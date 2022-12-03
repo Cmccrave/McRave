@@ -43,22 +43,22 @@ namespace McRave::BuildOrder::Zerg {
             return 0;
         if (Spy::enemyProxy() || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush")
             return 10;
-        return 6;
+        return 2;
     }
 
     void ZvT2HatchMuta()
     {
-        inTransition =                              vis(Zerg_Lair) > 0;
+        inTransition =                                  vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 28 : 15 - hatchCount();
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
         gasLimit =                                      gasMax();
 
-        inOpening =                                 total(Zerg_Mutalisk) <= 9;
+        inOpening =                                     total(Zerg_Mutalisk) <= 9;
         firstUpgrade =                                  UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  total(Zerg_Mutalisk) < 6;
         wantThird =                                     !Spy::enemyPressure() && !Spy::enemyRush() && Spy::getEnemyOpener() != "8Rax" && Spy::getEnemyBuild() != "RaxFact";
-        planEarly =                                     wantThird && atPercent(Zerg_Lair, 0.5) && int(Stations::getStations(PlayerState::Self).size()) < 3;
+        planEarly =                                     wantThird && atPercent(Zerg_Spire, 0.5) && int(Stations::getStations(PlayerState::Self).size()) < 3;
 
         auto thirdHatch =  (total(Zerg_Mutalisk) >= 6) || (vis(Zerg_Drone) >= 20 && s >= 48 && vis(Zerg_Spire) > 0);
 
@@ -82,22 +82,20 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvT3HatchMuta()
     {
-        inTransition =                              vis(Zerg_Lair) > 0;
+        inTransition =                                  vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : 15 - hatchCount();
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
         gasLimit =                                      gasMax();
 
-        inOpening =                                 total(Zerg_Mutalisk) <= 9;
+        inOpening =                                     total(Zerg_Mutalisk) <= 9;
         firstUpgrade =                                  (vis(Zerg_Extractor) >= 2 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  vis(Zerg_Overlord) < 7 || total(Zerg_Mutalisk) < 9;
         wantThird =                                     true;
+        planEarly =                                     hatchCount() < 3 && s >= 26;
 
-        auto fourthHatch =                              total(Zerg_Mutalisk) >= 9;
-        planEarly =                                     ((Spy::enemyFastExpand() && s >= 60) || atPercent(Zerg_Lair, 0.6)) && wantThird && int(Stations::getStations(PlayerState::Self).size()) < 3;
-
-        buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + fourthHatch;
-        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 3) + (s >= 44);
+        buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + (total(Zerg_Mutalisk) >= 9);
+        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 3) + (s >= 44 && vis(Zerg_Drone) >= 20);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + (atPercent(Zerg_Spire, 0.5) * 3);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        (s >= 42 && atPercent(Zerg_Lair, 0.80));
@@ -121,7 +119,7 @@ namespace McRave::BuildOrder::Zerg {
         gasLimit =                                      ((!Spy::enemyProxy() || com(Zerg_Zergling) >= 6) && !lingSpeed()) ? capGas(100) : 0;
 
         wallNat =                                       false;
-        inOpening =                                 total(Zerg_Zergling) < 36;
+        inOpening =                                     total(Zerg_Zergling) < 36;
         firstUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     UnitTypes::None;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
@@ -144,7 +142,7 @@ namespace McRave::BuildOrder::Zerg {
         gasLimit =                                      !lingSpeed() ? capGas(100) : 0;
 
         wallNat =                                       true;
-        inOpening =                                 total(Zerg_Zergling) < 80;
+        inOpening =                                     total(Zerg_Zergling) < 80;
         firstUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     UnitTypes::None;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;

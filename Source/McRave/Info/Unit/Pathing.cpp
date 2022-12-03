@@ -45,6 +45,9 @@ namespace McRave::Pathing {
                 auto engage = Util::getClosestPointToRadiusGround(unit.getPosition(), unitTarget->getPosition(), range);
                 unit.setEngagePosition(engage.second);
                 unit.setEngDist(engage.first);
+                if (unit.unit()->isSelected()) {
+                    Broodwar << engage.first << endl;
+                }
             }
         }
 

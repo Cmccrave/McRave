@@ -253,8 +253,8 @@ namespace McRave::BuildOrder
         // Add any buildable requisite buildings to make this unit
         std::function<void(UnitType)>addBuildableRequisites = [&](auto &type) {
             for (auto &[parent, _] : type.requiredUnits()) {
-                checkedAlready.push_back(parent);
-                if (notCompleted(parent) && find(checkedAlready.begin(), checkedAlready.end(), parent) != checkedAlready.end()) {
+                if (notCompleted(parent) && find(checkedAlready.begin(), checkedAlready.end(), parent) == checkedAlready.end()) {
+                    checkedAlready.push_back(parent);
                     addBuildableRequisites(parent);
                     return;
                 }

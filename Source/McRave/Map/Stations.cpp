@@ -250,7 +250,6 @@ namespace McRave::Stations
             else {
                 if (Util::getTime() > Time(4, 15) && (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()))
                     return 1 - groundCount;
-                return (Util::getTime() > Time(7, 30)) + (Util::getTime() > Time(8, 00)) - groundCount;
             }
             return 0;
         }
@@ -442,6 +441,8 @@ namespace McRave::Stations
                 return 1 - airCount;
             if (Players::ZvP() && Util::getTime() > Time(5, 00) && !station->isMain() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() == "3HatchMuta")
                 return 1 - airCount;
+            if (Players::ZvT() && Util::getTime() > Time(5, 30) && Util::getTime() < Time(7, 00) && Spy::getEnemyTransition() == "2PortWraith" && BuildOrder::getCurrentTransition() == "3HatchMuta")
+                return 1 - airCount;
         }
 
         if (Broodwar->self()->getRace() == Races::Terran) {
@@ -532,20 +533,28 @@ namespace McRave::Stations
             return false;
         };
 
-        if (Util::getTime() < Time(8, 00)) {
-            if (!unit.hasSimTarget() || unit.isFlying() || closerThanSim(getDefendPosition(Terrain::getDefendStation())) || alreadyInArea(Terrain::getDefendStation()))
-                return Terrain::getDefendStation();
-        }
+        //if (Util::getTime() < Time(8, 00)) {
+        //    if (!unit.hasSimTarget() || unit.isFlying() || closerThanSim(getDefendPosition(Terrain::getDefendStation())) || alreadyInArea(Terrain::getDefendStation()))
+        //        return Terrain::getDefendStation();
+        //}
 
         auto distBest = DBL_MAX;
         auto bestStation = Terrain::getMyMain();
         for (auto &station : getStations(PlayerState::Self)) {
             auto defendPosition = Stations::getDefendPosition(station);
-            auto dist = defendPosition.getDistance(unit.getPosition());
+            auto distDefend = defendPosition.getDistance(unit.getPosition());
+            auto distCenter = station->getBase()->Center().getDistance(unit.getPosition());
 
-            if (dist < distBest && !ownForwardBase(station) && (closerThanSim(defendPosition) || alreadyInArea(station))) {
+            if (unit.hasTarget()) {
+                auto target = unit.getTarget().lock();
+                Broodwar->drawLineMap(unit.getPosition(), target->getPosition(), Colors::Red);
+                if (Terrain::inTerritory(PlayerState::Self, target->getPosition()) && target->getPosition().getDistance(station->getBase()->Center()) < distCenter)
+                    continue;
+            }
+
+            if (distDefend < distBest && !ownForwardBase(station) && (closerThanSim(defendPosition) || alreadyInArea(station))) {
                 bestStation = station;
-                distBest = dist;
+                distBest = distDefend;
             }
         }
         return bestStation;

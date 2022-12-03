@@ -119,7 +119,7 @@ namespace McRave::Spy::Terran {
 
                 // RaxFact
                 if (theSpy.build.name == "RaxFact") {
-                    if (hasWraiths && Util::getTime() < Time(6, 00))
+                    if (arrivesBy(2, Terran_Wraith, Time(6,30)))
                         theSpy.transition.name = "2PortWraith";
 
                     if ((Players::getTotalCount(PlayerState::Enemy, Terran_Machine_Shop) >= 2 && (theSpy.typeUpgrading.find(Terran_Machine_Shop) != theSpy.typeUpgrading.end() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture_Spider_Mine) > 0))

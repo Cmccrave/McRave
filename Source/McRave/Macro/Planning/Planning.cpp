@@ -727,6 +727,10 @@ namespace McRave::Planning {
                     break;
                 }
             }
+
+            // Clear current expansion if we found it unbuildable now
+            if (currentExpansion && !isBuildable(baseType, currentExpansion->getBase()->Location()))
+                currentExpansion = nullptr;
         }
 
         void updatePlan()

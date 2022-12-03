@@ -93,15 +93,15 @@ namespace McRave::Roles {
             if (Players::ZvP()){
 
                 // If we suspect a cannon rush is coming
-                if (Players::ZvP() && Spy::enemyPossibleProxy() && Util::getTime() < Time(3, 00))
+                if (Spy::enemyPossibleProxy() && Util::getTime() < Time(3, 00))
                     forceCombatWorker(1, LocalState::Attack, GlobalState::Attack);
-                else if (Players::ZvP() && proxyDangerousBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
+                else if (proxyDangerousBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(1, LocalState::Attack, GlobalState::Attack);
 
                 // If we're trying to make our expanding hatchery and the drone is being harassed
-                else if (Players::ZvP() && vis(Zerg_Hatchery) == 1 && Util::getTime() < Time(3, 00) && BuildOrder::isOpener() && Units::getImmThreat() > 0.0f && com(Zerg_Zergling) == 0)
+                else if (vis(Zerg_Hatchery) == 1 && Util::getTime() < Time(3, 00) && BuildOrder::isOpener() && Units::getImmThreat() > 0.0f && com(Zerg_Zergling) == 0)
                     forceCombatWorker(1, LocalState::Attack, GlobalState::Attack);
-                else if (Players::ZvP() && Util::getTime() < Time(4, 00) && int(Stations::getStations(PlayerState::Self).size()) < 2 && BuildOrder::getBuildQueue()[Zerg_Hatchery] >= 2 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Probe) > 0)
+                else if (Util::getTime() < Time(4, 00) && int(Stations::getStations(PlayerState::Self).size()) < 2 && BuildOrder::getBuildQueue()[Zerg_Hatchery] >= 2 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Probe) > 0)
                     forceCombatWorker(1, LocalState::Attack, GlobalState::Attack);
             }
 
@@ -113,6 +113,12 @@ namespace McRave::Roles {
                     forceCombatWorker(6, LocalState::Attack, GlobalState::Attack);
                 else if (BuildOrder::getCurrentOpener() == "12Hatch" && Spy::getEnemyOpener() == "8Rax" && com(Zerg_Zergling) < 2)
                     forceCombatWorker(8, LocalState::Attack, GlobalState::Attack);
+
+                // If we're trying to make our expanding hatchery and the drone is being harassed
+                else if (vis(Zerg_Hatchery) == 1 && Util::getTime() < Time(3, 00) && BuildOrder::isOpener() && Units::getImmThreat() > 0.0f && com(Zerg_Zergling) == 0)
+                    forceCombatWorker(1, LocalState::Attack, GlobalState::Attack);
+                else if (Util::getTime() < Time(4, 00) && int(Stations::getStations(PlayerState::Self).size()) < 2 && BuildOrder::getBuildQueue()[Zerg_Hatchery] >= 2 && Players::getVisibleCount(PlayerState::Enemy, Terran_SCV) > 0)
+                    forceCombatWorker(1, LocalState::Attack, GlobalState::Attack);
             }
 
             // Misc

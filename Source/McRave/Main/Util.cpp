@@ -362,6 +362,8 @@ namespace McRave::Util {
                     dist = (dist1 < dist2 ? dist1 : dist2);
                 }
             }
+
+            Broodwar->drawTextMap(position, "%d", i);
         }
         return { dist, position };
     }

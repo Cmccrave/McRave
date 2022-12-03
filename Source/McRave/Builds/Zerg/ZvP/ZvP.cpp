@@ -91,7 +91,7 @@ namespace McRave::BuildOrder::Zerg {
         arrivalValue += int(3 * count_if(Units::getUnits(PlayerState::Enemy).begin(), Units::getUnits(PlayerState::Enemy).end(), [&](auto &u) {
             if (trackables.find(u->getType()) != trackables.end()) {
                 auto visDiff = Broodwar->getFrameCount() - u->getLastVisibleFrame();
-                return trackables.find(u->getType()) != trackables.end() && Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 20);
+                return trackables.find(u->getType()) != trackables.end() && Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 30);
             }
             return false;
         }));
@@ -200,7 +200,7 @@ namespace McRave::BuildOrder::Zerg {
         inOpening =                                     total(Zerg_Hydralisk) < 9;
         inBookSupply =                                  vis(Zerg_Overlord) < 5;
         firstUnit =                                     Zerg_Hydralisk;
-        firstUpgrade =                                  vis(Zerg_Drone) >= 14 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        firstUpgrade =                                  UpgradeTypes::Muscular_Augments;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) == 0 ? 13 : 19;
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP() + (6 * vis(Zerg_Hydralisk_Den));
         playPassive =                                   false;
@@ -212,7 +212,7 @@ namespace McRave::BuildOrder::Zerg {
 
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 28 && vis(Zerg_Drone) >= 11) + (total(Zerg_Hydralisk) >= 9 && vis(Zerg_Larva) < 3);
         buildQueue[Zerg_Extractor] =                    (s >= 30 && vis(Zerg_Drone) >= 11 && hatchCount() >= 3) + (vis(Zerg_Lair));
-        buildQueue[Zerg_Hydralisk_Den] =                ((lingSpeed() || firstUpgrade == UpgradeTypes::None) && vis(Zerg_Drone) >= 14 && s >= 38);
+        buildQueue[Zerg_Hydralisk_Den] =                (vis(Zerg_Drone) >= 14 && s >= 38);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + (s >= 54);
 
         // Composition

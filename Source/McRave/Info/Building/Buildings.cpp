@@ -118,7 +118,7 @@ namespace McRave::Buildings {
                     if (morphTile == Terrain::getMainTile()) {
                         if (Util::getTime() >= Time(3, 02)
                             || (Util::getTime() >= Time(3, 31) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
-                            || (Util::getTime() >= Time(4, 00) && BuildOrder::getCurrentTransition().find("3Hatch") != string::npos)
+                            || (BuildOrder::getCurrentTransition().find("3Hatch") != string::npos)
                             || Players::ZvZ())
                             morphType = Zerg_Lair;
                     }

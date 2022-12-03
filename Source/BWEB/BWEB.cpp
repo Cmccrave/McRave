@@ -371,14 +371,13 @@ namespace BWEB::Map
         const auto validatePoint = [&](WalkPosition w) {
             auto distBest = 0.0;
             auto posBest = Position(w);
-            for (auto x = w.x - 1; x < w.x + 1; x++) {
-                for (auto y = w.y - 1; y < w.y + 1; y++) {
-                    WalkPosition w(x, y);
-                    if (!w.isValid()
-                        || !mapBWEM.GetArea(w))
+            for (auto x = w.x - 2; x <= w.x + 2; x++) {
+                for (auto y = w.y - 2; y <= w.y + 2; y++) {
+                    WalkPosition walk(x, y);
+                    if (!walk.isValid()
+                        || !mapBWEM.GetArea(walk))
                         continue;
-
-                    auto p = Position(w);
+                    auto p = Position(walk);
                     auto dist = p.getDistance(mapBWEM.Center());
                     if (dist > distBest) {
                         distBest = dist;
@@ -397,14 +396,14 @@ namespace BWEB::Map
         if (!mapBWEM.GetArea(WalkPosition(start)))
             start = validatePoint(WalkPosition(start));
         if (!mapBWEM.GetArea(WalkPosition(end)))
-            end = validatePoint(WalkPosition(end));
+            end = validatePoint(WalkPosition(end));        
 
         // If not valid still, return DBL_MAX
         if (!start.isValid()
             || !end.isValid()
             || !mapBWEM.GetArea(WalkPosition(start))
             || !mapBWEM.GetArea(WalkPosition(end))
-            || !mapBWEM.GetArea(WalkPosition(start))->AccessibleFrom(mapBWEM.GetArea(WalkPosition(end))))
+            || !mapBWEM.GetArea(WalkPosition(start))->AccessibleFrom(mapBWEM.GetArea(WalkPosition(end))))           
             return DBL_MAX;
 
         // Find the closest chokepoint node
@@ -413,9 +412,6 @@ namespace BWEB::Map
         };
 
         const auto fastClosestNode = [&](const BWEM::ChokePoint * cp) {
-            auto bestPosition = cp->Center();
-            auto bestDist = DBL_MAX;
-
             const auto n1 = Position(cp->Pos(cp->end1));
             const auto n2 = Position(cp->Pos(cp->end2));
             const auto n3 = Position(cp->Center());
@@ -430,10 +426,9 @@ namespace BWEB::Map
         // For each chokepoint, add the distance to the closest chokepoint node
         auto first = true;
         for (auto &cpp : mapBWEM.GetPath(start, end)) {
+            const auto large = cpp->Pos(cpp->end1).getDistance(cpp->Pos(cpp->end2)) > 40;
+            const auto next = (first && !large) ? accurateClosestNode(cpp) : fastClosestNode(cpp);
 
-            auto large = cpp->Pos(cpp->end1).getDistance(cpp->Pos(cpp->end2)) > 40;
-
-            auto next = (first && !large) ? accurateClosestNode(cpp) : fastClosestNode(cpp);
             dist += next.getDistance(last);
             last = next;
             first = false;

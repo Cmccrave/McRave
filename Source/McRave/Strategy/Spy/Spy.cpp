@@ -46,7 +46,7 @@ namespace McRave::Spy {
 
     Time whenArrival(int count, UnitType type)
     {
-        auto timeCount = Time(0, 00);
+        auto timeCount = Time(999, 00);
         auto times = theSpy.enemyTimings[type].countArrivesWhen;
         if (int(times.size()) >= count) {
             for (auto &time : times) {

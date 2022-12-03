@@ -397,7 +397,7 @@ namespace McRave
 
         // Check if an enemy building is a proxy
         if (player->isEnemy(Broodwar->self())) {
-            if (getType() == Terran_Barracks || getType() == Terran_Bunker || getType() == Protoss_Gateway || getType() == Protoss_Photon_Cannon || getType() == Protoss_Pylon || getType() == Protoss_Forge) {
+            if (getType() == Terran_Barracks || getType() == Terran_Factory || getType() == Terran_Engineering_Bay || getType() == Terran_Bunker || getType() == Protoss_Gateway || getType() == Protoss_Photon_Cannon || getType() == Protoss_Pylon || getType() == Protoss_Forge) {
                 auto closestMain = BWEB::Stations::getClosestMainStation(getTilePosition());
                 auto closestNat = BWEB::Stations::getClosestNaturalStation(getTilePosition());
                 auto isNotInMain = closestNat && closestNat->getBase()->GetArea() != mapBWEM.GetArea(getTilePosition()) && getPosition().getDistance(closestNat->getBase()->Center()) > 640.0;
@@ -705,22 +705,24 @@ namespace McRave
 
         auto countDefensesInRange = 0.0;
         if (getType() == Zerg_Mutalisk && hasTarget() && canOneShot(*unitTarget)) {
-            return true;
-            //for (auto &e : Units::getUnits(PlayerState::Enemy)) {
-            //    if (e->canAttackAir() && e != unitTarget && (e->getPosition().getDistance(unitTarget->getPosition()) < e->getAirRange() + 32.0 || e->getPosition().getDistance(getPosition()) < e->getAirRange() + 32.0)) {
-            //        countDefensesInRange += (e->getType().isBuilding() ? 1.0 : 0.25);
-            //    }
-            //}
+            for (auto &e : Units::getUnits(PlayerState::Enemy)) {
+                if (e->canAttackAir() && e != unitTarget) {
+                    if (e->getPosition().getDistance(unitTarget->getPosition()) < e->getAirRange() + 32.0
+                        || e->getPosition().getDistance(getEngagePosition()) < e->getAirRange() + 32.0
+                        || e->getPosition().getDistance(getPosition()) < e->getAirRange() + 32.0)
+                        countDefensesInRange += (e->getType().isBuilding() ? 1.0 : 0.25);
+                }
+            }
 
-            //if (canOneShot(*unitTarget)) {
-            //    if ((countDefensesInRange < (Players::ZvP() ? 2.0 : 3.0) && Util::getTime() < Time(8, 00))
-            //        || (countDefensesInRange < (Players::ZvP() ? 3.0 : 4.0) && Util::getTime() < Time(10, 00)))
-            //        return true;
-            //}
-            //else {
-            //    if (countDefensesInRange <= 0.0)
-            //        return true;
-            //}
+            if (canOneShot(*unitTarget)) {
+                if ((countDefensesInRange < 2.0 && Util::getTime() < Time(8, 00))
+                    || (countDefensesInRange < 3.0 && Util::getTime() < Time(10, 00)))
+                    return true;
+            }
+            else {
+                if (countDefensesInRange <= 0.0)
+                    return true;
+            }
         }
 
         return ((!isFlying() && unitTarget->isSiegeTank() && getType() != Zerg_Lurker && isWithinRange(*getTarget().lock()) && getGroundRange() > 32.0)

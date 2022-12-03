@@ -144,20 +144,20 @@ namespace McRave::Combat::Simulation {
 
         // Adjust winrates based on how close to a station we are
         auto closestSelf = unit.isFlying() ? Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self) : Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
-        auto closestEnemy = unit.isFlying() ? Stations::getClosestStationAir(unit.getPosition(), PlayerState::Enemy) : Stations::getClosestStationGround(unit.getPosition(), PlayerState::Enemy);
+        //auto closestEnemy = unit.isFlying() ? Stations::getClosestStationAir(unit.getPosition(), PlayerState::Enemy) : Stations::getClosestStationGround(unit.getPosition(), PlayerState::Enemy);
 
-        if (closestSelf && closestEnemy) {
+        if (closestSelf /*&& closestEnemy*/) {
             const auto distSelf = unit.isFlying() ? min(unit.getPosition().getDistance(closestSelf->getBase()->Center()), unitTarget->getPosition().getDistance(closestSelf->getBase()->Center()))
                 : min(BWEB::Map::getGroundDistance(unit.getPosition(), closestSelf->getBase()->Center()), BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestSelf->getBase()->Center()));
-            const auto distEnemy = unit.isFlying() ? min(unit.getPosition().getDistance(closestEnemy->getBase()->Center()), unitTarget->getPosition().getDistance(closestEnemy->getBase()->Center()))
-                : min(BWEB::Map::getGroundDistance(unit.getPosition(), closestEnemy->getBase()->Center()), BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestEnemy->getBase()->Center()));
+            //const auto distEnemy = unit.isFlying() ? min(unit.getPosition().getDistance(closestEnemy->getBase()->Center()), unitTarget->getPosition().getDistance(closestEnemy->getBase()->Center()))
+            //    : min(BWEB::Map::getGroundDistance(unit.getPosition(), closestEnemy->getBase()->Center()), BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestEnemy->getBase()->Center()));
 
             const auto dist = clamp(200.0, Util::getTime().minutes * 50.0, 640.0);
-            const auto diffAllowed = 0.20;
-            const auto diffSelf = diffAllowed * exp(max(0.0, dist - distSelf) / dist);
-            const auto diffEnemy = diffAllowed * exp(max(0.0, dist - distEnemy) / dist);
-            minWinPercent = minWinPercent + diffEnemy - diffSelf;
-            maxWinPercent = maxWinPercent + diffEnemy - diffSelf;
+            const auto diffAllowed = 0.50;
+            const auto diffSelf = diffAllowed * (1.0 - exp(max(0.0, dist - distSelf) / dist));
+            //const auto diffEnemy = diffAllowed * exp(max(0.0, dist - distEnemy) / dist);
+            minWinPercent = minWinPercent /*+ diffEnemy*/ - diffSelf;
+            maxWinPercent = maxWinPercent /*+ diffEnemy*/ - diffSelf;
         }
 
         minThreshold = minWinPercent;

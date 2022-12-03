@@ -261,7 +261,7 @@ namespace BWEB {
                     else {
                         tryOrder ={
                         { TilePosition(4, -4), TilePosition(0, -3), TilePosition(4,-2) },
-                        { TilePosition(0, -3), TilePosition(4, -4), TilePosition(4,-2) }
+                        { TilePosition(-1, -3), TilePosition(4, -4), TilePosition(4,-2) }
                         };
                     }
                 }

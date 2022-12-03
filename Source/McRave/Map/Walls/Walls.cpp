@@ -132,7 +132,7 @@ namespace McRave::Walls {
                     + (!threeHatch && Util::getTime() > Time(4, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
-                    return (firstHatchNeeded && Util::getTime() > Time(3, 15))
+                    return (firstHatchNeeded && Util::getTime() > Time(3, 00))
                     + (!threeHatch && Util::getTime() > Time(4, 30));
             }
 
@@ -303,7 +303,7 @@ namespace McRave::Walls {
                 if (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::enemyWalled())
                     return (Util::getTime() > Time(3, 30));
             }
-            return (Util::getTime() > Time(3, 30));
+            return (Util::getTime() > Time(3, 45));
         }
 
         int ZvTTransition(BWEB::Wall& wall)
