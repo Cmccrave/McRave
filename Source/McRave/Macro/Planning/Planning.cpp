@@ -456,7 +456,7 @@ namespace McRave::Planning {
                 }
 
                 // How to dictate row order
-                vector<int> desiredRowOrder ={ 3, 4, 2, 1 };
+                vector<int> desiredRowOrder; Players::ZvT() ? desiredRowOrder ={ 2, 3, 4, 1 } : desiredRowOrder ={ 3, 4, 2, 1 };
 
                 auto closestDefense = Util::getClosestUnit(Position(closestMain->getChokepoint()->Center()), PlayerState::Self, [&](auto &u) {
                     return isDefensiveType(u->getType());

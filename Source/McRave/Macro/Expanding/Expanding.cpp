@@ -91,8 +91,10 @@ namespace McRave::Expansion {
             }
 
             // Score each station
-            auto allowedFirstMineralBase = 3;
-            if (BuildOrder::mineralThirdDesired() || Players::ZvZ() || Players::ZvP())
+            auto allowedFirstMineralBase = 4;
+            if (Players::ZvP())
+                allowedFirstMineralBase = 3;
+            if (Players::ZvZ() || BuildOrder::mineralThirdDesired())
                 allowedFirstMineralBase = 2;
 
             expansionOrder.clear();

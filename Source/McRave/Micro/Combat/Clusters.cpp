@@ -143,7 +143,6 @@ namespace McRave::Combat::Clusters {
                 return;
             }
 
-
             // Get closest unit to centroid
             auto closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
                 return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && !u->isTargetedBySuicide() && !u->globalRetreat() && !u->localRetreat();
@@ -272,7 +271,7 @@ namespace McRave::Combat::Clusters {
                     auto retreatStation = Stations::getClosestRetreatStation(*commander);
                     cluster.mobileCluster = commander->getGlobalState() != GlobalState::Retreat || !Terrain::inTerritory(PlayerState::Self, commander->getPosition());
                     cluster.marchPosition = (commander->getGlobalState() != GlobalState::Retreat && commander->hasTarget()) ? commander->getTarget().lock()->getPosition() : commander->getDestination();
-                    cluster.retreatPosition = retreatStation ? retreatStation->getBase()->Center() : Terrain::getMainPosition();
+                    cluster.retreatPosition = commander->getRetreat();
                     cluster.commandShare = commander->isLightAir() ? CommandShare::Exact : CommandShare::Parallel;
                     cluster.shape = commander->isLightAir() ? Shape::None : Shape::Concave;
 

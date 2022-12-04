@@ -8,7 +8,7 @@ namespace McRave::Combat::Destination {
 
     namespace {
 
-        vector<BWEB::Station*> combatScoutOrder;        
+        vector<BWEB::Station*> combatScoutOrder;
     }
 
     void getCleanupPosition(UnitInfo& unit)
@@ -23,6 +23,26 @@ namespace McRave::Combat::Destination {
                 }), list.end());
             }
         }
+    }
+
+    void updateRetreat(UnitInfo& unit)
+    {
+        unit.setRetreat(Positions::Invalid);
+        const auto &retreat = Stations::getClosestRetreatStation(unit);
+        const auto lowGroundCount = (vis(Zerg_Zergling) < 12 && vis(Zerg_Hydralisk) < 6);
+
+        // 1 Base - Retreat is Main
+        // 2 Base - Retreat first is main choke
+        // 2 Base - Retreat second is natural
+        // x Base - Closest retreat station
+        if (Stations::getStations(PlayerState::Self).size() == 1)
+            unit.setRetreat(Terrain::getMainPosition());
+        else if (Stations::getStations(PlayerState::Self).size() >= 2 && lowGroundCount)
+            unit.setRetreat(Position(Terrain::getMainChoke()->Center()));
+        else if (retreat)
+            unit.setRetreat(Stations::getDefendPosition(retreat));
+        else
+            unit.setRetreat(Terrain::getMainPosition());
     }
 
     void updateDestination(UnitInfo& unit)
@@ -86,7 +106,7 @@ namespace McRave::Combat::Destination {
             }
         }
 
-        
+
         //Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
         //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
     }
@@ -95,8 +115,10 @@ namespace McRave::Combat::Destination {
     {
         for (auto &u : Units::getUnits(PlayerState::Self)) {
             auto &unit = *u;
-            if (unit.getRole() == Role::Combat)
-                updateDestination(unit);            
+            if (unit.getRole() == Role::Combat) {
+                updateRetreat(unit);
+                updateDestination(unit);
+            }
         }
     }
 }

@@ -384,7 +384,7 @@ namespace McRave
 
         if (threateningFrames > 24)
             lastThreateningFrame = Broodwar->getFrameCount();
-        threatening = Broodwar->getFrameCount() - lastThreateningFrame <= min(64, Util::getTime().minutes * 2);
+        threatening = Broodwar->getFrameCount() - lastThreateningFrame <= 8;
     }
 
     void UnitInfo::checkProxy()

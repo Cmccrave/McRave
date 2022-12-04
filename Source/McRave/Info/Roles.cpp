@@ -90,13 +90,13 @@ namespace McRave::Roles {
             }
 
             // ZvP
-            if (Players::ZvP()){
+            if (Players::ZvP() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0) {
 
                 // If we suspect a cannon rush is coming
                 if (Spy::enemyPossibleProxy() && Util::getTime() < Time(3, 00))
                     forceCombatWorker(1, LocalState::Attack, GlobalState::Attack);
                 else if (proxyDangerousBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
-                    forceCombatWorker(1, LocalState::Attack, GlobalState::Attack);
+                    forceCombatWorker(3, LocalState::Attack, GlobalState::Attack);
 
                 // If we're trying to make our expanding hatchery and the drone is being harassed
                 else if (vis(Zerg_Hatchery) == 1 && Util::getTime() < Time(3, 00) && BuildOrder::isOpener() && Units::getImmThreat() > 0.0f && com(Zerg_Zergling) == 0)

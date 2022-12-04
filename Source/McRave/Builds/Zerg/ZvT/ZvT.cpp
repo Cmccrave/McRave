@@ -10,12 +10,13 @@ using namespace McRave::BuildOrder::All;
 namespace McRave::BuildOrder::Zerg {
 
     void defaultZvT() {
-        inOpening =                             true;
+        inOpening =                                 true;
         inBookSupply =                              true;
         wallNat =                                   hatchCount() >= 4;
         wallMain =                                  false;
         wantNatural =                               true;
         wantThird =                                 true;
+        mineralThird =                              false;
         proxy =                                     false;
         hideTech =                                  false;
         playPassive =                               Util::getTime() > Time(3, 30) && !Spy::enemyFastExpand() && com(Zerg_Mutalisk) < 5;
@@ -43,6 +44,8 @@ namespace McRave::BuildOrder::Zerg {
             return 0;
         if (Spy::enemyProxy() || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush")
             return 10;
+        if (Spy::getEnemyBuild() == "RaxFact")
+            return 6;
         return 2;
     }
 

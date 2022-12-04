@@ -303,6 +303,11 @@ namespace McRave::Walls {
                 if (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::enemyWalled())
                     return (Util::getTime() > Time(3, 30));
             }
+
+            // Enemy walled, which delays any push they have
+            if (Spy::enemyWalled() && Util::getTime() < Time(4, 30))
+                return (Util::getTime() > Time(4, 15));
+
             return (Util::getTime() > Time(3, 45));
         }
 

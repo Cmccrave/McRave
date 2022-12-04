@@ -164,7 +164,7 @@ namespace McRave::Scouts {
             if (Broodwar->self()->getRace() == Races::Zerg) {
 
                 // Main drone scouting counts
-                main.desiredScoutTypeCounts[Zerg_Drone] = int(BuildOrder::shouldScout() || Spy::enemyProxy()) + int(BuildOrder::shouldScout() && BuildOrder::isProxy());
+                main.desiredScoutTypeCounts[Zerg_Drone] = int(BuildOrder::shouldScout()) + int(BuildOrder::shouldScout() && BuildOrder::isProxy()) - int(Spy::enemyProxy());
                 if ((Players::ZvP() && Util::getTime() > Time(3, 30) && Spy::enemyFastExpand())
                     || (Players::ZvP() && Util::getTime() > Time(4, 30))
                     || (Players::ZvT() && Util::getTime() > Time(4, 30))
