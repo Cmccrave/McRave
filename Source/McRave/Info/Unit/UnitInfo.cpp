@@ -139,8 +139,16 @@ namespace McRave
             minStopFrame                = Math::stopAnimationFrames(t);
             lastStimFrame               = unit()->isStimmed() ? Broodwar->getFrameCount() : lastStimFrame;
             lastVisibleFrame            = Broodwar->getFrameCount();
-            arriveFrame                 = isFlying() ? Broodwar->getFrameCount() + int(position.getDistance(Terrain::getMainPosition()) / speed) :
-                Broodwar->getFrameCount() + int(BWEB::Map::getGroundDistance(position, Terrain::getMainPosition()) / speed);
+
+            if (arriveFrame == -999 && player != Broodwar->self()) {
+                if (isFlying())
+                    arriveFrame = Broodwar->getFrameCount() + int(position.getDistance(Terrain::getMainPosition()) / speed);
+                else {
+                    BWEB::Path newPath(position, Terrain::getMainPosition(), type, true, false);
+                    newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t); });
+                    arriveFrame = Broodwar->getFrameCount() + int(newPath.getDistance() / speed);
+                }
+            }
 
             checkHidden();
             checkStuck();

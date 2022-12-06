@@ -70,15 +70,15 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Overlord] =                     (com(Zerg_Spire) == 0 && atPercent(Zerg_Spire, 0.35) && (s >= 34)) ? 4 : 1 + (vis(Zerg_Extractor) >= 1) + (s >= 32) + (s >= 46);
 
         // Army Composition
-        if (com(Zerg_Spire) > 0) {
-            armyComposition[Zerg_Drone] =               0.40;
-            armyComposition[Zerg_Zergling] =            0.00;
-            armyComposition[Zerg_Mutalisk] =            0.60;
-        }
-        else if (com(Zerg_Spire) == 0 && lingsNeeded_ZvZ() > vis(Zerg_Zergling)) {
+        if (com(Zerg_Spire) == 0 && lingsNeeded_ZvZ() > vis(Zerg_Zergling)) {
             armyComposition[Zerg_Drone] =               0.00;
             armyComposition[Zerg_Zergling] =            1.00;
             armyComposition[Zerg_Mutalisk] =            0.00;
+        }
+        else if (atPercent(Zerg_Spire, 0.5) > 0) {
+            armyComposition[Zerg_Drone] =               0.40;
+            armyComposition[Zerg_Zergling] =            0.00;
+            armyComposition[Zerg_Mutalisk] =            0.60;
         }
         else {
             armyComposition[Zerg_Drone] =               1.00;

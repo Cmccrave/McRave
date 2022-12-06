@@ -489,7 +489,7 @@ namespace McRave::Producing {
     }
 
     bool larvaTrickRequired(UnitInfo& larva) {
-        if (larva.getType() == Zerg_Larva && larva.unit()->getHatchery()) {
+        if (larva.getType() == Zerg_Larva && larva.unit()->getHatchery() && larva.getRemainingTrainFrames() <= 0) {
             auto closestStation = Stations::getClosestStationAir(larva.unit()->getHatchery()->getPosition(), PlayerState::Self);
             if (!closestStation)
                 return false;
@@ -506,7 +506,7 @@ namespace McRave::Producing {
     };
 
     bool larvaTrickOptional(UnitInfo& larva) {
-        if (larva.getType() == Zerg_Larva && larva.unit()->getHatchery()) {
+        if (larva.getType() == Zerg_Larva && larva.unit()->getHatchery() && larva.getRemainingTrainFrames() <= 0) {
             auto closestStation = Stations::getClosestStationAir(larva.unit()->getHatchery()->getPosition(), PlayerState::Self);
             if (!closestStation)
                 return false;

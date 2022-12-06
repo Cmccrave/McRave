@@ -101,7 +101,7 @@ namespace McRave::Spy::Protoss {
                     theSpy.opener.name = "Proxy";
                     theSpy.proxy.possible = true;
                 }
-                else if (arrivesBy(2, Protoss_Zealot, Time(3, 25)) || arrivesBy(3, Protoss_Zealot, Time(3, 50)) || arrivesBy(4, Protoss_Zealot, Time(4, 00)) || arrivesBy(5, Protoss_Zealot, Time(4, 10))
+                else if (arrivesBy(2, Protoss_Zealot, Time(3, 25)) || arrivesBy(3, Protoss_Zealot, Time(3, 45)) || arrivesBy(4, Protoss_Zealot, Time(4, 00)) || arrivesBy(5, Protoss_Zealot, Time(4, 10))
                     || completesBy(2, Protoss_Zealot, Time(2, 45)) || completesBy(3, Protoss_Zealot, Time(2, 50)) || completesBy(4, Protoss_Zealot, Time(3, 10)) || completesBy(5, Protoss_Zealot, Time(3, 15))
                     || completesBy(2, Protoss_Gateway, Time(2, 15)))
                     theSpy.opener.name = "9/9";

@@ -638,14 +638,15 @@ namespace McRave::BuildOrder::Zerg {
     void unlocks()
     {
         // Saving larva to burst out tech units
-        int limitBy = int(Stations::getStations(PlayerState::Self).size()) * 3;
+        const auto limitBy = int(Stations::getStations(PlayerState::Self).size()) * 3;
+        const auto reserveAt = Players::ZvZ() ? 10 : 16;
         unitReservations.clear();
         if (inOpening || techList.size() <= 1) {
-            if (atPercent(Zerg_Spire, 0.50) && vis(Zerg_Drone) >= 16 && techUnit == Zerg_Mutalisk && (armyComposition[Zerg_Mutalisk] > 0.0 || armyComposition[Zerg_Scourge] > 0.0)) {
+            if (atPercent(Zerg_Spire, 0.50) && vis(Zerg_Drone) >= reserveAt && techUnit == Zerg_Mutalisk && (armyComposition[Zerg_Mutalisk] > 0.0 || armyComposition[Zerg_Scourge] > 0.0)) {
                 unitReservations[Zerg_Mutalisk] = max(0, limitBy - total(Zerg_Mutalisk) - int(armyComposition[Zerg_Scourge] > 0.0));
                 unitReservations[Zerg_Scourge] = max(0, 2 * int(armyComposition[Zerg_Scourge] > 0.0) - total(Zerg_Scourge));
             }
-            if (vis(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Drone) >= 16 && techUnit == Zerg_Hydralisk && armyComposition[Zerg_Hydralisk] > 0.0)
+            if (vis(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Drone) >= reserveAt && techUnit == Zerg_Hydralisk && armyComposition[Zerg_Hydralisk] > 0.0)
                 unitReservations[Zerg_Hydralisk] = max(0, limitBy - total(Zerg_Hydralisk));
         }
 

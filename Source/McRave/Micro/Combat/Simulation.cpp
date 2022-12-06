@@ -152,9 +152,9 @@ namespace McRave::Combat::Simulation {
             //const auto distEnemy = unit.isFlying() ? min(unit.getPosition().getDistance(closestEnemy->getBase()->Center()), unitTarget->getPosition().getDistance(closestEnemy->getBase()->Center()))
             //    : min(BWEB::Map::getGroundDistance(unit.getPosition(), closestEnemy->getBase()->Center()), BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestEnemy->getBase()->Center()));
 
-            const auto dist = clamp(200.0, Util::getTime().minutes * 50.0, 640.0);
+            const auto dist = 320.0;
             const auto diffAllowed = 0.50;
-            const auto diffSelf = diffAllowed * (1.0 - exp(max(0.0, dist - distSelf) / dist));
+            const auto diffSelf = diffAllowed * (exp(max(0.0, dist - distSelf) / dist) - 1.0);
             //const auto diffEnemy = diffAllowed * exp(max(0.0, dist - distEnemy) / dist);
             minWinPercent = minWinPercent /*+ diffEnemy*/ - diffSelf;
             maxWinPercent = maxWinPercent /*+ diffEnemy*/ - diffSelf;

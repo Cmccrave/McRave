@@ -16,12 +16,14 @@ namespace McRave::Roles {
             if (needed <= 0)
                 return;
 
+            auto lowHp = Spy::getEnemyTransition() == "WorkerRush" ? 6 : 20;
+
             // Only pull the closest worker to our defend position
             for (int i = 0; i < needed; i++) {
                 auto closestWorker = Util::getClosestUnit(Terrain::getDefendPosition(), PlayerState::Self, [&](auto &u) {
                     if (u->getType() == Protoss_Probe && u->getShields() <= 4) // Don't pull low shield probes
                         return false;
-                    if (u->getType() == Zerg_Drone && u->getHealth() < 20) // Don't pull low health drones
+                    if (u->getType() == Zerg_Drone && u->getHealth() < lowHp) // Don't pull low health drones
                         return false;
                     return u->getRole() == Role::Worker && !u->getGoal().isValid() && (!u->hasResource() || !u->getResource().lock()->getType().isRefinery()) && !u->getBuildPosition().isValid();
                 });

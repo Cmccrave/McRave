@@ -71,7 +71,7 @@ namespace McRave::Combat::Formations {
                     || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None
                     || Util::boxDistance(type, p, type, last) <= 2
                     || (closestBuilder && p.getDistance(closestBuilder->getPosition()) < 128.0)) {
-                    Broodwar->drawCircleMap(p, 1, Colors::Red);
+                    //Broodwar->drawCircleMap(p, 1, Colors::Red);
                     return false;
                 }
                 assignmentsRemaining--;
@@ -175,7 +175,6 @@ namespace McRave::Combat::Formations {
                 center = dir - Position(int(dirx*cluster.radius), int(diry*cluster.radius));
             else
                 center = dir + Position(int(dirx*cluster.radius), int(diry*cluster.radius));
-            Broodwar->drawCircleMap(center, 4, Colors::Cyan, true);
         }
         concave.center = center;
         generateConcavePositions(concave, cluster, type, center, cluster.radius, radsPerUnit, unitTangentSize);        

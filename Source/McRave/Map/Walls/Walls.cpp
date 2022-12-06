@@ -128,7 +128,7 @@ namespace McRave::Walls {
                     + (!threeHatch && Util::getTime() > Time(4, 30))
                     + (!threeHatch && Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown")
-                    return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 15))
+                    return (firstHatchNeeded && Util::getTime() > Time(3, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
@@ -193,7 +193,7 @@ namespace McRave::Walls {
             // 3 hatch builds make lings instead of sunkens
             auto initial = 1;
             if (threeHatch)
-                initial = -2;
+                return 0;
 
             // 1 base transitions
             if (Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") {
@@ -392,6 +392,14 @@ namespace McRave::Walls {
         auto groundCount = wall.getGroundDefenseCount();
         if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
             return 0;
+
+        // If any defense in the wall is severely damaged, we should build 1 extra
+        for (auto &unit : Units::getUnits(PlayerState::Self)) {
+            if (unit->isCompleted() && unit->getType().isBuilding() && !unit->isHealthy() && wall.getDefenses().find(unit->getTilePosition()) != wall.getDefenses().end()) {
+                groundCount--;
+                break;
+            }
+        }
 
         // Protoss
         if (Broodwar->self()->getRace() == Races::Protoss) {

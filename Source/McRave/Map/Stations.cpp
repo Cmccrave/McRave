@@ -547,7 +547,6 @@ namespace McRave::Stations
 
             if (unit.hasTarget()) {
                 auto target = unit.getTarget().lock();
-                Broodwar->drawLineMap(unit.getPosition(), target->getPosition(), Colors::Red);
                 if (Terrain::inTerritory(PlayerState::Self, target->getPosition()) && target->getPosition().getDistance(station->getBase()->Center()) < distCenter)
                     continue;
             }

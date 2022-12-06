@@ -556,7 +556,6 @@ namespace McRave::Scouts {
             for (auto &u : sortedScouts) {
                 if (auto unit = u.lock()) {
                     i++;
-                    Broodwar->drawTextMap(unit->getPosition(), "%d", i);
                     updateDestination(*unit);
                     updatePath(*unit);
                     updateDecision(*unit);

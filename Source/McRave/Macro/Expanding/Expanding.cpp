@@ -140,7 +140,7 @@ namespace McRave::Expansion {
                         || (Terrain::getEnemyMain() && station == Terrain::getEnemyMain())
                         || (Terrain::getEnemyNatural() && station == Terrain::getEnemyNatural())
                         || (station.getBase()->Geysers().empty() && int(expansionOrder.size()) < allowedFirstMineralBase)
-                        || (geysersOwned + int(station.getBase()->Geysers().size()) < allowedFirstMineralBase)
+                        || (station.getBase()->Geysers().empty() && geysersOwned + int(station.getBase()->Geysers().size()) < allowedFirstMineralBase)
                         || (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea())))
                         continue;
 

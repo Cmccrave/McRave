@@ -40,7 +40,7 @@ namespace McRave::Combat::Destination {
         else if (Stations::getStations(PlayerState::Self).size() >= 2 && lowGroundCount)
             unit.setRetreat(Position(Terrain::getMainChoke()->Center()));
         else if (retreat)
-            unit.setRetreat(Stations::getDefendPosition(retreat));
+            unit.setRetreat(retreat->getBase()->Center());
         else
             unit.setRetreat(Terrain::getMainPosition());
     }

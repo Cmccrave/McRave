@@ -49,11 +49,20 @@ namespace McRave::Combat::Clusters {
 
         bool generateCluster(ClusterNode &parent, int id, int minsize)
         {
+            auto matching = [&](auto &parent, auto &child) {
+                auto matchedType = (parent.unit->isFlying() && child.unit->isFlying()) || (!parent.unit->isFlying() && !child.unit->isFlying());
+                auto matchedStrat = parent.unit->getLocalState() == child.unit->getLocalState() &&
+                    ((parent.unit->getLocalState() == LocalState::Attack /*&& parent.unit->getDestination() == child.unit->getDestination()*/)
+                        || (parent.unit->getLocalState() == LocalState::Retreat && parent.unit->getRetreat() == child.unit->getRetreat())
+                        || (parent.unit->getGlobalState() == GlobalState::Retreat && parent.unit->getRetreat() == child.unit->getRetreat()));
+                auto matchedDistance = child.position.getDistance(parent.position) < 160.0 || (parent.unit->isLightAir() && child.unit->isLightAir());
+                return matchedType && matchedStrat && matchedDistance;
+            };
+
             auto getNeighbors = [&](auto &currentNode, auto &queue) {
-                for (auto &node : clusterNodes) {
-                    auto matchedType = (parent.unit->isFlying() && node.unit->isFlying()) || (!parent.unit->isFlying() && !node.unit->isFlying());
-                    if (node.id == 0 && matchedType && (node.position.getDistance(currentNode.position) < 640.0 || node.unit->isLightAir()))
-                        queue.push(&node);
+                for (auto &child : clusterNodes) {
+                    if (child.id == 0 && matching(parent, child))
+                        queue.push(&child);
                 }
             };
 
@@ -165,9 +174,7 @@ namespace McRave::Combat::Clusters {
             BWEB::Path newMarchPath(commander->getPosition(), marchPathPoint, commander->getType());
             newMarchPath.generateJPS([&](const TilePosition &t) { return newMarchPath.unitWalkable(t);  });
             cluster.marchPath = newMarchPath;
-
-            // Get closest unit to target for marching/retreating
-            
+            //Visuals::drawPath(cluster.marchPath);
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.marchNavigation = cluster.marchPosition;
@@ -181,6 +188,7 @@ namespace McRave::Combat::Clusters {
             BWEB::Path newRetreatPath(commander->getPosition(), retreatPathPoint, commander->getType());
             newRetreatPath.generateJPS([&](const TilePosition &t) { return newRetreatPath.unitWalkable(t);  });
             cluster.retreatPath = newRetreatPath;
+            //Visuals::drawPath(cluster.retreatPath);
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.retreatNavigation = cluster.retreatPosition;
