@@ -16,6 +16,8 @@ namespace McRave::Combat::Simulation {
 
     void updateSimulation(UnitInfo& unit)
     {
+        Horizon::simulate(unit);
+
         if (unit.getEngDist() == DBL_MAX || !unit.hasTarget()) {
             unit.setSimState(SimState::Loss);
             unit.setSimValue(0.0);
@@ -92,10 +94,6 @@ namespace McRave::Combat::Simulation {
 
     void updateThresholds(UnitInfo& unit)
     {
-        if (!unit.hasTarget())
-            return;
-        auto unitTarget = unit.getTarget().lock();
-
         // P
         if (Players::PvP()) {
             minWinPercent = 0.8;
@@ -116,8 +114,8 @@ namespace McRave::Combat::Simulation {
             maxWinPercent = 1.2;
         }
         if (Players::ZvZ()) {
-            minWinPercent = 1.0;
-            maxWinPercent = 1.4;
+            minWinPercent = 0.8;
+            maxWinPercent = 1.2;
         }
         if (Players::ZvT()) {
             minWinPercent = 1.0;
@@ -137,27 +135,46 @@ namespace McRave::Combat::Simulation {
             minWinPercent = 1.0;
             maxWinPercent = 1.4;
         }
+    }
 
-        // Adjust winrates based on game duration
-        // Early on we want confident engagements, later on we can be lenient
-        // TODO
+    void updateIncentives(UnitInfo& unit)
+    {
+        // Can't have incentives without a target for now
+        if (!unit.hasTarget())
+            return;
+        auto unitTarget = unit.getTarget().lock();
 
-        // Adjust winrates based on how close to a station we are
+        // Air units are way more powerful when clustered properly
+        if (unit.isLightAir() && !unitTarget->isThreatening()) {
+            auto density = Grids::getAirDensity(unit.getPosition(), PlayerState::Self);
+            if (density < 5) {
+                minWinPercent += 0.2;
+                maxWinPercent += 0.2;
+            }
+        }
+
+        // Adjust winrates based on how close to self station we are
         auto closestSelf = unit.isFlying() ? Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self) : Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
-        //auto closestEnemy = unit.isFlying() ? Stations::getClosestStationAir(unit.getPosition(), PlayerState::Enemy) : Stations::getClosestStationGround(unit.getPosition(), PlayerState::Enemy);
-
-        if (closestSelf /*&& closestEnemy*/) {
+        if (closestSelf) {
             const auto distSelf = unit.isFlying() ? min(unit.getPosition().getDistance(closestSelf->getBase()->Center()), unitTarget->getPosition().getDistance(closestSelf->getBase()->Center()))
                 : min(BWEB::Map::getGroundDistance(unit.getPosition(), closestSelf->getBase()->Center()), BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestSelf->getBase()->Center()));
-            //const auto distEnemy = unit.isFlying() ? min(unit.getPosition().getDistance(closestEnemy->getBase()->Center()), unitTarget->getPosition().getDistance(closestEnemy->getBase()->Center()))
-            //    : min(BWEB::Map::getGroundDistance(unit.getPosition(), closestEnemy->getBase()->Center()), BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestEnemy->getBase()->Center()));
 
             const auto dist = 320.0;
             const auto diffAllowed = 0.50;
             const auto diffSelf = diffAllowed * (exp(max(0.0, dist - distSelf) / dist) - 1.0);
-            //const auto diffEnemy = diffAllowed * exp(max(0.0, dist - distEnemy) / dist);
-            minWinPercent = minWinPercent /*+ diffEnemy*/ - diffSelf;
-            maxWinPercent = maxWinPercent /*+ diffEnemy*/ - diffSelf;
+            minWinPercent = minWinPercent - diffSelf;
+            maxWinPercent = maxWinPercent - diffSelf;
+        }
+
+        // Adjust winrates if we have static defense out of range that would make the fight easier
+        if (Util::getTime() < Time(8, 00) && !unit.isFlying() && vis(Zerg_Sunken_Colony) > 0) {
+            const auto closestSunken = Util::getClosestUnit(unit.getRetreat(), PlayerState::Self, [&](auto &u) {
+                return u->getType() == Zerg_Sunken_Colony && u->getPosition().getDistance(unit.getRetreat()) < 200.0;
+            });
+            if (closestSunken && !closestSunken->isWithinRange(*unit.getTarget().lock())) {
+                minWinPercent *=2;
+                maxWinPercent *=2;
+            }
         }
 
         minThreshold = minWinPercent;
@@ -170,7 +187,7 @@ namespace McRave::Combat::Simulation {
             auto &unit = *u;
             if (unit.getRole() == Role::Combat) {
                 updateThresholds(unit);
-                Horizon::simulate(unit);
+                updateIncentives(unit);
                 updateSimulation(unit);
             }
         }

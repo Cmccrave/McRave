@@ -122,6 +122,7 @@ namespace McRave::Horizon {
             // If the unit doesn't affect this simulation
             if (self.localRetreat()
                 || self.globalRetreat()
+                || (Combat::State::isStaticRetreat(self.getType()) && !unitTarget->isThreatening())
                 || (self.getSpeed() <= 0.0 && self.getEngDist() > -16.0)
                 || (unit.hasTarget() && self.hasTarget() && self.getEngagePosition().getDistance(unitTarget->getPosition()) > reach))
                 continue;

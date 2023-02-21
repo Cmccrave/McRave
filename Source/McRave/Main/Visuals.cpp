@@ -116,13 +116,16 @@ namespace McRave::Visuals {
             if (resources) {
                 for (auto &r : Resources::getMyMinerals()) {
                     auto &resource = *r;
+                    if (resource.isThreatened())
+                        drawCircle(resource.getPosition(), 5, Colors::Red);
                     Broodwar->drawTextMap(resource.getPosition() + Position(-8, 8), "%c%d", Text::GreyBlue, (*r).getRemainingResources());
                     Broodwar->drawTextMap(resource.getPosition() - Position(32, 8), "%cGatherers: %d", textColor, resource.getGathererCount());
                     Broodwar->drawTextMap(resource.getPosition() - Position(32, 16), "%cState: %d", textColor, (int)resource.getResourceState());
-
                 }
                 for (auto &r : Resources::getMyGas()) {
                     auto &resource = *r;
+                    if (resource.isThreatened())
+                        drawCircle(resource.getPosition(), 5, Colors::Red);
                     Broodwar->drawTextMap(resource.getPosition() + Position(-8, 8), "%c%d", Text::Green, (*r).getRemainingResources());
                     Broodwar->drawTextMap(resource.getPosition() - Position(32, 8), "%cGatherers: %d", textColor, resource.getGathererCount());
                     Broodwar->drawTextMap(resource.getPosition() - Position(32, 16), "%cState: %d", textColor, (int)resource.getResourceState());

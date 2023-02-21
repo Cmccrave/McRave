@@ -327,7 +327,7 @@ namespace McRave
 
         // Check if our resources are in danger
         auto nearResources = [&]() {
-            return closestStation && closestStation == Terrain::getMyMain() && closestStation->getResourceCentroid().getDistance(getPosition()) < proximityCheck && atHome;
+            return closestStation && closestStation->getResourceCentroid().getDistance(getPosition()) < proximityCheck && atHome;
         };
 
         // Check if our defenses can hit or be hit
@@ -408,15 +408,9 @@ namespace McRave
             if (getType() == Terran_Barracks || getType() == Terran_Factory || getType() == Terran_Engineering_Bay || getType() == Terran_Bunker || getType() == Protoss_Gateway || getType() == Protoss_Photon_Cannon || getType() == Protoss_Pylon || getType() == Protoss_Forge) {
                 auto closestMain = BWEB::Stations::getClosestMainStation(getTilePosition());
                 auto closestNat = BWEB::Stations::getClosestNaturalStation(getTilePosition());
-                auto isNotInMain = closestNat && closestNat->getBase()->GetArea() != mapBWEM.GetArea(getTilePosition()) && getPosition().getDistance(closestNat->getBase()->Center()) > 640.0;
-                auto isNotInNat = closestMain && closestMain->getBase()->GetArea() != mapBWEM.GetArea(getTilePosition()) && getPosition().getDistance(closestMain->getBase()->Center()) > 640.0;
-
-                auto closerToMyMain = closestMain && closestMain == Terrain::getMyMain() && getPosition().getDistance(closestMain->getBase()->Center()) < 480.0;
-                auto closerToMyNat = closestNat && closestNat == Terrain::getMyNatural() && getPosition().getDistance(closestNat->getBase()->Center()) < 320.0;
-                auto proxyBuilding = (isNotInMain && isNotInNat) || closerToMyMain || closerToMyNat;
-
-                if (proxyBuilding)
-                    proxy = true;
+                auto closerToMyMain = closestMain && closestMain == Terrain::getMyMain();
+                auto closerToMyNat = closestNat && closestNat == Terrain::getMyNatural();
+                proxy = closerToMyMain || closerToMyNat;
             }
         }
     }

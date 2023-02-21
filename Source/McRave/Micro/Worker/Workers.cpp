@@ -16,13 +16,13 @@ namespace McRave::Workers {
         BWEB::Station * getTransferStation(UnitInfo& unit)
         {
             // Allow some drones to transfer if another base is unsaturated
-            if (Util::getTime() < Time(4, 00) && !Spy::enemyRush() && vis(UnitTypes::Zerg_Drone) >= 9) {
+            if (Util::getTime() < Time(4, 00) && unit.isHealthy() && !Spy::enemyRush() && vis(UnitTypes::Zerg_Drone) >= 9) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
                     int droneCount = 0;
                     auto mineable = true;
                     for (auto &mineral : Resources::getMyMinerals()) {
                         if (mineral->hasStation() && mineral->getStation() == station) {
-                            if (mineral->getResourceState() != ResourceState::Mineable)
+                            if (mineral->getResourceState() != ResourceState::Mineable || mineral->isThreatened())
                                 mineable = false;
                             droneCount += mineral->getGathererCount();
                         }
@@ -43,8 +43,6 @@ namespace McRave::Workers {
 
             // Find safe stations to mine resources from
             for (auto &station : Stations::getStations(PlayerState::Self)) {
-                auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
-                auto closestMain = BWEB::Stations::getClosestMainStation(station->getBase()->Location());
 
                 // If unit is close, it must be safe
                 if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(unit.getTilePosition()) == station->getBase()->GetArea())
@@ -55,15 +53,15 @@ namespace McRave::Workers {
                     safeStations.push_back(station);
 
                 // Otherwise create a path to it to check if it's safe
-                else {
+                else if (unit.hasTarget()) {
+                    auto unitTarget = unit.getTarget().lock();
                     BWEB::Path newPath(unit.getPosition(), station->getBase()->Center(), unit.getType());
                     newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t) || Util::rectangleIntersect(Position(station->getBase()->Location()), Position(station->getBase()->Location()) + Position(96, 64), Position(t)); });
                     unit.setDestinationPath(newPath);
 
                     // If unit is far, we need to check if it's safe
                     auto threatPosition = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
-                        return (unit.getType().isFlyer() ? Grids::getAirThreat(p, PlayerState::Enemy) > 0.0f : Grids::getGroundThreat(p, PlayerState::Enemy) > 0.0f) ||
-                            (unit.hasTarget() && p.getDistance(unit.getTarget().lock()->getPosition()) < unit.getTarget().lock()->getGroundReach());
+                        return p.getDistance(unitTarget->getPosition()) < unitTarget->getGroundReach() && !Terrain::inTerritory(PlayerState::Self, p);
                     });
 
                     // If JPS path is safe
@@ -291,7 +289,6 @@ namespace McRave::Workers {
                         auto allowedGatherCount = threatened ? 50 : i;
 
                         if (!resourceReady(resource, allowedGatherCount)
-                            || (!transferStation && !safeStations.empty() && find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
                             || (transferStation && resource.getStation() != transferStation)
                             || resource.isThreatened())
                             continue;

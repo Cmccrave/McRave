@@ -52,9 +52,10 @@ namespace McRave::Combat::Clusters {
             auto matching = [&](auto &parent, auto &child) {
                 auto matchedType = (parent.unit->isFlying() && child.unit->isFlying()) || (!parent.unit->isFlying() && !child.unit->isFlying());
                 auto matchedStrat = parent.unit->getLocalState() == child.unit->getLocalState() &&
-                    ((parent.unit->getLocalState() == LocalState::Attack /*&& parent.unit->getDestination() == child.unit->getDestination()*/)
+                    ((parent.unit->getLocalState() == LocalState::Attack)
                         || (parent.unit->getLocalState() == LocalState::Retreat && parent.unit->getRetreat() == child.unit->getRetreat())
-                        || (parent.unit->getGlobalState() == GlobalState::Retreat && parent.unit->getRetreat() == child.unit->getRetreat()));
+                        || (parent.unit->getGlobalState() == GlobalState::Retreat && parent.unit->getRetreat() == child.unit->getRetreat())
+                        || (parent.unit->getGlobalState() == GlobalState::Attack && parent.unit->isLightAir() && child.unit->isLightAir()));
                 auto matchedDistance = child.position.getDistance(parent.position) < 160.0 || (parent.unit->isLightAir() && child.unit->isLightAir());
                 return matchedType && matchedStrat && matchedDistance;
             };
@@ -292,6 +293,16 @@ namespace McRave::Combat::Clusters {
                 }
             }
         }
+
+        void drawClusters()
+        {
+            for (auto &cluster : clusters) {
+                for (auto &unit : cluster.units) {
+                    Visuals::drawLine(unit->getPosition(), cluster.commander.lock()->getPosition(), cluster.color);
+                    unit->circle(cluster.color);
+                }
+            }
+        }
     }
 
     void onFrame()
@@ -300,6 +311,7 @@ namespace McRave::Combat::Clusters {
         runDBSCAN();
         createClusters();
         finishClusters();
+        //drawClusters();
     }
 
     vector<Cluster>& getClusters() { return clusters; }

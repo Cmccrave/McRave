@@ -20,60 +20,41 @@ namespace BWEB {
 
     void Station::addResourceReserves()
     {
-        const auto addReserve = [&](Unit resource, TilePosition start) {
+        const auto addReserve = [&](Unit resource, TilePosition start, TilePosition end) {
             vector<TilePosition> directions{ {1,0}, {-1,0}, {0, 1}, {0,-1} };
-            auto diff = (base->Center() - resourceCentroid);
-            auto end = resource->getType().isMineralField() ? base->Center() + (diff / 4) : base->Center() - (diff / 4);
-
-            // Get the starting tile for a geyser
-            if (resource->getType().isRefinery()) {
-                auto distClosest = resource->getType().isMineralField() ? 0.0 : DBL_MAX;
-                for (int x = resource->getTilePosition().x; x < resource->getTilePosition().x + resource->getType().tileWidth(); x++) {
-                    for (int y = resource->getTilePosition().y; y < resource->getTilePosition().y + resource->getType().tileHeight(); y++) {
-                        auto tile = TilePosition(x, y);
-                        auto center = Position(tile) + Position(16, 16);
-                        auto dist = center.getDistance(resourceCentroid);
-                        if (resource->getType().isMineralField() ? dist > distClosest : dist < distClosest) {
-                            start = tile;
-                            distClosest = dist;
-                        }
-                    }
-                }
-            }
-
             TilePosition next = start;
-            while (next != TilePosition(end)) {
+            Position pEnd = Position(end);
+
+            while (next != end) {
                 auto distBest = DBL_MAX;
                 start = next;
                 for (auto &t : directions) {
                     auto tile = start + t;
-                    auto pos = Position(tile) + Position(16, 16);
+                    auto pos = Position(tile);
 
                     if (!tile.isValid())
                         continue;
 
-                    auto dist = pos.getDistance(end);
+                    auto dist = pos.getDistance(pEnd);
                     if (dist <= distBest) {
                         next = tile;
                         distBest = dist;
                     }
                 }
-
-                if (next.isValid()) {
-                    Map::addReserve(next, 1, 1);
-                }
+                Map::addReserve(next, 1, 1);
             }
         };
 
         // Add reserved tiles
         for (auto &m : base->Minerals()) {
             Map::addReserve(m->TopLeft(), 2, 1);
-            addReserve(m->Unit(), m->Unit()->getTilePosition());
-            addReserve(m->Unit(), m->Unit()->getTilePosition() + TilePosition(1, 0));
+            addReserve(m->Unit(), m->Unit()->getTilePosition(), base->Location());
+            addReserve(m->Unit(), m->Unit()->getTilePosition() + TilePosition(1, 0), base->Location() + TilePosition(3, 2));
         }
         for (auto &g : base->Geysers()) {
             Map::addReserve(g->TopLeft(), 4, 2);
-            addReserve(g->Unit(), g->Unit()->getTilePosition());
+            addReserve(g->Unit(), g->Unit()->getTilePosition(), base->Location());
+            addReserve(g->Unit(), g->Unit()->getTilePosition() + TilePosition(3, 1), base->Location() + TilePosition(3, 2));
         }
     }
 

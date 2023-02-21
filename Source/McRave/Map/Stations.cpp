@@ -271,7 +271,7 @@ namespace McRave::Stations
                     desiredDefenses = max(desiredDefenses, 1 + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 1));
 
                 // 7 Pool
-                if (Spy::getEnemyOpener() == "7Pool" && Spy::getEnemyTransition() != "1HatchMuta")
+                if (Spy::getEnemyOpener() == "7Pool" && BuildOrder::getCurrentOpener() != "9Pool")
                     desiredDefenses = max(desiredDefenses, 1);
 
                 // 12 Pool
@@ -300,6 +300,9 @@ namespace McRave::Stations
 
                 // Unknown and lots of lings
                 if (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling))
+                    desiredDefenses = max(desiredDefenses, 1);
+
+                if (Spy::getEnemyBuild() == "HatchPool" && BuildOrder::getCurrentBuild() != "HatchPool" && Util::getTime() > Time(3, 30))
                     desiredDefenses = max(desiredDefenses, 1);
             }
             else if (station->isNatural()) {

@@ -168,6 +168,7 @@ namespace McRave::Scouts {
                 if ((Players::ZvP() && Util::getTime() > Time(3, 30) && Spy::enemyFastExpand())
                     || (Players::ZvP() && Util::getTime() > Time(4, 30))
                     || (Players::ZvT() && Util::getTime() > Time(4, 30))
+                    || (BuildOrder::isProxy() && Terrain::getEnemyStartingPosition().isValid())                    
                     || workerScoutDenied
                     || Spy::enemyRush()
                     || Spy::enemyPressure()
@@ -175,7 +176,6 @@ namespace McRave::Scouts {
                     || Spy::enemyFastExpand()
                     || Spy::getEnemyOpener() == "8Rax"
                     || Spy::getEnemyOpener() == "9/9"
-                    || (BuildOrder::isProxy() && Terrain::getEnemyStartingPosition().isValid())
                     || Spy::getEnemyBuild() == "FFE"
                     || (Spy::getEnemyBuild() == "2Gate" && (Spy::enemyFastExpand() || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0))
                     || (Spy::getEnemyBuild() == "1GateCore" && (Spy::enemyFastExpand() || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0)))
@@ -198,6 +198,7 @@ namespace McRave::Scouts {
                 safe.desiredScoutTypeCounts[Zerg_Overlord] = int(com(Zerg_Overlord) >= 2);
                 if (total(Zerg_Mutalisk) >= 6
                     || Spy::getEnemyBuild() == "FFE"
+                    || (Players::ZvT() && Spy::enemyProxy())
                     || (Players::ZvZ() && Util::getTime() > Time(5, 00)))
                     safe.desiredScoutTypeCounts[Zerg_Overlord] = 0;
 

@@ -386,7 +386,7 @@ namespace McRave::Learning {
             // Testing builds if needed
             if (false) {
                 if (Players::PvZ()) {
-                    BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
+                    BuildOrder::setLearnedBuild("2Gate", "Main", "4Gate");
                     return;
                 }
                 if (Players::PvP()) {
@@ -406,7 +406,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "3HatchHydra");
+                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "2HatchMuta");
                     return;
                 }
             }
@@ -562,7 +562,7 @@ namespace McRave::Learning {
         mapLearning         = false;
         myRaceChar          ={ *Broodwar->self()->getRace().c_str() };
         enemyRaceChar       ={ *Broodwar->enemy()->getRace().c_str() };
-        version             = "AIIDE2022";
+        version             = "Offseason2023";
         noStats             = " 0 0 ";
         learningExtension   = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + mapName + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + ".txt";
         gameInfoExtension   = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + " Info.txt";

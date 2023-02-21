@@ -29,26 +29,11 @@ namespace McRave {
     {
         // Determine if this resource is threatened based on a substantial threat nearby
         const auto time = (Spy::enemyRush() || Broodwar->self()->getRace() == Races::Zerg) ? Time(3, 00) : Time(4, 00);
-        threatened = Units::getImmThreat() > 0.0 && Util::getTime() > time && Grids::getGroundThreat(position, PlayerState::Enemy) > min(6.0f, 0.10f * float(Util::getTime().minutes));
+        threatened = Units::getImmThreat() > 0.0 && (Util::getTime() > time || Broodwar->getGameType() == GameTypes::Use_Map_Settings) && Grids::getGroundThreat(position, PlayerState::Enemy) > min(6.0f, 0.10f * float(Util::getTime().minutes));
 
-        // Determine if this resource is threatened based on an assigned worker being attacked
-        for (auto &w : targetedBy) {
-            if (auto worker = w.lock()) {
-                if (!worker->hasTarget())
-                    continue;
-                auto workerTarget = worker->getTarget().lock();
-
-                if (worker->isWithinGatherRange() && !worker->isBurrowed() && !worker->getUnitsTargetingThis().empty() && workerTarget->isThreatening() && !workerTarget->getType().isWorker()) {
-                    for (auto &e : worker->getUnitsTargetingThis()) {
-                        if (auto enemy = e.lock()) {
-                            if (enemy->isWithinRange(*worker)) {
-                                threatened = true;
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
+        for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
+            if (enemy->isThreatening() && enemy->getPosition().getDistance(position) < 200.0)
+                threatened = true;
         }
     }
 

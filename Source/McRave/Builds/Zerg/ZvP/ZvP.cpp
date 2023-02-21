@@ -60,7 +60,7 @@ namespace McRave::BuildOrder::Zerg {
         // FFE
         if (Spy::getEnemyBuild() == "FFE") {
             if (Spy::getEnemyOpener() == "Forge" || Spy::getEnemyOpener() == "Nexus")
-                initialValue = 0;
+                initialValue = com(Zerg_Lair) * 6;
         }
 
         // 1GC

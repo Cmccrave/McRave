@@ -40,7 +40,7 @@ namespace McRave::BuildOrder::Zerg {
     int lingsNeeded_ZvZ() {
         if (Players::getTotalCount(PlayerState::Enemy, Zerg_Sunken_Colony) >= 1 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) < 6)
             return 24;
-        else if (vis(Zerg_Drone) >= 11)
+        else if (vis(Zerg_Drone) >= 11 || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) > 1)
             return 18;
         else if (vis(Zerg_Spire) > 0)
             return 12;
@@ -53,7 +53,7 @@ namespace McRave::BuildOrder::Zerg {
     {
         inOpening =                                     total(Zerg_Mutalisk) < 4;
         inTransition =                                  vis(Zerg_Lair) > 0;
-        unitLimits[Zerg_Drone] =                        (vis(Zerg_Lair) > 0) ? 11 : 9;
+        unitLimits[Zerg_Drone] =                        (vis(Zerg_Lair) > 0 && Spy::getEnemyOpener() != "9Pool") ? 11 : 9;
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvZ();
         gasLimit =                                      ((lingSpeed() || gas(80)) && total(Zerg_Lair) == 0) ? 2 : gasMax();
         firstUnit =                                     Zerg_Mutalisk;
