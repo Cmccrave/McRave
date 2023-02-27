@@ -15,7 +15,6 @@ namespace McRave::BuildOrder::Protoss {
         firstUnit =                                 None;
         inTransition =                          total(Protoss_Gateway) >= 3;
         inOpening =                             s < 82;
-        playPassive =                               Broodwar->getFrameCount() < 13000;
         gasLimit =                                  vis(Protoss_Gateway) >= 2 && com(Protoss_Gateway) < 3 ? 2 : INT_MAX;
         wallNat =                                   Util::getTime() > Time(4, 30);
 

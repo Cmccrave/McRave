@@ -34,12 +34,11 @@ namespace McRave::BuildOrder::Protoss {
         void PvT_1GC_DT()
         {
             // "https://liquipedia.net/starcraft/DT_Fast_Expand_(vs._Terran)"
-            inTransition =                              total(Protoss_Citadel_of_Adun) > 0;
-            inOpening =                                 s <= 80;
+            inTransition =                                  total(Protoss_Citadel_of_Adun) > 0;
+            inOpening =                                     s <= 80;
             hideTech =                                      com(Protoss_Dark_Templar) <= 0;
             firstUnit =                                     Protoss_Dark_Templar;
             firstUpgrade =                                  vis(Protoss_Dark_Templar) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
-            playPassive =                                   Spy::enemyPressure() ? vis(Protoss_Observer) == 0 : false;
 
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (vis(Protoss_Templar_Archives) > 0);
             buildQueue[Protoss_Nexus] =                     1 + (vis(Protoss_Dark_Templar) > 0);

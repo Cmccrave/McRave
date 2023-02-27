@@ -270,6 +270,54 @@ namespace McRave::Grids
                 logLookup16[i] = log(16 * i);
             }
         }
+
+        void createChokeDirections()
+        {
+            const auto walkableTilesAround = [&](auto &t, auto d) {
+                auto walkables = 0;
+                auto aD = d;
+                while (aD > 0) {
+                    const auto aroundTiles ={ WalkPosition(-aD, -aD), WalkPosition(-aD, 0), WalkPosition(-aD, aD), WalkPosition(0, -aD), WalkPosition(0, aD), WalkPosition(aD, -aD), WalkPosition(aD, 0), WalkPosition(aD, aD) };
+                    for (auto &tile : aroundTiles) {
+                        if (WalkPosition(t + tile).isValid() && mapBWEM.GetMiniTile(t + tile).Walkable()) {
+                            //Broodwar->drawLineMap(Position(t + tile), Position(t), Colors::Green);
+                            walkables++;
+                        }
+                    }
+                    aD--;
+                }
+                return walkables;
+            };
+
+            for (auto &area : mapBWEM.Areas()) {
+                for (auto &choke : area.ChokePoints()) {
+                    auto cD = int(round(double(choke->Width()) / 8.0));
+                    const vector<WalkPosition> distTiles ={ WalkPosition(-cD, -cD), WalkPosition(-cD, 0), WalkPosition(-cD, cD), WalkPosition(0, -cD), WalkPosition(0, cD), WalkPosition(cD, -cD), WalkPosition(cD, 0), WalkPosition(cD, cD) };
+
+                    auto largest = 0;
+                    pair<WalkPosition, WalkPosition> bestPair;
+                    for (auto itr = distTiles.begin(); itr != distTiles.end(); itr++) {
+                        const auto tile = *itr + WalkPosition(choke->Center());
+                        auto opposite = WalkPosition(choke->Center()) + distTiles.at(distTiles.size() - 1 - distance(distTiles.begin(), itr));
+                        if (!tile.isValid() || !opposite.isValid() || !mapBWEM.GetMiniTile(tile).Walkable() || !mapBWEM.GetMiniTile(opposite).Walkable())
+                            continue;
+
+                        const auto walkables = walkableTilesAround(tile, cD);
+                        Broodwar->drawTextMap(Position(tile), "%d", walkables);
+
+
+                        // Get largest and opposite point
+                        if (walkables > largest) {
+                            largest = walkables;
+                            bestPair = make_pair(tile, opposite);
+                        }
+                    }
+                    
+                    if (bestPair.first.isValid())
+                        Visuals::drawLine(bestPair.first, bestPair.second, Colors::Red);
+                }
+            }
+        }
     }
 
     void onFrame()
@@ -277,6 +325,7 @@ namespace McRave::Grids
         reset();
         updateGrids();
         updateVisibility(Broodwar->getFrameCount());
+        //createChokeDirections();
     }
 
     void onStart()
@@ -322,7 +371,7 @@ namespace McRave::Grids
     int getFCollision(WalkPosition here, PlayerState player) {
         const auto index = gridWalkScale * here.y + here.x;
         if (player == PlayerState::All)
-            return neutralGrid[index].fullCollision + enemyGrid[index].fullCollision + selfGrid[index].fullCollision;        
+            return neutralGrid[index].fullCollision + enemyGrid[index].fullCollision + selfGrid[index].fullCollision;
         if (player == PlayerState::Self)
             return selfGrid[index].fullCollision;
         if (player == PlayerState::Enemy)
@@ -330,7 +379,7 @@ namespace McRave::Grids
         return 0;
     }
 
-    int getVCollision(WalkPosition here, PlayerState player) { 
+    int getVCollision(WalkPosition here, PlayerState player) {
         const auto index = gridWalkScale * here.y + here.x;
         if (player == PlayerState::All)
             return neutralGrid[index].verticalCollision + enemyGrid[index].verticalCollision + selfGrid[index].verticalCollision;

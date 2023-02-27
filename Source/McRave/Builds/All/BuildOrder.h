@@ -23,7 +23,6 @@ namespace McRave::BuildOrder {
         inline bool wantThird = false;
         inline bool proxy = false;
         inline bool hideTech = false;
-        inline bool playPassive = false;
         inline bool rush = false;
         inline bool pressure = false;
         inline bool gasTrick = false;
@@ -93,7 +92,6 @@ namespace McRave::BuildOrder {
     bool isWallMain();
     bool isProxy();
     bool isHideTech();
-    bool isPlayPassive();
     bool isRush();
     bool isPressure();
     bool isGasTrick();

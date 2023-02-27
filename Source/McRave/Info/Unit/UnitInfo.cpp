@@ -144,7 +144,9 @@ namespace McRave
                 if (isFlying())
                     arriveFrame = Broodwar->getFrameCount() + int(position.getDistance(Terrain::getMainPosition()) / speed);
                 else {
-                    BWEB::Path newPath(position, Terrain::getMainPosition(), type, true, false);
+                    //auto closestStation = Stations::getClosestStationGround(position, PlayerState::Self);
+                    auto arrivePos =/* closestStation ? closestStation->getBase()->Center() :*/ Terrain::getMainPosition();
+                    BWEB::Path newPath(position, arrivePos, type, true, false);
                     newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t); });
                     arriveFrame = Broodwar->getFrameCount() + int(newPath.getDistance() / speed);
                 }
@@ -264,8 +266,11 @@ namespace McRave
                 lastMoveFrame = Broodwar->getFrameCount();
         }
 
+        // Check if the unit has attacked at least half as fast as it normally can
+        const auto attacked = Broodwar->getFrameCount() - lastAttackFrame > 2 * max(type.groundWeapon().damageCooldown(), type.airWeapon().damageCooldown());
+
         // Check if a unit hasn't moved in a while but is trying to
-        if (!bwUnit->isAttackFrame() && (getPlayer() != Broodwar->self() || lastPos != getPosition() || !unit()->isMoving() || unit()->getLastCommand().getType() == UnitCommandTypes::Stop))
+        if (!bwUnit->isAttackFrame() && (getPlayer() != Broodwar->self() || attacked || lastPos != getPosition() || !unit()->isMoving() || unit()->getLastCommand().getType() == UnitCommandTypes::Stop))
             lastMoveFrame = Broodwar->getFrameCount();
         else if (isStuck())
             lastStuckFrame = Broodwar->getFrameCount();
@@ -298,8 +303,8 @@ namespace McRave
             return;
 
         // Determine how close it is to strategic locations
-        const auto choke = Terrain::isDefendNatural() ? Terrain::getNaturalChoke() : Terrain::getMainChoke();
-        const auto area = Terrain::isDefendNatural() ? Terrain::getNaturalArea() : Terrain::getMainArea();
+        const auto choke = Combat::isDefendNatural() ? Terrain::getNaturalChoke() : Terrain::getMainChoke();
+        const auto area = Combat::isDefendNatural() ? Terrain::getNaturalArea() : Terrain::getMainArea();
         const auto closestGeo = BWEB::Map::getClosestChokeTile(choke, getPosition());
         const auto closestStation = Stations::getClosestStationAir(getPosition(), PlayerState::Self);
         const auto rangeCheck = max({ getAirRange() + 32.0, getGroundRange() + 32.0, 64.0 });
@@ -664,7 +669,7 @@ namespace McRave
         auto ff = (!isHovering() && !isFlying()) ? 0.0 : -8.0;
         if (isSuicidal())
             return getPosition().getDistance(otherUnit.getPosition()) <= 16.0;
-        return (range + ff) >= boxDistance;
+        return max(64.0, range + ff) >= boxDistance;
     }
 
     bool UnitInfo::isWithinAngle(UnitInfo& otherUnit)
@@ -898,6 +903,7 @@ namespace McRave
 
     bool UnitInfo::attemptingSurround()
     {
+        return false;
         if (attemptingRunby() || !hasTarget() || (hasTarget() && (getTarget().lock()->getType().isWorker() || getTarget().lock()->getCurrentSpeed() <= 0.0)))
             return false;
         if (surroundPosition.isValid() && !Terrain::inTerritory(PlayerState::Enemy, surroundPosition) && position.getDistance(surroundPosition) > 16.0)
@@ -915,13 +921,15 @@ namespace McRave
             return false;
         if (Players::ZvZ() && vis(Zerg_Mutalisk) <= Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk))
             return false;
+        if (Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0 && com(Zerg_Mutalisk) < 3)
+            return false;
 
         //if (hasTarget()) {
         //    auto unitTarget = getTarget().lock();
         //    if (unitTarget->canAttackGround() && unitTarget->getPosition().getDistance(Terrain::getMainPosition()) < unitTarget->getPosition().getDistance(Terrain::getEnemyStartingPosition()))
         //        return false;
         //}
-        return isLightAir() && Terrain::getHarassPosition().isValid();
+        return isLightAir() && Combat::getHarassPosition().isValid();
     }
 
     bool UnitInfo::attemptingRegroup()

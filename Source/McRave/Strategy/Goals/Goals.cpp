@@ -132,36 +132,6 @@ namespace McRave::Goals {
                 }
             }
 
-            // Defend my expansions
-            if (Stations::getStations(PlayerState::Self).size() >= 3 && !BuildOrder::isPlayPassive()) {
-                for (auto &station : Stations::getStations(PlayerState::Self)) {
-
-                    if (Stations::getGroundDefenseCount(station) >= 2 || Stations::needGroundDefenses(station) == 0 || (Broodwar->self()->getRace() == Races::Protoss && Stations::needPower(station)))
-                        continue;
-
-                    // If it's a main, defend at the natural
-                    if (station->isMain()) {
-                        auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
-                        if (closestNatural) {
-                            auto closestWall = BWEB::Walls::getClosestWall(closestNatural->getBase()->Location());
-                            if (closestWall && closestWall->getGroundDefenseCount() >= 2)
-                                continue;
-
-                            auto naturalDefendPosition = Stations::getDefendPosition(closestNatural);
-                            assignPercentToGoal(naturalDefendPosition, rangedType, 0.25, GoalType::Defend);
-                            continue;
-                        }
-                    }
-
-                    // Otherwise defend at this base
-                    auto defendPosition = Stations::getDefendPosition(station);
-                    if (com(rangedType) > 4)
-                        assignPercentToGoal(defendPosition, rangedType, 0.25, GoalType::Defend);
-                    else
-                        assignPercentToGoal(defendPosition, meleeType, 0.75, GoalType::Defend);
-                }
-            }
-
             // Send a worker early when we want to
             if (BuildOrder::isPlanEarly() && Planning::getCurrentExpansion() && !Planning::whatPlannedHere(Planning::getCurrentExpansion()->getBase()->Location()).isResourceDepot()) {
                 if (int(Stations::getStations(PlayerState::Self).size() < 2))
@@ -329,8 +299,8 @@ namespace McRave::Goals {
             }
 
             // Assign an Overlord to watch our Choke early on
-            if (Terrain::getNaturalChoke()) {
-                if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0))
+            if (Terrain::getNaturalChoke() && !Spy::enemyRush()) {
+                if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy() && Broodwar->getStartLocations().size() <= 2) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0))
                     assignNumberToGoal(Position(Terrain::getNaturalChoke()->Center()), Zerg_Overlord, 1, GoalType::Escort);
             }
 

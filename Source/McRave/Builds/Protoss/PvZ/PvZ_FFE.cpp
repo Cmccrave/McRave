@@ -122,7 +122,6 @@ namespace McRave::BuildOrder::Protoss {
             firstUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
             firstTech =                                 TechTypes::None;
             firstUnit =                                 Protoss_Scout;
-            playPassive =                               com(Protoss_Scout) == 0;
 
             // Build
             buildQueue[Protoss_Assimilator] =           (s >= 38) + (atPercent(Protoss_Cybernetics_Core, 0.75));

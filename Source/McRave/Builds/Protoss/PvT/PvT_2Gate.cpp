@@ -13,7 +13,6 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvT_2G_DT()
         {
-            playPassive =                                   Spy::getEnemyBuild() == "2Rax" && vis(Protoss_Dark_Templar) == 0;
             unitLimits[Protoss_Zealot] =                    Spy::getEnemyBuild() == "2Rax" ? 2 : 0;
             gasLimit =                                      Spy::getEnemyBuild() == "2Rax" && total(Protoss_Gateway) < 2 ? 0 : 3;
             inTransition =                                  total(Protoss_Citadel_of_Adun) > 0;
@@ -71,7 +70,6 @@ namespace McRave::BuildOrder::Protoss {
         {
             // "https://liquipedia.net/starcraft/10/15_Gates_(vs._Terran)"
             scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
-            playPassive =                                   Spy::enemyPressure() && Util::getTime() < Time(5, 0);
             transitionReady =                               vis(Protoss_Gateway) >= 2;
 
             buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 30);

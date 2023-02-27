@@ -154,22 +154,25 @@ namespace McRave::Combat::Simulation {
         }
 
         // Adjust winrates based on how close to self station we are
-        auto closestSelf = unit.isFlying() ? Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self) : Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
+        auto closestSelf = unit.isFlying() ? Stations::getClosestStationAir(unitTarget->getPosition(), PlayerState::Self) : Stations::getClosestStationGround(unitTarget->getPosition(), PlayerState::Self);
         if (closestSelf) {
-            const auto distSelf = unit.isFlying() ? min(unit.getPosition().getDistance(closestSelf->getBase()->Center()), unitTarget->getPosition().getDistance(closestSelf->getBase()->Center()))
-                : min(BWEB::Map::getGroundDistance(unit.getPosition(), closestSelf->getBase()->Center()), BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestSelf->getBase()->Center()));
+            const auto distSelf = unit.isFlying() ? unitTarget->getPosition().getDistance(closestSelf->getBase()->Center())
+                : BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestSelf->getBase()->Center());
 
-            const auto dist = 320.0;
-            const auto diffAllowed = 0.50;
-            const auto diffSelf = diffAllowed * (exp(max(0.0, dist - distSelf) / dist) - 1.0);
-            minWinPercent = minWinPercent - diffSelf;
-            maxWinPercent = maxWinPercent - diffSelf;
+            const auto reach = max({ unitTarget->getGroundRange() / 2.0, unitTarget->getAirReach() / 2.0, unitTarget->getGroundRange() + 96.0, unitTarget->getAirRange() + 96.0 });
+            const auto insideDefendingChoke = Combat::holdAtChoke() && Terrain::inArea(Combat::getDefendArea(), unitTarget->getPosition());
+
+            if (distSelf < reach || insideDefendingChoke || unitTarget->isThreatening()) {
+                minWinPercent -= 1.0;
+                maxWinPercent -= 1.0;
+                unitTarget->circle(Colors::Orange);
+            }
         }
 
         // Adjust winrates if we have static defense out of range that would make the fight easier
-        if (Util::getTime() < Time(8, 00) && !unit.isFlying() && vis(Zerg_Sunken_Colony) > 0) {
+        if (Util::getTime() < Time(8, 00) && !unit.isFlying() && com(Zerg_Sunken_Colony) > 0) {
             const auto closestSunken = Util::getClosestUnit(unit.getRetreat(), PlayerState::Self, [&](auto &u) {
-                return u->getType() == Zerg_Sunken_Colony && u->getPosition().getDistance(unit.getRetreat()) < 200.0;
+                return u->getType() == Zerg_Sunken_Colony && u->isCompleted() && u->getPosition().getDistance(unit.getRetreat()) < 200.0;
             });
             if (closestSunken && !closestSunken->isWithinRange(*unit.getTarget().lock())) {
                 minWinPercent *=2;

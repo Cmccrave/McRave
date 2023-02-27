@@ -10,9 +10,7 @@ namespace McRave::Terrain {
     void onFrame();
 
     std::set <const BWEM::Base*>& getAllBases();
-    BWAPI::Position getAttackPosition();
-    BWAPI::Position getDefendPosition();
-    BWAPI::Position getHarassPosition();
+
     BWAPI::Position getEnemyStartingPosition();
     BWEB::Station * getEnemyMain();
     BWEB::Station * getEnemyNatural();
@@ -20,14 +18,11 @@ namespace McRave::Terrain {
     BWEB::Station * getMyNatural();
     BWAPI::TilePosition getEnemyExpand();
     BWAPI::TilePosition getEnemyStartingTilePosition();
-    const BWEM::ChokePoint * getDefendChoke();
-    const BWEM::Area * getDefendArea();
-    BWEB::Station * getDefendStation();
+
     bool isIslandMap();
     bool isReverseRamp();
     bool isFlatRamp();
     bool isNarrowNatural();
-    bool isDefendNatural();
     bool foundEnemy();
     bool inArea(const BWEM::Area *, BWAPI::Position);
     bool inTerritory(PlayerState, BWAPI::Position);

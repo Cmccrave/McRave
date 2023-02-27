@@ -130,6 +130,9 @@ namespace McRave::Targets {
                     auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
                     auto invalidType = allowedBuildings.find(target.getType()) == allowedBuildings.end();
 
+                    if (Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling) && target.getType() != Zerg_Zergling)
+                        return false;
+
                     if (target.isThreatening())
                         return allowThreatenTarget(unit, target);
 
@@ -272,11 +275,11 @@ namespace McRave::Targets {
                     return 5.0;
 
                 // Add bonus for being able to one shot a unit
-                if (!Players::ZvZ() && unit.canOneShot(target) && Util::getTime() < Time(10, 00))
+                if (!Players::ZvZ() && unit.isLightAir() && unit.canOneShot(target) && Util::getTime() < Time(10, 00))
                     return 4.0;
 
                 // Add bonus for being able to two shot a unit
-                if (!Players::ZvZ() && unit.canTwoShot(target) && Util::getTime() < Time(10, 00))
+                if (!Players::ZvZ() && unit.isLightAir() && unit.canTwoShot(target) && Util::getTime() < Time(10, 00))
                     return 2.0;
                 return 1.0;
             };
@@ -288,11 +291,11 @@ namespace McRave::Targets {
             };
 
             const auto focusScore = [&]() {
-                if (unit.isLightAir())
+                if (unit.isLightAir() || Players::ZvZ())
                     return 1.0;
-                if (unit.getType() == Zerg_Zergling)
-                    return min(1.00, double(meleeSpotsAvailable[&target]) / double(1 + target.getUnitsTargetingThis().size()));
-                if ((range > 32.0 && boxDistance <= reach) || (range <= 32.0 && target.getUnitsTargetingThis().size() < (max(target.getType().width(), target.getType().height()) / 4) && boxDistance <= range))
+                //if (unit.getType() == Zerg_Zergling)
+                //    return min(1.00, double(meleeSpotsAvailable[&target]) / double(1 + target.getUnitsTargetingThis().size()));
+                if ((range > 32.0 && boxDistance <= reach) || (range <= 32.0 && boxDistance <= range && target.getUnitsTargetingThis().size() < (max(target.getType().width(), target.getType().height()) / 4)))
                     return (1.0 + double(target.getUnitsTargetingThis().size()));
                 return 1.0;
             };
@@ -510,31 +513,35 @@ namespace McRave::Targets {
                 }
             }
 
-            // Check how many available melee spots exist on each enemy
-            meleeSpotsAvailable.clear();
-            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
-                UnitInfo& unit = *u;
-                auto width = unit.getType().isBuilding() ? unit.getType().tileWidth() * 16 : unit.getType().width();
-                auto height = unit.getType().isBuilding() ? unit.getType().tileHeight() * 16 : unit.getType().height();
-                for (double x = -1.0; x <= 1.0; x += 1.0 / double(unit.getType().tileWidth())) {
-                    auto p = (unit.getPosition()) + Position(int(x * width), int(-1.0 * height));
-                    auto q = (unit.getPosition()) + Position(int(x * width), int(1.0 * height));
-                    if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, p))
-                        meleeSpotsAvailable[&unit]+=2;
-                    if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, q))
-                        meleeSpotsAvailable[&unit]+=2;
-                }
-                for (double y = -1.0; y <= 1.0; y += 1.0 / double(unit.getType().tileHeight())) {
-                    if (y <= -0.99 || y >= 0.99)
-                        continue;
-                    auto p = (unit.getPosition()) + Position(int(-1.0 * width), int(y * height));
-                    auto q = (unit.getPosition()) + Position(int(1.0 * width), int(y * height));
-                    if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, p))
-                        meleeSpotsAvailable[&unit]+=2;
-                    if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, q))
-                        meleeSpotsAvailable[&unit]+=2;
-                }
-            }
+            // TODO: This results in lings seeing 0 empty spots when in range of the target
+            // Huge winrate decrease in ZvZ, maybe need to scrap this concept entirely
+
+            //// Check how many available melee spots exist on each enemy
+            //meleeSpotsAvailable.clear();
+            //for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+            //    UnitInfo& unit = *u;
+            //    auto width = unit.getType().isBuilding() ? unit.getType().tileWidth() * 16 : unit.getType().width();
+            //    auto height = unit.getType().isBuilding() ? unit.getType().tileHeight() * 16 : unit.getType().height();
+            //    for (double x = -1.0; x <= 1.0; x += 1.0 / double(unit.getType().tileWidth())) {
+            //        auto p = (unit.getPosition()) + Position(int(x * width), int(-1.0 * height));
+            //        auto q = (unit.getPosition()) + Position(int(x * width), int(1.0 * height));
+            //        if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, p))
+            //            meleeSpotsAvailable[&unit]+=2;
+            //        if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, q))
+            //            meleeSpotsAvailable[&unit]+=2;
+            //    }
+            //    for (double y = -1.0; y <= 1.0; y += 1.0 / double(unit.getType().tileHeight())) {
+            //        if (y <= -0.99 || y >= 0.99)
+            //            continue;
+            //        auto p = (unit.getPosition()) + Position(int(-1.0 * width), int(y * height));
+            //        auto q = (unit.getPosition()) + Position(int(1.0 * width), int(y * height));
+            //        if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, p))
+            //            meleeSpotsAvailable[&unit]+=2;
+            //        if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, q))
+            //            meleeSpotsAvailable[&unit]+=2;
+            //    }
+            //    Broodwar->drawTextMap(unit.getPosition(), "%d", meleeSpotsAvailable[&unit]);
+            //}
 
             for (auto &u : sortedUnits) {
                 UnitInfo& unit = u.second;

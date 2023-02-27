@@ -40,9 +40,12 @@ namespace McRave::Spy::Terran {
             if ((theSpy.rushArrivalTime < Time(3, 10) && Util::getTime() < Time(3, 25) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 3)
                 || (Util::getTime() < Time(2, 55) && Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) >= 2)
                 || (Util::getTime() < Time(4, 00) && Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) >= 2 && Players::getTotalCount(PlayerState::Enemy, Terran_Refinery) == 0)
-                || (Util::getTime() < Time(3, 15) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 5)
-                || (Util::getTime() < Time(3, 35) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 7)
-                || (Util::getTime() < Time(3, 55) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 9))
+                || completesBy(3, Terran_Barracks, Time(5, 15))
+                || completesBy(12, Terran_Marine, Time(5, 00))
+                || arrivesBy(6, Terran_Marine, Time(4, 10))
+                || arrivesBy(8, Terran_Marine, Time(4, 30))
+                || arrivesBy(10, Terran_Marine, Time(4, 50))
+                || arrivesBy(12, Terran_Marine, Time(5, 10)))
                 theSpy.build.name = "2Rax";
 
             // RaxCC
@@ -54,12 +57,19 @@ namespace McRave::Spy::Terran {
                 theSpy.build.name = "RaxCC";
 
             // RaxFact
-            if (completesBy(1, Terran_Factory, Time(4,00))
-                || (Util::getTime() < Time(5, 15) && hasMech))
+            if (completesBy(1, Terran_Factory, Time(4, 00))
+                || (Util::getTime() < Time(5, 15) && hasMech)
+                || arrivesBy(1, Terran_Wraith, Time(6, 00)))
                 theSpy.build.name = "RaxFact";
 
             // 2Rax Proxy - No info estimation
-            if (Scouts::gotFullScout() && Util::getTime() < Time(3, 30) && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) == 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Refinery) == 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Command_Center) <= 1) {
+            if (Scouts::gotFullScout() && Util::getTime() > Time(2, 30) && Util::getTime() < Time(3, 45) && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) == 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Refinery) == 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Command_Center) <= 1) {
+                theSpy.build.name = "2Rax";
+                theSpy.proxy.possible = true;
+            }
+
+            // 2Rax Proxy - Marine estimation
+            if (arrivesBy(4, Terran_Marine, Time(3, 45))) {
                 theSpy.build.name = "2Rax";
                 theSpy.proxy.possible = true;
             }
@@ -119,7 +129,8 @@ namespace McRave::Spy::Terran {
 
                 // RaxFact
                 if (theSpy.build.name == "RaxFact") {
-                    if (arrivesBy(2, Terran_Wraith, Time(6,30)))
+                    if (arrivesBy(1, Terran_Wraith, Time(5, 45))
+                        || arrivesBy(2, Terran_Wraith, Time(6, 30)))
                         theSpy.transition.name = "2PortWraith";
 
                     if ((Players::getTotalCount(PlayerState::Enemy, Terran_Machine_Shop) >= 2 && (theSpy.typeUpgrading.find(Terran_Machine_Shop) != theSpy.typeUpgrading.end() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture_Spider_Mine) > 0))
@@ -132,14 +143,19 @@ namespace McRave::Spy::Terran {
                 if (theSpy.build.name == "2Rax") {
                     if (theSpy.expand.possible && (hasTanks || Players::getVisibleCount(PlayerState::Enemy, Terran_Machine_Shop) > 0) && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) <= 1 && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) >= 3 && Util::getTime() < Time(10, 30))
                         theSpy.transition.name = "1FactTanks";
-                    else if (arrivesBy(3, Terran_Marine, Time(3, 10))
+                    else if (theSpy.proxy.confirmed
+                        || arrivesBy(3, Terran_Marine, Time(3, 10))
                         || completesBy(2, Terran_Barracks, Time(2, 35))
                         || completesBy(3, Terran_Barracks, Time(4, 00)))
                         theSpy.transition.name = "MarineRush";
                     else if (!theSpy.expand.possible && (completesBy(1, Terran_Academy, Time(5, 10)) || player.hasTech(TechTypes::Stim_Packs) || arrivesBy(1, Terran_Medic, Time(6, 00)) || arrivesBy(1, Terran_Firebat, Time(6, 00))))
                         theSpy.transition.name = "Academy";
                     else if (theSpy.expand.possible && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) >= 5 && Util::getTime() < Time(7, 00))
-                        theSpy.transition.name = "+1 5Rax";
+                        theSpy.transition.name = "5Rax";
+                    else if (Util::getTime() < Time(7, 00) && Players::getVisibleCount(PlayerState::Enemy, Terran_Academy) > 0 && theSpy.typeUpgrading.find(Terran_Engineering_Bay) != theSpy.typeUpgrading.end())
+                        theSpy.transition.name = "Sparks";
+                    else if (Util::getTime() < Time(5, 30) && (Players::getVisibleCount(PlayerState::Enemy, Terran_Medic) > 0 || Players::getVisibleCount(PlayerState::Enemy, Terran_Firebat) > 0))
+                        theSpy.transition.name = "Academy";
                 }
 
                 // RaxCC

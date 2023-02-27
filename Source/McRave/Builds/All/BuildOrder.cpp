@@ -309,7 +309,6 @@ namespace McRave::BuildOrder
     bool isWallMain() { return wallMain; }
     bool isProxy() { return proxy; }
     bool isHideTech() { return hideTech; }
-    bool isPlayPassive() { return playPassive; }
     bool isRush() { return rush; }
     bool isPressure() { return pressure; }
     bool isGasTrick() { return gasTrick; }

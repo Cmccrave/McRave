@@ -128,7 +128,7 @@ namespace McRave::Walls {
                     + (!threeHatch && Util::getTime() > Time(4, 30))
                     + (!threeHatch && Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown")
-                    return (firstHatchNeeded && Util::getTime() > Time(3, 15))
+                    return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
@@ -273,20 +273,20 @@ namespace McRave::Walls {
         {
             // If we are opening 12 hatch into a 2h tech, we sometimes need a faster sunken
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
-            auto firstHatchNeeded = !threeHatch || BuildOrder::getCurrentOpener() == "12Hatch";
+            auto greedyStart = !threeHatch || BuildOrder::getCurrentOpener() == "12Hatch" || BuildOrder::getCurrentOpener() == "12Pool";
 
             // 2Rax
             if (Spy::getEnemyBuild() == "2Rax") {
                 if (Spy::enemyProxy())
                     return 0;
                 if (!Spy::enemyFastExpand() && !Spy::enemyRush() && Util::getTime() < Time(5, 00))
-                    return firstHatchNeeded
+                    return greedyStart
                     + (!threeHatch && Util::getTime() > Time(3, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 30));
                 if (Spy::enemyRush())
-                    return firstHatchNeeded
-                    + (!threeHatch && Util::getTime() > Time(3, 15))
-                    + (Util::getTime() > Time(4, 30));
+                    return (greedyStart && Util::getTime() > Time(3, 15))
+                    + (Util::getTime() > Time(3, 15))
+                    + (!threeHatch && Util::getTime() > Time(4, 30));
             }
 
             // RaxCC
@@ -326,6 +326,13 @@ namespace McRave::Walls {
 
             if (Spy::getEnemyTransition() == "5FacGoliath")
                 return 5 * (Util::getTime() > Time(11, 00));
+
+            if (Spy::getEnemyTransition() == "2PortWraith")
+                return 2 * (Util::getTime() > Time(5, 30));
+
+            if (Spy::getEnemyTransition() == "Academy")
+                return 2 * (Util::getTime() > Time(4, 30));
+
             return 0;
         }
 
@@ -349,7 +356,7 @@ namespace McRave::Walls {
 
         int groundDefensesNeededZvT(BWEB::Wall& wall)
         {
-            // Try to see what we expect the 1st Vulture or 3rd Marine
+            // TODO: Try to see what we expect the 1st Vulture or 3rd Marine
             if (Spy::getEnemyBuild() == "Unknown" && wall.getGroundDefenseCount() == 0) {
                 if (Spy::whenArrival(3, Terran_Marine) - Time(0, 24) < Time(0, 00))
                     return 1;
@@ -362,7 +369,7 @@ namespace McRave::Walls {
                 + Players::getDeadCount(PlayerState::Enemy, Terran_Firebat)
                 + Players::getDeadCount(PlayerState::Enemy, Terran_Medic);
 
-            return max(ZvTOpener(wall), ZvTTransition(wall)) - max(0, unitsKilled / 4);
+            return max(ZvTOpener(wall), ZvTTransition(wall)) - max(0, unitsKilled / 8);
         }
 
         int groundDefensesNeededZvZ(BWEB::Wall& wall) {

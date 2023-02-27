@@ -51,12 +51,14 @@ namespace McRave::Combat::Clusters {
         {
             auto matching = [&](auto &parent, auto &child) {
                 auto matchedType = (parent.unit->isFlying() && child.unit->isFlying()) || (!parent.unit->isFlying() && !child.unit->isFlying());
-                auto matchedStrat = parent.unit->getLocalState() == child.unit->getLocalState() &&
-                    ((parent.unit->getLocalState() == LocalState::Attack)
-                        || (parent.unit->getLocalState() == LocalState::Retreat && parent.unit->getRetreat() == child.unit->getRetreat())
-                        || (parent.unit->getGlobalState() == GlobalState::Retreat && parent.unit->getRetreat() == child.unit->getRetreat())
-                        || (parent.unit->getGlobalState() == GlobalState::Attack && parent.unit->isLightAir() && child.unit->isLightAir()));
-                auto matchedDistance = child.position.getDistance(parent.position) < 160.0 || (parent.unit->isLightAir() && child.unit->isLightAir());
+                auto matchedStrat = parent.unit->getLocalState() == child.unit->getLocalState()
+                    || parent.unit->getLocalState() == LocalState::None
+                    || child.unit->getLocalState() == LocalState::None
+                    || (parent.unit->getGlobalState() == GlobalState::Retreat && parent.unit->getRetreat() == child.unit->getRetreat())
+                    || (parent.unit->getGlobalState() == GlobalState::Attack && parent.unit->isLightAir() && child.unit->isLightAir());
+                auto matchedDistance = child.position.getDistance(parent.position) < 160.0
+                    || (Terrain::inTerritory(PlayerState::Self, parent.unit->getPosition()) && Terrain::inTerritory(PlayerState::Self, child.unit->getPosition()))
+                    || (parent.unit->isLightAir() && child.unit->isLightAir());
                 return matchedType && matchedStrat && matchedDistance;
             };
 
@@ -69,7 +71,7 @@ namespace McRave::Combat::Clusters {
 
             std::queue<ClusterNode*> nodeQueue;
             getNeighbors(parent, nodeQueue);
-            if (nodeQueue.size() < minsize)
+            if (int(nodeQueue.size()) < minsize)
                 return false;
 
             // Create cluster
@@ -90,7 +92,7 @@ namespace McRave::Combat::Clusters {
                     std::queue<ClusterNode*> neighborQueue;
                     getNeighbors(*node, neighborQueue);
 
-                    if (neighborQueue.size() >= minsize) {
+                    if (int(neighborQueue.size()) >= minsize) {
                         while (!neighborQueue.empty()) {
                             auto &neighbor = neighborQueue.front();
                             neighborQueue.pop();
@@ -247,8 +249,13 @@ namespace McRave::Combat::Clusters {
                         auto closestBuilding = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
                             return (u->getType().isBuilding() && u->getFormation().getDistance(cluster.marchPosition) < 64.0);
                         });
-                        if (closestBuilding)
+                        if (closestBuilding && !Combat::holdAtChoke())
                             cluster.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition);
+                        if (Combat::holdAtChoke()) {
+                            const auto choke = Util::getClosestChokepoint(cluster.marchPosition);
+                            cluster.radius = max(cluster.radius, double(choke->Width()));
+                            Visuals::drawPath(cluster.retreatPath);
+                        }
                     }
                 }
             }
@@ -283,6 +290,14 @@ namespace McRave::Combat::Clusters {
                     cluster.retreatPosition = commander->getRetreat();
                     cluster.commandShare = commander->isLightAir() ? CommandShare::Exact : CommandShare::Parallel;
                     cluster.shape = commander->isLightAir() ? Shape::None : Shape::Concave;
+
+                    // Determine the shape we want
+                    if (!commander->isLightAir()) {
+                        if (!cluster.mobileCluster && Combat::holdAtChoke() && commander->getGlobalState() == GlobalState::Retreat)
+                            cluster.shape = Shape::Choke;
+                        else
+                            cluster.shape = Shape::Concave;
+                    }
 
                     // Assign commander to each unit
                     for (auto &unit : cluster.units) {

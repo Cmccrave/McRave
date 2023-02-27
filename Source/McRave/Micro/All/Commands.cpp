@@ -179,7 +179,7 @@ namespace McRave::Command {
                     const auto botRight = topLeft + Position(unit.getBuildType().tileWidth() * 32, unit.getBuildType().tileHeight() * 32);
                     return Util::rectangleIntersect(topLeft, botRight, unitTarget->getPosition());
                 }
-                if (unitTarget->isThreatening() && (unit.getUnitsTargetingThis().empty() || unit.isHealthy()) && unit.isWithinRange(*unitTarget) && unit.isWithinGatherRange())
+                if (unitTarget->isThreatening() && (unit.getUnitsTargetingThis().empty() || unit.isHealthy()) && unit.isWithinRange(*unitTarget) && unit.isWithinGatherRange() && (/*!Players::ZvZ() || */unitTarget->getType().isWorker()))
                     return true;
             }
 
@@ -478,8 +478,8 @@ namespace McRave::Command {
             }
 
             // If we aren't defending the choke, we just want to move to our mineral hold position
-            if (!Combat::defendChoke()) {
-                unit.command(Move, Terrain::getDefendPosition());
+            if (!Combat::holdAtChoke()) {
+                unit.command(Move, Combat::getDefendPosition());
                 return true;
             }
 
@@ -497,11 +497,22 @@ namespace McRave::Command {
     {
         const auto closeToDefend = unit.getPosition().getDistance(unit.getFormation()) < 160.0;
         const auto canDefend = unit.getRole() == Role::Combat;
-        const auto shouldDefend = unit.getFormation().isValid() && unit.getLocalState() == LocalState::None && (unit.getGlobalState() != GlobalState::Attack || unit.getLocalState() == LocalState::Retreat) && !unit.isLightAir() && !unit.attemptingRunby();
+        const auto shouldDefend = unit.getFormation().isValid() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && unit.getGlobalState() != GlobalState::Attack && unit.getLocalState() != LocalState::Attack && !unit.isLightAir() && !unit.attemptingRunby();
+
 
         if (closeToDefend && canDefend && shouldDefend) {
-            unit.command(Move, unit.getFormation());
-            return true;
+
+
+            // TODO Hold position units on ramp if melee vs melee
+            if (unit.getFormation().isValid() && unit.getDestination() == unit.getFormation() && unit.getPosition().getDistance(unit.getFormation()) < 4) {
+                if (unit.getCommandType() != UnitCommandTypes::Hold_Position)
+                    unit.command(UnitCommandTypes::Hold_Position, unit.getPosition());
+                return true;
+            }
+            else {
+                unit.command(Move, unit.getFormation());
+                return true;
+            }
         }
         return false;
     }
@@ -561,8 +572,6 @@ namespace McRave::Command {
             auto bestPosition = findViablePosition(unit, unit.getNavigation(), 12, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.command(Move, bestPosition);
-                Visuals::drawLine(unit.getPosition(), bestPosition, Colors::Cyan);
-                Visuals::drawLine(unit.getNavigation(), bestPosition, Colors::Yellow);
                 return true;
             }
             else {

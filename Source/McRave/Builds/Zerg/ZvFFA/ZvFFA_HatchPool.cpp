@@ -21,7 +21,6 @@ namespace McRave::BuildOrder::Zerg {
             firstUnit =                                     Zerg_Mutalisk;
             unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : 15 - hatchCount();
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvFFA();
-            playPassive =                                   (com(Zerg_Mutalisk) == 0 || Util::getTime() < Time(7, 00));
             wantThird =                                     Spy::enemyFastExpand() || hatchCount() >= 3;
             gasLimit =                                      (vis(Zerg_Drone) >= 11) ? gasMax() : 0;
 
@@ -54,7 +53,6 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvFFA();
             gasLimit =                                      0;
             wantNatural =                                   !Spy::enemyProxy();
-            playPassive =                                   true;
             unitLimits[Zerg_Drone] =                        10;
             planEarly =                                     hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150;
             gasTrick =                                      s >= 18 && hatchCount() < 2 && total(Zerg_Spawning_Pool) == 0;

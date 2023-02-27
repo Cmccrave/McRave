@@ -14,7 +14,6 @@ namespace McRave::BuildOrder::Protoss {
         void PvT_2B_12Nexus()
         {
             // "http://liquipedia.net/starcraft/12_Nexus"
-            playPassive =                                       Spy::enemyPressure() ? vis(Protoss_Dragoon) < 12 : !firstReady() && vis(Protoss_Dragoon) < 4;
             firstUpgrade =                                      vis(Protoss_Dragoon) >= 1 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
             gasLimit =                                          goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
             unitLimits[Protoss_Zealot] =                        1;
@@ -31,7 +30,6 @@ namespace McRave::BuildOrder::Protoss {
         void PvT_2B_21Nexus()
         {
             // "http://liquipedia.net/starcraft/21_Nexus"
-            playPassive =                                       (Spy::enemyPressure() ? vis(Protoss_Dragoon) < 16 : !firstReady()) || (com(Protoss_Dragoon) < 4 && !Spy::enemyFastExpand());
             scout =                                             Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
             gasLimit =                                          goonRange() && vis(Protoss_Nexus) < 2 ? 2 : INT_MAX;
             unitLimits[Protoss_Dragoon] =                       Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 ? INT_MAX : 1;

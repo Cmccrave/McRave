@@ -241,7 +241,7 @@ namespace McRave::BuildOrder::Zerg {
                 auto dropGasRush        = (Spy::enemyRush() && Broodwar->self()->gas() > 200);
                 auto dropGasExcess      = gasRemaining > 15 * vis(Zerg_Drone) && !inOpening;
                 auto dropGasDefenses    = needSunks && Util::getTime() < Time(3, 30) && (Players::ZvZ() || Spy::getEnemyOpener() == "Proxy" || Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "8Rax");
-                auto dropGasBroke       = minRemaining < 75 && gasRemaining >= 100 && Util::getTime() < Time(4, 30);
+                auto dropGasBroke       = minRemaining < 75 && gasRemaining >= 100 && (Util::getTime() < Time(4, 30) || Players::ZvZ());
                 auto dropGasDrones      = minRemaining < 75 && gasRemaining >= 100 && !Players::ZvZ() && vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 18;
                 auto dropGasLarva       = minRemaining < 100 && gasRemaining >= 100 && !Players::ZvZ() && vis(Zerg_Larva) >= 3 && Util::getTime() < Time(5, 00) && unitReservations.empty();
 
@@ -251,8 +251,6 @@ namespace McRave::BuildOrder::Zerg {
                     || (needSpores && Players::ZvZ() && com(Zerg_Evolution_Chamber) == 0)
                     || (unitLimits[Zerg_Larva] < 3 && !rush && !pressure && minRemaining < 100 && (dropGasRush || dropGasExcess || dropGasDefenses || dropGasDrones)))
                     gasLimit = 0;
-                if (Players::ZvZ() && vis(Zerg_Drone) < 8 && gasRemaining >= 100)
-                    gasLimit = vis(Zerg_Drone) - 5;
             }
         }
     }

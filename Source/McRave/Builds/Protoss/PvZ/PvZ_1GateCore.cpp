@@ -19,7 +19,6 @@ namespace McRave::BuildOrder::Protoss {
             inOpening =                                 s < 70;
             unitLimits[Protoss_Dragoon] =                   1;
             inTransition =                              total(Protoss_Citadel_of_Adun) > 0;
-            playPassive =                                   s < 70;
             firstUnit =                                     Protoss_Dark_Templar;
 
             // Build

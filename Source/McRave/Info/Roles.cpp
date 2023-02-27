@@ -20,7 +20,7 @@ namespace McRave::Roles {
 
             // Only pull the closest worker to our defend position
             for (int i = 0; i < needed; i++) {
-                auto closestWorker = Util::getClosestUnit(Terrain::getDefendPosition(), PlayerState::Self, [&](auto &u) {
+                auto closestWorker = Util::getClosestUnit(Combat::getDefendPosition(), PlayerState::Self, [&](auto &u) {
                     if (u->getType() == Protoss_Probe && u->getShields() <= 4) // Don't pull low shield probes
                         return false;
                     if (u->getType() == Zerg_Drone && u->getHealth() < lowHp) // Don't pull low health drones
@@ -60,7 +60,7 @@ namespace McRave::Roles {
             }
 
             // If trying to 1GateCore and scouted 2Gate late, pull workers to block choke when we are ready
-            else if (BuildOrder::getCurrentBuild() == "1GateCore" && Spy::getEnemyBuild() == "2Gate" && Combat::defendChoke()) {
+            else if (BuildOrder::getCurrentBuild() == "1GateCore" && Spy::getEnemyBuild() == "2Gate" && Combat::holdAtChoke()) {
                 if (Util::getTime() < Time(3, 30))
                     forceCombatWorker(2, LocalState::None, GlobalState::Retreat);
             }

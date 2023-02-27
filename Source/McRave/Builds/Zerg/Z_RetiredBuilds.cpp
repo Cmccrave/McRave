@@ -20,7 +20,6 @@ namespace McRave::BuildOrder::Zerg {
         pressure =                                      vis(Zerg_Zergling) >= 36;
         unitLimits[Zerg_Drone] =                        32;
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
-        playPassive =                                   (Spy::getEnemyBuild() == "1GateCore" || Spy::getEnemyBuild() == "2Gate") && vis(Zerg_Spire) == 0;
         wantThird =                                     Spy::getEnemyBuild() == "FFE";
 
         // Build
@@ -54,7 +53,6 @@ namespace McRave::BuildOrder::Zerg {
         gasLimit =                                      !lingSpeed() ? capGas(100) : 0;
         wallNat =                                       true;
         pressure =                                      !Spy::enemyProxy();
-        playPassive =                                   Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) == 0 && Spy::getEnemyOpener() != "Proxy";
         wantNatural =                                   !Spy::enemyProxy();
         firstUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
 
@@ -87,7 +85,6 @@ namespace McRave::BuildOrder::Zerg {
         wallNat =                                       true;
         pressure =                                      com(Zerg_Hatchery) >= 3 && inOpening;
         wantThird =                                     false;
-        playPassive =                                   Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost) == 0 && Spy::getEnemyOpener() != "Proxy";
 
         // Build
         buildQueue[Zerg_Hatchery] =                     1 + (s >= 22 && vis(Zerg_Spawning_Pool) > 0) + (s >= 26);
@@ -111,7 +108,6 @@ namespace McRave::BuildOrder::Zerg {
         firstUpgrade =                                  UpgradeTypes::None;
         firstTech =                                     TechTypes::Lurker_Aspect;
         firstUnit =                                     Zerg_Lurker;
-        playPassive =                                   !Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
         gasLimit =                                      gasMax();
 
         buildQueue[Zerg_Extractor] =                    (s >= 24) + (atPercent(Zerg_Lair, 0.90));
@@ -134,7 +130,6 @@ namespace McRave::BuildOrder::Zerg {
         firstUnit =                                     Zerg_Mutalisk;
         unitLimits[Zerg_Drone] =                        com(Zerg_Hive) > 0 ? 21 : 18;
         unitLimits[Zerg_Zergling] =                     200;
-        playPassive =                                   Broodwar->self()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands) == 0;
         gasLimit =                                      (vis(Zerg_Drone) >= 10 && Broodwar->self()->gatheredGas() < 800) ? gasMax() : 0;
 
         if (vis(Zerg_Lair) > 0)

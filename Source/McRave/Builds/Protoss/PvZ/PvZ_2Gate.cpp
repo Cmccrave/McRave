@@ -20,7 +20,6 @@ namespace McRave::BuildOrder::Protoss {
             unitLimits[Protoss_Zealot] =                5;
             unitLimits[Protoss_Dragoon] =               INT_MAX;
             wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
-            playPassive =                               !firstReady() && (!Terrain::foundEnemy() || Spy::enemyPressure());
 
             buildQueue[Protoss_Gateway] =               2 + (s >= 62) + (s >= 70);
             buildQueue[Protoss_Assimilator] =           s >= 52;

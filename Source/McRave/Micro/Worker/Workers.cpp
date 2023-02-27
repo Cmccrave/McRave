@@ -76,7 +76,9 @@ namespace McRave::Workers {
         {
             auto buildCenter = Position(unit.getBuildPosition()) + Position(unit.getBuildType().tileWidth() * 16, unit.getBuildType().tileHeight() * 16);
 
-            if (Util::getTime() < Time(4, 00))
+            if (Util::getTime() < Time(4, 00)
+                || Planning::isDefensiveType(unit.getBuildType())
+                || unit.getBuildType() == Zerg_Evolution_Chamber)
                 return true;
 
             for (auto &t : unit.getUnitsTargetingThis()) {
@@ -255,23 +257,26 @@ namespace McRave::Workers {
             };
 
             // Check if we need gas units
-            if (!threatened && (needGas || !unit.hasResource() || excessAssigned)) {
+            if (needGas || !unit.hasResource() || threatened || excessAssigned) {
                 for (auto &r : Resources::getMyGas()) {
                     auto &resource = *r;
+                    auto allowedGatherCount = threatened ? 50 : resource.getWorkerCap();
 
-                    if (!resourceReady(resource, resource.getWorkerCap())
+                    if (!resourceReady(resource, allowedGatherCount)
                         || (!safeStations.empty() && find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
                         || resource.isThreatened())
                         continue;
 
                     // Find closest unit that we will re-assign
-                    auto closestunit = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
-                        return u->getRole() == Role::Worker && !u->getBuildPosition().isValid() && (!u->hasResource() || u->getResource().lock()->getType().isMineralField());
-                    });
+                    if (!threatened) {
+                        auto closestunit = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
+                            return u->getRole() == Role::Worker && !u->getBuildPosition().isValid() && (!u->hasResource() || u->getResource().lock()->getType().isMineralField());
+                        });
 
-                    // If this is the closest unit and it's doing a return trip
-                    if (closestunit && (unit != *closestunit || !unit.unit()->isCarryingMinerals()))
-                        continue;
+                        // If this is the closest unit and it's doing a return trip
+                        if (closestunit && (unit != *closestunit || !unit.unit()->isCarryingMinerals()))
+                            continue;
+                    }
 
                     auto dist = resource.getPosition().getDistance(unit.getPosition());
                     if ((dist < distBest && !threatened) || (dist > distBest && threatened)) {

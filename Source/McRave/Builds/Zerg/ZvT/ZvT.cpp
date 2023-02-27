@@ -19,7 +19,6 @@ namespace McRave::BuildOrder::Zerg {
         mineralThird =                              false;
         proxy =                                     false;
         hideTech =                                  false;
-        playPassive =                               Util::getTime() > Time(3, 30) && !Spy::enemyFastExpand() && com(Zerg_Mutalisk) < 5;
         rush =                                      false;
         pressure =                                  false;
         transitionReady =                           false;
@@ -42,11 +41,13 @@ namespace McRave::BuildOrder::Zerg {
     int lingsNeeded_ZvT() {
         if (com(Zerg_Spawning_Pool) == 0)
             return 0;
+        if (Spy::enemyRush())
+            return 12;
         if (Spy::enemyProxy() || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush")
             return 10;
-        if (Spy::getEnemyBuild() == "RaxFact")
+        if (Spy::getEnemyBuild() == "RaxFact" || Spy::getEnemyBuild() == "2Rax")
             return 6;
-        return 2;
+        return 6;
     }
 
     void ZvT2HatchMuta()
@@ -57,7 +58,7 @@ namespace McRave::BuildOrder::Zerg {
         gasLimit =                                      gasMax();
 
         inOpening =                                     total(Zerg_Mutalisk) <= 9;
-        firstUpgrade =                                  UpgradeTypes::None;
+        firstUpgrade =                                  Spy::enemyRush() ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  total(Zerg_Mutalisk) < 6;
         wantThird =                                     !Spy::enemyPressure() && !Spy::enemyRush() && Spy::getEnemyOpener() != "8Rax" && Spy::getEnemyBuild() != "RaxFact";
@@ -91,14 +92,14 @@ namespace McRave::BuildOrder::Zerg {
         gasLimit =                                      gasMax();
 
         inOpening =                                     total(Zerg_Mutalisk) <= 9;
-        firstUpgrade =                                  (vis(Zerg_Extractor) >= 2 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        firstUpgrade =                                  Spy::enemyRush() ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         firstUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  vis(Zerg_Overlord) < 7 || total(Zerg_Mutalisk) < 9;
         wantThird =                                     true;
         planEarly =                                     hatchCount() < 3 && s >= 26;
 
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + (total(Zerg_Mutalisk) >= 9);
-        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 3) + (s >= 44 && vis(Zerg_Drone) >= 20);
+        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 3 && vis(Zerg_Zergling) >= 6) + (s >= 44 && vis(Zerg_Drone) >= 20);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + (atPercent(Zerg_Spire, 0.5) * 3);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        (s >= 42 && atPercent(Zerg_Lair, 0.80));
@@ -127,7 +128,6 @@ namespace McRave::BuildOrder::Zerg {
         firstUnit =                                     UnitTypes::None;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
         rush =                                          true;
-        playPassive =                                   false;
 
         // Build
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 26);
@@ -150,7 +150,6 @@ namespace McRave::BuildOrder::Zerg {
         firstUnit =                                     UnitTypes::None;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
         rush =                                          true;
-        playPassive =                                   false;
 
         // Build
         buildQueue[Zerg_Hatchery] =                     1 + (s >= 22 && vis(Zerg_Spawning_Pool) > 0) + (s >= 26);
@@ -174,8 +173,8 @@ namespace McRave::BuildOrder::Zerg {
 
         // Reactions
         if (!inTransition) {
-            if (Spy::enemyRush() || Spy::enemyProxy())
-                currentTransition = "2HatchSpeedling";
+            //if (Spy::enemyRush() || Spy::enemyProxy())
+            //    currentTransition = "2HatchSpeedling";
             if (Spy::getEnemyOpener() == "8Rax") {
                 currentBuild = "PoolHatch";
                 currentOpener = "12Pool";

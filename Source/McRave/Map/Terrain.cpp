@@ -8,48 +8,33 @@ using namespace UnitTypes;
 namespace McRave::Terrain {
 
     namespace {
+
+        // Territory
         map<const Area*, PlayerState> territoryArea;
         map<WalkPosition, PlayerState> territoryChokeGeometry;
-        map<WalkPosition, pair<const BWEM::Area *, const BWEM::Area *>> areaChokeGeometry;
-        set<const Base *> allBases;
+
+        // Enemy
         BWEB::Station * enemyNatural = nullptr;
         BWEB::Station * enemyMain = nullptr;
         Position enemyStartingPosition = Positions::Invalid;
-        Position defendPosition = Positions::Invalid;
-        Position attackPosition = Positions::Invalid;
-        Position harassPosition = Positions::Invalid;
         TilePosition enemyStartingTilePosition = TilePositions::Invalid;
         TilePosition enemyExpand = TilePositions::Invalid;
-        const ChokePoint * defendChoke = nullptr;
-        const Area * defendArea = nullptr;
-        map<BWEB::Station *, Position> safeSpots;
-        vector<Position> mapEdges, mapCorners;
-        int frame6MutasDone = 0;
-        vector<Position> groundCleanupPositions;
-        vector<Position> airCleanupPositions;
 
+        // Map
+        map<WalkPosition, pair<const BWEM::Area *, const BWEM::Area *>> areaChokeGeometry;
+        set<const Base *> allBases;
+        vector<Position> mapEdges, mapCorners;
         bool islandMap = false;
         bool reverseRamp = false;
         bool flatRamp = false;
         bool narrowNatural = false;
-        bool defendNatural = false;
-        int timeHarassingHere = 1500;
 
-        // TODO: This is unused, is it useful?
-        bool checkDefendRunby()
-        {
-            if (Players::ZvP() && com(Zerg_Zergling) >= 16) {
-                defendPosition = (Position(getMainChoke()->Center()) + Position(getNaturalChoke()->Center()) + Position(4, 4)) / 2;
-                defendNatural = true;
-                return true;
-            }
-            if (Players::ZvT()) {
-                defendPosition = Position(getMainChoke()->Center()) + Position(4, 4);
-                defendNatural = true;
-                return true;
-            }
-            return false;
-        }
+        // Cleanup
+        vector<Position> groundCleanupPositions;
+        vector<Position> airCleanupPositions;
+
+        // Overlord scouting
+        map<BWEB::Station *, Position> safeSpots;
 
         void findEnemy()
         {
@@ -178,186 +163,6 @@ namespace McRave::Terrain {
             }
         }
 
-        void findAttackPosition()
-        {
-            // Choose a default attack position, in FFA we choose enemy station to us that isn't ours
-            auto distBest = Players::vFFA() ? DBL_MAX : 0.0;
-            auto posBest = Positions::Invalid;
-            if (Players::vFFA()) {
-                for (auto &station : Stations::getStations(PlayerState::Enemy)) {
-                    auto dist = station->getBase()->Center().getDistance(getMainPosition());
-                    if (dist < distBest) {
-                        distBest = dist;
-                        posBest = station->getBase()->Center();
-                    }
-                }
-            }
-            else if (enemyStartingPosition.isValid() && Util::getTime() < Time(6, 00)) {
-                attackPosition = enemyStartingPosition;
-                return;
-            }
-
-            // Attack furthest enemy station from enemy main, closest enemy station to us in FFA
-            attackPosition = enemyStartingPosition;
-            distBest = Players::vFFA() ? DBL_MAX : 0.0;
-            posBest = Positions::Invalid;
-
-            for (auto &station : Stations::getStations(PlayerState::Enemy)) {
-                auto dist = enemyStartingPosition.getDistance(station->getBase()->Center());
-
-                if ((!Players::vFFA() && dist < distBest)
-                    || (Players::vFFA() && dist > distBest)
-                    || BWEB::Map::isUsed(station->getBase()->Location()) == UnitTypes::None)
-                    continue;
-
-                const auto stationWalkable = [&](const TilePosition &t) {
-                    return Util::rectangleIntersect(Position(station->getBase()->Location()), Position(station->getBase()->Location()) + Position(128, 96), Position(t));
-                };
-
-                auto pathFrom = getNaturalChoke() ? Position(getNaturalChoke()->Center()) : getMainPosition();
-                BWEB::Path path(pathFrom, station->getBase()->Center(), Zerg_Ultralisk, true, true);
-                path.generateJPS([&](auto &t) { return path.unitWalkable(t) || stationWalkable(t); });
-
-                if (path.isReachable()) {
-                    distBest = dist;
-                    posBest = station->getResourceCentroid();
-                }
-            }
-            attackPosition = posBest;
-        }
-
-        void findDefendPosition()
-        {
-            const auto baseType = Broodwar->self()->getRace().getResourceDepot();
-            narrowNatural = getNaturalChoke() && getNaturalChoke()->Width() <= 64;
-            defendNatural = getNaturalChoke() &&
-                (BuildOrder::isWallNat()
-                    || BuildOrder::takeNatural()
-                    || BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural())
-                    || Stations::getStations(PlayerState::Self).size() >= 2
-                    || (!Players::PvZ() && Players::getSupply(PlayerState::Self, Races::Protoss) > 140)
-                    || (Broodwar->self()->getRace() != Races::Zerg && reverseRamp));
-
-            auto oldPos = defendPosition;
-            auto mainChoke = getMainChoke();
-
-            // Natural defending position
-            if (defendNatural && getMyNatural()) {
-                defendChoke = getNaturalChoke();
-                defendPosition = Stations::getDefendPosition(getMyNatural());
-                addTerritory(PlayerState::Self, getMyNatural());
-            }
-
-            // Main defending position
-            else if (mainChoke) {
-                defendNatural = false;
-                addTerritory(PlayerState::Self, getMyMain());
-                removeTerritory(PlayerState::Self, getMyNatural()); // Erase just in case we dropped natural defense
-                defendPosition = Position(mainChoke->Center()) + Position(4, 4);
-
-                // Check to see if we have a wall
-                if (Walls::getMainWall() && BuildOrder::isWallMain()) {
-                    Position opening(Walls::getMainWall()->getOpening());
-                    defendPosition = opening.isValid() ? opening : Walls::getMainWall()->getCentroid();
-                }
-            }
-
-            // Natural defending area and choke
-            if (defendNatural) {
-                defendArea = getNaturalArea();
-                defendChoke = getNaturalChoke();
-                Zones::addZone(Position(getMainChoke()->Center()), ZoneType::Defend, 1, 160);
-            }
-
-            // Main defend area and choke
-            else if (mainChoke) {
-                defendChoke = mainChoke;
-                defendArea = getMainArea();
-            }
-
-            Broodwar->drawTriangleMap(defendPosition + Position(0, -20), defendPosition + Position(-20, 10), defendPosition + Position(20, 10), Colors::Green);
-        }
-
-        void findHarassPosition()
-        {
-            auto oldHarass = harassPosition;
-            if (!enemyMain)
-                return;
-            harassPosition = Positions::Invalid;
-
-            if (com(Zerg_Mutalisk) >= 6 && frame6MutasDone == 0)
-                frame6MutasDone = Broodwar->getFrameCount();
-
-            const auto commanderInRange = [&](Position here) {
-                auto commander = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
-                    return u->getType() == Zerg_Mutalisk;
-                });
-                return commander && commander->getPosition().getDistance(here) < 160.0;
-            };
-            const auto stationNotVisitedRecently = [&](auto &station) {
-                return max(frame6MutasDone, Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(station->getResourceCentroid()))) > 2880 && !commanderInRange(station->getResourceCentroid());
-            };
-
-            // In FFA just hit closest base to us
-            if (Players::vFFA() && attackPosition.isValid()) {
-                harassPosition = attackPosition;
-                return;
-            }
-
-            // Check if enemy lost all bases
-            auto lostAll = !Stations::getStations(PlayerState::Enemy).empty();
-            for (auto &station : Stations::getStations(PlayerState::Enemy)) {
-                if (!Stations::isBaseExplored(station) || BWEB::Map::isUsed(station->getBase()->Location()) != UnitTypes::None)
-                    lostAll = false;
-            }
-            if (lostAll) {
-                harassPosition = Positions::Invalid;
-                return;
-            }
-
-            // Some hardcoded ZvT stuff
-            if (Players::ZvT() && Util::getTime() < Time(8, 00) && enemyMain) {
-                harassPosition = enemyMain->getResourceCentroid();
-                return;
-            }
-
-            // Create a list of valid positions to harass/check
-            vector<BWEB::Station*> stations = Stations::getStations(PlayerState::Enemy);
-            if (Util::getTime() < Time(10, 00)) {
-                stations.push_back(Terrain::getEnemyMain());
-                stations.push_back(Terrain::getEnemyNatural());
-            }
-
-            // At a certain point we need to ensure they aren't mass expanding - check closest 2 if not visible in last 2 minutes
-            auto checkNeeded = (Stations::getStations(PlayerState::Enemy).size() <= 2 && Util::getTime() > Time(10, 00)) || (Stations::getStations(PlayerState::Enemy).size() <= 3 && Util::getTime() > Time(15, 00));
-            if (checkNeeded && Terrain::getEnemyNatural()) {
-                auto station1 = Stations::getClosestStationGround(Terrain::getEnemyNatural()->getBase()->Center(), PlayerState::None, [&](auto &s) {
-                    return s != Terrain::getEnemyMain() && s != Terrain::getEnemyNatural() && !s->getBase()->Geysers().empty();
-                });
-                if (station1) {
-                    stations.push_back(station1);
-
-                    auto station2 = Stations::getClosestStationGround(Terrain::getEnemyNatural()->getBase()->Center(), PlayerState::None, [&](auto &s) {
-                        return s != station1 && s != Terrain::getEnemyMain() && s != Terrain::getEnemyNatural() && !s->getBase()->Geysers().empty();
-                    });
-
-                    if (station2)
-                        stations.push_back(station2);
-                }
-            }
-
-            // Harass all stations by last visited
-            auto best = -1.0;
-            for (auto &station : stations) {
-                auto defCount = double(Stations::getAirDefenseCount(station));
-                auto score = double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(station->getResourceCentroid()))) / exp(1.0 + defCount);
-                if (score > best) {
-                    best = score;
-                    harassPosition = station->getResourceCentroid();
-                }
-            }
-        }
-
         void findCleanupPositions()
         {
             groundCleanupPositions.clear();
@@ -403,6 +208,8 @@ namespace McRave::Terrain {
                         areaChokeGeometry[walk] = choke->GetAreas();                    
                 }
             }
+
+            narrowNatural = getNaturalChoke() && getNaturalChoke()->Width() <= 64;
         }
     }
 
@@ -615,31 +422,23 @@ namespace McRave::Terrain {
         Visuals::startPerfTest();
         findEnemy();
         findEnemyNextExpand();
-        findAttackPosition();
-        findDefendPosition();
-        findHarassPosition();
         findCleanupPositions();
         updateAreas();
         Visuals::endPerfTest("Terrain");
     }
 
     set<const Base*>& getAllBases() { return allBases; }
-    Position getAttackPosition() { return attackPosition; }
-    Position getDefendPosition() { return defendPosition; }
-    Position getHarassPosition() { return harassPosition; }
+
     Position getEnemyStartingPosition() { return enemyStartingPosition; }
     BWEB::Station * getEnemyMain() { return enemyMain; }
     BWEB::Station * getEnemyNatural() { return enemyNatural; }
     TilePosition getEnemyExpand() { return enemyExpand; }
     TilePosition getEnemyStartingTilePosition() { return enemyStartingTilePosition; }
-    const ChokePoint * getDefendChoke() { return defendChoke; }
-    const Area * getDefendArea() { return defendArea; }
-    BWEB::Station * getDefendStation() { return defendNatural ? getMyNatural() : getMyMain(); }
+
     bool isIslandMap() { return islandMap; }
     bool isReverseRamp() { return reverseRamp; }
     bool isFlatRamp() { return flatRamp; }
     bool isNarrowNatural() { return narrowNatural; }
-    bool isDefendNatural() { return defendNatural; }
     bool foundEnemy() { return enemyStartingPosition.isValid() && Broodwar->isExplored(TilePosition(enemyStartingPosition)); }
     vector<Position>& getGroundCleanupPositions() { return groundCleanupPositions; }
     vector<Position>& getAirCleanupPositions() { return airCleanupPositions; }

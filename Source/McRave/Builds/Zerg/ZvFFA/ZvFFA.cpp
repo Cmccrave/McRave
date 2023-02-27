@@ -18,7 +18,6 @@ namespace McRave::BuildOrder::Zerg {
         wantThird =                                 Spy::getEnemyBuild() == "FFE";
         proxy =                                     false;
         hideTech =                                  false;
-        playPassive =                               false;
         rush =                                      false;
         pressure =                                  false;
         transitionReady =                           false;

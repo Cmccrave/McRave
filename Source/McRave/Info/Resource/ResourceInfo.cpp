@@ -28,11 +28,9 @@ namespace McRave {
     void ResourceInfo::updateThreatened()
     {
         // Determine if this resource is threatened based on a substantial threat nearby
-        const auto time = (Spy::enemyRush() || Broodwar->self()->getRace() == Races::Zerg) ? Time(3, 00) : Time(4, 00);
-        threatened = Units::getImmThreat() > 0.0 && (Util::getTime() > time || Broodwar->getGameType() == GameTypes::Use_Map_Settings) && Grids::getGroundThreat(position, PlayerState::Enemy) > min(6.0f, 0.10f * float(Util::getTime().minutes));
-
+        threatened = false;
         for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
-            if (enemy->isThreatening() && enemy->getPosition().getDistance(position) < 200.0)
+            if (!enemy->getType().isWorker() && enemy->hasTarget() && enemy->getTarget().lock()->getType().isWorker() && enemy->canAttackGround() && enemy->isThreatening() && enemy->getPosition().getDistance(position) < max(96.0, enemy->getGroundRange()))
                 threatened = true;
         }
     }
@@ -40,6 +38,7 @@ namespace McRave {
     void ResourceInfo::updateWorkerCap()
     {
         // Calculate the worker cap for the resource
+        // Default 2 for mineral, 3 for gas
         workerCap = 2 + !type.isMineralField();
         for (auto &t : targetedBy) {
             if (t.expired())

@@ -119,7 +119,7 @@ namespace McRave::Combat::Navigation {
                 || unit.getLocalState() == LocalState::Retreat
                 || unit.localRetreat()
                 || unit.globalRetreat());
-        auto harassing = unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Terrain::getHarassPosition() && unit.attemptingHarass() && unit.getLocalState() == LocalState::None;
+        auto harassing = unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Combat::getHarassPosition() && unit.attemptingHarass() && unit.getLocalState() == LocalState::None;
 
         // Generate a flying path for retreating or regrouping
         if (regrouping)

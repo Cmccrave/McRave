@@ -420,7 +420,10 @@ namespace McRave::Planning {
             for (auto &station : Stations::getStations(PlayerState::Self)) {
 
                 int colonies = 0;
-                Position desiredCenter = Position(station->getResourceCentroid());
+
+                // Place sunkens closest to the chokepoint by default
+                Position desiredCenter = Stations::getDefendPosition(station);
+
                 for (auto& tile : station->getDefenses()) {
                     if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony || buildingsPlanned.find(tile) != buildingsPlanned.end())
                         colonies++;

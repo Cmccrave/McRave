@@ -8,28 +8,23 @@ namespace McRave::Pathing {
 
     namespace {
 
-        void getEngagePosition(UnitInfo& unit)
+        void getEngagePosition(UnitInfo& unit, UnitInfo& target)
         {
-            // Without a target, we cannot assume an engage position
-            if (!unit.hasTarget() || unit.getPlayer() != Broodwar->self()) {
-                unit.setEngagePosition(Positions::Invalid);
+            // Suicidal units engage on top of the target
+            if (unit.isSuicidal()) {
+                unit.setEngagePosition(target.getPosition());
                 return;
             }
 
-            auto unitTarget = unit.getTarget().lock();
-            if (unit.getRole() == Role::Defender || unit.isSuicidal()) {
-                unit.setEngagePosition(unitTarget->getPosition());
-                return;
-            }
-
-            if (unit.isWithinRange(*unitTarget)) {
+            // No need to calculate for units already in range
+            if (unit.isWithinRange(target) || unit.getRole() == Role::Defender) {
                 unit.setEngagePosition(unit.getPosition());
                 unit.setEngDist(0.0);
                 return;
             }
 
-            //
-            auto range = unitTarget->isFlying() ? unit.getAirRange() : unit.getGroundRange();
+            // Create an air distance calculation for engage position for flyers
+            auto range = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
             if (unit.isFlying() || unit.hasTransport()) {
                 auto distance = Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().lock()->getType(), unit.getTarget().lock()->getPosition());
                 auto direction = ((distance - range) / distance);
@@ -42,32 +37,25 @@ namespace McRave::Pathing {
 
             // Create a binary search tree in a circle around the target
             else {
-                auto engage = Util::getClosestPointToRadiusGround(unit.getPosition(), unitTarget->getPosition(), range);
+                auto engage = Util::getClosestPointToRadiusGround(unit.getPosition(), target.getPosition(), range);
                 unit.setEngagePosition(engage.second);
                 unit.setEngDist(engage.first);
-                if (unit.unit()->isSelected()) {
-                    Broodwar << engage.first << endl;
-                }
             }
         }
 
-        void getInterceptPosition(UnitInfo& unit)
+        void getInterceptPosition(UnitInfo& unit, UnitInfo& target)
         {
-            if (!unit.hasTarget())
-                return;
-
             // If we can't see the units speed, return its current position
-            auto unitTarget = unit.getTarget().lock();
-            if (!unitTarget->unit()->exists()
+            if (!target.unit()->exists()
                 || unit.getSpeed() == 0.0
-                || unitTarget->getSpeed() == 0.0
-                || !unitTarget->getPosition().isValid()
+                || target.getSpeed() == 0.0
+                || !target.getPosition().isValid()
                 || !Terrain::getEnemyStartingPosition().isValid())
                 return;
 
-            auto range = unitTarget->isFlying() ? unit.getAirRange() : unit.getGroundRange();
-            auto framesToArrive = max(0.0, (unit.getPosition().getDistance(unitTarget->getPosition()) - range) / unit.getSpeed());
-            auto intercept = unitTarget->getPosition() + Position(int(unit.unit()->getVelocityX() * framesToArrive), int(unit.unit()->getVelocityY() * framesToArrive));
+            auto range = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
+            auto framesToArrive = max(0.0, (unit.getPosition().getDistance(target.getPosition()) - range) / unit.getSpeed());
+            auto intercept = target.getPosition() + Position(int(unit.unit()->getVelocityX() * framesToArrive), int(unit.unit()->getVelocityY() * framesToArrive));
             unit.setInterceptPosition(intercept);
         }
 
@@ -154,8 +142,9 @@ namespace McRave::Pathing {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo& unit = *u;
                 if (unit.hasTarget()) {
-                    getEngagePosition(unit);
-                    getInterceptPosition(unit);
+                    auto unitTarget = *unit.getTarget().lock();
+                    getEngagePosition(unit, unitTarget);
+                    getInterceptPosition(unit, unitTarget);
                 }
             }
         }

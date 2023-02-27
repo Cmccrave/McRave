@@ -17,7 +17,9 @@ namespace McRave::Combat::State {
 
         // Zerglings
         if ((Players::ZvT() && Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0))
-            || (Players::ZvZ() && Util::getTime() < Time(10, 00) && Players::getCompleteCount(PlayerState::Enemy, Zerg_Zergling) > com(Zerg_Zergling))
+            || (Players::ZvT() && com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0)
+            || (Players::ZvZ() && Spy::getEnemyTransition() == "2HatchSpeedling" && Util::getTime() < Time(10, 00) && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0)
+            || (Players::ZvZ() && Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 00) && !Terrain::getEnemyStartingPosition().isValid())
             || (Players::ZvZ() && Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45)))
             staticRetreatTypes.push_back(Zerg_Zergling);
 
@@ -53,11 +55,11 @@ namespace McRave::Combat::State {
         auto unitTarget = unit.getTarget().lock();
         const auto distSim = double(Util::boxDistance(unit.getType(), unit.getPosition(), simTarget->getType(), simTarget->getPosition()));
         const auto distTarget = double(Util::boxDistance(unit.getType(), unit.getPosition(), unitTarget->getType(), unitTarget->getPosition()));
+        const auto atHome = Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition());
         const auto insideRetreatRadius = distSim < unit.getRetreatRadius();
-        const auto insideEngageRadius = distTarget < unit.getEngageRadius() && unit.getGlobalState() == GlobalState::Attack;
-        const auto atHome = Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition()) && mapBWEM.GetArea(unit.getTilePosition()) == mapBWEM.GetArea(unitTarget->getTilePosition()) && !Players::ZvZ();
+        const auto insideEngageRadius = distTarget < unit.getEngageRadius() && (atHome || unit.getGlobalState() == GlobalState::Attack);
         const auto reAlign = (unit.getType() == Zerg_Mutalisk && !unit.canStartAttack() && !unit.isWithinAngle(*unitTarget) && Util::boxDistance(unit.getType(), unit.getPosition(), unitTarget->getType(), unitTarget->getPosition()) <= 64.0);
-        const auto winningState = (atHome || !BuildOrder::isPlayPassive()) && unit.getSimState() == SimState::Win;
+        const auto winningState = unit.getSimState() == SimState::Win;
         const auto exploringGoal = unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore && unit.getUnitsInRangeOfThis().empty() && Util::getTime() > Time(4, 00);
 
         // Regardless of any decision, determine if Unit is in danger and needs to retreat
@@ -69,7 +71,7 @@ namespace McRave::Combat::State {
         }
 
         // Regardless of local decision, determine if Unit needs to attack or retreat
-        else if (unit.globalEngage()) {
+        else if (unit.globalEngage() || (atHome && winningState)) {
             unit.setLocalState(LocalState::Attack);
         }
         else if (unit.globalRetreat()) {
@@ -106,7 +108,6 @@ namespace McRave::Combat::State {
                 unit.setGlobalState(GlobalState::Attack);
 
             else if (unit.getType().isWorker()
-                || (Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive())
                 || (unit.getType() == Protoss_Corsair && !BuildOrder::firstReady() && Players::getStrength(PlayerState::Enemy).airToAir > 0.0)
                 || (unit.getType() == Protoss_Carrier && com(Protoss_Interceptor) < 16 && !Spy::enemyPressure()))
                 unit.setGlobalState(GlobalState::Retreat);
@@ -120,8 +121,7 @@ namespace McRave::Combat::State {
                 || Broodwar->getGameType() == GameTypes::Use_Map_Settings
                 || unit.attemptingRunby())
                 unit.setGlobalState(GlobalState::Attack);
-            else if ((Broodwar->getFrameCount() < 15000 && BuildOrder::isPlayPassive() && !unit.getGoal().isValid())
-                || isStaticRetreat(unit.getType()))
+            else if (isStaticRetreat(unit.getType()))
                 unit.setGlobalState(GlobalState::Retreat);
             else
                 unit.setGlobalState(GlobalState::Attack);
@@ -129,7 +129,7 @@ namespace McRave::Combat::State {
 
         // Terran
         else if (Broodwar->self()->getRace() == Races::Terran) {
-            if (BuildOrder::isPlayPassive() || !BuildOrder::firstReady())
+            if (!BuildOrder::firstReady())
                 unit.setGlobalState(GlobalState::Retreat);
             else
                 unit.setGlobalState(GlobalState::Attack);

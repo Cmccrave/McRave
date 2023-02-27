@@ -202,7 +202,8 @@ namespace McRave::Visuals {
                 if (sim) {
                     if (unit.getRole() == Role::Combat) {
                         int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-                        Broodwar->drawTextMap(unit.getPosition() + Position(width, 8), "%c%.2f", Text::White, unit.getSimValue());
+                        auto color = unit.getSimState() == SimState::Win ? Text::Green : Text::Red;
+                        Broodwar->drawTextMap(unit.getPosition() + Position(width, 8), "%c%.2f", color, unit.getSimValue());
                     }
                 }
 

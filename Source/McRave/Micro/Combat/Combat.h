@@ -4,7 +4,7 @@
 namespace McRave::Combat {
 
     enum class Shape {
-        None, Concave, Line, Box
+        None, Concave, Line, Box, Choke
     };
 
     enum class CommandShare {
@@ -45,7 +45,7 @@ namespace McRave::Combat {
 
     namespace Formations {
         void onFrame();
-        std::vector<Formation>& getConcaves();
+        std::vector<Formation>& getFormations();
     }
     namespace Clusters {
         void onFrame();
@@ -73,7 +73,16 @@ namespace McRave::Combat {
         void onFrame();
     }
 
+    const BWEM::ChokePoint * getDefendChoke();
+    const BWEM::Area * getDefendArea();
+    BWEB::Station * getDefendStation();
+
+    BWAPI::Position getAttackPosition();
+    BWAPI::Position getDefendPosition();
+    BWAPI::Position getHarassPosition();
+    bool isDefendNatural();
+
     void onFrame();
     void onStart();
-    bool defendChoke();
+    bool holdAtChoke();
 }

@@ -19,7 +19,6 @@ namespace McRave::BuildOrder::Zerg {
             gasLimit =                                      0;
             scout =                                         scout || (hatchCount() >= 2);
             wantNatural =                                   !Spy::enemyProxy();
-            playPassive =                                   false;
 
             if (Spy::enemyFastExpand())
                 unitLimits[Zerg_Drone] =                    INT_MAX;
@@ -57,7 +56,6 @@ namespace McRave::BuildOrder::Zerg {
             gasTrick =                                      vis(Zerg_Spawning_Pool) > 0 && total(Zerg_Overlord) < 2;
             scout =                                         scout || (vis(Zerg_Spawning_Pool) > 0 && s >= 22);
             wantNatural =                                   !Spy::enemyProxy();
-            playPassive =                                   false;
 
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0 && atPercent(Zerg_Spawning_Pool, 0.8 && total(Zerg_Zergling) >= 6) && vis(Zerg_Overlord) >= 2 && (!Spy::enemyProxy() || vis(Zerg_Sunken_Colony) >= 2));
             buildQueue[Zerg_Spawning_Pool] =                s >= 18;

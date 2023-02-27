@@ -19,7 +19,6 @@ namespace McRave::BuildOrder::Protoss {
         wantThird =                                     true;
         proxy =                                         false;
         hideTech =                                      false;
-        playPassive =                                   false;
         rush =                                          false;
         transitionReady =                               false;
 

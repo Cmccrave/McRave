@@ -150,7 +150,6 @@ namespace McRave::Scouts {
 
                 if ((Players::PvZ() && Spy::enemyRush() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 2)
                     || (Players::PvT() && (Spy::enemyPressure() || Spy::enemyWalled()))
-                    || (BuildOrder::isPlayPassive() && Spy::enemyPressure())
                     || (Util::getTime() > Time(5, 00)))
                     main.desiredScoutTypeCounts[Protoss_Probe] = 0;
             }
@@ -190,26 +189,27 @@ namespace McRave::Scouts {
                     || Players::ZvT();
 
                 // Main overlord scouting counts
-                main.desiredScoutTypeCounts[Zerg_Overlord] = 1;
+                main.desiredScoutTypeCounts[Zerg_Overlord] = 1 + !Terrain::getEnemyStartingPosition().isValid();
                 if (enemyAir || Spy::enemyFastExpand())
                     main.desiredScoutTypeCounts[Zerg_Overlord] = 0;
 
                 // Natural overlord scouting counts
-                safe.desiredScoutTypeCounts[Zerg_Overlord] = int(com(Zerg_Overlord) >= 2);
+                safe.desiredScoutTypeCounts[Zerg_Overlord] = 1;
                 if (total(Zerg_Mutalisk) >= 6
                     || Spy::getEnemyBuild() == "FFE"
                     || (Players::ZvT() && Spy::enemyProxy())
+                    || (Stations::getStations(PlayerState::Enemy).size() >= 2)
                     || (Players::ZvZ() && Util::getTime() > Time(5, 00)))
                     safe.desiredScoutTypeCounts[Zerg_Overlord] = 0;
 
                 // Determine if we need to create a new checking unit to try and detect the enemy build
-                if ((!Players::ZvZ() || !Terrain::foundEnemy()) && Util::getTime() > Time(3, 00) && Terrain::getEnemyMain() && com(Zerg_Zergling) >= 6) {
-                    const auto needEnemyCheck = !Players::ZvZ() && !Spy::enemyRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) <= 0
+                auto lingScoutTime = Players::ZvZ() ? Time(2, 00) : Time(3, 00);
+                const auto needEnemyCheck = !Players::ZvZ() && !Spy::enemyRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) <= 0
                         && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(6, 00)
                         && Terrain::getEnemyMain()
-                        && !Scouts::gatheringInformation()
                         && Broodwar->getFrameCount() - Grids::getLastVisibleFrame(Terrain::getEnemyMain()->getBase()->Location()) > 120;
-                    
+
+                if (needEnemyCheck && Util::getTime() > lingScoutTime && total(Zerg_Zergling) >= 6) {                    
                     main.desiredScoutTypeCounts[Zerg_Zergling] = 1;
                     main.desiredScoutTypeCounts[Zerg_Drone] = 0;
                 }
@@ -433,6 +433,7 @@ namespace McRave::Scouts {
             for (auto &[type, target] : scoutTargets) {
 
                 if (unit.getDestination().isValid()
+                    || (type == ScoutType::Safe && unit.getHealth() != unit.getType().maxHitPoints() && target.center != safePositions[Terrain::getEnemyNatural()])
                     || target.currentScoutTypeCounts[unit.getType()] >= target.desiredScoutTypeCounts[unit.getType()])
                     continue;
 

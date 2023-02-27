@@ -58,7 +58,7 @@ namespace McRave::Command
         if (unit.getType() == Terran_Siege_Tank_Tank_Mode) {
             if (unit.hasTarget() && unit.getTarget().lock()->getGroundRange() > 32.0 && targetDist <= 450.0 && targetDist >= 100.0 && unit.getLocalState() == LocalState::Attack)
                 unit.unit()->siege();
-            if (unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(Terrain::getDefendPosition()) < 320)
+            if (unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(Combat::getDefendPosition()) < 320)
                 unit.unit()->siege();
         }
 

@@ -28,8 +28,11 @@ namespace McRave::Combat::Destination {
     void updateRetreat(UnitInfo& unit)
     {
         unit.setRetreat(Positions::Invalid);
-        const auto &retreat = Stations::getClosestRetreatStation(unit);
         const auto lowGroundCount = (vis(Zerg_Zergling) < 12 && vis(Zerg_Hydralisk) < 6);
+
+        auto retreat = Stations::getClosestRetreatStation(unit);
+        if (Util::getTime() < Time(5, 00) || Spy::enemyRush())
+            retreat = Combat::isDefendNatural() ? Terrain::getMyNatural() : Terrain::getMyMain();
 
         // 1 Base - Retreat is Main
         // 2 Base - Retreat first is main choke
@@ -43,10 +46,15 @@ namespace McRave::Combat::Destination {
             unit.setRetreat(retreat->getBase()->Center());
         else
             unit.setRetreat(Terrain::getMainPosition());
+        Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Red);
     }
 
     void updateDestination(UnitInfo& unit)
     {
+        auto retreat = Stations::getClosestRetreatStation(unit);
+        if (Util::getTime() < Time(5, 00) || Spy::enemyRush())
+            retreat = Combat::isDefendNatural() ? Terrain::getMyNatural() : Terrain::getMyMain();
+
         if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore) {
             unit.setDestination(unit.getGoal());
         }
@@ -70,7 +78,6 @@ namespace McRave::Combat::Destination {
             }
         }
         else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
-            const auto &retreat = Stations::getClosestRetreatStation(unit);
 
             if (!unit.globalRetreat() && unit.attemptingRegroup()) {
                 unit.setDestination(unit.getCommander().lock()->getPosition());
@@ -93,13 +100,13 @@ namespace McRave::Combat::Destination {
                 unit.setDestination(unit.getCommander().lock()->getPosition());
             }
             else if (unit.attemptingHarass()) {
-                unit.setDestination(Terrain::getHarassPosition());
+                unit.setDestination(Combat::getHarassPosition());
             }
             else if (unit.hasTarget()) {
                 unit.setDestination(unit.getTarget().lock()->getPosition());
             }
-            else if (Terrain::getAttackPosition().isValid() && unit.canAttackGround()) {
-                unit.setDestination(Terrain::getAttackPosition());
+            else if (Combat::getAttackPosition().isValid() && unit.canAttackGround()) {
+                unit.setDestination(Combat::getAttackPosition());
             }
             else {
                 getCleanupPosition(unit);

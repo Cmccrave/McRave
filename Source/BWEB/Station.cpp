@@ -295,7 +295,7 @@ namespace BWEB {
                     pocketDefense = base->Location() + defense;
                     Map::addUsed(smallPosition, UnitTypes::Zerg_Spire);
                     Map::addUsed(mediumPosition, UnitTypes::Zerg_Spawning_Pool);
-                    Map::addUsed(mediumPosition, UnitTypes::Zerg_Sunken_Colony);
+                    Map::addUsed(pocketDefense, UnitTypes::Zerg_Sunken_Colony);
                     break;
                 }
             }
@@ -571,6 +571,8 @@ namespace BWEB {
         Map::addReserve(mediumPosition, 3, 2);
         Map::removeUsed(smallPosition, 2, 2);
         Map::addReserve(smallPosition, 2, 2);
+        Map::removeUsed(pocketDefense, 2, 2);
+        Map::addReserve(pocketDefense, 2, 2);
     }
 }
 
