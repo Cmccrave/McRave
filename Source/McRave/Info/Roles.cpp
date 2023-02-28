@@ -20,18 +20,30 @@ namespace McRave::Roles {
 
             // Only pull the closest worker to our defend position
             for (int i = 0; i < needed; i++) {
-                auto closestWorker = Util::getClosestUnit(Combat::getDefendPosition(), PlayerState::Self, [&](auto &u) {
-                    if (u->getType() == Protoss_Probe && u->getShields() <= 4) // Don't pull low shield probes
-                        return false;
-                    if (u->getType() == Zerg_Drone && u->getHealth() < lowHp) // Don't pull low health drones
-                        return false;
-                    return u->getRole() == Role::Worker && !u->getGoal().isValid() && (!u->hasResource() || !u->getResource().lock()->getType().isRefinery()) && !u->getBuildPosition().isValid();
-                });
+                auto lowestDist = DBL_MAX;
+                UnitInfo* bestWorker = nullptr;
+                for (auto &u : Units::getUnits(PlayerState::Self)) {
+                    UnitInfo &unit = *u;
+                    if (!unit.hasTarget()
+                        || (unit.getRole() != Role::Worker)
+                        || (unit.getType() == Protoss_Probe && unit.getShields() <= 4)
+                        || (unit.getType() == Zerg_Drone && unit.getHealth() < lowHp)
+                        || unit.getGoal().isValid()
+                        || (unit.hasResource() && unit.getResource().lock()->getType().isRefinery())
+                        || unit.getBuildPosition().isValid())
+                        continue;
 
-                if (closestWorker) {
-                    closestWorker->setRole(Role::Combat);
-                    closestWorker->setLocalState(lState);
-                    closestWorker->setGlobalState(gState);
+                    auto dist = unit.getPosition().getDistance(unit.getTarget().lock()->getPosition());
+                    if (dist < lowestDist) {
+                        lowestDist = dist;
+                        bestWorker = &unit;
+                    }
+                }
+
+                if (bestWorker) {
+                    bestWorker->setRole(Role::Combat);
+                    bestWorker->setLocalState(lState);
+                    bestWorker->setGlobalState(gState);
                     forcedRoles[Role::Combat]++;
                 }
             }
@@ -76,11 +88,18 @@ namespace McRave::Roles {
             if (Broodwar->self()->getRace() != Races::Zerg)
                 return;
 
+            auto proxyBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                return u->isProxy() && u->getType().isBuilding() && !u->canAttackGround() && !u->canAttackAir();
+            });
             auto proxyDangerousBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                return u->isProxy() && u->getType().isBuilding() && u->canAttackGround();
+                return u->isProxy() && u->getType().isBuilding() && (u->canAttackGround() || u->canAttackAir());
+            });
+            auto proxyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                return u->getType().isWorker() && u->isProxy();
             });
             auto proxyBuildingWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                return u->getType().isWorker() && (u->isThreatening() || (proxyDangerousBuilding && u->getType().isWorker() && u->getPosition().getDistance(proxyDangerousBuilding->getPosition()) < 160.0));
+                return u->getType().isWorker() &&
+                    (u->isThreatening() || (proxyBuilding && u->getPosition().getDistance(proxyBuilding->getPosition()) < 160.0) || (proxyDangerousBuilding && u->getPosition().getDistance(proxyDangerousBuilding->getPosition()) < 160.0));
             });
 
             // ZvZ
@@ -93,17 +112,13 @@ namespace McRave::Roles {
 
             // ZvP
             if (Players::ZvP() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0) {
-
-                // If we suspect a cannon rush is coming
-                if (Spy::enemyPossibleProxy() && Util::getTime() < Time(3, 00))
-                    forceCombatWorker(1, LocalState::Attack, GlobalState::Attack);
-                else if (proxyDangerousBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
+                if (proxyDangerousBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(3, LocalState::Attack, GlobalState::Attack);
-
-                // If we're trying to make our expanding hatchery and the drone is being harassed
-                else if (vis(Zerg_Hatchery) == 1 && Util::getTime() < Time(3, 00) && BuildOrder::isOpener() && Units::getImmThreat() > 0.0f && com(Zerg_Zergling) == 0)
+                else if (proxyBuilding && proxyBuildingWorker)
+                    forceCombatWorker(2, LocalState::Attack, GlobalState::Attack);
+                else if (proxyWorker && Util::getTime() < Time(3, 00) && com(Zerg_Zergling) == 0)
                     forceCombatWorker(1, LocalState::Attack, GlobalState::Attack);
-                else if (Util::getTime() < Time(4, 00) && int(Stations::getStations(PlayerState::Self).size()) < 2 && BuildOrder::getBuildQueue()[Zerg_Hatchery] >= 2 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Probe) > 0)
+                else if (proxyBuilding)
                     forceCombatWorker(1, LocalState::Attack, GlobalState::Attack);
             }
 
@@ -131,12 +146,6 @@ namespace McRave::Roles {
         void updateForcedRoles()
         {
             forcedRoles.clear();
-            for (auto &u : Units::getUnits(PlayerState::Self)) {
-                UnitInfo &unit = *u;
-                if (unit.getRole() == Role::Combat && unit.getType().isWorker())
-                    unit.setRole(Role::Worker);
-            }
-
             pPullWorker();
             tPullWorker();
             zPullWorker();
@@ -179,6 +188,10 @@ namespace McRave::Roles {
                     else
                         unit.setRole(Role::Defender);
                 }
+
+                // Check if a worker was forced to fight
+                if (unit.getType().isWorker() && unit.getRole() == Role::Combat)
+                    unit.setRole(Role::Worker);
 
                 // If we cancelled any buildings, we may need to re-assign the worker
                 if (unit.getType().isWorker() && unit.getRole() == Role::Production)

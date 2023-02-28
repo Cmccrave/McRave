@@ -159,7 +159,7 @@ namespace McRave::Combat::Simulation {
             const auto distSelf = unit.isFlying() ? unitTarget->getPosition().getDistance(closestSelf->getBase()->Center())
                 : BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestSelf->getBase()->Center());
 
-            const auto reach = max({ unitTarget->getGroundRange() / 2.0, unitTarget->getAirReach() / 2.0, unitTarget->getGroundRange() + 96.0, unitTarget->getAirRange() + 96.0 });
+            const auto reach = max({ unitTarget->getGroundRange() / 2.0, unitTarget->getAirReach() / 2.0, 160.0 });
             const auto insideDefendingChoke = Combat::holdAtChoke() && Terrain::inArea(Combat::getDefendArea(), unitTarget->getPosition());
 
             if (distSelf < reach || insideDefendingChoke || unitTarget->isThreatening()) {

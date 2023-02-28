@@ -477,12 +477,6 @@ namespace McRave::Command {
                 return false;
             }
 
-            // If we aren't defending the choke, we just want to move to our mineral hold position
-            if (!Combat::holdAtChoke()) {
-                unit.command(Move, Combat::getDefendPosition());
-                return true;
-            }
-
             // If we found a valid position, move to it
             auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
             if (bestPosition.isValid()) {

@@ -4,6 +4,35 @@
 
 namespace McRave
 {
+    class Strength
+    {
+    public:
+        double airToAir = 0.0;
+        double airToGround = 0.0;
+        double groundToAir = 0.0;
+        double groundToGround = 0.0;
+        double airDefense = 0.0;
+        double groundDefense = 0.0;
+
+        void operator+= (const Strength &second) {
+            airToAir += second.airToAir;
+            airToGround += second.airToGround;
+            groundToAir += second.groundToAir;
+            groundToGround += second.groundToGround;
+            airDefense += second.airDefense;
+            groundDefense += second.groundDefense;
+        }
+
+        void clear() {
+            airToAir = 0.0;
+            airToGround = 0.0;
+            groundToAir = 0.0;
+            groundToGround = 0.0;
+            airDefense = 0.0;
+            groundDefense = 0.0;
+        }
+    };
+
     class PlayerInfo
     {
         std::set<BWAPI::UpgradeType> playerUpgrades;

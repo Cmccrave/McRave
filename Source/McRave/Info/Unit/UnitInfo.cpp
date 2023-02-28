@@ -410,12 +410,19 @@ namespace McRave
 
         // Check if an enemy building is a proxy
         if (player->isEnemy(Broodwar->self())) {
-            if (getType() == Terran_Barracks || getType() == Terran_Factory || getType() == Terran_Engineering_Bay || getType() == Terran_Bunker || getType() == Protoss_Gateway || getType() == Protoss_Photon_Cannon || getType() == Protoss_Pylon || getType() == Protoss_Forge) {
+            if (getType().isWorker() || getType() == Terran_Barracks || getType() == Terran_Factory || getType() == Terran_Engineering_Bay || getType() == Terran_Bunker || getType() == Protoss_Gateway || getType() == Protoss_Photon_Cannon || getType() == Protoss_Pylon || getType() == Protoss_Forge) {
                 auto closestMain = BWEB::Stations::getClosestMainStation(getTilePosition());
                 auto closestNat = BWEB::Stations::getClosestNaturalStation(getTilePosition());
                 auto closerToMyMain = closestMain && closestMain == Terrain::getMyMain();
                 auto closerToMyNat = closestNat && closestNat == Terrain::getMyNatural();
-                proxy = closerToMyMain || closerToMyNat;
+
+                // Workers are proxy if they're close enough to our bases
+                if (getType().isWorker()) {
+                    if (position.getDistance(closestMain->getBase()->Center()) < 960.0 || position.getDistance(closestNat->getBase()->Center()) < 960.0)
+                        proxy = closerToMyMain || closerToMyNat;
+                }
+                else
+                    proxy = closerToMyMain || closerToMyNat;
             }
         }
     }

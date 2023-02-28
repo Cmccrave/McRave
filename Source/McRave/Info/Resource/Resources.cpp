@@ -32,8 +32,7 @@ namespace McRave::Resources {
         void updateInformation(const shared_ptr<ResourceInfo>& r)
         {
             auto &resource = *r;
-            if (resource.unit()->exists())
-                resource.updateResource();
+            resource.updateResource();
 
             UnitType geyserType = Broodwar->self()->getRace().getRefinery();
 

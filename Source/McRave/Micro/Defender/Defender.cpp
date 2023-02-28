@@ -40,8 +40,8 @@ namespace McRave::Defender {
             }
 
             // Add a zone to help with engagements
-            Zones::addZone(unit.getPosition(), ZoneType::Defend, 1, unit.getGroundRange());
-            Zones::addZone(unit.getPosition(), ZoneType::Defend, 1, unit.getAirRange());
+            Zones::addZone(unit.getPosition(), ZoneType::Defend, 1, int(unit.getGroundRange()));
+            Zones::addZone(unit.getPosition(), ZoneType::Defend, 1, int(unit.getAirRange()));
         }
 
         void updateDefenders()

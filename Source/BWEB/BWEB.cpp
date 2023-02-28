@@ -125,10 +125,12 @@ namespace BWEB::Map
         {
             // Add overlap for neutrals
             for (auto unit : Broodwar->getNeutralUnits()) {
-                if (unit && unit->exists() && unit->getType().topSpeed() == 0.0)
-                    addReserve(unit->getTilePosition() - TilePosition(1, 1), unit->getType().tileWidth() + 2, unit->getType().tileHeight() + 2);
-                if (unit->getType().isBuilding())
-                    addUsed(unit->getTilePosition(), unit->getType());
+                if (unit) {
+                    if (unit->exists() && unit->getType().topSpeed() == 0.0)
+                        addReserve(unit->getTilePosition() - TilePosition(1, 1), unit->getType().tileWidth() + 2, unit->getType().tileHeight() + 2);
+                    if (unit->getType().isBuilding())
+                        addUsed(unit->getTilePosition(), unit->getType());
+                }
             }
         }
     }
@@ -396,14 +398,14 @@ namespace BWEB::Map
         if (!mapBWEM.GetArea(WalkPosition(start)))
             start = validatePoint(WalkPosition(start));
         if (!mapBWEM.GetArea(WalkPosition(end)))
-            end = validatePoint(WalkPosition(end));        
+            end = validatePoint(WalkPosition(end));
 
         // If not valid still, return DBL_MAX
         if (!start.isValid()
             || !end.isValid()
             || !mapBWEM.GetArea(WalkPosition(start))
             || !mapBWEM.GetArea(WalkPosition(end))
-            || !mapBWEM.GetArea(WalkPosition(start))->AccessibleFrom(mapBWEM.GetArea(WalkPosition(end))))           
+            || !mapBWEM.GetArea(WalkPosition(start))->AccessibleFrom(mapBWEM.GetArea(WalkPosition(end))))
             return DBL_MAX;
 
         // Find the closest chokepoint node

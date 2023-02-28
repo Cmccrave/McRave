@@ -19,7 +19,7 @@ namespace McRave {
             auto center = Position(tile) + Position(16, 16);
             if (BWEB::Map::isUsed(tile) == UnitTypes::None) {
                 if (center.getDistance(getStation()->getBase()->Center()) < position.getDistance(getStation()->getBase()->Center()) - 16.0)
-                    pocketTiles.push_back(tile);                
+                    pocketTiles.push_back(tile);
             }
         }
         pocket = int(pocketTiles.size()) <= 1;
@@ -60,10 +60,12 @@ namespace McRave {
 
     void ResourceInfo::updateResource()
     {
-        type                = thisUnit->getType();
-        remainingResources  = thisUnit->getResources();
-        position            = thisUnit->getPosition();
-        tilePosition        = thisUnit->getTilePosition();
+        if (thisUnit->exists()) {
+            type                = thisUnit->getType();
+            remainingResources  = thisUnit->getResources();
+            position            = thisUnit->getPosition();
+            tilePosition        = thisUnit->getTilePosition();
+        }
 
         updatePocketStatus();
         updateThreatened();

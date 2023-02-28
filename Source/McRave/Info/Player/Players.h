@@ -1,9 +1,9 @@
 #pragma once
-#include "Main/McRave.h"
+#include <BWAPI.h>
 
 namespace McRave
 {
-    namespace Players 
+    namespace Players
     {
         int getVisibleCount(PlayerState, BWAPI::UnitType);
         int getCompleteCount(PlayerState, BWAPI::UnitType);

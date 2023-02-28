@@ -101,7 +101,7 @@ namespace McRave::Spy::Protoss {
                     theSpy.opener.name = "Proxy";
                     theSpy.proxy.possible = true;
                 }
-                else if (arrivesBy(2, Protoss_Zealot, Time(3, 25)) || arrivesBy(3, Protoss_Zealot, Time(3, 45)) || arrivesBy(4, Protoss_Zealot, Time(4, 00)) || arrivesBy(5, Protoss_Zealot, Time(4, 10))
+                else if (arrivesBy(2, Protoss_Zealot, Time(3, 25)) || arrivesBy(3, Protoss_Zealot, Time(3, 40)) || arrivesBy(4, Protoss_Zealot, Time(4, 00)) || arrivesBy(5, Protoss_Zealot, Time(4, 10))
                     || completesBy(2, Protoss_Zealot, Time(2, 45)) || completesBy(3, Protoss_Zealot, Time(2, 50)) || completesBy(4, Protoss_Zealot, Time(3, 10)) || completesBy(5, Protoss_Zealot, Time(3, 15))
                     || completesBy(2, Protoss_Gateway, Time(2, 15)))
                     theSpy.opener.name = "9/9";
@@ -165,10 +165,12 @@ namespace McRave::Spy::Protoss {
                     theSpy.transition.name = "Speedlot";
 
                 // Corsair
-                if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) > 0
-                    || Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0
-                    || completesBy(1, Protoss_Scout, Time(5, 15))
-                    || completesBy(1, Protoss_Corsair, Time(5, 15)))
+                if ((theSpy.build.name == "2Gate" && completesBy(1, Protoss_Stargate, Time(5, 15)))
+                    || (theSpy.build.name == "1GateCore" && completesBy(1, Protoss_Stargate, Time(4, 00)))
+                    || (theSpy.build.name == "2Gate" && completesBy(1, Protoss_Scout, Time(6, 00)))
+                    || (theSpy.build.name == "2Gate" && completesBy(1, Protoss_Corsair, Time(6, 00)))
+                    || (theSpy.build.name == "1GateCore" && completesBy(1, Protoss_Scout, Time(5, 15)))
+                    || (theSpy.build.name == "1GateCore" && completesBy(1, Protoss_Corsair, Time(5, 15))))
                     theSpy.transition.name = "Corsair";
 
                 // Robo
@@ -193,7 +195,6 @@ namespace McRave::Spy::Protoss {
                         if ((!theSpy.expand.possible && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Util::getTime() < Time(6, 00))
                             || (theSpy.typeUpgrading.find(Protoss_Cybernetics_Core) != theSpy.typeUpgrading.end() && Util::getTime() < Time(4, 15))
                             || (Players::getPlayerInfo(Broodwar->enemy())->hasUpgrade(UpgradeTypes::Singularity_Charge) && Util::getTime() < Time(6, 00))
-                            || (arrivesBy(2, Protoss_Dragoon, Time(5, 30)))
                             || (arrivesBy(3, Protoss_Dragoon, Time(5, 45)))
                             || (arrivesBy(5, Protoss_Dragoon, Time(6, 05)))
                             || (arrivesBy(9, Protoss_Dragoon, Time(6, 40)))

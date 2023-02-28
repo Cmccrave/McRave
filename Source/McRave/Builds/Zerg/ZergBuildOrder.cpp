@@ -230,6 +230,11 @@ namespace McRave::BuildOrder::Zerg {
                     gasLimit = max(gasLimit, 6);
                 gasLimit += vis(Zerg_Evolution_Chamber) + vis(Zerg_Lair);
             }
+
+            // If enemy has invis and we are trying to get lair for detection
+            if (Spy::enemyInvis() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 && Util::getTime() > Time(4, 45) && vis(Zerg_Lair) > 0) {
+                gasLimit += 2;
+            }
         }
 
         void removeExcessGas()

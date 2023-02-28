@@ -144,6 +144,9 @@ namespace McRave::Combat::Formations {
         const auto choke = Util::getClosestChokepoint(cluster.marchPosition);
         const auto chokeAngle = BWEB::Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))));
         auto perpLine = BWEB::Map::perpendicularLine(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))), 96.0);
+
+        Broodwar->drawLineMap(perpLine.first, perpLine.second, Colors::Cyan);
+
         if (perpLine.first.getDistance(cluster.retreatNavigation) < perpLine.second.getDistance(cluster.retreatNavigation)) {
             angle = BWEB::Map::getAngle(make_pair(cluster.marchPosition, perpLine.first));
         }
@@ -180,6 +183,7 @@ namespace McRave::Combat::Formations {
         // Start creating positions starting at the start position
         auto angle = cluster.mobileCluster ? BWEB::Map::getAngle(make_pair(cluster.marchNavigation, cluster.retreatNavigation)) : BWEB::Map::getAngle(make_pair(cluster.marchPosition, cluster.retreatPosition));
         auto arcSize = arcRads / 2.0;
+        Broodwar->drawTextMap(concave.center, "%.2f", angle);
         generatePositions(concave, cluster, angle, arcSize);
     }
 

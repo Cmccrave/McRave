@@ -70,6 +70,10 @@ namespace BWEB::Map
     double getAngle(std::pair<T, T> p) {
         auto dy = double(p.second.y - p.first.y);
         auto dx = double(p.second.x - p.first.x);
-        return std::abs(dx) > 1.0 ? fmod(std::atan2(-dy, dx) + 6.18, 6.18) : 1.57;
+        if (std::abs(dx) > 1.0)
+            return fmod(std::atan2(-dy, dx) + 6.18, 6.18);
+        else if (p.first.y < p.second.y)
+            return 4.71;
+        return 1.57;
     }
 }

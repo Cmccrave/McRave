@@ -97,7 +97,7 @@ namespace McRave::Spy::General {
 
                 // Monitor for a proxy
                 if (Util::getTime() < Time(5, 00)) {
-                    if (unit.isProxy())
+                    if (unit.getType().isBuilding() && unit.isProxy())
                         theSpy.proxy.possible = true;
                 }
             }
@@ -153,16 +153,12 @@ namespace McRave::Spy::General {
         void checkEnemyEarly(PlayerInfo& player, StrategySpy& theSpy)
         {
             // If we have seen an enemy worker before we've scouted the enemy, follow it
-            theSpy.early.possible = false;
             if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Probe) > 0 || Players::getVisibleCount(PlayerState::Enemy, Terran_SCV) > 0) && Util::getTime() < Time(2, 00)) {
                 auto enemyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u->getType().isWorker();
+                    return u->getType().isWorker() && u->isProxy();
                 });
-                if (enemyWorker) {
-                    auto distMain = enemyWorker->getPosition().getDistance(Terrain::getMainPosition());
-                    auto distNat = enemyWorker->getPosition().getDistance(Terrain::getNaturalPosition());
-                    theSpy.early.possible = enemyWorker && (distMain < 320.0 || distNat < 320.0);
-                }
+                if (enemyWorker)
+                    theSpy.early.possible = true;
             }
             if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) > 0 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0 || Util::getTime() > Time(2, 00))
                 theSpy.early.confirmed = false;

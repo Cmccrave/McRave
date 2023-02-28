@@ -5,6 +5,7 @@
 
 namespace McRave
 {
+    class Strength;
     class UnitInfo;
     class ResourceInfo;
     class PlayerInfo;
@@ -80,36 +81,8 @@ namespace McRave
         return bw;
     }
 
-    struct Strength {
-        double airToAir = 0.0;
-        double airToGround = 0.0;
-        double groundToAir = 0.0;
-        double groundToGround = 0.0;
-        double airDefense = 0.0;
-        double groundDefense = 0.0;
 
-        void operator+= (const Strength &second) {
-            airToAir += second.airToAir;
-            airToGround += second.airToGround;
-            groundToAir += second.groundToAir;
-            groundToGround += second.groundToGround;
-            airDefense += second.airDefense;
-            groundDefense += second.groundDefense;
-        }
 
-        void clear() {
-            airToAir = 0.0;
-            airToGround = 0.0;
-            groundToAir = 0.0;
-            groundToGround = 0.0;
-            airDefense = 0.0;
-            groundDefense = 0.0;
-        }
-    };
-
-    enum class ZoneType {
-        None, Engage, Retreat, Defend
-    };
 
     enum class GoalType {
         None, Attack, Contain, Explore, Escort, Defend

@@ -145,7 +145,7 @@ namespace McRave::Learning {
                 if (build == "HatchPool")
                     return !z;
                 if (build == "PoolHatch")
-                    return !z;
+                    return true;
                 return false;
             };
 
@@ -154,7 +154,7 @@ namespace McRave::Learning {
                     if (opener == "Overpool")
                         return !z;
                     if (opener == "12Pool")
-                        return t;
+                        return t || z;
                 }
                 if (build == "HatchPool") {
                     if (opener == "12Hatch")
@@ -384,7 +384,7 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (true) {
+            if (false) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("2Gate", "Main", "4Gate");
                     return;
@@ -501,9 +501,9 @@ namespace McRave::Learning {
         ofstream gameLog("bwapi-data/write/" + gameInfoExtension, std::ios_base::app);
 
         // Who won on what map in how long
-        gameLog << (isWinner ? "Won" : "Lost") << ","
-            << mapName << ","
-            << std::setfill('0') << Util::getTime().minutes << ":" << std::setw(2) << Util::getTime().seconds << ",";
+        gameLog << std::setfill(' ') << std::setw(5) << (isWinner ? "Won" : "Lost")
+            << std::setw(20) << mapName
+            << std::setw(3) << std::setfill('0') << Util::getTime().minutes << ":" << std::setw(2) << Util::getTime().seconds << ",";
 
         // What strategies were used/detected
         gameLog
@@ -516,23 +516,6 @@ namespace McRave::Learning {
         gameLog << std::setfill('0') << Spy::getEnemyBuildTime().minutes << ":" << std::setw(2) << Spy::getEnemyBuildTime().seconds << ",";
         gameLog << std::setfill('0') << Spy::getEnemyOpenerTime().minutes << ":" << std::setw(2) << Spy::getEnemyOpenerTime().seconds << ",";
         gameLog << std::setfill('0') << Spy::getEnemyTransitionTime().minutes << ":" << std::setw(2) << Spy::getEnemyTransitionTime().seconds;
-
-        // Store a list of total units everyone made
-        for (auto &type : UnitTypes::allUnitTypes()) {
-            if (!type.isBuilding()) {
-                auto cnt = Players::getTotalCount(PlayerState::Self, type);
-                if (cnt > 0)
-                    gameLog << "," << cnt << "," << type.c_str();
-            }
-        }
-        for (auto &type : UnitTypes::allUnitTypes()) {
-            if (!type.isBuilding()) {
-                auto cnt = Players::getTotalCount(PlayerState::Enemy, type);
-                if (cnt > 0)
-                    gameLog << "," << cnt << "," << type.c_str();
-            }
-        }
-
         gameLog << endl;
     }
 

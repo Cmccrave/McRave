@@ -47,7 +47,7 @@ namespace McRave::Buildings {
             }
 
             if (Util::getTime() > Time(6, 00)) {
-                auto range = max({ building.getGroundRange(), building.getAirRange(), double(building.getType().sightRange()) });
+                auto range = int(max({ building.getGroundRange(), building.getAirRange(), double(building.getType().sightRange()) }));
                 Zones::addZone(building.getPosition(), ZoneType::Defend, 1, range);
             }
         }

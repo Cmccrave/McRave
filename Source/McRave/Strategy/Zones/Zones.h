@@ -1,6 +1,10 @@
 #pragma once
 #include <BWAPI.h>
 
+enum class ZoneType {
+    None, Engage, Retreat, Defend
+};
+
 namespace McRave::Zones
 {
     struct Zone {

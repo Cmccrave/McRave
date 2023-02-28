@@ -30,7 +30,7 @@ namespace McRave::BuildOrder::Zerg {
         void ZvP_HP_10Hatch()
         {
             // 'https://liquipedia.net/starcraft/10_Hatch'
-            transitionReady =                               com(Zerg_Spawning_Pool) > 0;
+            transitionReady =                               vis(Zerg_Spawning_Pool) > 0;
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
             gasLimit =                                      0;
             scout =                                         scout || (hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150);

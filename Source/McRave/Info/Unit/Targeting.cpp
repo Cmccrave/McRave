@@ -237,7 +237,7 @@ namespace McRave::Targets {
                         auto viableThreat = e->getType().isBuilding() || Broodwar->getFrameCount() - e->getLastVisibleFrame() < 200;
                         if (e->canAttackAir() && viableThreat && *e != target && (e->getPosition().getDistance(target.getPosition()) < e->getAirRange() + 32.0 || e->getPosition().getDistance(unit.getPosition()) < e->getAirRange() + 32.0)) {
                             auto damage = e->getAirDamage() / (e->getType().airWeapon().damageType() == DamageTypes::Explosive ? 2 : 1);
-                            countDamageInRange += damage;
+                            countDamageInRange += int(damage);
                         }
                     }
                     if ((countDamageInRange >= 50 && Util::getTime() < Time(8, 00))
@@ -295,7 +295,7 @@ namespace McRave::Targets {
                     return 1.0;
                 //if (unit.getType() == Zerg_Zergling)
                 //    return min(1.00, double(meleeSpotsAvailable[&target]) / double(1 + target.getUnitsTargetingThis().size()));
-                if ((range > 32.0 && boxDistance <= reach) || (range <= 32.0 && boxDistance <= range && target.getUnitsTargetingThis().size() < (max(target.getType().width(), target.getType().height()) / 4)))
+                if ((range > 32.0 && boxDistance <= reach) || (range <= 32.0 && boxDistance <= range && int(target.getUnitsTargetingThis().size()) < int(max(target.getType().width(), target.getType().height()) / 4)))
                     return (1.0 + double(target.getUnitsTargetingThis().size()));
                 return 1.0;
             };
@@ -303,7 +303,7 @@ namespace McRave::Targets {
             const auto priorityScore = [&]() {
                 if (!target.getType().isWorker() && !target.isThreatening() && ((!target.canAttackAir() && unit.isFlying()) || (!target.canAttackGround() && !unit.isFlying())))
                     return target.getPriority() / 4.0;
-                if (target.getType().isWorker() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
+                if (target.getType().isWorker() && !Spy::enemyProxy() && !Spy::enemyPossibleProxy() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
                     return target.getPriority() / 10.0;
                 return target.getPriority();
             };

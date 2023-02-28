@@ -25,6 +25,7 @@ namespace McRave::Scouts {
             case ScoutType::Safe:
                 return "Safe";
             }
+            return "None";
         }
 
         struct ScoutTarget {
@@ -163,22 +164,34 @@ namespace McRave::Scouts {
             if (Broodwar->self()->getRace() == Races::Zerg) {
 
                 // Main drone scouting counts
-                main.desiredScoutTypeCounts[Zerg_Drone] = int(BuildOrder::shouldScout()) + int(BuildOrder::shouldScout() && BuildOrder::isProxy()) - int(Spy::enemyProxy());
-                if ((Players::ZvP() && Util::getTime() > Time(3, 30) && Spy::enemyFastExpand())
-                    || (Players::ZvP() && Util::getTime() > Time(4, 30))
-                    || (Players::ZvT() && Util::getTime() > Time(4, 30))
-                    || (BuildOrder::isProxy() && Terrain::getEnemyStartingPosition().isValid())                    
-                    || workerScoutDenied
+                main.desiredScoutTypeCounts[Zerg_Drone] = int(BuildOrder::shouldScout()) + int(BuildOrder::shouldScout() && BuildOrder::isProxy());
+                if (workerScoutDenied
+                    || Spy::enemyProxy()
                     || Spy::enemyRush()
-                    || Spy::enemyPressure()
                     || Spy::enemyWalled()
-                    || Spy::enemyFastExpand()
-                    || Spy::getEnemyOpener() == "8Rax"
-                    || Spy::getEnemyOpener() == "9/9"
-                    || Spy::getEnemyBuild() == "FFE"
-                    || (Spy::getEnemyBuild() == "2Gate" && (Spy::enemyFastExpand() || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0))
-                    || (Spy::getEnemyBuild() == "1GateCore" && (Spy::enemyFastExpand() || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0)))
+                    || Spy::enemyFastExpand())
                     main.desiredScoutTypeCounts[Zerg_Drone] = 0;
+
+                if (Players::ZvT()) {
+                    if (Spy::getEnemyOpener() == "8Rax"
+                        || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0
+                        || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0
+                        || Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0
+                        || Players::getTotalCount(PlayerState::Enemy, Terran_Factory) > 0
+                        || Util::getTime() > Time(4, 00))
+                        main.desiredScoutTypeCounts[Zerg_Drone] = 0;
+                }
+
+                if (Players::ZvP()) {
+                    if (Spy::getEnemyOpener() == "9/9"
+                        || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
+                        || Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0
+                        || Util::getTime() > Time(4, 00))
+                        main.desiredScoutTypeCounts[Zerg_Drone] = 0;
+                }
+
+                if (Players::ZvZ())
+                    main.desiredScoutTypeCounts[Zerg_Drone] = 0;                
 
                 auto enemyAir = Players::getStrength(PlayerState::Enemy).groundToAir > 0.0
                     || Players::getStrength(PlayerState::Enemy).airToAir > 0.0
@@ -205,11 +218,11 @@ namespace McRave::Scouts {
                 // Determine if we need to create a new checking unit to try and detect the enemy build
                 auto lingScoutTime = Players::ZvZ() ? Time(2, 00) : Time(3, 00);
                 const auto needEnemyCheck = !Players::ZvZ() && !Spy::enemyRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) <= 0
-                        && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(6, 00)
-                        && Terrain::getEnemyMain()
-                        && Broodwar->getFrameCount() - Grids::getLastVisibleFrame(Terrain::getEnemyMain()->getBase()->Location()) > 120;
+                    && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(6, 00)
+                    && Terrain::getEnemyMain()
+                    && Broodwar->getFrameCount() - Grids::getLastVisibleFrame(Terrain::getEnemyMain()->getBase()->Location()) > 120;
 
-                if (needEnemyCheck && Util::getTime() > lingScoutTime && total(Zerg_Zergling) >= 6) {                    
+                if (needEnemyCheck && Util::getTime() > lingScoutTime && total(Zerg_Zergling) >= 6) {
                     main.desiredScoutTypeCounts[Zerg_Zergling] = 1;
                     main.desiredScoutTypeCounts[Zerg_Drone] = 0;
                 }
@@ -218,7 +231,6 @@ namespace McRave::Scouts {
 
         void updateScoutRoles()
         {
-            bool sendAnother = scoutDeadFrame < 0 && (Broodwar->getFrameCount() - scoutDeadFrame > 240 || (Util::getTime() < Time(4, 0) && Spy::getEnemyTransition() == "Unknown"));
             const auto assign = [&](UnitType type) {
                 UnitInfo* scout = nullptr;
 
@@ -235,10 +247,11 @@ namespace McRave::Scouts {
                         return u->getRole() == Role::Support && u->getType() == type;
                     });
                 }
-                else if (type.isWorker())
+                else if (type.isWorker()) {
                     scout = Util::getClosestUnitGround(assignPos, PlayerState::Self, [&](auto &u) {
-                    return u->getRole() == Role::Worker && u->getType() == type && (!u->hasResource() || !u->getResource().lock()->getType().isRefinery()) && u->getBuildType() == None && !u->unit()->isCarryingMinerals() && !u->unit()->isCarryingGas();
-                });
+                        return u->getRole() == Role::Worker && u->getType() == type && (!u->hasResource() || !u->getResource().lock()->getType().isRefinery()) && u->getBuildType() == None && !u->unit()->isCarryingMinerals() && !u->unit()->isCarryingGas();
+                    });
+                }
                 else {
                     scout = Util::getClosestUnitGround(assignPos, PlayerState::Self, [&](auto &u) {
                         return u->getRole() == Role::Combat && u->getType() == type;
@@ -286,7 +299,7 @@ namespace McRave::Scouts {
             }
 
             for (auto &[type, count] : totalDesiredScoutTypeCounts) {
-                if (sendAnother && totalCurrentScoutTypeCounts[type] < totalDesiredScoutTypeCounts[type])
+                if (totalCurrentScoutTypeCounts[type] < totalDesiredScoutTypeCounts[type])
                     assign(type);
                 else if (totalCurrentScoutTypeCounts[type] > totalDesiredScoutTypeCounts[type])
                     remove(type);
@@ -349,7 +362,7 @@ namespace McRave::Scouts {
         {
             // Against known proxies without visible proxy style buildings
             const auto closestProxyBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto& u) {
-                return u->isProxy();
+                return u->getType().isBuilding() && u->isProxy();
             });
             if (Spy::enemyProxy() && !closestProxyBuilding) {
                 if (Spy::getEnemyBuild() == "CannonRush")
@@ -391,7 +404,7 @@ namespace McRave::Scouts {
                 // Add each enemy building as a target
                 for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
                     if (mainScouted && unit->getType().isBuilding() && unit->getTilePosition().isValid() && mapBWEM.GetArea(unit->getTilePosition()) == Terrain::getEnemyMain()->getBase()->GetArea())
-                        addToTarget(ScoutType::Main, unit->getPosition(), 96.0);
+                        addToTarget(ScoutType::Main, unit->getPosition(), 96);
                 }
 
                 // Add main choke as a target

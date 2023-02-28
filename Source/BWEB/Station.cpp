@@ -196,117 +196,138 @@ namespace BWEB {
 
     void Station::findSecondaryLocations()
     {
-        if (Broodwar->self()->getRace() != Races::Zerg || !main)
+        if (Broodwar->self()->getRace() != Races::Zerg)
             return;
 
         vector<tuple<TilePosition, TilePosition, TilePosition>> tryOrder;
 
-        // Determine some standard positions
-        auto mineralsLeft = resourceCentroid.x < base->Center().x;
-        for (auto &geyser : base->Geysers()) {
+        // Determine some standard positions to place simcity pool/spire/sunken
+        if (main) {
+            auto mineralsLeft = resourceCentroid.x < base->Center().x;
+            for (auto &geyser : base->Geysers()) {
 
-            // Geyser west of hatchery
-            if (geyser->TopLeft() == base->Location() + TilePosition(-7, 1)) {
+                // Geyser west of hatchery
+                if (geyser->TopLeft() == base->Location() + TilePosition(-7, 1)) {
 
-                // North
-                if (baseAngle < 2.355 && baseAngle >= 0.785) {
-                    tryOrder ={
-                    { TilePosition(-3, -2), TilePosition(-5, -1), TilePosition(0,0) }
-                    };
-                }
-
-                // West
-                else if (baseAngle < 3.925 && baseAngle >= 2.355) {
-                    if (mineralsLeft) {
-
-                    }
-                    else {
+                    // North
+                    if (baseAngle < 2.355 && baseAngle >= 0.785) {
                         tryOrder ={
-                        { TilePosition(-3, -4), TilePosition(-5, -2), TilePosition(-3,-2) }
+                        { TilePosition(-3, -2), TilePosition(-5, -1), TilePosition(0,0) }
                         };
                     }
+
+                    // West
+                    else if (baseAngle < 3.925 && baseAngle >= 2.355) {
+                        if (mineralsLeft) {
+
+                        }
+                        else {
+                            tryOrder ={
+                            { TilePosition(-3, -4), TilePosition(-5, -2), TilePosition(-3,-2) }
+                            };
+                        }
+                    }
                 }
+
+                // Geyser north of hatchery
+                if (geyser->TopLeft() == base->Location() + TilePosition(0, -5)) {
+
+                    // North
+                    if (baseAngle < 2.355 && baseAngle >= 0.785) {
+                        if (mineralsLeft) {
+                            tryOrder ={
+                            { TilePosition(-3, -4), TilePosition(0, -3), TilePosition(-2,-2) },
+                            { TilePosition(0, -3), TilePosition(-2, -4), TilePosition(-2,-2) }
+                            };
+                        }
+                        else {
+                            tryOrder ={
+                            { TilePosition(4, -4), TilePosition(0, -3), TilePosition(4,-2) },
+                            { TilePosition(-1, -3), TilePosition(4, -4), TilePosition(4,-2) }
+                            };
+                        }
+                    }
+
+                    // West
+                    else if (baseAngle < 3.925 && baseAngle >= 2.355) {
+                        if (mineralsLeft) {
+
+                        }
+                        else {
+                            tryOrder ={
+                            { TilePosition(-3, -4), TilePosition(-2, -2), TilePosition(0,-3) }
+                            };
+                        }
+                    }
+
+                    // South
+                    else if (baseAngle < 5.495 && baseAngle >= 3.925) {
+                        if (mineralsLeft) {
+                            tryOrder ={
+                            { TilePosition(-3, 5), TilePosition(1, 3), TilePosition(-1,3) },
+                            { TilePosition(-2, 5), TilePosition(1, 3), TilePosition(-1,3) }
+                            };
+                        }
+                        else {
+                            tryOrder ={
+                            { TilePosition(4, 5), TilePosition(1, 3), TilePosition(3,3) },
+                            { TilePosition(3, 5), TilePosition(1, 3), TilePosition(3,3) },
+                            { TilePosition(2, 5), TilePosition(1, 3), TilePosition(3,3) },
+                            { TilePosition(1, 5), TilePosition(1, 3), TilePosition(3,3) }
+                            };
+                        }
+                    }
+
+                    // East
+                    else {
+                        if (mineralsLeft) {
+                            tryOrder ={
+                            { TilePosition(4, -4), TilePosition(4, -2), TilePosition(0,-3) }
+                            };
+                        }
+                    }
+                }
+
+                // For each pair, we try to place the best positions first
+                for (auto &[medium, small, defense] : tryOrder) {
+                    if (Map::isPlaceable(UnitTypes::Zerg_Spawning_Pool, base->Location() + medium) && Map::isPlaceable(UnitTypes::Zerg_Spire, base->Location() + small) && Map::isPlaceable(UnitTypes::Zerg_Sunken_Colony, base->Location() + defense)) {
+                        mediumPosition = base->Location() + medium;
+                        smallPosition = base->Location() + small;
+                        pocketDefense = base->Location() + defense;
+                        Map::addUsed(smallPosition, UnitTypes::Zerg_Spire);
+                        Map::addUsed(mediumPosition, UnitTypes::Zerg_Spawning_Pool);
+                        Map::addUsed(pocketDefense, UnitTypes::Zerg_Sunken_Colony);
+                        break;
+                    }
+                }
+                tryOrder.clear();
             }
-
-            // Geyser north of hatchery
-            if (geyser->TopLeft() == base->Location() + TilePosition(0, -5)) {
-
-                // North
-                if (baseAngle < 2.355 && baseAngle >= 0.785) {
-                    if (mineralsLeft) {
-                        tryOrder ={
-                        { TilePosition(-3, -4), TilePosition(0, -3), TilePosition(-2,-2) },
-                        { TilePosition(0, -3), TilePosition(-2, -4), TilePosition(-2,-2) }
-                        };
-                    }
-                    else {
-                        tryOrder ={
-                        { TilePosition(4, -4), TilePosition(0, -3), TilePosition(4,-2) },
-                        { TilePosition(-1, -3), TilePosition(4, -4), TilePosition(4,-2) }
-                        };
-                    }
-                }
-
-                // West
-                else if (baseAngle < 3.925 && baseAngle >= 2.355) {
-                    if (mineralsLeft) {
-
-                    }
-                    else {
-                        tryOrder ={
-                        { TilePosition(-3, -4), TilePosition(-2, -2), TilePosition(0,-3) }
-                        };
-                    }
-                }
-
-                // South
-                else if (baseAngle < 5.495 && baseAngle >= 3.925) {
-                    if (mineralsLeft) {
-                        tryOrder ={
-                        { TilePosition(-3, 5), TilePosition(1, 3), TilePosition(-1,3) },
-                        { TilePosition(-2, 5), TilePosition(1, 3), TilePosition(-1,3) }
-                        };
-                    }
-                    else {
-                        tryOrder ={
-                        { TilePosition(4, 5), TilePosition(1, 3), TilePosition(3,3) },
-                        { TilePosition(3, 5), TilePosition(1, 3), TilePosition(3,3) },
-                        { TilePosition(2, 5), TilePosition(1, 3), TilePosition(3,3) },
-                        { TilePosition(1, 5), TilePosition(1, 3), TilePosition(3,3) }
-                        };
-                    }
-                }
-
-                // East
-                else {
-                    if (mineralsLeft) {
-                        tryOrder ={
-                        { TilePosition(4, -4), TilePosition(4, -2), TilePosition(0,-3) }
-                        };
-                    }
-                }
-            }
-
-            // For each pair, we try to place the best positions first
-            for (auto &[medium, small, defense] : tryOrder) {
-                if (Map::isPlaceable(UnitTypes::Zerg_Spawning_Pool, base->Location() + medium) && Map::isPlaceable(UnitTypes::Zerg_Spire, base->Location() + small) && Map::isPlaceable(UnitTypes::Zerg_Sunken_Colony, base->Location() + defense)) {
-                    mediumPosition = base->Location() + medium;
-                    smallPosition = base->Location() + small;
-                    pocketDefense = base->Location() + defense;
-                    Map::addUsed(smallPosition, UnitTypes::Zerg_Spire);
-                    Map::addUsed(mediumPosition, UnitTypes::Zerg_Spawning_Pool);
-                    Map::addUsed(pocketDefense, UnitTypes::Zerg_Sunken_Colony);
-                    break;
-                }
-            }
-            tryOrder.clear();
         }
 
         auto cnt = 0;
-        if (main)
+        if (main || natural)
             cnt = 1;
         if (!main && !natural)
             cnt = 2;
+
+        const auto distCalc = [&](const auto& position) {
+            if (natural && partnerBase) {
+                auto closestMain = Stations::getClosestMainStation(base->Location());
+                if (closestMain && closestMain->getChokepoint())
+                    return Position(closestMain->getChokepoint()->Center()).getDistance(position);
+            }
+
+            else if (!base->Minerals().empty()) {
+                auto distMineralBest = DBL_MAX;
+                for (auto &mineral : base->Minerals()) {
+                    auto dist = mineral->Pos().getDistance(position);
+                    if (dist < distMineralBest)
+                        distMineralBest = dist;
+                }
+                return distMineralBest;
+            }
+            return 0.0;
+        };
 
         for (int i = 0; i < cnt; i++) {
             auto distBest = DBL_MAX;
@@ -315,7 +336,7 @@ namespace BWEB {
                 for (auto y = base->Location().y - 3; y <= base->Location().y + 3; y++) {
                     auto tile = TilePosition(x, y);
                     auto center = Position(tile) + Position(64, 48);
-                    auto dist = center.getDistance(resourceCentroid);
+                    auto dist = distCalc(center);
                     if (dist < distBest && Map::isPlaceable(Broodwar->self()->getRace().getResourceDepot(), tile)) {
                         distBest = dist;
                         tileBest = tile;
@@ -482,12 +503,14 @@ namespace BWEB {
         }
 
         // Try to fit more defenses with secondary positions
-        for (auto secondary : secondaryLocations) {
-            for (auto placement : basePlacements) {
-                auto tile = secondary + placement;
-                if (Map::isPlaceable(defenseType, tile)) {
-                    defenses.insert(tile);
-                    Map::addUsed(tile, defenseType);
+        if (!natural) {
+            for (auto secondary : secondaryLocations) {
+                for (auto placement : basePlacements) {
+                    auto tile = secondary + placement;
+                    if (Map::isPlaceable(defenseType, tile)) {
+                        defenses.insert(tile);
+                        Map::addUsed(tile, defenseType);
+                    }
                 }
             }
         }

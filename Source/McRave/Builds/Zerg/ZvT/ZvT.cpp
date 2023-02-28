@@ -39,15 +39,39 @@ namespace McRave::BuildOrder::Zerg {
     }
 
     int lingsNeeded_ZvT() {
+
+        auto initialValue = 6;
         if (com(Zerg_Spawning_Pool) == 0)
             return 0;
-        if (Spy::enemyRush())
-            return 12;
-        if (Spy::enemyProxy() || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush")
-            return 10;
-        if (Spy::getEnemyBuild() == "RaxFact" || Spy::getEnemyBuild() == "2Rax")
-            return 6;
-        return 6;
+
+        // 2Rax
+        if (Spy::getEnemyBuild() == "2Rax") {
+            if (Spy::getEnemyOpener() == "Main")
+                initialValue = 6;
+            else if (Spy::getEnemyOpener() == "Proxy")
+                initialValue = 12;
+        }
+
+        // RaxCC
+        if (Spy::getEnemyBuild() == "RaxCC") {
+            if (Spy::getEnemyOpener() == "8Rax")
+                initialValue = 12;
+            else
+                initialValue = com(Zerg_Lair) * 6;
+        }
+
+        // RaxFact
+        if (Spy::getEnemyBuild() == "RaxFact") {
+            if (Spy::getEnemyOpener() == "8Rax")
+                initialValue = 12;
+        }
+
+        if (total(Zerg_Zergling) < initialValue)
+            return initialValue;
+
+        if (Spy::getEnemyTransition() == "WorkerRush")
+            return 24;
+        return 0;
     }
 
     void ZvT2HatchMuta()

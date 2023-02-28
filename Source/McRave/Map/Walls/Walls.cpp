@@ -193,7 +193,7 @@ namespace McRave::Walls {
             // 3 hatch builds make lings instead of sunkens
             auto initial = 1;
             if (threeHatch)
-                return 0;
+                initial = -2 - int(vis(Zerg_Zergling) >= 24);
 
             // 1 base transitions
             if (Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") {

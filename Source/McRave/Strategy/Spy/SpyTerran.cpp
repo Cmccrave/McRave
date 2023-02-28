@@ -50,8 +50,6 @@ namespace McRave::Spy::Terran {
 
             // RaxCC
             if ((completesBy(2, Terran_Command_Center, Time(4, 30)))
-                || theSpy.rushArrivalTime < Time(2, 45)
-                || completesBy(1, Terran_Barracks, Time(1, 40))
                 || (theSpy.expand.possible && Util::getTime() < Time(4, 00))
                 || (theSpy.proxy.possible && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) == 1))
                 theSpy.build.name = "RaxCC";
@@ -59,6 +57,8 @@ namespace McRave::Spy::Terran {
             // RaxFact
             if (completesBy(1, Terran_Factory, Time(4, 00))
                 || (Util::getTime() < Time(5, 15) && hasMech)
+                || theSpy.rushArrivalTime < Time(2, 45)
+                || completesBy(1, Terran_Barracks, Time(1, 40))
                 || arrivesBy(1, Terran_Wraith, Time(6, 00)))
                 theSpy.build.name = "RaxFact";
 

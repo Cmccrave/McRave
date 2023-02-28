@@ -357,7 +357,7 @@ namespace McRave::Grids
     }
 
     float getGroundDensity(WalkPosition here, PlayerState player) {
-        return (player == PlayerState::Self ? selfGrid[gridWalkScale * here.y + here.x].groundDensity : enemyGrid[gridWalkScale * here.y + here.x].groundDensity);
+        return (player == PlayerState::Self ? float(selfGrid[gridWalkScale * here.y + here.x].groundDensity) : float(enemyGrid[gridWalkScale * here.y + here.x].groundDensity));
     }
 
     float getAirDensity(Position here, PlayerState player) {
@@ -365,7 +365,7 @@ namespace McRave::Grids
     }
 
     float getAirDensity(WalkPosition here, PlayerState player) {
-        return (player == PlayerState::Self ? selfGrid[gridWalkScale * here.y + here.x].airDensity : enemyGrid[gridWalkScale * here.y + here.x].airDensity);
+        return (player == PlayerState::Self ? float(selfGrid[gridWalkScale * here.y + here.x].airDensity) : float(enemyGrid[gridWalkScale * here.y + here.x].airDensity));
     }
 
     int getFCollision(WalkPosition here, PlayerState player) {

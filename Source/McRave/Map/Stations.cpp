@@ -316,6 +316,7 @@ namespace McRave::Stations
 
             if (Players::ZvFFA() && !station->isMain() && !station->isNatural())
                 return 2 - groundCount;
+            return 0;
         }
     }
 
