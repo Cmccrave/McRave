@@ -273,6 +273,17 @@ namespace BWEB::Blocks
                     return false;
             }
 
+            // A block of entirely supply doesn't care about map edge or neighbors, but cannot be built near edge of terrain
+            if (type == BlockType::Supply) {
+                for (auto x = here.x - 1; x < here.x + width + 1; x++) {
+                    for (auto y = here.y - 1; y < here.y + height + 1; y++) {
+                        const TilePosition t(x, y);
+                        if (t.isValid() && !Map::mapBWEM.GetTile(t).Buildable())
+                            return false;
+                    }
+                }
+            }
+
             // Check if a Block of specified size would overlap any bases, resources or other blocks
             auto ff = (Broodwar->self()->getRace() != Races::Zerg && type != BlockType::Supply) ? 1 : 0;
             for (auto x = here.x - ff; x < here.x + width + ff; x++) {

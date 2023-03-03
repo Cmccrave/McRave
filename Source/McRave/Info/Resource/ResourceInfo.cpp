@@ -30,7 +30,8 @@ namespace McRave {
         // Determine if this resource is threatened based on a substantial threat nearby
         threatened = false;
         for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
-            if (!enemy->getType().isWorker() && enemy->hasTarget() && enemy->getTarget().lock()->getType().isWorker() && enemy->canAttackGround() && enemy->isThreatening() && enemy->getPosition().getDistance(position) < max(96.0, enemy->getGroundRange()))
+            if (!enemy->getType().isWorker() && enemy->hasTarget() && enemy->getTarget().lock()->getType().isWorker() && enemy->isCompleted()
+                && enemy->canAttackGround() && enemy->isThreatening() && enemy->getPosition().getDistance(position) < max(96.0, enemy->getGroundRange()))
                 threatened = true;
         }
     }

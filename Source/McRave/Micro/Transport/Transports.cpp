@@ -159,7 +159,7 @@ namespace McRave::Transports {
 
             const auto readyToDrop = [&](UnitInfo& cargo, UnitInfo& cargoTarget) {
                 if (cargo.getType() == Terran_Ghost) {
-                    auto cargoArea = mapBWEM.GetArea(TilePosition(cargo.getDestination()));
+                    auto cargoArea = mapBWEM.GetArea(TilePosition(cargo.getDestination()));                    
                     return cargoArea && Terrain::inArea(cargoArea, unit.getPosition());
                 }
                 if (cargo.getType() == Protoss_Reaver)
@@ -194,8 +194,10 @@ namespace McRave::Transports {
                     setState(TransportState::Reinforcing);
                 else if (readyToEngage(cargo, cargoTarget)) {
                     setState(TransportState::Engaging);
-                    if (readyToDrop(cargo, cargoTarget))
-                        unit.unit()->unload(cargo.unit());                    
+                    if (readyToDrop(cargo, cargoTarget)) {
+                        Broodwar << "Dropping ghost in enemy main" << endl;
+                        unit.unit()->unload(cargo.unit());
+                    }
                 }
             }
         }

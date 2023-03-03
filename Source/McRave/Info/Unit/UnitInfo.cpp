@@ -135,7 +135,7 @@ namespace McRave
 
             // Frames
             remainingTrainFrame         = max(0, remainingTrainFrame - 1);
-            lastRepairFrame             = (unit()->isRepairing() || unit()->isBeingHealed()) ? Broodwar->getFrameCount() : lastRepairFrame;
+            lastRepairFrame             = (unit()->isRepairing() || unit()->isBeingHealed() || unit()->isConstructing()) ? Broodwar->getFrameCount() : lastRepairFrame;
             minStopFrame                = Math::stopAnimationFrames(t);
             lastStimFrame               = unit()->isStimmed() ? Broodwar->getFrameCount() : lastStimFrame;
             lastVisibleFrame            = Broodwar->getFrameCount();
@@ -410,7 +410,9 @@ namespace McRave
 
         // Check if an enemy building is a proxy
         if (player->isEnemy(Broodwar->self())) {
-            if (getType().isWorker() || getType() == Terran_Barracks || getType() == Terran_Factory || getType() == Terran_Engineering_Bay || getType() == Terran_Bunker || getType() == Protoss_Gateway || getType() == Protoss_Photon_Cannon || getType() == Protoss_Pylon || getType() == Protoss_Forge) {
+            if (getType().isWorker()
+                || getType() == Terran_Barracks || getType() == Terran_Factory || getType() == Terran_Engineering_Bay || getType() == Terran_Bunker
+                || getType() == Protoss_Gateway || getType() == Protoss_Photon_Cannon || getType() == Protoss_Pylon || getType() == Protoss_Forge) {
                 auto closestMain = BWEB::Stations::getClosestMainStation(getTilePosition());
                 auto closestNat = BWEB::Stations::getClosestNaturalStation(getTilePosition());
                 auto closerToMyMain = closestMain && closestMain == Terrain::getMyMain();

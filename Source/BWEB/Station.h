@@ -18,7 +18,7 @@ namespace BWEB {
         double baseAngle = 0.0;
         double chokeAngle = 0.0;
         int defenseArrangement = -1;
-        BWAPI::TilePosition mediumPosition, smallPosition, pocketDefense;
+        BWAPI::TilePosition  smallPosition, mediumPosition, pocketDefense;
 
         void initialize();
         void findChoke();
@@ -36,6 +36,10 @@ namespace BWEB {
             natural             = _natural;
             resourceCentroid    = BWAPI::Position(0, 0);
             defenseCentroid     = BWAPI::Position(0, 0);
+            smallPosition       = BWAPI::TilePositions::Invalid;
+            mediumPosition      = BWAPI::TilePositions::Invalid;
+            pocketDefense       = BWAPI::TilePositions::Invalid;
+
             initialize();
             findChoke();
             findSecondaryLocations();

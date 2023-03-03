@@ -300,7 +300,7 @@ namespace McRave::Goals {
 
             // Assign an Overlord to watch our Choke early on
             if (Terrain::getNaturalChoke() && !Spy::enemyRush()) {
-                if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy() && Broodwar->getStartLocations().size() <= 2) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0))
+                if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0))
                     assignNumberToGoal(Position(Terrain::getNaturalChoke()->Center()), Zerg_Overlord, 1, GoalType::Escort);
             }
 

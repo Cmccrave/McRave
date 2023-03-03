@@ -232,9 +232,12 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // If enemy has invis and we are trying to get lair for detection
-            if (Spy::enemyInvis() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 && Util::getTime() > Time(4, 45) && vis(Zerg_Lair) > 0) {
-                gasLimit += 2;
-            }
+            if (Spy::enemyInvis() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 && Util::getTime() > Time(4, 45) && vis(Zerg_Lair) > 0)
+                gasLimit += 2;            
+
+            // If we have very limited mineral mining (maybe we pulled workers to fight) we need to cut all gas
+            if (!Players::ZvZ() && Workers::getMineralWorkers() <= 5 && Util::getTime() < Time(5, 00))
+                gasLimit = 0;
         }
 
         void removeExcessGas()

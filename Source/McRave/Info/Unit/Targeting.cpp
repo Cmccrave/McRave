@@ -21,7 +21,18 @@ namespace McRave::Targets {
         }
 
         bool allowWorkerTarget(UnitInfo& unit, UnitInfo& target) {
-            if (target.getType().isWorker() && Util::getTime() < Time(8, 00)) {
+            if (!target.getType().isWorker())
+                return true;
+
+            if (unit.getType().isWorker()) {
+                return Spy::getEnemyTransition() == "WorkerRush"
+                    || target.hasAttackedRecently()
+                    || target.hasRepairedRecently()
+                    || target.isThreatening()
+                    || target.getUnitsTargetingThis().empty();
+            }
+
+            if (Util::getTime() < Time(8, 00)) {
                 return unit.getType().isWorker()
                     || Spy::getEnemyTransition() == "WorkerRush"
                     || target.hasAttackedRecently()
@@ -129,9 +140,6 @@ namespace McRave::Targets {
                     auto anythingSupply = !Players::ZvZ() && Players::getSupply(PlayerState::Enemy, Races::None) < 20;
                     auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
                     auto invalidType = allowedBuildings.find(target.getType()) == allowedBuildings.end();
-
-                    if (Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling) && target.getType() != Zerg_Zergling)
-                        return false;
 
                     if (target.isThreatening())
                         return allowThreatenTarget(unit, target);

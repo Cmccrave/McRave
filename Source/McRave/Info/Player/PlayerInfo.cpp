@@ -67,8 +67,7 @@ namespace McRave
 
             // Strength
             if ((type.isWorker() && unit.getRole() != Role::Combat)
-                || (unit.unit()->exists() && !type.isBuilding() && !unit.unit()->isCompleted())
-                || (unit.unit()->isMorphing()))
+                || (unit.unit()->exists() && !type.isBuilding() && !unit.unit()->isCompleted()))
                 continue;
 
             if (type.isBuilding()) {

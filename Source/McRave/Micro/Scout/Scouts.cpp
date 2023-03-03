@@ -195,6 +195,7 @@ namespace McRave::Scouts {
 
                 auto enemyAir = Players::getStrength(PlayerState::Enemy).groundToAir > 0.0
                     || Players::getStrength(PlayerState::Enemy).airToAir > 0.0
+                    || Players::getStrength(PlayerState::Enemy).airDefense > 0.0
                     || Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0
                     || Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) > 0
                     || Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) > 0

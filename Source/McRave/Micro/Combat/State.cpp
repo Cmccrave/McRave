@@ -31,7 +31,8 @@ namespace McRave::Combat::State {
         if ((Players::ZvT() && Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0))
             || (Players::ZvT() && com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0)
             || (Players::ZvP() && find(staticRetreatTypes.begin(), staticRetreatTypes.end(), Zerg_Hydralisk) != staticRetreatTypes.end())
-            || (Players::ZvZ() && Spy::getEnemyTransition() == "2HatchSpeedling" && Util::getTime() < Time(10, 00) && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0)
+            || (Players::ZvZ() && Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "12Pool")
+            || (Players::ZvZ() && Spy::getEnemyTransition() == "2HatchSpeedling" && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0)
             || (Players::ZvZ() && Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 00) && !Terrain::getEnemyStartingPosition().isValid())
             || (Players::ZvZ() && Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45)))
             staticRetreatTypes.push_back(Zerg_Zergling);

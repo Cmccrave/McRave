@@ -297,7 +297,14 @@ namespace McRave::Terrain {
     {
         if (!here.isValid())
             return false;
-        return mapBWEM.GetArea(TilePosition(here)) == area || areaChokeGeometry.find(WalkPosition(here)) != areaChokeGeometry.end();
+        if (mapBWEM.GetArea(TilePosition(here)) == area)
+            return true;
+        auto geo = areaChokeGeometry.find(WalkPosition(here));
+        if (geo != areaChokeGeometry.end()) {
+            const auto &areas = geo->second;
+            return areas.first == area || areas.second == area;
+        }
+        return false;
     }
 
     bool inTerritory(PlayerState playerState, Position here)

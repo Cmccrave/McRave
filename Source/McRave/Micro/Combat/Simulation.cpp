@@ -154,10 +154,12 @@ namespace McRave::Combat::Simulation {
         }
 
         // Adjust winrates based on how close to self station we are
-        auto closestSelf = unit.isFlying() ? Stations::getClosestStationAir(unitTarget->getPosition(), PlayerState::Self) : Stations::getClosestStationGround(unitTarget->getPosition(), PlayerState::Self);
+        auto closestSelf = Util::getClosestUnit(unitTarget->getPosition(), PlayerState::Self, [&](auto &u) {
+            return u->getType().isBuilding();
+        });
         if (closestSelf) {
-            const auto distSelf = unit.isFlying() ? unitTarget->getPosition().getDistance(closestSelf->getBase()->Center())
-                : BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestSelf->getBase()->Center());
+            const auto distSelf = unit.isFlying() ? unitTarget->getPosition().getDistance(closestSelf->getPosition())
+                : BWEB::Map::getGroundDistance(unitTarget->getPosition(), closestSelf->getPosition());
 
             const auto reach = max({ unitTarget->getGroundRange() / 2.0, unitTarget->getAirReach() / 2.0, 160.0 });
             const auto insideDefendingChoke = Combat::holdAtChoke() && Terrain::inArea(Combat::getDefendArea(), unitTarget->getPosition());
@@ -169,14 +171,20 @@ namespace McRave::Combat::Simulation {
             }
         }
 
-        // Adjust winrates if we have static defense out of range that would make the fight easier
+        // Adjust winrates if we have static defense that would make the fight easier
         if (Util::getTime() < Time(8, 00) && !unit.isFlying() && com(Zerg_Sunken_Colony) > 0) {
             const auto closestSunken = Util::getClosestUnit(unit.getRetreat(), PlayerState::Self, [&](auto &u) {
-                return u->getType() == Zerg_Sunken_Colony && u->isCompleted() && u->getPosition().getDistance(unit.getRetreat()) < 200.0;
+                return u->getType() == Zerg_Sunken_Colony && u->isCompleted();
             });
-            if (closestSunken && !closestSunken->isWithinRange(*unit.getTarget().lock())) {
-                minWinPercent *=2;
-                maxWinPercent *=2;
+            if (closestSunken) {
+                if (closestSunken->isWithinRange(*unitTarget)) {
+                    minWinPercent /=2;
+                    maxWinPercent /=2;
+                }
+                else {
+                    minWinPercent *=2;
+                    maxWinPercent *=2;
+                }
             }
         }
 

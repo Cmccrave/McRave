@@ -20,11 +20,11 @@ namespace McRave::Combat {
     struct Cluster {
         BWAPI::Position avgPosition, marchPosition, retreatPosition, marchNavigation, retreatNavigation;
         std::map<BWAPI::UnitType, int> typeCounts;
-        double radius;
         std::vector<UnitInfo*> units;
         std::weak_ptr<UnitInfo> commander;
         CommandShare commandShare;
         Shape shape;
+        double spacing = 32.0;
         bool mobileCluster = false;
         BWAPI::Color color;
         BWEB::Path marchPath, retreatPath;
@@ -40,6 +40,7 @@ namespace McRave::Combat {
     struct Formation {
         Cluster* cluster;
         BWAPI::Position center;
+        double radius, leash;
         std::vector<BWAPI::Position> positions;
     };
 

@@ -351,7 +351,10 @@ namespace McRave::Walls {
             auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot)
                 + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);
 
-            return max(ZvPOpener(wall), ZvPTransition(wall)) - max(0, unitsKilled / 4);
+            auto minimum = Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 ? 1 : 0;
+            auto expected = max(ZvPOpener(wall), ZvPTransition(wall)) - max(0, unitsKilled / 4);
+
+            return max(minimum, expected);
         }
 
         int groundDefensesNeededZvT(BWEB::Wall& wall)
@@ -369,7 +372,10 @@ namespace McRave::Walls {
                 + Players::getDeadCount(PlayerState::Enemy, Terran_Firebat)
                 + Players::getDeadCount(PlayerState::Enemy, Terran_Medic);
 
-            return max(ZvTOpener(wall), ZvTTransition(wall)) - max(0, unitsKilled / 8);
+            auto minimum = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 ? 1 : 0;
+            auto expected = max(ZvTOpener(wall), ZvTTransition(wall)) - max(0, unitsKilled / 8);
+
+            return max(minimum, expected);
         }
 
         int groundDefensesNeededZvZ(BWEB::Wall& wall) {

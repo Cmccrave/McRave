@@ -170,7 +170,7 @@ namespace McRave::Combat::Clusters {
             }
         }
 
-        void pathCluster(Cluster& cluster)
+        void pathCluster(Cluster& cluster, double dist)
         {
             auto commander = cluster.commander.lock();
             auto marchPathPoint = getPathPoint(*commander, cluster.marchPosition);
@@ -182,7 +182,7 @@ namespace McRave::Combat::Clusters {
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.marchNavigation = cluster.marchPosition;
             const auto march = Util::findPointOnPath(cluster.marchPath, [&](Position p) {
-                return p.getDistance(commander->getPosition()) >= max(160.0, cluster.radius - 32.0);
+                return p.getDistance(commander->getPosition()) >= max(160.0, dist - 32.0);
             });
             if (march.isValid())
                 cluster.marchNavigation = march;
@@ -196,7 +196,7 @@ namespace McRave::Combat::Clusters {
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.retreatNavigation = cluster.retreatPosition;
             const auto retreat = Util::findPointOnPath(cluster.retreatPath, [&](Position p) {
-                return p.getDistance(commander->getPosition()) >= max(160.0, cluster.radius - 32.0);
+                return p.getDistance(commander->getPosition()) >= max(160.0, dist - 32.0);
             });
             if (retreat.isValid())
                 cluster.retreatNavigation = retreat;
@@ -230,33 +230,10 @@ namespace McRave::Combat::Clusters {
                         }
                     }
 
-                    // Create radius based on how many units we have and want to fit into the first row of an arc
-                    auto unitTangentSize = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0)) + (cluster.mobileCluster ? 16.0 : 0.0);
-                    cluster.radius = min(commander->getRetreatRadius(), (count * unitTangentSize / arcRads));
-                    pathCluster(cluster);
-
-                    // Offset the center by a distance of the radius towards the navigation point
-                    if (cluster.mobileCluster) {
-
-                        // Clamp radius so that it moves forward/backwards as needed
-                        if (commander->getLocalState() == LocalState::Attack)
-                            cluster.radius = min(cluster.radius, commander->getPosition().getDistance(cluster.marchNavigation) - 64.0);
-                        if (commander->getLocalState() == LocalState::Retreat)
-                            cluster.radius = max(cluster.radius, commander->getPosition().getDistance(cluster.retreatNavigation) + 64.0);
-                    }
-                    else {
-                        // If we are setting up a static formation, align concave with buildings close by
-                        auto closestBuilding = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
-                            return (u->getType().isBuilding() && u->getFormation().getDistance(cluster.marchPosition) < 64.0);
-                        });
-                        if (closestBuilding && !Combat::holdAtChoke())
-                            cluster.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition);
-                        if (Combat::holdAtChoke()) {
-                            const auto choke = Util::getClosestChokepoint(cluster.marchPosition);
-                            cluster.radius = max(cluster.radius, double(choke->Width()));
-                            Visuals::drawPath(cluster.retreatPath);
-                        }
-                    }
+                    // Calculate rough spacing of the clustered units for formation and find path points
+                    cluster.spacing = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0)) + (cluster.mobileCluster ? 16.0 : 0.0);
+                    auto dist = min(commander->getRetreatRadius(), (count * cluster.spacing / arcRads));
+                    pathCluster(cluster, dist);
                 }
             }
         }

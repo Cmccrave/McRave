@@ -79,7 +79,7 @@ namespace McRave::BuildOrder::Zerg {
         inTransition =                                  vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 28 : 15 - hatchCount();
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
-        gasLimit =                                      gasMax();
+        gasLimit =                                      vis(Zerg_Drone) >= 11 ? gasMax() : 0;
 
         inOpening =                                     total(Zerg_Mutalisk) <= 9;
         firstUpgrade =                                  Spy::enemyRush() ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
@@ -94,7 +94,11 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 16);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (2 * atPercent(Zerg_Spire, 0.25));
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
-        buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.80);
+        buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.95);
+
+        // Reactions
+        if (Spy::getEnemyOpener() == "8Rax" && total(Zerg_Zergling) < 6) 
+            buildQueue[Zerg_Lair] = 0;        
 
         // Composition
         if (com(Zerg_Spire) == 0 && lingsNeeded_ZvT() > vis(Zerg_Zergling)) {

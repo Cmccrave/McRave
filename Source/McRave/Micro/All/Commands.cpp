@@ -221,7 +221,7 @@ namespace McRave::Command {
                     || unitTarget->isSuicidal()
                     || unit.isSpellcaster()
                     || unit.getLocalState() == LocalState::Retreat
-                    || (unit.getGroundRange() <= 32.0)
+                    || (unit.getGroundRange() <= 32.0 && !unit.getType().isWorker())
                     || (unit.getType() == Zerg_Lurker && !unit.isBurrowed())
                     || (unit.isFlying() && unit.getPosition().getDistance(unitTarget->getPosition()) < 32.0))
                     return false;

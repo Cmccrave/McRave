@@ -89,15 +89,15 @@ namespace McRave::Spy::Terran {
 
             // Mech builds
             if (theSpy.build.name == "RaxFact") {
-            }
-
-            // Expand builds
-            if (theSpy.build.name == "RaxCC") {
                 if (theSpy.rushArrivalTime < Time(2, 45)
                     || completesBy(1, Terran_Barracks, Time(1, 50))
                     || completesBy(1, Terran_Marine, Time(2, 05)))
                     theSpy.opener.name = "8Rax";
-                else if (theSpy.expand.possible)
+            }
+
+            // Expand builds
+            if (theSpy.build.name == "RaxCC") {
+                if (theSpy.expand.possible)
                     theSpy.opener.name = "1RaxFE";
             }
         }

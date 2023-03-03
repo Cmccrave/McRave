@@ -10,12 +10,12 @@ using namespace McRave::BuildOrder::All;
 namespace McRave::BuildOrder::Zerg {
 
     int lingsNeeded_ZvZ() {
-        if (vis(Zerg_Drone) >= unitLimits[Zerg_Drone])
-            return max(24, Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling));
-        return 8;
+        return max(18, int(0.9 * Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling)));
     }
 
     int dronesNeeded_ZvZ() {
+        if (hatchCount() >= 2)
+            return 11;
         if (Broodwar->getStartLocations().size() >= 4)
             return 10;
         return 9;
@@ -100,7 +100,7 @@ namespace McRave::BuildOrder::Zerg {
         // Build
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 9) + (atPercent(Zerg_Spire, 0.5));
         buildQueue[Zerg_Lair] =                         gas(100) && vis(Zerg_Spawning_Pool) > 0 && total(Zerg_Zergling) >= 12 && vis(Zerg_Drone) >= 8;
-        buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 9 && total(Zerg_Zergling) >= 36;
+        buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && com(Zerg_Drone) >= 11;
         buildQueue[Zerg_Overlord] =                     1 + (vis(Zerg_Extractor) + Spy::enemyGasSteal() >= 1) + (s >= 32) + (atPercent(Zerg_Spire, 0.5) && s >= 38);
 
         // Army Composition

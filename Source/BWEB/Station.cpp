@@ -196,6 +196,13 @@ namespace BWEB {
 
     void Station::findSecondaryLocations()
     {
+        // Add scanner addon for Terran
+        if (Broodwar->self()->getRace() == Races::Terran) {
+            auto scannerTile = base->Location() + TilePosition(4, 1);
+            smallPosition = scannerTile;
+            Map::addUsed(scannerTile, defenseType);
+        }
+
         if (Broodwar->self()->getRace() != Races::Zerg)
             return;
 
@@ -484,13 +491,6 @@ namespace BWEB {
         if (base->Center().x < defenseCentroid.x) {
             for (auto &placement : basePlacements)
                 placement.x = -(placement.x - 2);
-        }
-
-        // Add scanner addon for Terran
-        if (Broodwar->self()->getRace() == Races::Terran) {
-            auto scannerTile = here + TilePosition(4, 1);
-            defenses.insert(scannerTile);
-            Map::addUsed(scannerTile, defenseType);
         }
 
         // Add a defense near each base placement if possible
