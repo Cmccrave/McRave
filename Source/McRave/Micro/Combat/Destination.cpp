@@ -46,7 +46,6 @@ namespace McRave::Combat::Destination {
             unit.setRetreat(retreat->getBase()->Center());
         else
             unit.setRetreat(Terrain::getMainPosition());
-        Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Red);
     }
 
     void updateDestination(UnitInfo& unit)

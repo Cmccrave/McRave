@@ -217,13 +217,16 @@ namespace McRave::Scouts {
                     safe.desiredScoutTypeCounts[Zerg_Overlord] = 0;
 
                 // Determine if we need to create a new checking unit to try and detect the enemy build
-                auto lingScoutTime = Players::ZvZ() ? Time(2, 00) : Time(3, 00);
-                const auto needEnemyCheck = !Players::ZvZ() && !Spy::enemyRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) <= 0
-                    && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(6, 00)
-                    && Terrain::getEnemyMain()
-                    && Broodwar->getFrameCount() - Grids::getLastVisibleFrame(Terrain::getEnemyMain()->getBase()->Location()) > 120;
+                const auto needEnemyCheckZvZ = Players::ZvZ() && !Terrain::foundEnemy() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0;
+                const auto needEnemyCheckZvP = Players::ZvP() && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0
+                    && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() > Time(3, 00);
+                const auto needEnemyCheckZvT = Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0
+                    && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() > Time(3, 00);
 
-                if (needEnemyCheck && Util::getTime() > lingScoutTime && total(Zerg_Zergling) >= 6) {
+                const auto needEnemyCheck = (needEnemyCheckZvZ || needEnemyCheckZvP || needEnemyCheckZvT)
+                    && (!Terrain::getEnemyMain() || Broodwar->getFrameCount() - Grids::getLastVisibleFrame(Terrain::getEnemyMain()->getBase()->Location()) > 120);
+
+                if (needEnemyCheck && total(Zerg_Zergling) >= 6) {
                     main.desiredScoutTypeCounts[Zerg_Zergling] = 1;
                     main.desiredScoutTypeCounts[Zerg_Drone] = 0;
                 }

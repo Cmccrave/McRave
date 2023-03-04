@@ -14,6 +14,8 @@ namespace McRave::BuildOrder::Zerg {
     }
 
     int dronesNeeded_ZvZ() {
+        if (Spy::getEnemyOpener() == "12Pool" || Spy::getEnemyOpener() == "12Hatch")
+            return 12;
         if (hatchCount() >= 2)
             return 11;
         if (Broodwar->getStartLocations().size() >= 4)
@@ -92,14 +94,14 @@ namespace McRave::BuildOrder::Zerg {
         inTransition =                                  vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        dronesNeeded_ZvZ();
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvZ();
-        gasLimit =                                      (lingSpeed() && com(Zerg_Lair) == 0) ? 1 : gasMax();
+        gasLimit =                                      lingSpeed() ? 2 : gasMax();
 
         firstUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
 
         // Build
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 9) + (atPercent(Zerg_Spire, 0.5));
-        buildQueue[Zerg_Lair] =                         gas(100) && vis(Zerg_Spawning_Pool) > 0 && total(Zerg_Zergling) >= 12 && vis(Zerg_Drone) >= 8;
+        buildQueue[Zerg_Lair] =                         gas(100) && vis(Zerg_Spawning_Pool) > 0 && total(Zerg_Zergling) >= 10 && vis(Zerg_Drone) >= 8;
         buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && com(Zerg_Drone) >= 11;
         buildQueue[Zerg_Overlord] =                     1 + (vis(Zerg_Extractor) + Spy::enemyGasSteal() >= 1) + (s >= 32) + (atPercent(Zerg_Spire, 0.5) && s >= 38);
 

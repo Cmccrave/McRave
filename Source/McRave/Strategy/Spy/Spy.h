@@ -42,15 +42,16 @@ namespace McRave::Spy {
         std::map<BWAPI::TechType, bool> techResearched; // TODO: Impl
         int workersNearUs = 0;
         int gasMined = 0;
+        int productionCount = 0;
         std::set<BWAPI::UnitType> typeUpgrading; // TODO: Better impl (doesn't look at current state)
 
         StrategySpy() {
             listOfStrats ={ &build, &opener, &transition, &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis };
-            build.framesRequired = 100;
+            build.framesRequired = 240;
             build.framesChangeable = 500;
-            opener.framesRequired = 100;
+            opener.framesRequired = 240;
             opener.framesChangeable = 500;
-            transition.framesRequired = 100;
+            transition.framesRequired = 240;
             transition.framesChangeable = 500;
         }
     };

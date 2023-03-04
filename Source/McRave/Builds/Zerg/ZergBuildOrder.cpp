@@ -63,17 +63,8 @@ namespace McRave::BuildOrder::Zerg {
         {
             // Adding Station defenses
             if (vis(Zerg_Drone) >= 8 || Players::ZvZ()) {
-                for (auto &station : Stations::getStations(PlayerState::Self)) {
-                    auto colonies = 0;
-                    auto wallNeeds = station->getChokepoint() && BWEB::Walls::getWall(station->getChokepoint()) && (Walls::needGroundDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0 || Walls::needAirDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0);
-                    for (auto& tile : station->getDefenses()) {
-                        if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony)
-                            colonies++;
-                        if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony && wallNeeds && BWEB::Walls::getWall(station->getChokepoint())->getDefenses().find(tile) != BWEB::Walls::getWall(station->getChokepoint())->getDefenses().end())
-                            colonies--;
-                    }
-                    if (BWEB::Map::isUsed(station->getPocketDefense()) == Zerg_Creep_Colony)
-                        colonies++;
+                for (auto &station : Stations::getStations(PlayerState::Self)) {                   
+                    auto colonies = Stations::getColonyCount(station);
 
                     if ((vis(Zerg_Spawning_Pool) > 0 && Stations::needGroundDefenses(station) > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && Stations::needAirDefenses(station) > colonies))
                         buildQueue[Zerg_Creep_Colony] += clamp(Stations::needGroundDefenses(station) + Stations::needAirDefenses(station) - colonies, 0, 2);
@@ -238,6 +229,10 @@ namespace McRave::BuildOrder::Zerg {
             // If we have very limited mineral mining (maybe we pulled workers to fight) we need to cut all gas
             if (!Players::ZvZ() && Workers::getMineralWorkers() <= 5 && Util::getTime() < Time(5, 00))
                 gasLimit = 0;
+
+            // If we have to pull everything we have
+            if (Players::ZvZ() && Spy::getEnemyOpener() == "4Pool" && currentOpener == "12Pool")
+                gasLimit = 0;
         }
 
         void removeExcessGas()
@@ -256,7 +251,6 @@ namespace McRave::BuildOrder::Zerg {
                 if ((dropGasBroke)
                     || dropGasLarva
                     || Roles::getMyRoleCount(Role::Worker) < 5
-                    || (needSpores && Players::ZvZ() && com(Zerg_Evolution_Chamber) == 0)
                     || (unitLimits[Zerg_Larva] < 3 && !rush && !pressure && minRemaining < 100 && (dropGasRush || dropGasExcess || dropGasDefenses || dropGasDrones)))
                     gasLimit = 0;
             }

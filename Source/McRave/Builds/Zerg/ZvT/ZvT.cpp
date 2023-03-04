@@ -79,7 +79,7 @@ namespace McRave::BuildOrder::Zerg {
         inTransition =                                  vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 28 : 15 - hatchCount();
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
-        gasLimit =                                      vis(Zerg_Drone) >= 11 ? gasMax() : 0;
+        gasLimit =                                      vis(Zerg_Drone) >= 10 ? gasMax() : 0;
 
         inOpening =                                     total(Zerg_Mutalisk) <= 9;
         firstUpgrade =                                  Spy::enemyRush() ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;

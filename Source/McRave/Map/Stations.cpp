@@ -272,40 +272,46 @@ namespace McRave::Stations
                 if (station->isMain()) {
                     if (Spy::getEnemyTransition() == "2HatchSpeedling")
                         desiredDefenses = max(desiredDefenses, 2 * int(Util::getTime() > Time(3, 40)));
+                    if (Spy::getEnemyTransition() == "3HatchSpeedling" && com(Zerg_Spire) > 0)
+                        desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(5, 30)));
                 }
             }
 
             if (BuildOrder::getCurrentBuild() == "PoolLair") {
+                if (station->isMain()) {
 
-                // 4 Pool
-                if (Spy::getEnemyOpener() == "4Pool")
-                    desiredDefenses = max(desiredDefenses, 1 + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 1));
+                    // 4 Pool
+                    if (Spy::getEnemyOpener() == "4Pool")
+                        desiredDefenses = max(desiredDefenses, 1 + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 1));
 
-                // 7 Pool
-                if (Spy::getEnemyOpener() == "7Pool" && BuildOrder::getCurrentOpener() != "9Pool")
-                    desiredDefenses = max(desiredDefenses, 1);
+                    // 7 Pool
+                    if (Spy::getEnemyOpener() == "7Pool" && BuildOrder::getCurrentOpener() != "9Pool")
+                        desiredDefenses = max(desiredDefenses, 1);
 
-                // 12 Pool
-                if (Spy::getEnemyOpener() == "12Pool" && Spy::getEnemyTransition() != "1HatchMuta")
-                    desiredDefenses = max(desiredDefenses, int(Util::getTime() > Time(4, 00)));
+                    // 12 Pool
+                    if (Spy::getEnemyOpener() == "12Pool" && Spy::getEnemyTransition() != "1HatchMuta")
+                        desiredDefenses = max(desiredDefenses, int(Util::getTime() > Time(4, 00)));
 
-                // Speedling all-in
-                if (Spy::getEnemyTransition() == "2HatchSpeedling" && vis(Zerg_Spire) > 0)
-                    desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 30)));
+                    // Speedling all-in
+                    if (Spy::getEnemyTransition() == "2HatchSpeedling" && vis(Zerg_Spire) > 0)
+                        desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 30)));
 
-                // +1Ling
-                if (Spy::getEnemyTransition() == "+1Ling")
-                    desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 00)));
+                    // +1Ling
+                    if (Spy::getEnemyTransition() == "+1Ling")
+                        desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 00)));
 
-                // 3 Hatch
-                if (Util::getTime() < Time(6, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
-                    desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(6, 00)));
+                    // 3 Hatch
+                    if (Util::getTime() < Time(6, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
+                        desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(6, 00)));
 
-                // Unknown
-                if ((!Terrain::foundEnemy() && vis(Zerg_Spire) > 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
-                    || (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling) && vis(Zerg_Spire) > 0)
-                    || (Spy::getEnemyTransition().find("Muta") == string::npos && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 20 && vis(Zerg_Spire) > 0))
-                    desiredDefenses = max(desiredDefenses, 1);
+                    // Unknown
+                    if (vis(Zerg_Spire) > 0) {
+                        if ((!Terrain::foundEnemy() && vis(Zerg_Spire) > 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 16)
+                            || (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling))
+                            || (Spy::getEnemyTransition().find("Muta") == string::npos && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 20))
+                            desiredDefenses = max(desiredDefenses, 1);
+                    }
+                }
             }
             return desiredDefenses - groundCount;
         }
@@ -402,6 +408,21 @@ namespace McRave::Stations
         Terrain::removeTerritory(unit->getPlayer() == Broodwar->self() ? PlayerState::Self : PlayerState::Enemy, newStation);
     }
 
+    int getColonyCount(BWEB::Station * station)
+    {
+        auto colonies = 0;
+        auto wallNeeds = station->getChokepoint() && BWEB::Walls::getWall(station->getChokepoint()) && (Walls::needGroundDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0 || Walls::needAirDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0);
+        for (auto& tile : station->getDefenses()) {
+            if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony)
+                colonies++;
+            if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony && wallNeeds && BWEB::Walls::getWall(station->getChokepoint())->getDefenses().find(tile) != BWEB::Walls::getWall(station->getChokepoint())->getDefenses().end())
+                colonies--;
+        }
+        if (BWEB::Map::isUsed(station->getPocketDefense()) == Zerg_Creep_Colony)
+            colonies++;
+        return colonies;
+    }
+
     int needGroundDefenses(BWEB::Station * station) {
 
         if (BuildOrder::isRush()
@@ -435,11 +456,9 @@ namespace McRave::Stations
             || (Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 && Util::getTime() > Time(4, 45));
 
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Players::ZvZ() && total(Zerg_Zergling) > Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) && com(Zerg_Spire) == 0 && Util::getTime() > Time(4, 30) && Spy::getEnemyTransition() == "Unknown" && BuildOrder::getCurrentTransition() == "2HatchMuta")
-                return 1 + (Util::getTime() > Time(5, 15)) - airCount;
             if (Players::ZvZ() && Util::getTime() > Time(4, 15) && Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
                 return 1 - airCount;
-            if (Players::ZvP() && Util::getTime() > Time(4, 35) && !station->isMain() && Spy::getEnemyBuild() == "1GateCore" && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0 && Spy::getEnemyTransition() == "Corsair")
+            if (Players::ZvP() && Util::getTime() > Time(4, 35) && !station->isMain() && Spy::getEnemyBuild() == "1GateCore" && Spy::getEnemyTransition() == "Corsair")
                 return 1 - airCount;
             if (Players::ZvP() && Util::getTime() > Time(5, 00) && !station->isMain() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() == "3HatchMuta")
                 return 1 - airCount;

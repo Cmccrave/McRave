@@ -178,7 +178,7 @@ namespace McRave::Combat::Formations {
                 return (u->getType().isBuilding() && u->getFormation().getDistance(cluster.marchPosition) < 64.0);
             });
             auto closestDefender = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
-                return (u->getType().isBuilding() && u->getRole() == Role::Defender && u->getFormation().getDistance(cluster.marchPosition) < 64.0);
+                return (u->getType().isBuilding() && u->canAttackGround() && u->getRole() == Role::Defender && u->getFormation().getDistance(cluster.marchPosition) < 64.0);
             });
 
             if (closestBuilding)

@@ -225,7 +225,7 @@ namespace McRave::Combat {
                     holdChoke = true;
                 }
 
-                const auto defCount = Stations::getGroundDefenseCount(getDefendStation());
+                const auto defCount = Stations::getGroundDefenseCount(getDefendStation()) + Stations::getColonyCount(getDefendStation());
                 if (defCount > 0)
                     holdChoke = false;
             }

@@ -178,7 +178,7 @@ namespace McRave::Command
         // Ghost - Cloak / Nuke
         else if (unit.getType() == Terran_Ghost) {
 
-            if (!unit.unit()->isCloaked() && unit.getEnergy() >= 50 && unit.getPosition().getDistance(unit.getEngagePosition()) < unit.getEngageRadius())
+            if (!unit.unit()->isCloaked() && unit.getEnergy() >= 50 && (Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) || unit.getPosition().getDistance(unit.getEngagePosition()) < unit.getEngageRadius()))
                 unit.unit()->useTech(TechTypes::Personnel_Cloaking);
 
             if (com(Terran_Nuclear_Missile) > 0 && unit.hasTarget() && unit.unit()->isCloaked() && unit.getPosition().getDistance(unit.getTarget().lock()->getPosition()) > 200) {

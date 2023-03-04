@@ -10,6 +10,7 @@ namespace McRave::Stations
     void onStart();
     void storeStation(BWAPI::Unit);
     void removeStation(BWAPI::Unit);
+    int getColonyCount(BWEB::Station*);
     int needGroundDefenses(BWEB::Station*);
     int needAirDefenses(BWEB::Station*);
     int getGroundDefenseCount(BWEB::Station*);

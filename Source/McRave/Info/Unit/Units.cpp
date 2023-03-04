@@ -39,6 +39,12 @@ namespace McRave::Units {
                     if (flyingBuilding && unit.getLastTile().isValid())
                         Events::onUnitLift(unit);
 
+                    // If this is a morphed unit that we haven't updated
+                    if (unit.unit()->exists() && unit.getType() != unit.unit()->getType()) {
+                        Broodwar << "Noticed a morphed " << unit.unit()->getType().c_str() << " from " << unit.getType().c_str() << endl;
+                        Events::onUnitMorph(unit.unit());
+                    }
+
                     // Update
                     unit.update();
 

@@ -145,10 +145,12 @@ namespace McRave::Workers {
                 return true;
 
             // Determine if we have excess assigned resources with openings available at the current Station
-            if (unit.hasResource() && unit.getResource().lock()->getType().isMineralField()) {
-                for (auto &mineral : Resources::getMyMinerals()) {
-                    if (mineral->getStation() == unit.getResource().lock()->getStation() && mineral->getGathererCount() < unit.getResource().lock()->getGathererCount() - 1)
-                        return true;
+            if (unit.unit()->isCarryingMinerals() || unit.unit()->isCarryingGas()) {
+                if (unit.hasResource() && unit.getResource().lock()->getType().isMineralField()) {
+                    for (auto &mineral : Resources::getMyMinerals()) {
+                        if (mineral->getStation() == unit.getResource().lock()->getStation() && mineral->getGathererCount() < unit.getResource().lock()->getGathererCount() - 1)
+                            return true;
+                    }
                 }
             }
             return false;

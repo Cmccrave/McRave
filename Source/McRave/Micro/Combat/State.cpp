@@ -33,6 +33,7 @@ namespace McRave::Combat::State {
             || (Players::ZvP() && find(staticRetreatTypes.begin(), staticRetreatTypes.end(), Zerg_Hydralisk) != staticRetreatTypes.end())
             || (Players::ZvZ() && Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "12Pool")
             || (Players::ZvZ() && Spy::getEnemyTransition() == "2HatchSpeedling" && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0)
+            || (Players::ZvZ() && Spy::getEnemyTransition() == "3HatchSpeedling" && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0)
             || (Players::ZvZ() && Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 00) && !Terrain::getEnemyStartingPosition().isValid())
             || (Players::ZvZ() && Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45)))
             staticRetreatTypes.push_back(Zerg_Zergling);
@@ -121,7 +122,7 @@ namespace McRave::Combat::State {
                 || Broodwar->getGameType() == GameTypes::Use_Map_Settings
                 || unit.attemptingRunby())
                 unit.setGlobalState(GlobalState::Attack);
-            else if (isStaticRetreat(unit.getType()))
+            else if (isStaticRetreat(unit.getType()) && !Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()))
                 unit.setGlobalState(GlobalState::Retreat);
             else
                 unit.setGlobalState(GlobalState::Attack);

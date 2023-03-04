@@ -14,6 +14,14 @@ namespace McRave::Spy::General {
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit =*u;
 
+                // If unit type is changing now, remove it from the timings
+                if ((unit.getType() == Zerg_Lair || unit.getType() == Zerg_Hive
+                    || unit.getType() == Zerg_Greater_Spire
+                    || unit.getType() == Zerg_Sunken_Colony || unit.getType() == Zerg_Spore_Colony) && !unit.isCompleted()) {
+                    unitsStored.erase(unit.unit());
+                    continue;
+                }
+
                 // Estimate the finishing frame - HACK: Sometimes time arrival was negative
                 if (unitsStored.find(unit.unit()) == unitsStored.end() && (unit.getType().isBuilding() || unit.timeArrivesWhen().minutes > 0)) {
                     theSpy.enemyTimings[unit.getType()].countStartedWhen.push_back(unit.timeStartedWhen());
@@ -66,6 +74,7 @@ namespace McRave::Spy::General {
             }
 
             theSpy.workersNearUs = 0;
+            theSpy.productionCount = (player.getCurrentRace() == Races::Zerg ? 1 : 0); // Starting hatcheries always exist
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit =*u;
 
@@ -99,6 +108,12 @@ namespace McRave::Spy::General {
                 if (Util::getTime() < Time(5, 00)) {
                     if (unit.getType().isBuilding() && unit.isProxy())
                         theSpy.proxy.possible = true;
+                }
+
+                // Non starting hatchery incrementing
+                if (unit.getType() == Zerg_Hatchery || unit.getType() == Zerg_Lair || unit.getType() == Zerg_Hive) {
+                    if (find(mapBWEM.StartingLocations().begin(), mapBWEM.StartingLocations().end(), unit.getTilePosition()) == mapBWEM.StartingLocations().end())
+                        theSpy.productionCount++;
                 }
             }
         }

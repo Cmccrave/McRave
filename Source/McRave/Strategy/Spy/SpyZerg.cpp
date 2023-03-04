@@ -10,10 +10,6 @@ namespace McRave::Spy::Zerg {
 
         void enemyZergBuilds(PlayerInfo& player, StrategySpy& theSpy)
         {
-            auto enemyHatchCount = Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery)
-                + Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair)
-                + Players::getVisibleCount(PlayerState::Enemy, Zerg_Hive);
-
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit =*u;
 
@@ -25,21 +21,21 @@ namespace McRave::Spy::Zerg {
             }
 
             // Zerg builds
-            if ((theSpy.expand.possible || enemyHatchCount > 1) && completesBy(2, Zerg_Hatchery, Time(3, 15)))
+            if ((theSpy.expand.possible || theSpy.productionCount > 1) && completesBy(2, Zerg_Hatchery, Time(3, 15)))
                 theSpy.build.name = "HatchPool";
-            else if ((theSpy.expand.possible || enemyHatchCount > 1) && completesBy(2, Zerg_Hatchery, Time(4, 00)))
+            else if ((theSpy.expand.possible || theSpy.productionCount > 1) && completesBy(2, Zerg_Hatchery, Time(4, 00)))
                 theSpy.build.name = "PoolHatch";
-            else if (!theSpy.expand.possible && enemyHatchCount == 1 && completesBy(1, Zerg_Lair, Time(3, 45)))
+            else if (!theSpy.expand.possible && theSpy.productionCount == 1 && completesBy(1, Zerg_Lair, Time(3, 45)))
                 theSpy.build.name = "PoolLair";
 
             // Build based on the opener seen
             if (theSpy.opener.name == "4Pool" || theSpy.opener.name == "9Pool" || theSpy.opener.name == "OverPool" || theSpy.opener.name == "12Pool") {
-                if (enemyHatchCount > 1)
+                if (theSpy.productionCount > 1)
                     theSpy.build.name = "PoolHatch";
                 else if (completesBy(1, Zerg_Lair, Time(3, 45)))
                     theSpy.build.name = "PoolLair";
             }
-            if (enemyHatchCount > 1 && (theSpy.opener.name == "9Hatch" || theSpy.opener.name == "10Hatch" || theSpy.opener.name == "12Hatch"))
+            if (theSpy.productionCount > 1 && (theSpy.opener.name == "9Hatch" || theSpy.opener.name == "10Hatch" || theSpy.opener.name == "12Hatch"))
                 theSpy.build.name = "HatchPool";
 
             // Build based on the transition seen
@@ -49,10 +45,6 @@ namespace McRave::Spy::Zerg {
 
         void enemyZergOpeners(PlayerInfo& player, StrategySpy& theSpy)
         {
-            auto enemyHatchCount = Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery)
-                + Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair)
-                + Players::getVisibleCount(PlayerState::Enemy, Zerg_Hive);
-
             // Pool timing
             if (theSpy.build.name == "PoolHatch" || theSpy.build.name == "PoolLair" || (vis(Zerg_Zergling) > 0 && Util::getTime() < Time(3, 45))) {
                 if (theSpy.rushArrivalTime < Time(2, 45)
@@ -91,52 +83,49 @@ namespace McRave::Spy::Zerg {
 
         void enemyZergTransitions(PlayerInfo& player, StrategySpy& theSpy)
         {
-            auto enemyHatchCount = Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery)
-                + Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair)
-                + Players::getVisibleCount(PlayerState::Enemy, Zerg_Hive);
-
             // Ling rush detection
             if (theSpy.opener.name == "4Pool"
-                || (!Players::ZvZ() && theSpy.opener.name == "9Pool" && Util::getTime() > Time(3, 30) && Util::getTime() < Time(4, 30) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && enemyHatchCount == 1))
+                || (!Players::ZvZ() && theSpy.opener.name == "9Pool" && Util::getTime() > Time(3, 30) && Util::getTime() < Time(4, 30) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && theSpy.productionCount == 1))
                 theSpy.transition.name = "LingRush";
 
             // Zergling all-in transitions
             if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0) {
-                if (Players::ZvZ() && ((theSpy.opener.name == "10Hatch" && Util::getTime() > Time(3, 45))
-                    || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone) <= 7 && Util::getTime() > Time(3, 00) && (theSpy.build.name == "PoolHatch" || theSpy.build.name == "HatchPool"))
-                    || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Evolution_Chamber) == 0 && Util::getTime() > Time(4, 30))
-                    || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) == 2 && Util::getTime() > Time(3, 45))))
-                    theSpy.transition.name = "2HatchSpeedling";
-                else if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) == 3 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 12 && Util::getTime() > Time(3, 45))
+                if (theSpy.productionCount == 3 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 12 && Util::getTime() > Time(3, 45))
                     theSpy.transition.name = "3HatchSpeedling";
+                else if (Players::ZvZ() && theSpy.productionCount == 2) {
+                    if ((Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone) <= 7 && Util::getTime() > Time(3, 00) && (theSpy.build.name == "PoolHatch" || theSpy.build.name == "HatchPool"))
+                        || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && Util::getTime() > Time(3, 45)))
+                        theSpy.transition.name = "2HatchSpeedling";
+                }
+                else if (arrivesBy(20, Zerg_Zergling, Time(5, 10)))
+                    theSpy.transition.name = "2HatchSpeedling";
                 else if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Evolution_Chamber) > 0 && !theSpy.expand.possible && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 12 && Util::getTime() < Time(4, 00))
                     theSpy.transition.name = "+1Ling";
             }
 
             // Hydralisk/Lurker build detection
             if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0) {
-                if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) == 3)
+                if (theSpy.productionCount == 3)
                     theSpy.transition.name = "3HatchHydra";
-                else if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) == 2)
+                else if (theSpy.productionCount == 2)
                     theSpy.transition.name = "2HatchHydra";
-                else if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) == 1)
+                else if (theSpy.productionCount == 1)
                     theSpy.transition.name = "1HatchHydra";
                 else if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) == 2)
                     theSpy.transition.name = "2HatchLurker";
                 else if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 1 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) == 0)
                     theSpy.transition.name = "1HatchLurker";
-                else if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 4)
-                    theSpy.transition.name = "5Hatch";
+                else if (theSpy.productionCount >= 4)
+                    theSpy.transition.name = "5HatchHydra";
             }
 
             // Mutalisk transition detection
             if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) == 0) {
-                if ((Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) > 0) && enemyHatchCount == 3)
+                if ((Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) > 0) && theSpy.productionCount == 3)
                     theSpy.transition.name = "3HatchMuta";
-                else if ((Util::getTime() < Time(3, 30) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) > 0 && (enemyHatchCount == 2 || theSpy.expand.possible)))
+                else if (theSpy.productionCount == 2 && (completesBy(1, Zerg_Lair, Time(4, 25)) || completesBy(1, Zerg_Spire, Time(5, 45))))
                     theSpy.transition.name = "2HatchMuta";
-                else if ((Spy::getEnemyBuild() == "PoolLair" && Players::ZvZ())
-                    || (completesBy(1, Zerg_Spire, Time(5, 15))))
+                else if (theSpy.productionCount == 1 && ((Spy::getEnemyBuild() == "PoolLair" && Players::ZvZ()) || (completesBy(1, Zerg_Spire, Time(5, 15)))))
                     theSpy.transition.name = "1HatchMuta";
             }
         }

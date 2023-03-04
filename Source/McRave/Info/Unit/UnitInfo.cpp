@@ -439,8 +439,14 @@ namespace McRave
         else
             extra = 9;
 
+        // Reset frames when a Zerg building is morphing to another stage
+        if ((type == Zerg_Lair || type == Zerg_Hive || type == Zerg_Greater_Spire || type == Zerg_Sunken_Colony || type == Zerg_Spore_Colony) && !completed) {
+            completeFrame = -999;
+            startedFrame = -999;
+        }
+
         // Calculate completion based on build time
-        if (!bwUnit->isCompleted()) {
+        else if (!completed) {
             auto ratio = (double(health) - (0.1 * double(type.maxHitPoints()))) / (0.9 * double(type.maxHitPoints()));
             completeFrame = Broodwar->getFrameCount() + int(std::round((1.0 - ratio) * double(type.buildTime()))) + extra;
             startedFrame = Broodwar->getFrameCount() - int(std::round((ratio) * double(type.buildTime())));
@@ -656,7 +662,7 @@ namespace McRave
 
         // If this is a ghost, it shouldn't need picking up unless near nuke location
         if (getType() == Terran_Ghost)
-            return mapBWEM.GetArea(getTilePosition()) != Terrain::getEnemyMain()->getBase()->GetArea();
+            return !Terrain::inArea(mapBWEM.GetArea(TilePosition(getDestination())), getPosition());
 
         auto unitTarget = getTarget().lock();
         auto range = unitTarget->isFlying() ? getAirRange() : getGroundRange();

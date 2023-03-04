@@ -31,7 +31,7 @@ namespace McRave {
         threatened = false;
         for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
             if (!enemy->getType().isWorker() && enemy->hasTarget() && enemy->getTarget().lock()->getType().isWorker() && enemy->isCompleted()
-                && enemy->canAttackGround() && enemy->isThreatening() && enemy->getPosition().getDistance(position) < max(96.0, enemy->getGroundRange()))
+                && enemy->canAttackGround() && enemy->getPosition().getDistance(position) < max(160.0, enemy->getGroundRange()))
                 threatened = true;
         }
     }

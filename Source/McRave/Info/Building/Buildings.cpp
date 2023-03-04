@@ -116,9 +116,9 @@ namespace McRave::Buildings {
                 // Extra larva timings (main): 3:02, 3:31, 4:00
                 if (building.getTilePosition() == morphTile) {
                     if (morphTile == Terrain::getMainTile()) {
-                        if (Util::getTime() >= Time(3, 02)
-                            || (Util::getTime() >= Time(3, 31) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
-                            || (BuildOrder::getCurrentTransition().find("3Hatch") != string::npos)
+                        if ((Util::getTime() >= Time(2, 31) && BuildOrder::getCurrentTransition().find("1Hatch") != string::npos)
+                            || (Util::getTime() >= Time(3, 02) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
+                            || Util::getTime() >= Time(3, 31)
                             || Players::ZvZ())
                             morphType = Zerg_Lair;
                     }
