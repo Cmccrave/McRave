@@ -122,15 +122,14 @@ namespace McRave::Command {
 
         // Run irradiated units away
         else if (unit.unit()->isIrradiated()) {
-            unit.command(Move, Terrain::getClosestMapCorner(unit.getPosition()));
+            unit.setCommand(Move, Terrain::getClosestMapCorner(unit.getPosition()), "Irradiated");
             return true;
         }
 
         // If unit has a transport, load into it if we need to
         else if (unit.hasTransport()) {
             if (unit.isRequestingPickup()) {
-                unit.command(Right_Click_Unit, *unit.getTransport().lock());
-                unit.circle(Colors::Yellow);
+                unit.setCommand(Right_Click_Unit, *unit.getTransport().lock(), "Loading");
                 return true;
             }
         }
@@ -141,7 +140,7 @@ namespace McRave::Command {
                 return u->getType() == UnitTypes::Protoss_Pylon;
             });
             if (pylon && pylon->unit() && pylon->unit()->exists() && pylon->getPosition().getDistance(unit.getPosition()) < 128.0) {
-                unit.command(Attack_Unit, *pylon);
+                unit.setCommand(Attack_Unit, *pylon, "Attack");
                 return true;
             }
         }
@@ -179,7 +178,10 @@ namespace McRave::Command {
                     const auto botRight = topLeft + Position(unit.getBuildType().tileWidth() * 32, unit.getBuildType().tileHeight() * 32);
                     return Util::rectangleIntersect(topLeft, botRight, unitTarget->getPosition());
                 }
-                if (unitTarget->isThreatening() && (unit.getUnitsTargetingThis().empty() || unit.isHealthy()) && unit.isWithinRange(*unitTarget) && unit.isWithinGatherRange() && (/*!Players::ZvZ() || */unitTarget->getType().isWorker()))
+
+                const auto workerFightZvZ = Players::ZvZ() && com(Zerg_Zergling) > 0;
+
+                if (unitTarget->isThreatening() && (unit.getUnitsTargetingThis().empty() || unit.isHealthy()) && unit.isWithinRange(*unitTarget) && unit.isWithinGatherRange() && (workerFightZvZ || unitTarget->getType().isWorker()))
                     return true;
             }
 
@@ -192,7 +194,7 @@ namespace McRave::Command {
 
         // If unit can move and should attack
         if (canAttack() && shouldAttack()) {
-            unit.command(Attack_Unit, *unitTarget);
+            unit.setCommand(Attack_Unit, *unitTarget, "Attack");
             return true;
         }
         return false;
@@ -251,12 +253,12 @@ namespace McRave::Command {
 
         // If unit can move and should approach
         if (canApproach() && shouldApproach()) {
-            if (!unit.isSuicidal() && unitTarget->getSpeed() < unit.getSpeed()) {
-                unit.command(Right_Click_Position, unitTarget->getPosition());
+            if (!unit.isSuicidal() && !unit.getType().isWorker() && unitTarget->getSpeed() < unit.getSpeed()) {
+                unit.setCommand(Right_Click_Position, unitTarget->getPosition(), "Approach");
                 return true;
             }
             else {
-                unit.command(Move, unitTarget->getPosition());
+                unit.setCommand(Move, unitTarget->getPosition(), "Approach");
                 return true;
             }
         }
@@ -347,7 +349,7 @@ namespace McRave::Command {
 
             // Necessary for mutas to not overshoot
             if (unit.getRole() == Role::Combat && unit.hasTarget() && !unit.attemptingSurround() && !unit.isSuicidal() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack) {
-                unit.command(Right_Click_Position, unit.getTarget().lock()->getPosition());
+                unit.setCommand(Right_Click_Position, unit.getTarget().lock()->getPosition(), "Move");
                 return true;
             }
 
@@ -358,19 +360,19 @@ namespace McRave::Command {
             //}
 
             if (!unit.getDestinationPath().isReachable()) {
-                unit.command(Move, unit.getDestination());
+                unit.setCommand(Move, unit.getDestination(), "Move");
                 return true;
             }
 
             // Find the best position to move to
             auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
             if (bestPosition.isValid()) {
-                unit.command(Move, bestPosition);
+                unit.setCommand(Move, bestPosition, "Move");
                 return true;
             }
             else {
                 bestPosition = unit.getDestination();
-                unit.command(Move, bestPosition);
+                unit.setCommand(Move, bestPosition, "Move");
                 return true;
             }
         }
@@ -480,7 +482,7 @@ namespace McRave::Command {
             // If we found a valid position, move to it
             auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
             if (bestPosition.isValid()) {
-                unit.command(Move, bestPosition);
+                unit.setCommand(Move, bestPosition, "Kite");
                 return true;
             }
         }
@@ -500,11 +502,11 @@ namespace McRave::Command {
             // TODO Hold position units on ramp if melee vs melee
             if (unit.getFormation().isValid() && unit.getDestination() == unit.getFormation() && unit.getPosition().getDistance(unit.getFormation()) < 4) {
                 if (unit.getCommandType() != UnitCommandTypes::Hold_Position)
-                    unit.command(UnitCommandTypes::Hold_Position, unit.getPosition());
+                    unit.setCommand(UnitCommandTypes::Hold_Position, unit.getPosition(), "Hold");
                 return true;
             }
             else {
-                unit.command(Move, unit.getFormation());
+                unit.setCommand(Move, unit.getFormation(), "Defend");
                 return true;
             }
         }
@@ -526,11 +528,11 @@ namespace McRave::Command {
             auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
 
             if (bestPosition.isValid()) {
-                unit.command(Move, bestPosition);
+                unit.setCommand(Move, bestPosition, "Explore");
                 return true;
             }
             else {
-                unit.command(Move, unit.getDestination());
+                unit.setCommand(Move, unit.getDestination(), "Explore");
                 return true;
             }
         }
@@ -565,11 +567,11 @@ namespace McRave::Command {
 
             auto bestPosition = findViablePosition(unit, unit.getNavigation(), 12, scoreFunction);
             if (bestPosition.isValid()) {
-                unit.command(Move, bestPosition);
+                unit.setCommand(Move, bestPosition, "Retreat");
                 return true;
             }
             else {
-                unit.command(Move, Stations::getDefendPosition(Stations::getClosestRetreatStation(unit)));
+                unit.setCommand(Move, Stations::getClosestRetreatStation(unit)->getBase()->Center(), "Retreat");
                 return true;
             }
         }
@@ -592,14 +594,14 @@ namespace McRave::Command {
         if (unit.getPosition().getDistance(unit.getDestination()) < 32.0)
             return false;
         if (unit.getPosition().getDistance(unit.getDestination()) < 64.0) {
-            unit.command(Right_Click_Position, unit.getDestination());
+            unit.setCommand(Right_Click_Position, unit.getDestination(), "Escort");
             return true;
         }
 
         // If we found a valid position, move to it
         auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
         if (bestPosition.isValid()) {
-            unit.command(Move, bestPosition);
+            unit.setCommand(Move, bestPosition, "Escort");
             return true;
         }
         return false;
@@ -615,7 +617,7 @@ namespace McRave::Command {
             const auto airDist =        max(1.0, p.getDistance(unit.getDestination()));
             const auto grdDist =        max(1.0, BWEB::Map::getGroundDistance(p, unit.getDestination()));
             const auto dist =           grdDist;
-            const auto distRetreat =    p.getDistance(Stations::getDefendPosition(closestRetreat));
+            const auto distRetreat =    p.getDistance(closestRetreat->getBase()->Center());
 
             if (grdDist == DBL_MAX)
                 return 0.0;
@@ -640,7 +642,7 @@ namespace McRave::Command {
 
         auto bestPosition = findViablePosition(unit, unit.getNavigation(), 20, scoreFunction);
         if (bestPosition.isValid()) {
-            unit.command(Move, bestPosition);
+            unit.setCommand(Move, bestPosition, "Transport");
             return true;
         }
         return false;

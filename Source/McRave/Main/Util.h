@@ -99,15 +99,6 @@ namespace McRave::Util {
         return best;
     }
 
-    // Written by Hannes 8)
-    template<typename T, int idx = 0>
-    int iterateCommands(T const &tpl, UnitInfo& unit) {
-        if constexpr (idx < std::tuple_size<T>::value)
-            if (!std::get<idx>(tpl)(unit))
-                return iterateCommands<T, idx + 1>(tpl, unit);
-        return idx;
-    }
-
     template<typename F>
     void testPointOnPath(BWEB::Path& path, F &&pred) {
         BWAPI::TilePosition last = BWAPI::TilePositions::Invalid;

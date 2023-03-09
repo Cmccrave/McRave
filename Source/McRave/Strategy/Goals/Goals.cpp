@@ -291,7 +291,7 @@ namespace McRave::Goals {
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
 
             // Clear out base early game
-            if (Util::getTime() < Time(4, 00) && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
+            if (Util::getTime() < Time(4, 00) && !Spy::enemyProxy() && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
                 auto oldestTile = Terrain::getOldestPosition(Terrain::getMainArea());
 
                 if (oldestTile.isValid())
@@ -304,8 +304,31 @@ namespace McRave::Goals {
                     assignNumberToGoal(Position(Terrain::getNaturalChoke()->Center()), Zerg_Overlord, 1, GoalType::Escort);
             }
 
+            // Assign an Overlord to each natural Station
+            for (auto &station : Stations::getStations(PlayerState::Self)) {
+                if (!station->isNatural())
+                    continue;
+
+                auto closestSunk = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
+                    return u->getType() == Zerg_Sunken_Colony && Terrain::inArea(station->getBase()->GetArea(), u->getPosition());
+                });
+                auto closestSpore = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
+                    return u->getType() == Zerg_Spore_Colony && Terrain::inArea(station->getBase()->GetArea(), u->getPosition());
+                });
+
+                if (closestSpore)
+                    assignNumberToGoal(closestSpore->getPosition(), Zerg_Overlord, 1, GoalType::Escort);
+                else if (closestSunk)
+                    assignNumberToGoal(closestSunk->getPosition(), Zerg_Overlord, 1, GoalType::Escort);
+                else
+                    assignNumberToGoal(station->getBase()->Center(), Zerg_Overlord, 1, GoalType::Escort);
+            }
+
             // Assign an Overlord to each Station
             for (auto &station : Stations::getStations(PlayerState::Self)) {
+                if (station->isNatural())
+                    continue;
+
                 auto closestSunk = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
                     return u->getType() == Zerg_Sunken_Colony && Terrain::inArea(station->getBase()->GetArea(), u->getPosition());
                 });

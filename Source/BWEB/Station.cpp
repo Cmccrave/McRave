@@ -344,6 +344,9 @@ namespace BWEB {
                     auto tile = TilePosition(x, y);
                     auto center = Position(tile) + Position(64, 48);
                     auto dist = distCalc(center);
+                    if (natural && partnerBase && dist < 160.0)
+                        continue;
+
                     if (dist < distBest && Map::isPlaceable(Broodwar->self()->getRace().getResourceDepot(), tile)) {
                         distBest = dist;
                         tileBest = tile;

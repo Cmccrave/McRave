@@ -46,7 +46,9 @@ namespace McRave::Scouts {
         set<Position> unexploredMains, unexploredNaturals;
         map<ScoutType, ScoutTarget> scoutTargets;
 
-        int scoutDeadFrame = -5000;
+        bool scoutDied = false;
+        bool lingScoutDied = false;
+
         bool mainScouted = false;
         bool natScouted = false;
         bool info = false;
@@ -212,20 +214,24 @@ namespace McRave::Scouts {
                 if (total(Zerg_Mutalisk) >= 6
                     || Spy::getEnemyBuild() == "FFE"
                     || (Players::ZvT() && Spy::enemyProxy())
-                    || (Stations::getStations(PlayerState::Enemy).size() >= 2)
+                    || (!Players::ZvZ() && Stations::getStations(PlayerState::Enemy).size() >= 2)
                     || (Players::ZvZ() && Util::getTime() > Time(5, 00)))
                     safe.desiredScoutTypeCounts[Zerg_Overlord] = 0;
 
                 // Determine if we need to create a new checking unit to try and detect the enemy build
                 const auto needEnemyCheckZvZ = Players::ZvZ() && !Terrain::foundEnemy() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0;
                 const auto needEnemyCheckZvP = Players::ZvP() && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0
-                    && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() > Time(3, 00);
+                    && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() > Time(3, 45);
                 const auto needEnemyCheckZvT = Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0
-                    && Spy::getEnemyTransition() == "Unknown" && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() > Time(3, 00);
+                    && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() > Time(3, 45);
+
+                const auto mainCheck = (!Terrain::getEnemyMain() || Broodwar->getFrameCount() - Grids::getLastVisibleFrame(Terrain::getEnemyMain()->getBase()->Location()) > 120);
+                const auto armyCheck = (!Units::getEnemyArmyCenter().isValid() || Broodwar->getFrameCount() - Grids::getLastVisibleFrame(Units::getEnemyArmyCenter()) > 120);
 
                 const auto needEnemyCheck = (needEnemyCheckZvZ || needEnemyCheckZvP || needEnemyCheckZvT)
-                    && (!Terrain::getEnemyMain() || Broodwar->getFrameCount() - Grids::getLastVisibleFrame(Terrain::getEnemyMain()->getBase()->Location()) > 120);
+                    && armyCheck;
 
+                main.desiredScoutTypeCounts[Zerg_Zergling] = 0;
                 if (needEnemyCheck && total(Zerg_Zergling) >= 6) {
                     main.desiredScoutTypeCounts[Zerg_Zergling] = 1;
                     main.desiredScoutTypeCounts[Zerg_Drone] = 0;
@@ -303,6 +309,8 @@ namespace McRave::Scouts {
             }
 
             for (auto &[type, count] : totalDesiredScoutTypeCounts) {
+                if ((type.isWorker() && scoutDied) || (type == Zerg_Zergling && lingScoutDied))
+                    continue;
                 if (totalCurrentScoutTypeCounts[type] < totalDesiredScoutTypeCounts[type])
                     assign(type);
                 else if (totalCurrentScoutTypeCounts[type] > totalDesiredScoutTypeCounts[type])
@@ -500,7 +508,7 @@ namespace McRave::Scouts {
                 if (unit.getDestination().isValid() && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination()) && (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.getDestination())) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.getDestination()))))) {
 
                     const auto threat = [&](const TilePosition &t) {
-                        return Grids::getGroundThreat(Position(t) + Position(16, 16), PlayerState::Enemy) * 50.0;
+                        return Grids::getGroundThreat(Position(t) + Position(16, 16), PlayerState::Enemy) * 1000.0;
                     };
 
                     BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
@@ -522,36 +530,29 @@ namespace McRave::Scouts {
                         return p.getDistance(unit.getPosition()) >= 96.0 && BWEB::Map::isUsed(TilePosition(p)) == None;
                     });
 
-                    auto resource = Resources::getClosestResource(newDestination, [&](auto &r) {
-                        return r->getPosition().getDistance(newDestination) < unit.getPosition().getDistance(newDestination) && Util::boxDistance(r->getType(), r->getPosition(), unit.getType(), unit.getPosition()) > 32.0;
-                    });
-                    if (resource)
-                        unit.setNavigation(resource->getPosition());
-                    else if (newDestination.isValid())
+                    //auto resource = Resources::getClosestResource(newDestination, [&](auto &r) {
+                    //    return r->getPosition().getDistance(newDestination) < unit.getPosition().getDistance(newDestination) && Util::boxDistance(r->getType(), r->getPosition(), unit.getType(), unit.getPosition()) > 32.0;
+                    //});
+                    //if (resource)
+                    //    unit.setNavigation(resource->getPosition());
+                    //else 
+                    if (newDestination.isValid())
                         unit.setNavigation(newDestination);
                 }
                 Visuals::drawPath(unit.getDestinationPath());
             }
 
-
             Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Red);
         }
-
-        constexpr tuple commands{ Command::attack, Command::kite, Command::gather, Command::explore, Command::move };
+                
         void updateDecision(UnitInfo& unit)
         {
-            // Convert our commands to strings to display what the unit is doing for debugging
-            map<int, string> commandNames{
-                make_pair(0, "Attack"),
-                make_pair(1, "Kite"),
-                make_pair(2, "Gather"),
-                make_pair(3, "Explore"),
-                make_pair(4, "Move")
-            };
-
-            int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-            int i = Util::iterateCommands(commands, unit);
-            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
+            // Iterate commands, if one is executed then don't try to execute other commands
+            static const auto commands ={ Command::attack, Command::kite, Command::gather, Command::explore, Command::move };
+            for (auto cmd : commands) {
+                if (cmd(unit))
+                    break;
+            }
         }
 
         void updateScouts()
@@ -671,7 +672,10 @@ namespace McRave::Scouts {
 
     void removeUnit(UnitInfo& unit)
     {
-        scoutDeadFrame = Broodwar->getFrameCount();
+        if (unit.getType().isWorker())
+            scoutDied = true;
+        else
+            lingScoutDied = true;
     }
 
     bool gatheringInformation() { return info; }

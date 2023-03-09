@@ -90,6 +90,9 @@ namespace McRave::Buildings {
                 Events::onUnitCancelBecauseBWAPISucks(building);
             }
 
+            // Cancelling hatchery if against 4pool early
+
+
             // Cancelling colonies we don't need now
             if (building.getType() == Zerg_Creep_Colony) {
 

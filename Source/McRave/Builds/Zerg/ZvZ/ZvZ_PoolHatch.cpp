@@ -31,7 +31,7 @@ namespace McRave::BuildOrder::Zerg {
             gasLimit =                                      com(Zerg_Drone) >= 10 ? gasMax() : 0;
             firstUpgrade =                                  (vis(Zerg_Zergling) >= 6 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
             
-            buildQueue[Zerg_Hatchery] =                     1 + (s >= 22 && vis(Zerg_Extractor) > 0);
+            buildQueue[Zerg_Hatchery] =                     1 + (s >= 22 && vis(Zerg_Extractor) > 0 && !Spy::enemyRush());
             buildQueue[Zerg_Spawning_Pool] =                s >= 24;
             buildQueue[Zerg_Extractor] =                    (s >= 24 && vis(Zerg_Spawning_Pool) > 0);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18);

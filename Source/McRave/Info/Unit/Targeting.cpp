@@ -10,15 +10,21 @@ namespace McRave::Targets {
     map<UnitType, double> allowedBuildings;
     map<UnitInfo*, int> meleeSpotsAvailable;
 
+    enum class Priority {
+        Ignore, Trivial, Minor, Major, Critical
+    };
+
     namespace {
 
-        bool allowThreatenTarget(UnitInfo& unit, UnitInfo& target)
-        {
-            if (unit.getType() == Zerg_Mutalisk) {
-                return (Spy::getEnemyTransition() != "4Gate" || Util::getTime() > Time(10, 00));
-            }
-            return true;
-        }
+        bool enemyHasGround;
+        bool enemyHasAir;
+        bool enemyCanHitAir;
+        bool enemyCanHitGround;
+
+        bool selfHasGround;
+        bool selfHasAir;
+        bool selfCanHitAir;
+        bool selfCanHitGround;
 
         bool allowWorkerTarget(UnitInfo& unit, UnitInfo& target) {
             if (!target.getType().isWorker())
@@ -45,82 +51,53 @@ namespace McRave::Targets {
             return true;
         }
 
-        bool isValidTarget(UnitInfo& unit, UnitInfo& target)
+        Priority getPriority(UnitInfo &unit, UnitInfo& target)
         {
-            if (!target.unit()
-                || target.isInvincible()
-                || !target.getWalkPosition().isValid())
-                return false;
-            return true;
-        }
+            bool targetCanAttack = !unit.isHidden() && (((unit.getType().isFlyer() && target.canAttackAir()) || (!unit.getType().isFlyer() && target.canAttackGround()) || (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine)));
+            bool unitCanAttack = !target.isHidden() && ((target.isFlying() && unit.canAttackAir()) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));
 
-        bool suitableTargetWorker(UnitInfo& unit, UnitInfo& target)
-        {
-            return false;
-        }
-
-        bool suitableTargetBuilding(UnitInfo& unit, UnitInfo& target)
-        {
-            return false;
-        }
-
-        bool suitableTargetUnit(UnitInfo& unit, UnitInfo& target)
-        {
-            return false;
-        }
-
-        bool isSuitableTarget(UnitInfo& unit, UnitInfo& target)
-        {
-            if (target.movedFlag)
-                return false;
-
-            auto &enemyStrength = Players::getStrength(PlayerState::Enemy);
-            auto &myStrength = Players::getStrength(PlayerState::Self);
-
-            bool targetCanAttack = !unit.isHidden() && (((unit.getType().isFlyer() && target.getAirDamage() > 0.0) || (!unit.getType().isFlyer() && target.canAttackGround()) || (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine)));
-            bool unitCanAttack = !target.isHidden() && ((target.isFlying() && unit.getAirDamage() > 0.0) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));
-            bool enemyHasGround = enemyStrength.groundToAir > 0.0 || enemyStrength.groundToGround > 0.0 || enemyStrength.groundDefense > 0.0;
-            bool enemyHasAir = enemyStrength.airToGround > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0;
-            auto enemyCanHitAir = enemyStrength.groundToAir > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0;
-            bool selfHasGround = myStrength.groundToAir > 0.0 || myStrength.groundToGround > 0.0;
-            bool selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0;
-
-            bool enemyCanDefendUnit = unit.isFlying() ? enemyStrength.airDefense > 0.0 : enemyStrength.groundDefense > 0.0;
+            if (target.movedFlag || !unitCanAttack)
+                return Priority::Ignore;
 
             // Check if the target is important right now to attack
-            bool targetMatters = target.getType().isSpell()
-                || (target.canAttackAir() && selfHasAir)
-                || (target.canAttackGround())
+            bool targetMatters = (target.canAttackAir() && selfHasAir)
+                || (target.canAttackGround() && selfHasGround)
                 || (target.getType().spaceProvided() > 0)
                 || (target.getType().isDetector())
                 || (!target.canAttackAir() && !target.canAttackGround() && !unit.hasTransport())
-                || (target.getType().isWorker())
                 || (!enemyHasGround && !enemyHasAir)
-                || (Players::ZvZ() && enemyCanDefendUnit)
                 || (Players::ZvZ() && Spy::enemyFastExpand())
                 || Util::getTime() > Time(6, 00)
-                || Spy::enemyGreedy()
-                || (target.getType() == Protoss_Pylon && target.isProxy() && Spy::getEnemyTransition() == "ZealotRush");
-
-            if (!unitCanAttack)
-                return false;
+                || Spy::enemyGreedy();
 
             // Combat Role
             if (unit.getRole() == Role::Combat) {
 
-                // Generic
+                // Generic critical priority
+                if (target.isProxy() && target.getType() == Protoss_Photon_Cannon)
+                    return Priority::Critical;                
+
+                // Generic major priority
+                if (target.isProxy()
+                    || (target.isThreatening() && Terrain::inTerritory(PlayerState::Self, unit.getPosition())))
+                    return Priority::Major;
+
+                // Generic trivial
+                if (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir())     // Try not to attack buildings
+                    return Priority::Trivial;
+
+                // Generic ignore
                 if (!targetMatters
+                    || target.getType().isSpell()
                     || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getUnitsTargetingThis().size()) >= 4 && !target.isBurrowed())                          // Don't over target spider mines
                     || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                                         // Don't target interceptors as a flying unit
-                    || (!allowWorkerTarget(unit, target))
-                    || (!unit.isFlying() && target.getType() == Protoss_Corsair && target.getUnitsTargetingThis().size() > 2 && !unit.isWithinRange(target))
+                    || (target.getType().isWorker() && !allowWorkerTarget(unit, target))
+                    || (target.getType() == Protoss_Corsair && !unit.isFlying() && target.getUnitsTargetingThis().size() > 2 && !unit.isWithinRange(target))
                     || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())           // Don't target if invisible and can't attack this unit or we have no detectors in PvP
                     || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))           // Don't target flyers that we can't reach
-                    || (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir() && !target.isThreatening() && (target.getType() != Protoss_Pylon || !target.isProxy()) && Util::getTime() < Time(5, 00))     // Don't attack buildings that aren't threatening early on
-                    || (unit.isSpellcaster() && (target.getType() == Terran_Vulture_Spider_Mine || target.getType().isBuilding()))                                          // Don't cast spells on mines or buildings
-                    || (unit.isLightAir() && target.getType() == Protoss_Interceptor)
+                    || (unit.isFlying() && target.getType() == Protoss_Interceptor)
                     || (unit.getType().isWorker() && target.getType() == Terran_Bunker && !selfHasGround))
-                    return false;
+                    return Priority::Ignore;
 
                 // Zergling
                 if (unit.getType() == Zerg_Zergling) {
@@ -128,10 +105,10 @@ namespace McRave::Targets {
                         if ((Players::ZvZ() && !target.canAttackGround() && !Spy::enemyFastExpand())                                                                 // Avoid non ground hitters to try and kill drones
                             || (Players::ZvT() && target.getType().isWorker() && !target.isThreatening() && Spy::getEnemyBuild() == "RaxFact")                       // Avoid workers when we need to prepare for runbys|| 
                             || (BuildOrder::isProxy() && !target.isThreatening() && !target.getType().isWorker() && Util::getTime() < Time(6, 00)))
-                            return false;
+                            return Priority::Ignore;
                     }
                     if (unit.attemptingRunby() && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
-                        return false;
+                        return Priority::Ignore;
                 }
 
                 // Mutalisk
@@ -141,11 +118,8 @@ namespace McRave::Targets {
                     auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
                     auto invalidType = allowedBuildings.find(target.getType()) == allowedBuildings.end();
 
-                    if (target.isThreatening())
-                        return allowThreatenTarget(unit, target);
-
-                    if (Spy::getEnemyTransition() == "ZealotRush" && target.getType() == Protoss_Zealot)
-                        return true;
+                    if (Spy::getEnemyTransition() == "ZealotRush" && target.getType() == Protoss_Zealot && Util::getTime() < Time(9, 00))
+                        return Priority::Major;
 
                     if (!defendExpander && invalidType && !anythingTime && !anythingSupply && unit.attemptingHarass()
                         && !unit.canOneShot(target) && !target.getType().isWorker() && !target.isLightAir() && !unit.globalRetreat()) {
@@ -154,7 +128,7 @@ namespace McRave::Targets {
                             || (!target.getType().isWorker() && !target.getType().isBuilding() && !target.canAttackAir())                                                               // Avoid ground fighters only that we can't oneshot
                             || (target.getType().isBuilding() && enemyCanHitAir && !target.canAttackAir() && !target.canAttackGround())                                                 // Avoid buildings that don't fight
                             || (!unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding()))                                                                      // Avoid units we can't 2 shot
-                            return false;
+                            return Priority::Ignore;
 
                     }
                 }
@@ -162,7 +136,7 @@ namespace McRave::Targets {
                 // Lurker
                 if (unit.getType() == Zerg_Lurker) {
                     if (!target.getType().isWorker() && BuildOrder::isProxy())
-                        return false;
+                        return Priority::Ignore;
                 }
 
                 // Scourge
@@ -170,7 +144,7 @@ namespace McRave::Targets {
                     if ((!Stations::getStations(PlayerState::Enemy).empty() && target.getType().isBuilding())                                                                            // Avoid targeting buildings if the enemy has a base still
                         || target.getType() == Zerg_Overlord                                                                                                                // Don't target overlords
                         || target.getType() == Protoss_Interceptor)                                                                                                         // Don't target interceptors
-                        return false;
+                        return Priority::Ignore;
                 }
 
                 // Defiler
@@ -179,34 +153,29 @@ namespace McRave::Targets {
                         || target.getType().isWorker()
                         || (unit.targetsFriendly() && target.getType() != Zerg_Zergling)
                         || target.isFlying())
-                        return false;
+                        return Priority::Ignore;
                 }
 
                 // Zealot
                 if (unit.getType() == Protoss_Zealot) {
                     if ((target.getType() == Terran_Vulture_Spider_Mine && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) < 2)                     // Avoid mines without +2 to oneshot them
                         || ((target.getSpeed() > unit.getSpeed() || target.getType().isBuilding()) && !target.getType().isWorker() && BuildOrder::isRush()))                // Avoid faster units when we're rushing
-                        return false;
+                        return Priority::Ignore;
                 }
 
                 // Dark Templar
                 if (unit.getType() == Protoss_Dark_Templar) {
                     if (target.getType() == Terran_Vulture && !unit.isWithinRange(target))                                                                                  // Avoid vultures if not in range already
-                        return false;
+                        return Priority::Ignore;
                 }
 
                 // Ghost
                 if (unit.getType() == Terran_Ghost) {
                     if (!target.getType().isResourceDepot())
-                        return false;
+                        return Priority::Ignore;
                 }
             }
-
-            if (unit.getRole() == Role::Scout) {
-                if (!target.getType().isWorker() && !target.isThreatening())
-                    return false;
-            }
-            return true;
+            return Priority::Trivial;
         }
 
         double scoreTarget(UnitInfo& unit, UnitInfo& target)
@@ -357,7 +326,7 @@ namespace McRave::Targets {
 
             // Defender targeting (distance not used)
             else if (unit.getRole() == Role::Defender && boxDistance - range <= 16.0)
-                return healthScore() * priorityScore() * effectiveness();            
+                return healthScore() * priorityScore() * effectiveness();
 
             // Lurker burrowed targeting (only distance matters)
             else if (unit.getType() == Zerg_Lurker && unit.isBurrowed())
@@ -417,13 +386,32 @@ namespace McRave::Targets {
                 return true;
             };
 
+            const auto isValidTarget = [&](auto &target) {
+                if (!target.unit()
+                    || target.isInvincible()
+                    || !target.getWalkPosition().isValid())
+                    return false;
+                return true;
+            };
+
             auto scoreBest = 0.0;
+            auto priorityBest = Priority::Ignore;
+
             for (auto &t : Units::getUnits(pState)) {
                 UnitInfo &target = *t;
 
-                if (!isValidTarget(unit, target)
-                    || !isSuitableTarget(unit, target))
+                if (!isValidTarget(target))
                     continue;
+
+                auto priority = getPriority(unit, target);
+
+                if (priority == Priority::Ignore || priority < priorityBest)
+                    continue;
+
+                if (priority > priorityBest) {
+                    scoreBest = 0.0;
+                    priorityBest = priority;
+                }
 
                 // If this target is more important to target, set as current target
                 const auto thisUnit = scoreTarget(unit, target);
@@ -438,10 +426,19 @@ namespace McRave::Targets {
             for (auto &t : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &target = *t;
 
-                if (!isValidTarget(unit, target)
+                if (!isValidTarget(target)
                     || !target.isMarkedForDeath()
                     || unit.isLightAir())
                     continue;
+
+                auto priority = getPriority(unit, target);
+                if (priority == Priority::Ignore || priority < priorityBest)
+                    continue;
+
+                if (priority > priorityBest) {
+                    scoreBest = 0.0;
+                    priorityBest = priority;
+                }
 
                 // If this target is more important to target, set as current target
                 const auto thisUnit = scoreTarget(unit, target);
@@ -455,10 +452,19 @@ namespace McRave::Targets {
             for (auto &t : Units::getUnits(PlayerState::Neutral)) {
                 UnitInfo &target = *t;
 
-                if (!isValidTarget(unit, target)
+                if (!isValidTarget(target)
                     || !target.isMarkedForDeath()
                     || unit.isLightAir())
                     continue;
+
+                auto priority = getPriority(unit, target);
+                if (priority == Priority::Ignore || priority < priorityBest)
+                    continue;
+
+                if (priority > priorityBest) {
+                    scoreBest = 0.0;
+                    priorityBest = priority;
+                }
 
                 // If this target is more important to target, set as current target
                 const auto thisUnit = scoreTarget(unit, target);
@@ -581,10 +587,27 @@ namespace McRave::Targets {
                 allowedBuildings[Terran_Supply_Depot]= 50000.0;
             }
         }
+
+        void updateStatistics()
+        {
+            auto &enemyStrength = Players::getStrength(PlayerState::Enemy);
+            auto &myStrength = Players::getStrength(PlayerState::Self);
+
+            enemyHasGround = enemyStrength.groundToAir > 0.0 || enemyStrength.groundToGround > 0.0 || enemyStrength.groundDefense > 0.0;
+            enemyHasAir = enemyStrength.airToGround > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0;
+            enemyCanHitAir = enemyStrength.groundToAir > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0;
+            enemyCanHitGround = enemyStrength.groundToGround > 0.0 || enemyStrength.airToGround > 0.0 || enemyStrength.groundDefense > 0.0;
+
+            selfHasGround = myStrength.groundToAir > 0.0 || myStrength.groundToGround > 0.0;
+            selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0;
+            selfCanHitAir = myStrength.groundToAir > 0.0 || myStrength.airToAir > 0.0 || myStrength.airDefense > 0.0;
+            selfCanHitGround = myStrength.groundToGround > 0.0 || myStrength.airToGround > 0.0 || myStrength.groundDefense > 0.0;
+        }
     }
 
     void onFrame()
     {
+        updateStatistics();
         updateAllowedBuildings();
         updateTargets();
     }

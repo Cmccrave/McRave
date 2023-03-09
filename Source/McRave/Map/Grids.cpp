@@ -404,5 +404,6 @@ namespace McRave::Grids
     int getMobility(WalkPosition here) { return neutralGrid[gridWalkScale * here.y + here.x].mobility; }
     int getMobility(Position here) { return neutralGrid[gridWalkScale * (here.y / 8) + (here.x / 8)].mobility; }
 
-    int getLastVisibleFrame(TilePosition t) { return selfGrid[gridTileScale * t.y + t.x].visible; }
+    int getLastVisibleFrame(Position here) { return selfGrid[gridTileScale * (here.y / 32) + (here.x / 32)].visible; }
+    int getLastVisibleFrame(TilePosition here) { return selfGrid[gridTileScale * here.y + here.x].visible; }
 }

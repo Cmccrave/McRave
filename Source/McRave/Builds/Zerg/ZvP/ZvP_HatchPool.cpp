@@ -18,8 +18,8 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
             gasLimit =                                      0;
             scout =                                         scout || (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
-            wantNatural =                                   !Spy::enemyProxy();
-            unitLimits[Zerg_Drone] =                        13;
+            wantNatural =                                   !Spy::enemyProxy() || Spy::getEnemyBuild() == "CannonRush";
+            unitLimits[Zerg_Drone] =                        12;
             planEarly =                                     !Spy::enemyProxy() && (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
 
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 24);
@@ -34,7 +34,7 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
             gasLimit =                                      0;
             scout =                                         scout || (hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150);
-            wantNatural =                                   !Spy::enemyProxy();
+            wantNatural =                                   !Spy::enemyProxy() || Spy::getEnemyBuild() == "CannonRush";
             unitLimits[Zerg_Drone] =                        10;
             planEarly =                                     !Spy::enemyProxy() && hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150;
             gasTrick =                                      s >= 18 && hatchCount() < 2 && total(Zerg_Spawning_Pool) == 0;

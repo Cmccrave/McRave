@@ -19,5 +19,6 @@ namespace McRave::Grids
     int getHCollision(BWAPI::WalkPosition, PlayerState);
     int getMobility(BWAPI::WalkPosition);
     int getMobility(BWAPI::Position);
+    int getLastVisibleFrame(BWAPI::Position);
     int getLastVisibleFrame(BWAPI::TilePosition);
 }

@@ -87,7 +87,7 @@ namespace McRave::Combat {
             }
 
             // When we don't want to defend our natural
-            if (Players::ZvT() && Spy::enemyRush())
+            if (Players::ZvT() && (Spy::enemyRush() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0))
                 defendNatural = false;
 
             // Natural defending position
@@ -219,10 +219,14 @@ namespace McRave::Combat {
                         holdChoke = true;
                 }
                 if (Players::ZvP()) {
-
+                    if (Spy::getEnemyBuild() == "CannonRush")
+                        holdChoke = true;
+                    if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
+                        holdChoke = false;
                 }
                 if (Players::ZvT()) {
-                    holdChoke = true;
+                    if (!defendNatural)
+                        holdChoke = true;
                 }
 
                 const auto defCount = Stations::getGroundDefenseCount(getDefendStation()) + Stations::getColonyCount(getDefendStation());

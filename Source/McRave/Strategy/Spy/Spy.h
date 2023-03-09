@@ -47,9 +47,9 @@ namespace McRave::Spy {
 
         StrategySpy() {
             listOfStrats ={ &build, &opener, &transition, &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis };
-            build.framesRequired = 240;
+            build.framesRequired = 24;
             build.framesChangeable = 500;
-            opener.framesRequired = 240;
+            opener.framesRequired = 24;
             opener.framesChangeable = 500;
             transition.framesRequired = 240;
             transition.framesChangeable = 500;

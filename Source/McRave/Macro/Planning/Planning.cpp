@@ -422,7 +422,7 @@ namespace McRave::Planning {
                 int colonies = 0;
 
                 // Place sunkens closest to the chokepoint by default
-                Position desiredCenter = Stations::getDefendPosition(station);
+                Position desiredCenter = Players::ZvT() ? station->getResourceCentroid() : Stations::getDefendPosition(station);
 
                 for (auto& tile : station->getDefenses()) {
                     if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony || buildingsPlanned.find(tile) != buildingsPlanned.end())
@@ -459,7 +459,7 @@ namespace McRave::Planning {
                 }
 
                 // How to dictate row order
-                vector<int> desiredRowOrder; Players::ZvT() ? desiredRowOrder ={ 2, 3, 4, 1 } : desiredRowOrder ={ 3, 4, 2, 1 };
+                vector<int> desiredRowOrder ={ 3, 4, 2, 1 };
 
                 auto closestDefense = Util::getClosestUnit(Position(closestMain->getChokepoint()->Center()), PlayerState::Self, [&](auto &u) {
                     return isDefensiveType(u->getType());

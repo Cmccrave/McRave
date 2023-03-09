@@ -118,8 +118,6 @@ namespace McRave {
 
         // HACK: Hacky stuff that was added quickly for testing
         bool movedFlag = false;
-        int sleepFrame = -999;
-        bool isAsleep() { return sleepFrame > BWAPI::Broodwar->getFrameCount(); }
         bool isValid() { return unit() && unit()->exists(); }
         bool isAvailable() { return !unit()->isLockedDown() && !unit()->isMaelstrommed() && !unit()->isStasised() && unit()->isCompleted(); }
         UnitInfo();
@@ -168,8 +166,8 @@ namespace McRave {
         bool canTwoShot(UnitInfo&);
 
         // General commands that verify we aren't spamming the same command and sticking the unit
-        bool command(BWAPI::UnitCommandType, BWAPI::Position);
-        bool command(BWAPI::UnitCommandType, UnitInfo&);
+        void setCommand(BWAPI::UnitCommandType, BWAPI::Position, std::string);
+        void setCommand(BWAPI::UnitCommandType, UnitInfo&, std::string);
         BWAPI::Position getCommandPosition() { return commandPosition; }
         BWAPI::UnitCommandType getCommandType() { return commandType; }
 

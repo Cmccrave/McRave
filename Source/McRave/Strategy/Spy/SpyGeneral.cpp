@@ -80,7 +80,7 @@ namespace McRave::Spy::General {
 
                 // Monitor the soonest the enemy will scout us
                 if (unit.getType().isWorker()) {
-                    if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()))
+                    if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) || unit.isProxy())
                         theSpy.workersNearUs++;
                 }
 

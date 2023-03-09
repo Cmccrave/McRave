@@ -7,9 +7,6 @@ using namespace UnitTypes;
 namespace McRave::Support {
 
     namespace {
-
-        constexpr tuple commands{ Command::misc, Command::special, Command::escort };
-
         set<Position> assignedOverlords;
 
         void updateCounters()
@@ -58,7 +55,7 @@ namespace McRave::Support {
 
             // Find the highest combat cluster that doesn't overlap a current support action of this UnitType
             else if (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) {
-                auto highestCluster = 0.0;               
+                auto highestCluster = 0.0;
 
                 auto closestPartner = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                     return u->unit()->isCompleted() && find(types.begin(), types.end(), u->getType()) != types.end() && assignedOverlords.find(u->getPosition()) == assignedOverlords.end();
@@ -141,30 +138,19 @@ namespace McRave::Support {
 
         void updateDecision(UnitInfo& unit)
         {
-            if (!unit.unit() || !unit.unit()->exists()                                                                                          // Prevent crashes            
-                || unit.unit()->isLoaded()
-                || unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())    // If the unit is locked down, maelstrommed, stassised, or not completed
-                return;
-
             // Convert our commands to strings to display what the unit is doing for debugging
-            map<int, string> commandNames{
-                make_pair(0, "Misc"),
-                make_pair(1, "Special"),
-                make_pair(2, "Escort")
-            };
-
-            // Iterate commands, if one is executed then don't try to execute other commands
-            int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-            int i = Util::iterateCommands(commands, unit);
-            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
+            static auto commands ={ Command::misc, Command::special, Command::escort };
+            for (auto cmd : commands) {
+                if (cmd(unit))
+                    break;
+            }
         }
 
         void updateUnits()
         {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
-                if (unit.getRole() == Role::Support && !unit.isAsleep()) {
-                    unit.sleepFrame = Broodwar->getFrameCount() + 8; // Sleep unit for 8 frames
+                if (unit.getRole() == Role::Support && unit.isAvailable()) {
                     updateDestination(unit);
                     updatePath(unit);
                     updateNavigation(unit);

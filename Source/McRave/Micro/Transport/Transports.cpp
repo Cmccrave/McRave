@@ -8,8 +8,6 @@ namespace McRave::Transports {
 
     namespace {
 
-        constexpr tuple commands{ Command::escort, Command::retreat };
-
         void updatePath(UnitInfo& unit)
         {
             // Generate a flying path for dropping
@@ -277,20 +275,12 @@ namespace McRave::Transports {
 
         void updateDecision(UnitInfo& unit)
         {
-            if (!unit.unit() || !unit.unit()->exists()                                                                                          // Prevent crashes
-                || unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())    // If the unit is locked down, maelstrommed, stassised, or not completed
-                return;
-
-            // Convert our commands to strings to display what the unit is doing for debugging
-            map<int, string> commandNames{
-                make_pair(0, "Escort"),
-                make_pair(1, "Retreat"),
-            };
-
             // Iterate commands, if one is executed then don't try to execute other commands
-            int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-            int i = Util::iterateCommands(commands, unit);
-            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s (%d)", Text::White, commandNames[i].c_str(), unit.getTransportState());
+            static const auto commands ={ Command::escort, Command::retreat };
+            for (auto cmd : commands) {
+                if (cmd(unit))
+                    break;
+            }
         }
 
         void updateTransports()

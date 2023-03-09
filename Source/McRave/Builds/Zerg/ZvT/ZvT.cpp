@@ -62,6 +62,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // RaxFact
         if (Spy::getEnemyBuild() == "RaxFact") {
+            initialValue = 12;
             if (Spy::getEnemyOpener() == "8Rax")
                 initialValue = 12;
         }

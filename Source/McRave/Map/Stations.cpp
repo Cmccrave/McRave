@@ -270,10 +270,12 @@ namespace McRave::Stations
 
             if (BuildOrder::getCurrentBuild() == "PoolHatch") {
                 if (station->isMain()) {
+                    if (Spy::getEnemyOpener() == "4Pool" || Spy::getEnemyOpener() == "7Pool")
+                        desiredDefenses = max(desiredDefenses, 1);
                     if (Spy::getEnemyTransition() == "2HatchSpeedling")
                         desiredDefenses = max(desiredDefenses, 2 * int(Util::getTime() > Time(3, 40)));
-                    if (Spy::getEnemyTransition() == "3HatchSpeedling" && com(Zerg_Spire) > 0)
-                        desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(5, 30)));
+                    if (Spy::getEnemyTransition() == "3HatchSpeedling" && vis(Zerg_Spire) > 0)
+                        desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(5, 30)));
                 }
             }
 
@@ -282,10 +284,6 @@ namespace McRave::Stations
 
                     // 4 Pool
                     if (Spy::getEnemyOpener() == "4Pool")
-                        desiredDefenses = max(desiredDefenses, 1 + (vis(Zerg_Drone) >= 8 && com(Zerg_Sunken_Colony) >= 1));
-
-                    // 7 Pool
-                    if (Spy::getEnemyOpener() == "7Pool" && BuildOrder::getCurrentOpener() != "9Pool")
                         desiredDefenses = max(desiredDefenses, 1);
 
                     // 12 Pool
@@ -556,10 +554,9 @@ namespace McRave::Stations
             return false;
         };
 
-        //if (Util::getTime() < Time(8, 00)) {
-        //    if (!unit.hasSimTarget() || unit.isFlying() || closerThanSim(getDefendPosition(Terrain::getDefendStation())) || alreadyInArea(Terrain::getDefendStation()))
-        //        return Terrain::getDefendStation();
-        //}
+        const auto lowGroundCount = Broodwar->self()->getRace() == Races::Zerg && vis(Zerg_Zergling) < 12 && vis(Zerg_Hydralisk) < 6;
+        if (Util::getTime() < Time(5, 00) || Spy::enemyRush() || lowGroundCount)
+            return Combat::isDefendNatural() ? Terrain::getMyNatural() : Terrain::getMyMain();
 
         auto distBest = DBL_MAX;
         auto bestStation = Terrain::getMyMain();

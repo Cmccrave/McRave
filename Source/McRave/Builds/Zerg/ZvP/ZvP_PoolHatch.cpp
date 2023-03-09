@@ -18,14 +18,14 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
             gasLimit =                                      0;
             scout =                                         scout || (hatchCount() >= 2);
-            wantNatural =                                   !Spy::enemyProxy();
+            wantNatural =                                   !Spy::enemyProxy() || Spy::getEnemyBuild() == "CannonRush";
 
             if (Spy::enemyFastExpand())
                 unitLimits[Zerg_Drone] =                    INT_MAX;
             else
                 unitLimits[Zerg_Drone] =                    12 - vis(Zerg_Hatchery);
 
-            buildQueue[Zerg_Hatchery] =                     1 + (s >= 22 && vis(Zerg_Spawning_Pool) > 0 && (!Spy::enemyProxy() || com(Zerg_Sunken_Colony) >= 2));
+            buildQueue[Zerg_Hatchery] =                     1 + (s >= 22 && vis(Zerg_Spawning_Pool) > 0);
             buildQueue[Zerg_Spawning_Pool] =                (vis(Zerg_Overlord) >= 2);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 30);
         }
@@ -37,7 +37,7 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Drone] =                        4;
             unitLimits[Zerg_Zergling] =                     INT_MAX;
             gasLimit =                                      0;
-            wantNatural =                                   !Spy::enemyProxy();
+            wantNatural =                                   !Spy::enemyProxy() || Spy::getEnemyBuild() == "CannonRush";
             scout =                                         scout || (vis(Zerg_Spawning_Pool) > 0 && com(Zerg_Drone) >= 4 && !Terrain::getEnemyStartingPosition().isValid());
             rush =                                          true;
 

@@ -261,7 +261,6 @@ namespace McRave::Combat::Clusters {
                     getCommander(cluster);
 
                 if (auto commander = cluster.commander.lock()) {
-                    auto retreatStation = Stations::getClosestRetreatStation(*commander);
                     cluster.mobileCluster = commander->getGlobalState() != GlobalState::Retreat || !Terrain::inTerritory(PlayerState::Self, commander->getPosition());
                     cluster.marchPosition = (commander->getGlobalState() != GlobalState::Retreat && commander->hasTarget()) ? commander->getTarget().lock()->getPosition() : commander->getDestination();
                     cluster.retreatPosition = commander->getRetreat();

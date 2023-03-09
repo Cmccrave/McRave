@@ -344,26 +344,14 @@ namespace McRave::Workers {
             }
         }
 
-        constexpr tuple commands{ Command::misc, Command::attack, Command::click, Command::burrow, Command::returnResource, Command::build, Command::clearNeutral, Command::move, Command::gather };
         void updateDecision(UnitInfo& unit)
         {
-            // Convert our commands to strings to display what the unit is doing for debugging
-            map<int, string> commandNames{
-                make_pair(0, "Misc"),
-                make_pair(1, "Attack"),
-                make_pair(2, "Click"),
-                make_pair(3, "Burrow"),
-                make_pair(4, "Return"),
-                make_pair(5, "Build"),
-                make_pair(6, "Clear"),
-                make_pair(7, "Move"),
-                make_pair(8, "Gather")
-            };
-
             // Iterate commands, if one is executed then don't try to execute other commands
-            int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-            int i = Util::iterateCommands(commands, unit);
-            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", Text::White, commandNames[i].c_str());
+            static const auto commands ={ Command::misc, Command::attack, Command::click, Command::burrow, Command::returnResource, Command::build, Command::clearNeutral, Command::move, Command::gather };
+            for (auto cmd : commands) {
+                if (cmd(unit))
+                    break;
+            }
         }
 
         void updateunits()
@@ -371,8 +359,7 @@ namespace McRave::Workers {
             // Iterate workers and make decisions
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
-                if (unit.getRole() == Role::Worker && !unit.isAsleep() && unit.isAvailable()) {
-                    //unit.sleepFrame = Broodwar->getFrameCount() + 8; // Sleep unit for 8 frames
+                if (unit.getRole() == Role::Worker && unit.isAvailable()) {
                     updateResource(unit);
                     updateBuilding(unit);
                     updateDestination(unit);

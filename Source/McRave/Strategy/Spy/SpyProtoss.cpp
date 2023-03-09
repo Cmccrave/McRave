@@ -137,9 +137,9 @@ namespace McRave::Spy::Protoss {
             // Rush detection
             if (theSpy.build.name == "2Gate") {
                 if (theSpy.opener.name == "Proxy"
-                    || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Players::getCompleteCount(PlayerState::Enemy, Protoss_Zealot) >= 8 && Util::getTime() < Time(4, 00))
-                    || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && Util::getTime() > Time(6, 00))
-                    || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && completesBy(3, Protoss_Gateway, Time(4, 30)))
+                    || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 8 && Util::getTime() < Time(4, 00))
+                    || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && Util::getTime() > Time(6, 00))
+                    || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && completesBy(3, Protoss_Gateway, Time(4, 30)))
                     || completesBy(3, Protoss_Gateway, Time(3, 30)))
                     theSpy.transition.name = "ZealotRush";
             }

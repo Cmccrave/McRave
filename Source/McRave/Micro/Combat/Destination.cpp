@@ -28,11 +28,7 @@ namespace McRave::Combat::Destination {
     void updateRetreat(UnitInfo& unit)
     {
         unit.setRetreat(Positions::Invalid);
-        const auto lowGroundCount = (vis(Zerg_Zergling) < 12 && vis(Zerg_Hydralisk) < 6);
-
         auto retreat = Stations::getClosestRetreatStation(unit);
-        if (Util::getTime() < Time(5, 00) || Spy::enemyRush())
-            retreat = Combat::isDefendNatural() ? Terrain::getMyNatural() : Terrain::getMyMain();
 
         // 1 Base - Retreat is Main
         // 2 Base - Retreat first is main choke
@@ -40,8 +36,6 @@ namespace McRave::Combat::Destination {
         // x Base - Closest retreat station
         if (Stations::getStations(PlayerState::Self).size() == 1)
             unit.setRetreat(Terrain::getMainPosition());
-        else if (Stations::getStations(PlayerState::Self).size() >= 2 && lowGroundCount)
-            unit.setRetreat(Position(Terrain::getMainChoke()->Center()));
         else if (retreat)
             unit.setRetreat(retreat->getBase()->Center());
         else
@@ -51,8 +45,6 @@ namespace McRave::Combat::Destination {
     void updateDestination(UnitInfo& unit)
     {
         auto retreat = Stations::getClosestRetreatStation(unit);
-        if (Util::getTime() < Time(5, 00) || Spy::enemyRush())
-            retreat = Combat::isDefendNatural() ? Terrain::getMyNatural() : Terrain::getMyMain();
 
         if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore) {
             unit.setDestination(unit.getGoal());

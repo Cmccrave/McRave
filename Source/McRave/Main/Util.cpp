@@ -363,7 +363,7 @@ namespace McRave::Util {
                 }
             }
 
-            Broodwar->drawTextMap(position, "%d", i);
+            //Broodwar->drawTextMap(position, "%d", i);
         }
         return { dist, position };
     }

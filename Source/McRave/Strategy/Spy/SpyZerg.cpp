@@ -10,6 +10,8 @@ namespace McRave::Spy::Zerg {
 
         void enemyZergBuilds(PlayerInfo& player, StrategySpy& theSpy)
         {
+            theSpy.build.framesRequired = 24;
+
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit =*u;
 
@@ -45,6 +47,8 @@ namespace McRave::Spy::Zerg {
 
         void enemyZergOpeners(PlayerInfo& player, StrategySpy& theSpy)
         {
+            theSpy.opener.framesRequired = 24;
+
             // Pool timing
             if (theSpy.build.name == "PoolHatch" || theSpy.build.name == "PoolLair" || (vis(Zerg_Zergling) > 0 && Util::getTime() < Time(3, 45))) {
                 if (theSpy.rushArrivalTime < Time(2, 45)
@@ -92,7 +96,7 @@ namespace McRave::Spy::Zerg {
             if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0) {
                 if (theSpy.productionCount == 3 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 12 && Util::getTime() > Time(3, 45))
                     theSpy.transition.name = "3HatchSpeedling";
-                else if (Players::ZvZ() && theSpy.productionCount == 2) {
+                else if (Players::ZvZ() && theSpy.productionCount == 2 && Scouts::gotFullScout()) {
                     if ((Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone) <= 7 && Util::getTime() > Time(3, 00) && (theSpy.build.name == "PoolHatch" || theSpy.build.name == "HatchPool"))
                         || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && Util::getTime() > Time(3, 45)))
                         theSpy.transition.name = "2HatchSpeedling";

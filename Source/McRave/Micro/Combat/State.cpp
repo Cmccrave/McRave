@@ -14,29 +14,37 @@ namespace McRave::Combat::State {
         staticRetreatTypes.clear();
 
         // Hydralisks
-        auto hydraSpeed = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments);
-        auto hydraRange = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines);
-        if (BuildOrder::getCurrentTransition() == "2HatchHydra" || BuildOrder::getCurrentTransition() == "3HatchHydra") {
-            if (!hydraRange && !hydraSpeed)
-                staticRetreatTypes.push_back(Zerg_Hydralisk);
-            if (Spy::enemyInvis() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0)
-                staticRetreatTypes.push_back(Zerg_Hydralisk);
-        }
-        else {
-            if (!hydraRange || !hydraSpeed || BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00)
-                staticRetreatTypes.push_back(Zerg_Hydralisk);
+        if (BuildOrder::isUnitUnlocked(Zerg_Hydralisk)) {
+            auto hydraSpeed = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments);
+            auto hydraRange = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines);
+            if (BuildOrder::getCurrentTransition() == "2HatchHydra" || BuildOrder::getCurrentTransition() == "3HatchHydra") {
+                if (!hydraRange && !hydraSpeed)
+                    staticRetreatTypes.push_back(Zerg_Hydralisk);
+                if (Spy::enemyInvis() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0)
+                    staticRetreatTypes.push_back(Zerg_Hydralisk);
+            }
+            else {
+                if (!hydraRange || !hydraSpeed || BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00)
+                    staticRetreatTypes.push_back(Zerg_Hydralisk);
+            }
         }
 
         // Zerglings
-        if ((Players::ZvT() && Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0))
-            || (Players::ZvT() && com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0)
-            || (Players::ZvP() && find(staticRetreatTypes.begin(), staticRetreatTypes.end(), Zerg_Hydralisk) != staticRetreatTypes.end())
-            || (Players::ZvZ() && Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "12Pool")
-            || (Players::ZvZ() && Spy::getEnemyTransition() == "2HatchSpeedling" && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0)
-            || (Players::ZvZ() && Spy::getEnemyTransition() == "3HatchSpeedling" && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0)
-            || (Players::ZvZ() && Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 00) && !Terrain::getEnemyStartingPosition().isValid())
-            || (Players::ZvZ() && Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45)))
-            staticRetreatTypes.push_back(Zerg_Zergling);
+        if (!Spy::enemyGreedy()) {
+            const auto scaryOpeners = Players::ZvP() && Spy::getEnemyBuild() != "FFE"&& Spy::getEnemyBuild() != "CannonRush";
+            if (scaryOpeners && BuildOrder::isOpener())
+                staticRetreatTypes.push_back(Zerg_Zergling);
+
+            if ((Players::ZvT() && Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0))
+                || (Players::ZvT() && com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0)
+                || (Players::ZvP() && find(staticRetreatTypes.begin(), staticRetreatTypes.end(), Zerg_Hydralisk) != staticRetreatTypes.end())
+                || (Players::ZvZ() && Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "12Pool")
+                || (Players::ZvZ() && Spy::getEnemyTransition() == "2HatchSpeedling" && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0)
+                || (Players::ZvZ() && Spy::getEnemyTransition() == "3HatchSpeedling" && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0)
+                || (Players::ZvZ() && Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 00) && !Terrain::getEnemyStartingPosition().isValid())
+                || (Players::ZvZ() && Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45)))
+                staticRetreatTypes.push_back(Zerg_Zergling);
+        }
 
         // Mutalisks
         if (!Players::ZvZ() && com(Zerg_Mutalisk) < (Stations::getStations(PlayerState::Self).size() >= 2 ? 5 : 3) && total(Zerg_Mutalisk) < 9)

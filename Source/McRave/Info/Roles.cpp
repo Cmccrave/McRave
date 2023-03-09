@@ -105,13 +105,13 @@ namespace McRave::Roles {
             });
 
             // ZvZ
-            if (Players::ZvZ()) {
+            if (Players::ZvZ() && Util::getTime() < Time(6, 00)) {
                 if (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "12Pool" && total(Zerg_Zergling) < 16 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
                     forceCombatWorker(3, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
             }
 
             // ZvP
-            if (Players::ZvP() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0) {
+            if (Players::ZvP() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && Util::getTime() < Time(6, 00)) {
                 if (proxyDangerousBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(3, proxyDangerousBuilding->getPosition(), LocalState::Attack, GlobalState::Attack);
                 else if (proxyBuilding && proxyBuildingWorker)
@@ -123,7 +123,7 @@ namespace McRave::Roles {
             }
 
             // ZvT
-            if (Players::ZvT() && Players::getCompleteCount(PlayerState::Enemy, Terran_Bunker) == 0) {
+            if (Players::ZvT() && Players::getCompleteCount(PlayerState::Enemy, Terran_Bunker) == 0 && Util::getTime() < Time(6, 00)) {
 
                 // Proxy fighting
                 if (Spy::getEnemyOpener() == "8Rax" && com(Zerg_Zergling) < 2)
@@ -135,7 +135,7 @@ namespace McRave::Roles {
             }
 
             // Misc
-            if (Spy::getWorkersNearUs() > 2 && com(Zerg_Zergling) < Spy::getWorkersNearUs())
+            if (Spy::getWorkersNearUs() > 2 && com(Zerg_Zergling) < Spy::getWorkersNearUs() && Util::getTime() < Time(6, 00))
                 forceCombatWorker(Spy::getWorkersNearUs() + 2, Position(Terrain::getMainChoke()->Center()), LocalState::Attack, GlobalState::Attack);
         }
 

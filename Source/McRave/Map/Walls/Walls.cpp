@@ -129,7 +129,7 @@ namespace McRave::Walls {
                     + (!threeHatch && Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown")
                     return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 15))
-                    + (!threeHatch && Util::getTime() > Time(4, 15))
+                    + (!threeHatch && Util::getTime() > Time(4, 00))
                     + (!threeHatch && Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
                     return (firstHatchNeeded && Util::getTime() > Time(3, 00))
@@ -149,9 +149,7 @@ namespace McRave::Walls {
                     + (2 * (Util::getTime() > Time(6, 30)))
                     + (2 * (Util::getTime() > Time(7, 00)));
                 if (Spy::getEnemyTransition() == "Unknown" && Util::getTime() < Time(5, 15))
-                    return (2 * (Util::getTime() > Time(6, 00)))
-                    + (Util::getTime() > Time(6, 30))
-                    + (2 * (Util::getTime() > Time(8, 00)));
+                    return (Util::getTime() > Time(6, 00));
                 if (Util::getTime() < Time(8, 00))
                     return (Util::getTime() > Time(5, 30))
                     + (Util::getTime() > Time(6, 15))
@@ -191,9 +189,9 @@ namespace McRave::Walls {
             auto firstHatchNeeded = !threeHatch || BuildOrder::getCurrentOpener() == "12Hatch";
 
             // 3 hatch builds make lings instead of sunkens
-            auto initial = 1;
-            if (threeHatch)
-                initial = -2 - int(vis(Zerg_Zergling) >= 24);
+            auto initial = threeHatch ? -2 : 1;
+            if (threeHatch && int(vis(Zerg_Zergling) < 24) && int(vis(Zerg_Drone) < 20))
+                return 0;
 
             // 1 base transitions
             if (Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") {
@@ -351,7 +349,9 @@ namespace McRave::Walls {
             auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot)
                 + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);
 
-            auto minimum = Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 ? 1 : 0;
+            auto minimum = (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
+                || Players::getTotalCount(PlayerState::Self, Zerg_Zergling) >= 24
+                || Players::getTotalCount(PlayerState::Self, Zerg_Drone) >= 20) ? 1 : 0;
             auto expected = max(ZvPOpener(wall), ZvPTransition(wall)) - max(0, unitsKilled / 4);
 
             return max(minimum, expected);

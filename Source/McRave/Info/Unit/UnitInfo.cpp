@@ -425,6 +425,9 @@ namespace McRave
                 }
                 else
                     proxy = closerToMyMain || closerToMyNat;
+
+                if (proxy)
+                    circle(Colors::Grey);
             }
         }
     }
@@ -459,16 +462,22 @@ namespace McRave
         }
     }
 
-    bool UnitInfo::command(UnitCommandType cmd, Position here)
+    void UnitInfo::setCommand(UnitCommandType cmd, Position here, string cmdstring)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
-        auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
-        auto cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
-        commandPosition = here;
-        commandType = cmd;
+        const auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
+        const auto cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
 
-        if (cancelAttackRisk && !isLightAir())
-            return false;
+        auto newCommandPosition = commandPosition.getDistance(here) > 24;
+        auto newCommandType = commandType != cmd;
+        auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() - Broodwar->getLatencyFrames() > 8;
+
+        // Allows skipping the command but still printing the result to screen
+        auto executeCommand = (!cancelAttackRisk || isLightAir()) && (newCommandPosition || newCommandType || newCommandFrame);
+        if (executeCommand) {
+            commandPosition = here;
+            commandType = cmd;
+        }
 
         // Check if we should overshoot for halting distance
         if (cmd == UnitCommandTypes::Move && !getBuildPosition().isValid() && (getType().isFlyer() || isHovering() || getType() == Protoss_High_Templar || attemptingSurround())) {
@@ -484,60 +493,58 @@ namespace McRave
                 here = overShootHere;
         }
 
-        const auto newCommand = [&]() {
-            auto newCommandPosition = unit()->getLastCommand().getTargetPosition().getDistance(here) > 24;
-            auto newCommandType = unit()->getLastCommand().getType() != cmd;
-            auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() - Broodwar->getLatencyFrames() > 24;
-            return newCommandPosition || newCommandType || newCommandFrame;
-        };
-
         // Add action and grid movement
-        if ((cmd == UnitCommandTypes::Move || cmd == UnitCommandTypes::Right_Click_Position) && getPosition().getDistance(here) < 160.0) {
-            Actions::addAction(unit(), here, getType(), PlayerState::Self);
-        }
+        if ((cmd == UnitCommandTypes::Move || cmd == UnitCommandTypes::Right_Click_Position) && getPosition().getDistance(here) < 160.0)
+            Actions::addAction(unit(), here, getType(), PlayerState::Self);        
 
         // If this is a new order or new command than what we're requesting, we can issue it
-        if (newCommand()) {
+        if (executeCommand) {
             if (cmd == UnitCommandTypes::Move)
                 unit()->move(here);
             if (cmd == UnitCommandTypes::Right_Click_Position)
                 unit()->rightClick(here);
             if (cmd == UnitCommandTypes::Stop)
                 unit()->stop();
-            return true;
         }
-        return false;
+
+        const auto color = executeCommand ? Text::White : Text::Grey;
+        const auto height = getType().height() / 2;
+        const auto pText = getPosition() + Position(-4 * int(cmdstring.length() / 2), height);
+        Broodwar->drawTextMap(pText, "%c%s", color, cmdstring.c_str());
     }
 
-    bool UnitInfo::command(UnitCommandType cmd, UnitInfo& targetUnit)
+    void UnitInfo::setCommand(UnitCommandType cmd, UnitInfo& targetUnit, string cmdstring)
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
         auto cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
-        commandPosition = targetUnit.getPosition();
-        commandType = cmd;
 
-        if (cancelAttackRisk && !getType().isBuilding() && !isLightAir())
-            return false;
+        auto newCommandTarget = unit()->getLastCommand().getTarget() != targetUnit.unit();
+        auto newCommandType = commandType != cmd;
+        auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() - Broodwar->getLatencyFrames() > 8;
 
-        // Check if this is a new command
-        const auto newCommand = [&]() {
-            auto newCommandTarget = (unit()->getLastCommand().getType() != cmd || unit()->getLastCommand().getTarget() != targetUnit.unit());
-            return newCommandTarget;
-        };
+        // Allows skipping the command but still printing the result to screen
+        auto executeCommand = (!cancelAttackRisk || isLightAir()) && (newCommandTarget || newCommandType || newCommandFrame);
+        if (executeCommand) {
+            commandPosition = targetUnit.getPosition();
+            commandType = cmd;
+        }
 
         // Add action
         Actions::addAction(unit(), targetUnit.getPosition(), getType(), PlayerState::Self);
 
         // If this is a new order or new command than what we're requesting, we can issue it
-        if (newCommand()) {
+        if (executeCommand) {
             if (cmd == UnitCommandTypes::Attack_Unit)
                 unit()->attack(targetUnit.unit());
             else if (cmd == UnitCommandTypes::Right_Click_Unit)
                 unit()->rightClick(targetUnit.unit());
-            return true;
         }
-        return false;
+
+        const auto color = executeCommand ? Text::White : Text::Grey;
+        const auto height = getType().height() / 2;
+        const auto pText = getPosition() + Position(-4 * int(cmdstring.length() / 2), height);
+        Broodwar->drawTextMap(pText, "%c%s", color, cmdstring.c_str());
     }
 
     bool UnitInfo::canStartAttack()
