@@ -253,6 +253,8 @@ namespace McRave::BuildOrder
         // Add any buildable requisite buildings to make this unit
         std::function<void(UnitType)>addBuildableRequisites = [&](auto &type) {
             for (auto &[parent, _] : type.requiredUnits()) {
+                if (parent == Zerg_Larva)
+                    continue;
                 if (notCompleted(parent) && find(checkedAlready.begin(), checkedAlready.end(), parent) == checkedAlready.end()) {
                     checkedAlready.push_back(parent);
                     addBuildableRequisites(parent);

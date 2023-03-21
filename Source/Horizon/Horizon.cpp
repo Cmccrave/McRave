@@ -120,9 +120,7 @@ namespace McRave::Horizon {
             auto simRatio = max(0.0, simulationTime - engageTime + addPrepTime(self));
 
             // If the unit doesn't affect this simulation
-            if (self.localRetreat()
-                || self.globalRetreat()
-                || (self.getSpeed() <= 0.0 && self.getEngDist() > -16.0)
+            if ((self.getSpeed() <= 0.0 && self.getEngDist() > -16.0)
                 || (unit.hasTarget() && self.hasTarget() && self.getEngagePosition().getDistance(unitTarget->getPosition()) > reach))
                 continue;
 

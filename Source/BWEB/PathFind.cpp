@@ -202,7 +202,7 @@ namespace BWEB
         }
     }
 
-    void Path::generateAS(function <double(const TilePosition&)> passedHeuristic)
+    void Path::generateAS(function <double(const TilePosition&)> passedHeuristic, function <bool(const TilePosition&)> passedWalkable)
     {
         if (!source.isValid() || !target.isValid())
             return;
@@ -244,7 +244,7 @@ namespace BWEB
             for (const auto &d : direction) {
                 const auto t = parent.tile + d;
 
-                if (!t.isValid())
+                if (!t.isValid() || !passedWalkable(t))
                     continue;
 
                 auto g = parent.g + passedHeuristic(t);

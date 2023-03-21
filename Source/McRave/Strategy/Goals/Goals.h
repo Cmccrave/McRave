@@ -3,5 +3,6 @@
 
 namespace McRave::Goals
 {
+    void onStart();
     void onFrame();
 }

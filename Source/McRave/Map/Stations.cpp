@@ -462,7 +462,7 @@ namespace McRave::Stations
                 return 1 - airCount;
             if (Players::ZvT() && Util::getTime() > Time(5, 30) && Util::getTime() < Time(7, 00) && Spy::getEnemyTransition() == "2PortWraith" && BuildOrder::getCurrentTransition() == "3HatchMuta")
                 return 1 - airCount;
-            if (Players::ZvT() && Util::getTime() > Time(7, 00) && Spy::getEnemyTransition() == "2PortWraith" && !Spy::enemyFastExpand())
+            if (Players::ZvT() && Util::getTime() > Time(6, 30) && Spy::getEnemyTransition() == "2PortWraith" && Spy::enemyInvis())
                 return 1 - airCount;
         }
 
@@ -527,7 +527,8 @@ namespace McRave::Stations
     BWEB::Station * getClosestRetreatStation(UnitInfo& unit)
     {
         const auto closerThanSim = [&](auto &defendPosition) {
-            return unit.hasSimTarget() && !unit.isFlying() && BWEB::Map::getGroundDistance(unit.getPosition(), defendPosition) < BWEB::Map::getGroundDistance(unit.getSimTarget().lock()->getPosition(), defendPosition);
+            return !unit.hasSimTarget()
+                || (!unit.isFlying() && BWEB::Map::getGroundDistance(unit.getPosition(), defendPosition) < BWEB::Map::getGroundDistance(unit.getSimTarget().lock()->getPosition(), defendPosition));
         };
 
         const auto alreadyInArea = [&](auto station) {
@@ -554,16 +555,23 @@ namespace McRave::Stations
             return false;
         };
 
-        const auto lowGroundCount = Broodwar->self()->getRace() == Races::Zerg && vis(Zerg_Zergling) < 12 && vis(Zerg_Hydralisk) < 6;
-        if (Util::getTime() < Time(5, 00) || Spy::enemyRush() || lowGroundCount)
-            return Combat::isDefendNatural() ? Terrain::getMyNatural() : Terrain::getMyMain();
+        auto here = unit.getPosition();
+        if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Defend) {
+            here = unit.getGoal();
+            Visuals::drawLine(unit.getPosition(), unit.getGoal(), Colors::Yellow);
+        }
+        else {
+            const auto lowGroundCount = Broodwar->self()->getRace() == Races::Zerg && vis(Zerg_Zergling) < 12 && vis(Zerg_Hydralisk) < 6;
+            if (Util::getTime() < Time(5, 00) || Spy::enemyRush() || lowGroundCount)
+                return Combat::isDefendNatural() ? Terrain::getMyNatural() : Terrain::getMyMain();
+        }
 
         auto distBest = DBL_MAX;
         auto bestStation = Terrain::getMyMain();
         for (auto &station : getStations(PlayerState::Self)) {
             auto defendPosition = Stations::getDefendPosition(station);
-            auto distDefend = defendPosition.getDistance(unit.getPosition());
-            auto distCenter = station->getBase()->Center().getDistance(unit.getPosition());
+            auto distDefend = defendPosition.getDistance(here);
+            auto distCenter = station->getBase()->Center().getDistance(here);
 
             if (unit.hasTarget()) {
                 auto target = unit.getTarget().lock();

@@ -59,7 +59,7 @@ namespace McRave::Combat::Navigation {
         }
         else {
             BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-            newPath.generateAS(flyerRegroup);
+            newPath.generateAS_h(flyerRegroup);
             unit.setDestinationPath(newPath);
         }
     }
@@ -90,6 +90,7 @@ namespace McRave::Combat::Navigation {
 
         // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
         auto &simPositions = lastSimPositions[&unit];
+        auto cachedDist = min(simDistCurrent, int(unit.getRetreatRadius() + 64.0));
         const auto flyerAttack = [&](const TilePosition &t) {
             const auto center = Position(t) + Position(16, 16);
 
@@ -97,13 +98,13 @@ namespace McRave::Combat::Navigation {
             for (auto &pos : simPositions)
                 d = min(d, center.getApproxDistance(pos));
 
-            auto dist = max(0.01, double(d) - min(simDistCurrent, int(unit.getRetreatRadius() + 64.0)));
+            auto dist = max(0.01, double(d) - cachedDist);
             auto vis = clamp(double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(t)) / 960.0, 0.5, 3.0);
             return 1.0 / (vis * dist);
         };
 
         BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-        newPath.generateAS(flyerAttack);
+        newPath.generateAS_h(flyerAttack);
         unit.setDestinationPath(newPath);
     }
 
@@ -117,8 +118,8 @@ namespace McRave::Combat::Navigation {
             && Util::getTime() < Time(15, 00)
             && ((unit.attemptingRegroup() && unit.getDestination() == unit.getCommander().lock()->getPosition())
                 || unit.getLocalState() == LocalState::Retreat
-                || unit.localRetreat()
-                || unit.globalRetreat());
+                || unit.getLocalState() == LocalState::ForcedRetreat
+                || unit.getGlobalState() == GlobalState::ForcedRetreat);
         auto harassing = unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Combat::getHarassPosition() && unit.attemptingHarass() && unit.getLocalState() == LocalState::None;
 
         // Generate a flying path for retreating or regrouping
@@ -205,7 +206,7 @@ namespace McRave::Combat::Navigation {
                     continue;
 
                 // Determine if this is a shared decision                
-                auto sharedDecision = cluster.commandShare == CommandShare::Exact && !unit->localRetreat() && !unit->globalRetreat() && !unit->isNearSuicide()
+                auto sharedDecision = cluster.commandShare == CommandShare::Exact && unit->getLocalState() != LocalState::ForcedRetreat && unit->getGlobalState() != GlobalState::ForcedRetreat && !unit->isNearSuicide()
                     && !unit->attemptingRegroup() && (unit->getType() == commander->getType() || unit->getLocalState() != LocalState::Attack);
 
                 // If it's not a shared decision, indepdently update pathing and navigation waypoint

@@ -7,7 +7,7 @@ using namespace UnitTypes;
 namespace McRave::Combat::Formations {
 
     vector<Formation> formations;
-    double arcRads = 2.0944;
+    double arcRads = 1.57;
 
     void assignPosition(Cluster& cluster, Formation& concave, Position p, int& assignmentsRemaining)
     {
@@ -43,7 +43,7 @@ namespace McRave::Combat::Formations {
 
         auto type = cluster.commander.lock()->getType();
         auto unitTangentSize = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0)) + (cluster.mobileCluster ? 16.0 : 0.0);
-        auto radsPerUnit = arcRads / concave.radius;
+        auto radsPerUnit = (arcRads / concave.radius) + (cluster.mobileCluster ? 32.0 : 0.0);
 
         auto first = concave.center - Position(-int(concave.radius * cos(angle)), int(concave.radius * sin(angle)));
         Broodwar->drawCircleMap(first, 5, Colors::Yellow, true);
@@ -67,7 +67,7 @@ namespace McRave::Combat::Formations {
                     || (cluster.shape == Shape::Choke && !Terrain::inTerritory(PlayerState::Self, p))
                     || (p.getDistance(first) > concave.leash)
                     || (closestBuilder && p.getDistance(closestBuilder->getPosition()) < 96.0)) {
-                    Broodwar->drawCircleMap(p, 1, Colors::Red);
+                    //Broodwar->drawCircleMap(p, 1, Colors::Red);
                     return false;
                 }
                 assignmentsRemaining--;
@@ -142,7 +142,7 @@ namespace McRave::Combat::Formations {
         const auto choke = Util::getClosestChokepoint(cluster.marchPosition);
         const auto chokeAngle = BWEB::Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))));
         auto perpLine = BWEB::Map::perpendicularLine(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))), 96.0);
-        concave.radius = max(concave.radius, double(choke->Width()));
+        concave.radius = max({ concave.radius, double(choke->Width()), cluster.commander.lock()->getGroundRange() });
 
         Broodwar->drawLineMap(perpLine.first, perpLine.second, Colors::Cyan);
 
@@ -162,15 +162,33 @@ namespace McRave::Combat::Formations {
     void createConcave(Formation& concave, Cluster& cluster)
     {
         auto commander = cluster.commander.lock();
+        concave.center = cluster.marchPosition;
 
         // Offset the center by a distance of the radius towards the navigation point
         if (cluster.mobileCluster) {
 
             // Clamp radius so that it moves forward/backwards as needed
-            if (commander->getLocalState() == LocalState::Attack)
-                concave.radius = min(concave.radius, commander->getPosition().getDistance(cluster.marchNavigation) - 64.0);
-            if (commander->getLocalState() == LocalState::Retreat)
-                concave.radius = max(concave.radius, commander->getPosition().getDistance(cluster.retreatNavigation) + 64.0);
+            if (commander->getLocalState() == LocalState::Attack || commander->getLocalState() == LocalState::ForcedAttack)
+                concave.radius = min(concave.radius, commander->getPosition().getDistance(cluster.marchNavigation) - 96.0);
+            if (commander->getLocalState() == LocalState::Retreat || commander->getLocalState() == LocalState::ForcedAttack)
+                concave.radius = max(concave.radius, commander->getPosition().getDistance(cluster.retreatNavigation) + 96.0);
+
+            // Radius has to be at least this units range
+            concave.radius = max(concave.radius, commander->getGroundRange());
+
+            // Offset the center by a distance of the radius towards the navigation point
+            if (cluster.mobileCluster ) {
+                auto dir = commander->getLocalState() == LocalState::Retreat ? cluster.retreatNavigation : cluster.marchNavigation;
+                auto otherDir = commander->getLocalState() == LocalState::Retreat ? cluster.marchNavigation : cluster.retreatNavigation;
+                const auto dist = dir.getDistance(otherDir);
+                const auto dirx = double(dir.x - otherDir.x) / dist;
+                const auto diry = double(dir.y - otherDir.y) / dist;
+                const auto offset = concave.radius * 0.7;
+                if (commander->getLocalState() == LocalState::Retreat)
+                    concave.center = dir - Position(int(dirx*offset), int(diry*offset));
+                else
+                    concave.center = dir + Position(int(dirx*offset), int(diry*offset));
+            }
         }
         else {
             // If we are setting up a static formation, align concave with buildings close by
@@ -181,24 +199,14 @@ namespace McRave::Combat::Formations {
                 return (u->getType().isBuilding() && u->canAttackGround() && u->getRole() == Role::Defender && u->getFormation().getDistance(cluster.marchPosition) < 64.0);
             });
 
-            if (closestBuilding)
-                concave.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition);
-            if (closestDefender)
-                concave.leash = closestDefender->getGroundRange();
-        }
+            const auto extra = !Players::ZvZ() ? 64.0 : 0.0;
 
-        // Offset the center by a distance of the radius towards the navigation point
-        concave.center = cluster.marchPosition;
-        if (cluster.mobileCluster) {
-            auto dir = commander->getLocalState() == LocalState::Retreat ? cluster.retreatNavigation : cluster.marchNavigation;
-            auto otherDir = commander->getLocalState() == LocalState::Retreat ? cluster.marchNavigation : cluster.retreatNavigation;
-            const auto dist = dir.getDistance(otherDir);
-            const auto dirx = double(dir.x - otherDir.x) / dist;
-            const auto diry = double(dir.y - otherDir.y) / dist;
-            if (commander->getLocalState() == LocalState::Retreat)
-                concave.center = dir - Position(int(dirx*concave.radius), int(diry*concave.radius));
-            else
-                concave.center = dir + Position(int(dirx*concave.radius), int(diry*concave.radius));
+            if (closestBuilding && !closestDefender)
+                concave.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition) + extra;
+            if (closestDefender) {
+                concave.leash = closestDefender->getGroundRange() + extra;
+                concave.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition) + extra;
+            }
         }
 
         // Start creating positions starting at the start position

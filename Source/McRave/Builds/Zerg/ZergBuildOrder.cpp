@@ -293,19 +293,6 @@ namespace McRave::BuildOrder::Zerg {
         if (Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0 && !Players::ZvFFA() && !Players::ZvTVB())
             againstRandom = true;
 
-        if (againstRandom) {
-            if (Players::vZ()) {
-                currentBuild = "PoolHatch";
-                currentOpener = "Overpool";
-                currentTransition = "2HatchSpeedling";
-            }
-            else if (Players::vT() || Players::vP()) {
-                currentBuild = "PoolHatch";
-                currentOpener = "Overpool";
-                currentTransition = "2HatchMuta";
-            }
-        }
-
         // TODO: Team melee / Team FFA support
         if (Broodwar->getGameType() == GameTypes::Team_Free_For_All || Broodwar->getGameType() == GameTypes::Team_Melee) {
             buildQueue[Zerg_Hatchery] = Players::getSupply(PlayerState::Self, Races::None) >= 30;
@@ -594,14 +581,10 @@ namespace McRave::BuildOrder::Zerg {
                 pumpLings = 12;
             if (Spy::getEnemyTransition() == "Robo")
                 pumpLings = 12;
-            if (Util::getTime() > Time(9, 00) && ((Spy::getEnemyTransition() == "4Gate" && hatchCount >= 4) || (Spy::getEnemyTransition() == "5GateGoon"&& hatchCount >= 5)))
-                pumpLings = 36;
             if (Spy::getEnemyBuild() == "FFE") {
                 if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() > Time(6, 45) && Util::getTime() < Time(7, 45))
                     pumpLings = 24;
             }
-            if (Resources::isMineralSaturated() && Resources::isGasSaturated() && int(Stations::getStations(PlayerState::Self).size()) <= 2)
-                pumpLings = 200;
             if (Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && vis(Zerg_Drone) > Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone))
                 pumpLings = Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling);
 
@@ -624,9 +607,7 @@ namespace McRave::BuildOrder::Zerg {
             auto airCount = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) + Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith);
             auto needScourgeZvP = Players::ZvP() && airCount > 0 && vis(Zerg_Mutalisk) < 3 && vis(Zerg_Scourge) < min(6, airCount * 2);
             auto needScourgeZvZ = Players::ZvZ() && (airCount / 2) > vis(Zerg_Scourge) && (com(Zerg_Extractor) >= 3 || currentTransition == "2HatchMuta") && vis(Zerg_Scourge) < 2;
-            auto needScourgeZvT = Players::ZvT() &&
-                ((Spy::getEnemyTransition() == "2PortWraith" && (airCount >= 3 || vis(Zerg_Mutalisk) == 0) && ((vis(Zerg_Scourge) / 2) - 1 < airCount && airCount < 6 && Players::getStrength(PlayerState::Enemy).airToAir > 0.0))
-                    || (Players::getVisibleCount(PlayerState::Enemy, Terran_Valkyrie) >= 2 && vis(Zerg_Scourge) < 8));
+            auto needScourgeZvT = Players::ZvT() && Players::getVisibleCount(PlayerState::Enemy, Terran_Valkyrie) >= 2 && vis(Zerg_Scourge) < 4;
 
             if (needScourgeZvP || needScourgeZvZ || needScourgeZvT) {
                 armyComposition.clear();
@@ -641,7 +622,7 @@ namespace McRave::BuildOrder::Zerg {
         const auto limitBy = int(Stations::getStations(PlayerState::Self).size()) * 3;
         const auto reserveAt = Players::ZvZ() ? 10 : 16;
         unitReservations.clear();
-        if (inOpening || techList.size() <= 1) {
+        if ((inOpening && reserveLarva) || (!inOpening && techList.size() <= 1)) {
             if (atPercent(Zerg_Spire, 0.50) && vis(Zerg_Drone) >= reserveAt && techUnit == Zerg_Mutalisk && (armyComposition[Zerg_Mutalisk] > 0.0 || armyComposition[Zerg_Scourge] > 0.0)) {
                 unitReservations[Zerg_Mutalisk] = max(0, limitBy - total(Zerg_Mutalisk) - int(armyComposition[Zerg_Scourge] > 0.0));
                 unitReservations[Zerg_Scourge] = max(0, 2 * int(armyComposition[Zerg_Scourge] > 0.0) - total(Zerg_Scourge));

@@ -123,7 +123,7 @@ namespace McRave::Walls {
                     return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 10))
                     + (!threeHatch && Util::getTime() > Time(4, 40));
-                if (Spy::getEnemyOpener() == "10/17")
+                if (Spy::getEnemyOpener() == "10/15")
                     return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 30))
                     + (!threeHatch && Util::getTime() > Time(5, 00));
@@ -304,7 +304,7 @@ namespace McRave::Walls {
 
             // Enemy walled, which delays any push they have
             if (Spy::enemyWalled() && Util::getTime() < Time(4, 30))
-                return (Util::getTime() > Time(4, 15));
+                return (Util::getTime() > Time(4, 00));
 
             return (Util::getTime() > Time(3, 45));
         }
@@ -349,10 +349,17 @@ namespace McRave::Walls {
             auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot)
                 + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);
 
-            auto minimum = (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
+            // Make at least one sunken once if below criteria fulfilled
+            auto minimum = 0;
+            if ((Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
                 || Players::getTotalCount(PlayerState::Self, Zerg_Zergling) >= 24
-                || Players::getTotalCount(PlayerState::Self, Zerg_Drone) >= 20) ? 1 : 0;
-            auto expected = max(ZvPOpener(wall), ZvPTransition(wall)) - max(0, unitsKilled / 4);
+                || Players::getTotalCount(PlayerState::Self, Zerg_Drone) >= 30
+                || Players::getTotalCount(PlayerState::Self, Zerg_Lair) > 0))
+                minimum = 1 + (Spy::getEnemyTransition() == "4Gate");
+
+            auto hydraBuild = BuildOrder::getCurrentTransition().find("Hydra") != string::npos;
+            auto expected = hydraBuild ? 0 : max(ZvPOpener(wall), ZvPTransition(wall)) - max(0, unitsKilled / 4);
 
             return max(minimum, expected);
         }

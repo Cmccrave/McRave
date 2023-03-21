@@ -39,6 +39,16 @@ namespace McRave::Learning {
                 return nullptr;
             }
 
+            void setOpeners(vector<string> newOpeners) {
+                for (auto &opener : newOpeners)
+                    openers.push_back(BuildComponent(opener));
+            }
+
+            void setTransitions(vector<string> newTransitions) {
+                for (auto &transition : newTransitions)
+                    transitions.push_back(BuildComponent(transition));
+            }
+
             Build(string _name) {
                 name = _name;
             }
@@ -52,162 +62,6 @@ namespace McRave::Learning {
         string myRaceChar, enemyRaceChar;
         string version;
         string learningExtension, gameInfoExtension;
-        bool p, z, t, r;
-
-        bool isPBuildAllowed(Race enemy, string build, string opener, string transition)
-        {
-            const auto buildOkay = [&]() {
-                if (build == "1GateCore")
-                    return t || p;
-                if (build == "2Gate")
-                    return true;
-                if (build == "2Base")
-                    return t;
-                if (build == "FFE")
-                    return z && !Terrain::isIslandMap();
-                return false;
-            };
-
-            const auto openerOkay = [&]() {
-                if (build == "1GateCore") {
-                    if (opener == "1Zealot")
-                        return true;
-                    if (opener == "2Zealot")
-                        return z || r;
-                }
-
-                if (build == "2Gate") {
-                    if (opener == "Main")
-                        return true;
-                }
-
-                if (build == "FFE") {
-                    if (opener == "Forge")
-                        return z;
-                }
-
-                if (build == "2Base") {
-                    if (opener == "12Nexus" || opener == "21Nexus" || opener == "20Nexus")
-                        return t;
-                }
-                return false;
-            };
-
-            const auto transitionOkay = [&]() {
-                if (build == "1GateCore") {
-                    if (transition == "DT")
-                        return (p || t);
-                    if (transition == "3Gate")
-                        return !Terrain::isNarrowNatural() && (p || r);
-                    if (transition == "Robo")
-                        return !Terrain::isReverseRamp() && (p || r);
-                    if (transition == "4Gate")
-                        return !Terrain::isNarrowNatural() && p;
-                }
-
-                if (build == "2Gate") {
-                    if (transition == "DT")
-                        return p || t;
-                    if (transition == "Robo")
-                        return p || r;
-                    if (transition == "Expand")
-                        return false;
-                    if (transition == "4Gate")
-                        return z;
-                }
-
-                if (build == "FFE") {
-                    if (transition == "NeoBisu" || transition == "2Stargate" || transition == "StormRush" || transition == "5GateGoon")
-                        return z;
-                }
-
-                if (build == "2Base") {
-                    if (transition == "ReaverCarrier" || transition == "Carrier" || transition == "Obs")
-                        return t;
-                }
-                return false;
-            };
-
-            return buildOkay() && openerOkay() && transitionOkay();
-        }
-
-        bool isTBuildAllowed(Race enemy, string build, string opener, string transition)
-        {
-            // Uhhhhh
-            return true;
-        }
-
-        bool isZBuildAllowed(Race enemy, string build, string opener, string transition)
-        {
-            const auto buildOkay = [&]() {
-                if (build == "PoolLair")
-                    return z;
-                if (build == "HatchPool")
-                    return !z;
-                if (build == "PoolHatch")
-                    return true;
-                return false;
-            };
-
-            const auto openerOkay = [&]() {
-                if (build == "PoolHatch") {
-                    if (opener == "Overpool")
-                        return !z;
-                    if (opener == "12Pool")
-                        return t || z;
-                }
-                if (build == "HatchPool") {
-                    if (opener == "12Hatch")
-                        return !z;
-                    if (opener == "10Hatch")
-                        return false;
-                }
-                if (build == "PoolLair") {
-                    if (opener == "9Pool")
-                        return z;
-                }
-                return false;
-            };
-
-            const auto transitionOkay = [&]() {
-                if (build == "PoolLair") {
-                    if (transition == "1HatchMuta")
-                        return z;
-                }
-                if (build == "HatchPool") {
-                    if (transition == "2HatchMuta")
-                        return !z;
-                    if (transition == "3HatchHydra")
-                        return p;
-                }
-                if (build == "PoolHatch") {
-                    if (transition == "2HatchMuta")
-                        return true;
-                    if (transition == "3HatchMuta")
-                        return !z;
-                    if (transition == "3HatchSpeedling")
-                        return false;
-                    if (transition == "6HatchHydra")
-                        return p;
-                    if (transition == "2HatchLurker")
-                        return false;
-                }
-                return false;
-            };
-
-            return buildOkay() && openerOkay() && transitionOkay();
-        }
-
-        bool isBuildAllowed(Race enemy, string build, string opener, string transition)
-        {
-            if (Broodwar->self()->getRace() == Races::Protoss)
-                return isPBuildAllowed(enemy, build, opener, transition);
-            if (Broodwar->self()->getRace() == Races::Terran)
-                return isTBuildAllowed(enemy, build, opener, transition);
-            if (Broodwar->self()->getRace() == Races::Zerg)
-                return isZBuildAllowed(enemy, build, opener, transition);
-            return false;
-        }
 
         bool isBuildPossible(string build, string opener)
         {
@@ -307,11 +161,11 @@ namespace McRave::Learning {
 
                 }
             };
+            auto randomness = max(1, 50 - totalGames);
 
             const auto calculateUCB = [&](int w, int l) {
-                if (w + l == 0)
-                    return 999.9;
-                return (double(w) / double(w + l)) + pow(2.0 * log((double)totalGames) / double(w + l), 0.1);
+                auto UCB = (w + l) > 0 ? (double(w) / double(w + l)) + pow(2.0 * log((double)totalGames) / double(w + l), 0.1) : 1.0;
+                return (UCB * 100.0) + double(rand() % randomness) + 1.0;
             };
 
             // Attempt to read a file from the read directory first, then write directory
@@ -342,9 +196,9 @@ namespace McRave::Learning {
             for (auto &build : myBuilds) {
                 build.ucb1 = calculateUCB(build.w, build.l);
                 for (auto &opener : build.openers)
-                    opener.ucb1 = calculateUCB(opener.w, opener.l) + 0.01;
+                    opener.ucb1 = calculateUCB(opener.w, opener.l);
                 for (auto &transition : build.transitions)
-                    transition.ucb1 = calculateUCB(transition.w, transition.l) + 0.01;
+                    transition.ucb1 = calculateUCB(transition.w, transition.l);
 
                 sort(build.openers.begin(), build.openers.end(), [&](const auto &left, const auto &right) { return left.ucb1 < right.ucb1; });
                 sort(build.transitions.begin(), build.transitions.end(), [&](const auto &left, const auto &right) { return left.ucb1 < right.ucb1; });
@@ -373,9 +227,7 @@ namespace McRave::Learning {
                         if (transition.ucb1 < bestTransitionUCB1)
                             continue;
                         bestTransitionUCB1 = transition.ucb1;
-
-                        if (isBuildAllowed(enemyRace, build.name, opener.name, transition.name))
-                            BuildOrder::setLearnedBuild(build.name, opener.name, transition.name);
+                        BuildOrder::setLearnedBuild(build.name, opener.name, transition.name);
                     }
                 }
             }
@@ -412,45 +264,112 @@ namespace McRave::Learning {
             }
         }
 
+        void protossBuildMaps()
+        {
+            Build OneGateCore("1GateCore");
+            Build TwoGate("2Gate");
+            Build TwoBase("2Base");
+            Build FFE("FFE");
+
+            // PvT
+            if (Players::PvT()) {
+                OneGateCore.setOpeners({ "0Zealot", "1Zealot" });
+                OneGateCore.setTransitions({ "DT" });
+
+                TwoGate.setOpeners({ "Main" });
+                TwoGate.setTransitions({ "DT" });
+
+                TwoBase.setOpeners({ "12Nexus", "20Nexus", "21Nexus" });
+                TwoBase.setTransitions({ "Obs", "Carrier", "ReaverCarrier" });
+
+                myBuilds ={ OneGateCore, TwoGate, TwoBase };
+            }
+
+            // PvP
+            if (Players::PvP()) {
+                OneGateCore.setOpeners({ "1Zealot" });
+                OneGateCore.setTransitions({ "DT", "Robo", "4Gate", "3Gate" });
+
+                TwoGate.setOpeners({ "Main" });
+                TwoGate.setTransitions({ "DT", "Robo" });
+
+                myBuilds ={ OneGateCore, TwoGate };
+            }
+
+            // PvZ
+            if (Players::PvZ()) {
+                TwoGate.setOpeners({ "Main" });
+                TwoGate.setTransitions({ "4Gate" });
+
+                FFE.setOpeners({ "Forge" });
+                FFE.setTransitions({ "NeoBisu", "2Stargate", "StormRush", "5GateGoon" });
+
+                myBuilds ={ TwoGate, FFE };
+            }
+
+            // PvR
+            if (Players::PvR()) {
+                OneGateCore.setOpeners({ "2Zealot" });
+                OneGateCore.setTransitions({ "Robo", "3Gate" });
+
+                TwoGate.setOpeners({ "Main" });
+                TwoGate.setTransitions({ "Robo" });
+
+                myBuilds ={ OneGateCore, TwoGate };
+            }
+        }
+
+        void zergBuildMaps()
+        {
+            Build PoolHatch("PoolHatch");
+            Build HatchPool("HatchPool");
+            Build PoolLair("PoolLair");
+
+            if (Players::ZvP()) {
+                PoolHatch.setOpeners({ "Overpool"});
+                PoolHatch.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra"});
+
+                HatchPool.setOpeners({ "10Hatch", "12Hatch"});
+                HatchPool.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra"});
+
+                myBuilds = { PoolHatch, HatchPool };
+            }
+
+            if (Players::ZvT()) {
+                PoolHatch.setOpeners({ "4Pool", "Overpool", "12Pool"});
+                PoolHatch.setTransitions({ "2HatchMuta", "3HatchMuta"});
+
+                HatchPool.setOpeners({ "12Hatch"});
+                HatchPool.setTransitions({ "2HatchMuta", "3HatchMuta"});
+
+                myBuilds = { PoolHatch, HatchPool };
+            }
+
+            if (Players::ZvZ()) {
+                PoolHatch.setOpeners({ "12Pool"});
+                PoolHatch.setTransitions({ "2HatchMuta"});
+
+                PoolLair.setOpeners({ "9Pool"});
+                PoolLair.setTransitions({ "1HatchMuta"});
+
+                myBuilds ={ PoolHatch, PoolLair };
+            }
+
+            if (Players::ZvR()) {
+                PoolHatch.setOpeners({ "Overpool"});
+                PoolHatch.setTransitions({ "2HatchMuta"});
+
+                myBuilds ={ PoolHatch };
+            }
+        }
+
         void createBuildMaps()
         {
-            // Protoss builds, openers and transitions
-            if (Broodwar->self()->getRace() == Races::Protoss) {
-                Build OneGateCore("1GateCore");
-                OneGateCore.openers ={ BuildComponent("0Zealot"), BuildComponent("1Zealot"), BuildComponent("2Zealot") };
-                OneGateCore.transitions ={ BuildComponent("DT"), BuildComponent("Robo"), BuildComponent("4Gate"), BuildComponent("3Gate") };
+            if (Broodwar->self()->getRace() == Races::Protoss)
+                protossBuildMaps();
+            if (Broodwar->self()->getRace() == Races::Zerg)
+                zergBuildMaps();
 
-                Build TwoGate("2Gate");
-                TwoGate.openers ={ BuildComponent("Main") };
-                TwoGate.transitions ={ BuildComponent("DT"), BuildComponent("Robo"), BuildComponent("4Gate"), BuildComponent("Expand"), BuildComponent("DoubleExpand") };
-
-                Build FFE("FFE");
-                FFE.openers ={ BuildComponent("Forge") };
-                FFE.transitions ={ BuildComponent("NeoBisu"), BuildComponent("2Stargate"), BuildComponent("StormRush"), BuildComponent("4GateArchon"), BuildComponent("CorsairReaver"), BuildComponent("5GateGoon") };
-
-                Build TwoBase("2Base");
-                TwoBase.openers ={ BuildComponent("12Nexus"), BuildComponent("20Nexus"), BuildComponent("21Nexus") };
-                TwoBase.transitions ={ BuildComponent("Obs"), BuildComponent("Carrier"), BuildComponent("ReaverCarrier") };
-                
-                myBuilds ={ OneGateCore, TwoGate, FFE, TwoBase };
-            }
-
-            if (Broodwar->self()->getRace() == Races::Zerg) {
-
-                Build PoolHatch("PoolHatch");
-                PoolHatch.openers ={ BuildComponent("4Pool"), BuildComponent("9Pool"), BuildComponent("Overpool"), BuildComponent("12Pool") };
-                PoolHatch.transitions={ BuildComponent("2HatchMuta"), BuildComponent("2.5HatchMuta"), BuildComponent("3HatchMuta"), BuildComponent("2HatchSpeedling"), BuildComponent("3HatchSpeedling"), BuildComponent("6HatchHydra"), BuildComponent("2HatchLurker") };
-
-                Build HatchPool("HatchPool");
-                HatchPool.openers ={ BuildComponent("9Hatch"), BuildComponent("10Hatch"), BuildComponent("12Hatch") };
-                HatchPool.transitions={ BuildComponent("2HatchMuta"), BuildComponent("2.5HatchMuta"), BuildComponent("3HatchMuta"), BuildComponent("2HatchSpeedling"), BuildComponent("3HatchHydra"), BuildComponent("6HatchHydra") };
-
-                Build PoolLair("PoolLair");
-                PoolLair.openers ={ BuildComponent("9Pool"), BuildComponent("12Pool") };
-                PoolLair.transitions={ BuildComponent("1HatchMuta") };
-
-                myBuilds ={ PoolHatch, HatchPool, PoolLair };
-            }
 
             if (Broodwar->self()->getRace() == Races::Terran) {
                 BuildOrder::setLearnedBuild("RaxFact", "10Rax", "2Fact");
@@ -543,12 +462,6 @@ namespace McRave::Learning {
             return;
         }
 
-        // Enemy race bools
-        p = Broodwar->enemy()->getRace() == Races::Protoss;
-        z = Broodwar->enemy()->getRace() == Races::Zerg;
-        t = Broodwar->enemy()->getRace() == Races::Terran;
-        r = Broodwar->enemy()->getRace() == Races::Unknown || Broodwar->enemy()->getRace() == Races::Random;
-
         // Grab only the alpha characters from the map name to remove version numbers
         for (auto &c : Broodwar->mapFileName()) {
             if (isalpha(c))
@@ -564,7 +477,7 @@ namespace McRave::Learning {
         enemyRaceChar       ={ *Broodwar->enemy()->getRace().c_str() };
         version             = "Offseason2023";
         noStats             = " 0 0 ";
-        learningExtension   = mapLearning ? myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + mapName + ".txt" : myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + ".txt";
+        learningExtension   = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + " Learning.txt";
         gameInfoExtension   = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + " Info.txt";
 
         createBuildMaps();

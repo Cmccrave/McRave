@@ -110,7 +110,7 @@ namespace McRave::Expansion {
                 auto home = Terrain::getNaturalChoke() ? Position(Terrain::getNaturalChoke()->Center()) : Terrain::getMainPosition();
 
                 for (auto &station : BWEB::Stations::getStations()) {
-                    auto stationIndex =     expansionNetwork[&station];
+                    auto &stationIndex =    expansionNetwork[&station];
                     auto grdParent =        stationIndex[parentStation].getDistance();
                     auto grdHome =          stationIndex[Terrain::getMyMain()].getDistance();
 
@@ -193,7 +193,9 @@ namespace McRave::Expansion {
 
     void onFrame()
     {
+        Visuals::startPerfTest();
         updateExpandPlan();
+        Visuals::endPerfTest("Production");
     }
 
     void onStart()

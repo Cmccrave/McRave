@@ -16,7 +16,7 @@ namespace McRave::Transports {
             };
 
             BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-            newPath.generateAS(transportDrop);
+            newPath.generateAS_h(transportDrop);
             unit.setDestinationPath(newPath);
             Visuals::drawPath(newPath);
         }

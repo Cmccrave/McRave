@@ -1,27 +1,16 @@
 #pragma once
 #include <BWAPI.h>
 #include "BWEB.h"
+#include "UnitMath.h"
 
 namespace McRave {
 
     class UnitInfo : public std::enable_shared_from_this<UnitInfo>
     {
     #pragma region UnitData
-        double visibleGroundStrength = 0.0;
-        double visibleAirStrength = 0.0;
-        double maxGroundStrength = 0.0;
-        double maxAirStrength = 0.0;
-        double priority = 0.0;
-        double percentHealth = 0.0;
-        double percentShield = 0.0;
-        double percentTotal = 0.0;
-        double groundRange = 0.0;
-        double groundReach = 0.0;
-        double groundDamage = 0.0;
-        double airRange = 0.0;
-        double airReach = 0.0;
-        double airDamage = 0.0;
-        double speed = 0.0;
+
+        UnitData data;
+
         double engageDist = 0.0;
         double simValue = 0.0;
         double engageRadius = 0.0;
@@ -41,16 +30,7 @@ namespace McRave {
         int startedFrame = -999;
         int completeFrame = -999;
         int arriveFrame = -999;
-        int shields = 0;
-        int health = 0;
-        int armor = 0;
-        int shieldArmor = 0;
-        int minStopFrame = 0;
-        int energy = 0;
-        int walkWidth = 0;
-        int walkHeight = 0;
 
-        bool saveUnit = false;
         bool proxy = false;
         bool completed = false;
         bool burrowed = false;
@@ -118,6 +98,7 @@ namespace McRave {
 
         // HACK: Hacky stuff that was added quickly for testing
         bool movedFlag = false;
+        bool saveUnit = false;
         bool isValid() { return unit() && unit()->exists(); }
         bool isAvailable() { return !unit()->isLockedDown() && !unit()->isMaelstrommed() && !unit()->isStasised() && unit()->isCompleted(); }
         UnitInfo();
@@ -133,7 +114,7 @@ namespace McRave {
         bool hasSimTarget() { return !simTarget.expired(); }
         bool hasAttackedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 120); }
         bool hasRepairedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastRepairFrame < 120); }
-        bool targetsFriendly() { return type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || (type == BWAPI::UnitTypes::Zerg_Defiler && energy < 100); }
+        bool targetsFriendly() { return type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || (type == BWAPI::UnitTypes::Zerg_Defiler && data.energy < 100); }
 
         bool isSuicidal() { return type == BWAPI::UnitTypes::Protoss_Scarab || type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || type == BWAPI::UnitTypes::Zerg_Scourge || type == BWAPI::UnitTypes::Zerg_Infested_Terran; }
         bool isSplasher() { return type == BWAPI::UnitTypes::Protoss_Reaver || type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || type == BWAPI::UnitTypes::Protoss_Archon || type == BWAPI::UnitTypes::Protoss_Corsair || type == BWAPI::UnitTypes::Terran_Valkyrie || type == BWAPI::UnitTypes::Zerg_Devourer; }
@@ -194,12 +175,6 @@ namespace McRave {
             return Time(arrival);
         }
 
-        // Logic that dictates overriding simulation results
-        bool localRetreat();
-        bool localEngage();
-        bool globalRetreat();
-        bool globalEngage();
-
         bool attemptingRunby();
         bool attemptingSurround();
         bool attemptingHarass();
@@ -246,33 +221,33 @@ namespace McRave {
         BWAPI::TilePosition getBuildPosition() { return buildPosition; }
         BWAPI::TilePosition getLastTile() { return lastTile; }
         BWEB::Path& getDestinationPath() { return destinationPath; }
-        double getPercentTotal() { return percentTotal; }
-        double getVisibleGroundStrength() { return visibleGroundStrength; }
-        double getMaxGroundStrength() { return maxGroundStrength; }
-        double getVisibleAirStrength() { return visibleAirStrength; }
-        double getMaxAirStrength() { return maxAirStrength; }
-        double getGroundRange() { return groundRange; }
-        double getGroundReach() { return groundReach; }
-        double getGroundDamage() { return groundDamage; }
-        double getAirRange() { return airRange; }
-        double getAirReach() { return airReach; }
-        double getAirDamage() { return airDamage; }
-        double getSpeed() { return speed; }
+        double getPercentTotal() { return data.percentTotal; }
+        double getVisibleGroundStrength() { return data.visibleGroundStrength; }
+        double getMaxGroundStrength() { return data.maxGroundStrength; }
+        double getVisibleAirStrength() { return data.visibleAirStrength; }
+        double getMaxAirStrength() { return data.maxAirStrength; }
+        double getGroundRange() { return data.groundRange; }
+        double getGroundReach() { return data.groundReach; }
+        double getGroundDamage() { return data.groundDamage; }
+        double getAirRange() { return data.airRange; }
+        double getAirReach() { return data.airReach; }
+        double getAirDamage() { return data.airDamage; }
+        double getSpeed() { return data.speed; }
         double getCurrentSpeed() { return currentSpeed; }
-        double getPriority() { return priority; }
+        double getPriority() { return data.priority; }
         double getEngDist() { return engageDist; }
         double getSimValue() { return simValue; }
         double getEngageRadius() { return engageRadius; }
         double getRetreatRadius() { return retreatRadius; }
-        int getShields() { return shields; }
-        int getHealth() { return health; }
+        int getShields() { return data.shields; }
+        int getHealth() { return data.health; }
         int getLastAttackFrame() { return lastAttackFrame; }
         int getLastVisibleFrame() { return lastVisibleFrame; }
-        int getEnergy() { return energy; }
+        int getEnergy() { return data.energy; }
         int getRemainingTrainFrames() { return remainingTrainFrame; }
         int framesHoldingResource() { return resourceHeldFrames; }
-        int getWalkWidth() { return walkWidth; }
-        int getWalkHeight() { return walkHeight; }
+        int getWalkWidth() { return data.walkWidth; }
+        int getWalkHeight() { return data.walkHeight; }
         bool isMarkedForDeath() { return markedForDeath; }
         bool isProxy() { return proxy; }
         bool isBurrowed() { return burrowed; }

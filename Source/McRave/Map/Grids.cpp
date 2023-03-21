@@ -134,7 +134,7 @@ namespace McRave::Grids
                 for (int y = top; y < bottom; y++) {
                     auto &index = grid[gridWalkScale * y + x];
                     auto savePlease = false;
-                    const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4);
+                    const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4) - 32;
 
                     // Cluster
                     if (allowCluster && x * 8 >= clusterTopLeft.x && y * 8 >= clusterTopLeft.y && x * 8 <= clusterBotRight.x && y * 8 <= clusterBotRight.y) {
@@ -150,11 +150,11 @@ namespace McRave::Grids
 
                     // Threat
                     if (allowGround && dist <= unit.getGroundReach()) {
-                        index.groundThreat += float(unit.getVisibleGroundStrength() / max(1.0, logLookup16[dist / 16]));
+                        index.groundThreat += (dist <= unit.getGroundRange() ? float(unit.getVisibleGroundStrength()) : float(unit.getVisibleGroundStrength() / max(1.0, logLookup16[dist / 16])));
                         savePlease = true;
                     }
                     if (allowAir && dist <= unit.getAirReach()) {
-                        index.airThreat += float(unit.getVisibleAirStrength() / max(1.0, logLookup16[dist / 16]));
+                        index.airThreat += (dist <= unit.getAirRange() ? float(unit.getVisibleAirStrength()) : float(unit.getVisibleAirStrength() / max(1.0, logLookup16[dist / 16])));
                         savePlease = true;
                     }
 
@@ -349,7 +349,7 @@ namespace McRave::Grids
     }
 
     float getAirThreat(WalkPosition here, PlayerState player) {
-        return (player == PlayerState::Self ? selfGrid[gridWalkScale * here.y + here.x].airThreat : enemyGrid[gridWalkScale * here.y + here.x].airThreat);
+        return player == PlayerState::Self ? selfGrid[gridWalkScale * here.y + here.x].airThreat : enemyGrid[gridWalkScale * here.y + here.x].airThreat;
     }
 
     float getGroundDensity(Position here, PlayerState player) {

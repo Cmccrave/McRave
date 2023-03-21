@@ -20,12 +20,9 @@ namespace McRave::Command {
 
         double distance(UnitInfo& unit, WalkPosition w) {
             const auto p = Position(w) + Position(4, 4);
-            //if (unit.getFormation().isValid()) {
-            //    Visuals::drawLine(unit.getPosition(), unit.getFormation(), Colors::Black);
-            //    auto percentFormation = clamp(0.01, 1.0 - (unit.getPosition().getDistance(unit.getFormation()) / 640.0), 0.5);
-            //    Broodwar->drawTextMap(unit.getPosition(), "%.2f", percentFormation);
-            //    return max(1.0, (1.0 - percentFormation) * p.getDistance(unit.getNavigation()) + (percentFormation * p.getDistance(unit.getFormation())));
-            //}
+            if (unit.getFormation().isValid() && unit.getPosition().getDistance(unit.getFormation()) < 320.0) {
+                return max(1.0, p.getDistance(unit.getFormation()));
+            }
             return max(1.0, p.getDistance(unit.getNavigation()));
         }
 
@@ -56,6 +53,13 @@ namespace McRave::Command {
         double avoidance(UnitInfo& unit, Position p, Position sim)
         {
             return (p.getDistance(sim));
+        }
+
+        double altitude(UnitInfo& unit, WalkPosition w)
+        {
+            if (unit.isFlying())
+                return 1.0 + mapBWEM.GetMiniTile(w).Altitude();
+            return 1.0;
         }
 
         Position findViablePosition(UnitInfo& unit, Position pstart, int radius, function<double(WalkPosition)> score)
@@ -91,7 +95,7 @@ namespace McRave::Command {
                         continue;
 
                     auto current = score(w);
-                    if (unit.isLightAir() && unit.getLocalState() != LocalState::Attack) {
+                    if (unit.isLightAir() && unit.getLocalState() != LocalState::Attack && unit.getLocalState() != LocalState::ForcedAttack) {
                         auto edgePush = clamp(Terrain::getClosestMapEdge(unit.getPosition()).getDistance(p) / 160.0, 0.01, 1.00);
                         auto cornerPush = clamp(Terrain::getClosestMapCorner(unit.getPosition()).getDistance(p) / 320.0, 0.01, 1.00);
                         current = current * cornerPush * edgePush;
@@ -168,7 +172,7 @@ namespace McRave::Command {
                     return false;
                 if (unit.attemptingSurround())
                     return false;
-                return unit.isWithinRange(*unitTarget) && unit.getLocalState() == LocalState::Attack;
+                return unit.isWithinRange(*unitTarget) && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack);
             }
 
             // Workers will poke damage if near a build job or is threatning our gathering
@@ -298,7 +302,7 @@ namespace McRave::Command {
                     auto unitTarget = unit.getTarget().lock();
                     if (unit.getType() == Zerg_Mutalisk && unit.isWithinRange(*unitTarget) && unit.canStartAttack() && !unit.isWithinAngle(*unitTarget))
                         return true;
-                    if (unitTarget->unit()->exists() && unit.isWithinRange(*unitTarget) && unit.getLocalState() == LocalState::Attack && (unit.getType() != Zerg_Lurker || unit.isBurrowed()))
+                    if (unitTarget->unit()->exists() && unit.isWithinRange(*unitTarget) && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack) && (unit.getType() != Zerg_Lurker || unit.isBurrowed()))
                         return false;
                 }
 
@@ -348,8 +352,8 @@ namespace McRave::Command {
                 return false;
 
             // Necessary for mutas to not overshoot
-            if (unit.getRole() == Role::Combat && unit.hasTarget() && !unit.attemptingSurround() && !unit.isSuicidal() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack) {
-                unit.setCommand(Right_Click_Position, unit.getTarget().lock()->getPosition(), "Move");
+            if (unit.getRole() == Role::Combat && unit.hasTarget() && !unit.attemptingSurround() && !unit.isSuicidal() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(*unit.getTarget().lock()) && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack)) {
+                unit.setCommand(Right_Click_Position, unit.getTarget().lock()->getPosition(), "MoveA");
                 return true;
             }
 
@@ -360,19 +364,19 @@ namespace McRave::Command {
             //}
 
             if (!unit.getDestinationPath().isReachable()) {
-                unit.setCommand(Move, unit.getDestination(), "Move");
+                unit.setCommand(Move, unit.getDestination(), "MoveB");
                 return true;
             }
 
             // Find the best position to move to
             auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
             if (bestPosition.isValid()) {
-                unit.setCommand(Move, bestPosition, "Move");
+                unit.setCommand(Move, bestPosition, "MoveC");
                 return true;
             }
             else {
                 bestPosition = unit.getDestination();
-                unit.setCommand(Move, bestPosition, "Move");
+                unit.setCommand(Move, bestPosition, "MoveD");
                 return true;
             }
         }
@@ -386,8 +390,24 @@ namespace McRave::Command {
             return false;
         auto unitTarget = unit.getTarget().lock();
 
+        // Find the best possible position to kite towards
+        auto kiteTowards = Positions::Invalid;
+        if (unit.isLightAir() && Grids::getAirThreat(unit.getPosition(), PlayerState::Enemy) > 0.0) {
+            auto maxRange = max(unit.getAirRange(), unit.getGroundRange());
+            const auto kiteRange = unit.getType().groundWeapon().damageCooldown() * unit.getType().topSpeed();
+            const auto threatCalc = [&](auto &p) {
+                return double(Grids::getAirThreat(p, PlayerState::Enemy));
+            };
+            auto calcPair = Util::findPointOnCircle(unit.getPosition(), unitTarget->getPosition(), maxRange, threatCalc);
+            kiteTowards = Util::extendLine(unitTarget->getPosition(), calcPair.second, kiteRange);
+        }
+
         const auto scoreFunction = [&](WalkPosition w) {
-            const auto score =      (mobility(unit, w) * grouping(unit, w)) / (threat(unit, w));
+            auto score = 0.0;
+            if (kiteTowards.isValid())
+                score =      (mobility(unit, w) * grouping(unit, w)) / (w.getDistance(WalkPosition(kiteTowards)) * (threat(unit, w)) * altitude(unit, w));
+            else
+                score =      (mobility(unit, w) * grouping(unit, w)) / ((threat(unit, w)) * altitude(unit, w));
             return score;
         };
 
@@ -430,6 +450,7 @@ namespace McRave::Command {
         const auto shouldKite = [&]() {
             auto allyRange = (unitTarget->getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
             auto enemyRange = (unit.getType().isFlyer() ? unitTarget->getAirRange() : unitTarget->getGroundRange());
+            auto targetKitable = allyRange > enemyRange && enemyRange != 0 && allyRange != 0;
 
             if (unit.getRole() == Role::Worker)
                 return Util::getTime() < Time(3, 30) && !unit.getUnitsInRangeOfThis().empty();
@@ -454,8 +475,8 @@ namespace McRave::Command {
 
                 if (unit.getType() == UnitTypes::Protoss_Reaver                                                                 // Reavers: Always kite after shooting
                     || unit.isLightAir()                                                                                        // Do kite when this is a light air unit
-                    || allyRange > enemyRange                                                                                   // Do kite when this units range is higher than its target
                     || unit.isCapitalShip()                                                                                     // Do kite when this unit is a capital ship
+                    || targetKitable
                     || ((!unit.getUnitsTargetingThis().empty() || !unit.isHealthy()) && allyRange == enemyRange))               // Do kite when this unit is being attacked or isn't healthy
                     return true;
             }
@@ -493,7 +514,8 @@ namespace McRave::Command {
     {
         const auto closeToDefend = unit.getPosition().getDistance(unit.getFormation()) < 160.0;
         const auto canDefend = unit.getRole() == Role::Combat;
-        const auto shouldDefend = unit.getFormation().isValid() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && unit.getGlobalState() != GlobalState::Attack && unit.getLocalState() != LocalState::Attack && !unit.isLightAir() && !unit.attemptingRunby();
+        const auto shouldDefend = unit.getFormation().isValid() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && unit.getGlobalState() != GlobalState::Attack
+            && unit.getLocalState() != LocalState::Attack && unit.getLocalState() != LocalState::ForcedAttack && !unit.isLightAir() && !unit.attemptingRunby();
 
 
         if (closeToDefend && canDefend && shouldDefend) {
@@ -521,7 +543,7 @@ namespace McRave::Command {
         };
 
         const auto canExplore = unit.getRole() == Role::Scout && unit.getNavigation().isValid() && unit.getSpeed() > 0.0;
-        const auto shouldExplore = unit.getLocalState() != LocalState::Attack;
+        const auto shouldExplore = unit.getLocalState() != LocalState::Attack && unit.getLocalState() != LocalState::ForcedAttack;
 
         if (canExplore && shouldExplore) {
 

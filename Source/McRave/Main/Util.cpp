@@ -287,6 +287,13 @@ namespace McRave::Util {
         return (line.first + Position(int(projCalc * directionVector.x), int(projCalc * directionVector.y)));
     }
 
+    Position extendLine(Position here, Position target, double dist)
+    {
+        const auto directionVector = here - target;
+        const auto currentDist = target.getDistance(here);
+        return target - (directionVector * dist / currentDist);
+    }
+
     Time getTime()
     {
         return gameTime;
@@ -312,59 +319,33 @@ namespace McRave::Util {
         return { dist, source - (diff * ((dist - radius) / dist)) };
     }
 
-    pair<double, Position> getClosestPointToRadiusGround(Position source, Position target, double radius)
+    pair<double, Position> findPointOnCircle(Position source, Position target, double radius, function<double(Position)> calc)
     {
-        auto tileSource = TilePosition(source);
-        auto newSource = tileSource;
-        auto tries = 0;
-        while (!BWEB::Map::isWalkable(tileSource, Protoss_Dragoon) && tries < 10) {
-            auto closestDist = DBL_MAX;
-            tileSource = newSource;
-            for (auto x = -1; x <= 1; x++) {
-                for (auto y = -1; y <= 1; y++) {
-                    auto newTile = tileSource + TilePosition(x, y);
-                    auto dist = (Position(newTile) + Position(16, 16)).getDistance(source);
-                    if (dist < closestDist && BWEB::Map::isWalkable(tileSource, Protoss_Dragoon)) {
-                        newSource = newTile;
-                        closestDist = dist;
-                    }
-                }
-            }
-            tries++;
-        }
-        source = Position(newSource) + Position(16, 16);
-
         // Create a search tree in a circle around the target
         auto position = target;
-        auto dist = source.getDistance(target);
+        auto value = 0.0;
+        auto startAngle = BWEB::Map::getAngle(make_pair(target, source));
         pair<double, double> radrange ={ 0.00, 3.14 };
-        for (int i = 1; i <= 10; i++) {
-            auto diff = (radrange.second - radrange.first) / double(i + 1); // Allows for correction in the event that the first few points are unwalkable
-            auto p1 = target + Position(radius*cos(radrange.first), radius*sin(radrange.first));
-            auto p2 = target + Position(radius*cos(radrange.second), radius*sin(radrange.second));
+        for (int i = 1; i <= 20; i++) {
+            const auto diff = double(M_PI) / double(1 + i); // Allows for correction in the event that the first few points are unwalkable
+            const auto p1 = Util::clipPosition(target + Position(int((radius*cos(radrange.first))), -int((radius*sin(radrange.first)))));
+            const auto p2 = Util::clipPosition(target + Position(int((radius*cos(radrange.second))), -int((radius*sin(radrange.second)))));
+            const auto calc1 = calc(p1);
+            const auto calc2 = calc(p2);
 
-            if (!p1.isValid()) {
-                radrange ={ radrange.second - diff, radrange.second + diff };
-            }
-            else if (!p2.isValid()) {
+            if (calc1 < calc2) {
+                position = p1;
+                value = calc1;
                 radrange ={ radrange.first - diff, radrange.first + diff };
             }
             else {
-                auto dist1 = BWEB::Map::getGroundDistance(p1, source) + BWEB::Map::getGroundDistance(p1, target);
-                auto dist2 = BWEB::Map::getGroundDistance(p2, source) + BWEB::Map::getGroundDistance(p2, target);
-
-                if (i < 10) {
-                    dist1 < dist2 ? radrange ={ radrange.first - diff, radrange.first + diff } : radrange ={ radrange.second - diff, radrange.second + diff };
-                    position = (dist1 < dist2 ? p1 : p2);
-                }
-                else {
-                    position = (dist1 < dist2 ? p1 : p2);
-                    dist = (dist1 < dist2 ? dist1 : dist2);
-                }
+                position = p2;
+                value = calc2;
+                radrange ={ radrange.second - diff, radrange.second + diff };
             }
-
-            //Broodwar->drawTextMap(position, "%d", i);
+            Broodwar->drawTextMap(position, "%d", i);
         }
-        return { dist, position };
+        Broodwar->drawCircleMap(position, 3, Colors::Green);
+        return { value, position };
     }
 }

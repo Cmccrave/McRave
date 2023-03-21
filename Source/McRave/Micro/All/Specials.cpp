@@ -56,7 +56,7 @@ namespace McRave::Command
 
         // Siege Tanks - Siege
         if (unit.getType() == Terran_Siege_Tank_Tank_Mode) {
-            if (unit.hasTarget() && unit.getTarget().lock()->getGroundRange() > 32.0 && targetDist <= 450.0 && targetDist >= 100.0 && unit.getLocalState() == LocalState::Attack)
+            if (unit.hasTarget() && unit.getTarget().lock()->getGroundRange() > 32.0 && targetDist <= 450.0 && targetDist >= 100.0 && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack))
                 unit.unit()->siege();
             if (unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(Combat::getDefendPosition()) < 320)
                 unit.unit()->siege();
@@ -64,7 +64,7 @@ namespace McRave::Command
 
         // Siege Tanks - Unsiege
         else if (unit.getType() == Terran_Siege_Tank_Siege_Mode) {
-            if (unit.hasTarget() && (unit.getTarget().lock()->getGroundRange() <= 32.0 || targetDist < 100.0 || targetDist > 450.0 || unit.getLocalState() == LocalState::Retreat)) {
+            if (unit.hasTarget() && (unit.getTarget().lock()->getGroundRange() <= 32.0 || targetDist < 100.0 || targetDist > 450.0 || unit.getLocalState() == LocalState::Retreat || unit.getLocalState() == LocalState::ForcedRetreat)) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Unsiege)
                     unit.unit()->unsiege();
                 return true;
@@ -120,7 +120,7 @@ namespace McRave::Command
                 unit.unit()->burrow();
                 return true;
             }
-            else if (!unit.unit()->isBurrowed() && unit.getLocalState() == LocalState::Attack && unit.getPosition().getDistance(unit.getEngagePosition()) < 16.0) {
+            else if (!unit.unit()->isBurrowed() && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack) && unit.getPosition().getDistance(unit.getEngagePosition()) < 16.0) {
                 unit.unit()->burrow();
                 return true;
             }
@@ -133,7 +133,7 @@ namespace McRave::Command
         // Drone
         else if (unit.getType().isWorker() && Broodwar->self()->hasResearched(TechTypes::Burrowing) && unit.getRole() == Role::Worker) {
             const auto resourceThreatened = (unit.hasResource() && unit.getResource().lock()->isThreatened()) || !unit.getUnitsTargetingThis().empty();
-            const auto threatened = unit.hasTarget() && unit.getTarget().lock()->isThreatening() && unit.getTarget().lock()->isWithinReach(unit);
+            const auto threatened = unit.hasTarget() && unit.getTarget().lock()->isThreatening() && unit.getTarget().lock()->canAttackGround() && unit.getTarget().lock()->isWithinReach(unit);
 
             if (!unit.isBurrowed()) {
                 if (threatened) {
@@ -314,7 +314,7 @@ namespace McRave::Command
 
         // High Templar - Archon Morph
         if (unit.getType() == Protoss_High_Templar) {
-            auto lowEnergyThreat = unit.getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids::getGroundThreat(unit.getWalkPosition(), PlayerState::Enemy) > 0.0f;
+            auto lowEnergyThreat = unit.getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) > 0.0f;
             auto wantArchons = vis(Protoss_Archon) / BuildOrder::getCompositionPercentage(Protoss_Archon) < vis(Protoss_High_Templar) / BuildOrder::getCompositionPercentage(Protoss_High_Templar);
 
             if (!Players::vT() && (lowEnergyThreat || wantArchons)) {

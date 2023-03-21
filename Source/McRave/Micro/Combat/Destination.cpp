@@ -40,6 +40,9 @@ namespace McRave::Combat::Destination {
             unit.setRetreat(retreat->getBase()->Center());
         else
             unit.setRetreat(Terrain::getMainPosition());
+
+        if (unit.unit()->isSelected())
+            Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Green);
     }
 
     void updateDestination(UnitInfo& unit)
@@ -51,7 +54,7 @@ namespace McRave::Combat::Destination {
         }
 
         // If attacking and target is close, set as destination
-        else if (unit.getLocalState() == LocalState::Attack) {
+        else if (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack) {
             if (unit.attemptingRunby()) {
                 unit.setDestination(unit.getEngagePosition());
             }
@@ -61,7 +64,7 @@ namespace McRave::Combat::Destination {
             else if (unit.getSurroundPosition().isValid()) {
                 unit.setDestination(unit.getSurroundPosition());
             }
-            else if (unit.getEngagePosition().isValid()) {
+            else if (!unit.isFlying() && unit.getEngagePosition().isValid()) {
                 unit.setDestination(unit.getEngagePosition());
             }
             else if (unit.hasTarget()) {
@@ -69,8 +72,11 @@ namespace McRave::Combat::Destination {
             }
         }
         else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
-
-            if (!unit.globalRetreat() && unit.attemptingRegroup()) {
+            if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Defend) {
+                unit.setDestination(unit.getGoal());
+                //Visuals::drawLine(unit.getPosition(), unit.getGoal(), Colors::Yellow);
+            }
+            else if (unit.getGlobalState() != GlobalState::ForcedRetreat && unit.attemptingRegroup()) {
                 unit.setDestination(unit.getCommander().lock()->getPosition());
             }
             else if (retreat && unit.isFlying()) {
@@ -103,7 +109,6 @@ namespace McRave::Combat::Destination {
                 getCleanupPosition(unit);
             }
         }
-
 
         //Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
         //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);

@@ -71,7 +71,7 @@ namespace McRave::Resources {
                             resource.setResourceState(ResourceState::Mineable);
                     }
                     else {
-                        if (resource.unit()->getRemainingBuildTime() < 40)
+                        if (resource.unit()->getPlayer() == Broodwar->self() && resource.unit()->getRemainingBuildTime() < 40)
                             resource.setResourceState(ResourceState::Mineable);
                     }
                 }

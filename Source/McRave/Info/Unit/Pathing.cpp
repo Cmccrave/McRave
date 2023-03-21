@@ -26,10 +26,10 @@ namespace McRave::Pathing {
             // Create an air distance calculation for engage position for flyers
             auto range = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
             if (unit.isFlying() || unit.hasTransport()) {
-                auto distance = Util::boxDistance(unit.getType(), unit.getPosition(), unit.getTarget().lock()->getType(), unit.getTarget().lock()->getPosition());
+                auto distance = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition());
                 auto direction = ((distance - range) / distance);
-                auto engageX = int((unit.getPosition().x - unit.getTarget().lock()->getPosition().x) * direction);
-                auto engageY = int((unit.getPosition().y - unit.getTarget().lock()->getPosition().y) * direction);
+                auto engageX = int((unit.getPosition().x - target.getPosition().x) * direction);
+                auto engageY = int((unit.getPosition().y - target.getPosition().y) * direction);
                 auto engagePosition = unit.getPosition() - Position(engageX, engageY);
                 unit.setEngagePosition(engagePosition);
                 unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
@@ -37,7 +37,30 @@ namespace McRave::Pathing {
 
             // Create a binary search tree in a circle around the target
             else {
-                auto engage = Util::getClosestPointToRadiusGround(unit.getPosition(), target.getPosition(), range);
+                //auto source = unit.getPosition();
+                //auto tileSource = TilePosition(unit.getPosition());
+                //auto newSource = tileSource;
+                //auto tries = 0;
+                //while (!BWEB::Map::isWalkable(tileSource, Protoss_Dragoon) && tries < 10) {
+                //    auto closestDist = DBL_MAX;
+                //    tileSource = newSource;
+                //    for (auto x = -1; x <= 1; x++) {
+                //        for (auto y = -1; y <= 1; y++) {
+                //            auto newTile = tileSource + TilePosition(x, y);
+                //            auto dist = (Position(newTile) + Position(16, 16)).getDistance(target.getPosition());
+                //            if (dist < closestDist && BWEB::Map::isWalkable(tileSource, Protoss_Dragoon)) {
+                //                newSource = newTile;
+                //                closestDist = dist;
+                //            }
+                //        }
+                //    }
+                //    tries++;
+                //    source = Position(newSource) + Position(16, 16);
+                //}
+                const auto calc = [&](auto p) {
+                    return BWEB::Map::getGroundDistance(p, unit.getPosition()) + BWEB::Map::getGroundDistance(p, target.getPosition());
+                };
+                auto engage = Util::findPointOnCircle(unit.getPosition(), target.getPosition(), range, calc);
                 unit.setEngagePosition(engage.second);
                 unit.setEngDist(engage.first);
             }
@@ -142,9 +165,9 @@ namespace McRave::Pathing {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo& unit = *u;
                 if (unit.hasTarget()) {
-                    auto unitTarget = *unit.getTarget().lock();
-                    getEngagePosition(unit, unitTarget);
-                    getInterceptPosition(unit, unitTarget);
+                    auto &target = *unit.getTarget().lock();
+                    getEngagePosition(unit, target);
+                    getInterceptPosition(unit, target);
                 }
             }
         }

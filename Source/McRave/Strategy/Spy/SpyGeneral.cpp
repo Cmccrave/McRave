@@ -115,6 +115,10 @@ namespace McRave::Spy::General {
                     if (find(mapBWEM.StartingLocations().begin(), mapBWEM.StartingLocations().end(), unit.getTilePosition()) == mapBWEM.StartingLocations().end())
                         theSpy.productionCount++;
                 }
+
+                // Monitor for invis units
+                if (unit.isHidden())
+                    theSpy.invis.confirmed = true;                
             }
         }
 
@@ -142,7 +146,7 @@ namespace McRave::Spy::General {
             theSpy.invis.possible = (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dark_Templar) >= 1 || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) >= 1 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) > 0) || Players::getVisibleCount(PlayerState::Enemy, Protoss_Templar_Archives) >= 1)
                 || (Players::getVisibleCount(PlayerState::Enemy, Terran_Ghost) >= 1 || Players::getVisibleCount(PlayerState::Enemy, Terran_Vulture) >= 4)
                 || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Lurker) >= 1 || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) >= 1 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) >= 1 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) <= 0))
-                || (Spy::getEnemyBuild() == "1HatchLurker" || Spy::getEnemyBuild() == "2HatchLurker" || Spy::getEnemyBuild() == "1GateDT");
+                || (Spy::getEnemyTransition() == "1HatchLurker" || Spy::getEnemyTransition() == "2HatchLurker" || Spy::getEnemyTransition() == "DT");
 
             // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss) {

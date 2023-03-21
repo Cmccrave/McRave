@@ -7,7 +7,6 @@ using namespace UnitTypes;
 namespace McRave::Targets {
 
     set<UnitType> cancelPriority ={ Terran_Missile_Turret, Terran_Barracks, Terran_Bunker, Terran_Factory, Terran_Starport, Terran_Armory, Terran_Bunker };
-    map<UnitType, double> allowedBuildings;
     map<UnitInfo*, int> meleeSpotsAvailable;
 
     enum class Priority {
@@ -27,9 +26,6 @@ namespace McRave::Targets {
         bool selfCanHitGround;
 
         bool allowWorkerTarget(UnitInfo& unit, UnitInfo& target) {
-            if (!target.getType().isWorker())
-                return true;
-
             if (unit.getType().isWorker()) {
                 return Spy::getEnemyTransition() == "WorkerRush"
                     || target.hasAttackedRecently()
@@ -66,6 +62,7 @@ namespace McRave::Targets {
                 || (target.getType().isDetector())
                 || (!target.canAttackAir() && !target.canAttackGround() && !unit.hasTransport())
                 || (!enemyHasGround && !enemyHasAir)
+                || (target.getType() == Terran_Bunker && !target.isCompleted())
                 || (Players::ZvZ() && Spy::enemyFastExpand())
                 || Util::getTime() > Time(6, 00)
                 || Spy::enemyGreedy();
@@ -73,38 +70,34 @@ namespace McRave::Targets {
             // Combat Role
             if (unit.getRole() == Role::Combat) {
 
+                // Generic trivial
+                if (!targetMatters)
+                    return Priority::Trivial;
+
                 // Generic critical priority
                 if (target.isProxy() && target.getType() == Protoss_Photon_Cannon)
-                    return Priority::Critical;                
+                    return Priority::Critical;
 
                 // Generic major priority
                 if (target.isProxy()
                     || (target.isThreatening() && Terrain::inTerritory(PlayerState::Self, unit.getPosition())))
                     return Priority::Major;
 
-                // Generic trivial
-                if (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir())     // Try not to attack buildings
-                    return Priority::Trivial;
-
                 // Generic ignore
-                if (!targetMatters
-                    || target.getType().isSpell()
+                if (target.getType().isSpell()
                     || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getUnitsTargetingThis().size()) >= 4 && !target.isBurrowed())                          // Don't over target spider mines
                     || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                                         // Don't target interceptors as a flying unit
                     || (target.getType().isWorker() && !allowWorkerTarget(unit, target))
                     || (target.getType() == Protoss_Corsair && !unit.isFlying() && target.getUnitsTargetingThis().size() > 2 && !unit.isWithinRange(target))
                     || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())           // Don't target if invisible and can't attack this unit or we have no detectors in PvP
                     || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))           // Don't target flyers that we can't reach
-                    || (unit.isFlying() && target.getType() == Protoss_Interceptor)
-                    || (unit.getType().isWorker() && target.getType() == Terran_Bunker && !selfHasGround))
+                    || (unit.isFlying() && target.getType() == Protoss_Interceptor))
                     return Priority::Ignore;
 
                 // Zergling
                 if (unit.getType() == Zerg_Zergling) {
                     if (Util::getTime() < Time(5, 00)) {
-                        if ((Players::ZvZ() && !target.canAttackGround() && !Spy::enemyFastExpand())                                                                 // Avoid non ground hitters to try and kill drones
-                            || (Players::ZvT() && target.getType().isWorker() && !target.isThreatening() && Spy::getEnemyBuild() == "RaxFact")                       // Avoid workers when we need to prepare for runbys|| 
-                            || (BuildOrder::isProxy() && !target.isThreatening() && !target.getType().isWorker() && Util::getTime() < Time(6, 00)))
+                        if (Players::ZvZ() && !target.canAttackGround() && !Spy::enemyFastExpand())                                                                 // Avoid non ground hitters to try and kill drones
                             return Priority::Ignore;
                     }
                     if (unit.attemptingRunby() && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
@@ -116,27 +109,9 @@ namespace McRave::Targets {
                     auto anythingTime = Util::getTime() > (Players::ZvZ() ? Time(7, 00) : Time(12, 00));
                     auto anythingSupply = !Players::ZvZ() && Players::getSupply(PlayerState::Enemy, Races::None) < 20;
                     auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
-                    auto invalidType = allowedBuildings.find(target.getType()) == allowedBuildings.end();
 
                     if (Spy::getEnemyTransition() == "ZealotRush" && target.getType() == Protoss_Zealot && Util::getTime() < Time(9, 00))
                         return Priority::Major;
-
-                    if (!defendExpander && invalidType && !anythingTime && !anythingSupply && unit.attemptingHarass()
-                        && !unit.canOneShot(target) && !target.getType().isWorker() && !target.isLightAir() && !unit.globalRetreat()) {
-
-                        if ((enemyHasAir && !target.getType().isWorker() && !target.canAttackAir() && enemyHasGround)                                                                   // Avoid non-air shooters
-                            || (!target.getType().isWorker() && !target.getType().isBuilding() && !target.canAttackAir())                                                               // Avoid ground fighters only that we can't oneshot
-                            || (target.getType().isBuilding() && enemyCanHitAir && !target.canAttackAir() && !target.canAttackGround())                                                 // Avoid buildings that don't fight
-                            || (!unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding()))                                                                      // Avoid units we can't 2 shot
-                            return Priority::Ignore;
-
-                    }
-                }
-
-                // Lurker
-                if (unit.getType() == Zerg_Lurker) {
-                    if (!target.getType().isWorker() && BuildOrder::isProxy())
-                        return Priority::Ignore;
                 }
 
                 // Scourge
@@ -175,7 +150,7 @@ namespace McRave::Targets {
                         return Priority::Ignore;
                 }
             }
-            return Priority::Trivial;
+            return Priority::Minor;
         }
 
         double scoreTarget(UnitInfo& unit, UnitInfo& target)
@@ -183,6 +158,8 @@ namespace McRave::Targets {
             // Scoring parameters
             auto range =          target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
             auto reach =          target.getType().isFlyer() ? unit.getAirReach() : unit.getGroundReach();
+            auto enemyRange =     unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange();
+            auto enemyReach =     unit.getType().isFlyer() ? target.getAirReach() : target.getGroundReach();
             const auto boxDistance =    double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
             const auto dist =           exp(0.0125 * boxDistance);
 
@@ -198,28 +175,22 @@ namespace McRave::Targets {
                     return 5000.0;
 
                 // Add bonus for a building that is undefended
-                if (unit.isLightAir() && target.getType().isBuilding() && allowedBuildings.find(target.getType()) != allowedBuildings.end() && ((unit.getUnitsInRangeOfThis().empty() && unit.isWithinRange(target)) || target.canAttackAir())) {
+                if (unit.isLightAir() && target.getType().isBuilding() && ((unit.getUnitsInRangeOfThis().empty() && unit.isWithinRange(target)) || target.canAttackAir())) {
 
                     auto closestDefense = Util::getClosestUnit(target.getPosition(), PlayerState::Enemy, [&](auto &u) {
                         return u->getType().isBuilding() && u->canAttackAir();
                     });
                     if (!closestDefense || closestDefense->getPosition().getDistance(target.getPosition()) > 96.0)
-                        return allowedBuildings[target.getType()] * (1.0 + double(target.unit()->exists() && target.unit()->isUpgrading()));
+                        return (1.0 + double(target.unit()->exists() && target.unit()->isUpgrading()));
                 }
 
                 // Add penalty for targeting workers under defenses
-                if (unit.isLightAir() && target.getType().isWorker()) {
+                if (unit.isLightAir() && target.getType().isWorker() && !target.hasRepairedRecently()) {
                     auto countDamageInRange = 0;
                     for (auto &e : Units::getUnits(PlayerState::Enemy)) {
-                        auto viableThreat = e->getType().isBuilding() || Broodwar->getFrameCount() - e->getLastVisibleFrame() < 200;
-                        if (e->canAttackAir() && viableThreat && *e != target && (e->getPosition().getDistance(target.getPosition()) < e->getAirRange() + 32.0 || e->getPosition().getDistance(unit.getPosition()) < e->getAirRange() + 32.0)) {
-                            auto damage = e->getAirDamage() / (e->getType().airWeapon().damageType() == DamageTypes::Explosive ? 2 : 1);
-                            countDamageInRange += int(damage);
-                        }
+                        if (e->canAttackAir() && e->getType().isBuilding() && (e->getPosition().getDistance(target.getPosition()) < e->getAirRange() + 96.0 || e->getPosition().getDistance(unit.getPosition()) < e->getAirRange() + 96.0))
+                            return 0.0;
                     }
-                    if ((countDamageInRange >= 50 && Util::getTime() < Time(8, 00))
-                        || (countDamageInRange >= 70 && Util::getTime() < Time(16, 00)))
-                        return 0.0;
                 }
 
                 // Add bonus for Observers that are vulnerable
@@ -270,9 +241,12 @@ namespace McRave::Targets {
             const auto focusScore = [&]() {
                 if (unit.isLightAir() || Players::ZvZ())
                     return 1.0;
-                //if (unit.getType() == Zerg_Zergling)
-                //    return min(1.00, double(meleeSpotsAvailable[&target]) / double(1 + target.getUnitsTargetingThis().size()));
-                if ((range > 32.0 && boxDistance <= reach) || (range <= 32.0 && boxDistance <= range && int(target.getUnitsTargetingThis().size()) < int(max(target.getType().width(), target.getType().height()) / 4)))
+
+                const auto withinReachHigherRange = range > 32.0 && range >= enemyRange && boxDistance <= reach;
+                const auto withinRangeLessRange = range > 32.0 && range < enemyRange && boxDistance <= range;
+                const auto withinRangeMelee = range <= 32.0 && boxDistance <= range;
+
+                if (withinReachHigherRange || withinRangeLessRange || withinRangeMelee)
                     return (1.0 + double(target.getUnitsTargetingThis().size()));
                 return 1.0;
             };
@@ -318,8 +292,8 @@ namespace McRave::Targets {
 
             // Cluster targeting (grid score added)
             else if (unit.getType() == Protoss_High_Templar || unit.getType() == Protoss_Arbiter) {
-                const auto eGrid =      Grids::getGroundDensity(target.getWalkPosition(), PlayerState::Enemy) + Grids::getAirDensity(target.getWalkPosition(), PlayerState::Enemy);
-                const auto aGrid =      1.0 + Grids::getGroundDensity(target.getWalkPosition(), PlayerState::Self) + Grids::getAirDensity(target.getWalkPosition(), PlayerState::Self);
+                const auto eGrid =      Grids::getGroundDensity(target.getPosition(), PlayerState::Enemy) + Grids::getAirDensity(target.getPosition(), PlayerState::Enemy);
+                const auto aGrid =      1.0 + Grids::getGroundDensity(target.getPosition(), PlayerState::Self) + Grids::getAirDensity(target.getPosition(), PlayerState::Self);
                 const auto gridScore =  eGrid / aGrid;
                 return gridScore * targetScore / dist;
             }
@@ -567,38 +541,17 @@ namespace McRave::Targets {
             }
         }
 
-        void updateAllowedBuildings()
-        {
-            if (Util::getTime() > Time(8, 00)) {
-                allowedBuildings[Protoss_Cybernetics_Core]= 50000.0;
-                allowedBuildings[Protoss_Forge]= 50000.0;
-                allowedBuildings[Protoss_Photon_Cannon]= 100000.0;
-                allowedBuildings[Terran_Armory]= 150000.0;
-                allowedBuildings[Terran_Missile_Turret]= 50000.0;
-                allowedBuildings[Zerg_Spire]= 50000.0;
-                allowedBuildings[Zerg_Spawning_Pool]= 50000.0;
-            }
-            if (Util::getTime() > Time(10, 00)) {
-                allowedBuildings[Protoss_Gateway]= 50000.0;
-                allowedBuildings[Protoss_Pylon]= 50000.0;
-                allowedBuildings[Protoss_Stargate]= 50000.0;
-                allowedBuildings[Terran_Engineering_Bay]= 50000.0;
-                allowedBuildings[Terran_Missile_Turret]= 50000.0;
-                allowedBuildings[Terran_Supply_Depot]= 50000.0;
-            }
-        }
-
         void updateStatistics()
         {
             auto &enemyStrength = Players::getStrength(PlayerState::Enemy);
             auto &myStrength = Players::getStrength(PlayerState::Self);
 
-            enemyHasGround = enemyStrength.groundToAir > 0.0 || enemyStrength.groundToGround > 0.0 || enemyStrength.groundDefense > 0.0;
+            enemyHasGround = true;
             enemyHasAir = enemyStrength.airToGround > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0;
             enemyCanHitAir = enemyStrength.groundToAir > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0;
             enemyCanHitGround = enemyStrength.groundToGround > 0.0 || enemyStrength.airToGround > 0.0 || enemyStrength.groundDefense > 0.0;
 
-            selfHasGround = myStrength.groundToAir > 0.0 || myStrength.groundToGround > 0.0;
+            selfHasGround = true;
             selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0;
             selfCanHitAir = myStrength.groundToAir > 0.0 || myStrength.airToAir > 0.0 || myStrength.airDefense > 0.0;
             selfCanHitGround = myStrength.groundToGround > 0.0 || myStrength.airToGround > 0.0 || myStrength.groundDefense > 0.0;
@@ -608,7 +561,6 @@ namespace McRave::Targets {
     void onFrame()
     {
         updateStatistics();
-        updateAllowedBuildings();
         updateTargets();
     }
 }

@@ -15,6 +15,8 @@ namespace McRave::Util {
     bool findWalkable(BWAPI::Position, BWAPI::UnitType, BWAPI::Position&, bool visual = false);
     bool findWalkable(UnitInfo&, BWAPI::Position&, bool visual = false);
 
+    BWAPI::Position extendLine(BWAPI::Position here, BWAPI::Position target, double dist);
+    BWAPI::Position projectLine(std::pair<BWAPI::Position, BWAPI::Position> line, BWAPI::Position here);
     BWAPI::Position clipLine(BWAPI::Position, BWAPI::Position);
     BWAPI::Position clipPosition(BWAPI::Position);
 
@@ -205,6 +207,5 @@ namespace McRave::Util {
         return returnVector;
     }
 
-    std::pair<double, BWAPI::Position> getClosestPointToRadiusAir(BWAPI::Position, BWAPI::Position, double);
-    std::pair<double, BWAPI::Position> getClosestPointToRadiusGround(BWAPI::Position, BWAPI::Position, double);
+    std::pair<double, BWAPI::Position> findPointOnCircle(BWAPI::Position source, BWAPI::Position target, double radius, std::function<double(BWAPI::Position)> calc);
 }

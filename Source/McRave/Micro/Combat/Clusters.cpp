@@ -50,16 +50,15 @@ namespace McRave::Combat::Clusters {
         bool generateCluster(ClusterNode &parent, int id, int minsize)
         {
             auto matching = [&](auto &parent, auto &child) {
+                auto matchedGoal = (parent.unit->getGoal() == child.unit->getGoal());
                 auto matchedType = (parent.unit->isFlying() && child.unit->isFlying()) || (!parent.unit->isFlying() && !child.unit->isFlying());
-                auto matchedStrat = parent.unit->getLocalState() == child.unit->getLocalState()
-                    || parent.unit->getLocalState() == LocalState::None
-                    || child.unit->getLocalState() == LocalState::None
+                auto matchedStrat = (parent.unit->getGlobalState() == GlobalState::Attack && parent.unit->getLocalState() == child.unit->getLocalState())
                     || (parent.unit->getGlobalState() == GlobalState::Retreat && parent.unit->getRetreat() == child.unit->getRetreat())
                     || (parent.unit->getGlobalState() == GlobalState::Attack && parent.unit->isLightAir() && child.unit->isLightAir());
-                auto matchedDistance = child.position.getDistance(parent.position) < 160.0
+                auto matchedDistance = child.position.getDistance(parent.position) < 256.0
                     || (Terrain::inTerritory(PlayerState::Self, parent.unit->getPosition()) && Terrain::inTerritory(PlayerState::Self, child.unit->getPosition()))
                     || (parent.unit->isLightAir() && child.unit->isLightAir());
-                return matchedType && matchedStrat && matchedDistance;
+                return matchedType && matchedStrat && matchedDistance && matchedGoal;
             };
 
             auto getNeighbors = [&](auto &currentNode, auto &queue) {
@@ -147,7 +146,7 @@ namespace McRave::Combat::Clusters {
                 return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker()
                     && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end()
                     && find(previousCommanders.begin(), previousCommanders.end(), u) != previousCommanders.end()
-                    && !u->isTargetedBySuicide() && !u->globalRetreat() && !u->localRetreat();
+                    && !u->isTargetedBySuicide() && u->getGlobalState() != GlobalState::ForcedRetreat && u->getLocalState() != LocalState::ForcedRetreat;
             });
             if (closestPreviousCommander) {
                 cluster.commander = closestPreviousCommander->weak_from_this();
@@ -157,7 +156,9 @@ namespace McRave::Combat::Clusters {
 
             // Get closest unit to centroid
             auto closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
-                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && !u->isTargetedBySuicide() && !u->globalRetreat() && !u->localRetreat();
+                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker()
+                    && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && !u->isTargetedBySuicide()
+                    && u->getGlobalState() != GlobalState::ForcedRetreat && u->getLocalState() != LocalState::ForcedRetreat;
             });
             if (!closestToCentroid) {
                 closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
@@ -247,17 +248,15 @@ namespace McRave::Combat::Clusters {
                 auto avgPosition = Position(0, 0);
                 auto cnt = 0;
                 for (auto &unit : cluster.units) {
-                    if (!unit->globalRetreat() && !unit->localRetreat()) {
-                        avgPosition += unit->getPosition();
-                        cnt++;
-                    }
+                    avgPosition += unit->getPosition();
+                    cnt++;
                 }
                 if (cnt > 0)
                     cluster.avgPosition = avgPosition / cnt;
 
                 // If old commander no longer satisfactory
                 auto oldCommander = cluster.commander.lock();
-                if (!oldCommander || oldCommander->globalRetreat() || oldCommander->localRetreat())
+                if (!oldCommander || oldCommander->getGlobalState() == GlobalState::ForcedRetreat || oldCommander->getLocalState() == LocalState::ForcedRetreat)
                     getCommander(cluster);
 
                 if (auto commander = cluster.commander.lock()) {
@@ -268,7 +267,7 @@ namespace McRave::Combat::Clusters {
                     cluster.shape = commander->isLightAir() ? Shape::None : Shape::Concave;
 
                     // Determine the shape we want
-                    if (!commander->isLightAir()) {
+                    if (!commander->isLightAir() && !commander->isSuicidal()) {
                         if (!cluster.mobileCluster && Combat::holdAtChoke() && commander->getGlobalState() == GlobalState::Retreat)
                             cluster.shape = Shape::Choke;
                         else

@@ -126,17 +126,17 @@ namespace McRave::Roles {
             if (Players::ZvT() && Players::getCompleteCount(PlayerState::Enemy, Terran_Bunker) == 0 && Util::getTime() < Time(6, 00)) {
 
                 // Proxy fighting
-                if (Spy::getEnemyOpener() == "8Rax" && com(Zerg_Zergling) < 2)
-                    forceCombatWorker(8, Position(Terrain::getNaturalChoke()->Center()), LocalState::Attack, GlobalState::Attack);
-                else if (proxyDangerousBuilding && com(Zerg_Zergling) <= 2)
+                if (proxyDangerousBuilding && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(6, proxyDangerousBuilding->getPosition(), LocalState::Attack, GlobalState::Attack);
+                else if ((Spy::getEnemyOpener() == "8Rax" || Spy::enemyProxy()) && com(Zerg_Zergling) < 2 && Util::getTime() > Time(2, 00) && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) <= 2)
+                        forceCombatWorker(3, Position(Terrain::getNaturalChoke()->Center()), LocalState::Attack, GlobalState::Attack);
                 else if (proxyBuilding && com(Zerg_Zergling) <= 2 && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) == 0)
                     forceCombatWorker(1, proxyBuilding->getPosition(), LocalState::Attack, GlobalState::Attack);
             }
 
             // Misc
-            if (Spy::getWorkersNearUs() > 2 && com(Zerg_Zergling) < Spy::getWorkersNearUs() && Util::getTime() < Time(6, 00))
-                forceCombatWorker(Spy::getWorkersNearUs() + 2, Position(Terrain::getMainChoke()->Center()), LocalState::Attack, GlobalState::Attack);
+            //if (Spy::getWorkersNearUs() > 2 && com(Zerg_Zergling) < Spy::getWorkersNearUs() && Util::getTime() < Time(6, 00) && Units::getImmThreat() > 0.0f)
+            //    forceCombatWorker(Spy::getWorkersNearUs() + 2, Position(Terrain::getMainChoke()->Center()), LocalState::Attack, GlobalState::Attack);
         }
 
         void updateForcedRoles()

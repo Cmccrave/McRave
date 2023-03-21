@@ -6,6 +6,10 @@
 #include "Station.h"
 #include "Wall.h"
 
+# define M_PI_D2 1.57079632679489661923
+# define M_PI 3.14159265358979323846
+# define M_PI_T2 6.28318530717958647692
+
 namespace BWEB::Map
 {
     /// <summary> Global access of BWEM for BWEB. </summary>
@@ -71,9 +75,9 @@ namespace BWEB::Map
         auto dy = double(p.second.y - p.first.y);
         auto dx = double(p.second.x - p.first.x);
         if (std::abs(dx) > 1.0)
-            return fmod(std::atan2(-dy, dx) + 6.18, 6.18);
+            return fmod(std::atan2(-dy, dx) + M_PI_T2, M_PI_T2);
         else if (p.first.y < p.second.y)
-            return 4.71;
-        return 1.57;
+            return M_PI + M_PI_D2;
+        return M_PI_D2;
     }
 }

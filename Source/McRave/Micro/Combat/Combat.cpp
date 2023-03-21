@@ -124,7 +124,7 @@ namespace McRave::Combat {
                 return commander && commander->getPosition().getDistance(here) < 160.0;
             };
             const auto stationNotVisitedRecently = [&](auto &station) {
-                return max(frame6MutasDone, Broodwar->getFrameCount() - Grids::lastVisibleFrame(TilePosition(station->getResourceCentroid()))) > 2880 && !commanderInRange(station->getResourceCentroid());
+                return max(frame6MutasDone, Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(station->getResourceCentroid()))) > 2880 && !commanderInRange(station->getResourceCentroid());
             };
 
             // In FFA just hit closest base to us
@@ -163,14 +163,14 @@ namespace McRave::Combat {
                 auto station1 = Stations::getClosestStationGround(Terrain::getEnemyNatural()->getBase()->Center(), PlayerState::None, [&](auto &s) {
                     return s != Terrain::getEnemyMain() && s != Terrain::getEnemyNatural() && !s->getBase()->Geysers().empty();
                 });
-                if (station1) {
+                if (station1 && stationNotVisitedRecently(station1)) {
                     stations.push_back(station1);
 
                     auto station2 = Stations::getClosestStationGround(Terrain::getEnemyNatural()->getBase()->Center(), PlayerState::None, [&](auto &s) {
                         return s != station1 && s != Terrain::getEnemyMain() && s != Terrain::getEnemyNatural() && !s->getBase()->Geysers().empty();
                     });
 
-                    if (station2)
+                    if (station2 && stationNotVisitedRecently(station2))
                         stations.push_back(station2);
                 }
             }
@@ -189,12 +189,6 @@ namespace McRave::Combat {
 
         void checkHoldChoke()
         {
-            // UMS Setting
-            if (Broodwar->getGameType() == BWAPI::GameTypes::Use_Map_Settings) {
-                holdChoke = true;
-                return;
-            }
-
             // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss && Players::getSupply(PlayerState::Self, Races::None) > 40) {
                 holdChoke = BuildOrder::takeNatural()
@@ -212,7 +206,7 @@ namespace McRave::Combat {
 
             // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                holdChoke = Players::getSupply(PlayerState::Self, Races::None) > 60;
+                holdChoke = !defendNatural && Players::getSupply(PlayerState::Self, Races::None) < 60;
 
                 if (Players::ZvZ()) {
                     if (!defendNatural && com(Zerg_Zergling) >= 8)

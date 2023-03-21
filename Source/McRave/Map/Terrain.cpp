@@ -51,29 +51,31 @@ namespace McRave::Terrain {
             }
 
             // Find closest enemy building
-            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
-                UnitInfo &unit = *u;
-                if (!unit.getType().isBuilding()
-                    || !unit.getTilePosition().isValid()
-                    || unit.isFlying()
-                    || unit.isProxy())
-                    continue;
+            if (Util::getTime() < Time(5, 00)) {
+                for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                    UnitInfo &unit = *u;
+                    if (!unit.getType().isBuilding()
+                        || !unit.getTilePosition().isValid()
+                        || unit.isFlying()
+                        || unit.isProxy())
+                        continue;
 
-                const auto closestMain = BWEB::Stations::getClosestMainStation(unit.getTilePosition());
+                    const auto closestMain = BWEB::Stations::getClosestMainStation(unit.getTilePosition());
 
-                // Set start if valid
-                if (closestMain && closestMain != getMyMain()) {
-                    enemyStartingTilePosition = closestMain->getBase()->Location();
-                    enemyStartingPosition = Position(enemyStartingTilePosition) + Position(64, 48);
+                    // Set start if valid
+                    if (closestMain && closestMain != getMyMain()) {
+                        enemyStartingTilePosition = closestMain->getBase()->Location();
+                        enemyStartingPosition = Position(enemyStartingTilePosition) + Position(64, 48);
+                    }
                 }
             }
 
             // Infer based on enemy Overlord
             if (Players::vZ() && Util::getTime() < Time(3, 15)) {
+                auto inferedStart = TilePositions::Invalid;
+                auto inferedCount = 0;
                 for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                     UnitInfo &unit = *u;
-                    auto frameDiffBest = DBL_MAX;
-                    auto tileBest = TilePositions::Invalid;
 
                     if (unit.getType() != Zerg_Overlord)
                         continue;
@@ -82,16 +84,16 @@ namespace McRave::Terrain {
                         auto startCenter = Position(start) + Position(64, 48);
                         auto frameDiff = abs(Broodwar->getFrameCount() - (unit.getPosition().getDistance(startCenter) / unit.getSpeed()));
 
-                        if ((frameDiff < 240 && frameDiff < frameDiffBest) || (frameDiff > 1800 && frameDiff < 2200 && frameDiff < frameDiffBest)) {
-                            frameDiffBest = frameDiff;
-                            tileBest = start;
+                        if (frameDiff < 120) {
+                            inferedStart = start;
+                            inferedCount++;
                         }
                     }
 
                     // Set start if valid
-                    if (tileBest.isValid() && tileBest != getMainTile()) {
-                        enemyStartingPosition = Position(tileBest) + Position(64, 48);
-                        enemyStartingTilePosition = tileBest;
+                    if (inferedCount == 1 && inferedStart.isValid() && inferedStart != getMainTile()) {
+                        enemyStartingPosition = Position(inferedStart) + Position(64, 48);
+                        enemyStartingTilePosition = inferedStart;
                     }
                 }
             }
@@ -199,14 +201,6 @@ namespace McRave::Terrain {
                 // Add natural if we plan to take it
                 if (BuildOrder::isOpener() && BuildOrder::takeNatural())
                     addTerritory(PlayerState::Self, getMyNatural());
-            }
-
-            // For every area, store their choke geometry as belonging to both areas to prevent nullptr areas
-            for (auto &area : mapBWEM.Areas()) {
-                for (auto &choke : area.ChokePoints()) {
-                    for (auto &walk : choke->Geometry())
-                        areaChokeGeometry[walk] = choke->GetAreas();                    
-                }
             }
 
             narrowNatural = getNaturalChoke() && getNaturalChoke()->Width() <= 64;
@@ -418,6 +412,14 @@ namespace McRave::Terrain {
                 continue;
             for (auto &base : area.Bases())
                 allBases.insert(&base);
+        }
+
+        // For every area, store their choke geometry as belonging to both areas to prevent nullptr areas
+        for (auto &area : mapBWEM.Areas()) {
+            for (auto &choke : area.ChokePoints()) {
+                for (auto &walk : choke->Geometry())
+                    areaChokeGeometry[walk] = choke->GetAreas();
+            }
         }
 
         reverseRamp = Broodwar->getGroundHeight(getMainTile()) < Broodwar->getGroundHeight(getNaturalTile());

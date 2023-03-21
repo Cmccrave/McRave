@@ -10,6 +10,8 @@ namespace McRave
 
     namespace {
 
+        static map<Color, int> colorWidth ={ {Colors::Red, -3}, {Colors::Orange, -2}, {Colors::Yellow, -1}, {Colors::Green, 0}, {Colors::Blue, 1}, {Colors::Purple, 2} };
+
         WalkPosition calcWalkPosition(UnitInfo* unit)
         {
             auto walkWidth = unit->getType().isBuilding() ? unit->getType().tileWidth() * 4 : unit->getWalkWidth();
@@ -24,7 +26,8 @@ namespace McRave
     }
 
     void UnitInfo::circle(Color color) {
-        Visuals::drawCircle(position, type.width(), color);
+        const auto width = type.width() + colorWidth[color];
+        Visuals::drawCircle(position, width, color);
     }
 
     void UnitInfo::box(Color color) {
@@ -79,19 +82,20 @@ namespace McRave
             // Unit Stats
             type                        = t;
             player                      = p;
-            health                      = unit()->getHitPoints() > 0 ? unit()->getHitPoints() : (health == 0 ? t.maxHitPoints() : health);
-            armor                       = player->getUpgradeLevel(t.armorUpgrade());
-            shields                     = unit()->getShields() > 0 ? unit()->getShields() : (shields == 0 ? t.maxShields() : shields);
-            shieldArmor                 = player->getUpgradeLevel(UpgradeTypes::Protoss_Plasma_Shields);
-            energy                      = unit()->getEnergy();
-            percentHealth               = t.maxHitPoints() > 0 ? double(health) / double(t.maxHitPoints()) : 0.0;
-            percentShield               = t.maxShields() > 0 ? double(shields) / double(t.maxShields()) : 0.0;
-            percentTotal                = t.maxHitPoints() + t.maxShields() > 0 ? double(health + shields) / double(t.maxHitPoints() + t.maxShields()) : 0.0;
-            walkWidth                   = int(ceil(double(t.width()) / 8.0));
-            walkHeight                  = int(ceil(double(t.height()) / 8.0));
             completed                   = unit()->isCompleted() && !unit()->isMorphing();
             currentSpeed                = sqrt(pow(unit()->getVelocityX(), 2) + pow(unit()->getVelocityY(), 2));
             invincible                  = unit()->isInvincible() || unit()->isStasised();
+
+            data.health                 = unit()->getHitPoints() > 0 ? unit()->getHitPoints() : (data.health == 0 ? t.maxHitPoints() : data.health);
+            data.armor                  = player->getUpgradeLevel(t.armorUpgrade());
+            data.shields                = unit()->getShields() > 0 ? unit()->getShields() : (data.shields == 0 ? t.maxShields() : data.shields);
+            data.shieldArmor            = player->getUpgradeLevel(UpgradeTypes::Protoss_Plasma_Shields);
+            data.energy                 = unit()->getEnergy();
+            data.percentHealth          = t.maxHitPoints() > 0 ? double(data.health) / double(t.maxHitPoints()) : 0.0;
+            data.percentShield          = t.maxShields() > 0 ? double(data.shields) / double(t.maxShields()) : 0.0;
+            data.percentTotal           = t.maxHitPoints() + t.maxShields() > 0 ? double(data.health + data.shields) / double(t.maxHitPoints() + t.maxShields()) : 0.0;
+            data.walkWidth              = int(ceil(double(t.width()) / 8.0));
+            data.walkHeight             = int(ceil(double(t.height()) / 8.0));
 
             // Points        
             position                    = unit()->getPosition();
@@ -101,24 +105,26 @@ namespace McRave
             retreat                     = Positions::Invalid;
             surroundPosition            = Positions::Invalid;
             interceptPosition           = Positions::Invalid;
+            formation                   = Positions::Invalid;
+            navigation                  = Positions::Invalid;
 
             // Flags
             flying                      = unit()->isFlying() || getType().isFlyer() || unit()->getOrder() == Orders::LiftingOff || unit()->getOrder() == Orders::BuildingLiftOff;
             movedFlag                   = false;
 
             // McRave Stats
-            groundRange                 = Math::groundRange(*this);
-            groundDamage                = Math::groundDamage(*this);
-            groundReach                 = Math::groundReach(*this);
-            airRange                    = Math::airRange(*this);
-            airReach                    = Math::airReach(*this);
-            airDamage                   = Math::airDamage(*this);
-            speed                       = Math::moveSpeed(*this);
-            visibleGroundStrength       = Math::visibleGroundStrength(*this);
-            maxGroundStrength           = Math::maxGroundStrength(*this);
-            visibleAirStrength          = Math::visibleAirStrength(*this);
-            maxAirStrength              = Math::maxAirStrength(*this);
-            priority                    = Math::priority(*this);
+            data.groundRange            = Math::groundRange(*this);
+            data.groundDamage           = Math::groundDamage(*this);
+            data.groundReach            = Math::groundReach(*this);
+            data.airRange               = Math::airRange(*this);
+            data.airReach               = Math::airReach(*this);
+            data.airDamage              = Math::airDamage(*this);
+            data.speed                  = Math::moveSpeed(*this);
+            data.visibleGroundStrength  = Math::visibleGroundStrength(*this);
+            data.maxGroundStrength      = Math::maxGroundStrength(*this);
+            data.visibleAirStrength     = Math::visibleAirStrength(*this);
+            data.maxAirStrength         = Math::maxAirStrength(*this);
+            data.priority               = Math::priority(*this);
             engageRadius                = Math::simRadius(*this) + 96.0;
             retreatRadius               = Math::simRadius(*this);
 
@@ -130,26 +136,20 @@ namespace McRave
             // Attack Frame
             if ((getType() == Protoss_Reaver && unit()->getGroundWeaponCooldown() >= 59)
                 || (getType() != Protoss_Reaver && canAttackGround() && unit()->getGroundWeaponCooldown() >= type.groundWeapon().damageCooldown() - 1)
-                || (getType() != Protoss_Reaver && canAttackAir() && unit()->getAirWeaponCooldown() >= type.airWeapon().damageCooldown() - 1))
+                || (getType() != Protoss_Reaver && canAttackAir() && unit()->getAirWeaponCooldown() >= type.airWeapon().damageCooldown() - 1)
+                || unit()->isStartingAttack())
                 lastAttackFrame         = Broodwar->getFrameCount();
 
             // Frames
             remainingTrainFrame         = max(0, remainingTrainFrame - 1);
             lastRepairFrame             = (unit()->isRepairing() || unit()->isBeingHealed() || unit()->isConstructing()) ? Broodwar->getFrameCount() : lastRepairFrame;
-            minStopFrame                = Math::stopAnimationFrames(t);
+            data.minStopFrame           = Math::stopAnimationFrames(t);
             lastStimFrame               = unit()->isStimmed() ? Broodwar->getFrameCount() : lastStimFrame;
             lastVisibleFrame            = Broodwar->getFrameCount();
 
-            if (arriveFrame == -999 && player != Broodwar->self()) {
-                if (isFlying())
-                    arriveFrame = Broodwar->getFrameCount() + int(position.getDistance(Terrain::getMainPosition()) / speed);
-                else {
-                    //auto closestStation = Stations::getClosestStationGround(position, PlayerState::Self);
-                    auto arrivePos =/* closestStation ? closestStation->getBase()->Center() :*/ Terrain::getMainPosition();
-                    BWEB::Path newPath(position, arrivePos, type, true, false);
-                    newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t); });
-                    arriveFrame = Broodwar->getFrameCount() + int(newPath.getDistance() / speed);
-                }
+            if (player != Broodwar->self()) {
+                auto dist = isFlying() ? position.getDistance(Terrain::getMainPosition()) : BWEB::Map::getGroundDistance(position, Terrain::getMainPosition());
+                arriveFrame = Broodwar->getFrameCount() + int(dist / data.speed);
             }
 
             checkHidden();
@@ -157,6 +157,8 @@ namespace McRave
             checkProxy();
             checkCompletion();
             checkThreatening();
+
+            Visuals::drawLine(position, commandPosition, Colors::Cyan);
         }
 
         // Create a list of units that are in range of this unit
@@ -284,7 +286,7 @@ namespace McRave
         // If this is a spider mine and doesn't have a target, then it is an inactive mine and unable to attack
         if (getType() == Terran_Vulture_Spider_Mine && (!unit()->exists() || (!hasTarget() && unit()->getSecondaryOrder() == Orders::Cloak))) {
             burrowed = true;
-            groundReach = getGroundRange();
+            data.groundReach = getGroundRange();
         }
         if (getType() == UnitTypes::Spell_Scanner_Sweep) {
             hidden = true;
@@ -363,7 +365,7 @@ namespace McRave
         // Building
         if (getType().isBuilding()) {
             threateningThisFrame = Planning::overlapsPlan(*this, getPosition())
-                || ((atChoke || atHome) && (airDamage > 0.0 || groundDamage > 0.0 || getType() == Protoss_Shield_Battery || getType().isRefinery()))
+                || ((atChoke || atHome) && (data.airDamage > 0.0 || data.groundDamage > 0.0 || getType() == Protoss_Shield_Battery || getType().isRefinery()))
                 || nearResources();
         }
 
@@ -402,32 +404,38 @@ namespace McRave
 
     void UnitInfo::checkProxy()
     {
-        // If we're safe, no longer detect proxy
-        if (Players::getSupply(PlayerState::Self, Races::None) >= 60 || Util::getTime() > Time(6, 00)) {
-            proxy = false;
+        // Reset flag, if we're safe, no longer flag for proxy
+        proxy = false;
+        if (Players::getSupply(PlayerState::Self, Races::None) >= 60 || Util::getTime() > Time(6, 00))
             return;
-        }
 
         // Check if an enemy building is a proxy
         if (player->isEnemy(Broodwar->self())) {
             if (getType().isWorker()
                 || getType() == Terran_Barracks || getType() == Terran_Factory || getType() == Terran_Engineering_Bay || getType() == Terran_Bunker
                 || getType() == Protoss_Gateway || getType() == Protoss_Photon_Cannon || getType() == Protoss_Pylon || getType() == Protoss_Forge) {
-                auto closestMain = BWEB::Stations::getClosestMainStation(getTilePosition());
-                auto closestNat = BWEB::Stations::getClosestNaturalStation(getTilePosition());
-                auto closerToMyMain = closestMain && closestMain == Terrain::getMyMain();
-                auto closerToMyNat = closestNat && closestNat == Terrain::getMyNatural();
+                const auto closestMain = BWEB::Stations::getClosestMainStation(getTilePosition());
+                const auto closestNat = BWEB::Stations::getClosestNaturalStation(getTilePosition());
+                const auto closerToMyMain = closestMain && closestMain == Terrain::getMyMain();
+                const auto closerToMyNat = closestNat && closestNat == Terrain::getMyNatural();
 
-                // Workers are proxy if they're close enough to our bases
+                // When to consider a worker a proxy (potential proxy shenanigans)
+                const auto proxyWorker = (getType() == Protoss_Probe && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) == 0)
+                    || (getType() == Terran_SCV && (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) == 0 || bwUnit->isConstructing()))
+                    || (getType() == Zerg_Drone && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0);
+
+                const auto timedOrKnown = Util::getTime() < Time(3, 00) || Spy::getEnemyBuild() == "CannonRush" || Spy::getEnemyOpener() == "8Rax";
+
+                // Workers are proxy if they're close enough to our bases and considered suspicious
                 if (getType().isWorker()) {
-                    if (position.getDistance(closestMain->getBase()->Center()) < 960.0 || position.getDistance(closestNat->getBase()->Center()) < 960.0)
+                    if (timedOrKnown && proxyWorker && (position.getDistance(closestMain->getBase()->Center()) < 960.0 || position.getDistance(closestNat->getBase()->Center()) < 960.0))
                         proxy = closerToMyMain || closerToMyNat;
                 }
                 else
                     proxy = closerToMyMain || closerToMyNat;
 
                 if (proxy)
-                    circle(Colors::Grey);
+                    Broodwar->drawTextMap(getPosition(), "Proxy");
             }
         }
     }
@@ -450,7 +458,7 @@ namespace McRave
 
         // Calculate completion based on build time
         else if (!completed) {
-            auto ratio = (double(health) - (0.1 * double(type.maxHitPoints()))) / (0.9 * double(type.maxHitPoints()));
+            auto ratio = (double(data.health) - (0.1 * double(type.maxHitPoints()))) / (0.9 * double(type.maxHitPoints()));
             completeFrame = Broodwar->getFrameCount() + int(std::round((1.0 - ratio) * double(type.buildTime()))) + extra;
             startedFrame = Broodwar->getFrameCount() - int(std::round((ratio) * double(type.buildTime())));
         }
@@ -466,7 +474,7 @@ namespace McRave
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         const auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
-        const auto cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
+        const auto cancelAttackRisk = frameSinceAttack <= data.minStopFrame - Broodwar->getLatencyFrames();
 
         auto newCommandPosition = commandPosition.getDistance(here) > 24;
         auto newCommandType = commandType != cmd;
@@ -495,7 +503,7 @@ namespace McRave
 
         // Add action and grid movement
         if ((cmd == UnitCommandTypes::Move || cmd == UnitCommandTypes::Right_Click_Position) && getPosition().getDistance(here) < 160.0)
-            Actions::addAction(unit(), here, getType(), PlayerState::Self);        
+            Actions::addAction(unit(), here, getType(), PlayerState::Self);
 
         // If this is a new order or new command than what we're requesting, we can issue it
         if (executeCommand) {
@@ -517,7 +525,7 @@ namespace McRave
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
-        auto cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
+        auto cancelAttackRisk = frameSinceAttack <= data.minStopFrame - Broodwar->getLatencyFrames();
 
         auto newCommandTarget = unit()->getLastCommand().getTarget() != targetUnit.unit();
         auto newCommandType = commandType != cmd;
@@ -597,9 +605,9 @@ namespace McRave
             || Actions::overlapsActions(unit(), here, tech, PlayerState::Self, int(Util::getCastRadius(tech))))
             return false;
 
-        auto energyNeeded = tech.energyCost() - energy;
+        auto energyNeeded = tech.energyCost() - data.energy;
         auto framesToEnergize = 17.856 * energyNeeded;
-        auto spellReady = energy >= tech.energyCost();
+        auto spellReady = data.energy >= tech.energyCost();
         auto spellWillBeReady = framesToEnergize <= getEngDist() / (hasTransport() ? getTransport().lock()->getSpeed() : getSpeed());
 
         if (!spellReady && !spellWillBeReady)
@@ -644,13 +652,13 @@ namespace McRave
     bool UnitInfo::isHealthy()
     {
         if (type.isBuilding())
-            return percentHealth > 0.5;
+            return data.percentHealth > 0.5;
 
-        return (type.maxShields() > 0 && percentShield > 0.5)
-            || (type.isMechanical() && percentHealth > 0.25)
-            || (type.getRace() == BWAPI::Races::Zerg && percentHealth > 0.25)
-            || (type == BWAPI::UnitTypes::Zerg_Zergling && Players::ZvP() && health > 16)
-            || (type == BWAPI::UnitTypes::Zerg_Zergling && Players::ZvT() && health > 16);
+        return (type.maxShields() > 0 && data.percentShield > 0.5)
+            || (type.isMechanical() && data.percentHealth > 0.25)
+            || (type.getRace() == BWAPI::Races::Zerg && data.percentHealth > 0.25)
+            || (type == BWAPI::UnitTypes::Zerg_Zergling && Players::ZvP() && data.health > 16)
+            || (type == BWAPI::UnitTypes::Zerg_Zergling && Players::ZvT() && data.health > 16);
     }
 
     bool UnitInfo::isRequestingPickup()
@@ -673,7 +681,7 @@ namespace McRave
 
         auto unitTarget = getTarget().lock();
         auto range = unitTarget->isFlying() ? getAirRange() : getGroundRange();
-        auto cargoPickup = getType() == BWAPI::UnitTypes::Protoss_High_Templar ? (!canStartCast(BWAPI::TechTypes::Psionic_Storm, unitTarget->getPosition()) || Grids::getGroundThreat(getWalkPosition(), PlayerState::Enemy) <= 0.1f) : !canStartAttack();
+        auto cargoPickup = getType() == BWAPI::UnitTypes::Protoss_High_Templar ? (!canStartCast(BWAPI::TechTypes::Psionic_Storm, unitTarget->getPosition()) || Grids::getGroundThreat(getPosition(), PlayerState::Enemy) <= 0.1f) : !canStartAttack();
 
         return getLocalState() == LocalState::Retreat || getEngDist() > range + 32.0 || cargoPickup || bulletCount >= 4 || isTargetedBySuicide();
     }
@@ -681,7 +689,7 @@ namespace McRave
     bool UnitInfo::isWithinReach(UnitInfo& otherUnit)
     {
         auto boxDistance = Util::boxDistance(getType(), getPosition(), otherUnit.getType(), otherUnit.getPosition());
-        return otherUnit.getType().isFlyer() ? airReach >= boxDistance : groundReach >= boxDistance;
+        return otherUnit.getType().isFlyer() ? data.airReach >= boxDistance : data.groundReach >= boxDistance;
     }
 
     bool UnitInfo::isWithinRange(UnitInfo& otherUnit)
@@ -724,57 +732,6 @@ namespace McRave
         auto distResource = getPosition().getDistance(resource->getPosition());
         auto distStation = getPosition().getDistance(resource->getStation()->getBase()->Center());
         return (sameArea && distResource < 256.0) || distResource < 128.0 || distStation < 128.0;
-    }
-
-    bool UnitInfo::localEngage()
-    {
-        if (!hasTarget())
-            return false;
-        auto unitTarget = getTarget().lock();
-
-        auto countDefensesInRange = 0.0;
-        if (getType() == Zerg_Mutalisk && hasTarget() && canOneShot(*unitTarget)) {
-            for (auto &e : Units::getUnits(PlayerState::Enemy)) {
-                if (e->canAttackAir() && e != unitTarget) {
-                    if (e->getPosition().getDistance(unitTarget->getPosition()) < e->getAirRange() + 32.0
-                        || e->getPosition().getDistance(getEngagePosition()) < e->getAirRange() + 32.0
-                        || e->getPosition().getDistance(getPosition()) < e->getAirRange() + 32.0)
-                        countDefensesInRange += (e->getType().isBuilding() ? 1.0 : 0.25);
-                }
-            }
-
-            if (canOneShot(*unitTarget)) {
-                if ((countDefensesInRange < 2.0 && Util::getTime() < Time(8, 00))
-                    || (countDefensesInRange < 3.0 && Util::getTime() < Time(10, 00)))
-                    return true;
-            }
-            else {
-                if (countDefensesInRange <= 0.0)
-                    return true;
-            }
-        }
-
-        return ((!isFlying() && unitTarget->isSiegeTank() && getType() != Zerg_Lurker && isWithinRange(*getTarget().lock()) && getGroundRange() > 32.0)
-            || (getType() == Protoss_Reaver && !unit()->isLoaded() && isWithinRange(*unitTarget))
-            || (unitTarget->getType() == Terran_Vulture_Spider_Mine && !unitTarget->isBurrowed())
-            || (hasTransport() && !unit()->isLoaded() && getType() == Protoss_High_Templar && canStartCast(TechTypes::Psionic_Storm, unitTarget->getPosition()) && isWithinRange(*getTarget().lock()))
-            || (hasTransport() && !unit()->isLoaded() && getType() == Protoss_Reaver && canStartAttack()) && isWithinRange(*getTarget().lock()));
-    }
-
-    bool UnitInfo::localRetreat()
-    {
-        if (!hasTarget())
-            return false;
-        auto unitTarget = getTarget().lock();
-
-        return (getType() == Protoss_Zealot && hasTarget() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && unitTarget->getType() == Terran_Vulture)                 // ...unit is a slow Zealot attacking a Vulture
-            || (getType() == Protoss_Corsair && hasTarget() && unitTarget->isSuicidal() && com(Protoss_Corsair) < 6)                                                                             // ...unit is a Corsair attacking Scourge with less than 6 completed Corsairs
-            || (getType() == Terran_Medic && getEnergy() <= TechTypes::Healing.energyCost())                                                                                                     // ...unit is a Medic with no energy        
-            || (getType() == Terran_SCV && Broodwar->getFrameCount() > 12000)                                                                                                                    // ...unit is an SCV outside of early game
-            || (isLightAir() && hasTarget() && getType().maxShields() > 0 && unitTarget->getType() == Zerg_Overlord && Grids::getAirThreat(getEngagePosition(), PlayerState::Enemy) * 5.0 > (double)getShields())   // ...unit is a low shield light air attacking a Overlord under threat greater than our shields
-            || (getType() == Zerg_Zergling && Players::ZvP() && !getUnitsTargetingThis().empty() && getHealth() < 20 && Util::getTime() < Time(4, 00))
-            || (getType() == Zerg_Zergling && hasTarget() && !isHealthy() && unitTarget->getType().isWorker())
-            || unit()->isIrradiated();
     }
 
     bool UnitInfo::canOneShot(UnitInfo& target) {
@@ -835,85 +792,6 @@ namespace McRave
         if (target.getType() == Protoss_Dragoon || target.getType() == Protoss_Corsair || target.getType() == Terran_Missile_Turret)
             return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 12.0f;
         return false;
-    }
-
-    bool UnitInfo::globalEngage()
-    {
-        if (!hasTarget())
-            return false;
-        auto unitTarget = getTarget().lock();
-
-        const auto nearEnemyStation = [&]() {
-            const auto closestEnemyStation = Stations::getClosestStationGround(getPosition(), PlayerState::Enemy);
-            return (closestEnemyStation && getPosition().getDistance(closestEnemyStation->getBase()->Center()) < 400.0);
-        };
-
-        const auto nearProxyStructure = [&]() {
-            const auto closestProxy = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getType().isBuilding() && u->isProxy();
-            });
-            return closestProxy && closestProxy->getPosition().getDistance(getPosition()) < 160.0;
-        };
-
-        const auto nearEnemyDefenseStructure = [&]() {
-            const auto closestDefense = Util::getClosestUnit(getPosition(), PlayerState::Enemy, [&](auto &u) {
-                return u->getType().isBuilding() && ((u->canAttackGround() && isFlying()) || (u->canAttackAir() && !isFlying()));
-            });
-            return closestDefense && closestDefense->getPosition().getDistance(getTarget().lock()->getPosition()) < 256.0;
-        };
-
-        const auto engagingWithWorkers = [&]() {
-            if (!hasTarget())
-                return false;
-            const auto closestCombatWorker = Util::getClosestUnit(unitTarget->getPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getType().isWorker() && u->getRole() == Role::Combat;
-            });
-            return closestCombatWorker && closestCombatWorker->getPosition().getDistance(unitTarget->getPosition()) < getPosition().getDistance(unitTarget->getPosition()) + 64.0;
-        };
-
-        return (unitTarget->isThreatening() && !unitTarget->isHidden() && (Util::getTime() < Time(10, 00) || getSimState() == SimState::Win || Players::ZvZ() || getType() == Zerg_Zergling))                                                                          // ...target is threatening                    
-            || (!getType().isWorker() && !Spy::enemyRush() && (getGroundRange() > unitTarget->getGroundRange() || unitTarget->getType().isWorker()) && Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition()) && !unitTarget->isHidden())                 // ...unit can get free hits in our territory
-            || (isSuicidal() && hasTarget() && (Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition()) || unitTarget->isThreatening() || unitTarget->getPosition().getDistance(getGoal()) < 160.0))
-            || (isSuicidal() && hasTarget() && Players::getStrength(PlayerState::Enemy).groundToAir <= 0.0 && !nearEnemyDefenseStructure())
-            || (isHidden() && !Actions::overlapsDetection(unit(), getEngagePosition(), PlayerState::Enemy))
-            || (getType() == Zerg_Lurker && isBurrowed() && !Actions::overlapsDetection(unit(), getEngagePosition(), PlayerState::Enemy))
-            || (!isFlying() && Actions::overlapsActions(unit(), getEngagePosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
-            || (!isFlying() && (getGroundRange() < 32.0 || getType() == Zerg_Lurker) && Terrain::inTerritory(PlayerState::Enemy, getPosition()) && (Util::getTime() > Time(8, 00) || BuildOrder::isProxy()) && nearEnemyStation() && !Players::ZvZ())
-            || (getType() == Zerg_Lurker && BuildOrder::isProxy() && nearProxyStructure())
-            || (!isFlying() && Actions::overlapsActions(unit(), getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
-            || (isTargetedBySuicide() && !isFlying())
-            || (getType() == Terran_Ghost && com(Terran_Nuclear_Missile) > 0 && unit()->isLoaded())
-            || engagingWithWorkers();
-    }
-
-    bool UnitInfo::globalRetreat()
-    {
-        auto thisTarget = !target.expired() ? target.lock() : nullptr;
-        auto freeTarget = thisTarget && ((!thisTarget->canAttackAir() && this->isFlying()) || (!thisTarget->canAttackGround() && !this->isFlying()))
-            && Terrain::inTerritory(PlayerState::Self, thisTarget->getPosition()) && !Terrain::inTerritory(PlayerState::Enemy, thisTarget->getPosition())
-            && getPosition().getDistance(thisTarget->getPosition()) < getEngageRadius();
-
-        // Try to save Mutas that are low hp when the firepower isn't needed
-        const auto mutaSavingRequired = getType() == Zerg_Mutalisk && thisTarget &&
-            (Players::ZvZ() ? (Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) == 0) : (Util::getTime() > Time(8, 00)))
-            && !thisTarget->isThreatening() && !isWithinRange(*thisTarget) && !thisTarget->isWithinRange(*this) && getHealth() <= 60
-            && !Terrain::inTerritory(PlayerState::Enemy, getPosition());
-
-        // Try to save scouts as they have high shield counts
-        const auto scoutSavingRequired = getType() == Protoss_Scout && hasTarget() && !thisTarget->isThreatening() && !isWithinRange(*thisTarget) && getHealth() + getShields() <= 80;
-
-        if (mutaSavingRequired || scoutSavingRequired)
-            saveUnit = true;
-        if (saveUnit) {
-            if (getType() == Zerg_Mutalisk && getHealth() >= 100)
-                saveUnit = false;
-            if (getType() == Protoss_Scout && getShields() >= 90)
-                saveUnit = false;
-        }
-
-        return nearHidden
-            || (getGlobalState() == GlobalState::Retreat && !Terrain::inTerritory(PlayerState::Self, getPosition()) && !attemptingRunby())
-            || (saveUnit && !freeTarget);
     }
 
     bool UnitInfo::attemptingRunby()

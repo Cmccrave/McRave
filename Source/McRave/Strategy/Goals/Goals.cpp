@@ -9,17 +9,40 @@ namespace McRave::Goals {
     namespace {
 
         multimap<double, BWEB::Station> stationsByDistance;
+        UnitType rangedType = UnitTypes::None;
+        UnitType meleeType = UnitTypes::None;
+        UnitType airType = UnitTypes::None;
+        UnitType detector = UnitTypes::None;
+        UnitType base = UnitTypes::None;
 
-        void assignNumberToGoal(Position here, UnitType type, int count, GoalType gType = GoalType::None)
+        map<UnitInfo*, pair<Position, GoalType>> oldGoals;
+
+        template <class T>
+        void assignNumberToGoal(T t, UnitType type, int count, GoalType gType = GoalType::None)
         {
+            const auto here = Position(t);
             if (!here.isValid())
                 return;
 
+            // Check for a cached assignment
+            int countCached = 0;
             for (int current = 0; current < count; current++) {
+                for (auto &[unit, goalPair] : oldGoals) {
+                    if (!unit->getGoal().isValid() && unit->getType() == type && goalPair.first == here && goalPair.second == gType) {
+                        unit->setGoal(here);
+                        unit->setGoalType(gType);
+                        countCached++;
+                        break;
+                    }
+                }
+            }
 
+            // Get new assignment
+            count -= countCached;
+            for (int current = 0; current < count; current++) {
                 if (type.isFlyer()) {
                     const auto closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
-                        if (gType == GoalType::Attack && u->globalRetreat())
+                        if (gType == GoalType::Attack && u->getGlobalState() == GlobalState::ForcedRetreat)
                             return false;
                         return u->getType() == type && !u->getGoal().isValid();
                     });
@@ -32,7 +55,7 @@ namespace McRave::Goals {
 
                 else {
                     const auto closest = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
-                        if (gType == GoalType::Attack && u->globalRetreat())
+                        if (gType == GoalType::Attack && u->getGlobalState() == GlobalState::ForcedRetreat)
                             return false;
                         return u->getType() == type && !u->getGoal().isValid();
                     });
@@ -45,30 +68,12 @@ namespace McRave::Goals {
             }
         }
 
-        void assignNumberToGoal(WalkPosition here, UnitType type, int count, GoalType gType = GoalType::None)
+        template <class T>
+        void assignPercentToGoal(T t, UnitType type, double percent, GoalType gType = GoalType::None)
         {
-            assignNumberToGoal(Position(here) + Position(4, 4), type, count, gType);
-        }
-
-        void assignNumberToGoal(TilePosition here, UnitType type, int count, GoalType gType = GoalType::None)
-        {
-            assignNumberToGoal(Position(here) + Position(16, 16), type, count, gType);
-        }
-
-        void assignPercentToGoal(Position here, UnitType type, double percent, GoalType gType = GoalType::None)
-        {
-            int count = int(percent * double(vis(type)));
+            const auto here = Position(t);
+            const auto count = int(percent * double(vis(type)));
             assignNumberToGoal(here, type, count, gType);
-        }
-
-        void assignPercentToGoal(WalkPosition here, UnitType type, double percent, GoalType gType = GoalType::None)
-        {
-            assignPercentToGoal(Position(here) + Position(4, 4), type, percent, gType);
-        }
-
-        void assignPercentToGoal(TilePosition here, UnitType type, double percent, GoalType gType = GoalType::None)
-        {
-            assignPercentToGoal(Position(here) + Position(16, 16), type, percent, gType);
         }
 
         // HACK: Need a pred function integrated above 
@@ -82,91 +87,17 @@ namespace McRave::Goals {
 
         void clearGoals()
         {
+            oldGoals.clear();
             for (auto &unit : Units::getUnits(PlayerState::Self)) {
+                oldGoals[&*unit] = make_pair(unit->getGoal(), unit->getGoalType());
                 unit->setGoal(Positions::Invalid);
                 unit->setGoalType(GoalType::None);
             }
         }
 
-        void updateGenericGoals()
+        void updateExpandDenial()
         {
-            auto rangedType = UnitTypes::None;
-            auto meleeType = UnitTypes::None;
-            auto airType = UnitTypes::None;
-            auto detector = UnitTypes::None;
-            auto base = UnitTypes::None;
-
-            if (Broodwar->self()->getRace() == Races::Protoss) {
-                rangedType = Protoss_Dragoon;
-                meleeType = Protoss_Zealot;
-                airType = Protoss_Corsair;
-                detector = Protoss_Observer;
-                base = Protoss_Nexus;
-            }
-            if (Broodwar->self()->getRace() == Races::Zerg) {
-                rangedType = Zerg_Hydralisk;
-                meleeType = Zerg_Zergling;
-                airType = Zerg_Mutalisk;
-                detector = Zerg_Overlord;
-                base = Zerg_Hatchery;
-            }
-            if (Broodwar->self()->getRace() == Races::Terran) {
-                rangedType = Terran_Vulture;
-                meleeType = Terran_Firebat;
-                airType = Terran_Wraith;
-                detector = Terran_Science_Vessel;
-                base = Terran_Command_Center;
-            }
-
-            // Before Hydras have upgrades, defend vulnerable bases
-            if (BuildOrder::isTechUnit(Zerg_Hydralisk) && Combat::State::isStaticRetreat(Zerg_Hydralisk)) {
-                auto &stations = Stations::getStations(PlayerState::Self);
-                if (!stations.empty()) {
-                    auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto& s) { return s->isMain(); }));
-                    auto percentPer = 1.0 / double(stations.size() - mainStations);
-                    for (auto &station : stations) {
-                        if (station->isMain())
-                            continue;
-                        assignPercentToGoal(Stations::getDefendPosition(station), rangedType, percentPer, GoalType::None);
-                    }
-                }
-            }
-
-            // Send a worker early when we want to
-            if (BuildOrder::isPlanEarly() && Planning::getCurrentExpansion() && !Planning::whatPlannedHere(Planning::getCurrentExpansion()->getBase()->Location()).isResourceDepot()) {
-                if (int(Stations::getStations(PlayerState::Self).size() < 2))
-                    assignWorker(Terrain::getMyNatural()->getBase()->Center());
-                else if (Planning::getCurrentExpansion())
-                    assignWorker(Planning::getCurrentExpansion()->getBase()->Center());
-            }
-
-            // Send detector to next expansion
-            if (Planning::getCurrentExpansion()) {
-                auto nextExpand = Planning::getCurrentExpansion()->getBase()->Center();
-                auto needDetector = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 || Players::vZ();
-                if (nextExpand.isValid() && needDetector && BWEB::Map::isUsed(Planning::getCurrentExpansion()->getBase()->Location()) == UnitTypes::None) {
-                    if (Stations::getStations(PlayerState::Self).size() >= 2 && BuildOrder::buildCount(base) > vis(base))
-                        assignNumberToGoal(nextExpand, detector, 1);
-                }
-
-                // Escort expanders
-                if (nextExpand.isValid() && (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 2 || Stations::getStations(PlayerState::Self).size() <= 1 || Spy::getEnemyTransition() == "4Gate")) {
-                    auto closestBuilder = Util::getClosestUnit(nextExpand, PlayerState::Self, [&](auto &u) {
-                        return u->getBuildType().isResourceDepot();
-                    });
-                    auto type = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
-
-                    if (closestBuilder) {
-                        assignNumberToGoal(closestBuilder->getPosition(), type, 1, GoalType::Escort);
-                        for (auto &t : closestBuilder->getUnitsTargetingThis()) {
-                            if (auto targeter = t.lock())
-                                assignNumberToGoal(targeter->getPosition(), type, 1, GoalType::Escort);
-                        }
-                    }
-                }
-            }
-
-            // Aggresively deny enemy expansions
+            // Deny enemy expansions from being built by sending a small force ahead of time
             stationsByDistance.clear();
             if (Terrain::getEnemyStartingPosition().isValid() && !BuildOrder::isRush() && !Players::ZvZ() && !Players::vFFA()) {
 
@@ -207,12 +138,55 @@ namespace McRave::Goals {
                 // Protoss denies closest base
                 if (Players::PvT()) {
                     for (auto &station : stationsByDistance) {
-                        auto type = (Players::PvT() || Players::PvP()) ? rangedType : meleeType;
+                        auto type = (Players::PvT() || Players::PvP()) ? Protoss_Dragoon : Protoss_Zealot;
                         assignNumberToGoal(station.second.getBase()->Center(), type, 2);
                         break;
                     }
                 }
+
+                // Zerg maybe deny with a single ling?
+                // Terran a vulture/marine?
             }
+        }
+
+        void updateGenericGoals()
+        {
+
+            // Send a worker early when we want to
+            if (BuildOrder::isPlanEarly() && Planning::getCurrentExpansion() && !Planning::whatPlannedHere(Planning::getCurrentExpansion()->getBase()->Location()).isResourceDepot()) {
+                if (int(Stations::getStations(PlayerState::Self).size() < 2))
+                    assignWorker(Terrain::getMyNatural()->getBase()->Center());
+                else if (Planning::getCurrentExpansion())
+                    assignWorker(Planning::getCurrentExpansion()->getBase()->Center());
+            }
+
+            // Send detector to next expansion
+            if (Planning::getCurrentExpansion()) {
+                auto nextExpand = Planning::getCurrentExpansion()->getBase()->Center();
+                auto needDetector = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 || Players::vZ();
+                if (nextExpand.isValid() && needDetector && BWEB::Map::isUsed(Planning::getCurrentExpansion()->getBase()->Location()) == UnitTypes::None) {
+                    if (Stations::getStations(PlayerState::Self).size() >= 2 && BuildOrder::buildCount(base) > vis(base))
+                        assignNumberToGoal(nextExpand, detector, 1);
+                }
+
+                // Escort expanders
+                if (nextExpand.isValid() && (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 2 || Stations::getStations(PlayerState::Self).size() <= 1 || Spy::getEnemyTransition() == "4Gate")) {
+                    auto closestBuilder = Util::getClosestUnit(nextExpand, PlayerState::Self, [&](auto &u) {
+                        return u->getBuildType().isResourceDepot();
+                    });
+                    auto type = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
+
+                    if (closestBuilder) {
+                        assignNumberToGoal(closestBuilder->getPosition(), type, 1, GoalType::Escort);
+                        for (auto &t : closestBuilder->getUnitsTargetingThis()) {
+                            if (auto targeter = t.lock())
+                                assignNumberToGoal(targeter->getPosition(), type, 1, GoalType::Escort);
+                        }
+                    }
+                }
+            }
+
+            
 
         }
 
@@ -362,6 +336,20 @@ namespace McRave::Goals {
                 }
             }
 
+            // Before Hydras have upgrades, defend vulnerable bases
+            if (Combat::State::isStaticRetreat(Zerg_Hydralisk)) {
+                auto &stations = Stations::getStations(PlayerState::Self);
+                if (!stations.empty()) {
+                    auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto& s) { return s->isMain(); }));
+                    auto percentPer = 1.0 / double(stations.size() - mainStations);
+                    for (auto &station : stations) {
+                        if (station->isMain())
+                            continue;
+                        assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, percentPer, GoalType::Defend);
+                    }
+                }
+            }
+
             // Attack enemy expansions with a small force
             if (Util::getTime() > Time(6, 00) || Spy::enemyProxy()) {
                 auto distBest = 0.0;
@@ -407,6 +395,31 @@ namespace McRave::Goals {
             if (Broodwar->getGameType() == GameTypes::Use_Map_Settings && !Broodwar->isMultiplayer()) {
 
             }
+        }
+    }
+
+    void onStart()
+    {
+        if (Broodwar->self()->getRace() == Races::Protoss) {
+            rangedType = Protoss_Dragoon;
+            meleeType = Protoss_Zealot;
+            airType = Protoss_Corsair;
+            detector = Protoss_Observer;
+            base = Protoss_Nexus;
+        }
+        if (Broodwar->self()->getRace() == Races::Zerg) {
+            rangedType = Zerg_Hydralisk;
+            meleeType = Zerg_Zergling;
+            airType = Zerg_Mutalisk;
+            detector = Zerg_Overlord;
+            base = Zerg_Hatchery;
+        }
+        if (Broodwar->self()->getRace() == Races::Terran) {
+            rangedType = Terran_Vulture;
+            meleeType = Terran_Firebat;
+            airType = Terran_Wraith;
+            detector = Terran_Science_Vessel;
+            base = Terran_Command_Center;
         }
     }
 

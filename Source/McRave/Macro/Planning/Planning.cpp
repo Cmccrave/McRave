@@ -460,6 +460,10 @@ namespace McRave::Planning {
 
                 // How to dictate row order
                 vector<int> desiredRowOrder ={ 3, 4, 2, 1 };
+                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
+                    desiredRowOrder ={ 2, 3, 4, 1 };
+                if (Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode) > 0)
+                    desiredRowOrder ={ 1, 2, 3, 4 };
 
                 auto closestDefense = Util::getClosestUnit(Position(closestMain->getChokepoint()->Center()), PlayerState::Self, [&](auto &u) {
                     return isDefensiveType(u->getType());

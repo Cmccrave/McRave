@@ -110,8 +110,8 @@ namespace McRave::Combat::Simulation {
 
         // Z
         if (Players::ZvP()) {
-            minWinPercent = 0.8;
-            maxWinPercent = 1.2;
+            minWinPercent = 0.9;
+            maxWinPercent = 1.3;
         }
         if (Players::ZvZ()) {
             minWinPercent = 0.8;
@@ -142,10 +142,10 @@ namespace McRave::Combat::Simulation {
         // Can't have incentives without a target for now
         if (!unit.hasTarget())
             return;
-        auto unitTarget = unit.getTarget().lock();
+        auto &target = *unit.getTarget().lock();
 
         // Air units are way more powerful when clustered properly
-        if (unit.isLightAir() && !unitTarget->isThreatening()) {
+        if (unit.isLightAir() && !target.isThreatening()) {
             auto density = Grids::getAirDensity(unit.getPosition(), PlayerState::Self);
             if (density < 5) {
                 minWinPercent += 0.2;
@@ -153,20 +153,18 @@ namespace McRave::Combat::Simulation {
             }
         }
 
-        // Adjust winrates based on how close to self station we are
-        auto closestSelf = Util::getClosestUnit(unitTarget->getPosition(), PlayerState::Self, [&](auto &u) {
-            return u->getType().isBuilding();
-        });
-        if (closestSelf) {
-            const auto distSelf = unitTarget->getPosition().getDistance(closestSelf->getPosition());
-            const auto reach = max({ unitTarget->getGroundRange() / 2.0, unitTarget->getAirReach() / 2.0, 160.0 });
-            const auto insideDefendingChoke = Combat::holdAtChoke() && unit.getPosition().getDistance(unitTarget->getPosition()) <= 32.0 && Terrain::inArea(Combat::getDefendArea(), unitTarget->getPosition());
+        //// Ground units have to be careful in lower numbers
+        //if (unit.getType() == Zerg_Hydralisk && com(Zerg_Hydralisk) < 36) {
+        //    minWinPercent += 0.5;
+        //    maxWinPercent += 0.5;
+        //}
 
-            if (distSelf < reach || insideDefendingChoke || unitTarget->isThreatening()) {
-                minWinPercent -= 1.0;
-                maxWinPercent -= 1.0;
-                unitTarget->circle(Colors::Orange);
-            }
+        // Adjust winrates based on how close to self station we are
+        const auto insideDefendingChoke = (Combat::holdAtChoke() || Combat::isDefendNatural()) && Terrain::inArea(Combat::getDefendArea(), target.getPosition());
+        if (insideDefendingChoke || target.isThreatening()) {
+            minWinPercent = 0.0;
+            maxWinPercent = 0.5;
+            target.circle(Colors::Orange);
         }
 
         // Adjust winrates if we have static defense that would make the fight easier
@@ -175,9 +173,9 @@ namespace McRave::Combat::Simulation {
                 return u->getType() == Zerg_Sunken_Colony && u->isCompleted();
             });
             if (closestSunken) {
-                if (closestSunken->isWithinRange(*unitTarget)) {
-                    minWinPercent /=2;
-                    maxWinPercent /=2;
+                if (closestSunken->isWithinRange(target)) {
+                    minWinPercent = 0.0;
+                    maxWinPercent = 0.0;
                 }
                 else {
                     minWinPercent *=2;

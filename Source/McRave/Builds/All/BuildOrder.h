@@ -29,6 +29,7 @@ namespace McRave::BuildOrder {
         inline bool inBookSupply = false;
         inline bool transitionReady = false;
         inline bool planEarly = false;
+        inline bool reserveLarva = false;
 
         inline bool gasDesired = false;
         inline bool expandDesired = false;

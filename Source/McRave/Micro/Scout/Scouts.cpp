@@ -9,7 +9,7 @@ namespace McRave::Scouts {
     namespace {
 
         enum class ScoutType {
-            None, Main, Natural, Proxy, Safe
+            None, Main, Natural, Proxy, Safe, Army
         };
 
         string scoutTypeToString(ScoutType t) {
@@ -45,9 +45,7 @@ namespace McRave::Scouts {
 
         set<Position> unexploredMains, unexploredNaturals;
         map<ScoutType, ScoutTarget> scoutTargets;
-
-        bool scoutDied = false;
-        bool lingScoutDied = false;
+        map<UnitType, int> scoutTypeDeaths;
 
         bool mainScouted = false;
         bool natScouted = false;
@@ -185,7 +183,8 @@ namespace McRave::Scouts {
                 }
 
                 if (Players::ZvP()) {
-                    if (Spy::getEnemyOpener() == "9/9"
+                    if (Spy::getEnemyBuild() == "2Gate"
+                        || Spy::getEnemyBuild() == "1GateCore"
                         || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
                         || Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0
                         || Util::getTime() > Time(4, 00))
@@ -193,7 +192,7 @@ namespace McRave::Scouts {
                 }
 
                 if (Players::ZvZ())
-                    main.desiredScoutTypeCounts[Zerg_Drone] = 0;                
+                    main.desiredScoutTypeCounts[Zerg_Drone] = 0;
 
                 auto enemyAir = Players::getStrength(PlayerState::Enemy).groundToAir > 0.0
                     || Players::getStrength(PlayerState::Enemy).airToAir > 0.0
@@ -220,13 +219,15 @@ namespace McRave::Scouts {
 
                 // Determine if we need to create a new checking unit to try and detect the enemy build
                 const auto needEnemyCheckZvZ = Players::ZvZ() && !Terrain::foundEnemy() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0;
-                const auto needEnemyCheckZvP = Players::ZvP() && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0
-                    && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() > Time(3, 45);
+                const auto needEnemyCheckZvP = Players::ZvP()
+                    && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() > Time(3, 00);
                 const auto needEnemyCheckZvT = Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0
-                    && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() > Time(3, 45);
+                    && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() > Time(3, 00);
 
                 const auto mainCheck = (!Terrain::getEnemyMain() || Broodwar->getFrameCount() - Grids::getLastVisibleFrame(Terrain::getEnemyMain()->getBase()->Location()) > 120);
-                const auto armyCheck = (!Units::getEnemyArmyCenter().isValid() || Broodwar->getFrameCount() - Grids::getLastVisibleFrame(Units::getEnemyArmyCenter()) > 120);
+                const auto armyCheck = (!Terrain::getEnemyNatural() || !Terrain::getEnemyNatural()->getChokepoint()
+                    || Broodwar->getFrameCount() - Grids::getLastVisibleFrame(Position(Terrain::getEnemyNatural()->getChokepoint()->Center())) > 24);
+                //(!Units::getEnemyArmyCenter().isValid() || Broodwar->getFrameCount() - Grids::getLastVisibleFrame(Units::getEnemyArmyCenter()) > 24);
 
                 const auto needEnemyCheck = (needEnemyCheckZvZ || needEnemyCheckZvP || needEnemyCheckZvT)
                     && armyCheck;
@@ -264,7 +265,7 @@ namespace McRave::Scouts {
                 }
                 else {
                     scout = Util::getClosestUnitGround(assignPos, PlayerState::Self, [&](auto &u) {
-                        return u->getRole() == Role::Combat && u->getType() == type;
+                        return u->getRole() == Role::Combat && u->getType() == type && u->isHealthy();
                     });
                 }
 
@@ -309,7 +310,7 @@ namespace McRave::Scouts {
             }
 
             for (auto &[type, count] : totalDesiredScoutTypeCounts) {
-                if ((type.isWorker() && scoutDied) || (type == Zerg_Zergling && lingScoutDied))
+                if (scoutTypeDeaths[type] > 0)
                     continue;
                 if (totalCurrentScoutTypeCounts[type] < totalDesiredScoutTypeCounts[type])
                     assign(type);
@@ -444,11 +445,16 @@ namespace McRave::Scouts {
                 if (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())) >= 200)
                     addToTarget(ScoutType::Safe, Terrain::getEnemyNatural()->getBase()->Center());
             }
+
+            // Army scouting
+            if (Terrain::getEnemyNatural() && Terrain::getEnemyNatural()->getChokepoint()) {
+                addToTarget(ScoutType::Army, Position(Terrain::getEnemyNatural()->getChokepoint()->Center()), 32);
+
+            }
         }
 
         void updateDestination(UnitInfo& unit)
         {
-            auto start = unit.getWalkPosition();
             auto distBest = DBL_MAX;
 
             // If we have scout targets, find the closest scout target
@@ -458,6 +464,7 @@ namespace McRave::Scouts {
             for (auto &[type, target] : scoutTargets) {
 
                 if (unit.getDestination().isValid()
+                    || (type == ScoutType::Army && unit.getType() != Zerg_Zergling)
                     || (type == ScoutType::Safe && unit.getHealth() != unit.getType().maxHitPoints() && target.center != safePositions[Terrain::getEnemyNatural()])
                     || target.currentScoutTypeCounts[unit.getType()] >= target.desiredScoutTypeCounts[unit.getType()])
                     continue;
@@ -505,23 +512,25 @@ namespace McRave::Scouts {
         void updatePath(UnitInfo& unit)
         {
             if (!unit.isFlying()) {
+
                 if (unit.getDestination().isValid() && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination()) && (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.getDestination())) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.getDestination()))))) {
 
+                    BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
+
                     const auto threat = [&](const TilePosition &t) {
-                        return Grids::getGroundThreat(Position(t) + Position(16, 16), PlayerState::Enemy) * 1000.0;
+                        return 1.0 + (Grids::getGroundThreat(Position(t) + Position(16, 16), PlayerState::Enemy) * 1000.0);
                     };
 
-                    BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-                    newPath.generateAS([&](const TilePosition &t) {
-                        if (newPath.unitWalkable(t))
-                            return threat(t);
-                        else if (unit.getType().isWorker()) {
+                    const auto walkable = [&](const TilePosition &t) {
+                        if (unit.getType().isWorker()) {
                             const auto type = BWEB::Map::isUsed(t);
                             if (type != UnitTypes::None && !type.isBuilding() && resourceWalkPossible[t.x][t.y])
-                                return threat(t);
+                                return true;
                         }
-                        return DBL_MAX;
-                    });
+                        return newPath.unitWalkable(t);
+                    };
+
+                    newPath.generateAS(threat, walkable);
                     unit.setDestinationPath(newPath);
                 }
 
@@ -544,7 +553,7 @@ namespace McRave::Scouts {
 
             Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Red);
         }
-                
+
         void updateDecision(UnitInfo& unit)
         {
             // Iterate commands, if one is executed then don't try to execute other commands
@@ -672,10 +681,7 @@ namespace McRave::Scouts {
 
     void removeUnit(UnitInfo& unit)
     {
-        if (unit.getType().isWorker())
-            scoutDied = true;
-        else
-            lingScoutDied = true;
+        scoutTypeDeaths[unit.getType()]++;
     }
 
     bool gatheringInformation() { return info; }

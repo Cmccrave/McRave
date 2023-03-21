@@ -22,6 +22,7 @@ namespace McRave::BuildOrder::Zerg {
         pressure =                                  false;
         transitionReady =                           false;
         planEarly =                                 false;
+        reserveLarva =                              true;
 
         gasLimit =                                  gasMax();
         unitLimits[Zerg_Zergling] =                 6;

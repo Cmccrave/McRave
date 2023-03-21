@@ -26,6 +26,7 @@ void McRaveModule::onStart()
     Resources::onStart();
     Scouts::onStart();
     Combat::onStart();
+    Goals::onStart();
 
     Broodwar->enableFlag(Flag::UserInput);
     Broodwar->setCommandOptimizationLevel(0);
@@ -38,6 +39,10 @@ void McRaveModule::onStart()
 
 void McRaveModule::onEnd(bool isWinner)
 {
+    // @McRave ☑ has taken "drop all your weapons at the end of a csgo match" to the ai scene
+    for (auto &unit : Units::getUnits(PlayerState::Self))
+        unit->setMarkForDeath(true);
+
     Learning::onEnd(isWinner);
     Resources::onEnd();
     Broodwar->sendText("ggwp");
@@ -48,6 +53,13 @@ void McRaveModule::onFrame()
 {
     if (Broodwar->getGameType() != GameTypes::Use_Map_Settings && Broodwar->isPaused())
         return;
+
+    //if (Util::getTime() > Time(30, 00))
+    //    Broodwar->leaveGame();
+
+    //auto mousePos = WalkPosition(Broodwar->getScreenPosition() + Broodwar->getMousePosition());
+    //auto grid = Grids::getAirThreat(mousePos, PlayerState::Enemy);
+    //Broodwar << grid << endl;
 
     // Update game state
     Util::onFrame();

@@ -105,10 +105,10 @@ namespace McRave::Spy::Protoss {
                     || completesBy(2, Protoss_Zealot, Time(2, 45)) || completesBy(3, Protoss_Zealot, Time(2, 50)) || completesBy(4, Protoss_Zealot, Time(3, 10)) || completesBy(5, Protoss_Zealot, Time(3, 15))
                     || completesBy(2, Protoss_Gateway, Time(2, 15)))
                     theSpy.opener.name = "9/9";
-                else if ((completesBy(3, Protoss_Zealot, Time(3, 10)) && arrivesBy(3, Protoss_Zealot, Time(4, 05))) || arrivesBy(4, Protoss_Zealot, Time(4, 20)))
+                else if (arrivesBy(3, Protoss_Zealot, Time(4, 05)) || arrivesBy(4, Protoss_Zealot, Time(4, 20)))
                     theSpy.opener.name = "10/12";
-                else if ((completesBy(3, Protoss_Zealot, Time(3, 35)) && arrivesBy(3, Protoss_Zealot, Time(4, 20))) || arrivesBy(2, Protoss_Dragoon, Time(5, 00)) || completesBy(1, Protoss_Cybernetics_Core, Time(3, 40)))
-                    theSpy.opener.name = "10/17";
+                else if (arrivesBy(3, Protoss_Zealot, Time(4, 20)) || arrivesBy(2, Protoss_Dragoon, Time(5, 00)) || completesBy(1, Protoss_Cybernetics_Core, Time(3, 40)))
+                    theSpy.opener.name = "10/15";
             }
 
             // FFE Openers - need timings for when Nexus/Forge/Gate complete

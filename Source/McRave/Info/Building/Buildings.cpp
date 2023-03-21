@@ -116,7 +116,7 @@ namespace McRave::Buildings {
                 if (closestScout && Stations::getStations(PlayerState::Self).size() >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == Terrain::getMainArea())
                     morphTile = Terrain::getNaturalTile();
 
-                // Extra larva timings (main): 3:02, 3:31, 4:00
+                // Extra larva timings (main): 2:31, 3:02, 3:31
                 if (building.getTilePosition() == morphTile) {
                     if (morphTile == Terrain::getMainTile()) {
                         if ((Util::getTime() >= Time(2, 31) && BuildOrder::getCurrentTransition().find("1Hatch") != string::npos)

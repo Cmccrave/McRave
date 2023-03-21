@@ -101,11 +101,11 @@ namespace McRave
     };
 
     enum class GlobalState {
-        None, Attack, Retreat, Hold
+        None, ForcedAttack, Attack, Hold, Retreat, ForcedRetreat
     };
 
     enum class LocalState {
-        None, Attack, Retreat, Hold
+        None, ForcedAttack, Attack, Hold, Retreat, ForcedRetreat
     };
 
     enum class SimState {

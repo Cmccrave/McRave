@@ -16,7 +16,7 @@ namespace McRave::Workers {
         BWEB::Station * getTransferStation(UnitInfo& unit)
         {
             // Allow some drones to transfer if another base is unsaturated
-            if (Util::getTime() < Time(4, 00) && unit.isHealthy() && !Spy::enemyRush() && vis(UnitTypes::Zerg_Drone) >= 9) {
+            if (Util::getTime() < Time(4, 00) && unit.isHealthy() && !Spy::enemyRush() && !Spy::enemyRush() && Spy::getEnemyOpener() != "8Rax" && vis(UnitTypes::Zerg_Drone) >= 9) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
                     int droneCount = 0;
                     auto mineable = true;
@@ -38,7 +38,7 @@ namespace McRave::Workers {
         {
             // If this station already has defenses, it's likely safe, just need to hide there
             vector<BWEB::Station *> safeStations;
-            if (unit.hasResource() && Stations::getGroundDefenseCount(unit.getResource().lock()->getStation()) > 0 && Util::getTime() > Time(6, 00))
+            if (unit.hasResource() && Terrain::inArea(unit.getResource().lock()->getStation()->getBase()->GetArea(), unit.getPosition()) && Stations::getGroundDefenseCount(unit.getResource().lock()->getStation()) > 0 && Util::getTime() > Time(6, 00))
                 safeStations.push_back(unit.getResource().lock()->getStation());
 
             // Find safe stations to mine resources from
@@ -265,7 +265,7 @@ namespace McRave::Workers {
                     auto allowedGatherCount = threatened ? 50 : resource.getWorkerCap();
 
                     if (!resourceReady(resource, allowedGatherCount)
-                        || (!safeStations.empty() && find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
+                        || (find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
                         || resource.isThreatened())
                         continue;
 

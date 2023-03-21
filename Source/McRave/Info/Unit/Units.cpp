@@ -52,7 +52,7 @@ namespace McRave::Units {
                         Events::onUnitLand(unit);
 
                     // Must see a 3x3 grid of Tiles to set a unit to invalid position
-                    if (!unit.unit()->exists() && Broodwar->isVisible(TilePosition(unit.getPosition())) && (!unit.isBurrowed() || Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Self) || (unit.getWalkPosition().isValid() && Grids::getGroundDensity(unit.getWalkPosition(), PlayerState::Self) > 0)))
+                    if (!unit.unit()->exists() && Broodwar->isVisible(TilePosition(unit.getPosition())) && (!unit.isBurrowed() || Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Self) || (unit.getPosition().isValid() && Grids::getGroundDensity(unit.getPosition(), PlayerState::Self) > 0)))
                         Events::onUnitDisappear(unit);
 
                     // If a unit is threatening our position
