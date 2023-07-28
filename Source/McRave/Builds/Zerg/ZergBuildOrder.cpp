@@ -261,6 +261,14 @@ namespace McRave::BuildOrder::Zerg {
         return Broodwar->self()->isUpgrading(UpgradeTypes::Metabolic_Boost) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost);
     }
 
+    bool hydraSpeed() {
+        return Broodwar->self()->isUpgrading(UpgradeTypes::Muscular_Augments) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Muscular_Augments);
+    }
+
+    bool hydraRange() {
+        return Broodwar->self()->isUpgrading(UpgradeTypes::Grooved_Spines) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Grooved_Spines);
+    }
+
     bool gas(int amount) {
         return Broodwar->self()->gas() >= amount;
     }

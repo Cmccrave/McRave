@@ -127,7 +127,7 @@ namespace McRave::Transports {
 
             // Check if this cargo is ready to engage
             const auto readyToEngage = [&](UnitInfo& cargo, UnitInfo& cargoTarget) {
-                const auto combatEngage = cargo.getLocalState() != LocalState::Retreat && unit.isHealthy() && cargo.isHealthy();
+                const auto combatEngage = cargo.getLocalState() != LocalState::Retreat && cargo.getLocalState() != LocalState::ForcedRetreat && unit.isHealthy() && cargo.isHealthy();
                 const auto range = cargoTarget.getType().isFlyer() ? cargo.getAirRange() : cargo.getGroundRange();
                 const auto dist = Util::boxDistance(cargo.getType(), cargo.getPosition(), cargoTarget.getType(), cargoTarget.getPosition());
 
@@ -135,7 +135,7 @@ namespace McRave::Transports {
                     return true;
 
                 // Don't keep moving into range if we already are
-                if (dist <= range)
+                if (dist <= range - 64.0)
                     return false;
 
                 if (cargo.getType() == Protoss_High_Templar)
@@ -192,8 +192,9 @@ namespace McRave::Transports {
                     setState(TransportState::Reinforcing);
                 else if (readyToEngage(cargo, cargoTarget)) {
                     setState(TransportState::Engaging);
+                    Broodwar << "A" << endl;
                     if (readyToDrop(cargo, cargoTarget)) {
-                        Broodwar << "Dropping ghost in enemy main" << endl;
+                        Broodwar << "B" << endl;
                         unit.unit()->unload(cargo.unit());
                     }
                 }

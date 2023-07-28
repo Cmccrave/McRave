@@ -12,18 +12,8 @@ namespace BWEB
         BWAPI::TilePosition source, target;
         BWAPI::UnitType type;
     public:
-        Path(BWAPI::TilePosition _source, BWAPI::TilePosition _target, BWAPI::UnitType _type, bool _diagonal = true, bool _cached = true)
-        {
-            tiles ={};
-            dist = 0.0;
-            reachable = false;
-            diagonal = _diagonal;
-            cached = _cached;
-            source = _source;
-            target = _target;
-            type = _type;
-        }
-        Path(BWAPI::Position _source, BWAPI::Position _target, BWAPI::UnitType _type, bool _diagonal = true, bool _cached = true)
+        template <class T>
+        Path(T _source, T _target, BWAPI::UnitType _type, bool _diagonal = true, bool _cached = true)
         {
             tiles ={};
             dist = 0.0;

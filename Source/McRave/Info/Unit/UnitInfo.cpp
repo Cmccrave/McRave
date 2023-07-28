@@ -157,8 +157,6 @@ namespace McRave
             checkProxy();
             checkCompletion();
             checkThreatening();
-
-            Visuals::drawLine(position, commandPosition, Colors::Cyan);
         }
 
         // Create a list of units that are in range of this unit
@@ -339,7 +337,9 @@ namespace McRave
 
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
-            return (closestDefender && closestDefender->isWithinRange(*this)) || Zones::getZone(getPosition()) == ZoneType::Defend;
+            return (closestDefender && closestDefender->isWithinRange(*this))
+                || Zones::getZone(getPosition()) == ZoneType::Defend
+                || (Combat::isDefendNatural() && Terrain::inTerritory(PlayerState::Self, position) && !Terrain::inArea(Terrain::getNaturalArea(), position));
         };
 
         // Checks if it can damage an already damaged building
@@ -476,9 +476,9 @@ namespace McRave
         const auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
         const auto cancelAttackRisk = frameSinceAttack <= data.minStopFrame - Broodwar->getLatencyFrames();
 
-        auto newCommandPosition = commandPosition.getDistance(here) > 24;
+        auto newCommandPosition = commandPosition.getDistance(here) > 36;
         auto newCommandType = commandType != cmd;
-        auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() - Broodwar->getLatencyFrames() > 8;
+        auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() - Broodwar->getLatencyFrames() > 10;
 
         // Allows skipping the command but still printing the result to screen
         auto executeCommand = (!cancelAttackRisk || isLightAir()) && (newCommandPosition || newCommandType || newCommandFrame);
@@ -529,7 +529,7 @@ namespace McRave
 
         auto newCommandTarget = unit()->getLastCommand().getTarget() != targetUnit.unit();
         auto newCommandType = commandType != cmd;
-        auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() - Broodwar->getLatencyFrames() > 8;
+        auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() - Broodwar->getLatencyFrames() > 10;
 
         // Allows skipping the command but still printing the result to screen
         auto executeCommand = (!cancelAttackRisk || isLightAir()) && (newCommandTarget || newCommandType || newCommandFrame);
@@ -582,7 +582,7 @@ namespace McRave
         // Special Case: Reavers - Shuttles reset the cooldown of their attacks to 30 frames not 60 frames
         if (getType() == Protoss_Reaver && hasTransport() && unit()->isLoaded()) {
             auto dist = Util::boxDistance(getType(), getPosition(), unitTarget->getType(), unitTarget->getPosition());
-            return (dist < getGroundRange());
+            return (dist <= getGroundRange());
         }
 
         auto weaponCooldown = getType() == Protoss_Reaver ? 60 : (unitTarget->getType().isFlyer() ? getType().airWeapon().damageCooldown() : getType().groundWeapon().damageCooldown());

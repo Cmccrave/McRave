@@ -54,8 +54,8 @@ void McRaveModule::onFrame()
     if (Broodwar->getGameType() != GameTypes::Use_Map_Settings && Broodwar->isPaused())
         return;
 
-    //if (Util::getTime() > Time(30, 00))
-    //    Broodwar->leaveGame();
+    if (Util::getTime() > Time(30, 00))
+        Broodwar->leaveGame();
 
     //auto mousePos = WalkPosition(Broodwar->getScreenPosition() + Broodwar->getMousePosition());
     //auto grid = Grids::getAirThreat(mousePos, PlayerState::Enemy);

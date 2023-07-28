@@ -17,7 +17,10 @@ namespace McRave {
         for (auto &dir : directions) {
             auto tile = tilePosition + dir;
             auto center = Position(tile) + Position(16, 16);
-            if (BWEB::Map::isUsed(tile) == UnitTypes::None) {
+
+            // If the build type is empty or somehow a resource depot is here (FPM possibility)
+            auto buildType = BWEB::Map::isUsed(tile);
+            if (buildType == UnitTypes::None || buildType.isResourceDepot()) {
                 if (center.getDistance(getStation()->getBase()->Center()) < position.getDistance(getStation()->getBase()->Center()) - 16.0)
                     pocketTiles.push_back(tile);
             }

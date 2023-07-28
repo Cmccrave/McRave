@@ -166,17 +166,20 @@ namespace McRave::Spy::Terran {
                         theSpy.transition.name = "+1 5Rax";
                 }
 
-                if ((hasGols && theSpy.expand.possible && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) >= 4 && Players::getVisibleCount(PlayerState::Enemy, Terran_Armory) > 0)
-                    || (Util::getTime() < Time(6, 30) && Players::getVisibleCount(PlayerState::Enemy, Terran_Armory) > 0)
-                    || (theSpy.upgradeLevel[UpgradeTypes::Charon_Boosters] > 0) && Util::getTime() < Time(10, 00)
-                    || (Util::getTime() < Time(7, 30) && Players::getVisibleCount(PlayerState::Enemy, Terran_Armory) > 0)
-                    || (Util::getTime() < Time(7, 30) && Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) >= 5)
-                    || (Util::getTime() < Time(8, 30) && Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) >= 8))
+                // Goliaths builds
+                if (completesBy(1, Terran_Armory, Time(4, 45))
+                    || completesBy(2, Terran_Goliath, Time(5, 00))
+                    || completesBy(4, Terran_Goliath, Time(5, 30))
+                    || completesBy(6, Terran_Goliath, Time(6, 00))
+                    || (theSpy.upgradeLevel[UpgradeTypes::Charon_Boosters] > 0) && Util::getTime() < Time(7, 15))
+                    theSpy.transition.name = "3FactGoliath";
+                if ((completesBy(1, Terran_Armory, Time(5, 15))
+                    || completesBy(3, Terran_Goliath, Time(6, 15))
+                    || completesBy(5, Terran_Goliath, Time(6, 45))
+                    || completesBy(7, Terran_Goliath, Time(7, 15))
+                    || (theSpy.upgradeLevel[UpgradeTypes::Charon_Boosters] > 0) && Util::getTime() < Time(8, 30)))
                     theSpy.transition.name = "5FactGoliath";
             }
-
-
-            // TvT
         }
     }
 

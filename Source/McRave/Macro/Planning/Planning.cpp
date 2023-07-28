@@ -845,21 +845,21 @@ namespace McRave::Planning {
                 return newPath.isReachable();
             };
 
-            for (auto &block : BWEB::Blocks::getBlocks()) {
-                if (Terrain::inTerritory(PlayerState::Self, block.getCenter())) {
-                    if (!reachable(block.getCenter())) {
-                        for_each(block.getLargeTiles().begin(), block.getLargeTiles().end(), [&](auto &t) { unreachablePositions.push_back(t); });
-                        for_each(block.getMediumTiles().begin(), block.getMediumTiles().end(), [&](auto &t) { unreachablePositions.push_back(t); });
-                        for_each(block.getSmallTiles().begin(), block.getSmallTiles().end(), [&](auto &t) { unreachablePositions.push_back(t); });
-                    }
-                }
-            }
-            for (auto &wall : BWEB::Walls::getWalls()) {
-                for (auto &def : wall.second.getDefenses()) {
-                    if (!reachable(Position(def)))
-                        unreachablePositions.push_back(def);
-                }
-            }
+            //for (auto &block : BWEB::Blocks::getBlocks()) {
+            //    if (Terrain::inTerritory(PlayerState::Self, block.getCenter())) {
+            //        if (!reachable(block.getCenter())) {
+            //            for_each(block.getLargeTiles().begin(), block.getLargeTiles().end(), [&](auto &t) { unreachablePositions.push_back(t); });
+            //            for_each(block.getMediumTiles().begin(), block.getMediumTiles().end(), [&](auto &t) { unreachablePositions.push_back(t); });
+            //            for_each(block.getSmallTiles().begin(), block.getSmallTiles().end(), [&](auto &t) { unreachablePositions.push_back(t); });
+            //        }
+            //    }
+            //}
+            //for (auto &wall : BWEB::Walls::getWalls()) {
+            //    for (auto &def : wall.second.getDefenses()) {
+            //        if (!reachable(Position(def)))
+            //            unreachablePositions.push_back(def);
+            //    }
+            //}
         }
 
         void validateDefenses()

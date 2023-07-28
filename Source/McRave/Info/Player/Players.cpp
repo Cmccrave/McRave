@@ -124,6 +124,8 @@ namespace McRave::Players
             removeUnit(bwUnit);
             storeUnit(bwUnit);
             BWEB::Map::addUsed(bwUnit->getTilePosition(), bwUnit->getType());   // Storing doesn't seem to re-add the used tiles right now
+            if (p->isSelf())
+                p->getTotalTypeCounts()[Zerg_Drone]--;    // And it seems sometimes we add an additional drone count
         }
 
         // Morphing into a Hatchery

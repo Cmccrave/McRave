@@ -17,31 +17,7 @@ namespace McRave::Combat::Navigation {
             return unit.hasCommander() && unit.getPosition().getDistance(unit.getCommander().lock()->getPosition()) > 64.0;
         }
 
-        Position getPathPoint(UnitInfo& unit, Position start)
-        {
-            // Create a pathpoint
-            auto pathPoint = start;
-            auto usedTile = BWEB::Map::isUsed(TilePosition(start));
-            if (!BWEB::Map::isWalkable(TilePosition(start), unit.getType()) || usedTile != UnitTypes::None) {
-                auto dimensions = usedTile != UnitTypes::None ? usedTile.tileSize() : TilePosition(1, 1);
-                auto closest = DBL_MAX;
-                for (int x = TilePosition(start).x - dimensions.x; x < TilePosition(start).x + dimensions.x + 1; x++) {
-                    for (int y = TilePosition(start).y - dimensions.y; y < TilePosition(start).y + dimensions.y + 1; y++) {
-                        auto tile = TilePosition(x, y);
-                        if (!tile.isValid())
-                            continue;
 
-                        auto center = Position(tile) + Position(16, 16);
-                        auto dist = center.getDistance(unit.getPosition());
-                        if (dist < closest && BWEB::Map::isWalkable(tile, unit.getType()) && BWEB::Map::isUsed(tile) == UnitTypes::None) {
-                            closest = dist;
-                            pathPoint = center;
-                        }
-                    }
-                }
-            }
-            return pathPoint;
-        }
     }
 
     void getRegroupPath(UnitInfo& unit)
@@ -66,7 +42,7 @@ namespace McRave::Combat::Navigation {
 
     void getGroundPath(UnitInfo& unit)
     {
-        auto pathPoint = unit.getFormation().isValid() ? getPathPoint(unit, unit.getFormation()) : getPathPoint(unit, unit.getDestination());
+        auto pathPoint = unit.getFormation().isValid() ? Util::getPathPoint(unit, unit.getFormation()) : Util::getPathPoint(unit, unit.getDestination());
         auto newPathNeeded = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)));
 
         if (newPathNeeded) {

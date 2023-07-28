@@ -44,6 +44,7 @@ namespace McRave::Roles {
                     closestWorker->setRole(Role::Combat);
                     closestWorker->setLocalState(lState);
                     closestWorker->setGlobalState(gState);
+                    closestWorker->setDestination(here);
                     forcedRoles[Role::Combat]++;
                     if (oldCombatWorkers.find(closestWorker) != oldCombatWorkers.end())
                         oldCombatWorkers.erase(closestWorker);
@@ -129,7 +130,7 @@ namespace McRave::Roles {
                 if (proxyDangerousBuilding && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(6, proxyDangerousBuilding->getPosition(), LocalState::Attack, GlobalState::Attack);
                 else if ((Spy::getEnemyOpener() == "8Rax" || Spy::enemyProxy()) && com(Zerg_Zergling) < 2 && Util::getTime() > Time(2, 00) && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) <= 2)
-                        forceCombatWorker(3, Position(Terrain::getNaturalChoke()->Center()), LocalState::Attack, GlobalState::Attack);
+                    forceCombatWorker(3, Position(Terrain::getNaturalChoke()->Center()), LocalState::Attack, GlobalState::Attack);
                 else if (proxyBuilding && com(Zerg_Zergling) <= 2 && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) == 0)
                     forceCombatWorker(1, proxyBuilding->getPosition(), LocalState::Attack, GlobalState::Attack);
             }

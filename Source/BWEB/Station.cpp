@@ -555,6 +555,8 @@ namespace BWEB {
             Broodwar->drawLineMap(base->Center(), anglePosition, Colors::Grey);
         }
 
+        Broodwar->drawCircleMap(resourceCentroid, 3, color, true);
+
         // Label angle
         Broodwar->drawTextMap(base->Center() - Position(0, 16), "BA: %c%.2f", Text::White, baseAngle);
         Broodwar->drawTextMap(base->Center(), "CA: %c%.2f", Text::White, chokeAngle);

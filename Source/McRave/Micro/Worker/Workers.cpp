@@ -61,7 +61,7 @@ namespace McRave::Workers {
 
                     // If unit is far, we need to check if it's safe
                     auto threatPosition = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
-                        return p.getDistance(unitTarget->getPosition()) < unitTarget->getGroundReach() && !Terrain::inTerritory(PlayerState::Self, p);
+                        return p.getDistance(unitTarget->getPosition()) < unitTarget->getGroundReach();
                     });
 
                     // If JPS path is safe

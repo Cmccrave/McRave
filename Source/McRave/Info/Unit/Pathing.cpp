@@ -37,30 +37,12 @@ namespace McRave::Pathing {
 
             // Create a binary search tree in a circle around the target
             else {
-                //auto source = unit.getPosition();
-                //auto tileSource = TilePosition(unit.getPosition());
-                //auto newSource = tileSource;
-                //auto tries = 0;
-                //while (!BWEB::Map::isWalkable(tileSource, Protoss_Dragoon) && tries < 10) {
-                //    auto closestDist = DBL_MAX;
-                //    tileSource = newSource;
-                //    for (auto x = -1; x <= 1; x++) {
-                //        for (auto y = -1; y <= 1; y++) {
-                //            auto newTile = tileSource + TilePosition(x, y);
-                //            auto dist = (Position(newTile) + Position(16, 16)).getDistance(target.getPosition());
-                //            if (dist < closestDist && BWEB::Map::isWalkable(tileSource, Protoss_Dragoon)) {
-                //                newSource = newTile;
-                //                closestDist = dist;
-                //            }
-                //        }
-                //    }
-                //    tries++;
-                //    source = Position(newSource) + Position(16, 16);
-                //}
                 const auto calc = [&](auto p) {
+                    if (!Util::findWalkable(unit, p, true))
+                        return DBL_MAX;
                     return BWEB::Map::getGroundDistance(p, unit.getPosition()) + BWEB::Map::getGroundDistance(p, target.getPosition());
                 };
-                auto engage = Util::findPointOnCircle(unit.getPosition(), target.getPosition(), range, calc);
+                auto engage = Util::findPointOnCircle(unit.getPosition(), target.getPosition(), range + 32.0, calc);
                 unit.setEngagePosition(engage.second);
                 unit.setEngDist(engage.first);
             }

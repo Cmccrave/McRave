@@ -58,7 +58,7 @@ namespace McRave::BuildOrder::Zerg {
             if (Spy::getEnemyOpener() == "8Rax")
                 initialValue = 10;
             else
-                initialValue = com(Zerg_Lair) * 6;
+                initialValue = 6;
         }
 
         // RaxFact
@@ -73,7 +73,7 @@ namespace McRave::BuildOrder::Zerg {
 
         if (Spy::getEnemyTransition() == "WorkerRush")
             return 24;
-        return 0;
+        return 6;
     }
 
     void ZvT2HatchMuta()
@@ -129,7 +129,7 @@ namespace McRave::BuildOrder::Zerg {
         planEarly =                                     hatchCount() < 3 && s >= 26;
 
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + (total(Zerg_Mutalisk) >= 9);
-        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 3 && total(Zerg_Zergling) >= 6) + (s >= 44 && vis(Zerg_Drone) >= 20);
+        buildQueue[Zerg_Extractor] =                    (s >= 28 && vis(Zerg_Drone) >= 11) + (s >= 44 && vis(Zerg_Drone) >= 20);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + (atPercent(Zerg_Spire, 0.5) * 3);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        (s >= 42 && atPercent(Zerg_Lair, 0.80));
@@ -191,6 +191,57 @@ namespace McRave::BuildOrder::Zerg {
         armyComposition[Zerg_Zergling] =                0.80;
     }
 
+    void ZvT6HatchCrackling()
+    {
+        // Uhhh, yeah who knows what this build is
+        inTransition =                                  vis(Zerg_Lair) > 0;
+        inOpening =                                     true;
+        inBookSupply =                                  vis(Zerg_Overlord) < 8 || total(Zerg_Mutalisk) < 9;
+        firstUpgrade =                                  vis(Zerg_Lair) > 0 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        firstUnit =                                     Zerg_Mutalisk;
+        unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 24 : unitLimits[Zerg_Drone];
+        unitLimits[Zerg_Zergling] =                     total(Zerg_Mutalisk) < 0 ? lingsNeeded_ZvP() : INT_MAX;
+
+        wantThird =                                     !Spy::enemyPressure() && !Spy::enemyRush() && Spy::getEnemyOpener() != "8Rax" && Spy::getEnemyBuild() != "RaxFact";
+        gasLimit =                                      (vis(Zerg_Drone) >= 11) ? gasMax() : 0;
+        planEarly =                                     wantThird && hatchCount() < 3 && Util::getTime() > Time(2, 30);
+
+        auto spireOverlords = (Spy::getEnemyTransition() == "Corsair" || Spy::getEnemyTransition() == "NeoBisu") ? (4 * (s >= 66)) : (3 * (s >= 66)) + (s >= 82);
+
+        if (vis(Zerg_Hive) > 0) {
+            unitLimits[Zerg_Drone] = 30;
+            firstUpgrade = UpgradeTypes::Adrenal_Glands;
+        }
+
+        if (com(Zerg_Hive) > 0)
+            gasLimit = 3;
+
+        // Build
+        buildQueue[Zerg_Hatchery] =                     2 + (s >= 28 && vis(Zerg_Drone) >= 11 && vis(Zerg_Extractor) > 0) + (com(Zerg_Hive) > 0) + 2 * (s >= 100);
+        buildQueue[Zerg_Extractor] =                    (s >= 28 && vis(Zerg_Drone) >= 11) + (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 21);
+        buildQueue[Zerg_Lair] =                         (s >= 32 && gas(100) && hatchCount() >= 3 && vis(Zerg_Overlord) >= 3);
+        buildQueue[Zerg_Spire] =                        (s >= 32 && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 16);
+        buildQueue[Zerg_Queens_Nest] =                  total(Zerg_Mutalisk) >= 9;
+        buildQueue[Zerg_Hive] =                         atPercent(Zerg_Queens_Nest, 0.95);
+        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + spireOverlords;
+
+        // Composition
+        if (com(Zerg_Hive) > 0 || vis(Zerg_Drone) >= 30) {
+            armyComposition[Zerg_Drone] =               0.00;
+            armyComposition[Zerg_Zergling] =            0.70;
+            armyComposition[Zerg_Mutalisk] =            0.30;
+        }
+        else if (com(Zerg_Spire) == 0 && lingsNeeded_ZvP() > vis(Zerg_Zergling)) {
+            armyComposition[Zerg_Drone] =               0.00;
+            armyComposition[Zerg_Zergling] =            1.00;
+        }
+        else if (vis(Zerg_Drone) < 30) {
+            armyComposition[Zerg_Drone] =               0.60;
+            armyComposition[Zerg_Zergling] =            0.00;
+            armyComposition[Zerg_Mutalisk] =            0.40;
+        }
+    }
+
     void ZvT()
     {
         defaultZvT();
@@ -227,6 +278,8 @@ namespace McRave::BuildOrder::Zerg {
                 ZvT2HatchSpeedling();
             if (currentTransition == "3HatchSpeedling")
                 ZvT3HatchSpeedling();
+            if (currentTransition == "6HatchCrackling")
+                ZvT6HatchCrackling();
         }
     }
 }

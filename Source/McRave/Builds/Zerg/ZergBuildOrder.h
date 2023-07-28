@@ -19,6 +19,8 @@ namespace McRave::BuildOrder::Zerg {
     void ZvFFA_HP();
 
     bool lingSpeed();
+    bool hydraSpeed();
+    bool hydraRange();
     bool gas(int);
     int gasMax();
     int capGas(int);

@@ -40,15 +40,17 @@ namespace McRave::Combat::Simulation {
         auto belowGrdtoAirLimit = false;
         auto belowAirtoAirLimit = false;
         auto belowAirtoGrdLimit = false;
-        auto engagedAlreadyOffset = unit.getSimState() == SimState::Win ? 0.2 : 0.0;
         auto unitTarget = unit.getTarget().lock();
+        auto somethingEngaged = false;
 
         // Check if any allied unit is below the limit to synchronize sim values
-        for (auto &a : Units::getUnits(PlayerState::Self)) {
-            UnitInfo &self = *a;
+        for (auto &u : Units::getUnits(PlayerState::Self)) {
+            UnitInfo &self = *u;
 
             if (self.hasTarget()) {
                 auto selfTarget = self.getTarget().lock();
+                if (self.isWithinRange(*selfTarget))
+                    somethingEngaged = true;
                 if (selfTarget == unitTarget && self.getSimValue() <= minThreshold && self.getSimValue() != 0.0) {
                     self.isFlying() ?
                         (selfTarget->isFlying() ? belowAirtoAirLimit = true : belowAirtoGrdLimit = true) :
@@ -56,11 +58,22 @@ namespace McRave::Combat::Simulation {
                 }
             }
         }
-        for (auto &a : Units::getUnits(PlayerState::Ally)) {
-            UnitInfo &ally = *a;
+        for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+            UnitInfo &enemy = *u;
+
+            if (enemy.hasTarget()) {
+                auto enemyTarget = enemy.getTarget().lock();
+                if (enemy.isWithinRange(*enemyTarget))
+                    somethingEngaged = true;
+            }
+        }
+        for (auto &u : Units::getUnits(PlayerState::Ally)) {
+            UnitInfo &ally = *u;
 
             if (ally.hasTarget()) {
                 auto allyTarget = ally.getTarget().lock();
+                if (ally.isWithinRange(*allyTarget))
+                    somethingEngaged = true;
                 if (ally.getTarget() == unit.getTarget() && ally.getSimValue() <= minThreshold && ally.getSimValue() != 0.0) {
                     ally.isFlying() ?
                         (allyTarget->isFlying() ? belowAirtoAirLimit = true : belowAirtoGrdLimit = true) :
@@ -68,11 +81,12 @@ namespace McRave::Combat::Simulation {
                 }
             }
         }
+        auto engagedAlreadyOffset = somethingEngaged ? 0.2 : 0.0;
 
         // If above/below thresholds, it's a sim win/loss
         if (unit.getSimValue() >= maxThreshold - engagedAlreadyOffset)
             unit.setSimState(SimState::Win);
-        else if (unit.getSimValue() < minThreshold - engagedAlreadyOffset || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
+        else if (unit.getSimValue() < minThreshold || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
             unit.setSimState(SimState::Loss);
 
         // Check for hardcoded directional losses
@@ -110,8 +124,8 @@ namespace McRave::Combat::Simulation {
 
         // Z
         if (Players::ZvP()) {
-            minWinPercent = 0.9;
-            maxWinPercent = 1.3;
+            minWinPercent = 1.0;
+            maxWinPercent = 1.4;
         }
         if (Players::ZvZ()) {
             minWinPercent = 0.8;
@@ -168,12 +182,13 @@ namespace McRave::Combat::Simulation {
         }
 
         // Adjust winrates if we have static defense that would make the fight easier
-        if (Util::getTime() < Time(8, 00) && !unit.isFlying() && com(Zerg_Sunken_Colony) > 0) {
-            const auto closestSunken = Util::getClosestUnit(unit.getRetreat(), PlayerState::Self, [&](auto &u) {
-                return u->getType() == Zerg_Sunken_Colony && u->isCompleted();
+        if (Util::getTime() < Time(8, 00) && !unit.isFlying() && com(Zerg_Sunken_Colony) > 0 && (unit.getGlobalState() == GlobalState::Retreat || unit.getGlobalState() == GlobalState::ForcedRetreat)) {
+            const auto defendStation = Stations::getClosestStationAir(unit.getRetreat(), PlayerState::Self);
+            const auto furthestSunk = Util::getFurthestUnit(unit.getRetreat(), PlayerState::Self, [&](auto &u) {
+                return u->getType() == Zerg_Sunken_Colony && u->isCompleted() && Terrain::inArea(defendStation->getBase()->GetArea(), u->getPosition());
             });
-            if (closestSunken) {
-                if (closestSunken->isWithinRange(target)) {
+            if (furthestSunk) {
+                if (furthestSunk->isWithinRange(target)) {
                     minWinPercent = 0.0;
                     maxWinPercent = 0.0;
                 }

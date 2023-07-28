@@ -170,20 +170,29 @@ namespace McRave::Terrain {
             groundCleanupPositions.clear();
             airCleanupPositions.clear();
 
-            // Look at every TilePosition and sort by furthest oldest
-            auto best = 0.0;
-            for (int x = 0; x < Broodwar->mapWidth(); x++) {
-                for (int y = 0; y < Broodwar->mapHeight(); y++) {
-                    auto t = TilePosition(x, y);
-                    auto p = Position(t) + Position(16, 16);
+            // If any base hasn't been visited in past 5 minutes
+            for (auto &base : allBases) {
+                auto frameDiff = (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(base->Center()));
+                if (frameDiff > 7200 || !Broodwar->isExplored(TilePosition(base->Center())))
+                    groundCleanupPositions.push_back(base->Center());
+            }
 
-                    if (!Broodwar->isBuildable(t))
-                        continue;
+            // If any reachable tile hasn't been visited in past 5 minutes
+            if (groundCleanupPositions.empty()) {
+                auto best = 0.0;
+                for (int x = 0; x < Broodwar->mapWidth(); x++) {
+                    for (int y = 0; y < Broodwar->mapHeight(); y++) {
+                        auto t = TilePosition(x, y);
+                        auto p = Position(t) + Position(16, 16);
 
-                    auto frameDiff = (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(t));
-                    if (frameDiff > 2880) {
-                        groundCleanupPositions.push_back(p);
-                        airCleanupPositions.push_back(p);
+                        if (!Broodwar->isBuildable(t) || !BWEB::Map::isWalkable(t, Protoss_Dragoon))
+                            continue;
+
+                        auto frameDiff = (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(t));
+                        if (frameDiff > 7200 || !Broodwar->isExplored(t)) {
+                            groundCleanupPositions.push_back(p);
+                            airCleanupPositions.push_back(p);
+                        }
                     }
                 }
             }

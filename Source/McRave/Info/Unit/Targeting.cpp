@@ -36,12 +36,13 @@ namespace McRave::Targets {
 
             if (Util::getTime() < Time(8, 00)) {
                 return unit.getType().isWorker()
-                    || Spy::getEnemyTransition() == "WorkerRush"
-                    || target.hasAttackedRecently()
                     || unit.getGroundRange() > 32.0
+                    || unit.attemptingRunby()
+                    || target.hasAttackedRecently()
+                    || target.hasRepairedRecently()
                     || target.isThreatening()
                     || (target.getUnitsTargetingThis().empty() && !Players::ZvZ())
-                    || unit.attemptingRunby()
+                    || Spy::getEnemyTransition() == "WorkerRush"
                     || Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
             }
             return true;
@@ -110,8 +111,18 @@ namespace McRave::Targets {
                     auto anythingSupply = !Players::ZvZ() && Players::getSupply(PlayerState::Enemy, Races::None) < 20;
                     auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
 
-                    if (Spy::getEnemyTransition() == "ZealotRush" && target.getType() == Protoss_Zealot && Util::getTime() < Time(9, 00))
+                    if (Players::ZvP() && Spy::getEnemyTransition() == "ZealotRush" && target.getType() == Protoss_Zealot && Util::getTime() < Time(9, 00))
                         return Priority::Major;
+                    if (Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
+                        return Priority::Major;
+
+                    auto priorityAfterInfo = Terrain::foundEnemy() ? Priority::Trivial : Priority::Ignore;
+                    if (!anythingTime && !defendExpander) {
+                        if (!Players::ZvZ() && !unit.canOneShot(target) && !unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding() && !target.getType().isWorker())
+                            return priorityAfterInfo;
+                        if ((enemyCanHitAir || enemyCanHitGround) && !target.canAttackAir() && !target.canAttackGround())
+                            return priorityAfterInfo;
+                    }
                 }
 
                 // Scourge
@@ -173,16 +184,6 @@ namespace McRave::Targets {
                 // Add bonus for expansion killing
                 if (target.getType().isResourceDepot() && !Players::ZvZ() && (Util::getTime() > Time(8, 00) || Spy::enemyGreedy()) && !unit.isLightAir())
                     return 5000.0;
-
-                // Add bonus for a building that is undefended
-                if (unit.isLightAir() && target.getType().isBuilding() && ((unit.getUnitsInRangeOfThis().empty() && unit.isWithinRange(target)) || target.canAttackAir())) {
-
-                    auto closestDefense = Util::getClosestUnit(target.getPosition(), PlayerState::Enemy, [&](auto &u) {
-                        return u->getType().isBuilding() && u->canAttackAir();
-                    });
-                    if (!closestDefense || closestDefense->getPosition().getDistance(target.getPosition()) > 96.0)
-                        return (1.0 + double(target.unit()->exists() && target.unit()->isUpgrading()));
-                }
 
                 // Add penalty for targeting workers under defenses
                 if (unit.isLightAir() && target.getType().isWorker() && !target.hasRepairedRecently()) {
@@ -252,10 +253,10 @@ namespace McRave::Targets {
             };
 
             const auto priorityScore = [&]() {
-                if (!target.getType().isWorker() && !target.isThreatening() && ((!target.canAttackAir() && unit.isFlying()) || (!target.canAttackGround() && !unit.isFlying())))
-                    return target.getPriority() / 4.0;
-                if (target.getType().isWorker() && !Spy::enemyProxy() && !Spy::enemyPossibleProxy() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
-                    return target.getPriority() / 10.0;
+                //if (!target.getType().isWorker() && !target.isThreatening() && ((!target.canAttackAir() && unit.isFlying()) || (!target.canAttackGround() && !unit.isFlying())))
+                //    return target.getPriority() / 4.0;
+                //if (target.getType().isWorker() && !Spy::enemyProxy() && !Spy::enemyPossibleProxy() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
+                //    return target.getPriority() / 10.0;
                 return target.getPriority();
             };
 
@@ -312,7 +313,8 @@ namespace McRave::Targets {
                     return 0.1 / dist;
                 return 1.0 / dist;
             }
-
+            if (unit.getType() == Zerg_Mutalisk)
+                Broodwar->drawTextMap(target.getPosition(), "%.2f", targetScore / dist);
             return targetScore / dist;
         }
 

@@ -20,6 +20,8 @@ namespace McRave::Util {
     BWAPI::Position clipLine(BWAPI::Position, BWAPI::Position);
     BWAPI::Position clipPosition(BWAPI::Position);
 
+    BWAPI::Position getPathPoint(UnitInfo&, BWAPI::Position);
+
     Time getTime();
 
     void onStart();
@@ -45,7 +47,7 @@ namespace McRave::Util {
     }
 
     template<typename F>
-    UnitInfo*  getFurthestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
+    UnitInfo* getFurthestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
         auto distBest = 0.0;
         auto &units = Units::getUnits(player);
         UnitInfo* best = nullptr;
@@ -153,7 +155,7 @@ namespace McRave::Util {
     }
 
     template<typename F>
-    BWAPI::Position findPointOnPath(BWEB::Path& path, F &&pred, int cnt = INT_MAX) {
+    BWAPI::Position findPointOnPath(BWEB::Path& path, F &&pred) {
         BWAPI::TilePosition last = BWAPI::TilePositions::Invalid;
 
         // For each TilePosition on the path

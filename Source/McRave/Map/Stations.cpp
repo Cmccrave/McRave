@@ -276,6 +276,8 @@ namespace McRave::Stations
                         desiredDefenses = max(desiredDefenses, 2 * int(Util::getTime() > Time(3, 40)));
                     if (Spy::getEnemyTransition() == "3HatchSpeedling" && vis(Zerg_Spire) > 0)
                         desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(5, 30)));
+                    if (Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling) && Util::getTime() > Time(3, 40) && vis(Zerg_Spire) > 0)
+                        desiredDefenses = max(desiredDefenses, 1);
                 }
             }
 

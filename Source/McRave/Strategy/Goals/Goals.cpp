@@ -17,6 +17,15 @@ namespace McRave::Goals {
 
         map<UnitInfo*, pair<Position, GoalType>> oldGoals;
 
+        struct GoalTarget {
+            Position center = Positions::Invalid;
+            GoalType gtype;
+            map<UnitType, int> currentTypeCounts;
+            map<UnitType, int> desiredTypeCounts;
+
+            GoalTarget() {};
+        };
+
         template <class T>
         void assignNumberToGoal(T t, UnitType type, int count, GoalType gType = GoalType::None)
         {

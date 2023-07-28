@@ -6,23 +6,25 @@ using namespace UnitTypes;
 
 namespace McRave::Combat::Destination {
 
-    namespace {
-
-        vector<BWEB::Station*> combatScoutOrder;
-    }
-
     void getCleanupPosition(UnitInfo& unit)
     {
         // Finish off positions that are old
-        if (Util::getTime() > Time(1, 00)) {
-            auto &list = unit.isFlying() ? Terrain::getAirCleanupPositions() : Terrain::getGroundCleanupPositions();
-            if (!list.empty()) {
-                unit.setDestination(*list.begin());
-                list.erase(remove_if(list.begin(), list.end(), [&](auto &p) {
-                    return unit.getPosition().getDistance(p) < 160.0;
-                }), list.end());
+        auto &list = unit.isFlying() ? Terrain::getAirCleanupPositions() : Terrain::getGroundCleanupPositions();
+        auto posBest = Positions::Invalid;
+        if (!list.empty()) {
+            auto distBest = DBL_MAX;
+            for (auto &pos : list) {
+                const auto dist = pos.getDistance(unit.getPosition());
+                if (dist < distBest) {
+                    distBest = dist;
+                    posBest = pos;
+                }
             }
         }
+        if (posBest.isValid())
+            unit.setDestination(posBest);
+        else
+            unit.setDestination(Terrain::getMainPosition());
     }
 
     void updateRetreat(UnitInfo& unit)
@@ -30,19 +32,12 @@ namespace McRave::Combat::Destination {
         unit.setRetreat(Positions::Invalid);
         auto retreat = Stations::getClosestRetreatStation(unit);
 
-        // 1 Base - Retreat is Main
-        // 2 Base - Retreat first is main choke
-        // 2 Base - Retreat second is natural
-        // x Base - Closest retreat station
         if (Stations::getStations(PlayerState::Self).size() == 1)
             unit.setRetreat(Terrain::getMainPosition());
         else if (retreat)
             unit.setRetreat(retreat->getBase()->Center());
         else
             unit.setRetreat(Terrain::getMainPosition());
-
-        if (unit.unit()->isSelected())
-            Broodwar->drawLineMap(unit.getPosition(), unit.getRetreat(), Colors::Green);
     }
 
     void updateDestination(UnitInfo& unit)
@@ -71,7 +66,7 @@ namespace McRave::Combat::Destination {
                 unit.setDestination(unit.getTarget().lock()->getPosition());
             }
         }
-        else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
+        else if (unit.getLocalState() == LocalState::Retreat || unit.getLocalState() == LocalState::ForcedRetreat || unit.getGlobalState() == GlobalState::Retreat || unit.getGlobalState() == GlobalState::ForcedRetreat) {
             if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Defend) {
                 unit.setDestination(unit.getGoal());
                 //Visuals::drawLine(unit.getPosition(), unit.getGoal(), Colors::Yellow);

@@ -117,28 +117,6 @@ namespace McRave::Combat::Clusters {
             }
         }
 
-        Position getPathPoint(UnitInfo& unit, Position start)
-        {
-            // Create a pathpoint
-            auto pathPoint = start;
-            auto usedTile = BWEB::Map::isUsed(TilePosition(start));
-            if (!BWEB::Map::isWalkable(TilePosition(start), unit.getType()) || usedTile != UnitTypes::None) {
-                auto dimensions = usedTile != UnitTypes::None ? usedTile.tileSize() : TilePosition(1, 1);
-                auto closest = DBL_MAX;
-                for (int x = TilePosition(start).x - dimensions.x; x < TilePosition(start).x + dimensions.x + 1; x++) {
-                    for (int y = TilePosition(start).y - dimensions.y; y < TilePosition(start).y + dimensions.y + 1; y++) {
-                        auto center = Position(TilePosition(x, y)) + Position(16, 16);
-                        auto dist = center.getDistance(unit.getPosition());
-                        if (dist < closest && BWEB::Map::isWalkable(TilePosition(x, y), unit.getType()) && BWEB::Map::isUsed(TilePosition(x, y)) == UnitTypes::None) {
-                            closest = dist;
-                            pathPoint = center;
-                        }
-                    }
-                }
-            }
-            return pathPoint;
-        }
-
         void getCommander(Cluster& cluster)
         {
             // Check if a commander previously existed within a similar cluster
@@ -174,21 +152,21 @@ namespace McRave::Combat::Clusters {
         void pathCluster(Cluster& cluster, double dist)
         {
             auto commander = cluster.commander.lock();
-            auto marchPathPoint = getPathPoint(*commander, cluster.marchPosition);
+            auto marchPathPoint = Util::getPathPoint(*commander, cluster.marchPosition);
             BWEB::Path newMarchPath(commander->getPosition(), marchPathPoint, commander->getType());
             newMarchPath.generateJPS([&](const TilePosition &t) { return newMarchPath.unitWalkable(t);  });
             cluster.marchPath = newMarchPath;
-            //Visuals::drawPath(cluster.marchPath);
+            Visuals::drawPath(cluster.marchPath);
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.marchNavigation = cluster.marchPosition;
             const auto march = Util::findPointOnPath(cluster.marchPath, [&](Position p) {
-                return p.getDistance(commander->getPosition()) >= max(160.0, dist - 32.0);
+                return p.getDistance(cluster.avgPosition) >= dist;
             });
             if (march.isValid())
                 cluster.marchNavigation = march;
 
-            auto retreatPathPoint = getPathPoint(*commander, cluster.retreatPosition);
+            auto retreatPathPoint = Util::getPathPoint(*commander, cluster.retreatPosition);
             BWEB::Path newRetreatPath(commander->getPosition(), retreatPathPoint, commander->getType());
             newRetreatPath.generateJPS([&](const TilePosition &t) { return newRetreatPath.unitWalkable(t);  });
             cluster.retreatPath = newRetreatPath;
@@ -197,22 +175,10 @@ namespace McRave::Combat::Clusters {
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.retreatNavigation = cluster.retreatPosition;
             const auto retreat = Util::findPointOnPath(cluster.retreatPath, [&](Position p) {
-                return p.getDistance(commander->getPosition()) >= max(160.0, dist - 32.0);
+                return p.getDistance(cluster.avgPosition) >= dist;
             });
             if (retreat.isValid())
                 cluster.retreatNavigation = retreat;
-        }
-
-        void mergeClusters(Cluster& cluster1, Cluster& cluster2)
-        {
-            auto commander1 = cluster1.commander.lock();
-            auto commander2 = cluster2.commander.lock();
-            auto commander = (commander1->getPosition().getDistance(cluster1.avgPosition) < commander2->getPosition().getDistance(cluster1.avgPosition)) ? commander1 : commander2;
-
-            cluster1.units.insert(cluster1.units.end(), cluster2.units.begin(), cluster2.units.end());
-            cluster1.commander = commander;
-            cluster2.units.clear();
-            cluster2.commander.reset();
         }
 
         void finishClusters()
@@ -232,8 +198,8 @@ namespace McRave::Combat::Clusters {
                     }
 
                     // Calculate rough spacing of the clustered units for formation and find path points
-                    cluster.spacing = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0)) + (cluster.mobileCluster ? 16.0 : 0.0);
-                    auto dist = min(commander->getRetreatRadius(), (count * cluster.spacing / arcRads));
+                    cluster.spacing = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0)) + (cluster.mobileCluster ? 2.0 : 0.0);
+                    auto dist = max(96.0, min(commander->getRetreatRadius(), (count * cluster.spacing / arcRads)));
                     pathCluster(cluster, dist);
                 }
             }
@@ -258,17 +224,36 @@ namespace McRave::Combat::Clusters {
                 auto oldCommander = cluster.commander.lock();
                 if (!oldCommander || oldCommander->getGlobalState() == GlobalState::ForcedRetreat || oldCommander->getLocalState() == LocalState::ForcedRetreat)
                     getCommander(cluster);
+            }
+        }
 
+        void shapeClusters()
+        {
+            for (auto &cluster : clusters) {
                 if (auto commander = cluster.commander.lock()) {
-                    cluster.mobileCluster = commander->getGlobalState() != GlobalState::Retreat || !Terrain::inTerritory(PlayerState::Self, commander->getPosition());
-                    cluster.marchPosition = (commander->getGlobalState() != GlobalState::Retreat && commander->hasTarget()) ? commander->getTarget().lock()->getPosition() : commander->getDestination();
-                    cluster.retreatPosition = commander->getRetreat();
-                    cluster.commandShare = commander->isLightAir() ? CommandShare::Exact : CommandShare::Parallel;
-                    cluster.shape = commander->isLightAir() ? Shape::None : Shape::Concave;
+                    const auto retreatCluster = commander->getGlobalState() == GlobalState::Retreat || commander->getGlobalState() == GlobalState::ForcedRetreat;
+
+                    // Determine the directions of the cluster and whether it's moving
+                    if (Terrain::inTerritory(PlayerState::Self, commander->getPosition()) && retreatCluster) {
+                        cluster.mobileCluster = false;
+                        cluster.marchPosition = commander->getDestination();
+                        cluster.retreatPosition = commander->getRetreat();
+                    }
+                    else {
+                        cluster.mobileCluster = true;
+                        cluster.marchPosition = commander->getDestination();
+                        cluster.retreatPosition = commander->getRetreat();
+                    }
+
+                    // Determine how commands are sent out
+                    if (commander->isLightAir())
+                        cluster.commandShare = CommandShare::Exact;                    
+                    else
+                        cluster.commandShare = CommandShare::Parallel;
 
                     // Determine the shape we want
                     if (!commander->isLightAir() && !commander->isSuicidal()) {
-                        if (!cluster.mobileCluster && Combat::holdAtChoke() && commander->getGlobalState() == GlobalState::Retreat)
+                        if (!cluster.mobileCluster && Combat::holdAtChoke() && retreatCluster)
                             cluster.shape = Shape::Choke;
                         else
                             cluster.shape = Shape::Concave;
@@ -300,6 +285,7 @@ namespace McRave::Combat::Clusters {
         createNodes();
         runDBSCAN();
         createClusters();
+        shapeClusters();
         finishClusters();
         //drawClusters();
     }

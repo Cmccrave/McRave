@@ -120,7 +120,7 @@ namespace McRave::Walls {
             // 2Gate
             if (Spy::getEnemyBuild() == "2Gate" && Util::getTime() < Time(5, 30) && !Spy::enemyProxy()) {
                 if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
-                    return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 15))
+                    return (Util::getTime() > Time(3, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 10))
                     + (!threeHatch && Util::getTime() > Time(4, 40));
                 if (Spy::getEnemyOpener() == "10/15")
@@ -128,7 +128,7 @@ namespace McRave::Walls {
                     + (!threeHatch && Util::getTime() > Time(4, 30))
                     + (!threeHatch && Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown")
-                    return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 15))
+                    return (firstHatchNeeded && Util::getTime() > Time(3, 15))
                     + (!threeHatch && Util::getTime() > Time(4, 00))
                     + (!threeHatch && Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
@@ -186,19 +186,13 @@ namespace McRave::Walls {
                 && Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) == 0;
             auto noExpandOrTech = noExpand && noTech;
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
-            auto firstHatchNeeded = !threeHatch || BuildOrder::getCurrentOpener() == "12Hatch";
-
-            // 3 hatch builds make lings instead of sunkens
-            auto initial = threeHatch ? -2 : 1;
-            if (threeHatch && int(vis(Zerg_Zergling) < 24) && int(vis(Zerg_Drone) < 20))
-                return 0;
 
             // 1 base transitions
             if (Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") {
 
                 // 4Gate
                 if (Spy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(9, 00)) {
-                    return initial
+                    return (Util::getTime() > Time(4, 00))
                         + (Util::getTime() > Time(4, 10))
                         + (noExpand && Util::getTime() > Time(4, 40))
                         + (noExpand && Util::getTime() > Time(5, 10))
@@ -210,8 +204,8 @@ namespace McRave::Walls {
                 }
 
                 // DT
-                if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "DT") {
-                    return initial
+                if (Spy::getEnemyTransition() == "DT") {
+                    return (Util::getTime() > Time(4, 00))
                         + (noExpand && Util::getTime() > Time(4, 15))
                         + (noExpand && Util::getTime() > Time(5, 00))
                         + (noExpand && Util::getTime() > Time(5, 20))
@@ -219,15 +213,15 @@ namespace McRave::Walls {
                 }
 
                 // Corsair
-                if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "Corsair") {
-                    return initial
+                if (Spy::getEnemyTransition() == "Corsair") {
+                    return (Util::getTime() > Time(4, 00))
                         + (noExpand && Util::getTime() > Time(4, 30))
                         + (noExpand && Util::getTime() > Time(7, 00));
                 }
 
                 // Speedlot
-                if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "Speedlot") {
-                    return initial
+                if (Spy::getEnemyTransition() == "Speedlot") {
+                    return (Util::getTime() > Time(4, 00))
                         + (noExpand && Util::getTime() > Time(4, 00))
                         + (noExpand && Util::getTime() > Time(4, 30))
                         + (noExpand && Util::getTime() > Time(5, 00))
@@ -235,8 +229,8 @@ namespace McRave::Walls {
                 }
 
                 // Zealot flood
-                if (Util::getTime() < Time(8, 30) && Spy::getEnemyTransition() == "ZealotRush") {
-                    return initial
+                if (Spy::getEnemyTransition() == "ZealotRush") {
+                    return (Util::getTime() > Time(4, 00))
                         + (noExpand && Util::getTime() > Time(4, 00))
                         + (noExpand && Util::getTime() > Time(4, 30))
                         + (noExpand && Util::getTime() > Time(5, 00))
@@ -246,22 +240,22 @@ namespace McRave::Walls {
                 }
 
                 // Unknown + Expand + No Tech
-                if (Util::getTime() > Time(7, 00) && Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown") {
-                    return initial
-                        + (noTech && Util::getTime() > Time(7, 00))
-                        + (noTech && Util::getTime() > Time(7, 30))
-                        + (noTech && Util::getTime() > Time(8, 00))
-                        + (noTech && Util::getTime() > Time(8, 30));
+                if (noTech && Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown") {
+                    return (Util::getTime() > Time(4, 00))
+                        + (Util::getTime() > Time(4, 30))
+                        + (Util::getTime() > Time(5, 00))
+                        + (Util::getTime() > Time(8, 00))
+                        + (Util::getTime() > Time(8, 30));
                 }
 
                 // Unknown + No Expand + No Tech
-                if (Util::getTime() > Time(5, 00) && noExpandOrTech) {
-                    return initial
-                        + (noExpandOrTech && Util::getTime() > Time(5, 20))
-                        + (noExpandOrTech && Util::getTime() > Time(5, 40))
-                        + (noExpandOrTech && Util::getTime() > Time(6, 00))
-                        + (noExpandOrTech && Util::getTime() > Time(6, 00))
-                        + (noExpandOrTech && Util::getTime() > Time(6, 30));
+                if (noExpandOrTech) {
+                    return (Util::getTime() > Time(4, 00))
+                        + (Util::getTime() > Time(4, 30))
+                        + (Util::getTime() > Time(5, 00))
+                        + (Util::getTime() > Time(5, 20))
+                        + (Util::getTime() > Time(5, 40))
+                        + (Util::getTime() > Time(6, 00));
                 }
             }
             return 0;
@@ -325,6 +319,9 @@ namespace McRave::Walls {
             if (Spy::getEnemyTransition() == "5FacGoliath")
                 return 5 * (Util::getTime() > Time(11, 00));
 
+            if (Spy::getEnemyTransition() == "3FacGoliath")
+                return 3 * (Util::getTime() > Time(8, 00));
+
             if (Spy::getEnemyTransition() == "2PortWraith")
                 return 2 * (Util::getTime() > Time(5, 30));
 
@@ -336,44 +333,28 @@ namespace McRave::Walls {
 
         int groundDefensesNeededZvP(BWEB::Wall& wall) {
 
-            // Try to see what we expect based on 1st Zealot push out
-            if (Spy::getEnemyBuild() == "Unknown" && wall.getGroundDefenseCount() == 0) {
-                auto closestZealot = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
-                    return u->getType() == Protoss_Zealot;
-                });
-                if (closestZealot && closestZealot->timeArrivesWhen() < Time(3, 50) && BWEB::Map::getGroundDistance(closestZealot->getPosition(), Terrain::getNaturalPosition()) < 640.0)
-                    return (Util::getTime() > Time(2, 50));
-            }
-
             // Determine how much we have traded
             auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot)
                 + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);
 
             // Make at least one sunken once if below criteria fulfilled
             auto minimum = 0;
-            if ((Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
-                || Players::getTotalCount(PlayerState::Self, Zerg_Zergling) >= 24
-                || Players::getTotalCount(PlayerState::Self, Zerg_Drone) >= 30
-                || Players::getTotalCount(PlayerState::Self, Zerg_Lair) > 0))
-                minimum = 1 + (Spy::getEnemyTransition() == "4Gate");
+            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2
+                || Players::getTotalCount(PlayerState::Self, Zerg_Drone) >= 30)
+                minimum = 1;
 
-            auto hydraBuild = BuildOrder::getCurrentTransition().find("Hydra") != string::npos;
-            auto expected = hydraBuild ? 0 : max(ZvPOpener(wall), ZvPTransition(wall)) - max(0, unitsKilled / 4);
+            auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
+            auto expected = max(ZvPOpener(wall), ZvPTransition(wall)) - max(0, unitsKilled / 4);
+
+            if (threeHatch)
+                expected /= 2;
 
             return max(minimum, expected);
         }
 
         int groundDefensesNeededZvT(BWEB::Wall& wall)
         {
-            // TODO: Try to see what we expect the 1st Vulture or 3rd Marine
-            if (Spy::getEnemyBuild() == "Unknown" && wall.getGroundDefenseCount() == 0) {
-                if (Spy::whenArrival(3, Terran_Marine) - Time(0, 24) < Time(0, 00))
-                    return 1;
-                if (Spy::whenArrival(1, Terran_Vulture) - Time(0, 24) < Time(0, 00))
-                    return 1;
-            }
-
             // Determine how much we have traded
             auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Terran_Marine)
                 + Players::getDeadCount(PlayerState::Enemy, Terran_Firebat)

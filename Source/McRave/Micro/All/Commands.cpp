@@ -168,8 +168,8 @@ namespace McRave::Command {
 
             // Combat will attack when in range
             if (unit.getRole() == Role::Combat) {
-                if (unit.getType() == Zerg_Mutalisk && unit.isWithinRange(*unitTarget) && unit.canStartAttack() && !unit.isWithinAngle(*unitTarget))
-                    return false;
+                //if (unit.getType() == Zerg_Mutalisk && unit.isWithinRange(*unitTarget) && unit.canStartAttack() && !unit.isWithinAngle(*unitTarget))
+                //    return false;
                 if (unit.attemptingSurround())
                     return false;
                 return unit.isWithinRange(*unitTarget) && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack);
@@ -467,7 +467,7 @@ namespace McRave::Command {
                     return false;
 
                 if (unit.getType() == Zerg_Zergling || unit.getType() == Protoss_Corsair
-                    || (unit.getGroundRange() < 32.0 && unit.getAirRange() < 32.0))
+                    || (unit.getGroundRange() <= 32.0 && unit.getAirRange() <= 32.0))
                     return false;
 
                 if (unit.getType() == Protoss_Zealot && Util::getTime() < Time(4, 00) && Players::PvZ())

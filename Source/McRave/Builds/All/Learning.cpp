@@ -161,7 +161,7 @@ namespace McRave::Learning {
 
                 }
             };
-            auto randomness = max(1, 50 - totalGames);
+            auto randomness = max(1, 10 - totalGames);
 
             const auto calculateUCB = [&](int w, int l) {
                 auto UCB = (w + l) > 0 ? (double(w) / double(w + l)) + pow(2.0 * log((double)totalGames) / double(w + l), 0.1) : 1.0;
@@ -258,7 +258,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "3HatchMuta");
+                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "4HatchHydra");
                     return;
                 }
             }
