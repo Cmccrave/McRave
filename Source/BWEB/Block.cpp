@@ -484,6 +484,8 @@ namespace BWEB::Blocks
             multimap<double, TilePosition> tilesByPathDist;
             multimap<double, TilePosition> inverseTilesByPathDist;
             for (auto &station : Stations::getStations()) {
+                if (station.isNatural())
+                    continue;
                 for (int x = 0; x < Broodwar->mapWidth(); x++) {
                     for (int y = 0; y < Broodwar->mapHeight(); y++) {
                         const TilePosition t(x, y);

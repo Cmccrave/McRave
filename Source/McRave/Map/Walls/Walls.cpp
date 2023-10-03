@@ -50,8 +50,8 @@ namespace McRave::Walls {
             // Zerg wall parameters
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 tight = false;
-                defenses.insert(defenses.end(), 20, Zerg_Creep_Colony);
-                //buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber };
+                defenses ={ Zerg_Sunken_Colony };
+                buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber };
             }
         }
 

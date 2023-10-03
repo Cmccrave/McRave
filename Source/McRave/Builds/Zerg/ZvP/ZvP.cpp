@@ -238,7 +238,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 50) + (s >= 60) + (s >= 74);
 
         // Composition
-        if (total(Zerg_Hydralisk) == 0 && lingsNeeded_ZvP() > vis(Zerg_Zergling)) {
+        if (total(Zerg_Hydralisk) == 0 && hatchCount() < 4 && lingsNeeded_ZvP() > vis(Zerg_Zergling)) {
             armyComposition[Zerg_Drone] =               0.00;
             armyComposition[Zerg_Zergling] =            1.00;
             armyComposition[Zerg_Hydralisk] =           0.00;

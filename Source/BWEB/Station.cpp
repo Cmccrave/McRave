@@ -312,7 +312,7 @@ namespace BWEB {
         }
 
         auto cnt = 0;
-        if (main || natural)
+        if (main)
             cnt = 1;
         if (!main && !natural)
             cnt = 2;

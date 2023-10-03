@@ -3,6 +3,7 @@
 
 using namespace std;
 using namespace BWAPI;
+using namespace UnitTypes;
 
 namespace BWEB {
 
@@ -19,6 +20,8 @@ namespace BWEB {
 
         int resourceGrid[256][256];
         int existingDefenseGrid[256][256];
+
+        vector<TilePosition> testTiles;
 
         int tilesWithinArea(BWEM::Area const * area, const TilePosition here, const int width, const int height)
         {
@@ -701,6 +704,59 @@ namespace BWEB {
         if (rawBuildings.empty())
             return;
 
+        // For each piece, try to place it a known distance away depending on how the angles of chokes look        
+        if (Broodwar->self()->getRace() == Races::Zerg) {
+
+            auto closestMain = Stations::getClosestMainStation(station->getBase()->Location());
+            auto mainChoke = Position(closestMain->getChokepoint()->Center());
+
+            vector<TilePosition> tryOrder;
+            defenseArrangement = int(round(chokeAngle / 0.785)) % 4;
+            if (defenseArrangement == 0) { // 0/8 - Horizontal
+                tryOrder ={ {-4, -6}, {-3, -6}, {-2, -6}, {-1, -6}, {0, -6}, {1, -6}, {2, -6}, {3, -6} };
+            }
+            else if (defenseArrangement == 1 || defenseArrangement == 3) { // pi/4 - Angled
+                tryOrder ={ {-9, -2}, {-7, -4}, {-5, -6}, {-3, -8}, {0, -10}, {-3, -7}, {-2, -8}, {-1, -9} };
+            }
+            else if (defenseArrangement == 2) {  // pi/2 - Vertical
+                tryOrder ={ {-7, -4}, {-7, -3}, {-7, -2}, {-7, -1}, {-7, 0}, {-7, 1}, {-7, 2}, {-7, 3}, {-7, 4} };
+            }
+
+            // Flip them vertically / horizontally as needed
+            if (mainChoke.y < Position(choke->Center()).y) {
+                for (auto &placement : tryOrder)
+                    placement.y = -(placement.y);
+            }
+            if (mainChoke.x < Position(choke->Center()).x) {
+                for (auto &placement : tryOrder)
+                    placement.x = -(placement.x);
+            }
+
+            // Place a hatchery
+            for (auto placement : tryOrder) {
+                auto tile = station->getBase()->Location() + placement;
+                if (BWEB::Map::isPlaceable(Zerg_Hatchery, tile)) {
+                    addToWallPieces(tile, Zerg_Hatchery);
+                    Map::addReserve(tile, 4, 3);
+                    Map::addUsed(tile, Zerg_Hatchery);
+                    break;
+                }
+            }
+
+            // Place an evo
+            for (auto placement : tryOrder) {
+                auto tile = station->getBase()->Location() + placement;
+                if (BWEB::Map::isPlaceable(Zerg_Evolution_Chamber, tile)) {
+                    addToWallPieces(tile, Zerg_Evolution_Chamber);
+                    Map::addReserve(tile, 3, 2);
+                    Map::addUsed(tile, Zerg_Evolution_Chamber);
+                    break;
+                }
+            }
+
+            return;
+        }
+
         // For each permutation, try to make a wall combination that is better than the current best
         do {
             currentLayout.clear();
@@ -804,9 +860,22 @@ namespace BWEB {
         if (rawDefenses.empty() || !valid)
             return;
 
-        // Find a final path
-        if (openWall)
-            finalPath = findPathOut();
+        // Find a final path, but need a custom A* path that hugs the terrain
+        if (openWall) {
+
+            // Check that the path points are possible to reach
+            checkPathPoints();
+            const auto startCenter = Position(pathStart) + Position(16, 16);
+            const auto endCenter = Position(pathEnd) + Position(16, 16);
+            const auto biggestUnit = Broodwar->self()->getRace() == Races::Zerg ? UnitTypes::Zerg_Ultralisk : UnitTypes::Protoss_Dragoon;
+
+            const auto cost = [&](const TilePosition& tile) { return Map::mapBWEM.GetTile(tile).MinAltitude(); };
+            const auto walkable = [&](const auto &t) { return wallWalkable(t); };
+
+            // Get a new path
+            finalPath = Path(endCenter, startCenter, biggestUnit, false, false);
+            finalPath.generateAS(cost, walkable);
+        }
 
         auto left = Position(choke->Center()).x < base->Center().x;
         auto up = Position(choke->Center()).y < base->Center().y;
@@ -822,26 +891,19 @@ namespace BWEB {
             return true;
         };
 
-        map<int, vector<TilePosition>> wallPlacements;
-        defenseArrangement = int(round(chokeAngle / 0.785)) % 4;
-        
-        if (defenseArrangement == 0) { // 0/8
-            wallPlacements[1] ={ {-6,-6}, {-4, -6}, {-2, -6}, {0, -6}, {2, -6}, {4, -6}, {6, -6}, {8, -6} };
-            wallPlacements[2] ={ {-6,-4}, {-4, -4}, {-2, -4}, {0, -4}, {2, -4}, {4, -4}, {6, -4}, {8, -4} };
-            wallPlacements[3] ={ {-6, -2}, {-4, -2}, {-2, -2}, {0, -2}, {2, -2}, {4, -2}, {6, -2}, {8, -2} };
-            wallPlacements[4] ={ {-6, 0}, {-4, 0}, {-2, 0}, {4, 0}, {6, 0}, {8, 0} };
-        }        
-        else if (defenseArrangement == 1 || defenseArrangement == 3) { // pi/4
-            wallPlacements[1] ={ {-8, 0}, {-6, -2}, {-4, -4}, {-2, -6}, {0, -8} };
-            wallPlacements[2] ={ {-8, 2}, {-6, 0}, {-4, -2}, {-2, -4}, {0, -6}, {2, -8} };
-            wallPlacements[3] ={ {-6, 2}, {-4, 0}, {-2, -2}, {0, -4}, {2, -6} };
-            wallPlacements[4] ={ {-6, 4}, {-4, 2}, {-2, 0}, {0, -2}, {2, -4}, {4, -6} };
-        }        
-        else if (defenseArrangement == 2) {  // pi/2
-            wallPlacements[1] ={ {-6, 6}, {-6, 4}, {-6, 2}, {-6, 0}, {-6, -2}, {-6, -4}, {-6, -6} };
-            wallPlacements[2] ={ {-4, 6}, {-4, 4}, {-4, 2}, {-4, 0}, {-4, -2}, {-4, -4}, {-4, -6} };
-            wallPlacements[3] ={ {-2, 6}, {-2, 4}, {-2, 2}, {-2, 0}, {-2, -2}, {-2, -4}, {-2, -6} };
-            wallPlacements[4] ={ {0, 7}, {0, 5}, {0, 3}, {0, -2}, {0, -4}, {0, -6} };
+        map<int, vector<TilePosition>> wallPlacements;        
+
+        if (defenseArrangement == 0) { // 0/8 - Horizontal
+            wallPlacements[1] ={ {-4, -2}, {-2, -2}, {0, -2}, {2, -2}, {4, -2}, {6, -2} };
+            wallPlacements[2] ={ {-4, 0}, {-2, 0}, {4, 0}, {6, 0} };
+        }
+        else if (defenseArrangement == 1 || defenseArrangement == 3) { // pi/4 - Angled
+            wallPlacements[1] ={ {-4, 0}, {-2, -2}, {0, -4} };
+            wallPlacements[2] ={ {-4, 2}, {-2, 0}, {0, -2}, {2, -4} };
+        }
+        else if (defenseArrangement == 2) {  // pi/2 - Vertical
+            wallPlacements[1] ={ {-2, 4}, {-2, 2}, {-2, 0}, {-2, -2}, {-2, -4} };
+            wallPlacements[2] ={ {0, 5}, {0, 3}, {0, -2}, {0, -4} };
         }
 
         // Flip them vertically / horizontally as needed
@@ -1009,6 +1071,10 @@ namespace BWEB {
         set<Position> anglePositions;
         int color = Broodwar->self()->getColor();
         int textColor = color == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
+
+        for (auto tile : testTiles) {
+            Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Colors::White);
+        }
 
         // Draw boxes around each feature
         auto drawBoxes = true;

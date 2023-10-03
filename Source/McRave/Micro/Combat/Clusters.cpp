@@ -153,7 +153,7 @@ namespace McRave::Combat::Clusters {
         {
             auto commander = cluster.commander.lock();
             auto marchPathPoint = Util::getPathPoint(*commander, cluster.marchPosition);
-            BWEB::Path newMarchPath(commander->getPosition(), marchPathPoint, commander->getType());
+            BWEB::Path newMarchPath(cluster.avgPosition, marchPathPoint, commander->getType());
             newMarchPath.generateJPS([&](const TilePosition &t) { return newMarchPath.unitWalkable(t);  });
             cluster.marchPath = newMarchPath;
             Visuals::drawPath(cluster.marchPath);
@@ -161,13 +161,17 @@ namespace McRave::Combat::Clusters {
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.marchNavigation = cluster.marchPosition;
             const auto march = Util::findPointOnPath(cluster.marchPath, [&](Position p) {
+                if (mapBWEM.GetMiniTile(WalkPosition(p)).Altitude() * 4 < cluster.units.size()) {
+                    Visuals::drawBox(TilePosition(p), TilePosition(1, 1), Colors::Red);
+                    return false;
+                }
                 return p.getDistance(cluster.avgPosition) >= dist;
             });
             if (march.isValid())
                 cluster.marchNavigation = march;
 
             auto retreatPathPoint = Util::getPathPoint(*commander, cluster.retreatPosition);
-            BWEB::Path newRetreatPath(commander->getPosition(), retreatPathPoint, commander->getType());
+            BWEB::Path newRetreatPath(cluster.avgPosition, retreatPathPoint, commander->getType());
             newRetreatPath.generateJPS([&](const TilePosition &t) { return newRetreatPath.unitWalkable(t);  });
             cluster.retreatPath = newRetreatPath;
             //Visuals::drawPath(cluster.retreatPath);
@@ -175,6 +179,10 @@ namespace McRave::Combat::Clusters {
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.retreatNavigation = cluster.retreatPosition;
             const auto retreat = Util::findPointOnPath(cluster.retreatPath, [&](Position p) {
+                if (mapBWEM.GetMiniTile(WalkPosition(p)).Altitude() * 4 < cluster.units.size()) {
+                    Visuals::drawBox(TilePosition(p), TilePosition(1, 1), Colors::Red);
+                    return false;
+                }
                 return p.getDistance(cluster.avgPosition) >= dist;
             });
             if (retreat.isValid())
@@ -187,6 +195,7 @@ namespace McRave::Combat::Clusters {
                 if (auto commander = cluster.commander.lock()) {
                     auto count = int(cluster.units.size());
 
+                    // Calculate rough spacing of the clustered units for formation
                     auto fattestDimension = 0;
                     auto type = UnitTypes::None;
                     for (auto &unit : cluster.units) {
@@ -196,10 +205,13 @@ namespace McRave::Combat::Clusters {
                             type = unit->getType();
                         }
                     }
-
-                    // Calculate rough spacing of the clustered units for formation and find path points
                     cluster.spacing = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0)) + (cluster.mobileCluster ? 2.0 : 0.0);
-                    auto dist = max(96.0, min(commander->getRetreatRadius(), (count * cluster.spacing / arcRads)));
+
+                    
+                    auto sizeSpacing = cluster.spacing * count / 2.0;
+                    auto speedSpacing = commander->getSpeed() * 48;
+                    
+                    auto dist = min(sizeSpacing, speedSpacing);
                     pathCluster(cluster, dist);
                 }
             }
