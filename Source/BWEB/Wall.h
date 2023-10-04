@@ -44,6 +44,7 @@ namespace BWEB {
         void addDefenses();
         void scoreWall();
         void cleanup();
+        void tryLocations(std::vector<BWAPI::TilePosition>&, std::set<BWAPI::TilePosition>&, BWAPI::UnitType, bool, bool);
 
     public:
         Wall(const BWEM::Area * _area, const BWEM::ChokePoint * _choke, std::vector<BWAPI::UnitType> _buildings, std::vector<BWAPI::UnitType> _defenses, BWAPI::UnitType _tightType, bool _requireTight, bool _openWall) {

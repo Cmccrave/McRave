@@ -109,68 +109,68 @@ namespace BWEB {
 
         // Get partner choke
         const BWEM::ChokePoint * partnerChoke = nullptr;
-        if (!Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).empty()) {
+        if (main && !Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).empty()) {
             partnerChoke = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).front();
 
             // Partner only has one chokepoint means we have a shared choke with this path
             if (partnerBase->GetArea()->ChokePoints().size() == 1)
                 partnerChoke = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).back();
-        }
-
-        if (main && partnerChoke)
             choke = partnerChoke;
+            return;
+        }
 
-        else {
+        // Only one chokepoint in this area, otherwise find an ideal one
+        if (base->GetArea()->ChokePoints().size() == 1) {
+            choke = base->GetArea()->ChokePoints().front();
+            return;
+        }
 
-            // Only one chokepoint in this area
-            if (base->GetArea()->ChokePoints().size() == 1) {
-                choke = base->GetArea()->ChokePoints().front();
-                return;
-            }
+        // Find chokes between partner base and this base
+        set<BWEM::ChokePoint const *> nonChokes;
+        for (auto &choke : Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()))
+            nonChokes.insert(choke);
+        distBest = DBL_MAX;
+        const BWEM::Area* second = nullptr;
 
-            set<BWEM::ChokePoint const *> nonChokes;
-            for (auto &choke : Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()))
-                nonChokes.insert(choke);
+        // Iterate each neighboring area to get closest to this natural area
+        for (auto &area : base->GetArea()->AccessibleNeighbours()) {
+            auto center = area->Top();
+            const auto dist = Position(center).getDistance(Map::mapBWEM.Center());
 
-            auto distBest = DBL_MAX;
-            const BWEM::Area* second = nullptr;
-
-            // Iterate each neighboring area to get closest to this natural area
-            for (auto &area : base->GetArea()->AccessibleNeighbours()) {
-                auto center = area->Top();
-                const auto dist = Position(center).getDistance(Map::mapBWEM.Center());
-
-                bool wrongArea = false;
-                for (auto &choke : area->ChokePoints()) {
-                    if ((!choke->Blocked() && choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2)) <= 2) || nonChokes.find(choke) != nonChokes.end()) {
-                        wrongArea = true;
-                    }
-                }
-                if (wrongArea)
-                    continue;
-
-                if (center.isValid() && dist < distBest) {
-                    second = area;
-                    distBest = dist;
+            // Label areas that connect with partner
+            bool wrongArea = false;
+            for (auto &choke : area->ChokePoints()) {
+                if ((!choke->Blocked() && choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2)) <= 2) || nonChokes.find(choke) != nonChokes.end()) {
+                    wrongArea = true;
                 }
             }
+            if (wrongArea)
+                continue;
 
-            distBest = DBL_MAX;
-            for (auto &c : base->GetArea()->ChokePoints()) {
-                if (c->Blocked()
-                    || find(mainChokes.begin(), mainChokes.end(), c) != mainChokes.end()
-                    || c->Geometry().size() <= 3
-                    || (c->GetAreas().first != second && c->GetAreas().second != second))
-                    continue;
-
-                const auto dist = Position(c->Center()).getDistance(Position(partnerBase->Center()));
-                if (dist < distBest) {
-                    choke = c;
-                    distBest = dist;
-                }
+            if (center.isValid() && dist < distBest) {
+                second = area;
+                distBest = dist;
             }
         }
 
+        distBest = DBL_MAX;
+        for (auto &c : base->GetArea()->ChokePoints()) {
+            if (c->Blocked()
+                || find(mainChokes.begin(), mainChokes.end(), c) != mainChokes.end()
+                || c->Geometry().size() <= 3
+                || (c->GetAreas().first != second && c->GetAreas().second != second))
+                continue;
+
+            const auto dist = Position(c->Center()).getDistance(Position(partnerBase->Center()));
+            if (dist < distBest) {
+                choke = c;
+                distBest = dist;
+            }
+        }
+    }
+
+    void Station::findAngles()
+    {
         if (choke && !main)
             defenseCentroid = Position(choke->Center());
         if (choke)
@@ -179,18 +179,35 @@ namespace BWEB {
         // Create angles that dictate a lot about how the station is formed
         if (choke) {
             anglePosition = Position(choke->Center()) + Position(4, 4);
-            auto dist = min(640.0, getBase()->Center().getDistance(anglePosition));
-
+            auto dist = getBase()->Center().getDistance(anglePosition);
             baseAngle = Map::getAngle(make_pair(getBase()->Center(), anglePosition));
             chokeAngle = Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))));
 
             baseAngle = (round(baseAngle / 0.785)) * 0.785;
             chokeAngle = (round(chokeAngle / 0.785)) * 0.785;
 
-            auto baseMod = fmod(baseAngle + 1.57, 3.14);
-            auto chokeMod = fmod(chokeAngle, 3.14);
+            defenseAngle = baseAngle + 1.57;
 
-            defenseAngle = fmod((baseMod + chokeMod) / 2.0, 3.14);
+            if (base->GetArea()->ChokePoints().size() >= 3) {
+                const BWEM::ChokePoint * validSecondChoke = nullptr;
+                for (auto &otherChoke : base->GetArea()->ChokePoints()) {
+                    if (choke == otherChoke)
+                        continue;
+
+                    if ((choke->GetAreas().first == otherChoke->GetAreas().first && choke->GetAreas().second == otherChoke->GetAreas().second)
+                        || (choke->GetAreas().first == otherChoke->GetAreas().second && choke->GetAreas().second == otherChoke->GetAreas().first))
+                        validSecondChoke = otherChoke;
+                }
+
+                if (validSecondChoke)
+                    defenseAngle = (Map::getAngle(make_pair(Position(choke->Center()), Position(validSecondChoke->Center()))) + Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))))) / 2.0;
+            }
+
+            else if (dist >= 320.0 && !main && !natural) {
+                auto baseMod = fmod(baseAngle + 1.57, 3.14);
+                auto chokeMod = fmod(chokeAngle, 3.14);
+                defenseAngle = fmod((baseMod + chokeMod) / 2.0, 3.14);
+            }
         }
     }
 
@@ -452,28 +469,6 @@ namespace BWEB {
         vector<TilePosition> basePlacements;
         vector<TilePosition> geyserPlacements ={ {-2, -2}, {-2, 0}, {-2, 2}, {0, -2}, {0, 2}, {2, -2}, {2, 2}, {4, -2}, {4, 0}, {4, 2} };
         auto here = base->Location();
-
-        // Get angle of chokepoint
-        if (choke && base && (main || natural)) {
-            if (base->GetArea()->ChokePoints().size() >= 3) {
-                const BWEM::ChokePoint * validSecondChoke = nullptr;
-                for (auto &otherChoke : base->GetArea()->ChokePoints()) {
-                    if (choke == otherChoke)
-                        continue;
-
-                    if ((choke->GetAreas().first == otherChoke->GetAreas().first && choke->GetAreas().second == otherChoke->GetAreas().second)
-                        || (choke->GetAreas().first == otherChoke->GetAreas().second && choke->GetAreas().second == otherChoke->GetAreas().first))
-                        validSecondChoke = otherChoke;
-                }
-
-                if (validSecondChoke)
-                    defenseAngle = (Map::getAngle(make_pair(Position(choke->Center()), Position(validSecondChoke->Center()))) + Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))))) / 2.0;
-            }
-        }
-        else {
-            defenseCentroid = BWEB::Map::mapBWEM.Center();
-            defenseAngle = fmod(Map::getAngle(make_pair(Position(getBase()->Center()), defenseCentroid)), 3.14) + 1.57;
-        }
 
         // Generate defenses
         defenseArrangement = int(round(defenseAngle / 0.785)) % 4;

@@ -698,6 +698,50 @@ namespace BWEB {
         }
     }
 
+    void Wall::tryLocations(vector<TilePosition>& tryOrder, set<TilePosition>& insertList, UnitType type, bool flipVertical, bool flipHorizontal)
+    {
+        // Flip them vertically / horizontally as needed
+        if (flipVertical) {
+            for (auto &placement : tryOrder) {
+                auto diff = 3 - type.tileHeight();
+                placement.y = -(placement.y - diff);
+            }
+        }
+        if (flipHorizontal) {
+            for (auto &placement : tryOrder) {
+                auto diff = 4 - type.tileWidth();
+                placement.x = -(placement.x - diff);
+            }
+        }
+        
+        // Defense types place every possible tile
+        if (type.tileWidth() == 2 && type.tileHeight() == 2) {
+            for (auto placement : tryOrder) {
+                auto tile = station->getBase()->Location() + placement;
+                auto stationDefense = type.tileHeight() == 2 && type.tileHeight() == 2 && station->getDefenses().find(tile) != station->getDefenses().end();
+                if ((!Map::isReserved(tile, 2, 2) && BWEB::Map::isPlaceable(type, tile)) || stationDefense) {
+                    insertList.insert(tile);
+                    Map::addReserve(tile, type.tileWidth(), type.tileHeight());
+                    Map::addUsed(tile, type);
+                }
+            }
+        }
+
+        // Other types only need 1 unique spot
+        else {
+            for (auto placement : tryOrder) {
+                auto tile = station->getBase()->Location() + placement;
+                testTiles.push_back(tile);
+                if (BWEB::Map::isPlaceable(type, tile)) {
+                    insertList.insert(tile);
+                    Map::addReserve(tile, type.tileWidth(), type.tileHeight());
+                    Map::addUsed(tile, type);
+                    break;
+                }
+            }
+        }
+    }
+
     void Wall::addPieces()
     {
         // If not adding any buildings to the wall
@@ -706,54 +750,44 @@ namespace BWEB {
 
         // For each piece, try to place it a known distance away depending on how the angles of chokes look        
         if (Broodwar->self()->getRace() == Races::Zerg) {
-
             auto closestMain = Stations::getClosestMainStation(station->getBase()->Location());
-            auto mainChoke = Position(closestMain->getChokepoint()->Center());
-
-            vector<TilePosition> tryOrder;
+            auto mainChokeCenter = Position(closestMain->getChokepoint()->Center());
+            vector<TilePosition> hatchOrder;
+            vector<TilePosition> evoOrder;
+            auto flipOrder = false; // TODO: Right now we flip the opposite way so we always can get out            
+            auto flipHorizontal = false;
+            auto flipVertical = false;
             defenseArrangement = int(round(chokeAngle / 0.785)) % 4;
             if (defenseArrangement == 0) { // 0/8 - Horizontal
-                tryOrder ={ {-4, -6}, {-3, -6}, {-2, -6}, {-1, -6}, {0, -6}, {1, -6}, {2, -6}, {3, -6} };
+                hatchOrder      ={ {-4, -5}, {-3, -5}, {-2, -5}, {-1, -5}, {0, -5}, {1, -5}, {2, -5}, {3, -5}, {4, -5} };
+                evoOrder        ={ {-4, -4}, {-3, -4}, {-2, -4}, {-1, -4}, {0, -4}, {1, -4}, {2, -4}, {3, -4}, {4, -4} };
+                flipOrder       = mainChokeCenter.x > base->Center().x;
+                flipVertical    = base->Center().y < Position(choke->Center()).y;
             }
+            // TODO: these flips don't really work as intended
             else if (defenseArrangement == 1 || defenseArrangement == 3) { // pi/4 - Angled
-                tryOrder ={ {-9, -2}, {-7, -4}, {-5, -6}, {-3, -8}, {0, -10}, {-3, -7}, {-2, -8}, {-1, -9} };
+                hatchOrder      ={ {0, -7}, {-2, -5}, {-4, -3}, {-6, -1} };
+                evoOrder        ={ {1, -6}, {-1, -4}, {-3, -2}, {-5, 0} };
+                flipOrder       = (mainChokeCenter.x < base->Center().x && mainChokeCenter.y > base->Center().y) || (mainChokeCenter.x > base->Center().x && mainChokeCenter.y < base->Center().y);
+                flipVertical    = base->Center().y < Position(choke->Center()).y;
+                flipHorizontal  = base->Center().x < Position(choke->Center()).x;
             }
             else if (defenseArrangement == 2) {  // pi/2 - Vertical
-                tryOrder ={ {-7, -4}, {-7, -3}, {-7, -2}, {-7, -1}, {-7, 0}, {-7, 1}, {-7, 2}, {-7, 3}, {-7, 4} };
+                hatchOrder      ={ {-6, -4}, {-6, -3}, {-6, -2}, {-6, -1}, {-6, 0}, {-6, 1}, {-6, 2}, {-6, 3}, {-6, 4} };
+                evoOrder        ={ {-5, -4}, {-5, -3}, {-5, -2}, {-5, -1}, {-5, 0}, {-5, 1}, {-5, 2}, {-5, 3}, {-5, 4} };
+                flipOrder       = mainChokeCenter.y > base->Center().y;
+                flipHorizontal  = base->Center().x < Position(choke->Center()).x;
             }
 
-            // Flip them vertically / horizontally as needed
-            if (mainChoke.y < Position(choke->Center()).y) {
-                for (auto &placement : tryOrder)
-                    placement.y = -(placement.y);
-            }
-            if (mainChoke.x < Position(choke->Center()).x) {
-                for (auto &placement : tryOrder)
-                    placement.x = -(placement.x);
+            // Reverse order if these are "blocking" pieces to lengthen time to enter main
+            flipOrder = !flipOrder; // TODO: Right now we flip the opposite way so we always can get out        
+            if (flipOrder) {
+                std::reverse(hatchOrder.begin(), hatchOrder.end());
+                std::reverse(evoOrder.begin(), evoOrder.end());                
             }
 
-            // Place a hatchery
-            for (auto placement : tryOrder) {
-                auto tile = station->getBase()->Location() + placement;
-                if (BWEB::Map::isPlaceable(Zerg_Hatchery, tile)) {
-                    addToWallPieces(tile, Zerg_Hatchery);
-                    Map::addReserve(tile, 4, 3);
-                    Map::addUsed(tile, Zerg_Hatchery);
-                    break;
-                }
-            }
-
-            // Place an evo
-            for (auto placement : tryOrder) {
-                auto tile = station->getBase()->Location() + placement;
-                if (BWEB::Map::isPlaceable(Zerg_Evolution_Chamber, tile)) {
-                    addToWallPieces(tile, Zerg_Evolution_Chamber);
-                    Map::addReserve(tile, 3, 2);
-                    Map::addUsed(tile, Zerg_Evolution_Chamber);
-                    break;
-                }
-            }
-
+            tryLocations(evoOrder, mediumTiles, Zerg_Evolution_Chamber, flipVertical, flipHorizontal);
+            tryLocations(hatchOrder, largeTiles, Zerg_Hatchery, flipVertical, flipHorizontal);
             return;
         }
 
@@ -891,19 +925,24 @@ namespace BWEB {
             return true;
         };
 
-        map<int, vector<TilePosition>> wallPlacements;        
-
+        map<int, vector<TilePosition>> wallPlacements;
+        auto flipHorizontal = false;
+        auto flipVertical = false;
         if (defenseArrangement == 0) { // 0/8 - Horizontal
             wallPlacements[1] ={ {-4, -2}, {-2, -2}, {0, -2}, {2, -2}, {4, -2}, {6, -2} };
             wallPlacements[2] ={ {-4, 0}, {-2, 0}, {4, 0}, {6, 0} };
+            flipVertical = base->Center().y < Position(choke->Center()).y;
         }
         else if (defenseArrangement == 1 || defenseArrangement == 3) { // pi/4 - Angled
-            wallPlacements[1] ={ {-4, 0}, {-2, -2}, {0, -4} };
-            wallPlacements[2] ={ {-4, 2}, {-2, 0}, {0, -2}, {2, -4} };
+            wallPlacements[1] ={ {-4, 2}, {-2, 0}, {0, -2}, {2, -4}, {4, -6} };
+            wallPlacements[2] ={ {-4, 4}, {-2, 2}, {2, -2}, {4, -4} };
+            flipVertical    = base->Center().y < Position(choke->Center()).y;
+            flipHorizontal  = base->Center().x < Position(choke->Center()).x;
         }
         else if (defenseArrangement == 2) {  // pi/2 - Vertical
             wallPlacements[1] ={ {-2, 4}, {-2, 2}, {-2, 0}, {-2, -2}, {-2, -4} };
             wallPlacements[2] ={ {0, 5}, {0, 3}, {0, -2}, {0, -4} };
+            flipHorizontal  = base->Center().x < Position(choke->Center()).x;
         }
 
         // Flip them vertically / horizontally as needed
@@ -942,7 +981,6 @@ namespace BWEB {
                 }
             }
         }
-
 
         // Add station defenses to the set
         for (auto &defense : station->getDefenses())
@@ -1073,7 +1111,7 @@ namespace BWEB {
         int textColor = color == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
 
         for (auto tile : testTiles) {
-            Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), Colors::White);
+            Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(32, 32), Colors::White);
         }
 
         // Draw boxes around each feature

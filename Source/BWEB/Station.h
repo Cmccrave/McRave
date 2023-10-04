@@ -22,6 +22,7 @@ namespace BWEB {
 
         void initialize();
         void findChoke();
+        void findAngles();
         void findSecondaryLocations();
         void findDefenses();
         void findNestedDefenses();
@@ -42,6 +43,7 @@ namespace BWEB {
 
             initialize();
             findChoke();
+            findAngles();
             findSecondaryLocations();
             //findNestedDefenses();
             findDefenses();

@@ -12,7 +12,7 @@ namespace McRave::BuildOrder::Zerg {
     void defaultZvP() {
         inOpening =                                 true;
         inBookSupply =                              true;
-        wallNat =                                   hatchCount() >= 4;
+        wallNat =                                   hatchCount() >= 2;
         wallMain =                                  false;
         wantNatural =                               true;
         wantThird =                                 Util::getTime() < Time(2, 45) || Spy::getEnemyBuild() == "FFE";
