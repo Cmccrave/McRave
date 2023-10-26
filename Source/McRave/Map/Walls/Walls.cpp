@@ -106,34 +106,33 @@ namespace McRave::Walls {
 
         int ZvPOpener(BWEB::Wall& wall)
         {
-            // If we are opening 12 hatch into a 2h tech, we sometimes need a faster sunken
-            auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
-            auto firstHatchNeeded = !threeHatch || BuildOrder::getCurrentOpener() == "12Hatch";
+            // If we are opening 12 hatch, we sometimes need a faster sunken
+            auto firstHatchNeeded = BuildOrder::getCurrentOpener() == "12Hatch";
 
             // 1GateCore
             if (Spy::getEnemyBuild() == "1GateCore" || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
-                return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 45))
-                    + (!threeHatch && Util::getTime() > Time(4, 30))
-                    + (!threeHatch && Util::getTime() > Time(5, 00));
+                return (firstHatchNeeded && Util::getTime() > Time(3, 45))
+                    + (Util::getTime() > Time(4, 30))
+                    + (Util::getTime() > Time(5, 00));
             }
 
             // 2Gate
             if (Spy::getEnemyBuild() == "2Gate" && Util::getTime() < Time(5, 30) && !Spy::enemyProxy()) {
                 if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
                     return (Util::getTime() > Time(3, 15))
-                    + (!threeHatch && Util::getTime() > Time(4, 10))
-                    + (!threeHatch && Util::getTime() > Time(4, 40));
+                    + (Util::getTime() > Time(4, 10))
+                    + (Util::getTime() > Time(4, 40));
                 if (Spy::getEnemyOpener() == "10/15")
-                    return (!threeHatch && firstHatchNeeded && Util::getTime() > Time(3, 15))
-                    + (!threeHatch && Util::getTime() > Time(4, 30))
-                    + (!threeHatch && Util::getTime() > Time(5, 00));
+                    return (firstHatchNeeded && Util::getTime() > Time(3, 15))
+                    + (Util::getTime() > Time(4, 30))
+                    + (Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown")
                     return (firstHatchNeeded && Util::getTime() > Time(3, 15))
-                    + (!threeHatch && Util::getTime() > Time(4, 00))
-                    + (!threeHatch && Util::getTime() > Time(4, 45));
+                    + (Util::getTime() > Time(4, 00))
+                    + (Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
                     return (firstHatchNeeded && Util::getTime() > Time(3, 00))
-                    + (!threeHatch && Util::getTime() > Time(4, 30));
+                    + (Util::getTime() > Time(4, 30));
             }
 
             // FFE
@@ -185,7 +184,6 @@ namespace McRave::Walls {
                 && Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) == 0
                 && Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) == 0;
             auto noExpandOrTech = noExpand && noTech;
-            auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
 
             // 1 base transitions
             if (Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") {
@@ -347,7 +345,8 @@ namespace McRave::Walls {
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto expected = max(ZvPOpener(wall), ZvPTransition(wall)) - max(0, unitsKilled / 4);
 
-            if (threeHatch)
+            // Kind of hacky solution to build less with 3h
+            if (threeHatch && expected > 1)
                 expected /= 2;
 
             return max(minimum, expected);

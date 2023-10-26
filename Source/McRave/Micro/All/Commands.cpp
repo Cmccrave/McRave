@@ -20,8 +20,8 @@ namespace McRave::Command {
 
         double distance(UnitInfo& unit, WalkPosition w) {
             const auto p = Position(w) + Position(4, 4);
-            if (unit.getFormation().isValid() && unit.getPosition().getDistance(unit.getFormation()) < 320.0) {
-                return max(1.0, p.getDistance(unit.getFormation()));
+            if (unit.getFormation().isValid()) {
+                return p.getDistance(unit.getNavigation()) + log(p.getDistance(unit.getFormation()));
             }
             return max(1.0, p.getDistance(unit.getNavigation()));
         }
@@ -399,7 +399,7 @@ namespace McRave::Command {
                 return double(Grids::getAirThreat(p, PlayerState::Enemy));
             };
             auto calcPair = Util::findPointOnCircle(unit.getPosition(), unitTarget->getPosition(), maxRange, threatCalc);
-            kiteTowards = Util::extendLine(unitTarget->getPosition(), calcPair.second, kiteRange);
+            kiteTowards = Util::shiftTowards(unitTarget->getPosition(), calcPair.second, kiteRange);
         }
 
         const auto scoreFunction = [&](WalkPosition w) {
@@ -453,7 +453,7 @@ namespace McRave::Command {
             auto targetKitable = allyRange > enemyRange && enemyRange != 0 && allyRange != 0;
 
             if (unit.getRole() == Role::Worker)
-                return Util::getTime() < Time(3, 30) && !unit.getUnitsInRangeOfThis().empty();
+                return Util::getTime() < Time(3, 30) && !unit.getUnitsInReachOfThis().empty();
 
             if (unit.getRole() == Role::Combat || unit.getRole() == Role::Scout) {
 

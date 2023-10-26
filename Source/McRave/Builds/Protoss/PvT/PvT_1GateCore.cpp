@@ -17,7 +17,7 @@ namespace McRave::BuildOrder::Protoss {
             inTransition =                              total(Protoss_Robotics_Facility) > 0;
             inOpening =                                 s < 60;
             hideTech =                                      com(Protoss_Reaver) <= 0;
-            firstUnit =                                     Spy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
+            focusUnit =                                     Spy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
 
             buildQueue[Protoss_Nexus] =                     1 + (s >= 74);
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 60) + (s >= 62);
@@ -37,8 +37,8 @@ namespace McRave::BuildOrder::Protoss {
             inTransition =                                  total(Protoss_Citadel_of_Adun) > 0;
             inOpening =                                     s <= 80;
             hideTech =                                      com(Protoss_Dark_Templar) <= 0;
-            firstUnit =                                     Protoss_Dark_Templar;
-            firstUpgrade =                                  vis(Protoss_Dark_Templar) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
+            focusUnit =                                     Protoss_Dark_Templar;
+            focusUpgrade =                                  vis(Protoss_Dark_Templar) >= 2 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
 
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (vis(Protoss_Templar_Archives) > 0);
             buildQueue[Protoss_Nexus] =                     1 + (vis(Protoss_Dark_Templar) > 0);
@@ -56,7 +56,7 @@ namespace McRave::BuildOrder::Protoss {
             // "https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)"
             inTransition =                              total(Protoss_Gateway) >= 4;
             inOpening =                                 s < 80;
-            firstUnit =                                     None;
+            focusUnit =                                     None;
 
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 30) + (2 * (s >= 62));
             buildQueue[Protoss_Assimilator] =               s >= 22;

@@ -8,81 +8,42 @@ namespace McRave::Support {
 
     namespace {
         set<Position> assignedOverlords;
+        set<UnitType> types ={ Zerg_Hydralisk, Zerg_Ultralisk, Protoss_Dragoon, Terran_Marine, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode };
 
         void updateCounters()
         {
             assignedOverlords.clear();
         }
 
-        void updateDestination(UnitInfo& unit)
+        void getSafeHome(UnitInfo& unit)
         {
             auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
             auto closestSpore = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 return u->getType() == Zerg_Spore_Colony;
             });
-            auto enemyAir = Spy::getEnemyTransition() == "Corsair"
-                || Spy::getEnemyTransition() == "2PortWraith"
-                || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
-            auto types ={ Zerg_Hydralisk, Zerg_Ultralisk, Protoss_Dragoon, Terran_Marine, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode };
-            auto followArmyPossible = any_of(types.begin(), types.end(), [&](auto &t) { return com(t) > 0; });
 
-            if (Util::getTime() < Time(7, 00) && Stations::getStations(PlayerState::Self).size() >= 2 && !Players::ZvZ())
-                closestStation = Terrain::getMyNatural();
-
-            // Set goal as destination
-            if (unit.getGoal().isValid() && unit.getUnitsTargetingThis().empty() && unit.getUnitsInRangeOfThis().empty())
-                unit.setDestination(unit.getGoal());
-
-            // Send Overlords to safety from enemy air
-            else if (unit.getType() == Zerg_Overlord && closestSpore && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy() || !followArmyPossible)) {
-                if (closestSpore) {
-                    unit.setDestination(closestSpore->getPosition());
-                    for (int x = -1; x <= 1; x++) {
-                        for (int y = -1; y <= 1; y++) {
-                            auto center = Position(closestSpore->getTilePosition() + TilePosition(x, y)) + Position(16, 16);
-                            auto closest = Util::getClosestUnit(center, PlayerState::Self, [&](auto &u) {
-                                return u->getType() == Zerg_Overlord;
-                            });
-                            if (closest && unit == *closest) {
-                                unit.setDestination(center);
-                                goto endloop;
-                            }
+            if (closestSpore) {
+                unit.setDestination(closestSpore->getPosition());
+                for (int x = -1; x <= 1; x++) {
+                    for (int y = -1; y <= 1; y++) {
+                        auto center = Position(closestSpore->getTilePosition() + TilePosition(x, y)) + Position(16, 16);
+                        auto closest = Util::getClosestUnit(center, PlayerState::Self, [&](auto &u) {
+                            return u->getType() == Zerg_Overlord;
+                        });
+                        if (closest && unit == *closest) {
+                            unit.setDestination(center);
+                            return;
                         }
                     }
                 }
-            endloop:;
             }
 
-            // Find the highest combat cluster that doesn't overlap a current support action of this UnitType
-            else if (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) {
-                auto highestCluster = 0.0;
-
-                auto closestPartner = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u->unit()->isCompleted() && find(types.begin(), types.end(), u->getType()) != types.end() && assignedOverlords.find(u->getPosition()) == assignedOverlords.end();
-                });
-
-                if (closestPartner) {
-                    assignedOverlords.insert(closestPartner->getPosition());
-                    unit.setDestination(closestPartner->getPosition());
-                }
-
-                // Move detectors between target and unit vs Terran
-                if (unit.getType().isDetector() && Players::PvT()) {
-                    if (unit.hasTarget())
-                        unit.setDestination((unit.getTarget().lock()->getPosition() + unit.getDestination()) / 2);
-                    else {
-                        auto closestEnemy = Util::getClosestUnit(unit.getDestination(), PlayerState::Enemy, [&](auto &u) {
-                            return !u->getType().isWorker() && !u->getType().isBuilding();
-                        });
-
-                        if (closestEnemy)
-                            unit.setDestination((closestEnemy->getPosition() + unit.getDestination()) / 2);
-                    }
-                }
+            if (Stations::needAirDefenses(Terrain::getMyNatural()) > 0) {
+                unit.setDestination(Terrain::getMyNatural()->getBase()->Center());
+                return;
             }
 
-            // Space them out near the station
-            else if (unit.getType() == Zerg_Overlord && closestStation && closestStation->getChokepoint() && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy() || enemyAir)) {
+            if (closestStation && closestStation->getChokepoint()) {
                 auto natDist = closestStation->getBase()->Center().getDistance(Position(closestStation->getChokepoint()->Center()));
                 auto chokeCenter = Position(closestStation->getChokepoint()->Center());
                 unit.setDestination(closestStation->getBase()->Center());
@@ -94,11 +55,77 @@ namespace McRave::Support {
                     }
                 }
             }
+        }
 
-            else if (Terrain::getMyNatural() && Stations::needAirDefenses(Terrain::getMyNatural()) > 0)
-                unit.setDestination(Terrain::getMyNatural()->getBase()->Center());
-            else if (closestStation)
-                unit.setDestination(closestStation->getBase()->Center());
+        void getArmyPlacement(UnitInfo& unit)
+        {
+            auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
+            auto distBest = DBL_MAX;
+            auto posBest = Positions::Invalid;
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                auto assignedDist = 320.0;
+                if (types.find(u->getType()) != types.end()) {
+                    for (auto &position : assignedOverlords)
+                        assignedDist = min(assignedDist, position.getDistance(u->getPosition()));
+                    auto dist = u->getPosition().getDistance(unit.getPosition()) / assignedDist;
+                    if (dist < distBest) {
+                        posBest = u->getPosition();
+                        distBest = dist;
+                    }
+                }
+            }
+            if (posBest.isValid())
+                unit.setDestination(posBest);
+
+            // Move detectors between target and unit vs Terran
+            if (unit.getType().isDetector() && Players::PvT()) {
+                if (unit.hasTarget())
+                    unit.setDestination((unit.getTarget().lock()->getPosition() + unit.getDestination()) / 2);
+                else {
+                    auto closestEnemy = Util::getClosestUnit(unit.getDestination(), PlayerState::Enemy, [&](auto &u) {
+                        return !u->getType().isWorker() && !u->getType().isBuilding();
+                    });
+
+                    if (closestEnemy)
+                        unit.setDestination((closestEnemy->getPosition() + unit.getDestination()) / 2);
+                }
+            }
+
+            // Move detectors between closest self station and destination if vulnerable
+            if (unit.getType() == Zerg_Overlord && closestStation) {
+                unit.setDestination(Util::shiftTowards(unit.getDestination(), closestStation->getBase()->Center(), 96.0));
+            }
+
+            // Assign placement
+            assignedOverlords.insert(unit.getDestination());
+        }
+
+        void updateDestination(UnitInfo& unit)
+        {
+            auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
+
+            auto enemyAir = Spy::getEnemyTransition() == "Corsair"
+                || Spy::getEnemyTransition() == "2PortWraith"
+                || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
+           
+            auto followArmyPossible = any_of(types.begin(), types.end(), [&](auto &t) { return com(t) > 0; });
+
+            if (Util::getTime() < Time(7, 00) && Stations::getStations(PlayerState::Self).size() >= 2 && !Players::ZvZ())
+                closestStation = Terrain::getMyNatural();
+
+            // Set goal as destination
+            if (unit.getGoal().isValid() && unit.getUnitsTargetingThis().empty() && unit.getUnitsInReachOfThis().empty())
+                unit.setDestination(unit.getGoal());
+
+            // Send support units to army
+            else if (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) {
+                getArmyPlacement(unit);
+            }
+
+            // Send Overlords to a safe home
+            else if (unit.getType() == Zerg_Overlord && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy() || !followArmyPossible || enemyAir)) {
+                getSafeHome(unit);
+            }
 
             if (!unit.getDestination().isValid())
                 unit.setDestination(Terrain::getMainPosition());

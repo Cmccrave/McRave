@@ -34,8 +34,8 @@ namespace McRave::Producing {
                 selfSupply             += type.supplyRequired() * cnt;
             }
 
-            auto mineralReserve         = (!BuildOrder::isTechUnit(unit) || Researching::hasIdleResearch() || Upgrading::hasIdleUpgrades()) ? reservedMineral + Researching::getReservedMineral() + Upgrading::getReservedMineral() : 0;
-            auto gasReserve             = (!BuildOrder::isTechUnit(unit) || Researching::hasIdleResearch() || Upgrading::hasIdleUpgrades()) ? reservedGas + Researching::getReservedGas() + Upgrading::getReservedGas() : 0;
+            auto mineralReserve         = (!BuildOrder::isFocusUnit(unit) || Researching::hasIdleResearch() || Upgrading::hasIdleUpgrades()) ? reservedMineral + Researching::getReservedMineral() + Upgrading::getReservedMineral() : 0;
+            auto gasReserve             = (!BuildOrder::isFocusUnit(unit) || Researching::hasIdleResearch() || Upgrading::hasIdleUpgrades()) ? reservedGas + Researching::getReservedGas() + Upgrading::getReservedGas() : 0;
             auto mineralAffordable      = unit.mineralPrice() == 0 || (selfMineral >= unit.mineralPrice() + Planning::getPlannedMineral() + mineralReserve);
             auto gasAffordable          = unit.gasPrice() == 0 || (selfGas >= unit.gasPrice() + Planning::getPlannedGas() + gasReserve);
             auto supplyAffordable       = unit.supplyRequired() == 0 || (selfSupply + unit.supplyRequired() <= Broodwar->self()->supplyTotal());
@@ -150,7 +150,7 @@ namespace McRave::Producing {
             // Determine whether we want reavers or shuttles
             bool needReavers = false;
             bool needShuttles = false;
-            if (!Spy::enemyInvis() && BuildOrder::isTechUnit(Protoss_Reaver)) {
+            if (!Spy::enemyInvis() && BuildOrder::isFocusUnit(Protoss_Reaver)) {
                 if ((Terrain::isIslandMap() && vis(unit) < 2 * vis(Protoss_Nexus))
                     || vis(Protoss_Shuttle) == 0
                     || vis(Protoss_Reaver) > vis(Protoss_Shuttle) * 2
@@ -291,7 +291,7 @@ namespace McRave::Producing {
                 }
 
                 // Else if this is a tech unit, add it to idle production
-                else if (BuildOrder::isTechUnit(bestType) && Broodwar->self()->getRace() != Races::Zerg && (Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= bestType.mineralPrice()) && (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= bestType.gasPrice())) {
+                else if (BuildOrder::isFocusUnit(bestType) && Broodwar->self()->getRace() != Races::Zerg && (Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= bestType.mineralPrice()) && (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= bestType.gasPrice())) {
                     trainedThisFrame[bestType]++;
                     idleProduction[building.unit()] = bestType;
                     reservedMineral += bestType.mineralPrice();
@@ -309,7 +309,7 @@ namespace McRave::Producing {
         {
             // Reserved resources for idle production
             for (auto &[unit, type] : idleProduction) {
-                if (BuildOrder::isTechUnit(type) && unit->exists()) {
+                if (BuildOrder::isFocusUnit(type) && unit->exists()) {
                     reservedMineral += type.mineralPrice();
                     reservedGas += type.gasPrice();
                 }
@@ -435,12 +435,12 @@ namespace McRave::Producing {
 
     double scoreUnit(UnitType type)
     {
-        if (BuildOrder::getTechUnit() == type && Broodwar->self()->getRace() != Races::Zerg)
+        if (BuildOrder::getFirstFocusUnit() == type && Broodwar->self()->getRace() != Races::Zerg)
             return DBL_MAX;
 
         // Check if we are saving larva but not for this type
         if (BuildOrder::getUnitReservation(type) == 0 && (BuildOrder::getUnitReservation(Zerg_Mutalisk) > 0 || BuildOrder::getUnitReservation(Zerg_Hydralisk) > 0)) {
-            auto larvaMinCost = (BuildOrder::getTechUnit().mineralPrice() * BuildOrder::getUnitReservation(Zerg_Mutalisk))
+            auto larvaMinCost = (BuildOrder::getFirstFocusUnit().mineralPrice() * BuildOrder::getUnitReservation(Zerg_Mutalisk))
                 + (Zerg_Hydralisk.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Hydralisk))
                 + (Zerg_Scourge.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Scourge));
 

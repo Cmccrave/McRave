@@ -45,22 +45,25 @@ namespace McRave::BuildOrder {
         inline std::string currentOpener = "";
         inline std::string currentTransition = "";
 
-        inline BWAPI::UpgradeType firstUpgrade = BWAPI::UpgradeTypes::None;
-        inline BWAPI::TechType firstTech = BWAPI::TechTypes::None;
-        inline BWAPI::UnitType firstUnit = BWAPI::UnitTypes::None;
-        inline BWAPI::UnitType techUnit = BWAPI::UnitTypes::None;
-        inline BWAPI::UnitType desiredDetection = BWAPI::UnitTypes::None;
-        inline std::vector<BWAPI::UnitType> techOrder;
-        inline std::set <BWAPI::UnitType> techList;
-        inline std::set <BWAPI::UnitType> unlockedType;
+        // Focus queue
+        inline BWAPI::UnitType focusUnit = BWAPI::UnitTypes::None;
+        inline BWAPI::UpgradeType focusUpgrade = BWAPI::UpgradeTypes::None;
+        inline BWAPI::TechType focusTech = BWAPI::TechTypes::None;
+        inline std::vector<BWAPI::UnitType> unitOrder;
+        inline std::vector<BWAPI::TechType> techOrder;
+        inline std::vector<BWAPI::UpgradeType> upgradeOrder;
 
+        // Focus complete
+        inline std::set <BWAPI::UnitType> focusUnits;
+
+        inline BWAPI::UnitType desiredDetection = BWAPI::UnitTypes::None;        
+        inline std::set <BWAPI::UnitType> unlockedType;
         inline std::map <BWAPI::UnitType, double> armyComposition;
     }
 
     double getCompositionPercentage(BWAPI::UnitType);
     std::map<BWAPI::UnitType, double> getArmyComposition();
     int buildCount(BWAPI::UnitType);
-    bool firstReady();
     bool unlockReady(BWAPI::UnitType);
 
     void onFrame();
@@ -76,15 +79,15 @@ namespace McRave::BuildOrder {
     bool atPercent(BWAPI::TechType, double);
 
     std::map<BWAPI::UnitType, int>& getBuildQueue();
-    BWAPI::UnitType getTechUnit();
-    BWAPI::UpgradeType getFirstUpgrade();
-    BWAPI::TechType getFirstTech();
-    std::set <BWAPI::UnitType>& getTechList();
+    std::map<BWAPI::UpgradeType, int>& getUpgradeQueue();
+    BWAPI::UnitType getFirstFocusUnit();
+    BWAPI::UpgradeType getFirstFocusUpgrade();
+    BWAPI::TechType getFirstFocusTech();
     std::set <BWAPI::UnitType>& getUnlockedList();
     int gasWorkerLimit();
     int getUnitReservation(BWAPI::UnitType);
     bool isUnitUnlocked(BWAPI::UnitType);
-    bool isTechUnit(BWAPI::UnitType);
+    bool isFocusUnit(BWAPI::UnitType);
     bool isOpener();
     bool takeNatural();
     bool takeThird();

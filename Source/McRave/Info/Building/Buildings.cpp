@@ -104,7 +104,7 @@ namespace McRave::Buildings {
             auto needLarvaSpending = vis(Zerg_Larva) > 3 && Broodwar->self()->supplyUsed() < Broodwar->self()->supplyTotal() && BuildOrder::getUnitReservation(Zerg_Mutalisk) == 0 && Util::getTime() < Time(4, 30) && com(Zerg_Sunken_Colony) > 2;
             auto morphType = UnitTypes::None;
             auto station = BWEB::Stations::getClosestStation(building.getTilePosition());
-            auto wall = BWEB::Walls::getClosestWall(building.getTilePosition());
+            auto wall = BWEB::Walls::getClosestWall(building.getPosition());
             auto plannedType = Planning::whatPlannedHere(building.getTilePosition());
 
             // Lair morphing

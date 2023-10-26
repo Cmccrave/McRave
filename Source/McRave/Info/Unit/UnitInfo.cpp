@@ -159,12 +159,23 @@ namespace McRave
             checkThreatening();
         }
 
+        // Create a list of units that are in reach of this unit
+        unitsInReachOfThis.clear();
+        if (getPlayer() == Broodwar->self()) {
+            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                auto &unit = *u;
+                if (((this->isFlying() && unit.canAttackAir()) || (!this->isFlying() && unit.canAttackGround())) && unit.isWithinReach(*this)) {
+                    unitsInReachOfThis.push_back(unit.weak_from_this());
+                }
+            }
+        }
+
         // Create a list of units that are in range of this unit
         unitsInRangeOfThis.clear();
         if (getPlayer() == Broodwar->self()) {
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 auto &unit = *u;
-                if (((this->isFlying() && unit.canAttackAir()) || (!this->isFlying() && unit.canAttackGround())) && unit.isWithinReach(*this)) {
+                if (((this->isFlying() && unit.canAttackAir()) || (!this->isFlying() && unit.canAttackGround())) && unit.isWithinRange(*this)) {
                     unitsInRangeOfThis.push_back(unit.weak_from_this());
                 }
             }

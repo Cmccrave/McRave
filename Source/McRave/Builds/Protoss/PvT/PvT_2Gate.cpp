@@ -17,9 +17,9 @@ namespace McRave::BuildOrder::Protoss {
             gasLimit =                                      Spy::getEnemyBuild() == "2Rax" && total(Protoss_Gateway) < 2 ? 0 : 3;
             inTransition =                                  total(Protoss_Citadel_of_Adun) > 0;
             inOpening =                                     s < 70;
-            firstUnit =                                     Protoss_Dark_Templar;
+            focusUnit =                                     Protoss_Dark_Templar;
             hideTech =                                      true;
-            firstUpgrade =                                  UpgradeTypes::None;
+            focusUpgrade =                                  UpgradeTypes::None;
 
             // Build
             buildQueue[Protoss_Nexus] =                     1 + (vis(Protoss_Templar_Archives) > 0);
@@ -35,7 +35,7 @@ namespace McRave::BuildOrder::Protoss {
         {
             inTransition =                                  total(Protoss_Robotics_Facility) > 0;
             inOpening =                                     s < 70;
-            firstUnit =                                     Protoss_Reaver;
+            focusUnit =                                     Protoss_Reaver;
 
             // Build
             buildQueue[Protoss_Nexus] =                     1;
@@ -55,7 +55,7 @@ namespace McRave::BuildOrder::Protoss {
         {
             inTransition =                                  total(Protoss_Nexus) >= 2;
             inOpening =                                     s < 100;
-            firstUnit =                                     None;
+            focusUnit =                                     None;
 
             // Build
             buildQueue[Protoss_Nexus] =                     1 + (s >= 50);

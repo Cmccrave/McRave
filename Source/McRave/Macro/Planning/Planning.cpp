@@ -29,7 +29,10 @@ namespace McRave::Planning {
             return builder;
         }
 
-        bool isPathable(UnitType building, TilePosition here) { return find(unreachablePositions.begin(), unreachablePositions.end(), here) == unreachablePositions.end(); }
+        bool isPathable(UnitType building, TilePosition here) 
+        {
+            return find(unreachablePositions.begin(), unreachablePositions.end(), here) == unreachablePositions.end(); 
+        }
 
         bool creepOrPowerReadyOnArrival(UnitType building, TilePosition here, UnitInfo& builder)
         {
@@ -460,13 +463,12 @@ namespace McRave::Planning {
 
                 // How to dictate row order
                 vector<int> desiredRowOrder ={ 1, 2 };
-
                 auto closestDefense = Util::getClosestUnit(Position(closestMain->getChokepoint()->Center()), PlayerState::Self, [&](auto &u) {
                     return isDefensiveType(u->getType());
                 });
                 if (closestDefense) {
                     desiredCenter = closestDefense->getPosition();
-                    for (int i = 4; i >= 1; i--) {
+                    for (int i = 2; i >= 1; i--) {
                         if (wall.getDefenses(i).find(closestDefense->getTilePosition()) != wall.getDefenses(i).end()) {
                             if (i == 1)
                                 desiredRowOrder.insert(desiredRowOrder.begin(), { i, i + 1 });

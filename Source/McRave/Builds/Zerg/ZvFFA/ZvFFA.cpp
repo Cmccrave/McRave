@@ -29,9 +29,9 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Drone] =                    INT_MAX;
 
         desiredDetection =                          Zerg_Overlord;
-        firstUpgrade =                              (vis(Zerg_Zergling) >= 6 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
-        firstTech =                                 TechTypes::None;
-        firstUnit =                                 None;
+        focusUpgrade =                              (vis(Zerg_Zergling) >= 6 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        focusTech =                                 TechTypes::None;
+        focusUnit =                                 None;
 
         armyComposition[Zerg_Drone] =               0.60;
         armyComposition[Zerg_Zergling] =            0.40;

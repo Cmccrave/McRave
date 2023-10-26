@@ -17,8 +17,8 @@ namespace McRave::BuildOrder::Zerg {
             inTransition =                              hatchCount() >= 3 || total(Zerg_Mutalisk) > 0;
             inOpening =                                 total(Zerg_Mutalisk) < 9;
             inBookSupply =                                  vis(Zerg_Overlord) < 8 || total(Zerg_Mutalisk) < 9;
-            firstUpgrade =                                  UpgradeTypes::None;
-            firstUnit =                                     Zerg_Mutalisk;
+            focusUpgrade =                                  UpgradeTypes::None;
+            focusUnit =                                     Zerg_Mutalisk;
             unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : 15 - hatchCount();
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvFFA();
             wantThird =                                     Spy::enemyFastExpand() || hatchCount() >= 3;

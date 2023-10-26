@@ -84,7 +84,7 @@ namespace McRave::BuildOrder::Terran {
             // If we're not in our opener
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                expandDesired = (techUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Terran_Command_Center) >= 3) && (techSat || com(Terran_Command_Center) >= 3) && productionSat)
+                expandDesired = (focusUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Terran_Command_Center) >= 3) && (techSat || com(Terran_Command_Center) >= 3) && productionSat)
                     || (com(Terran_Command_Center) >= 2 && availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated()))
                     || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2)
                     || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1);
@@ -103,7 +103,7 @@ namespace McRave::BuildOrder::Terran {
                 auto maxFacts = 8;
                 auto factsPerBase = 3;
                 productionSat = (vis(Terran_Factory) >= int(factsPerBase * vis(Terran_Command_Center)) || vis(Terran_Command_Center) >= maxFacts);
-                rampDesired = !productionSat && ((techUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
+                rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
                 if (rampDesired) {
                     auto factCount = min({ maxFacts, int(round(com(Terran_Command_Center) * factsPerBase)), vis(Terran_Factory) + 1 });
                     buildQueue[Terran_Factory] = factCount;
@@ -135,21 +135,21 @@ namespace McRave::BuildOrder::Terran {
 
     void tech()
     {
-        auto techVal = int(techList.size());
+        auto techVal = int(focusUnits.size());
         techSat = (techVal > vis(Terran_Command_Center));
-        techOrder ={ Terran_Vulture, Terran_Siege_Tank_Tank_Mode };
+        unitOrder ={ Terran_Vulture, Terran_Siege_Tank_Tank_Mode };
 
         if (techComplete())
-            techUnit = None;   
-        if (Spy::enemyInvis() || (!inOpening && !getTech && !techSat && techUnit == None))
+            focusUnit = None;   
+        if (Spy::enemyInvis() || (!inOpening && !getTech && !techSat && focusUnit == None))
             getTech = true;
 
         if (Players::TvZ())
-            techOrder ={ Terran_Medic, Terran_Science_Vessel, Terran_Siege_Tank_Tank_Mode };
+            unitOrder ={ Terran_Medic, Terran_Science_Vessel, Terran_Siege_Tank_Tank_Mode };
         if (Players::TvP())
-            techOrder ={ Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Science_Vessel };
+            unitOrder ={ Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Science_Vessel };
         if (Players::TvT())
-            techOrder ={ Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Science_Vessel };
+            unitOrder ={ Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Science_Vessel };
 
         getNewTech();
         getTechBuildings();
@@ -209,7 +209,7 @@ namespace McRave::BuildOrder::Terran {
                 if (!type.isBuilding() && type.getRace() == Races::Terran && vis(type) >= 2) {
                     unlockedType.insert(type);
                     if (!type.isWorker())
-                        techList.insert(type);
+                        focusUnits.insert(type);
                 }
             }
         }

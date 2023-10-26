@@ -10,7 +10,7 @@ namespace McRave::Upgrading {
         map <Unit, UpgradeType> idleUpgrade;
         int reservedMineral, reservedGas;
         int lastUpgradeFrame = -999;
-    
+
         void reset()
         {
             reservedMineral = 0;
@@ -32,7 +32,7 @@ namespace McRave::Upgrading {
                 return false;
 
             // First upgrade check
-            if (upgrade == BuildOrder::getFirstUpgrade() && Broodwar->self()->getUpgradeLevel(upgrade) == 0 && !Broodwar->self()->isUpgrading(upgrade))
+            if (upgrade == BuildOrder::getFirstFocusUpgrade() && Broodwar->self()->getUpgradeLevel(upgrade) == 0 && !Broodwar->self()->isUpgrading(upgrade))
                 return true;
 
             // Upgrades that require a building
@@ -60,12 +60,16 @@ namespace McRave::Upgrading {
         {
             using namespace UpgradeTypes;
 
-            // Allow first upgrade
-            if (upgrade == BuildOrder::getFirstUpgrade() && !BuildOrder::firstReady())
-                return true;
+            // If we have an upgrade order, follow it
+            for (auto &[u, cnt] : BuildOrder::getUpgradeQueue()) {
+                if (upgrade == u && !haveOrUpgrading(u, cnt))
+                    return true;
+            }
+            if (!BuildOrder::getUpgradeQueue().empty() && BuildOrder::isOpener())
+                return false;
 
             // Don't upgrade anything in opener if nothing is chosen
-            if (BuildOrder::getFirstUpgrade() == UpgradeTypes::None && BuildOrder::isOpener())
+            if (BuildOrder::getFirstFocusUpgrade() == UpgradeTypes::None && BuildOrder::isOpener() && BuildOrder::getUpgradeQueue().empty())
                 return false;
 
             // If this is a specific unit upgrade, check if it's unlocked
@@ -77,10 +81,10 @@ namespace McRave::Upgrading {
             }
 
             // If this isn't the first upgrade and we don't have our first tech/upgrade
-            if (upgrade != BuildOrder::getFirstUpgrade()) {
-                if (BuildOrder::getFirstUpgrade() != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(BuildOrder::getFirstUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder::getFirstUpgrade()))
+            if (upgrade != BuildOrder::getFirstFocusUpgrade()) {
+                if (BuildOrder::getFirstFocusUpgrade() != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(BuildOrder::getFirstFocusUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder::getFirstFocusUpgrade()))
                     return false;
-                if (BuildOrder::getFirstTech() != TechTypes::None && !Broodwar->self()->hasResearched(BuildOrder::getFirstTech()) && !Broodwar->self()->isResearching(BuildOrder::getFirstTech()))
+                if (BuildOrder::getFirstFocusTech() != TechTypes::None && !Broodwar->self()->hasResearched(BuildOrder::getFirstFocusTech()) && !Broodwar->self()->isResearching(BuildOrder::getFirstFocusTech()))
                     return false;
             }
 
@@ -132,7 +136,7 @@ namespace McRave::Upgrading {
 
                     // Air unit upgrades
                 case Protoss_Air_Weapons:
-                    return (vis(Protoss_Corsair) > 0 || vis(Protoss_Scout) > 0 || (vis(Protoss_Stargate) > 0 && BuildOrder::isTechUnit(Protoss_Carrier) && Players::vT()));
+                    return (vis(Protoss_Corsair) > 0 || vis(Protoss_Scout) > 0 || (vis(Protoss_Stargate) > 0 && BuildOrder::isFocusUnit(Protoss_Carrier) && Players::vT()));
                 case Protoss_Air_Armor:
                     return Broodwar->self()->getUpgradeLevel(Protoss_Air_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Air_Armor);
                 }
@@ -176,18 +180,18 @@ namespace McRave::Upgrading {
                 case Metabolic_Boost:
                     return vis(Zerg_Zergling) >= 20 || total(Zerg_Hive) > 0 || total(Zerg_Defiler_Mound) > 0;
                 case Muscular_Augments:
-                    return (BuildOrder::isTechUnit(Zerg_Hydralisk) && Players::ZvP()) || Broodwar->self()->getUpgradeLevel(Grooved_Spines) > 0;
+                    return (BuildOrder::isFocusUnit(Zerg_Hydralisk) && Players::ZvP()) || Broodwar->self()->getUpgradeLevel(Grooved_Spines) > 0;
                 case Pneumatized_Carapace:
                     return (Players::ZvT() && Spy::getEnemyTransition() == "2PortWraith")
                         || (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 160)
-                        || (Spy::enemyInvis() && (BuildOrder::isTechUnit(Zerg_Hydralisk) || BuildOrder::isTechUnit(Zerg_Ultralisk)))
+                        || (Spy::enemyInvis() && (BuildOrder::isFocusUnit(Zerg_Hydralisk) || BuildOrder::isFocusUnit(Zerg_Ultralisk)))
                         || (Players::getSupply(PlayerState::Self, Races::Zerg) >= 200);
                 case Anabolic_Synthesis:
                     return Players::getTotalCount(PlayerState::Enemy, Terran_Marine) < 20 || Broodwar->self()->getUpgradeLevel(Chitinous_Plating) > 0;
 
                     // Range upgrades
                 case Grooved_Spines:
-                    return (BuildOrder::isTechUnit(Zerg_Hydralisk) && !Players::ZvP()) || Broodwar->self()->getUpgradeLevel(Muscular_Augments) > 0;
+                    return (BuildOrder::isFocusUnit(Zerg_Hydralisk) && !Players::ZvP()) || Broodwar->self()->getUpgradeLevel(Muscular_Augments) > 0;
 
                     // Other upgrades
                 case Chitinous_Plating:
@@ -197,12 +201,14 @@ namespace McRave::Upgrading {
 
                     // Ground unit upgrades
                 case Zerg_Melee_Attacks:
-                    return (BuildOrder::getCompositionPercentage(Zerg_Zergling) > 0.0 || BuildOrder::getCompositionPercentage(Zerg_Ultralisk) > 0.0) && Players::getSupply(PlayerState::Self, Races::Zerg) > 160 && (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Melee_Attacks) || Broodwar->self()->isUpgrading(Zerg_Carapace));
+                    return (BuildOrder::getCompositionPercentage(Zerg_Zergling) > 0.0 || BuildOrder::getCompositionPercentage(Zerg_Ultralisk) > 0.0)
+                        && Players::getSupply(PlayerState::Self, Races::Zerg) > 160
+                        && (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Melee_Attacks) || Broodwar->self()->isUpgrading(Zerg_Carapace));
                 case Zerg_Missile_Attacks:
-                    return (BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0 || BuildOrder::getCompositionPercentage(Zerg_Lurker) > 0.0) && (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Missile_Attacks) || Broodwar->self()->isUpgrading(Zerg_Carapace));
+                    return (BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0 || BuildOrder::getCompositionPercentage(Zerg_Lurker) > 0.0)
+                        && (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Missile_Attacks) || Broodwar->self()->isUpgrading(Zerg_Carapace));
                 case Zerg_Carapace:
-                    return (BuildOrder::getTechUnit() == Zerg_Ultralisk
-                        || BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0
+                    return (BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0
                         || BuildOrder::getCompositionPercentage(Zerg_Zergling) > 0.0
                         || BuildOrder::getCompositionPercentage(Zerg_Ultralisk) > 0.0) && Players::getSupply(PlayerState::Self, Races::Zerg) > 100;
 
@@ -236,7 +242,7 @@ namespace McRave::Upgrading {
             for (auto &upgrade : building.getType().upgradesWhat()) {
                 if (isCreateable(building.unit(), upgrade) && isSuitable(upgrade)) {
                     if (isAffordable(upgrade)) {
-                        building.setRemainingTrainFrame(upgrade.upgradeTime(Broodwar->self()->getUpgradeLevel(upgrade) + 1));
+                        building.setRemainingTrainFrame(upgrade.upgradeTime(Broodwar->self()->getUpgradeLevel(upgrade) + 1) + Broodwar->getLatencyFrames());
                         building.unit()->upgrade(upgrade);
                         lastUpgradeFrame = Broodwar->getFrameCount();
                         return true;
@@ -271,7 +277,7 @@ namespace McRave::Upgrading {
                 if (!building.unit()
                     || building.getRole() != Role::Production
                     || !building.unit()->isCompleted()
-                    || building.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
+                    || building.getRemainingTrainFrames() > 0
                     || Upgrading::upgradedThisFrame()
                     || Researching::researchedThisFrame()
                     || Producing::producedThisFrame()
@@ -283,7 +289,7 @@ namespace McRave::Upgrading {
         }
     }
 
-    void onFrame() 
+    void onFrame()
     {
         Visuals::startPerfTest();
         reset();

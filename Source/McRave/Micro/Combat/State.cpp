@@ -31,7 +31,8 @@ namespace McRave::Combat::State {
         if (BuildOrder::isUnitUnlocked(Zerg_Zergling) || vis(Zerg_Zergling) > 0) {
             const auto lingSpeed = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Metabolic_Boost);
             const auto crackling = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Adrenal_Glands);
-            const auto limitedTech = (!staticRetreatTypes.empty() && int(BuildOrder::getTechList().size()) == 1) || (total(Zerg_Hydralisk) == 0 && total(Zerg_Mutalisk) == 0);
+            const auto onlyLings = !BuildOrder::isUnitUnlocked(Zerg_Hydralisk) && !BuildOrder::isUnitUnlocked(Zerg_Mutalisk);
+            const auto limitedTech = (!staticRetreatTypes.empty() && onlyLings) || (total(Zerg_Hydralisk) < 12 && total(Zerg_Mutalisk) < 6);
 
             if (!crackling && !BuildOrder::isRush()) {
                 if (Players::ZvP()) {
@@ -225,7 +226,7 @@ namespace McRave::Combat::State {
 
         const auto insideRetreatRadius = distSim < unit.getRetreatRadius();
         const auto insideEngageRadius = distTarget < unit.getEngageRadius() && (unit.getGlobalState() == GlobalState::Attack || unit.getGlobalState() == GlobalState::ForcedAttack || atHome);
-        const auto exploringGoal = unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore && unit.getUnitsInRangeOfThis().empty() && Util::getTime() > Time(4, 00);
+        const auto exploringGoal = unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore && unit.getUnitsInReachOfThis().empty() && Util::getTime() > Time(4, 00);
 
         // Regardless of any decision, determine if Unit is in danger and needs to retreat
         if ((Actions::isInDanger(unit, unit.getPosition()) && !unit.isTargetedBySuicide())

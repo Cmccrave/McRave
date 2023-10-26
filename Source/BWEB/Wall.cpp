@@ -713,7 +713,7 @@ namespace BWEB {
                 placement.x = -(placement.x - diff);
             }
         }
-        
+
         // Defense types place every possible tile
         if (type.tileWidth() == 2 && type.tileHeight() == 2) {
             for (auto placement : tryOrder) {
@@ -783,7 +783,7 @@ namespace BWEB {
             flipOrder = !flipOrder; // TODO: Right now we flip the opposite way so we always can get out        
             if (flipOrder) {
                 std::reverse(hatchOrder.begin(), hatchOrder.end());
-                std::reverse(evoOrder.begin(), evoOrder.end());                
+                std::reverse(evoOrder.begin(), evoOrder.end());
             }
 
             tryLocations(evoOrder, mediumTiles, Zerg_Evolution_Chamber, flipVertical, flipHorizontal);
@@ -1252,29 +1252,41 @@ namespace BWEB::Walls {
         return nullptr;
     }
 
-    Wall* createOpenWall()
+    Wall* createProtossWall()
     {
-        return nullptr;
+        vector<UnitType> buildings ={ Protoss_Forge, Protoss_Gateway, Protoss_Pylon };
+        return createWall(buildings,
+            BWEB::Stations::getStartingNatural()->getBase()->GetArea(),
+            BWEB::Stations::getStartingNatural()->getChokepoint(),
+            UnitTypes::None,
+            { Protoss_Photon_Cannon },
+            true,
+            false);
     }
 
-    Wall* createSimCity()
+    Wall* createTerranWall()
     {
-        return nullptr;
+        vector<UnitType> buildings ={ Terran_Barracks, Terran_Supply_Depot, Terran_Supply_Depot };
+        auto tightType = Broodwar->enemy()->getRace() == Races::Zerg ? Zerg_Zergling : Protoss_Zealot;
+        return createWall(buildings,
+            BWEB::Stations::getStartingNatural()->getBase()->GetArea(),
+            BWEB::Stations::getStartingNatural()->getChokepoint(),
+            tightType,
+            { Terran_Missile_Turret },
+            false,
+            true);
     }
 
-    Wall* getClosestWall(TilePosition here)
+    Wall* createZergWall()
     {
-        auto distBest = DBL_MAX;
-        Wall * bestWall = nullptr;
-        for (auto &[_, wall] : walls) {
-            const auto dist = here.getDistance(TilePosition(wall.getChokePoint()->Center()));
-
-            if (dist < distBest) {
-                distBest = dist;
-                bestWall = &wall;
-            }
-        }
-        return bestWall;
+        vector<UnitType> buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber };
+        return createWall(buildings,
+            BWEB::Stations::getStartingNatural()->getBase()->GetArea(),
+            BWEB::Stations::getStartingNatural()->getChokepoint(),
+            UnitTypes::None,
+            { Zerg_Sunken_Colony },
+            true,
+            false);
     }
 
     Wall* getWall(const BWEM::ChokePoint * choke)

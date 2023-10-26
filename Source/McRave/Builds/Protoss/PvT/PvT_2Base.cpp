@@ -14,7 +14,7 @@ namespace McRave::BuildOrder::Protoss {
         void PvT_2B_12Nexus()
         {
             // "http://liquipedia.net/starcraft/12_Nexus"
-            firstUpgrade =                                      vis(Protoss_Dragoon) >= 1 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
+            focusUpgrade =                                      vis(Protoss_Dragoon) >= 1 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
             gasLimit =                                          goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
             unitLimits[Protoss_Zealot] =                        1;
             scout =                                             vis(Protoss_Pylon) > 0;
@@ -63,7 +63,7 @@ namespace McRave::BuildOrder::Protoss {
         void PvT_2B_Obs()
         {
             inOpening =                                     s < 80;
-            firstUnit =                                     Protoss_Observer;
+            focusUnit =                                     Protoss_Observer;
             inTransition =                                  total(Protoss_Nexus) >= 2;
 
             buildQueue[Protoss_Assimilator] =               s >= 24;
@@ -74,7 +74,7 @@ namespace McRave::BuildOrder::Protoss {
         void PvT_2B_Carrier()
         {
             inOpening =                                     s < 160;
-            firstUnit =                                     Protoss_Carrier;
+            focusUnit =                                     Protoss_Carrier;
             inTransition =                                  total(Protoss_Stargate) > 0;
 
             buildQueue[Protoss_Assimilator] =               (s >= 24) + (s >= 60);
@@ -87,16 +87,16 @@ namespace McRave::BuildOrder::Protoss {
         {
             inOpening =                                 s < 120;
             inTransition =                              total(Protoss_Stargate) > 0;
-            firstUnit =                                 Players::getTotalCount(PlayerState::Enemy, Terran_Medic) > 0 ? Protoss_Reaver : Protoss_Carrier;
+            focusUnit =                                 Players::getTotalCount(PlayerState::Enemy, Terran_Medic) > 0 ? Protoss_Reaver : Protoss_Carrier;
 
             // Build
             buildQueue[Protoss_Assimilator] =           1 + (s >= 56);
-            if (firstUnit == Protoss_Carrier) {
+            if (focusUnit == Protoss_Carrier) {
                 buildQueue[Protoss_Stargate] =          (s >= 80) + (vis(Protoss_Carrier) > 0);
                 buildQueue[Protoss_Fleet_Beacon] =      atPercent(Protoss_Stargate, 0.95);
             }
 
-            if (firstUnit == Protoss_Reaver) {
+            if (focusUnit == Protoss_Reaver) {
                 buildQueue[Protoss_Robotics_Facility] = s >= 58;
                 buildQueue[Protoss_Robotics_Support_Bay] = atPercent(Protoss_Robotics_Facility, 0.95);
             }

@@ -15,7 +15,7 @@ namespace McRave::Util {
     bool findWalkable(BWAPI::Position, BWAPI::UnitType, BWAPI::Position&, bool visual = false);
     bool findWalkable(UnitInfo&, BWAPI::Position&, bool visual = false);
 
-    BWAPI::Position extendLine(BWAPI::Position here, BWAPI::Position target, double dist);
+    BWAPI::Position shiftTowards(BWAPI::Position here, BWAPI::Position target, double dist);
     BWAPI::Position projectLine(std::pair<BWAPI::Position, BWAPI::Position> line, BWAPI::Position here);
     BWAPI::Position clipLine(BWAPI::Position, BWAPI::Position);
     BWAPI::Position clipPosition(BWAPI::Position);

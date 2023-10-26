@@ -78,7 +78,7 @@ namespace McRave::BuildOrder::Protoss
                     buildQueue[Protoss_Cybernetics_Core] = 1;
 
                 // Corsair/Scout upgrades
-                if (s >= 300 && (isTechUnit(Protoss_Scout) || isTechUnit(Protoss_Corsair)))
+                if (s >= 300 && (isFocusUnit(Protoss_Scout) || isFocusUnit(Protoss_Corsair)))
                     buildQueue[Protoss_Fleet_Beacon] = 1;
             }
         }
@@ -107,7 +107,7 @@ namespace McRave::BuildOrder::Protoss
             // If we're not in our opener
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                expandDesired = (techUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Protoss_Nexus) >= 3) && (techSat || com(Protoss_Nexus) >= 3) && productionSat)
+                expandDesired = (focusUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Protoss_Nexus) >= 3) && (techSat || com(Protoss_Nexus) >= 3) && productionSat)
                     || (availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated()))
                     || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2)
                     || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1);
@@ -121,15 +121,15 @@ namespace McRave::BuildOrder::Protoss
             // If we're not in our opener
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                rampDesired = !productionSat && ((techUnit == None && availableMinerals >= 150 && (techSat || Stations::getGasingStationsCount() >= 3)) || availableMinerals >= 300);
+                rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || Stations::getGasingStationsCount() >= 3)) || availableMinerals >= 300);
 
                 // Adding production
                 auto maxGates = Players::vT() ? 16 : 12;
-                auto gatesPerBase = 3.0 - (1.0 * (int(isTechUnit(Protoss_Carrier) || isTechUnit(Protoss_Scout)) || int(Stations::getStations(PlayerState::Self).size()) >= 3));
+                auto gatesPerBase = 3.0 - (1.0 * (int(isFocusUnit(Protoss_Carrier) || isFocusUnit(Protoss_Scout)) || int(Stations::getStations(PlayerState::Self).size()) >= 3));
                 productionSat = (vis(Protoss_Gateway) + vis(Protoss_Stargate)) >= int(2.5 * Stations::getGasingStationsCount()) || vis(Protoss_Gateway) >= maxGates;
                 if (rampDesired) {
                     auto gateCount = min({ maxGates, int(round(Stations::getGasingStationsCount() * gatesPerBase)), vis(Protoss_Gateway) + 1 });
-                    auto stargateCount = min({ 4, int(isTechUnit(Protoss_Carrier) || isTechUnit(Protoss_Scout)) * Stations::getGasingStationsCount(), vis(Protoss_Stargate) + 1 });
+                    auto stargateCount = min({ 4, int(isFocusUnit(Protoss_Carrier) || isFocusUnit(Protoss_Scout)) * Stations::getGasingStationsCount(), vis(Protoss_Stargate) + 1 });
                     buildQueue[Protoss_Gateway] = gateCount;
                     buildQueue[Protoss_Stargate] = stargateCount;
                 }
@@ -177,50 +177,50 @@ namespace McRave::BuildOrder::Protoss
         if (!atPercent(Protoss_Cybernetics_Core, 1.00))
             return;
 
-        const auto skipOneTech = int(firstUnit == None || (firstUnit != None && Stations::getStations(PlayerState::Self).size() >= 2) || Spy::getEnemyBuild() == "FFE" || (Spy::enemyGasSteal() && !Terrain::isNarrowNatural()));
-        const auto techVal = int(techList.size()) + skipOneTech - isTechUnit(Protoss_Shuttle) + isTechUnit(Protoss_Arbiter) - (com(Protoss_Nexus) >= 3 && isTechUnit(Protoss_Dark_Templar));
+        const auto skipOneTech = int(focusUnit == None || (focusUnit != None && Stations::getStations(PlayerState::Self).size() >= 2) || Spy::getEnemyBuild() == "FFE" || (Spy::enemyGasSteal() && !Terrain::isNarrowNatural()));
+        const auto techVal = int(focusUnits.size()) + skipOneTech - isFocusUnit(Protoss_Shuttle) + isFocusUnit(Protoss_Arbiter) - (com(Protoss_Nexus) >= 3 && isFocusUnit(Protoss_Dark_Templar));
 
         // PvP
         if (Players::PvP()) {
-            if (firstUnit == Protoss_Dark_Templar)
-                techOrder ={ Protoss_High_Templar, Protoss_Observer };
+            if (focusUnit == Protoss_Dark_Templar)
+                unitOrder ={ Protoss_High_Templar, Protoss_Observer };
             else
-                techOrder ={ Protoss_Reaver, Protoss_High_Templar };
+                unitOrder ={ Protoss_Reaver, Protoss_High_Templar };
         }
 
         // PvZ
         if (Players::PvZ()) {
-            if (firstUnit == Protoss_Reaver)
-                techOrder ={ Protoss_Corsair, Protoss_High_Templar };
-            else if (firstUnit == Protoss_Corsair)
-                techOrder ={ Protoss_High_Templar, Protoss_Reaver };
-            else if (firstUnit == Protoss_High_Templar)
-                techOrder ={ Protoss_Corsair, Protoss_Reaver };
-            else if (firstUnit == Protoss_Scout)
-                techOrder ={ Protoss_Scout };
+            if (focusUnit == Protoss_Reaver)
+                unitOrder ={ Protoss_Corsair, Protoss_High_Templar };
+            else if (focusUnit == Protoss_Corsair)
+                unitOrder ={ Protoss_High_Templar, Protoss_Reaver };
+            else if (focusUnit == Protoss_High_Templar)
+                unitOrder ={ Protoss_Corsair, Protoss_Reaver };
+            else if (focusUnit == Protoss_Scout)
+                unitOrder ={ Protoss_Scout };
             else
-                techOrder ={ Protoss_Corsair, Protoss_Observer, Protoss_High_Templar };
+                unitOrder ={ Protoss_Corsair, Protoss_Observer, Protoss_High_Templar };
         }
 
         // PvT
         if (Players::PvT()) {
-            if (firstUnit == Protoss_Dark_Templar)
-                techOrder ={ Protoss_Arbiter, Protoss_Observer, Protoss_High_Templar };
-            else if (firstUnit == Protoss_Carrier)
-                techOrder ={ Protoss_Observer, Protoss_High_Templar };
+            if (focusUnit == Protoss_Dark_Templar)
+                unitOrder ={ Protoss_Arbiter, Protoss_Observer, Protoss_High_Templar };
+            else if (focusUnit == Protoss_Carrier)
+                unitOrder ={ Protoss_Observer, Protoss_High_Templar };
             else
-                techOrder ={ Protoss_Observer, Protoss_Arbiter, Protoss_High_Templar };
+                unitOrder ={ Protoss_Observer, Protoss_Arbiter, Protoss_High_Templar };
         }
 
         // PvFFA
         if (Players::PvFFA()) {
-            techOrder ={ Protoss_Observer, Protoss_Reaver, Protoss_Carrier };
+            unitOrder ={ Protoss_Observer, Protoss_Reaver, Protoss_Carrier };
         }
         techSat = techVal >= Stations::getGasingStationsCount();
 
         // If we have our tech unit, set to none
         if (techComplete())
-            techUnit = None;
+            focusUnit = None;
 
         // Change desired detection if we get Cannons
         // TODO: Clean up all below this section
@@ -235,18 +235,18 @@ namespace McRave::BuildOrder::Protoss
         }
 
         // If production is saturated and none are idle or we need detection, choose a tech
-        if ((!inOpening && !getTech && !techSat && techUnit == None) || (Spy::enemyInvis() && !isTechUnit(desiredDetection)))
+        if ((!inOpening && !getTech && !techSat && focusUnit == None) || (Spy::enemyInvis() && !isFocusUnit(desiredDetection)))
             getTech = true;
 
         // If we need detection
-        if (getTech && Spy::enemyInvis() && !isTechUnit(desiredDetection))
-            techUnit = desiredDetection;
+        if (getTech && Spy::enemyInvis() && !isFocusUnit(desiredDetection))
+            focusUnit = desiredDetection;
 
         // Various hardcoded tech choices
-        else if (getTech && currentTransition == "DoubleExpand" && !isTechUnit(Protoss_High_Templar))
-            techUnit = Protoss_High_Templar;
-        else if (getTech && Spy::getEnemyTransition() == "4Gate" && !isTechUnit(Protoss_Dark_Templar) && !Spy::enemyGasSteal())
-            techUnit = Protoss_Dark_Templar;
+        else if (getTech && currentTransition == "DoubleExpand" && !isFocusUnit(Protoss_High_Templar))
+            focusUnit = Protoss_High_Templar;
+        else if (getTech && Spy::getEnemyTransition() == "4Gate" && !isFocusUnit(Protoss_Dark_Templar) && !Spy::enemyGasSteal())
+            focusUnit = Protoss_Dark_Templar;
 
         getNewTech();
         getTechBuildings();
@@ -280,7 +280,7 @@ namespace McRave::BuildOrder::Protoss
 
     void composition()
     {
-        if (inOpening && techList.empty())
+        if (inOpening && focusUnits.empty())
             return;
 
         armyComposition.clear();
@@ -293,7 +293,7 @@ namespace McRave::BuildOrder::Protoss
                 armyComposition[Protoss_Dragoon] = 0.25;
                 armyComposition[Protoss_Archon] = 0.25;
             }
-            else if (isTechUnit(Protoss_High_Templar)) {
+            else if (isFocusUnit(Protoss_High_Templar)) {
                 armyComposition[Protoss_Zealot] = 0.50;
                 armyComposition[Protoss_Dragoon] = 0.50;
             }
@@ -304,11 +304,11 @@ namespace McRave::BuildOrder::Protoss
         }
 
         if (Players::vT()) {
-            if (isTechUnit(Protoss_Carrier)) {
+            if (isFocusUnit(Protoss_Carrier)) {
                 armyComposition[Protoss_Zealot] = 0.25;
                 armyComposition[Protoss_Dragoon] = 0.75;
             }
-            else if (isTechUnit(Protoss_High_Templar) || isTechUnit(Protoss_Arbiter)) {
+            else if (isFocusUnit(Protoss_High_Templar) || isFocusUnit(Protoss_Arbiter)) {
                 armyComposition[Protoss_Zealot] = 0.40;
                 armyComposition[Protoss_Dragoon] = 0.60;
             }
@@ -331,7 +331,7 @@ namespace McRave::BuildOrder::Protoss
         }
 
         if (Players::PvFFA()) {
-            if (isTechUnit(Protoss_Observer)) {
+            if (isFocusUnit(Protoss_Observer)) {
                 armyComposition[Protoss_Zealot] = 0.40;
                 armyComposition[Protoss_Dragoon] = 0.60;
             }
@@ -339,7 +339,7 @@ namespace McRave::BuildOrder::Protoss
                 armyComposition[Protoss_Dragoon] = 1.00;
         }
 
-        for (auto &type : techList)
+        for (auto &type : focusUnits)
             armyComposition[type] = 0.05;
     }
 
@@ -374,25 +374,25 @@ namespace McRave::BuildOrder::Protoss
 
         //// Add Observers if we have a Reaver
         //if (vis(Protoss_Reaver) >= 2) {
-        //    techList.insert(Protoss_Observer);
+        //    focusUnits.insert(Protoss_Observer);
         //    unlockedType.insert(Protoss_Observer);
         //}
 
         //// Add Reavers if we have a Observer in PvP
         //if (Players::vP() && vis(Protoss_Observer) >= 1) {
-        //    techList.insert(Protoss_Reaver);
+        //    focusUnits.insert(Protoss_Reaver);
         //    unlockedType.insert(Protoss_Reaver);
         //}
 
         // Add Shuttles if we have Reavers/HT
-        if (com(Protoss_Robotics_Facility) > 0 && (isTechUnit(Protoss_Reaver) || isTechUnit(Protoss_High_Templar) || (Players::vP() && !Spy::enemyInvis() && isTechUnit(Protoss_Observer)))) {
-            techList.insert(Protoss_Shuttle);
+        if (com(Protoss_Robotics_Facility) > 0 && (isFocusUnit(Protoss_Reaver) || isFocusUnit(Protoss_High_Templar) || (Players::vP() && !Spy::enemyInvis() && isFocusUnit(Protoss_Observer)))) {
+            focusUnits.insert(Protoss_Shuttle);
             unlockedType.insert(Protoss_Shuttle);
         }
 
         // Add DT late game
         if (Stations::getStations(PlayerState::Self).size() >= 4) {
-            techList.insert(Protoss_Dark_Templar);
+            focusUnits.insert(Protoss_Dark_Templar);
             unlockedType.insert(Protoss_Dark_Templar);
         }
 
@@ -401,14 +401,14 @@ namespace McRave::BuildOrder::Protoss
             auto substitute = Players::vT() ? Protoss_Arbiter : Protoss_High_Templar;
             if (!Players::vP() && Players::hasDetection(PlayerState::Enemy)) {
                 unlockedType.insert(substitute);
-                techList.insert(substitute);
+                focusUnits.insert(substitute);
             }
         }
 
         // Remove DT if enemy has Observers in PvP
         if (Players::PvP() && total(Protoss_Dark_Templar) >= 4 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Observer) > 0) {
             unlockedType.erase(Protoss_Dark_Templar);
-            techList.erase(Protoss_Dark_Templar);
+            focusUnits.erase(Protoss_Dark_Templar);
         }
     }
 }

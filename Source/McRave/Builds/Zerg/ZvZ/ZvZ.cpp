@@ -51,9 +51,9 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Drone] =                        dronesNeeded_ZvZ();
 
         desiredDetection =                              Zerg_Overlord;
-        firstUpgrade =                                  ((vis(Zerg_Zergling) >= 6 && gas(100)) || lingSpeed()) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
-        firstTech =                                     TechTypes::None;
-        firstUnit =                                     None;
+        focusUpgrade =                                  ((vis(Zerg_Zergling) >= 6 && gas(100)) || lingSpeed()) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        focusTech =                                     TechTypes::None;
+        focusUnit =                                     None;
 
         armyComposition[Zerg_Drone] =                   0.60;
         armyComposition[Zerg_Zergling] =                0.40;
@@ -66,7 +66,7 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Drone] =                        (vis(Zerg_Lair) > 0) ? 11 : 9;;
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvZ();
         gasLimit =                                      ((lingSpeed() || gas(80)) && total(Zerg_Lair) == 0) ? 2 : gasMax();
-        firstUnit =                                     Zerg_Mutalisk;
+        focusUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  total(Zerg_Mutalisk) < 3;
 
         auto secondHatch = (Spy::getEnemyTransition() == "1HatchMuta" && total(Zerg_Mutalisk) >= 4)
@@ -105,7 +105,7 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvZ();
         gasLimit =                                      lingSpeed() ? 2 : gasMax();
 
-        firstUnit =                                     Zerg_Mutalisk;
+        focusUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
 
         // Build

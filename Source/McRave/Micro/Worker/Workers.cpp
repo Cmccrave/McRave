@@ -56,7 +56,7 @@ namespace McRave::Workers {
                 else if (unit.hasTarget()) {
                     auto unitTarget = unit.getTarget().lock();
                     BWEB::Path newPath(unit.getPosition(), station->getBase()->Center(), unit.getType());
-                    newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t) || Util::rectangleIntersect(Position(station->getBase()->Location()), Position(station->getBase()->Location()) + Position(96, 64), Position(t)); });
+                    newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t); });
                     unit.setDestinationPath(newPath);
 
                     // If unit is far, we need to check if it's safe
@@ -115,29 +115,6 @@ namespace McRave::Workers {
             return true;
         }
 
-        bool isResourceSafe(UnitInfo& unit)
-        {
-            // Creates a path to the resource and verifies the resource is safe
-            if (unit.hasResource()) {
-                BWEB::Path newPath(unit.getPosition(), unit.getResource().lock()->getStation()->getResourceCentroid(), unit.getType());
-                const auto walkable = [&](const TilePosition &t) {
-                    return newPath.terrainWalkable(t);
-                };
-                newPath.generateJPS(walkable);
-
-                auto threatPosition = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
-                    return (unit.getType().isFlyer() ? Grids::getAirThreat(p, PlayerState::Enemy) > 0.0f : Grids::getGroundThreat(p, PlayerState::Enemy) > 0.0f) ||
-                        (unit.hasTarget() && p.getDistance(unit.getTarget().lock()->getPosition()) < unit.getTarget().lock()->getGroundReach());
-                });
-
-                if (threatPosition)
-                    return false;
-                else
-                    unit.setDestinationPath(newPath);
-            }
-            return true;
-        }
-
         bool isResourceFlooded(UnitInfo& unit)
         {
             // Determine if we have over the work cap assigned
@@ -154,11 +131,6 @@ namespace McRave::Workers {
                 }
             }
             return false;
-        }
-
-        bool isResourceThreatened(UnitInfo& unit)
-        {
-            return (unit.hasResource() && unit.getResource().lock()->isThreatened());
         }
 
         void updatePath(UnitInfo& unit)
@@ -229,8 +201,7 @@ namespace McRave::Workers {
             // Get some information of the workers current assignment
             const auto isGasunit =          unit.hasResource() && unit.getResource().lock()->getType().isRefinery();
             const auto isMineralunit =      unit.hasResource() && unit.getResource().lock()->getType().isMineralField();
-            const auto resourceSafe =       isResourceSafe(unit);
-            const auto threatened =         isResourceThreatened(unit);
+            const auto threatened =         unit.hasResource() && unit.getResource().lock()->isThreatened();
             const auto excessAssigned =     isResourceFlooded(unit);
             const auto transferStation =    getTransferStation(unit);
             const auto closestStation =     Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
@@ -296,6 +267,7 @@ namespace McRave::Workers {
                         auto allowedGatherCount = threatened ? 50 : i;
 
                         if (!resourceReady(resource, allowedGatherCount)
+                            || (find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
                             || (transferStation && resource.getStation() != transferStation)
                             || resource.isThreatened())
                             continue;

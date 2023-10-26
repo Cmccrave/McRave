@@ -12,7 +12,7 @@ namespace McRave::BuildOrder::Protoss {
     void PvFFA_1GC_3Gate()
     {
         // -nolink-
-        firstUnit =                                 None;
+        focusUnit =                                 None;
         inTransition =                          total(Protoss_Gateway) >= 3;
         inOpening =                             s < 82;
         gasLimit =                                  vis(Protoss_Gateway) >= 2 && com(Protoss_Gateway) < 3 ? 2 : INT_MAX;

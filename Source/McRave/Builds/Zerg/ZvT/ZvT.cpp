@@ -31,9 +31,9 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Drone] =                    INT_MAX;
 
         desiredDetection =                          Zerg_Overlord;
-        firstUpgrade =                              (vis(Zerg_Zergling) >= 8 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
-        firstTech =                                 TechTypes::None;
-        firstUnit =                                 None;
+        focusUpgrade =                              (vis(Zerg_Zergling) >= 8 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        focusTech =                                 TechTypes::None;
+        focusUnit =                                 None;
 
         armyComposition[Zerg_Drone] =               0.60;
         armyComposition[Zerg_Zergling] =            0.40;
@@ -84,8 +84,8 @@ namespace McRave::BuildOrder::Zerg {
         gasLimit =                                      vis(Zerg_Drone) >= 10 ? gasMax() : 0;
 
         inOpening =                                     total(Zerg_Mutalisk) <= 9;
-        firstUpgrade =                                  Spy::enemyRush() ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
-        firstUnit =                                     Zerg_Mutalisk;
+        focusUpgrade =                                  Spy::enemyRush() ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        focusUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  total(Zerg_Mutalisk) < 6;
         wantThird =                                     !Spy::enemyPressure() && !Spy::enemyRush() && Spy::getEnemyOpener() != "8Rax" && Spy::getEnemyBuild() != "RaxFact";
         planEarly =                                     wantThird && atPercent(Zerg_Spire, 0.5) && int(Stations::getStations(PlayerState::Self).size()) < 3;
@@ -122,8 +122,8 @@ namespace McRave::BuildOrder::Zerg {
         gasLimit =                                      gasMax();
 
         inOpening =                                     total(Zerg_Mutalisk) <= 9;
-        firstUpgrade =                                  Spy::enemyRush() ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
-        firstUnit =                                     Zerg_Mutalisk;
+        focusUpgrade =                                  Spy::enemyRush() ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        focusUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  vis(Zerg_Overlord) < 7 || total(Zerg_Mutalisk) < 9;
         wantThird =                                     !Spy::enemyPressure() && !Spy::enemyRush() && Spy::getEnemyOpener() != "8Rax" && Spy::getEnemyBuild() != "RaxFact";
         planEarly =                                     hatchCount() < 3 && s >= 26;
@@ -154,8 +154,8 @@ namespace McRave::BuildOrder::Zerg {
 
         wallNat =                                       false;
         inOpening =                                     total(Zerg_Zergling) < 36;
-        firstUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
-        firstUnit =                                     UnitTypes::None;
+        focusUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        focusUnit =                                     UnitTypes::None;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
         rush =                                          true;
 
@@ -176,8 +176,8 @@ namespace McRave::BuildOrder::Zerg {
 
         wallNat =                                       true;
         inOpening =                                     total(Zerg_Zergling) < 80;
-        firstUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
-        firstUnit =                                     UnitTypes::None;
+        focusUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        focusUnit =                                     UnitTypes::None;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
         rush =                                          true;
 
@@ -197,8 +197,8 @@ namespace McRave::BuildOrder::Zerg {
         inTransition =                                  vis(Zerg_Lair) > 0;
         inOpening =                                     true;
         inBookSupply =                                  vis(Zerg_Overlord) < 8 || total(Zerg_Mutalisk) < 9;
-        firstUpgrade =                                  vis(Zerg_Lair) > 0 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
-        firstUnit =                                     Zerg_Mutalisk;
+        focusUpgrade =                                  vis(Zerg_Lair) > 0 ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        focusUnit =                                     Zerg_Mutalisk;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 24 : unitLimits[Zerg_Drone];
         unitLimits[Zerg_Zergling] =                     total(Zerg_Mutalisk) < 0 ? lingsNeeded_ZvP() : INT_MAX;
 
@@ -210,7 +210,7 @@ namespace McRave::BuildOrder::Zerg {
 
         if (vis(Zerg_Hive) > 0) {
             unitLimits[Zerg_Drone] = 30;
-            firstUpgrade = UpgradeTypes::Adrenal_Glands;
+            focusUpgrade = UpgradeTypes::Adrenal_Glands;
         }
 
         if (com(Zerg_Hive) > 0)

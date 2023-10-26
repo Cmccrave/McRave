@@ -13,10 +13,10 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvZ_2G_4Gate()
         {
-            firstUnit =                                 None;
+            focusUnit =                                 None;
             inOpening =                             s < 120;
             inTransition =                          true;
-            firstUpgrade =                              UpgradeTypes::Singularity_Charge;
+            focusUpgrade =                              UpgradeTypes::Singularity_Charge;
             unitLimits[Protoss_Zealot] =                5;
             unitLimits[Protoss_Dragoon] =               INT_MAX;
             wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
@@ -35,7 +35,7 @@ namespace McRave::BuildOrder::Protoss {
             inOpening =                             s < 90;
             inTransition =                          vis(Protoss_Nexus) >= 2;
             wallNat =                                   vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
-            firstUnit =                                 None;
+            focusUnit =                                 None;
 
             buildQueue[Protoss_Nexus] =                 1 + (s >= 42);
             buildQueue[Protoss_Forge] =                 s >= 62;

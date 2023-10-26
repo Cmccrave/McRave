@@ -115,25 +115,25 @@ namespace McRave::BuildOrder
 
     bool techComplete()
     {
-        if (Spy::enemyInvis() && techUnit == Protoss_Observer)
+        if (Spy::enemyInvis() && focusUnit == Protoss_Observer)
             return vis(Protoss_Robotics_Facility) > 0;
 
         // When 1 unit finishes
-        if (techUnit == Protoss_Scout || techUnit == Protoss_Corsair || techUnit == Protoss_Reaver || techUnit == Protoss_Observer || techUnit == Terran_Science_Vessel)
-            return com(techUnit) > 0;
+        if (focusUnit == Protoss_Scout || focusUnit == Protoss_Corsair || focusUnit == Protoss_Reaver || focusUnit == Protoss_Observer || focusUnit == Terran_Science_Vessel)
+            return com(focusUnit) > 0;
 
         // When 2 units are visible
-        if (techUnit == Protoss_High_Templar)
-            return vis(techUnit) >= 1 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm);
+        if (focusUnit == Protoss_High_Templar)
+            return vis(focusUnit) >= 1 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm);
 
         // When 2 units finish
-        if (techUnit == Protoss_Dark_Templar)
-            return total(techUnit) >= 4;
+        if (focusUnit == Protoss_Dark_Templar)
+            return total(focusUnit) >= 4;
 
         // When timing attack finishes
-        if (techUnit == Zerg_Mutalisk || techUnit == Zerg_Hydralisk)
-            return total(techUnit) >= 6;
-        if (techUnit == Zerg_Lurker) {
+        if (focusUnit == Zerg_Mutalisk || focusUnit == Zerg_Hydralisk)
+            return total(focusUnit) >= 6;
+        if (focusUnit == Zerg_Lurker) {
             auto vsMech = Spy::getEnemyTransition() == "2Fact"
                 || Spy::getEnemyTransition() == "1FactTanks"
                 || Spy::getEnemyTransition() == "5FactGoliath";
@@ -141,7 +141,7 @@ namespace McRave::BuildOrder
         }
 
         // When 1 unit is visible
-        return vis(techUnit) > 0;
+        return vis(focusUnit) > 0;
     }
 
     double getCompositionPercentage(UnitType unit)
@@ -158,17 +158,6 @@ namespace McRave::BuildOrder
         if (ptr != buildQueue.end())
             return ptr->second;
         return 0;
-    }
-
-    bool firstReady()
-    {
-        if (firstTech != TechTypes::None && Broodwar->self()->hasResearched(firstTech))
-            return true;
-        else if (firstUpgrade != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(firstUpgrade) > 0)
-            return true;
-        else if (firstTech == TechTypes::None && firstUpgrade == UpgradeTypes::None)
-            return true;
-        return false;
     }
 
     bool unlockReady(UnitType type) {
@@ -200,12 +189,12 @@ namespace McRave::BuildOrder
     void getNewTech()
     {
         // If we already have a tech choice based on build, only try to unlock it and nothing else for now
-        if (firstUnit != None && !isTechUnit(firstUnit)) {
-            if (unlockReady(firstUnit)) {
-                techUnit = firstUnit;
+        if (focusUnit != None && !isFocusUnit(focusUnit)) {
+            if (unlockReady(focusUnit)) {
+                focusUnit = focusUnit;
                 getTech = false;
-                techList.insert(techUnit);
-                unlockedType.insert(techUnit);
+                focusUnits.insert(focusUnit);
+                unlockedType.insert(focusUnit);
             }
             return;
         }
@@ -213,20 +202,20 @@ namespace McRave::BuildOrder
         if (getTech) {
 
             // If we already chose a tech unit
-            if (techUnit != None) {
+            if (focusUnit != None) {
                 getTech = false;
-                techList.insert(techUnit);
-                unlockedType.insert(techUnit);
+                focusUnits.insert(focusUnit);
+                unlockedType.insert(focusUnit);
                 return;
             }
 
             // Select next tech based on the order
-            for (auto &type : techOrder) {
-                if (!isTechUnit(type)) {
-                    techUnit = type;
+            for (auto &type : unitOrder) {
+                if (!isFocusUnit(type)) {
+                    focusUnit = type;
                     getTech = false;
-                    techList.insert(techUnit);
-                    unlockedType.insert(techUnit);
+                    focusUnits.insert(focusUnit);
+                    unlockedType.insert(focusUnit);
                     break;
                 }
             }
@@ -263,7 +252,7 @@ namespace McRave::BuildOrder
             }
             toCheck.push_back(type);
         };
-        for (auto &type : techList)
+        for (auto &type : focusUnits)
             addBuildableRequisites(type);
         reverse(toCheck.begin(), toCheck.end());
 
@@ -293,17 +282,28 @@ namespace McRave::BuildOrder
         Visuals::endPerfTest("BuildOrder");
     }
 
+    // Focus
+    UnitType getFirstFocusUnit() { return focusUnit; }
+    UpgradeType getFirstFocusUpgrade() { return focusUpgrade; }
+    TechType getFirstFocusTech() { return focusTech; }
+
+    // getFocusTechs
+    // getFocusUpgrades
+
+    bool isFocusUnit(UnitType unit) { return focusUnits.find(unit) != focusUnits.end(); }
+    // bool isFocusTech
+    // bool isFocusUpgrade
+
     map<UnitType, int>& getBuildQueue() { return buildQueue; }
+    map<UpgradeType, int>& getUpgradeQueue() { return upgradeQueue; }
     map<UnitType, double> getArmyComposition() { return armyComposition; }
-    UnitType getTechUnit() { return techUnit; }
-    UpgradeType getFirstUpgrade() { return firstUpgrade; }
-    TechType getFirstTech() { return firstTech; }
-    set <UnitType>& getTechList() { return  techList; }
+
+
     set <UnitType>& getUnlockedList() { return  unlockedType; }
     int gasWorkerLimit() { return gasLimit; }
     int getUnitReservation(UnitType type) { return unitReservations[type]; }
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
-    bool isTechUnit(UnitType unit) { return techList.find(unit) != techList.end(); }
+    
     bool isOpener() { return inOpening; }
     bool takeNatural() { return wantNatural; }
     bool takeThird() { return wantThird; }

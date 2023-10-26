@@ -14,12 +14,12 @@ namespace McRave::BuildOrder::Protoss {
         void PvZ_1GC_DT()
         {
             // Experimental build from Best
-            firstUpgrade =                                  UpgradeTypes::None;
-            firstTech =                                     vis(Protoss_Dark_Templar) >= 2 ? TechTypes::Psionic_Storm : TechTypes::None;
+            focusUpgrade =                                  UpgradeTypes::None;
+            focusTech =                                     vis(Protoss_Dark_Templar) >= 2 ? TechTypes::Psionic_Storm : TechTypes::None;
             inOpening =                                 s < 70;
             unitLimits[Protoss_Dragoon] =                   1;
             inTransition =                              total(Protoss_Citadel_of_Adun) > 0;
-            firstUnit =                                     Protoss_Dark_Templar;
+            focusUnit =                                     Protoss_Dark_Templar;
 
             // Build
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 42);

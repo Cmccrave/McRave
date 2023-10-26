@@ -115,20 +115,22 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueUpgradeStructures()
         {
-            auto hiveEventually = techList.find(Zerg_Ultralisk) != techList.end()
-                || techList.find(Zerg_Defiler) != techList.end()
+            auto hiveEventually = focusUnits.find(Zerg_Ultralisk) != focusUnits.end()
+                || focusUnits.find(Zerg_Defiler) != focusUnits.end()
                 || Util::getTime() > Time(12, 00);
 
             // Adding Evolution Chambers
             if ((s >= 200 && Stations::getStations(PlayerState::Self).size() >= 3)
-                || (techUnit == Zerg_Ultralisk && vis(Zerg_Queens_Nest) > 0))
+                || (focusUnit == Zerg_Ultralisk && vis(Zerg_Queens_Nest) > 0))
                 buildQueue[Zerg_Evolution_Chamber] = 1 + (Stations::getStations(PlayerState::Self).size() >= 4);
             if (needSpores)
                 buildQueue[Zerg_Evolution_Chamber] = max(buildQueue[Zerg_Evolution_Chamber], 1);
 
             // Adding a Lair
-            if (Spy::enemyInvis() && Util::getTime() > Time(4, 45))
+            if (Spy::enemyInvis() && Util::getTime() > Time(4, 45)) {
                 buildQueue[Zerg_Lair] = 1;
+                buildQueue[Zerg_Extractor] = max(vis(Zerg_Extractor), 2);
+            }
 
             // Hive upgrades
             if (int(Stations::getStations(PlayerState::Self).size()) >= 4 - Players::ZvT() && vis(Zerg_Drone) >= 36 && hiveEventually) {
@@ -146,9 +148,9 @@ namespace McRave::BuildOrder::Zerg {
                 const auto resourceSat = Resources::isGasSaturated() && (int(Stations::getStations(PlayerState::Self).size()) >= 4 ? Resources::isMineralSaturated() : Resources::isHalfMineralSaturated());
                 const auto droneMin = Players::ZvZ() ? 10 : 16;
 
-                expandDesired = (techUnit == None && resourceSat && techSat && productionSat)
+                expandDesired = (focusUnit == None && resourceSat && techSat && productionSat)
                     || (Players::ZvZ() && Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0 && Stations::getStations(PlayerState::Self).size() < Stations::getStations(PlayerState::Enemy).size() && availableMinerals > 300 && availableGas < 150)
-                    || (techUnit == None && vis(Zerg_Drone) >= droneMin && int(Stations::getStations(PlayerState::Self).size()) <= 1);
+                    || (focusUnit == None && vis(Zerg_Drone) >= droneMin && int(Stations::getStations(PlayerState::Self).size()) <= 1);
 
                 buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + expandDesired);
 
@@ -324,43 +326,45 @@ namespace McRave::BuildOrder::Zerg {
     void tech()
     {
         const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5GateGoon" || Spy::getEnemyTransition() == "CorsairGoon" || Spy::getEnemyTransition() == "5FactGoliath";
-        const auto techVal = int(techList.size()) + (2 * Players::ZvT()) + (Players::ZvP()) + mineralThird;
-        const auto endOfTech = !techOrder.empty() && isTechUnit(techOrder.back());
+        const auto techVal = int(focusUnits.size()) + (2 * Players::ZvT()) + (Players::ZvP()) + mineralThird;
+        const auto endOfTech = !unitOrder.empty() && isFocusUnit(unitOrder.back());
 
         // ZvP
         if (Players::ZvP()) {
             if (Spy::getEnemyTransition() == "Carriers")
-                techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
+                unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
+            else if (focusUnit == Zerg_Hydralisk)
+                unitOrder ={ Zerg_Hydralisk };
             else if (vsGoonsGols)
-                techOrder ={ Zerg_Mutalisk };
+                unitOrder ={ Zerg_Mutalisk };
             else
-                techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker };
+                unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker };
         }
 
         // ZvT
         if (Players::ZvT()) {
             if (vsGoonsGols)
-                techOrder ={ Zerg_Mutalisk };
+                unitOrder ={ Zerg_Mutalisk };
             else
-                techOrder ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Defiler };
+                unitOrder ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Defiler };
         }
 
         // ZvZ
         if (Players::ZvZ())
-            techOrder ={ Zerg_Mutalisk };
+            unitOrder ={ Zerg_Mutalisk };
 
         // ZvFFA
         if (Players::ZvFFA())
-            techOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker };
+            unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker };
 
         // If we have our tech unit, set to none
         if (techComplete())
-            techUnit = None;
+            focusUnit = None;
 
         // Adding tech
-        techSat = !techList.empty() && (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
-        auto readyToTech = vis(Zerg_Extractor) >= 2 || int(Stations::getStations(PlayerState::Self).size()) >= 4 || techList.empty();
-        if (!inOpening && readyToTech && techUnit == None && !techSat && productionSat && vis(Zerg_Drone) >= 10)
+        techSat = !focusUnits.empty() && (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
+        auto readyToTech = vis(Zerg_Extractor) >= 2 || int(Stations::getStations(PlayerState::Self).size()) >= 4 || focusUnits.empty();
+        if (!inOpening && readyToTech && focusUnit == None && !techSat && productionSat && vis(Zerg_Drone) >= 10)
             getTech = true;
 
         getNewTech();
@@ -409,7 +413,7 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Defiler tech
-            else if (isTechUnit(Zerg_Defiler)) {
+            else if (isFocusUnit(Zerg_Defiler)) {
 
                 if (s > 360 || (Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode)) > 12) {
                     armyComposition[Zerg_Drone] =               0.50;
@@ -427,7 +431,7 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Ultralisk tech
-            else if (isTechUnit(Zerg_Ultralisk) && com(Zerg_Hive)) {
+            else if (isFocusUnit(Zerg_Ultralisk) && com(Zerg_Hive)) {
                 if (s > 360 || (Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode)) > 6) {
                     armyComposition[Zerg_Drone] =               0.45;
                     armyComposition[Zerg_Mutalisk] =            0.20;
@@ -443,7 +447,7 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Lurker tech
-            else if (isTechUnit(Zerg_Lurker) && atPercent(TechTypes::Lurker_Aspect, 0.8)) {
+            else if (isFocusUnit(Zerg_Lurker) && atPercent(TechTypes::Lurker_Aspect, 0.8)) {
                 armyComposition[Zerg_Drone] =                   0.60;
                 armyComposition[Zerg_Zergling] =                0.15;
                 armyComposition[Zerg_Hydralisk] =               0.05;
@@ -452,7 +456,7 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Hydralisk tech
-            else if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk)) {
+            else if (isFocusUnit(Zerg_Hydralisk) && isFocusUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.70;
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Hydralisk] =               0.20;
@@ -460,7 +464,7 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Mutalisk tech
-            else if (isTechUnit(Zerg_Mutalisk)) {
+            else if (isFocusUnit(Zerg_Mutalisk)) {
                 if (total(Zerg_Mutalisk) >= 32 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands) > 0) {
                     armyComposition[Zerg_Drone] =               0.40;
                     armyComposition[Zerg_Zergling] =            0.30;
@@ -488,27 +492,27 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvP
         if (Players::vP() && !inOpening) {
-            if (isTechUnit(Zerg_Defiler)) {
+            if (isFocusUnit(Zerg_Defiler)) {
                 armyComposition[Zerg_Drone] =                   0.58;
                 armyComposition[Zerg_Zergling] =                0.02;
                 armyComposition[Zerg_Hydralisk] =               0.25;
                 armyComposition[Zerg_Mutalisk] =                0.10;
                 armyComposition[Zerg_Defiler] =                 0.05;
             }
-            else if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk) && isTechUnit(Zerg_Lurker)) {
+            else if (isFocusUnit(Zerg_Hydralisk) && isFocusUnit(Zerg_Mutalisk) && isFocusUnit(Zerg_Lurker)) {
                 armyComposition[Zerg_Drone] =                   0.50;
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Hydralisk] =               0.35;
                 armyComposition[Zerg_Lurker] =                  0.05;
                 armyComposition[Zerg_Mutalisk] =                0.10;
             }
-            else if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk)) {
+            else if (isFocusUnit(Zerg_Hydralisk) && isFocusUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.60;
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Hydralisk] =               0.30;
                 armyComposition[Zerg_Mutalisk] =                0.10;
             }
-            else if (isTechUnit(Zerg_Mutalisk)) {
+            else if (isFocusUnit(Zerg_Mutalisk)) {
                 if (total(Zerg_Mutalisk) >= 32 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands) > 0) {
                     armyComposition[Zerg_Drone] =               0.40;
                     armyComposition[Zerg_Zergling] =            0.30;
@@ -520,14 +524,14 @@ namespace McRave::BuildOrder::Zerg {
                     armyComposition[Zerg_Mutalisk] =            0.40;
                 }
             }
-            else if (isTechUnit(Zerg_Lurker)) {
+            else if (isFocusUnit(Zerg_Lurker)) {
                 armyComposition[Zerg_Drone] =                   0.60;
                 armyComposition[Zerg_Zergling] =                0.20;
                 armyComposition[Zerg_Hydralisk] =               0.20;
                 armyComposition[Zerg_Lurker] =                  1.00;
             }
 
-            else if (isTechUnit(Zerg_Hydralisk)) {
+            else if (isFocusUnit(Zerg_Hydralisk)) {
                 armyComposition[Zerg_Drone] =                   0.60;
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Hydralisk] =               0.40;
@@ -540,12 +544,12 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvZ
         if (Players::ZvZ() && !inOpening) {
-            if (isTechUnit(Zerg_Mutalisk) && hatchCount() >= 4) {
+            if (isFocusUnit(Zerg_Mutalisk) && hatchCount() >= 4) {
                 armyComposition[Zerg_Drone] =                   0.40;
                 armyComposition[Zerg_Zergling] =                0.10;
                 armyComposition[Zerg_Mutalisk] =                0.50;
             }
-            else if (isTechUnit(Zerg_Mutalisk)) {
+            else if (isFocusUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.50;
                 armyComposition[Zerg_Mutalisk] =                0.50;
             }
@@ -557,20 +561,20 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvFFA
         if ((Players::ZvTVB() || Players::ZvFFA()) && !inOpening) {
-            if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk) && isTechUnit(Zerg_Lurker)) {
+            if (isFocusUnit(Zerg_Hydralisk) && isFocusUnit(Zerg_Mutalisk) && isFocusUnit(Zerg_Lurker)) {
                 armyComposition[Zerg_Drone] =                   0.60;
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Hydralisk] =               0.25;
                 armyComposition[Zerg_Lurker] =                  0.05;
                 armyComposition[Zerg_Mutalisk] =                0.10;
             }
-            else if (isTechUnit(Zerg_Hydralisk) && isTechUnit(Zerg_Mutalisk)) {
+            else if (isFocusUnit(Zerg_Hydralisk) && isFocusUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.70;
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Hydralisk] =               0.20;
                 armyComposition[Zerg_Mutalisk] =                0.10;
             }
-            else if (isTechUnit(Zerg_Mutalisk)) {
+            else if (isFocusUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.70;
                 armyComposition[Zerg_Zergling] =                0.00;
                 armyComposition[Zerg_Mutalisk] =                0.30;
@@ -585,7 +589,7 @@ namespace McRave::BuildOrder::Zerg {
         if (!inOpening) {
             int hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
             int pumpLings = 0;
-            if (Players::ZvP() && Util::getTime() > Time(7, 30) && techList.find(Zerg_Hydralisk) == techList.end() && hatchCount >= 6 && int(Stations::getStations(PlayerState::Self).size()) >= 3)
+            if (Players::ZvP() && Util::getTime() > Time(7, 30) && focusUnits.find(Zerg_Hydralisk) == focusUnits.end() && hatchCount >= 6 && int(Stations::getStations(PlayerState::Self).size()) >= 3)
                 pumpLings = 12;
             if (Spy::getEnemyTransition() == "Robo")
                 pumpLings = 12;
@@ -604,7 +608,7 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         // Specific compositions
-        if (isTechUnit(Zerg_Hydralisk) && !Terrain::isIslandMap() && (Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) >= 3 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Carrier) >= 4 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Fleet_Beacon) >= 1 || Spy::getEnemyTransition() == "DoubleStargate" || Spy::getEnemyTransition() == "Carriers")) {
+        if (isFocusUnit(Zerg_Hydralisk) && !Terrain::isIslandMap() && (Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) >= 3 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Carrier) >= 4 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Fleet_Beacon) >= 1 || Spy::getEnemyTransition() == "DoubleStargate" || Spy::getEnemyTransition() == "Carriers")) {
             armyComposition.clear();
             armyComposition[Zerg_Drone] = 0.50;
             armyComposition[Zerg_Hydralisk] = 0.50;
@@ -630,12 +634,12 @@ namespace McRave::BuildOrder::Zerg {
         const auto limitBy = int(Stations::getStations(PlayerState::Self).size()) * 3;
         const auto reserveAt = Players::ZvZ() ? 10 : 16;
         unitReservations.clear();
-        if ((inOpening && reserveLarva) || (!inOpening && techList.size() <= 1)) {
-            if (atPercent(Zerg_Spire, 0.50) && vis(Zerg_Drone) >= reserveAt && techUnit == Zerg_Mutalisk && (armyComposition[Zerg_Mutalisk] > 0.0 || armyComposition[Zerg_Scourge] > 0.0)) {
+        if ((inOpening && reserveLarva) || (!inOpening && focusUnits.size() <= 1)) {
+            if (atPercent(Zerg_Spire, 0.50) && vis(Zerg_Drone) >= reserveAt && focusUnit == Zerg_Mutalisk && (armyComposition[Zerg_Mutalisk] > 0.0 || armyComposition[Zerg_Scourge] > 0.0)) {
                 unitReservations[Zerg_Mutalisk] = max(0, limitBy - total(Zerg_Mutalisk) - int(armyComposition[Zerg_Scourge] > 0.0));
                 unitReservations[Zerg_Scourge] = max(0, 2 * int(armyComposition[Zerg_Scourge] > 0.0) - total(Zerg_Scourge));
             }
-            if (vis(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Drone) >= reserveAt && techUnit == Zerg_Hydralisk && armyComposition[Zerg_Hydralisk] > 0.0)
+            if (vis(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Drone) >= reserveAt && focusUnit == Zerg_Hydralisk && armyComposition[Zerg_Hydralisk] > 0.0)
                 unitReservations[Zerg_Hydralisk] = max(0, limitBy - total(Zerg_Hydralisk));
         }
 
@@ -678,7 +682,7 @@ namespace McRave::BuildOrder::Zerg {
                 if (!type.isBuilding() && type.getRace() == Races::Zerg && vis(type) >= 2) {
                     unlockedType.insert(type);
                     if (!type.isWorker())
-                        techList.insert(type);
+                        focusUnits.insert(type);
                 }
             }
         }

@@ -287,11 +287,11 @@ namespace McRave::Util {
         return (line.first + Position(int(projCalc * directionVector.x), int(projCalc * directionVector.y)));
     }
 
-    Position extendLine(Position here, Position target, double dist)
+    Position shiftTowards(Position here, Position target, double dist)
     {
-        const auto directionVector = here - target;
+        const auto directionVector = target - here;
         const auto currentDist = target.getDistance(here);
-        return target - (directionVector * dist / currentDist);
+        return here + (directionVector * dist / currentDist);
     }
 
     Time getTime()

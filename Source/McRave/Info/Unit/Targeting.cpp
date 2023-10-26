@@ -89,6 +89,7 @@ namespace McRave::Targets {
                     || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getUnitsTargetingThis().size()) >= 4 && !target.isBurrowed())                          // Don't over target spider mines
                     || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                                         // Don't target interceptors as a flying unit
                     || (target.getType().isWorker() && !allowWorkerTarget(unit, target))
+                    || (target.getType().isWorker() && !target.hasRepairedRecently() && !target.hasAttackedRecently() && !unit.getUnitsInRangeOfThis().empty())
                     || (target.getType() == Protoss_Corsair && !unit.isFlying() && target.getUnitsTargetingThis().size() > 2 && !unit.isWithinRange(target))
                     || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())           // Don't target if invisible and can't attack this unit or we have no detectors in PvP
                     || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))           // Don't target flyers that we can't reach
@@ -181,9 +182,9 @@ namespace McRave::Targets {
 
             const auto bonusScore = [&]() {
 
-                // Add bonus for expansion killing
-                if (target.getType().isResourceDepot() && !Players::ZvZ() && (Util::getTime() > Time(8, 00) || Spy::enemyGreedy()) && !unit.isLightAir())
-                    return 5000.0;
+                //// Add bonus for expansion killing
+                //if (target.getType().isResourceDepot() && !Players::ZvZ() && (Util::getTime() > Time(8, 00) || Spy::enemyGreedy()) && !unit.isLightAir())
+                //    return 5000.0;
 
                 // Add penalty for targeting workers under defenses
                 if (unit.isLightAir() && target.getType().isWorker() && !target.hasRepairedRecently()) {

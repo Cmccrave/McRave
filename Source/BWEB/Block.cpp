@@ -33,7 +33,6 @@ namespace BWEB::Blocks
     namespace {
         vector<Block> allBlocks;
         int blockGrid[256][256];
-        int testGrid[256][256];
 
         void addToBlockGrid(TilePosition start, TilePosition end)
         {
@@ -293,38 +292,6 @@ namespace BWEB::Blocks
                         return false;
                 }
             }
-
-            //// Check if this Block would not be reachable
-            //for (auto &[tile, piece] : pieces) {
-            //    if (piece == Piece::Large && !productionReachable(tile))
-            //        return false;
-            //}
-
-            //// Check if placing a Block here will prevent other Blocks from being reachable
-            //for (auto &block : allBlocks) {
-            //    if (Map::mapBWEM.GetArea(block.getTilePosition()) != Map::mapBWEM.GetArea(here))
-            //        continue;
-
-            //    for (auto &large : block.getLargeTiles()) {
-            //        if (!productionReachable(large))
-            //            return false;
-            //    }
-            //}
-
-            // Check if placing a Block here will prevent other Stations from being reachable
-            if (type != BlockType::Proxy) {
-                for (auto &station : Stations::getStations()) {
-                    if (station.getBase()->GetArea() != Map::mapBWEM.GetArea(here))
-                        continue;
-
-                    /*if (!blockExists(station.getBase()->Location()) && !productionReachable(station.getBase()->Location()))
-                        return false;
-                    for (auto &location : station.getSecondaryLocations()) {
-                        if (!blockExists(location) && (!blockWalkable(location + TilePosition(0, 3))) || !productionReachable(location))
-                            return false;
-                    }*/
-                }
-            }
             return true;
         }
 
@@ -444,40 +411,6 @@ namespace BWEB::Blocks
             while (searchStart(secondStart)) {}
         }
 
-        void findMainDefenseBlock()
-        {
-            if (Broodwar->self()->getRace() == Races::Zerg)
-                return;
-
-            // Added a block that allows a good shield battery placement or bunker placement
-            vector<Piece> pieces ={ Piece::Small, Piece::Medium };
-            multimap<TilePosition, Piece> pieceLayout;
-            auto tileBest = TilePositions::Invalid;
-            auto start = Stations::getStartingMain()->getChokepoint() ? TilePosition(Stations::getStartingMain()->getChokepoint()->Center()) : Stations::getStartingMain()->getBase()->Location();
-            auto distBest = DBL_MAX;
-            for (auto x = start.x - 12; x <= start.x + 16; x++) {
-                for (auto y = start.y - 12; y <= start.y + 16; y++) {
-                    const TilePosition tile(x, y);
-                    const auto blockCenter = Position(tile) + Position(80, 32);
-                    const auto dist = (blockCenter.getDistance((Position)Stations::getStartingMain()->getChokepoint()->Center()));
-
-                    if (!tile.isValid()
-                        || Map::mapBWEM.GetArea(tile) != Stations::getStartingMain()->getBase()->GetArea()
-                        || dist < 96.0)
-                        continue;
-
-                    const auto layout = wherePieces(tile, pieces);
-                    pieceLayout = generatePieceLayout(pieces, layout);
-                    if (dist < distBest && canAddBlock(tile, 5, 2, pieceLayout, BlockType::Defensive)) {
-                        tileBest = tile;
-                        distBest = dist;
-                    }
-                }
-            }
-
-            //createBlock(tileBest, pieceLayout, 5, 2, BlockType::Defensive);
-        }
-
         void findProductionBlocks()
         {
             // Calculate distance for each tile to our natural choke, we want to place bigger blocks closer to the chokes
@@ -492,7 +425,9 @@ namespace BWEB::Blocks
                         if (t.isValid() && Broodwar->isBuildable(t) && Map::mapBWEM.GetArea(t) && Map::mapBWEM.GetArea(t) == station.getBase()->GetArea()) {
                             const auto p = Position(t) + Position(16, 16);
                             const auto distStation = p.getDistance(station.getBase()->Center());
-                            const auto distChoke = (station.getChokepoint() && Broodwar->self()->getRace() != Races::Zerg) ? p.getDistance(Position(station.getChokepoint()->Center())) : 1.0;
+                            auto distChoke = station.getChokepoint() ? p.getDistance(Position(station.getChokepoint()->Center())) : 1.0;
+                            if (Broodwar->self()->getRace() == Races::Zerg)
+                                distChoke /= 2.0;
                             tilesByPathDist.emplace(make_pair(distStation + distChoke, t));
                             if (station.isMain())
                                 inverseTilesByPathDist.emplace(make_pair(1.0 / (distChoke), t));
@@ -503,23 +438,25 @@ namespace BWEB::Blocks
 
             // Iterate tiles looking to add supply areas far from the main chokepoint
             map<const BWEM::Area *, TilePosition> firstPerArea;
-            for (auto &[v, tile] : inverseTilesByPathDist) {
-                auto area = Map::mapBWEM.GetArea(tile);
-                if (!area)
-                    continue;
+            if (Broodwar->self()->getRace() != Races::Zerg) {
+                for (auto &[v, tile] : inverseTilesByPathDist) {
+                    auto area = Map::mapBWEM.GetArea(tile);
+                    if (!area)
+                        continue;
 
-                auto supplyWidth = Broodwar->self()->getRace() == Races::Protoss ? 2 : 3;
-                if (firstPerArea.find(area) != firstPerArea.end() && (tile.x % supplyWidth != firstPerArea[area].x % supplyWidth || tile.y % 2 != firstPerArea[area].y % 2))
-                    continue;
+                    auto supplyWidth = Broodwar->self()->getRace() == Races::Protoss ? 2 : 3;
+                    if (firstPerArea.find(area) != firstPerArea.end() && (tile.x % supplyWidth != firstPerArea[area].x % supplyWidth || tile.y % 2 != firstPerArea[area].y % 2))
+                        continue;
 
-                const vector<TilePosition> layout ={ tile };
-                const vector<Piece> pieces =  { Broodwar->self()->getRace() == Races::Protoss ? Piece::Small : Piece::Medium };
-                multimap<TilePosition, Piece> pieceLayout = generatePieceLayout(pieces, layout);
-                if (canAddBlock(tile, supplyWidth, 2, pieceLayout, BlockType::Supply)) {
-                    createBlock(tile, pieceLayout, supplyWidth, 2, BlockType::Supply);
-                    firstPerArea[area] = tile;
-                    if (piecePerArea[area].pieces[Piece::Small] >= 20 || piecePerArea[area].pieces[Piece::Medium] >= 20)
-                        break;
+                    const vector<TilePosition> layout ={ tile };
+                    const vector<Piece> pieces ={ Broodwar->self()->getRace() == Races::Protoss ? Piece::Small : Piece::Medium };
+                    multimap<TilePosition, Piece> pieceLayout = generatePieceLayout(pieces, layout);
+                    if (canAddBlock(tile, supplyWidth, 2, pieceLayout, BlockType::Supply)) {
+                        createBlock(tile, pieceLayout, supplyWidth, 2, BlockType::Supply);
+                        firstPerArea[area] = tile;
+                        if (piecePerArea[area].pieces[Piece::Small] >= 20 || piecePerArea[area].pieces[Piece::Medium] >= 20)
+                            break;
+                    }
                 }
             }
 
@@ -578,103 +515,6 @@ namespace BWEB::Blocks
                 }
             }
         }
-
-        void findProxyBlock()
-        {
-            return;
-
-            // For base-specific locations, avoid all areas likely to be traversed by worker scouts
-            set<const BWEM::Area*> areasToAvoid;
-            for (auto &first : Map::mapBWEM.StartingLocations()) {
-                for (auto &second : Map::mapBWEM.StartingLocations()) {
-                    if (first == second)
-                        continue;
-
-                    for (auto &choke : Map::mapBWEM.GetPath(Position(first), Position(second))) {
-                        areasToAvoid.insert(choke->GetAreas().first);
-                        areasToAvoid.insert(choke->GetAreas().second);
-                    }
-                }
-
-                // Also add any areas that neighbour each start location
-                auto baseArea = Map::mapBWEM.GetNearestArea(first);
-                for (auto &area : baseArea->AccessibleNeighbours())
-                    areasToAvoid.insert(area);
-            }
-
-            // Gather the possible enemy start locations
-            vector<TilePosition> enemyStartLocations;
-            for (auto &start : Map::mapBWEM.StartingLocations()) {
-                if (Map::mapBWEM.GetArea(start) != Stations::getStartingMain()->getBase()->GetArea())
-                    enemyStartLocations.push_back(start);
-            }
-
-            // Check if this block is in a good area
-            const auto goodArea = [&](TilePosition t) {
-                for (auto &start : enemyStartLocations) {
-                    if (Map::mapBWEM.GetArea(t) == Map::mapBWEM.GetArea(start))
-                        return false;
-                }
-                for (auto &area : areasToAvoid) {
-                    if (Map::mapBWEM.GetArea(t) == area)
-                        return false;
-                }
-                return true;
-            };
-
-            // Check if there's a blocking neutral between the positions to prevent bad pathing
-            const auto blockedPath = [&](Position source, Position target) {
-                for (auto &choke : Map::mapBWEM.GetPath(source, target)) {
-                    if (Map::isUsed(TilePosition(choke->Center())) != UnitTypes::None)
-                        return true;
-                }
-                return false;
-            };
-
-            // Find the best locations
-            vector<Piece> pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Small, Piece::Small };
-            TilePosition tileBest = TilePositions::Invalid;
-            multimap<TilePosition, Piece> bestPieceLayout;
-            auto distBest = DBL_MAX;
-            for (int x = 0; x < Broodwar->mapWidth(); x++) {
-                for (int y = 0; y < Broodwar->mapHeight(); y++) {
-                    const TilePosition topLeft(x, y);
-                    const TilePosition botRight(x + 8, y + 5);
-                    vector<TilePosition> layout = wherePieces(topLeft, pieces);
-                    auto pieceLayout = generatePieceLayout(pieces, layout);
-
-                    if (!topLeft.isValid()
-                        || !botRight.isValid()
-                        || !canAddBlock(topLeft, 8, 5, pieceLayout, BlockType::Proxy))
-                        continue;
-
-                    const Position blockCenter = Position(topLeft) + Position(160, 96);
-
-                    // Consider each start location
-                    auto dist = 0.0;
-                    for (auto &base : enemyStartLocations) {
-                        const auto baseCenter = Position(base) + Position(64, 48);
-                        dist += Map::getGroundDistance(blockCenter, baseCenter);
-                        if (blockedPath(blockCenter, baseCenter)) {
-                            dist = DBL_MAX;
-                            break;
-                        }
-                    }
-
-                    // Bonus for placing in a good area
-                    if (goodArea(topLeft) && goodArea(botRight))
-                        dist = log(dist);
-
-                    if (dist < distBest) {
-                        distBest = dist;
-                        tileBest = topLeft;
-                        bestPieceLayout = pieceLayout;
-                    }
-                }
-            }
-
-            //createBlock(tileBest, bestPieceLayout, 8, 5, BlockType::Proxy);
-        }
     }
 
     void eraseBlock(const TilePosition here)
@@ -691,9 +531,7 @@ namespace BWEB::Blocks
     void findBlocks()
     {
         initialize();
-        findMainDefenseBlock();
         findMainStartBlocks();
-        findProxyBlock();
         findProductionBlocks();
         Pathfinding::clearCacheFully();
     }

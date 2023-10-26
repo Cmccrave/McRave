@@ -13,7 +13,6 @@ namespace McRave::Combat::Clusters {
         vector<Cluster> clusters;
         vector<ClusterNode> clusterNodes;
         vector<weak_ptr<UnitInfo>> previousCommanders;
-        constexpr double arcRads = 2.0944;
 
         vector<Color> bwColors ={ Colors::Red, Colors::Orange, Colors::Yellow, Colors::Green, Colors::Blue, Colors::Purple, Colors::Black, Colors::Grey, Colors::White };
 
@@ -54,7 +53,8 @@ namespace McRave::Combat::Clusters {
                 auto matchedType = (parent.unit->isFlying() && child.unit->isFlying()) || (!parent.unit->isFlying() && !child.unit->isFlying());
                 auto matchedStrat = (parent.unit->getGlobalState() == GlobalState::Attack && parent.unit->getLocalState() == child.unit->getLocalState())
                     || (parent.unit->getGlobalState() == GlobalState::Retreat && parent.unit->getRetreat() == child.unit->getRetreat())
-                    || (parent.unit->getGlobalState() == GlobalState::Attack && parent.unit->isLightAir() && child.unit->isLightAir());
+                    || (parent.unit->getGlobalState() == GlobalState::Attack && parent.unit->isLightAir() && child.unit->isLightAir())
+                    || (parent.unit->getGlobalState() == child.unit->getGlobalState() && parent.unit->getLocalState() == child.unit->getLocalState());
                 auto matchedDistance = child.position.getDistance(parent.position) < 256.0
                     || (Terrain::inTerritory(PlayerState::Self, parent.unit->getPosition()) && Terrain::inTerritory(PlayerState::Self, child.unit->getPosition()))
                     || (parent.unit->isLightAir() && child.unit->isLightAir());
@@ -124,7 +124,7 @@ namespace McRave::Combat::Clusters {
                 return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker()
                     && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end()
                     && find(previousCommanders.begin(), previousCommanders.end(), u) != previousCommanders.end()
-                    && !u->isTargetedBySuicide() && u->getGlobalState() != GlobalState::ForcedRetreat && u->getLocalState() != LocalState::ForcedRetreat;
+                    && !u->isTargetedBySuicide();
             });
             if (closestPreviousCommander) {
                 cluster.commander = closestPreviousCommander->weak_from_this();
@@ -135,8 +135,7 @@ namespace McRave::Combat::Clusters {
             // Get closest unit to centroid
             auto closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
                 return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker()
-                    && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && !u->isTargetedBySuicide()
-                    && u->getGlobalState() != GlobalState::ForcedRetreat && u->getLocalState() != LocalState::ForcedRetreat;
+                    && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && !u->isTargetedBySuicide();
             });
             if (!closestToCentroid) {
                 closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
@@ -156,7 +155,6 @@ namespace McRave::Combat::Clusters {
             BWEB::Path newMarchPath(cluster.avgPosition, marchPathPoint, commander->getType());
             newMarchPath.generateJPS([&](const TilePosition &t) { return newMarchPath.unitWalkable(t);  });
             cluster.marchPath = newMarchPath;
-            Visuals::drawPath(cluster.marchPath);
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.marchNavigation = cluster.marchPosition;
@@ -168,13 +166,12 @@ namespace McRave::Combat::Clusters {
                 return p.getDistance(cluster.avgPosition) >= dist;
             });
             if (march.isValid())
-                cluster.marchNavigation = march;
+                cluster.marchNavigation = march;            
 
             auto retreatPathPoint = Util::getPathPoint(*commander, cluster.retreatPosition);
             BWEB::Path newRetreatPath(cluster.avgPosition, retreatPathPoint, commander->getType());
             newRetreatPath.generateJPS([&](const TilePosition &t) { return newRetreatPath.unitWalkable(t);  });
             cluster.retreatPath = newRetreatPath;
-            //Visuals::drawPath(cluster.retreatPath);
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.retreatNavigation = cluster.retreatPosition;
@@ -187,6 +184,49 @@ namespace McRave::Combat::Clusters {
             });
             if (retreat.isValid())
                 cluster.retreatNavigation = retreat;
+        }
+
+        void fixNavigations()
+        {
+            // Create new navigation points that are more centered to the terrain
+            for (auto &cluster : clusters) {
+
+                const auto desiredAltitude = int(cluster.units.size()) * 4 * 8;
+
+                const auto newNavigations = [&](Position navigation) {
+                    auto perpAngle = BWEB::Map::getAngle(make_pair(navigation, cluster.avgPosition)) + 1.57;
+                    auto size = 32;
+                    auto newNav = navigation;
+                    auto currentAltitude = 0;
+
+                    // Now take the center and try to shift it perpendicular towards lower altitude
+                    while (mapBWEM.GetMiniTile(WalkPosition(newNav)).Altitude() < desiredAltitude) {
+                        auto p1 = Util::clipPosition(newNav - Position(-size * cos(perpAngle), size * sin(perpAngle)));
+                        auto p2 = Util::clipPosition(newNav + Position(-size * cos(perpAngle), size * sin(perpAngle)));
+                        auto altitude1 = mapBWEM.GetMiniTile(WalkPosition(p1)).Altitude();
+                        auto altitude2 = mapBWEM.GetMiniTile(WalkPosition(p2)).Altitude();
+
+                        if (altitude1 > altitude2 && altitude1 > currentAltitude) {
+                            newNav = p1;
+                            size = 32;
+                            currentAltitude = altitude1;
+                        }
+                        else if (altitude2 > currentAltitude) {
+                            newNav = p2;
+                            size = 32;
+                            currentAltitude = altitude2;
+                        }
+                        else if (altitude1 == 0 && altitude2 == 0)
+                            size+=32;
+                        else
+                            break;
+                    }
+                    return newNav;
+                };
+
+                cluster.marchNavigation = newNavigations(cluster.marchNavigation);
+                cluster.retreatNavigation = newNavigations(cluster.retreatNavigation);
+            }
         }
 
         void finishClusters()
@@ -284,10 +324,18 @@ namespace McRave::Combat::Clusters {
         void drawClusters()
         {
             for (auto &cluster : clusters) {
-                for (auto &unit : cluster.units) {
-                    Visuals::drawLine(unit->getPosition(), cluster.commander.lock()->getPosition(), cluster.color);
-                    unit->circle(cluster.color);
-                }
+                //for (auto &unit : cluster.units) {
+                //    Visuals::drawLine(unit->getPosition(), cluster.commander.lock()->getPosition(), cluster.color);
+                //    unit->circle(cluster.color);
+                //}
+
+                //Visuals::drawPath(cluster.marchPath);
+                //Visuals::drawPath(cluster.retreatPath);
+
+                Visuals::drawCircle(cluster.marchNavigation, 4, Colors::Green);
+                Visuals::drawCircle(cluster.retreatNavigation, 4, Colors::Red);
+
+                Broodwar->drawTextMap(cluster.marchNavigation, "%d", mapBWEM.GetMiniTile(WalkPosition(cluster.marchNavigation)).Altitude());
             }
         }
     }
@@ -299,7 +347,8 @@ namespace McRave::Combat::Clusters {
         createClusters();
         shapeClusters();
         finishClusters();
-        //drawClusters();
+        fixNavigations();
+        drawClusters();
     }
 
     vector<Cluster>& getClusters() { return clusters; }

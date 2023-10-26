@@ -12,8 +12,8 @@ namespace McRave::BuildOrder::Terran
     void TvA()
     {
         //if (currentTransition == "2Fact") {
-        //    firstUpgrade =  UpgradeTypes::Ion_Thrusters;
-        //    firstTech = TechTypes::None;
+        //    focusUpgrade =  UpgradeTypes::Ion_Thrusters;
+        //    focusTech = TechTypes::None;
         //    inOpening = s < 70;
         //    inBookSupply = vis(Terran_Supply_Depot) < 0;
         //    scout = s >= 20 && vis(Terran_Supply_Depot) > 0;
@@ -33,11 +33,11 @@ namespace McRave::BuildOrder::Terran
         //}
 
         if (true || currentTransition == "NukeRush"){
-            firstTech = TechTypes::Personnel_Cloaking;
+            focusTech = TechTypes::Personnel_Cloaking;
             inBookSupply = vis(Terran_Supply_Depot) < 3;
             scout = scout || vis(Terran_Barracks) > 0;
             inOpening = com(Terran_Ghost) == 0;
-            firstUnit = Terran_Ghost;
+            focusUnit = Terran_Ghost;
             wallMain = true;
             gasLimit = INT_MAX;
             wantNatural = false;

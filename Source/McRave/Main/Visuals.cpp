@@ -58,7 +58,7 @@ namespace McRave::Visuals {
                 Broodwar->drawTextScreen(432, 26, "%c%s: %c%s %s", Text::White, Spy::getEnemyBuild().c_str(), Text::Grey, Spy::getEnemyOpener().c_str(), Spy::getEnemyTransition().c_str());
                 Broodwar->drawTextScreen(160, 0, "%cExpanding", BuildOrder::shouldExpand() ? Text::White : Text::Grey);
                 Broodwar->drawTextScreen(160, 10, "%cRamping", BuildOrder::shouldRamp() ? Text::White : Text::Grey);
-                Broodwar->drawTextScreen(160, 20, "%cTeching", BuildOrder::getTechUnit() != UnitTypes::None ? Text::White : Text::Grey);
+                Broodwar->drawTextScreen(160, 20, "%cTeching", BuildOrder::getFirstFocusUnit() != UnitTypes::None ? Text::White : Text::Grey);
             }
 
             // Scores
@@ -75,7 +75,7 @@ namespace McRave::Visuals {
                         offset += 10;
                     }
                 }
-                Broodwar->drawTextScreen(0, offset, "%c%s", Text::Grey, BuildOrder::getTechUnit().c_str());
+                Broodwar->drawTextScreen(0, offset, "%c%s", Text::Grey, BuildOrder::getFirstFocusUnit().c_str());
             }
 
             // Timers

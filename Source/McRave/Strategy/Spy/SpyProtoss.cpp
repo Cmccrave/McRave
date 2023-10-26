@@ -199,9 +199,7 @@ namespace McRave::Spy::Protoss {
                             || (arrivesBy(5, Protoss_Dragoon, Time(6, 05)))
                             || (arrivesBy(9, Protoss_Dragoon, Time(6, 40)))
                             || (arrivesBy(12, Protoss_Dragoon, Time(7, 25)))
-                            || (completesBy(3, Protoss_Gateway, Time(4, 00)) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) > 0)
-                            || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) >= 2 && arrivesBy(2, Protoss_Dragoon, Time(5, 00)))
-                            || (completesBy(4, Protoss_Gateway, Time(5, 30)) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) >= 1))
+                            || (completesBy(4, Protoss_Gateway, Time(5, 30)) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) + Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) >= 1))
                             theSpy.transition.name = "4Gate";
                     }
                 }

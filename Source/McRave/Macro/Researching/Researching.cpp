@@ -25,7 +25,7 @@ namespace McRave::Researching {
         bool isCreateable(Unit building, TechType tech)
         {
             // First tech check
-            if (tech == BuildOrder::getFirstTech() && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
+            if (tech == BuildOrder::getFirstFocusTech() && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
                 return true;
 
             // Avoid researching Burrow with a Lair/Hive
@@ -47,12 +47,8 @@ namespace McRave::Researching {
         {
             using namespace TechTypes;
 
-            // Allow first tech
-            if (tech == BuildOrder::getFirstTech() && !BuildOrder::firstReady())
-                return true;
-
             // If this is a specific unit tech, check if it's unlocked
-            if (tech != BuildOrder::getFirstTech() && tech.whatUses().size() == 1) {
+            if (tech != BuildOrder::getFirstFocusTech() && tech.whatUses().size() == 1) {
                 for (auto &unit : tech.whatUses()) {
                     if (!BuildOrder::isUnitUnlocked(unit))
                         return false;
@@ -60,10 +56,10 @@ namespace McRave::Researching {
             }
 
             // If this isn't the first tech and we don't have our first tech/upgrade
-            if (tech != BuildOrder::getFirstTech()) {
-                if (BuildOrder::getFirstUpgrade() != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(BuildOrder::getFirstUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder::getFirstUpgrade()))
+            if (tech != BuildOrder::getFirstFocusTech()) {
+                if (BuildOrder::getFirstFocusUpgrade() != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(BuildOrder::getFirstFocusUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder::getFirstFocusUpgrade()))
                     return false;
-                if (BuildOrder::getFirstTech() != TechTypes::None && !Broodwar->self()->hasResearched(BuildOrder::getFirstTech()) && !Broodwar->self()->isResearching(BuildOrder::getFirstTech()))
+                if (BuildOrder::getFirstFocusTech() != TechTypes::None && !Broodwar->self()->hasResearched(BuildOrder::getFirstFocusTech()) && !Broodwar->self()->isResearching(BuildOrder::getFirstFocusTech()))
                     return false;
             }
 
@@ -100,7 +96,7 @@ namespace McRave::Researching {
             else if (Broodwar->self()->getRace() == Races::Zerg) {
                 switch (tech) {
                 case Lurker_Aspect:
-                    return !BuildOrder::isTechUnit(Zerg_Hydralisk) || (Upgrading::haveOrUpgrading(UpgradeTypes::Grooved_Spines, 1) && Upgrading::haveOrUpgrading(UpgradeTypes::Muscular_Augments, 1));
+                    return !BuildOrder::isFocusUnit(Zerg_Hydralisk) || (Upgrading::haveOrUpgrading(UpgradeTypes::Grooved_Spines, 1) && Upgrading::haveOrUpgrading(UpgradeTypes::Muscular_Augments, 1));
                 case Burrowing:
                     return Stations::getStations(PlayerState::Self).size() >= 3 && Players::getSupply(PlayerState::Self, Races::Zerg) > 140;
                 case Consume:

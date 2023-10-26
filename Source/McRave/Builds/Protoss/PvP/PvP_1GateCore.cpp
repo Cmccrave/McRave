@@ -14,9 +14,9 @@ namespace McRave::BuildOrder::Protoss {
         void PvP_1GC_Robo()
         {
             // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"
-            firstUnit =                                 enemyMaybeDT() ? Protoss_Observer : Protoss_Reaver;
+            focusUnit =                                 enemyMaybeDT() ? Protoss_Observer : Protoss_Reaver;
             inTransition =                          total(Protoss_Robotics_Facility) > 0;
-            inOpening =                             com(firstUnit) == 0;
+            inOpening =                             com(focusUnit) == 0;
 
             // Build
             buildQueue[Protoss_Gateway] =               (s >= 20) + (vis(Protoss_Robotics_Facility) > 0);
@@ -33,7 +33,7 @@ namespace McRave::BuildOrder::Protoss {
         void PvP_1GC_3Gate()
         {
             // -nolink-
-            firstUnit =                                 None;
+            focusUnit =                                 None;
             inTransition =                              total(Protoss_Gateway) >= 3;
             inOpening =                                 Spy::enemyPressure() ? Broodwar->getFrameCount() < 9000 : Broodwar->getFrameCount() < 8000;
             gasLimit =                                  vis(Protoss_Gateway) >= 2 && com(Protoss_Gateway) < 3 ? 2 : INT_MAX;
@@ -50,7 +50,7 @@ namespace McRave::BuildOrder::Protoss {
         void PvP_1GC_4Gate()
         {
             // "https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)"
-            firstUnit =                                 None;
+            focusUnit =                                 None;
             inTransition =                              total(Protoss_Gateway) >= 3;
             inOpening =                                 s < 140;
             desiredDetection =                          Protoss_Forge;
@@ -77,12 +77,12 @@ namespace McRave::BuildOrder::Protoss {
         void PvP_1GC_DT()
         {
             // "https://liquipedia.net/starcraft/2_Gate_DT_(vs._Protoss)"
-            firstUnit =                                 Protoss_Dark_Templar;
+            focusUnit =                                 Protoss_Dark_Templar;
             inTransition =                              total(Protoss_Citadel_of_Adun) > 0;
             inOpening =                                 s < 90;
             wallNat =                                   (com(Protoss_Forge) > 0 && com(Protoss_Dark_Templar) > 0);
             desiredDetection =                          Protoss_Forge;
-            firstUpgrade =                              UpgradeTypes::None;
+            focusUpgrade =                              UpgradeTypes::None;
             hideTech =                                  com(Protoss_Dark_Templar) <= 0;
             unitLimits[Protoss_Zealot] =                vis(Protoss_Photon_Cannon) >= 2 && s < 60 ? INT_MAX : unitLimits[Protoss_Zealot];
 

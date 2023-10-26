@@ -53,6 +53,7 @@ namespace McRave {
 
         std::vector<std::weak_ptr<UnitInfo>> assignedCargo;
         std::vector<std::weak_ptr<UnitInfo>> unitsTargetingThis;
+        std::vector<std::weak_ptr<UnitInfo>> unitsInReachOfThis;
         std::vector<std::weak_ptr<UnitInfo>> unitsInRangeOfThis;
         TransportState tState = TransportState::None;
         LocalState lState = LocalState::None;
@@ -185,6 +186,7 @@ namespace McRave {
 
         std::vector<std::weak_ptr<UnitInfo>>& getAssignedCargo() { return assignedCargo; }
         std::vector<std::weak_ptr<UnitInfo>>& getUnitsTargetingThis() { return unitsTargetingThis; }
+        std::vector<std::weak_ptr<UnitInfo>>& getUnitsInReachOfThis() { return unitsInReachOfThis; }
         std::vector<std::weak_ptr<UnitInfo>>& getUnitsInRangeOfThis() { return unitsInRangeOfThis; }
         std::map<int, BWAPI::Position>& getPositionHistory() { return positionHistory; }
         std::map<int, BWAPI::UnitCommandType>& getCommandHistory() { return commandHistory; }

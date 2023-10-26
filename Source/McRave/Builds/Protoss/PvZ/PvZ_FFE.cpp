@@ -56,9 +56,9 @@ namespace McRave::BuildOrder::Protoss {
         {
             inOpening =                             s < 100;
             inTransition =                          total(Protoss_Citadel_of_Adun) > 0;
-            firstUpgrade =                              UpgradeTypes::None;
-            firstTech =                                 TechTypes::Psionic_Storm;
-            firstUnit =                                 Protoss_High_Templar;
+            focusUpgrade =                              UpgradeTypes::None;
+            focusTech =                                 TechTypes::Psionic_Storm;
+            focusUnit =                                 Protoss_High_Templar;
 
             // Build
             buildQueue[Protoss_Assimilator] =           (s >= 38) + (s >= 60);
@@ -77,9 +77,9 @@ namespace McRave::BuildOrder::Protoss {
         {
             inOpening =                             s < 100;
             inTransition =                          total(Protoss_Stargate) >= 2;
-            firstUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
-            firstTech =                                 TechTypes::None;
-            firstUnit =                                 Protoss_Corsair;
+            focusUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
+            focusTech =                                 TechTypes::None;
+            focusUnit =                                 Protoss_Corsair;
 
             // Build
             buildQueue[Protoss_Assimilator] =           (s >= 38) + (atPercent(Protoss_Cybernetics_Core, 0.75));
@@ -102,9 +102,9 @@ namespace McRave::BuildOrder::Protoss {
             inTransition =                          total(Protoss_Gateway) >= 3;
             unitLimits[Protoss_Zealot] =                2;
             unitLimits[Protoss_Dragoon] =               INT_MAX;
-            firstUpgrade =                              UpgradeTypes::Singularity_Charge;
-            firstTech =                                 TechTypes::None;
-            firstUnit =                                 UnitTypes::None;
+            focusUpgrade =                              UpgradeTypes::Singularity_Charge;
+            focusTech =                                 TechTypes::None;
+            focusUnit =                                 UnitTypes::None;
 
             // Build
             buildQueue[Protoss_Cybernetics_Core] =      s >= 40;
@@ -119,9 +119,9 @@ namespace McRave::BuildOrder::Protoss {
         {
             inOpening =                             s < 100;
             inTransition =                          total(Protoss_Stargate) >= 2;
-            firstUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
-            firstTech =                                 TechTypes::None;
-            firstUnit =                                 Protoss_Scout;
+            focusUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
+            focusTech =                                 TechTypes::None;
+            focusUnit =                                 Protoss_Scout;
 
             // Build
             buildQueue[Protoss_Assimilator] =           (s >= 38) + (atPercent(Protoss_Cybernetics_Core, 0.75));
@@ -141,9 +141,9 @@ namespace McRave::BuildOrder::Protoss {
             // "https://liquipedia.net/starcraft/%2B1_Sair/Speedlot_(vs._Zerg)"
             inOpening =                             s < 100;
             inTransition =                          total(Protoss_Citadel_of_Adun) > 0 && total(Protoss_Stargate) > 0;
-            firstUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
-            firstTech =                                 TechTypes::None;
-            firstUnit =                                 Protoss_Corsair;
+            focusUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
+            focusTech =                                 TechTypes::None;
+            focusUnit =                                 Protoss_Corsair;
 
             // Build
             buildQueue[Protoss_Assimilator] =           (s >= 34) + (vis(Protoss_Cybernetics_Core) > 0);
@@ -154,9 +154,9 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Templar_Archives] =      Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements);
 
             if (vis(Protoss_Templar_Archives) > 0) {
-                techList.insert(Protoss_High_Templar);
+                focusUnits.insert(Protoss_High_Templar);
                 unlockedType.insert(Protoss_High_Templar);
-                techList.insert(Protoss_Dark_Templar);
+                focusUnits.insert(Protoss_Dark_Templar);
                 unlockedType.insert(Protoss_Dark_Templar);
             }
 

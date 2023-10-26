@@ -15,8 +15,8 @@ namespace McRave::BuildOrder::Protoss {
         {
             inTransition =                          total(Protoss_Citadel_of_Adun) > 0;
             inOpening =                             s < 80;
-            firstUpgrade =                              UpgradeTypes::None;
-            firstUnit =                                 Protoss_Dark_Templar;
+            focusUpgrade =                              UpgradeTypes::None;
+            focusUnit =                                 Protoss_Dark_Templar;
             wallNat =                                   (com(Protoss_Forge) > 0 && com(Protoss_Dark_Templar) > 0);
             hideTech =                                  com(Protoss_Dark_Templar) <= 0;
 
@@ -40,7 +40,7 @@ namespace McRave::BuildOrder::Protoss {
             // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"
             inTransition =                              total(Protoss_Robotics_Facility) > 0;
             inOpening =                                 s < 80;
-            firstUnit =                                 enemyMaybeDT() ? Protoss_Observer : Protoss_Reaver;
+            focusUnit =                                 enemyMaybeDT() ? Protoss_Observer : Protoss_Reaver;
 
             // Build
             buildQueue[Protoss_Gateway] =               2 + (com(Protoss_Robotics_Facility) > 0);

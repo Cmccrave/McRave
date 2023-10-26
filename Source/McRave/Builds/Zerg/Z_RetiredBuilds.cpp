@@ -15,8 +15,8 @@ namespace McRave::BuildOrder::Zerg {
         inTransition =                              atPercent(Zerg_Lair, 0.25) || total(Zerg_Mutalisk) > 0;
         inOpening =                                 total(Zerg_Mutalisk) < 9;
         inBookSupply =                                  vis(Zerg_Overlord) < 6 || total(Zerg_Mutalisk) < 6;
-        firstUpgrade =                                  (com(Zerg_Lair) > 0 && vis(Zerg_Overlord) >= 5 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
-        firstUnit =                                     Zerg_Mutalisk;
+        focusUpgrade =                                  (com(Zerg_Lair) > 0 && vis(Zerg_Overlord) >= 5 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        focusUnit =                                     Zerg_Mutalisk;
         pressure =                                      vis(Zerg_Zergling) >= 36;
         unitLimits[Zerg_Drone] =                        32;
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
@@ -54,7 +54,7 @@ namespace McRave::BuildOrder::Zerg {
         wallNat =                                       true;
         pressure =                                      !Spy::enemyProxy();
         wantNatural =                                   !Spy::enemyProxy();
-        firstUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        focusUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
 
         // Build
         buildQueue[Zerg_Hatchery] =                     1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0 && (!Spy::enemyProxy() || vis(Zerg_Zergling) >= 6));
@@ -78,7 +78,7 @@ namespace McRave::BuildOrder::Zerg {
         inTransition =                              true;
         inOpening =                                 total(Zerg_Zergling) < 56 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) == 0;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
-        firstUpgrade =                                  (hatchCount() >= 3 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        focusUpgrade =                                  (hatchCount() >= 3 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         unitLimits[Zerg_Drone] =                        13;
         unitLimits[Zerg_Zergling] =                     INT_MAX;
         gasLimit =                                      !lingSpeed() ? capGas(100) : 0;
@@ -105,9 +105,9 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Drone] =                        20;
         unitLimits[Zerg_Zergling] =                     12;
         unitLimits[Zerg_Hydralisk] =                    3;
-        firstUpgrade =                                  UpgradeTypes::None;
-        firstTech =                                     TechTypes::Lurker_Aspect;
-        firstUnit =                                     Zerg_Lurker;
+        focusUpgrade =                                  UpgradeTypes::None;
+        focusTech =                                     TechTypes::Lurker_Aspect;
+        focusUnit =                                     Zerg_Lurker;
         gasLimit =                                      gasMax();
 
         buildQueue[Zerg_Extractor] =                    (s >= 24) + (atPercent(Zerg_Lair, 0.90));
@@ -126,18 +126,18 @@ namespace McRave::BuildOrder::Zerg {
         inTransition =                              true;
         inOpening =                                 total(Zerg_Zergling) < 100;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
-        firstUpgrade =                                  lingSpeed() ? UpgradeTypes::Zerg_Carapace : UpgradeTypes::Metabolic_Boost;
-        firstUnit =                                     Zerg_Mutalisk;
+        focusUpgrade =                                  lingSpeed() ? UpgradeTypes::Zerg_Carapace : UpgradeTypes::Metabolic_Boost;
+        focusUnit =                                     Zerg_Mutalisk;
         unitLimits[Zerg_Drone] =                        com(Zerg_Hive) > 0 ? 21 : 18;
         unitLimits[Zerg_Zergling] =                     200;
         gasLimit =                                      (vis(Zerg_Drone) >= 10 && Broodwar->self()->gatheredGas() < 800) ? gasMax() : 0;
 
         if (vis(Zerg_Lair) > 0)
-            firstUpgrade = UpgradeTypes::Zerg_Carapace;
+            focusUpgrade = UpgradeTypes::Zerg_Carapace;
         if (Broodwar->self()->isUpgrading(UpgradeTypes::Zerg_Carapace))
-            firstUpgrade = UpgradeTypes::Metabolic_Boost;
+            focusUpgrade = UpgradeTypes::Metabolic_Boost;
         if (com(Zerg_Hive) > 0)
-            firstUpgrade = UpgradeTypes::Adrenal_Glands;
+            focusUpgrade = UpgradeTypes::Adrenal_Glands;
 
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32 && vis(Zerg_Extractor) > 0);
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 60) + (s >= 70) + (s >= 76) + (s >= 82) + (s >= 88);
