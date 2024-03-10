@@ -82,7 +82,9 @@ namespace McRave
     }
 
 
-
+    enum class Diagnostic {
+        None, Goal, Destination, Command, Order
+    };
 
     enum class GoalType {
         None, Attack, Contain, Explore, Escort, Defend

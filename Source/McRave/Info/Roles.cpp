@@ -10,8 +10,9 @@ namespace McRave::Roles {
         map<Role, int> myRoles;
         map<Role, int> forcedRoles;
         set<UnitInfo*> oldCombatWorkers;
+        set<UnitType> proxyTargeting ={ Protoss_Pylon, Protoss_Photon_Cannon, Terran_Barracks, Terran_Bunker, Zerg_Sunken_Colony };
 
-        void forceCombatWorker(int count, Position here, LocalState lState, GlobalState gState)
+        void forceCombatWorker(int count, Position here, LocalState lState = LocalState::Attack, GlobalState gState = GlobalState::Attack)
         {
             auto needed = count - forcedRoles[Role::Combat];
             if (needed <= 0)
@@ -45,7 +46,11 @@ namespace McRave::Roles {
                     closestWorker->setLocalState(lState);
                     closestWorker->setGlobalState(gState);
                     closestWorker->setDestination(here);
+
                     forcedRoles[Role::Combat]++;
+
+                    if (closestWorker->hasResource())
+                        Workers::removeUnit(*closestWorker);
                     if (oldCombatWorkers.find(closestWorker) != oldCombatWorkers.end())
                         oldCombatWorkers.erase(closestWorker);
                 }
@@ -95,7 +100,7 @@ namespace McRave::Roles {
                 return u->isProxy() && u->getType().isBuilding() && !u->canAttackGround() && !u->canAttackAir();
             });
             auto proxyDangerousBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                return u->isProxy() && u->getType().isBuilding() && (u->canAttackGround() || u->canAttackAir());
+                return u->isProxy() && proxyTargeting.find(u->getType()) != proxyTargeting.end() && (u->canAttackGround() || u->canAttackAir() || Terrain::inTerritory(PlayerState::Self, mapBWEM.GetArea(u->getTilePosition())));
             });
             auto proxyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                 return u->getType().isWorker() && u->isProxy();
@@ -113,26 +118,42 @@ namespace McRave::Roles {
 
             // ZvP
             if (Players::ZvP() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && Util::getTime() < Time(6, 00)) {
-                if (proxyDangerousBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
-                    forceCombatWorker(3, proxyDangerousBuilding->getPosition(), LocalState::Attack, GlobalState::Attack);
+
+                // 2Gate or Cannon proxy, 3 drones
+                if (proxyDangerousBuilding && (Spy::getEnemyBuild() == "CannonRush" || Spy::getEnemyBuild() == "2Gate") && com(Zerg_Zergling) <= 2)
+                    forceCombatWorker(3, proxyDangerousBuilding->getPosition());
+
+                // Probe actively building proxy, 2 drones
                 else if (proxyBuilding && proxyBuildingWorker)
-                    forceCombatWorker(2, proxyBuildingWorker->getPosition(), LocalState::Attack, GlobalState::Attack);
+                    forceCombatWorker(2, proxyBuildingWorker->getPosition());
+
+                // Probe arrived early, 1 drone
                 else if (proxyWorker && Util::getTime() < Time(3, 00) && com(Zerg_Zergling) == 0)
-                    forceCombatWorker(1, proxyWorker->getPosition(), LocalState::Attack, GlobalState::Attack);
-                else if (proxyBuilding && com(Zerg_Zergling) <= 2)
-                    forceCombatWorker(1, proxyBuilding->getPosition(), LocalState::Attack, GlobalState::Attack);
+                    forceCombatWorker(1, proxyWorker->getPosition());
+
+                // Proxy building, 1 drone
+                else if (proxyBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
+                    forceCombatWorker(1, proxyBuilding->getPosition());
             }
 
             // ZvT
-            if (Players::ZvT() && Players::getCompleteCount(PlayerState::Enemy, Terran_Bunker) == 0 && Util::getTime() < Time(6, 00)) {
+            if (Players::ZvT() && Util::getTime() < Time(6, 00)) {
 
-                // Proxy fighting
-                if (proxyDangerousBuilding && com(Zerg_Zergling) <= 2)
-                    forceCombatWorker(6, proxyDangerousBuilding->getPosition(), LocalState::Attack, GlobalState::Attack);
-                else if ((Spy::getEnemyOpener() == "8Rax" || Spy::enemyProxy()) && com(Zerg_Zergling) < 2 && Util::getTime() > Time(2, 00) && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) <= 2)
-                    forceCombatWorker(3, Position(Terrain::getNaturalChoke()->Center()), LocalState::Attack, GlobalState::Attack);
-                else if (proxyBuilding && com(Zerg_Zergling) <= 2 && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) == 0)
-                    forceCombatWorker(1, proxyBuilding->getPosition(), LocalState::Attack, GlobalState::Attack);
+                // 8Rax proxy
+                if (Spy::getEnemyOpener() == "8Rax" && proxyBuilding && total(Zerg_Zergling) <= 6)
+                    forceCombatWorker(6, proxyBuilding->getPosition());
+
+                // BBS proxy
+                if (Spy::getEnemyOpener() == "BBS" && total(Zerg_Zergling) <= 6 && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
+                    forceCombatWorker(6, Position(Terrain::getNaturalChoke()->Center()));
+
+                // Bunker
+                if (proxyDangerousBuilding && !proxyDangerousBuilding->isCompleted() && com(Zerg_Zergling) <= 2 && Terrain::inTerritory(PlayerState::Self, proxyDangerousBuilding->getPosition()))
+                    forceCombatWorker(3, proxyDangerousBuilding->getPosition());
+
+                // All-in with marines
+                if (Spy::getEnemyTransition() == "WorkerRush" && total(Zerg_Zergling) < 12 && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
+                    forceCombatWorker(4, Position(Terrain::getNaturalChoke()->Center()));
             }
 
             // Misc

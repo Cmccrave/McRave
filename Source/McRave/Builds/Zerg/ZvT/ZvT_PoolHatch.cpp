@@ -41,7 +41,7 @@ namespace McRave::BuildOrder::Zerg {
         void ZvT_PH_12Pool()
         {
             transitionReady =                               hatchCount() >= 2;
-            unitLimits[Zerg_Zergling] =                     4;
+            unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
             gasLimit =                                      com(Zerg_Drone) >= 11 ? gasMax() : 0;
             unitLimits[Zerg_Drone] =                        13;
             scout =                                         scout || (com(Zerg_Drone) >= 9);

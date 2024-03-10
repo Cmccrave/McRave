@@ -69,7 +69,6 @@ namespace McRave {
         BWAPI::Position position = BWAPI::Positions::Invalid;
         BWAPI::Position engagePosition = BWAPI::Positions::Invalid;
         BWAPI::Position destination = BWAPI::Positions::Invalid;
-        BWAPI::Position retreat = BWAPI::Positions::Invalid;
         BWAPI::Position formation = BWAPI::Positions::Invalid;
         BWAPI::Position navigation = BWAPI::Positions::Invalid;
         BWAPI::Position lastPos = BWAPI::Positions::Invalid;
@@ -107,6 +106,9 @@ namespace McRave {
         UnitInfo(BWAPI::Unit u) {
             bwUnit = u;
         }
+
+        BWAPI::Position retreatPos = BWAPI::Positions::Invalid;
+        BWAPI::Position marchPos = BWAPI::Positions::Invalid;
 
         bool hasResource() { return !resource.expired(); }
         bool hasTransport() { return !transport.expired(); }
@@ -148,10 +150,14 @@ namespace McRave {
         bool canTwoShot(UnitInfo&);
 
         // General commands that verify we aren't spamming the same command and sticking the unit
-        void setCommand(BWAPI::UnitCommandType, BWAPI::Position, std::string);
-        void setCommand(BWAPI::UnitCommandType, UnitInfo&, std::string);
+        void setCommand(BWAPI::UnitCommandType, BWAPI::Position);
+        void setCommand(BWAPI::UnitCommandType, UnitInfo&);
         BWAPI::Position getCommandPosition() { return commandPosition; }
         BWAPI::UnitCommandType getCommandType() { return commandType; }
+
+        // Debug text
+        void setCommandText(std::string);
+        void setDestinationText(std::string);
 
         // Information about frame timings
         int frameStartedWhen() {
@@ -214,7 +220,6 @@ namespace McRave {
         BWAPI::Position getDestination() { return destination; }
         BWAPI::Position getFormation() { return formation; }
         BWAPI::Position getNavigation() { return navigation; }
-        BWAPI::Position getRetreat() { return retreat; }
         BWAPI::Position getGoal() { return goal; }
         BWAPI::Position getInterceptPosition() { return interceptPosition; }
         BWAPI::Position getSurroundPosition() { return surroundPosition; }
@@ -288,7 +293,6 @@ namespace McRave {
         void setDestination(BWAPI::Position newPosition) { destination = newPosition; }
         void setFormation(BWAPI::Position newPosition) { formation = newPosition; }
         void setNavigation(BWAPI::Position newPosition) { navigation = newPosition; }
-        void setRetreat(BWAPI::Position newPosition) { retreat = newPosition; }
         void setGoal(BWAPI::Position newPosition) { goal = newPosition; }
         void setBuildPosition(BWAPI::TilePosition newPosition) { buildPosition = newPosition; }
         void setDestinationPath(BWEB::Path& newPath) { destinationPath = newPath; }

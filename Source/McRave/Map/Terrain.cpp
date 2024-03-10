@@ -38,8 +38,9 @@ namespace McRave::Terrain {
 
         void findEnemy()
         {
+            // If we think we found the enemy but we were wrong
             if (enemyStartingPosition.isValid()) {
-                if (Broodwar->isExplored(enemyStartingTilePosition) && Util::getTime() < Time(8, 00) && BWEB::Map::isUsed(enemyStartingTilePosition) == UnitTypes::None) {
+                if (Broodwar->isExplored(enemyStartingTilePosition) && Util::getTime() < Time(5, 00) && BWEB::Map::isUsed(enemyStartingTilePosition) == UnitTypes::None) {
                     enemyStartingPosition = Positions::Invalid;
                     enemyStartingTilePosition = TilePositions::Invalid;
                     enemyNatural = nullptr;
@@ -170,11 +171,25 @@ namespace McRave::Terrain {
             groundCleanupPositions.clear();
             airCleanupPositions.clear();
 
+            // Early on it's just the starting locations
+            if (Util::getTime() < Time(5, 00)) {
+                for (auto &station : BWEB::Stations::getStations()) {
+                    if (station.isMain() && !Stations::isBaseExplored(&station)) {
+                        groundCleanupPositions.push_back(station.getBase()->Center());
+                        airCleanupPositions.push_back(station.getBase()->Center());
+                        Visuals::drawCircle(station.getBase()->Center(), 4, Colors::Teal, true);
+                    }
+                }
+                return;
+            }
+
             // If any base hasn't been visited in past 5 minutes
             for (auto &base : allBases) {
                 auto frameDiff = (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(base->Center()));
-                if (frameDiff > 7200 || !Broodwar->isExplored(TilePosition(base->Center())))
+                if (frameDiff > 7200 || !Broodwar->isExplored(TilePosition(base->Center()))) {
                     groundCleanupPositions.push_back(base->Center());
+                    airCleanupPositions.push_back(base->Center());
+                }
             }
 
             // If any reachable tile hasn't been visited in past 5 minutes
@@ -218,13 +233,6 @@ namespace McRave::Terrain {
 
     Position getClosestMapCorner(Position here)
     {
-        vector<Position> mapCorners ={
-    {0, 0},
-    {0, Broodwar->mapHeight() * 32 },
-    {Broodwar->mapWidth() * 32, 0},
-    {Broodwar->mapWidth() * 32, Broodwar->mapHeight() * 32}
-        };
-
         auto closestCorner = Positions::Invalid;
         auto closestDist = DBL_MAX;
         for (auto &corner : mapCorners) {
@@ -239,13 +247,7 @@ namespace McRave::Terrain {
 
     Position getClosestMapEdge(Position here)
     {
-        vector<Position> mapEdges ={
-    {here.x, 0},
-    {here.x, Broodwar->mapHeight() * 32 },
-    {0, here.y},
-    {Broodwar->mapWidth() * 32, here.y}
-        };
-
+        mapEdges ={ {here.x, 0}, {here.x, Broodwar->mapHeight() * 32 }, {0, here.y}, {Broodwar->mapWidth() * 32, here.y} };
         auto closestCorner = Positions::Invalid;
         auto closestDist = DBL_MAX;
         for (auto &corner : mapEdges) {
@@ -430,6 +432,8 @@ namespace McRave::Terrain {
                     areaChokeGeometry[walk] = choke->GetAreas();
             }
         }
+
+        mapCorners ={ {0, 0}, {0, Broodwar->mapHeight() * 32 }, {Broodwar->mapWidth() * 32, 0}, {Broodwar->mapWidth() * 32, Broodwar->mapHeight() * 32} };
 
         reverseRamp = Broodwar->getGroundHeight(getMainTile()) < Broodwar->getGroundHeight(getNaturalTile());
         flatRamp = Broodwar->getGroundHeight(getMainTile()) == Broodwar->getGroundHeight(getNaturalTile());

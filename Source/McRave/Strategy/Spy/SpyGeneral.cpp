@@ -73,15 +73,15 @@ namespace McRave::Spy::General {
                     theSpy.wall.possible = true;
             }
 
-            theSpy.workersNearUs = 0;
+            theSpy.workersPulled = 0;
             theSpy.productionCount = (player.getCurrentRace() == Races::Zerg ? 1 : 0); // Starting hatcheries always exist
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit =*u;
 
                 // Monitor the soonest the enemy will scout us
                 if (unit.getType().isWorker()) {
-                    if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) || unit.isProxy())
-                        theSpy.workersNearUs++;
+                    if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) || unit.isProxy() || !Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()))
+                        theSpy.workersPulled++;
                 }
 
                 // Monitor gas intake or gas steal
@@ -143,9 +143,9 @@ namespace McRave::Spy::General {
         void checkEnemyInvis(PlayerInfo& player, StrategySpy& theSpy)
         {
             // DTs, Vultures, Lurkers
-            theSpy.invis.possible = (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dark_Templar) >= 1 || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) >= 1 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) > 0) || Players::getVisibleCount(PlayerState::Enemy, Protoss_Templar_Archives) >= 1)
-                || (Players::getVisibleCount(PlayerState::Enemy, Terran_Ghost) >= 1 || Players::getVisibleCount(PlayerState::Enemy, Terran_Vulture) >= 4)
-                || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Lurker) >= 1 || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) >= 1 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) >= 1 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) <= 0))
+            theSpy.invis.possible = (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) >= 1 || (Players::getTotalCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) >= 1 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0) || Players::getTotalCount(PlayerState::Enemy, Protoss_Templar_Archives) >= 1)
+                || (Players::getTotalCount(PlayerState::Enemy, Terran_Ghost) >= 1 || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 4)
+                || (Players::getTotalCount(PlayerState::Enemy, Zerg_Lurker) >= 1 || (Players::getTotalCount(PlayerState::Enemy, Zerg_Lair) >= 1 && Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) >= 1))
                 || (Spy::getEnemyTransition() == "1HatchLurker" || Spy::getEnemyTransition() == "2HatchLurker" || Spy::getEnemyTransition() == "DT");
 
             // Protoss

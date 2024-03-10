@@ -12,10 +12,8 @@ namespace McRave::BuildOrder::Zerg {
     void defaultZvT() {
         inOpening =                                 true;
         inBookSupply =                              true;
-        wallNat =                                   hatchCount() >= 4;
-        wallMain =                                  false;
         wantNatural =                               true;
-        wantThird =                                 true;
+        wantThird =                                 false;
         mineralThird =                              false;
         proxy =                                     false;
         hideTech =                                  false;
@@ -31,76 +29,87 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Drone] =                    INT_MAX;
 
         desiredDetection =                          Zerg_Overlord;
-        focusUpgrade =                              (vis(Zerg_Zergling) >= 8 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
+        focusUpgrade =                              (vis(Zerg_Zergling) >= 6 && gas(100)) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         focusTech =                                 TechTypes::None;
         focusUnit =                                 None;
 
         armyComposition[Zerg_Drone] =               0.60;
         armyComposition[Zerg_Zergling] =            0.40;
+
+        wallNat =                                   false;
+        wallMain =                                  false;
     }
 
     int lingsNeeded_ZvT() {
 
         auto initialValue = 6;
-        if (com(Zerg_Spawning_Pool) == 0)
+        if (!atPercent(Zerg_Spawning_Pool, 0.80))
             return 0;
 
         // 2Rax
         if (Spy::getEnemyBuild() == "2Rax") {
-            if (Spy::getEnemyOpener() == "Main")
+            initialValue = 6;
+            if (Spy::getEnemyOpener() == "11/13")
                 initialValue = 6;
-            else if (Spy::getEnemyOpener() == "Proxy")
+            else if (Spy::getEnemyOpener() == "BBS")
                 initialValue = 10;
         }
 
         // RaxCC
         if (Spy::getEnemyBuild() == "RaxCC") {
+            initialValue = 2;
             if (Spy::getEnemyOpener() == "8Rax")
                 initialValue = 10;
             else
-                initialValue = 6;
+                initialValue = 2;
         }
 
         // RaxFact
         if (Spy::getEnemyBuild() == "RaxFact") {
-            initialValue = 10;
-            if (Spy::getEnemyOpener() == "8Rax")
-                initialValue = 10;
+            initialValue = 2;
+            if (Util::getTime() > Time(3, 45))
+                initialValue = 6;
         }
+
+        // TODO: Fix T spy
+        if (Spy::getEnemyOpener() == "8Rax")
+            initialValue = 10;
 
         if (total(Zerg_Zergling) < initialValue)
             return initialValue;
 
         if (Spy::getEnemyTransition() == "WorkerRush")
             return 24;
-        return 6;
+        return 0;
     }
 
     void ZvT2HatchMuta()
     {
         inTransition =                                  vis(Zerg_Lair) > 0;
-        unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 28 : 15 - hatchCount();
+        unitLimits[Zerg_Drone] =                        (com(Zerg_Spawning_Pool) > 0 ? 28 : 15 - hatchCount());
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
         gasLimit =                                      vis(Zerg_Drone) >= 10 ? gasMax() : 0;
 
         inOpening =                                     total(Zerg_Mutalisk) <= 9;
-        focusUpgrade =                                  Spy::enemyRush() ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
         focusUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  total(Zerg_Mutalisk) < 6;
-        wantThird =                                     !Spy::enemyPressure() && !Spy::enemyRush() && Spy::getEnemyOpener() != "8Rax" && Spy::getEnemyBuild() != "RaxFact";
-        planEarly =                                     wantThird && atPercent(Zerg_Spire, 0.5) && int(Stations::getStations(PlayerState::Self).size()) < 3;
 
-        auto thirdHatch =  (total(Zerg_Mutalisk) >= 6) || (vis(Zerg_Drone) >= 20 && s >= 48 && vis(Zerg_Spire) > 0);
+        auto thirdHatch =  (total(Zerg_Mutalisk) >= 6) || (wantThird && s >= 48);
+        planEarly = inOpening && hatchCount() == 2 && wantThird && Util::getTime() > Time(3, 45);
 
+        // Buildings
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 16);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (2 * atPercent(Zerg_Spire, 0.25));
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.95);
 
+        // Upgrades
+        //techQueue[TechTypes::Burrowing] =               !Spy::enemyFastExpand() && com(Zerg_Lair) > 0 && !Spy::enemyRush() && !Spy::enemyProxy();
+
         // Reactions
         if (Spy::getEnemyOpener() == "8Rax" && total(Zerg_Zergling) < 6) 
-            buildQueue[Zerg_Lair] = 0;        
+            buildQueue[Zerg_Lair] = 0;
 
         // Composition
         if (com(Zerg_Spire) == 0 && lingsNeeded_ZvT() > vis(Zerg_Zergling)) {
@@ -254,17 +263,11 @@ namespace McRave::BuildOrder::Zerg {
 
         // Reactions
         if (!inTransition) {
-            //if (Spy::enemyRush() || Spy::enemyProxy())
-            //    currentTransition = "2HatchSpeedling";
-            if (Spy::getEnemyOpener() == "8Rax") {
+
+            if (Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush") {
                 currentBuild = "PoolHatch";
                 currentOpener = "12Pool";
                 currentTransition = "2HatchMuta";
-            }
-            if (Spy::getEnemyTransition() == "WorkerRush") {
-                currentBuild = "PoolHatch";
-                currentOpener = "Overpool";
-                currentTransition = "2HatchSpeedling";
             }
         }
 

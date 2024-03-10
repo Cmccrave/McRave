@@ -236,7 +236,7 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (true) {
+            if (false) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("2Gate", "Main", "4Gate");
                     return;
@@ -254,7 +254,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvT()) {
-                    BuildOrder::setLearnedBuild("PoolHatch", "12Pool", "3HatchMuta");
+                    BuildOrder::setLearnedBuild("PoolHatch", "12Pool", "2HatchMuta");
                     return;
                 }
                 if (Players::ZvP()) {

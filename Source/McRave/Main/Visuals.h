@@ -11,6 +11,7 @@ namespace McRave::Visuals {
 
     void centerCameraOn(BWAPI::Position);
 
+    void drawDiagnostic(Diagnostic, BWAPI::Position);
 
     void drawDebugText(std::string, double);
     void drawDebugText(std::string, int);

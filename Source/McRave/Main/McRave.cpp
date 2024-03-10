@@ -29,7 +29,7 @@ void McRaveModule::onStart()
     Goals::onStart();
 
     Broodwar->enableFlag(Flag::UserInput);
-    Broodwar->setCommandOptimizationLevel(0);
+    Broodwar->setCommandOptimizationLevel(1);
     Broodwar->setLatCom(true);
     Broodwar->sendText("glhf");
     Broodwar->setLocalSpeed(Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings ? 0 : 42);
@@ -54,8 +54,8 @@ void McRaveModule::onFrame()
     if (Broodwar->getGameType() != GameTypes::Use_Map_Settings && Broodwar->isPaused())
         return;
 
-    if (Util::getTime() > Time(30, 00))
-        Broodwar->leaveGame();
+    //if (Util::getTime() > Time(20, 00))
+    //    Broodwar->leaveGame();
 
     //auto mousePos = WalkPosition(Broodwar->getScreenPosition() + Broodwar->getMousePosition());
     //auto grid = Grids::getAirThreat(mousePos, PlayerState::Enemy);

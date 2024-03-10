@@ -163,21 +163,6 @@
     <ClCompile Include="..\Source\McRave\Macro\Planning\Pylons.cpp">
       <Filter>McRave\Macro\Planning</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Strategy\Spy\Spy.cpp">
-      <Filter>McRave\Strategy\Spy</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyGeneral.cpp">
-      <Filter>McRave\Strategy\Spy</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyProtoss.cpp">
-      <Filter>McRave\Strategy\Spy</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyTerran.cpp">
-      <Filter>McRave\Strategy\Spy</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyZerg.cpp">
-      <Filter>McRave\Strategy\Spy</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Strategy\Goals\Goals.cpp">
       <Filter>McRave\Strategy\Goals</Filter>
     </ClCompile>
@@ -262,9 +247,6 @@
     <ClCompile Include="..\Source\McRave\Micro\Combat\Decision.cpp">
       <Filter>McRave\Micro\Combat</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Micro\Combat\Destination.cpp">
-      <Filter>McRave\Micro\Combat</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Micro\Combat\Formations.cpp">
       <Filter>McRave\Micro\Combat</Filter>
     </ClCompile>
@@ -309,6 +291,24 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Map\Walls\Walls.cpp">
       <Filter>McRave\Map\Walls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Micro\Combat\Bearings.cpp">
+      <Filter>McRave\Micro\Combat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Strategy\Spy\Spy.cpp">
+      <Filter>McRave\Strategy\Spy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyGeneral.cpp">
+      <Filter>McRave\Strategy\Spy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyProtoss.cpp">
+      <Filter>McRave\Strategy\Spy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyTerran.cpp">
+      <Filter>McRave\Strategy\Spy</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyZerg.cpp">
+      <Filter>McRave\Strategy\Spy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -404,9 +404,6 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Macro\Planning\Pylons.h">
       <Filter>McRave\Macro\Planning</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\Strategy\Spy\Spy.h">
-      <Filter>McRave\Strategy\Spy</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Strategy\Goals\Goals.h">
       <Filter>McRave\Strategy\Goals</Filter>
@@ -512,6 +509,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Map\Walls\Walls.h">
       <Filter>McRave\Map\Walls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Strategy\Spy\Spy.h">
+      <Filter>McRave\Strategy\Spy</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -46,40 +46,42 @@ namespace McRave::Combat::Clusters {
             }
         }
 
-        bool generateCluster(ClusterNode &parent, int id, int minsize)
+        bool generateCluster(ClusterNode &root, int id, int minsize)
         {
             auto matching = [&](auto &parent, auto &child) {
                 auto matchedGoal = (parent.unit->getGoal() == child.unit->getGoal());
-                auto matchedType = (parent.unit->isFlying() && child.unit->isFlying()) || (!parent.unit->isFlying() && !child.unit->isFlying());
-                auto matchedStrat = (parent.unit->getGlobalState() == GlobalState::Attack && parent.unit->getLocalState() == child.unit->getLocalState())
-                    || (parent.unit->getGlobalState() == GlobalState::Retreat && parent.unit->getRetreat() == child.unit->getRetreat())
-                    || (parent.unit->getGlobalState() == GlobalState::Attack && parent.unit->isLightAir() && child.unit->isLightAir())
-                    || (parent.unit->getGlobalState() == child.unit->getGlobalState() && parent.unit->getLocalState() == child.unit->getLocalState());
-                auto matchedDistance = child.position.getDistance(parent.position) < 256.0
-                    || (Terrain::inTerritory(PlayerState::Self, parent.unit->getPosition()) && Terrain::inTerritory(PlayerState::Self, child.unit->getPosition()))
+                auto matchedType = (parent.unit->isFlying() == child.unit->isFlying());
+                auto matchedStrat = (parent.unit->getGlobalState() == child.unit->getGlobalState());
+                auto matchedDistance = BWEB::Map::getGroundDistance(child.position, parent.position) < 256.0
+                    //|| (Terrain::inTerritory(PlayerState::Self, parent.unit->getPosition()) && Terrain::inTerritory(PlayerState::Self, child.unit->getPosition()))
                     || (parent.unit->isLightAir() && child.unit->isLightAir());
                 return matchedType && matchedStrat && matchedDistance && matchedGoal;
             };
 
-            auto getNeighbors = [&](auto &currentNode, auto &queue) {
+            auto getNeighbors = [&](auto &parent, auto &queue) {
                 for (auto &child : clusterNodes) {
-                    if (child.id == 0 && matching(parent, child))
+                    if (parent.unit != child.unit && child.id == 0 && matching(parent, child))
                         queue.push(&child);
+                    if (int(queue.size()) >= 24 && !parent.unit->isFlying())
+                        break;
                 }
             };
 
             std::queue<ClusterNode*> nodeQueue;
-            getNeighbors(parent, nodeQueue);
+            getNeighbors(root, nodeQueue);
+
+            // If we didn't find enough neighbors, no cluster generates
             if (int(nodeQueue.size()) < minsize)
                 return false;
 
             // Create cluster
             Cluster newCluster;
-            parent.id = id;
+            root.id = id;
             newCluster.color = bwColors.at(id % 8);
-            newCluster.units.push_back(parent.unit);
+            newCluster.units.push_back(root.unit);
 
             // Every other node looks at neighbor and tries to add it, if enough neighbors
+            int x = 0;
             while (!nodeQueue.empty()) {
                 auto &node = nodeQueue.front();
                 nodeQueue.pop();
@@ -87,21 +89,7 @@ namespace McRave::Combat::Clusters {
                 if (node->id == 0) {
                     node->id = id;
                     newCluster.units.push_back(node->unit);
-
-                    std::queue<ClusterNode*> neighborQueue;
-                    getNeighbors(*node, neighborQueue);
-
-                    if (int(neighborQueue.size()) >= minsize) {
-                        while (!neighborQueue.empty()) {
-                            auto &neighbor = neighborQueue.front();
-                            neighborQueue.pop();
-                            if (neighbor->id == 0) {
-                                neighbor->id = id;
-                                nodeQueue.push(neighbor);
-                                newCluster.units.push_back(neighbor->unit);
-                            }
-                        }
-                    }
+                    getNeighbors(*node, nodeQueue);
                 }
             }
             clusters.push_back(newCluster);
@@ -159,14 +147,10 @@ namespace McRave::Combat::Clusters {
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.marchNavigation = cluster.marchPosition;
             const auto march = Util::findPointOnPath(cluster.marchPath, [&](Position p) {
-                if (mapBWEM.GetMiniTile(WalkPosition(p)).Altitude() * 4 < cluster.units.size()) {
-                    Visuals::drawBox(TilePosition(p), TilePosition(1, 1), Colors::Red);
-                    return false;
-                }
                 return p.getDistance(cluster.avgPosition) >= dist;
             });
             if (march.isValid())
-                cluster.marchNavigation = march;            
+                cluster.marchNavigation = march;
 
             auto retreatPathPoint = Util::getPathPoint(*commander, cluster.retreatPosition);
             BWEB::Path newRetreatPath(cluster.avgPosition, retreatPathPoint, commander->getType());
@@ -176,14 +160,14 @@ namespace McRave::Combat::Clusters {
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.retreatNavigation = cluster.retreatPosition;
             const auto retreat = Util::findPointOnPath(cluster.retreatPath, [&](Position p) {
-                if (mapBWEM.GetMiniTile(WalkPosition(p)).Altitude() * 4 < cluster.units.size()) {
-                    Visuals::drawBox(TilePosition(p), TilePosition(1, 1), Colors::Red);
-                    return false;
-                }
                 return p.getDistance(cluster.avgPosition) >= dist;
             });
             if (retreat.isValid())
                 cluster.retreatNavigation = retreat;
+
+            // Remove the center to the tile from Util function above
+            cluster.marchNavigation -= Position(16, 16);
+            cluster.retreatNavigation -= Position(16, 16);
         }
 
         void fixNavigations()
@@ -191,7 +175,7 @@ namespace McRave::Combat::Clusters {
             // Create new navigation points that are more centered to the terrain
             for (auto &cluster : clusters) {
 
-                const auto desiredAltitude = int(cluster.units.size()) * 4 * 8;
+                const auto desiredAltitude = (int(cluster.units.size()) * 32);
 
                 const auto newNavigations = [&](Position navigation) {
                     auto perpAngle = BWEB::Map::getAngle(make_pair(navigation, cluster.avgPosition)) + 1.57;
@@ -200,7 +184,7 @@ namespace McRave::Combat::Clusters {
                     auto currentAltitude = 0;
 
                     // Now take the center and try to shift it perpendicular towards lower altitude
-                    while (mapBWEM.GetMiniTile(WalkPosition(newNav)).Altitude() < desiredAltitude) {
+                    while (newNav.isValid() && mapBWEM.GetMiniTile(WalkPosition(newNav)).Altitude() < desiredAltitude) {
                         auto p1 = Util::clipPosition(newNav - Position(-size * cos(perpAngle), size * sin(perpAngle)));
                         auto p2 = Util::clipPosition(newNav + Position(-size * cos(perpAngle), size * sin(perpAngle)));
                         auto altitude1 = mapBWEM.GetMiniTile(WalkPosition(p1)).Altitude();
@@ -247,12 +231,7 @@ namespace McRave::Combat::Clusters {
                     }
                     cluster.spacing = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0)) + (cluster.mobileCluster ? 2.0 : 0.0);
 
-                    
-                    auto sizeSpacing = cluster.spacing * count / 2.0;
-                    auto speedSpacing = commander->getSpeed() * 48;
-                    
-                    auto dist = min(sizeSpacing, speedSpacing);
-                    pathCluster(cluster, dist);
+                    pathCluster(cluster, 160.0);
                 }
             }
         }
@@ -266,6 +245,8 @@ namespace McRave::Combat::Clusters {
                 auto avgPosition = Position(0, 0);
                 auto cnt = 0;
                 for (auto &unit : cluster.units) {
+                    if (unit->saveUnit)
+                        continue;
                     avgPosition += unit->getPosition();
                     cnt++;
                 }
@@ -283,33 +264,26 @@ namespace McRave::Combat::Clusters {
         {
             for (auto &cluster : clusters) {
                 if (auto commander = cluster.commander.lock()) {
-                    const auto retreatCluster = commander->getGlobalState() == GlobalState::Retreat || commander->getGlobalState() == GlobalState::ForcedRetreat;
+                    auto atHome = Terrain::inTerritory(PlayerState::Self, cluster.avgPosition);
 
-                    // Determine the directions of the cluster and whether it's moving
-                    if (Terrain::inTerritory(PlayerState::Self, commander->getPosition()) && retreatCluster) {
-                        cluster.mobileCluster = false;
-                        cluster.marchPosition = commander->getDestination();
-                        cluster.retreatPosition = commander->getRetreat();
+                    for (auto &unit : cluster.units) {
+                        if (unit->getLocalState() == LocalState::Retreat || unit->getLocalState() == LocalState::ForcedRetreat || unit->getGlobalState() == GlobalState::Retreat || unit->getGlobalState() == GlobalState::ForcedRetreat)
+                            cluster.retreatCluster = true;
                     }
-                    else {
-                        cluster.mobileCluster = true;
-                        cluster.marchPosition = commander->getDestination();
-                        cluster.retreatPosition = commander->getRetreat();
-                    }
+
+                    cluster.marchPosition = commander->marchPos;
+                    cluster.retreatPosition = commander->retreatPos;
+                    cluster.mobileCluster = !atHome || !cluster.retreatCluster;
 
                     // Determine how commands are sent out
                     if (commander->isLightAir())
-                        cluster.commandShare = CommandShare::Exact;                    
+                        cluster.commandShare = CommandShare::Exact;
                     else
                         cluster.commandShare = CommandShare::Parallel;
 
                     // Determine the shape we want
-                    if (!commander->isLightAir() && !commander->isSuicidal()) {
-                        if (!cluster.mobileCluster && Combat::holdAtChoke() && retreatCluster)
-                            cluster.shape = Shape::Choke;
-                        else
-                            cluster.shape = Shape::Concave;
-                    }
+                    if (!commander->isLightAir() && !commander->isSuicidal())
+                        cluster.shape = Shape::Concave;
 
                     // Assign commander to each unit
                     for (auto &unit : cluster.units) {
@@ -332,10 +306,15 @@ namespace McRave::Combat::Clusters {
                 //Visuals::drawPath(cluster.marchPath);
                 //Visuals::drawPath(cluster.retreatPath);
 
-                Visuals::drawCircle(cluster.marchNavigation, 4, Colors::Green);
-                Visuals::drawCircle(cluster.retreatNavigation, 4, Colors::Red);
+                // March
+                Visuals::drawCircle(cluster.marchNavigation, 8, Colors::Green);
+                Visuals::drawLine(cluster.marchNavigation, cluster.marchPosition, Colors::Green);
 
-                Broodwar->drawTextMap(cluster.marchNavigation, "%d", mapBWEM.GetMiniTile(WalkPosition(cluster.marchNavigation)).Altitude());
+                // Retreat
+                Visuals::drawCircle(cluster.retreatNavigation, 6, Colors::Red);
+                Visuals::drawLine(cluster.retreatNavigation, cluster.retreatPosition, Colors::Red);
+
+                //Broodwar->drawTextMap(cluster.marchNavigation, "%d", mapBWEM.GetMiniTile(WalkPosition(cluster.marchNavigation)).Altitude());
             }
         }
     }

@@ -98,10 +98,10 @@ namespace McRave::Spy::Protoss {
             // 2Gate Openers
             if (theSpy.build.name == "2Gate" || theSpy.build.name == "CannonRush") {
                 if (theSpy.proxy.possible || arrivesBy(1, Protoss_Zealot, Time(2, 50)) || arrivesBy(2, Protoss_Zealot, Time(3, 00)) || arrivesBy(4, Protoss_Zealot, Time(3, 25))) {
-                    theSpy.opener.name = "Proxy";
+                    theSpy.opener.name = "Proxy9/9";
                     theSpy.proxy.possible = true;
                 }
-                else if (arrivesBy(2, Protoss_Zealot, Time(3, 25)) || arrivesBy(3, Protoss_Zealot, Time(3, 35)) || arrivesBy(4, Protoss_Zealot, Time(4, 00)) || arrivesBy(5, Protoss_Zealot, Time(4, 10))
+                else if (arrivesBy(1, Protoss_Zealot, Time(3, 20)) || arrivesBy(2, Protoss_Zealot, Time(3, 25)) || arrivesBy(3, Protoss_Zealot, Time(3, 35)) || arrivesBy(4, Protoss_Zealot, Time(4, 10)) || arrivesBy(5, Protoss_Zealot, Time(4, 10))
                     || completesBy(2, Protoss_Zealot, Time(2, 45)) || completesBy(3, Protoss_Zealot, Time(2, 50)) || completesBy(4, Protoss_Zealot, Time(3, 10)) || completesBy(5, Protoss_Zealot, Time(3, 15))
                     || completesBy(2, Protoss_Gateway, Time(2, 15)))
                     theSpy.opener.name = "9/9";
@@ -136,7 +136,7 @@ namespace McRave::Spy::Protoss {
         {
             // Rush detection
             if (theSpy.build.name == "2Gate") {
-                if (theSpy.opener.name == "Proxy"
+                if (theSpy.opener.name == "Proxy9/9"
                     || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 8 && Util::getTime() < Time(4, 00))
                     || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && Util::getTime() > Time(6, 00))
                     || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && completesBy(3, Protoss_Gateway, Time(4, 30)))
@@ -144,7 +144,7 @@ namespace McRave::Spy::Protoss {
                     theSpy.transition.name = "ZealotRush";
             }
 
-            if (theSpy.workersNearUs >= 3 && Util::getTime() < Time(3, 00))
+            if (theSpy.workersPulled >= 3 && Util::getTime() < Time(3, 00))
                 theSpy.transition.name = "WorkerRush";
 
             // 2Gate

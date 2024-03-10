@@ -38,7 +38,7 @@ namespace McRave::Pathing {
             // Create a binary search tree in a circle around the target
             else {
                 const auto calc = [&](auto p) {
-                    if (!Util::findWalkable(unit, p, true))
+                    if (!BWEB::Map::isWalkable(TilePosition(p), unit.getType()))
                         return DBL_MAX;
                     return BWEB::Map::getGroundDistance(p, unit.getPosition()) + BWEB::Map::getGroundDistance(p, target.getPosition());
                 };
@@ -59,7 +59,7 @@ namespace McRave::Pathing {
                 return;
 
             auto range = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
-            auto framesToArrive = max(0.0, (unit.getPosition().getDistance(target.getPosition()) - range) / unit.getSpeed());
+            auto framesToArrive = clamp((unit.getPosition().getDistance(target.getPosition()) - range) / unit.getSpeed(), 0.0, 24.0);
             auto intercept = target.getPosition() + Position(int(unit.unit()->getVelocityX() * framesToArrive), int(unit.unit()->getVelocityY() * framesToArrive));
             unit.setInterceptPosition(intercept);
         }

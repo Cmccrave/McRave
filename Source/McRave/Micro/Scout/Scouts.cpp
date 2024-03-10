@@ -34,7 +34,7 @@ namespace McRave::Scouts {
                     return;
                 }
 
-                vector<Position> positions ={ here,
+                vector<Position> offsets ={ here,
                     here + Position(sRadius, 0),
                     here + Position(-sRadius, 0),
                     here + Position(0, sRadius),
@@ -43,7 +43,7 @@ namespace McRave::Scouts {
                     here + Position(-radius, radius),
                     here + Position(radius, -radius),
                     here + Position(-radius, -radius) };
-                for_each(positions.begin(), positions.end(), [&](auto p) {
+                for_each(offsets.begin(), offsets.end(), [&](auto p) {
                     positions.push_back(Util::clipPosition(p));
                 });
             }
@@ -199,10 +199,10 @@ namespace McRave::Scouts {
             // Check for fully scouted
             if (Terrain::getEnemyMain()) {
                 main.center = Terrain::getEnemyMain()->getBase()->Center();
-                if (!mainScouted) {
-                    main.addTargets(Position(Terrain::getEnemyMain()->getBase()->Center()), 256);
+                main.addTargets(Position(Terrain::getEnemyMain()->getBase()->Center()), 256);
 
-                    // Determine if we scouted the main sufficiently
+                // Determine if we scouted the main sufficiently
+                if (!mainScouted) {
                     for (auto &[type, target] : scoutTargets) {
                         if (type == ScoutType::Main) {
                             auto exploredCount = count_if(target.positions.begin(), target.positions.end(), [&](auto &p) { return Broodwar->isExplored(TilePosition(p)); });
@@ -278,7 +278,7 @@ namespace McRave::Scouts {
                 safe.desiredTypeCounts[Zerg_Overlord] = 1;
                 if (total(Zerg_Mutalisk) >= 6
                     || Spy::getEnemyBuild() == "FFE"
-                    || (Players::ZvT() && Spy::enemyProxy())
+                    || (Players::ZvT() && Spy::getEnemyOpener() == "8Rax")
                     || (!Players::ZvZ() && Stations::getStations(PlayerState::Enemy).size() >= 2)
                     || (Players::ZvZ() && Util::getTime() > Time(5, 00)))
                     safe.desiredTypeCounts[Zerg_Overlord] = 0;
@@ -296,11 +296,14 @@ namespace McRave::Scouts {
             if (!Terrain::getEnemyNatural() || !Terrain::getMyNatural())
                 return;
             auto &army = scoutTargets[ScoutType::Army];
-
-            if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
-                || (Players::ZvP() && Util::getTime() < Time(8, 00))
-                || (Players::ZvZ() && !Terrain::foundEnemy() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0))
-                army.desiredTypeCounts[Zerg_Zergling] = 1;
+            
+            // No threat at home, we should use a ling to scout the enemy
+            if (Units::getImmThreat() <= 0.1) {
+                if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
+                    || (Players::ZvP() && Util::getTime() < Time(8, 00))
+                    || (Players::ZvZ() && !Terrain::foundEnemy() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0))
+                    army.desiredTypeCounts[Zerg_Zergling] = 1;
+            }
 
             // Army scouting between my natural and enemy natural
             BWEB::Path newPath(Terrain::getEnemyNatural()->getChokepoint()->Center(), Terrain::getNaturalChoke()->Center(), Zerg_Zergling);
@@ -325,7 +328,7 @@ namespace McRave::Scouts {
                     assignPos = Position(Terrain::getNaturalChoke()->Center());
 
                 // Proxy takes furthest from natural choke
-                if (type.isWorker() && BuildOrder::getCurrentOpener() == "Proxy") {
+                if (type.isWorker() && BuildOrder::isProxy()) {
                     scout = Util::getFurthestUnit(assignPos, PlayerState::Self, [&](auto &u) {
                         return u->getRole() == Role::Worker && u->getType() == type && (!u->hasResource() || !u->getResource().lock()->getType().isRefinery()) && u->getBuildType() == None && !u->unit()->isCarryingMinerals() && !u->unit()->isCarryingGas();
                     });
@@ -472,7 +475,7 @@ namespace McRave::Scouts {
                 for (auto &pos : target.positions) {
                     auto time = Grids::getLastVisibleFrame(TilePosition(pos));
                     auto timeDiff = Broodwar->getFrameCount() - time;
-                    auto score = double(timeDiff) / target.dist;
+                    auto score = double(timeDiff) / (1.0 + target.dist);
 
                     if (score > best) {
                         best = score;
@@ -510,8 +513,6 @@ namespace McRave::Scouts {
             // Overlord paths
 
             // Ground unit paths
-
-
             if (!unit.isFlying()) {
 
                 if (unit.getDestination().isValid() && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination()) && (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.getDestination())) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.getDestination()))))) {
@@ -540,22 +541,17 @@ namespace McRave::Scouts {
                     return p.getDistance(unit.getPosition()) >= 96.0 && BWEB::Map::isUsed(TilePosition(p)) == None;
                 });
 
-                //auto resource = Resources::getClosestResource(newDestination, [&](auto &r) {
-                //    return r->getPosition().getDistance(newDestination) < unit.getPosition().getDistance(newDestination) && Util::boxDistance(r->getType(), r->getPosition(), unit.getType(), unit.getPosition()) > 32.0;
-                //});
-                //if (resource)
-                //    unit.setNavigation(resource->getPosition());
-                //else 
                 if (newDestination.isValid())
                     unit.setNavigation(newDestination);
                 Visuals::drawPath(unit.getDestinationPath());
             }
-
-            Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Red);
         }
 
         void updateDecision(UnitInfo& unit)
         {
+            Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+            Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
+
             // Iterate commands, if one is executed then don't try to execute other commands
             static const auto commands ={ Command::attack, Command::kite, Command::gather, Command::explore, Command::move };
             for (auto cmd : commands) {

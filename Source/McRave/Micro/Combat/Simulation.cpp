@@ -167,24 +167,17 @@ namespace McRave::Combat::Simulation {
             }
         }
 
-        //// Ground units have to be careful in lower numbers
-        //if (unit.getType() == Zerg_Hydralisk && com(Zerg_Hydralisk) < 36) {
-        //    minWinPercent += 0.5;
-        //    maxWinPercent += 0.5;
-        //}
-
         // Adjust winrates based on how close to self station we are
         const auto insideDefendingChoke = (Combat::holdAtChoke() || Combat::isDefendNatural()) && Terrain::inArea(Combat::getDefendArea(), target.getPosition());
         if (insideDefendingChoke || target.isThreatening()) {
             minWinPercent = 0.0;
             maxWinPercent = 0.5;
-            target.circle(Colors::Orange);
         }
 
         // Adjust winrates if we have static defense that would make the fight easier
         if (Util::getTime() < Time(8, 00) && !unit.isFlying() && com(Zerg_Sunken_Colony) > 0 && (unit.getGlobalState() == GlobalState::Retreat || unit.getGlobalState() == GlobalState::ForcedRetreat)) {
-            const auto defendStation = Stations::getClosestStationAir(unit.getRetreat(), PlayerState::Self);
-            const auto furthestSunk = Util::getFurthestUnit(unit.getRetreat(), PlayerState::Self, [&](auto &u) {
+            const auto defendStation = Stations::getClosestStationAir(unit.retreatPos, PlayerState::Self);
+            const auto furthestSunk = Util::getFurthestUnit(unit.retreatPos, PlayerState::Self, [&](auto &u) {
                 return u->getType() == Zerg_Sunken_Colony && u->isCompleted() && Terrain::inArea(defendStation->getBase()->GetArea(), u->getPosition());
             });
             if (furthestSunk) {

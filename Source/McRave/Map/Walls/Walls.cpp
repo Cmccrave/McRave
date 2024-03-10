@@ -107,12 +107,11 @@ namespace McRave::Walls {
         int ZvPOpener(BWEB::Wall& wall)
         {
             // If we are opening 12 hatch, we sometimes need a faster sunken
-            auto firstHatchNeeded = BuildOrder::getCurrentOpener() == "12Hatch";
+            auto greedyStart = BuildOrder::getCurrentOpener() == "12Hatch";
 
             // 1GateCore
             if (Spy::getEnemyBuild() == "1GateCore" || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
-                return (firstHatchNeeded && Util::getTime() > Time(3, 45))
-                    + (Util::getTime() > Time(4, 30))
+                return (Util::getTime() > Time(4, 30))
                     + (Util::getTime() > Time(5, 00));
             }
 
@@ -123,15 +122,16 @@ namespace McRave::Walls {
                     + (Util::getTime() > Time(4, 10))
                     + (Util::getTime() > Time(4, 40));
                 if (Spy::getEnemyOpener() == "10/15")
-                    return (firstHatchNeeded && Util::getTime() > Time(3, 15))
+                    return (greedyStart && Util::getTime() > Time(3, 15))
                     + (Util::getTime() > Time(4, 30))
                     + (Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown")
-                    return (firstHatchNeeded && Util::getTime() > Time(3, 15))
+                    return (greedyStart && Util::getTime() > Time(3, 50))
                     + (Util::getTime() > Time(4, 00))
                     + (Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
-                    return (firstHatchNeeded && Util::getTime() > Time(3, 00))
+                    return (Util::getTime() > Time(2, 50))
+                    + (greedyStart && Util::getTime() > Time(2, 50))
                     + (Util::getTime() > Time(4, 30));
             }
 
@@ -184,9 +184,10 @@ namespace McRave::Walls {
                 && Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) == 0
                 && Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) == 0;
             auto noExpandOrTech = noExpand && noTech;
+            auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
 
             // 1 base transitions
-            if (Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") {
+            if (!threeHatch && (Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore")) {
 
                 // 4Gate
                 if (Spy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(9, 00)) {
@@ -262,36 +263,35 @@ namespace McRave::Walls {
         int ZvTOpener(BWEB::Wall& wall)
         {
             // If we are opening 12 hatch into a 2h tech, we sometimes need a faster sunken
-            auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
-            auto greedyStart = !threeHatch || BuildOrder::getCurrentOpener() == "12Hatch" || BuildOrder::getCurrentOpener() == "12Pool";
+            auto greedyStart = BuildOrder::getCurrentOpener() == "12Hatch" || BuildOrder::getCurrentOpener() == "12Pool";
 
             // 2Rax
             if (Spy::getEnemyBuild() == "2Rax") {
                 if (Spy::enemyProxy())
-                    return 0;
+                    return greedyStart;
                 if (!Spy::enemyFastExpand() && !Spy::enemyRush() && Util::getTime() < Time(5, 00))
-                    return greedyStart
-                    + (!threeHatch && Util::getTime() > Time(3, 15))
-                    + (!threeHatch && Util::getTime() > Time(4, 30));
-                if (Spy::enemyRush())
-                    return (greedyStart && Util::getTime() > Time(3, 15))
-                    + (Util::getTime() > Time(3, 15))
-                    + (!threeHatch && Util::getTime() > Time(4, 30));
+                    return Util::getTime() > Time(3, 15)
+                    + (Util::getTime() > Time(4, 30));
+                if (Spy::enemyRush() || Spy::getEnemyOpener() == "BBS")
+                    return (Util::getTime() > Time(2, 50))
+                    + (Util::getTime() > Time(4, 30));
             }
 
             // RaxCC
             if (Spy::getEnemyBuild() == "RaxCC") {
                 if (Spy::getEnemyOpener() == "8Rax")
-                    return 1;
+                    return greedyStart;
                 if (Spy::enemyProxy())
-                    return 0;
-                return (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(4, 45));
+                    return greedyStart;
+                return (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00));
             }
 
             // RaxFact
             if (Spy::getEnemyBuild() == "RaxFact") {
                 if (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::enemyWalled())
                     return (Util::getTime() > Time(3, 30));
+                if (Spy::getEnemyOpener() == "8Rax")
+                    return greedyStart;
             }
 
             // Enemy walled, which delays any push they have
@@ -311,17 +311,14 @@ namespace McRave::Walls {
                 && Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) == 0
                 && Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode) == 0;
             auto noExpandOrTech = noExpand && noTech;
-            auto threeHatch = BuildOrder::getCurrentTransition().find("3Hatch") != string::npos;
+            auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto firstHatchNeeded = !threeHatch || BuildOrder::getCurrentOpener() == "12Hatch";
 
-            if (Spy::getEnemyTransition() == "5FacGoliath")
-                return 5 * (Util::getTime() > Time(11, 00));
-
-            if (Spy::getEnemyTransition() == "3FacGoliath")
+            if (Spy::getEnemyTransition() == "3FactGoliath")
                 return 3 * (Util::getTime() > Time(8, 00));
 
             if (Spy::getEnemyTransition() == "2PortWraith")
-                return 2 * (Util::getTime() > Time(5, 30));
+                return 1 * (Util::getTime() > Time(5, 30));
 
             if (Spy::getEnemyTransition() == "Academy")
                 return 2 * (Util::getTime() > Time(4, 30));
@@ -360,7 +357,13 @@ namespace McRave::Walls {
                 + Players::getDeadCount(PlayerState::Enemy, Terran_Medic);
 
             auto minimum = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 ? 1 : 0;
+
+            auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto expected = max(ZvTOpener(wall), ZvTTransition(wall)) - max(0, unitsKilled / 8);
+
+            // Kind of hacky solution to build less with 3h
+            if (threeHatch && expected > 1)
+                expected /= 2;
 
             return max(minimum, expected);
         }

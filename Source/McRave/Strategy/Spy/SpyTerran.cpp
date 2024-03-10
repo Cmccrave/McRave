@@ -58,12 +58,13 @@ namespace McRave::Spy::Terran {
             if (completesBy(1, Terran_Factory, Time(4, 00))
                 || (Util::getTime() < Time(5, 15) && hasMech)
                 || theSpy.rushArrivalTime < Time(2, 45)
+                || completesBy(1, Terran_Refinery, Time(2, 30))
                 || completesBy(1, Terran_Barracks, Time(1, 40))
                 || arrivesBy(1, Terran_Wraith, Time(6, 00)))
                 theSpy.build.name = "RaxFact";
 
             // 2Rax Proxy - No info estimation
-            if (Scouts::gotFullScout() && Util::getTime() > Time(2, 30) && Util::getTime() < Time(3, 45) && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) == 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Refinery) == 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Command_Center) <= 1) {
+            if (Scouts::gotFullScout() && Util::getTime() > Time(2, 20) && Util::getTime() < Time(3, 45) && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) == 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Refinery) == 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Command_Center) <= 1) {
                 theSpy.build.name = "2Rax";
                 theSpy.proxy.possible = true;
             }
@@ -73,6 +74,11 @@ namespace McRave::Spy::Terran {
                 theSpy.build.name = "2Rax";
                 theSpy.proxy.possible = true;
             }
+
+            // Rax/Gas/Rax estimation - consider 2Rax
+            if (completesBy(1, Terran_Academy, Time(3, 30)) || arrivesBy(1, Terran_Medic, Time(5, 30))) {
+                theSpy.build.name = "2Rax";
+            }
         }
 
         void enemyTerranOpeners(PlayerInfo& player, StrategySpy& theSpy)
@@ -81,24 +87,39 @@ namespace McRave::Spy::Terran {
             if (theSpy.build.name == "2Rax") {
                 if (theSpy.expand.possible)
                     theSpy.opener.name = "Expand";
-                else if (theSpy.proxy.possible)
-                    theSpy.opener.name = "Proxy";
-                else if (Util::getTime() > Time(4, 00))
-                    theSpy.opener.name = "Main";
+                else if (theSpy.proxy.possible
+                    || completesBy(2, Terran_Barracks, Time(2, 35))
+                    || completesBy(2, Terran_Marine, Time(2, 40))
+                    || completesBy(4, Terran_Marine, Time(2, 55))
+                    || arrivesBy(2, Terran_Marine, Time(2, 55))
+                    || arrivesBy(4, Terran_Marine, Time(3, 25)))
+                    theSpy.opener.name = "BBS";
+                else if (completesBy(2, Terran_Barracks, Time(3, 00))
+                    || completesBy(3, Terran_Marine, Time(2, 55))
+                    || completesBy(5, Terran_Marine, Time(3, 15))
+                    || arrivesBy(3, Terran_Marine, Time(3, 40))
+                    || arrivesBy(5, Terran_Marine, Time(4, 00)))
+                    theSpy.opener.name = "11/13";
             }
 
             // Mech builds
             if (theSpy.build.name == "RaxFact") {
-                if (theSpy.rushArrivalTime < Time(2, 45)
-                    || completesBy(1, Terran_Barracks, Time(1, 50))
-                    || completesBy(1, Terran_Marine, Time(2, 05)))
-                    theSpy.opener.name = "8Rax";
+                if (theSpy.expand.possible)
+                    theSpy.opener.name = "1FactFE";
             }
 
             // Expand builds
             if (theSpy.build.name == "RaxCC") {
                 if (theSpy.expand.possible)
                     theSpy.opener.name = "1RaxFE";
+            }
+
+            // 8Rax opener
+            if (theSpy.build.name != "2Rax") {
+                if (arrivesBy(1, Terran_Marine, Time(3, 00))
+                    || completesBy(1, Terran_Barracks, Time(2, 00))
+                    || completesBy(1, Terran_Marine, Time(2, 15)))
+                    theSpy.opener.name = "8Rax";
             }
         }
 
@@ -108,7 +129,7 @@ namespace McRave::Spy::Terran {
             auto hasGols = Players::getVisibleCount(PlayerState::Enemy, Terran_Goliath) > 0;
             auto hasWraiths = Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > 0;
 
-            if (theSpy.workersNearUs >= 3 && Util::getTime() < Time(3, 00))
+            if (theSpy.workersPulled >= 5 && Util::getTime() < Time(3, 00))
                 theSpy.transition.name = "WorkerRush";
 
             // PvT
@@ -167,17 +188,15 @@ namespace McRave::Spy::Terran {
                 }
 
                 // Goliaths builds
-                if (completesBy(1, Terran_Armory, Time(4, 45))
-                    || completesBy(2, Terran_Goliath, Time(5, 00))
+                if (completesBy(2, Terran_Goliath, Time(5, 00))
                     || completesBy(4, Terran_Goliath, Time(5, 30))
                     || completesBy(6, Terran_Goliath, Time(6, 00))
                     || (theSpy.upgradeLevel[UpgradeTypes::Charon_Boosters] > 0) && Util::getTime() < Time(7, 15))
                     theSpy.transition.name = "3FactGoliath";
-                if ((completesBy(1, Terran_Armory, Time(5, 15))
-                    || completesBy(3, Terran_Goliath, Time(6, 15))
+                if (completesBy(3, Terran_Goliath, Time(6, 15))
                     || completesBy(5, Terran_Goliath, Time(6, 45))
                     || completesBy(7, Terran_Goliath, Time(7, 15))
-                    || (theSpy.upgradeLevel[UpgradeTypes::Charon_Boosters] > 0) && Util::getTime() < Time(8, 30)))
+                    || (theSpy.upgradeLevel[UpgradeTypes::Charon_Boosters] > 0) && Util::getTime() < Time(8, 30))
                     theSpy.transition.name = "5FactGoliath";
             }
         }

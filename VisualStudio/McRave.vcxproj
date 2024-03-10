@@ -96,7 +96,7 @@
     <ClCompile Include="..\Source\McRave\Micro\Combat\Clusters.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\Combat\Combat.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\Combat\Decision.cpp" />
-    <ClCompile Include="..\Source\McRave\Micro\Combat\Destination.cpp" />
+    <ClCompile Include="..\Source\McRave\Micro\Combat\Bearings.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\Combat\Formations.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\Combat\Navigation.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\Combat\Simulation.cpp" />

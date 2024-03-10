@@ -92,6 +92,6 @@ namespace McRave::Spy {
     bool enemyWalled() { return theSpy.wall.confirmed; }
     bool enemyGreedy() { return theSpy.greedy.confirmed; }
     bool enemyBust() { return theSpy.transition.name.find("HatchHydra") != string::npos; }
-    int getWorkersNearUs() { return theSpy.workersNearUs; }
+    int getWorkersPulled() { return theSpy.workersPulled; }
     int getEnemyGasMined() { return theSpy.gasMined; }
 }

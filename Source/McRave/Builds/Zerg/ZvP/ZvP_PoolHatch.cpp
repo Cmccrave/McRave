@@ -17,8 +17,7 @@ namespace McRave::BuildOrder::Zerg {
             transitionReady =                               hatchCount() >= 2;
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
             gasLimit =                                      0;
-            scout =                                         scout || (hatchCount() >= 2);
-            wantNatural =                                   !Spy::enemyProxy() || Spy::getEnemyBuild() == "CannonRush";
+            scout =                                         scout || (hatchCount() >= 2 && int(Broodwar->getStartLocations().size()) > 2);
 
             if (Spy::enemyFastExpand())
                 unitLimits[Zerg_Drone] =                    INT_MAX;
@@ -37,7 +36,6 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Drone] =                        4;
             unitLimits[Zerg_Zergling] =                     INT_MAX;
             gasLimit =                                      0;
-            wantNatural =                                   !Spy::enemyProxy() || Spy::getEnemyBuild() == "CannonRush";
             scout =                                         scout || (vis(Zerg_Spawning_Pool) > 0 && com(Zerg_Drone) >= 4 && !Terrain::getEnemyStartingPosition().isValid());
             rush =                                          true;
 
@@ -55,7 +53,6 @@ namespace McRave::BuildOrder::Zerg {
             gasLimit =                                      0;
             gasTrick =                                      vis(Zerg_Spawning_Pool) > 0 && total(Zerg_Overlord) < 2;
             scout =                                         scout || (vis(Zerg_Spawning_Pool) > 0 && s >= 22);
-            wantNatural =                                   !Spy::enemyProxy();
 
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0 && atPercent(Zerg_Spawning_Pool, 0.8 && total(Zerg_Zergling) >= 6) && vis(Zerg_Overlord) >= 2 && (!Spy::enemyProxy() || vis(Zerg_Sunken_Colony) >= 2));
             buildQueue[Zerg_Spawning_Pool] =                s >= 18;

@@ -3,6 +3,7 @@
 using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
+using namespace UnitCommandTypes;
 
 namespace McRave::Command
 {
@@ -19,8 +20,10 @@ namespace McRave::Command
             });
 
             if (battery && ((unit.getType().isFlyer() && (!unit.hasTarget() || (unit.getTarget().lock()->getPosition().getDistance(unit.getPosition()) >= 320))) || unit.unit()->getDistance(battery->getPosition()) < 320)) {
-                if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit || unit.unit()->getLastCommand().getTarget() != battery->unit())
-                    unit.unit()->rightClick(battery->unit());
+                if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit || unit.unit()->getLastCommand().getTarget() != battery->unit()) {
+                    unit.setCommand(Right_Click_Unit, *battery);
+                    unit.setCommandText("Regen");
+                }
                 return true;
             }
         }
@@ -34,19 +37,69 @@ namespace McRave::Command
             });
 
             if (bunker) {
-                unit.unit()->rightClick(bunker->unit());
+                unit.setCommand(Right_Click_Unit, *bunker);
+                unit.setCommandText("LoadBunker");
                 return true;
             }
 
             if (bunker && bunker->unit() && unit.hasTarget()) {
                 if (unit.getTarget().lock()->unit()->exists() && unit.getTarget().lock()->getPosition().getDistance(unit.getPosition()) <= 320) {
-                    unit.unit()->rightClick(bunker->unit());
+                    unit.setCommand(Right_Click_Unit, *bunker);
+                    unit.setCommandText("LoadBunker");
                     return true;
                 }
                 if (unit.unit()->isLoaded() && unit.getTarget().lock()->getPosition().getDistance(unit.getPosition()) > 320)
                     bunker->unit()->unloadAll();
             }
         }
+
+        if (!unit.getType().isWorker())
+            return false;
+
+        vector<const BWEM::Area *> validAreas;
+        if (unit.getDestination().isValid() && !unit.isBurrowed() && unit.getPosition().getDistance(unit.getDestination()) > 480.0) {
+            auto closestDist = DBL_MAX;
+            const auto destDist = BWEB::Map::getGroundDistance(unit.getPosition(), unit.getDestination());
+            ResourceInfo * closestResource = nullptr;
+            const auto checkCloserToDestination = [&](auto resource) {       
+                const auto dist = BWEB::Map::getGroundDistance(resource->getPosition(), unit.getDestination());
+                if (dist < closestDist && dist < destDist - 320.0) {
+                    closestDist = dist;
+                    closestResource = resource;
+                    return true;
+                }
+                return false;
+            };
+
+            // See if there's a way to resource walk
+            for (auto &m : Resources::getMyMinerals()) {
+                auto mineral = &*m;
+                if (mineral->unit()->exists())
+                    checkCloserToDestination(mineral);
+            }
+
+            // Gather it
+            if (closestResource) {
+                unit.unit()->gather(closestResource->unit());
+                unit.setCommandText("MineralWalk");
+                return true;
+            }
+        }
+        //for (auto &g : Resources::getMyGas()) {
+        //    auto &gas = *g;
+        //    if (unit.getNavigation() == gas.getPosition()) {
+        //        unit.unit()->rightClick(gas.unit());
+        //        return true;
+        //    }
+        //}
+        //for (auto &b : Resources::getMyBoulders()) {
+        //    auto &boulder = *b;
+        //    if (unit.getNavigation() == boulder.getPosition()) {
+        //        unit.unit()->gather(boulder.unit());
+        //        return true;
+        //    }
+        //}
+
         return false;
     }
 
@@ -132,20 +185,24 @@ namespace McRave::Command
 
         // Drone
         else if (unit.getType().isWorker() && Broodwar->self()->hasResearched(TechTypes::Burrowing) && unit.getRole() == Role::Worker) {
-            const auto resourceThreatened = (unit.hasResource() && unit.getResource().lock()->isThreatened()) || !unit.getUnitsTargetingThis().empty();
-            const auto threatened = unit.hasTarget() && unit.getTarget().lock()->isThreatening() && unit.getTarget().lock()->canAttackGround() && unit.getTarget().lock()->isWithinReach(unit);
 
-            if (!unit.isBurrowed()) {
-                if (threatened) {
-                    unit.unit()->burrow();
-                    return true;
-                }
+            auto threatened = false;
+            auto dmg = 0;
+            auto &list = unit.isBurrowed() ? unit.getUnitsInReachOfThis() : unit.getUnitsInRangeOfThis();
+            for (auto &t : list) {
+                if (auto targeter = t.lock())
+                    dmg+= targeter->getGroundDamage() * 2;
             }
-            else if (unit.isBurrowed()) {
-                if (!threatened) {
-                    unit.unit()->unburrow();
-                    return true;
-                }
+            if (dmg >= unit.getHealth())
+                threatened = true;
+
+            if (!unit.isBurrowed() && threatened) {
+                unit.unit()->burrow();
+                return true;
+            }
+            else if (unit.isBurrowed() && !threatened) {
+                unit.unit()->unburrow();
+                return true;
             }
         }
 
@@ -383,7 +440,7 @@ namespace McRave::Command
     bool returnResource(UnitInfo& unit)
     {
         // Can't return cargo if we aren't carrying a resource or overlapping a building position
-        if ((!unit.unit()->isCarryingGas() && !unit.unit()->isCarryingMinerals()))
+        if ((!unit.unit()->isCarryingGas() && !unit.unit()->isCarryingMinerals()) || unit.getRole() != Role::Worker)
             return false;
 
         auto checkPath = (unit.hasResource() && unit.getPosition().getDistance(unit.getResource().lock()->getPosition()) > 320.0) || (!unit.hasResource() && !Terrain::inTerritory(PlayerState::Self, unit.getPosition()));
@@ -391,29 +448,12 @@ namespace McRave::Command
             // TODO: Create a path to the closest station and check if it's safe
         }
 
-        //auto hatch = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-        //    return u.getType() == Zerg_Hatchery;
-        //});
-        //if (hatch && unit.hasResource()) {
-        //    auto distHome = Util::boxDistance(hatch->getType(), hatch->getPosition(), unit.getType(), unit.getPosition());
-        //    if (distHome <= 0) {
-        //        auto frame = Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 11;
-        //        auto optimal = unit.getPositionHistory().find(frame);
-        //        if (optimal != unit.getPositionHistory().end())
-        //            unit.getResource().getReturnOrderPositions().insert(optimal->second);
-        //        unit.getPositionHistory().clear();
-        //    }
-
-        //    if (unit.getResource().getReturnOrderPositions().find(unit.getPosition()) != unit.getResource().getReturnOrderPositions().end() && Broodwar->getFrameCount() - unit.unit()->getLastCommandFrame() > 24.0) {
-        //        unit.unit()->returnCargo();
-        //        return true;
-        //    }
-        //}
-
         // TODO: Check if we have a building to place first?
         if ((unit.unit()->isCarryingMinerals() || unit.unit()->isCarryingGas())) {
-            if ((unit.unit()->isIdle() || (unit.unit()->getOrder() != Orders::ReturnMinerals && unit.unit()->getOrder() != Orders::ReturnGas)) && unit.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo)
+            if ((unit.unit()->isIdle() || (unit.unit()->getOrder() != Orders::ReturnMinerals && unit.unit()->getOrder() != Orders::ReturnGas)) && unit.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo) {
                 unit.unit()->returnCargo();
+            }
+            unit.setCommandText("Return");
             return true;
         }
 
@@ -477,32 +517,6 @@ namespace McRave::Command
 
     bool gather(UnitInfo& unit)
     {
-        if (!unit.getType().isWorker())
-            return false;
-
-        // See if there's a way to resource walk
-        //for (auto &m : Resources::getMyMinerals()) {
-        //    auto &mineral = *m;
-        //    if (unit.getNavigation() == mineral.getPosition()) {
-        //        unit.unit()->gather(mineral.unit());
-        //        return true;
-        //    }
-        //}
-        //for (auto &g : Resources::getMyGas()) {
-        //    auto &gas = *g;
-        //    if (unit.getNavigation() == gas.getPosition()) {
-        //        unit.unit()->rightClick(gas.unit());
-        //        return true;
-        //    }
-        //}
-        //for (auto &b : Resources::getMyBoulders()) {
-        //    auto &boulder = *b;
-        //    if (unit.getNavigation() == boulder.getPosition()) {
-        //        unit.unit()->gather(boulder.unit());
-        //        return true;
-        //    }
-        //}
-
         if (unit.getRole() != Role::Worker)
             return false;
 
@@ -514,10 +528,16 @@ namespace McRave::Command
         const auto canGather = [&](ResourceInfo * resource) {
             if (unit.unit()->getTarget() == resource->unit() && unit.unit()->getLastCommand().getType() == UnitCommandTypes::Gather)
                 return false;
+            auto boxDist = Util::boxDistance(unit.getType(), unit.getPosition(), resource->getType(), resource->getPosition());
+            if ((unit.hasResource() && boxDist > 0 && unit.unit()->getOrder() == Orders::MoveToMinerals && unit.getResource().lock()->getGatherOrderPositions().find(unit.getPosition()) != unit.getResource().lock()->getGatherOrderPositions().end()))
+                return true;
+
+            // Dont spam
+            if (unit.unit()->getLastCommand().getType() == UnitCommandTypes::Gather && Broodwar->getFrameCount() - unit.unit()->getLastCommandFrame() < 12)
+                return false;
 
             auto closestChokepoint = Util::getClosestChokepoint(unit.getPosition());
             auto nearNonBlockingChoke = closestChokepoint && !closestChokepoint->Blocked() && unit.getPosition().getDistance(Position(closestChokepoint->Center())) < 160.0;
-            auto boxDist = Util::boxDistance(unit.getType(), unit.getPosition(), resource->getType(), resource->getPosition());
 
             if (Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) > 0.0f)
                 return true;
@@ -526,8 +546,6 @@ namespace McRave::Command
             if (!hasMineableResource)
                 return true;
             if (Planning::overlapsPlan(unit, unit.getPosition()))
-                return true;
-            if ((unit.hasResource() && boxDist > 0 && unit.unit()->getOrder() == Orders::MoveToMinerals && unit.getResource().lock()->getGatherOrderPositions().find(unit.getPosition()) != unit.getResource().lock()->getGatherOrderPositions().end()))
                 return true;
             return false;
         };
@@ -591,6 +609,7 @@ namespace McRave::Command
                         // Spam gather it to move out of the way
                         if (furthest) {
                             unit.unit()->gather(furthest->Unit());
+                            unit.setCommandText("Gather");
                             return true;
                         }
                     }
@@ -604,10 +623,12 @@ namespace McRave::Command
         if (resource->unit()->exists()) {
             if (canClick(resource)) {
                 unit.unit()->rightClick(resource->unit());
+                unit.setCommandText("Gather");
                 return true;
             }
             if (canGather(resource)) {
                 unit.unit()->gather(resource->unit());
+                unit.setCommandText("Gather");
                 return true;
             }
         }
@@ -616,10 +637,10 @@ namespace McRave::Command
 
     bool special(UnitInfo& unit)
     {
-        return click(unit)
+        return burrow(unit)
+            || click(unit)
             || siege(unit)
             || repair(unit)
-            || burrow(unit)
             || cast(unit)
             || morph(unit)
             || train(unit)

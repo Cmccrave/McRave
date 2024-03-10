@@ -15,8 +15,28 @@ namespace McRave::Workers {
 
         BWEB::Station * getTransferStation(UnitInfo& unit)
         {
-            // Allow some drones to transfer if another base is unsaturated
-            if (Util::getTime() < Time(4, 00) && unit.isHealthy() && !Spy::enemyRush() && !Spy::enemyRush() && Spy::getEnemyOpener() != "8Rax" && vis(UnitTypes::Zerg_Drone) >= 9) {
+            // Transfer counts depending on if we think it's safe or not
+            auto desiredTransfer = 3;
+            if (Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyOpener() == "BBS")
+                desiredTransfer = (total(Zerg_Creep_Colony) == 0 && total(Zerg_Sunken_Colony) == 0) ? 1 : 0;
+            if (Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "Proxy9/9")
+                desiredTransfer = (total(Zerg_Creep_Colony) == 0 && total(Zerg_Sunken_Colony) == 0) ? 1 : 0;
+            if (Units::getImmThreat() > 0.0f)
+                desiredTransfer = 0;
+
+            // Keep damaged workers in the main
+            if (Util::getTime() < Time(4, 00) && (unit.getHealth() < unit.getType().maxHitPoints() || desiredTransfer == 0)) {
+                if (unit.hasResource() && unit.getResource().lock()->getStation()->isNatural()) {
+                    auto closestMain = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self, [&](auto &s) {
+                        return s->isMain();
+                    });
+                    return closestMain;
+                }
+                return nullptr;
+            }
+
+            // Allow some workers to transfer early on so we can make early sunks if needed
+            if (Util::getTime() < Time(4, 00) && desiredTransfer > 0 && unit.isHealthy() && vis(UnitTypes::Zerg_Drone) >= 9) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
                     int droneCount = 0;
                     auto mineable = true;
@@ -27,7 +47,7 @@ namespace McRave::Workers {
                             droneCount += mineral->getGathererCount();
                         }
                     }
-                    if (mineable && droneCount < 3)
+                    if (mineable && droneCount < desiredTransfer)
                         return station;
                 }
             }
@@ -36,10 +56,29 @@ namespace McRave::Workers {
 
         vector<BWEB::Station*> getSafeStations(UnitInfo& unit)
         {
-            // If this station already has defenses, it's likely safe, just need to hide there
             vector<BWEB::Station *> safeStations;
-            if (unit.hasResource() && Terrain::inArea(unit.getResource().lock()->getStation()->getBase()->GetArea(), unit.getPosition()) && Stations::getGroundDefenseCount(unit.getResource().lock()->getStation()) > 0 && Util::getTime() > Time(6, 00))
+
+            auto stationGrdOkay = unit.hasResource() && Stations::getGroundDefenseCount(unit.getResource().lock()->getStation()) > 0;
+            auto stationAirOkay = unit.hasResource() && Stations::getAirDefenseCount(unit.getResource().lock()->getStation()) > 0;
+
+            // Current station is a fortress, we can stay
+            if (unit.hasResource() && stationGrdOkay && stationAirOkay) {
                 safeStations.push_back(unit.getResource().lock()->getStation());
+                return safeStations;
+            }
+
+            // If this station has a defense to deal with whatever is near us, stay at this station
+            auto currentStationSafe = true;
+            for (auto &t : unit.getUnitsInReachOfThis()) {
+                if (auto targeter = t.lock()) {
+                    if ((targeter->isFlying() && !stationAirOkay) || (!targeter->isFlying() && !stationGrdOkay))
+                        currentStationSafe = false;
+                }
+            }
+            if (unit.hasResource() && currentStationSafe) {
+                safeStations.push_back(unit.getResource().lock()->getStation());
+                return safeStations;
+            }
 
             // Find safe stations to mine resources from
             for (auto &station : Stations::getStations(PlayerState::Self)) {
@@ -52,23 +91,18 @@ namespace McRave::Workers {
                 else if (!Terrain::inTerritory(PlayerState::Self, unit.getPosition()))
                     safeStations.push_back(station);
 
-                // Otherwise create a path to it to check if it's safe
-                else if (unit.hasTarget()) {
-                    auto unitTarget = unit.getTarget().lock();
-                    BWEB::Path newPath(unit.getPosition(), station->getBase()->Center(), unit.getType());
-                    newPath.generateJPS([&](const TilePosition &t) { return newPath.terrainWalkable(t); });
-                    unit.setDestinationPath(newPath);
+                // If station has defenses, it's probably safe
+                else if (Stations::getGroundDefenseCount(station) > 0 || Stations::getAirDefenseCount(station) > 0)
+                    safeStations.push_back(station);
+            }
 
-                    // If unit is far, we need to check if it's safe
-                    auto threatPosition = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
-                        return p.getDistance(unitTarget->getPosition()) < unitTarget->getGroundReach();
-                    });
-
-                    // If JPS path is safe
-                    if (!threatPosition.isValid())
-                        safeStations.push_back(station);
+            // If we have no safe stations, every station is fine
+            if (safeStations.empty()) {
+                for (auto &station : Stations::getStations(PlayerState::Self)) {
+                    safeStations.push_back(station);
                 }
             }
+
             return safeStations;
         }
 
@@ -76,9 +110,7 @@ namespace McRave::Workers {
         {
             auto buildCenter = Position(unit.getBuildPosition()) + Position(unit.getBuildType().tileWidth() * 16, unit.getBuildType().tileHeight() * 16);
 
-            if (Util::getTime() < Time(4, 00)
-                || Planning::isDefensiveType(unit.getBuildType())
-                || unit.getBuildType() == Zerg_Evolution_Chamber)
+            if (Util::getTime() < Time(4, 00))
                 return true;
 
             for (auto &t : unit.getUnitsTargetingThis()) {
@@ -90,7 +122,7 @@ namespace McRave::Workers {
 
             // If around defenders
             auto aroundDefenders = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                if (u->getRole() != Role::Combat && u->getRole() != Role::Defender)
+                if ((u->getRole() != Role::Combat && u->getRole() != Role::Defender) || u->getGlobalState() == GlobalState::ForcedRetreat)
                     return false;
 
                 return (unit.getPosition().getDistance(u->getPosition()) < u->getGroundReach() && u->getPosition().getDistance(buildCenter) < u->getGroundReach())
@@ -113,6 +145,15 @@ namespace McRave::Workers {
             if (threatPosition && threatPosition.getDistance(unit.getPosition()) < 200.0 && Util::getTime() > Time(5, 00))
                 return false;
             return true;
+        }
+
+        bool isResourceSafe(UnitInfo& unit)
+        {
+            // Determine if the resource we're at is safe or if we need to ditch this station entirely
+            // 1. Safe, no threats around
+            // 2. Any threat exists, but we have burrow and they dont have detection
+            // 3. A minor threat exists, move between resources
+            // 4. A major threat exists, ditch the station (TODO?)
         }
 
         bool isResourceFlooded(UnitInfo& unit)
@@ -201,7 +242,7 @@ namespace McRave::Workers {
             // Get some information of the workers current assignment
             const auto isGasunit =          unit.hasResource() && unit.getResource().lock()->getType().isRefinery();
             const auto isMineralunit =      unit.hasResource() && unit.getResource().lock()->getType().isMineralField();
-            const auto threatened =         unit.hasResource() && unit.getResource().lock()->isThreatened();
+            const auto threatened =         unit.hasResource() && unit.getResource().lock()->isThreatened() && unit.getHealth() < unit.getType().maxHitPoints();
             const auto excessAssigned =     isResourceFlooded(unit);
             const auto transferStation =    getTransferStation(unit);
             const auto closestStation =     Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
@@ -236,8 +277,8 @@ namespace McRave::Workers {
                     auto allowedGatherCount = threatened ? 50 : resource.getWorkerCap();
 
                     if (!resourceReady(resource, allowedGatherCount)
-                        || (find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
-                        || resource.isThreatened())
+                        || (!transferStation && find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
+                        || (resource.isThreatened() && !threatened))
                         continue;
 
                     // Find closest unit that we will re-assign
@@ -260,16 +301,16 @@ namespace McRave::Workers {
             }
 
             // Check if we need mineral units
-            if (needMinerals || !unit.hasResource() || threatened || excessAssigned || transferStation) {                
+            if (needMinerals || !unit.hasResource() || threatened || excessAssigned || transferStation) {
                 for (int i = 1; i <= 2; i++) {
                     for (auto &r : Resources::getMyMinerals()) {
                         auto &resource = *r;
                         auto allowedGatherCount = threatened ? 50 : i;
 
                         if (!resourceReady(resource, allowedGatherCount)
-                            || (find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
+                            || (!transferStation && find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
                             || (transferStation && resource.getStation() != transferStation)
-                            || resource.isThreatened())
+                            || (resource.isThreatened() && !threatened))
                             continue;
 
                         auto stationDist = unit.getPosition().getDistance(resource.getStation()->getBase()->Center());
@@ -319,7 +360,7 @@ namespace McRave::Workers {
         void updateDecision(UnitInfo& unit)
         {
             // Iterate commands, if one is executed then don't try to execute other commands
-            static const auto commands ={ Command::misc, Command::attack, Command::click, Command::burrow, Command::returnResource, Command::build, Command::clearNeutral, Command::move, Command::gather };
+            static const auto commands ={ Command::misc, Command::attack, Command::burrow, Command::returnResource, Command::build, Command::clearNeutral, Command::click, Command::move, Command::gather };
             for (auto cmd : commands) {
                 if (cmd(unit))
                     break;

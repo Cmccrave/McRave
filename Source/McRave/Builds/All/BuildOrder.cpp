@@ -46,6 +46,11 @@ namespace McRave::BuildOrder
                 Zerg::situational();
                 Zerg::unlocks();
             }
+
+            if (focusUpgrade != UpgradeTypes::None)
+                upgradeQueue[focusUpgrade] = 1;
+            if (focusTech != TechTypes::None)
+                techQueue[focusTech] = 1;
         }
     }
 
@@ -191,7 +196,6 @@ namespace McRave::BuildOrder
         // If we already have a tech choice based on build, only try to unlock it and nothing else for now
         if (focusUnit != None && !isFocusUnit(focusUnit)) {
             if (unlockReady(focusUnit)) {
-                focusUnit = focusUnit;
                 getTech = false;
                 focusUnits.insert(focusUnit);
                 unlockedType.insert(focusUnit);
@@ -296,6 +300,7 @@ namespace McRave::BuildOrder
 
     map<UnitType, int>& getBuildQueue() { return buildQueue; }
     map<UpgradeType, int>& getUpgradeQueue() { return upgradeQueue; }
+    map<TechType, int>& getTechQueue() { return techQueue; }
     map<UnitType, double> getArmyComposition() { return armyComposition; }
 
 

@@ -80,14 +80,14 @@ namespace McRave::Buildings {
 
             // Cancelling buildings that are being built/morphed but will be dead
             if (!building.unit()->isCompleted() && willDieToAttacks(building) && building.getType() != Zerg_Sunken_Colony && building.getType() != Zerg_Spore_Colony) {
-                building.unit()->cancelConstruction();
                 Events::onUnitCancelBecauseBWAPISucks(building);
+                building.unit()->cancelConstruction();
             }
 
             // Cancelling hatcheries if we're being proxy 2gated
             if (building.getType() == Zerg_Hatchery && isStation && Terrain::getMyNatural() && building.getTilePosition() == Terrain::getMyNatural()->getBase()->Location() && Util::getTime() < Time(4, 00) && Spy::getEnemyBuild() == "2Gate" && Spy::enemyProxy()) {
-                building.unit()->cancelConstruction();
                 Events::onUnitCancelBecauseBWAPISucks(building);
+                building.unit()->cancelConstruction();
             }
 
             // Cancelling hatchery if against 4pool early

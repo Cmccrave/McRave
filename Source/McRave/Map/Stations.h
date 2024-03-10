@@ -20,6 +20,7 @@ namespace McRave::Stations
     bool isBaseExplored(BWEB::Station*);
     bool isGeyserExplored(BWEB::Station*);
     bool isCompleted(BWEB::Station*);
+    bool isBlocked(BWEB::Station*);
     int lastVisible(BWEB::Station*);
     double getSaturationRatio(BWEB::Station *);
     BWAPI::Position getDefendPosition(BWEB::Station *);

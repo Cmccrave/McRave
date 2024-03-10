@@ -43,6 +43,8 @@ namespace McRave::Visuals {
         bool roles = false;
         bool stations = false;
 
+        Diagnostic currentDiagnostic = Diagnostic::None;
+
         void drawInformation()
         {
             // BWAPIs green text doesn't point to the right color so this will be seen occasionally
@@ -69,6 +71,8 @@ namespace McRave::Visuals {
                     auto shortStr = type.toString();
                     shortStr.erase(0, raceLen);
                     auto typeColor = BuildOrder::isUnitUnlocked(type) ? Text::White : Text::Grey;
+                    if (BuildOrder::isFocusUnit(type))
+                        typeColor = Text::Cyan;
 
                     if ((total(type) > 0 && !type.isBuilding()) || BuildOrder::getCompositionPercentage(type) > 0.00) {
                         Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d  %.2f [%d]", typeColor, shortStr.c_str(), vis(type), total(type), BuildOrder::getCompositionPercentage(type), BuildOrder::isUnitUnlocked(type));
@@ -253,6 +257,33 @@ namespace McRave::Visuals {
                 }
             }
         }
+
+        void checkSpeed()
+        {
+            static BWAPI::Key lastKeyState = BWAPI::Key(0);
+            static int localSpeed = 0;
+            auto mb_back = BWAPI::Key(5);
+            auto mb_forward = BWAPI::Key(6);
+
+            // Back mouse button pressed
+            if (Broodwar->getKeyState(mb_back) && lastKeyState == BWAPI::Key(0)) {
+                lastKeyState = mb_back;
+                localSpeed = min(100, localSpeed + 10);
+                Broodwar->setLocalSpeed(localSpeed);
+                Broodwar << "Set gamespeed to " << localSpeed << endl;
+            }
+
+            // Back mouse button pressed
+            if (Broodwar->getKeyState(mb_forward) && lastKeyState == BWAPI::Key(0)) {
+                lastKeyState = mb_forward;
+                localSpeed = max(0, localSpeed - 10);
+                Broodwar->setLocalSpeed(localSpeed);
+                Broodwar << "Set gamespeed to " << localSpeed << endl;
+            }
+
+            if (!Broodwar->getKeyState(mb_back) && !Broodwar->getKeyState(mb_forward))
+                lastKeyState = BWAPI::Key(0);
+        }
     }
 
     void centerCameraOn(Position here)
@@ -266,6 +297,7 @@ namespace McRave::Visuals {
         drawAllyInfo();
         drawEnemyInfo();
         drawStations();
+        checkSpeed();
     }
 
     void endPerfTest(string function)
@@ -320,6 +352,11 @@ namespace McRave::Visuals {
                 next = tile;
             }
         }
+    }
+
+    void drawDiagnostic(Diagnostic diagnostic, Position p)
+    {
+
     }
 
     void drawDebugText(std::string s, double d) {

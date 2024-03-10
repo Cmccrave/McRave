@@ -14,7 +14,7 @@ namespace McRave::Combat::State {
         staticRetreatTypes.clear();
 
         // Hydralisks
-        if (!Spy::enemyFastExpand() && (BuildOrder::isUnitUnlocked(Zerg_Hydralisk) || vis(Zerg_Hydralisk) > 0)) {
+        if (Spy::getEnemyBuild() != "FFE" && (BuildOrder::isUnitUnlocked(Zerg_Hydralisk) || vis(Zerg_Hydralisk) > 0 || BuildOrder::getCurrentTransition().find("Hydra") != string::npos)) {
             const auto hydraSpeed = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments);
             const auto hydraRange = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines);
             if (!hydraRange || !hydraSpeed)
@@ -22,7 +22,7 @@ namespace McRave::Combat::State {
         }
 
         // Mutalisks
-        if (BuildOrder::isUnitUnlocked(Zerg_Mutalisk) || vis(Zerg_Mutalisk) > 0) {
+        if (BuildOrder::isUnitUnlocked(Zerg_Mutalisk) || vis(Zerg_Mutalisk) > 0 || BuildOrder::getCurrentTransition().find("Muta") != string::npos) {
             if (!Players::ZvZ() && com(Zerg_Mutalisk) < (Stations::getStations(PlayerState::Self).size() >= 2 ? 5 : 3) && total(Zerg_Mutalisk) < 9)
                 staticRetreatTypes.push_back(Zerg_Mutalisk);
         }
@@ -32,16 +32,16 @@ namespace McRave::Combat::State {
             const auto lingSpeed = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Metabolic_Boost);
             const auto crackling = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Adrenal_Glands);
             const auto onlyLings = !BuildOrder::isUnitUnlocked(Zerg_Hydralisk) && !BuildOrder::isUnitUnlocked(Zerg_Mutalisk);
-            const auto limitedTech = (!staticRetreatTypes.empty() && onlyLings) || (total(Zerg_Hydralisk) < 12 && total(Zerg_Mutalisk) < 6);
+            const auto limitedTech = (!staticRetreatTypes.empty() && onlyLings) || (find(staticRetreatTypes.begin(), staticRetreatTypes.end(), Zerg_Hydralisk) != staticRetreatTypes.end());
 
             if (!crackling && !BuildOrder::isRush()) {
                 if (Players::ZvP()) {
-                    const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && Spy::getEnemyBuild() != "CannonRush" && limitedTech;
+                    const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && Spy::getEnemyBuild() != "CannonRush" && limitedTech && !lingSpeed;
                     if (scaryOpeners)
                         staticRetreatTypes.push_back(Zerg_Zergling);
                 }
                 if (Players::ZvT()) {
-                    const auto defendSunkens = com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0;
+                    const auto defendSunkens = com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0 && !lingSpeed;
                     const auto vultureThreat = Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy()
                         && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0);
                     if (defendSunkens || vultureThreat)
@@ -74,7 +74,7 @@ namespace McRave::Combat::State {
         auto countDefensesInRange = 0.0;
         if (unit.getType() == Zerg_Mutalisk && unit.hasTarget() && unit.canOneShot(target)) {
             for (auto &e : Units::getUnits(PlayerState::Enemy)) {
-                auto enemy = *e;
+                auto &enemy = *e;
                 if (enemy.canAttackAir() && enemy != target) {
                     if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 32.0
                         || enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 32.0

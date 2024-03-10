@@ -119,6 +119,11 @@ namespace McRave::Combat::Navigation {
     {
         unit.setNavigation(unit.getFormation().isValid() ? unit.getFormation() : unit.getDestination());
 
+        if (unit.getFormation().isValid()) {
+            unit.setNavigation(unit.getFormation());
+            return;
+        }
+
         // If path is reachable, find a point n pixels away to set as new destination
         auto dist = unit.isFlying() ? 96.0 : 160.0;
         if (unit.getDestinationPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > dist) {
@@ -137,12 +142,6 @@ namespace McRave::Combat::Navigation {
             return;
 
         auto &simUnits = lastSimUnits[&unit];
-
-        //// Remove any expired sim units
-        //simUnits.erase(remove_if(simUnits.begin(), simUnits.end(), [&](auto &u) {
-        //    return u.first.expired() || Broodwar->getFrameCount() >= u.second;
-        //}), simUnits.end());
-
         for (auto itr = simUnits.begin(); itr != simUnits.end(); ) {
             if (itr->first.expired() || Broodwar->getFrameCount() >= itr->second)
                 itr = simUnits.erase(itr);

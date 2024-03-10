@@ -4,7 +4,7 @@ using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 
-namespace McRave::Combat::Destination {
+namespace McRave::Combat::Bearings {
 
     void getCleanupPosition(UnitInfo& unit)
     {
@@ -27,17 +27,35 @@ namespace McRave::Combat::Destination {
             unit.setDestination(Terrain::getMainPosition());
     }
 
+    // What is the "backward" bearing for this unit
     void updateRetreat(UnitInfo& unit)
     {
-        unit.setRetreat(Positions::Invalid);
         auto retreat = Stations::getClosestRetreatStation(unit);
 
-        if (Stations::getStations(PlayerState::Self).size() == 1)
-            unit.setRetreat(Terrain::getMainPosition());
-        else if (retreat)
-            unit.setRetreat(retreat->getBase()->Center());
+        if (retreat)
+            unit.retreatPos = retreat->getBase()->Center();
         else
-            unit.setRetreat(Terrain::getMainPosition());
+            unit.retreatPos = Terrain::getMainPosition();
+    }
+
+    // What is the "forward" bearing for this unit
+    void updateMarch(UnitInfo& unit)
+    {
+        // TODO: March station (depending on goal), like retreat       
+        if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat || unit.getGlobalState() == GlobalState::ForcedRetreat) {
+            auto retreat = Stations::getClosestRetreatStation(unit);
+            unit.marchPos = Stations::getDefendPosition(retreat);
+        }
+        else if (unit.hasTarget()) {
+            unit.marchPos = unit.getTarget().lock()->getPosition();
+        }
+        else if (Combat::getAttackPosition().isValid() && unit.canAttackGround()) {
+            unit.marchPos = Combat::getAttackPosition();
+        }
+        else {
+            unit.marchPos = unit.getDestination();
+            Broodwar->drawLineMap(unit.getPosition(), unit.marchPos, Colors::Green);
+        }
     }
 
     void updateDestination(UnitInfo& unit)
@@ -53,12 +71,12 @@ namespace McRave::Combat::Destination {
             if (unit.attemptingRunby()) {
                 unit.setDestination(unit.getEngagePosition());
             }
-            else if (unit.getInterceptPosition().isValid()) {
-                unit.setDestination(unit.getInterceptPosition());
-            }
-            else if (unit.getSurroundPosition().isValid()) {
-                unit.setDestination(unit.getSurroundPosition());
-            }
+            //else if (unit.getInterceptPosition().isValid()) {
+            //    unit.setDestination(unit.getInterceptPosition());
+            //}
+            //else if (unit.getSurroundPosition().isValid()) {
+            //    unit.setDestination(unit.getSurroundPosition());
+            //}
             else if (!unit.isFlying() && unit.getEngagePosition().isValid()) {
                 unit.setDestination(unit.getEngagePosition());
             }
@@ -69,7 +87,6 @@ namespace McRave::Combat::Destination {
         else if (unit.getLocalState() == LocalState::Retreat || unit.getLocalState() == LocalState::ForcedRetreat || unit.getGlobalState() == GlobalState::Retreat || unit.getGlobalState() == GlobalState::ForcedRetreat) {
             if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Defend) {
                 unit.setDestination(unit.getGoal());
-                //Visuals::drawLine(unit.getPosition(), unit.getGoal(), Colors::Yellow);
             }
             else if (unit.getGlobalState() != GlobalState::ForcedRetreat && unit.attemptingRegroup()) {
                 unit.setDestination(unit.getCommander().lock()->getPosition());
@@ -104,9 +121,6 @@ namespace McRave::Combat::Destination {
                 getCleanupPosition(unit);
             }
         }
-
-        //Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
-        //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
     }
 
     void onFrame()
@@ -114,8 +128,9 @@ namespace McRave::Combat::Destination {
         for (auto &u : Units::getUnits(PlayerState::Self)) {
             auto &unit = *u;
             if (unit.getRole() == Role::Combat) {
-                updateRetreat(unit);
                 updateDestination(unit);
+                updateRetreat(unit);
+                updateMarch(unit);
             }
         }
     }

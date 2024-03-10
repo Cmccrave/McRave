@@ -8,6 +8,9 @@ namespace McRave::Combat::Decision {
 
     void updateDecision(UnitInfo& unit)
     {
+        //Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+        //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
+
         // Iterate commands, if one is executed then don't try to execute other commands
         static const auto commands ={ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::explore, Command::escort, Command::retreat, Command::move };
         for (auto cmd : commands) {
@@ -20,11 +23,11 @@ namespace McRave::Combat::Decision {
     {
         // Use commands that the commander is using if okay to do so
         if (commander.getCommandType() == UnitCommandTypes::Attack_Unit && commander.hasTarget())
-            unit.setCommand(commander.getCommandType(), *commander.getTarget().lock(), "");
+            unit.setCommand(commander.getCommandType(), *commander.getTarget().lock());
         else if (commander.getCommandType() == UnitCommandTypes::Move && !unit.isTargetedBySplash())
-            unit.setCommand(commander.getCommandType(), commander.getCommandPosition(), "");
+            unit.setCommand(commander.getCommandType(), commander.getCommandPosition());
         else if (commander.getCommandType() == UnitCommandTypes::Right_Click_Position && !unit.isTargetedBySplash())
-            unit.setCommand(UnitCommandTypes::Right_Click_Position, commander.getCommandPosition(), "");
+            unit.setCommand(UnitCommandTypes::Right_Click_Position, commander.getCommandPosition());
         else
             updateDecision(unit);
     }

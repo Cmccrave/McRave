@@ -22,7 +22,11 @@ namespace McRave::Upgrading {
             auto mineralCost        = upgrade.mineralPrice() + (upgrade.mineralPriceFactor() * Broodwar->self()->getUpgradeLevel(upgrade));
             auto gasCost            = upgrade.gasPrice() + (upgrade.gasPriceFactor() * Broodwar->self()->getUpgradeLevel(upgrade));
 
-            return Broodwar->self()->minerals() >= mineralCost && Broodwar->self()->gas() >= gasCost;
+            // Plan buildings before we upgrade
+            auto mineralReserve     = Planning::getPlannedMineral();
+            auto gasReserve         = Planning::getPlannedGas();
+
+            return Broodwar->self()->minerals() >= (mineralCost + mineralReserve) && Broodwar->self()->gas() >= (gasCost + gasReserve);
         }
 
         bool isCreateable(Unit building, UpgradeType upgrade)
@@ -61,15 +65,15 @@ namespace McRave::Upgrading {
             using namespace UpgradeTypes;
 
             // If we have an upgrade order, follow it
+            auto incompleteQueue = false;
             for (auto &[u, cnt] : BuildOrder::getUpgradeQueue()) {
-                if (upgrade == u && !haveOrUpgrading(u, cnt))
-                    return true;
+                if (!haveOrUpgrading(u, cnt)) {
+                    incompleteQueue = true;
+                    if (upgrade == u)
+                        return true;
+                }
             }
-            if (!BuildOrder::getUpgradeQueue().empty() && BuildOrder::isOpener())
-                return false;
-
-            // Don't upgrade anything in opener if nothing is chosen
-            if (BuildOrder::getFirstFocusUpgrade() == UpgradeTypes::None && BuildOrder::isOpener() && BuildOrder::getUpgradeQueue().empty())
+            if (incompleteQueue)
                 return false;
 
             // If this is a specific unit upgrade, check if it's unlocked
@@ -78,14 +82,6 @@ namespace McRave::Upgrading {
                     if (!BuildOrder::isUnitUnlocked(unit))
                         return false;
                 }
-            }
-
-            // If this isn't the first upgrade and we don't have our first tech/upgrade
-            if (upgrade != BuildOrder::getFirstFocusUpgrade()) {
-                if (BuildOrder::getFirstFocusUpgrade() != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(BuildOrder::getFirstFocusUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder::getFirstFocusUpgrade()))
-                    return false;
-                if (BuildOrder::getFirstFocusTech() != TechTypes::None && !Broodwar->self()->hasResearched(BuildOrder::getFirstFocusTech()) && !Broodwar->self()->isResearching(BuildOrder::getFirstFocusTech()))
-                    return false;
             }
 
             // If we're playing Protoss, check Protoss upgrades
@@ -174,56 +170,7 @@ namespace McRave::Upgrading {
             }
 
             else if (Broodwar->self()->getRace() == Races::Zerg) {
-                switch (upgrade)
-                {
-                    // Speed upgrades
-                case Metabolic_Boost:
-                    return vis(Zerg_Zergling) >= 20 || total(Zerg_Hive) > 0 || total(Zerg_Defiler_Mound) > 0;
-                case Muscular_Augments:
-                    return (BuildOrder::isFocusUnit(Zerg_Hydralisk) && Players::ZvP()) || Broodwar->self()->getUpgradeLevel(Grooved_Spines) > 0;
-                case Pneumatized_Carapace:
-                    return (Players::ZvT() && Spy::getEnemyTransition() == "2PortWraith")
-                        || (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 160)
-                        || (Spy::enemyInvis() && (BuildOrder::isFocusUnit(Zerg_Hydralisk) || BuildOrder::isFocusUnit(Zerg_Ultralisk)))
-                        || (Players::getSupply(PlayerState::Self, Races::Zerg) >= 200);
-                case Anabolic_Synthesis:
-                    return Players::getTotalCount(PlayerState::Enemy, Terran_Marine) < 20 || Broodwar->self()->getUpgradeLevel(Chitinous_Plating) > 0;
-
-                    // Range upgrades
-                case Grooved_Spines:
-                    return (BuildOrder::isFocusUnit(Zerg_Hydralisk) && !Players::ZvP()) || Broodwar->self()->getUpgradeLevel(Muscular_Augments) > 0;
-
-                    // Other upgrades
-                case Chitinous_Plating:
-                    return Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 20 || Broodwar->self()->getUpgradeLevel(Anabolic_Synthesis) > 0;
-                case Adrenal_Glands:
-                    return Broodwar->self()->getUpgradeLevel(Metabolic_Boost) > 0;
-
-                    // Ground unit upgrades
-                case Zerg_Melee_Attacks:
-                    return (BuildOrder::getCompositionPercentage(Zerg_Zergling) > 0.0 || BuildOrder::getCompositionPercentage(Zerg_Ultralisk) > 0.0)
-                        && Players::getSupply(PlayerState::Self, Races::Zerg) > 160
-                        && (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Melee_Attacks) || Broodwar->self()->isUpgrading(Zerg_Carapace));
-                case Zerg_Missile_Attacks:
-                    return (BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0 || BuildOrder::getCompositionPercentage(Zerg_Lurker) > 0.0)
-                        && (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Missile_Attacks) || Broodwar->self()->isUpgrading(Zerg_Carapace));
-                case Zerg_Carapace:
-                    return (BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0
-                        || BuildOrder::getCompositionPercentage(Zerg_Zergling) > 0.0
-                        || BuildOrder::getCompositionPercentage(Zerg_Ultralisk) > 0.0) && Players::getSupply(PlayerState::Self, Races::Zerg) > 100;
-
-                    // Air unit upgrades
-                case Zerg_Flyer_Attacks:
-                    if (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) < 2)
-                        return false;
-                    if (Players::ZvZ() && int(Stations::getStations(PlayerState::Self).size()) < 2)
-                        return false;
-                    return BuildOrder::getCompositionPercentage(Zerg_Mutalisk) > 0.0 && (Broodwar->self()->getUpgradeLevel(Zerg_Flyer_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Flyer_Attacks) + 1 || Broodwar->self()->isUpgrading(Zerg_Flyer_Carapace));
-                case Zerg_Flyer_Carapace:
-                    if (Players::ZvZ() && int(Stations::getStations(PlayerState::Self).size()) < 2)
-                        return false;
-                    return BuildOrder::getCompositionPercentage(Zerg_Mutalisk) > 0.0 && total(Zerg_Mutalisk) >= 12 && Stations::getStations(PlayerState::Self).size() >= 3;
-                }
+                return false;                
             }
             return false;
         }
@@ -276,7 +223,7 @@ namespace McRave::Upgrading {
 
                 if (!building.unit()
                     || building.getRole() != Role::Production
-                    || !building.unit()->isCompleted()
+                    || !building.isCompleted()
                     || building.getRemainingTrainFrames() > 0
                     || Upgrading::upgradedThisFrame()
                     || Researching::researchedThisFrame()

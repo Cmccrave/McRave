@@ -221,10 +221,12 @@ namespace McRave::Stations
             auto groundCount = getGroundDefenseCount(station);
 
             if (station->isMain()) {
-                if (Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate")
+                if (Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate" && total(Zerg_Zergling) >= 6)
                     return (2 * (Util::getTime() > Time(2, 20))) - groundCount;
                 if (BuildOrder::isProxy() && BuildOrder::getCurrentTransition() == "2HatchLurker")
                     return (Util::getTime() > Time(2, 45)) + (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 15)) - groundCount;
+                if (BuildOrder::isOpener() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None)
+                    return (Util::getTime() > Time(3, 00)) - groundCount;
             }
             else if (station->isNatural()) {
             }
@@ -244,12 +246,13 @@ namespace McRave::Stations
             if (station->isMain()) {
                 if (Players::getTotalCount(PlayerState::Enemy, Terran_Dropship) > 0)
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
+                if (BuildOrder::isOpener() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None)
+                    return (Util::getTime() > Time(3, 00)) - groundCount;
             }
             else if (station->isNatural()) {
             }
             else {
-                if (Util::getTime() > Time(4, 15) && (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()))
-                    return 1 - groundCount;
+                return (Util::getTime() > Time(4, 30)) - groundCount;
             }
             return 0;
         }
@@ -347,14 +350,15 @@ namespace McRave::Stations
 
     void storeStation(Unit unit) {
         auto newStation = BWEB::Stations::getClosestStation(unit->getTilePosition());
+        auto stationptr = stations.find(newStation);
+
         if (!newStation
-            || !unit->getType().isResourceDepot()
+            || stationptr == stations.end()
             || unit->getTilePosition() != newStation->getBase()->Location()
-            || stations[newStation] != PlayerState::None)
+            || stationptr->second != PlayerState::None)
             return;
 
         // Store station and set resource states if we own this station
-        (unit->getPlayer() == Broodwar->self()) ? stations[newStation] = PlayerState::Self : stations[newStation] = PlayerState::Enemy;
         if (unit->getPlayer() == Broodwar->self()) {
 
             // Store minerals that still exist
@@ -375,14 +379,19 @@ namespace McRave::Stations
         }
 
         // Add any territory it is in
+        stationptr->second = (unit->getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
         Terrain::addTerritory(unit->getPlayer() == Broodwar->self() ? PlayerState::Self : PlayerState::Enemy, newStation);
     }
 
     void removeStation(Unit unit) {
         auto newStation = BWEB::Stations::getClosestStation(unit->getTilePosition());
-        if (!newStation || stations.find(newStation) == stations.end())
+        auto stationptr = stations.find(newStation);
+
+        if (!newStation
+            || stationptr == stations.end()
+            || unit->getTilePosition() != newStation->getBase()->Location()
+            || stationptr->second == PlayerState::None)
             return;
-        stations[newStation] = PlayerState::None;
 
         // Remove workers from any resources on this station
         for (auto &mineral : Resources::getMyMinerals()) {
@@ -405,6 +414,7 @@ namespace McRave::Stations
         }
 
         // Remove any territory it was in
+        stationptr->second = PlayerState::None;
         Terrain::removeTerritory(unit->getPlayer() == Broodwar->self() ? PlayerState::Self : PlayerState::Enemy, newStation);
     }
 
@@ -430,6 +440,10 @@ namespace McRave::Stations
             || Spy::getEnemyTransition() == "Carriers")
             return 0;
 
+        // We don't want to pull workers to build things if none are nearby
+        if (getSaturationRatio(station) == 0.0 && getColonyCount(station) == 0)
+            return 0;
+
         if (Players::PvP())
             return calcGroundDefPvP(station);
         if (Players::PvT())
@@ -446,6 +460,11 @@ namespace McRave::Stations
     }
 
     int needAirDefenses(BWEB::Station * station) {
+
+        // We don't want to pull workers to build things if none are nearby
+        if (getSaturationRatio(station) == 0.0 && getColonyCount(station) == 0)
+            return 0;
+
         auto airCount = getAirDefenseCount(station);
         const auto enemyAir = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0
             || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0
@@ -462,9 +481,9 @@ namespace McRave::Stations
                 return 1 - airCount;
             if (Players::ZvP() && Util::getTime() > Time(5, 00) && !station->isMain() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() == "3HatchMuta")
                 return 1 - airCount;
-            if (Players::ZvT() && Util::getTime() > Time(5, 30) && Util::getTime() < Time(7, 00) && Spy::getEnemyTransition() == "2PortWraith" && BuildOrder::getCurrentTransition() == "3HatchMuta")
+            if (Players::ZvT() && Util::getTime() > Time(5, 30) && Spy::getEnemyTransition() == "2PortWraith" && BuildOrder::getCurrentTransition() == "3HatchMuta")
                 return 1 - airCount;
-            if (Players::ZvT() && Util::getTime() > Time(6, 30) && Spy::getEnemyTransition() == "2PortWraith" && Spy::enemyInvis())
+            if (Players::ZvT() && Spy::getEnemyTransition() == "2PortWraith" && Spy::enemyInvis())
                 return 1 - airCount;
         }
 
@@ -507,6 +526,22 @@ namespace McRave::Stations
         return base && base->unit()->isCompleted();
     }
 
+    bool isBlocked(BWEB::Station * station)
+    {
+        auto stationptr = stations.find(station);
+        if (stationptr != stations.end())
+            return stationptr->second != PlayerState::Self;
+
+        for (auto x = 0; x < 4; x++) {
+            for (auto y = 0; y < 3; y++) {
+                auto tile = station->getBase()->Location() + TilePosition(x, y);
+                if (BWEB::Map::isUsed(tile) != UnitTypes::None)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     int lastVisible(BWEB::Station * station) {
         auto botRight = station->getBase()->Location() + TilePosition(4, 3);
         return min(Grids::getLastVisibleFrame(station->getBase()->Location()), Grids::getLastVisibleFrame(botRight));
@@ -523,7 +558,10 @@ namespace McRave::Stations
 
     PlayerState ownedBy(BWEB::Station * station)
     {
-        return stations[station];
+        auto stationptr = stations.find(station);
+        if (stationptr != stations.end())
+            return stationptr->second;
+        return PlayerState::None;
     }
 
     BWEB::Station * getClosestRetreatStation(UnitInfo& unit)

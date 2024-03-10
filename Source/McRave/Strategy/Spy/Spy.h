@@ -34,19 +34,19 @@ namespace McRave::Spy {
     };
 
     struct StrategySpy { // TODO: Impl multiple players
-        Strat build, opener, transition, expand, rush, wall, proxy, early, steal, pressure, greedy, invis;
+        Strat build, opener, transition, expand, rush, wall, proxy, early, steal, pressure, greedy, invis, allin;
         Time buildTime, openerTime, transitionTime, rushArrivalTime;
         std::vector<Strat*> listOfStrats;
         std::map<BWAPI::UnitType, UnitTimings> enemyTimings;
         std::map<BWAPI::UpgradeType, int> upgradeLevel;
         std::map<BWAPI::TechType, bool> techResearched; // TODO: Impl
-        int workersNearUs = 0;
+        int workersPulled = 0;
         int gasMined = 0;
         int productionCount = 0;
         std::set<BWAPI::UnitType> typeUpgrading; // TODO: Better impl (doesn't look at current state)
 
         StrategySpy() {
-            listOfStrats ={ &build, &opener, &transition, &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis };
+            listOfStrats ={ &build, &opener, &transition, &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &allin };
             build.framesRequired = 24;
             build.framesChangeable = 500;
             opener.framesRequired = 24;
@@ -92,6 +92,6 @@ namespace McRave::Spy {
     bool enemyWalled();
     bool enemyGreedy();
     bool enemyBust();
-    int getWorkersNearUs();
+    int getWorkersPulled();
     int getEnemyGasMined();
 }

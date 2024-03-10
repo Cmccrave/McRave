@@ -80,6 +80,7 @@ namespace McRave::BuildOrder {
 
     std::map<BWAPI::UnitType, int>& getBuildQueue();
     std::map<BWAPI::UpgradeType, int>& getUpgradeQueue();
+    std::map<BWAPI::TechType, int>& getTechQueue();
     BWAPI::UnitType getFirstFocusUnit();
     BWAPI::UpgradeType getFirstFocusUpgrade();
     BWAPI::TechType getFirstFocusTech();

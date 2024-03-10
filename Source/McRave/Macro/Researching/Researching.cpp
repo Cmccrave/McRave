@@ -19,7 +19,14 @@ namespace McRave::Researching {
 
         bool isAffordable(TechType tech)
         {
-            return Broodwar->self()->minerals() >= tech.mineralPrice() && Broodwar->self()->gas() >= tech.gasPrice();
+            auto mineralCost        = tech.mineralPrice();
+            auto gasCost            = tech.gasPrice();
+
+            // Plan buildings and upgrades before we research
+            auto mineralReserve     = Planning::getPlannedMineral() + Upgrading::getReservedMineral();
+            auto gasReserve         = Planning::getPlannedGas() + Upgrading::getReservedGas();
+
+            return Broodwar->self()->minerals() >= (mineralCost + mineralReserve) && Broodwar->self()->gas() >= (gasCost + gasReserve);
         }
 
         bool isCreateable(Unit building, TechType tech)
@@ -47,20 +54,24 @@ namespace McRave::Researching {
         {
             using namespace TechTypes;
 
+            // If we have an upgrade order, follow it
+            auto incompleteQueue = false;
+            for (auto &[t, cnt] : BuildOrder::getTechQueue()) {
+                if (!haveOrResearching(t)) {
+                    incompleteQueue = true;
+                    if (tech == t)
+                        return true;
+                }
+            }
+            if (incompleteQueue)
+                return false;
+
             // If this is a specific unit tech, check if it's unlocked
             if (tech != BuildOrder::getFirstFocusTech() && tech.whatUses().size() == 1) {
                 for (auto &unit : tech.whatUses()) {
                     if (!BuildOrder::isUnitUnlocked(unit))
                         return false;
                 }
-            }
-
-            // If this isn't the first tech and we don't have our first tech/upgrade
-            if (tech != BuildOrder::getFirstFocusTech()) {
-                if (BuildOrder::getFirstFocusUpgrade() != UpgradeTypes::None && Broodwar->self()->getUpgradeLevel(BuildOrder::getFirstFocusUpgrade()) <= 0 && !Broodwar->self()->isUpgrading(BuildOrder::getFirstFocusUpgrade()))
-                    return false;
-                if (BuildOrder::getFirstFocusTech() != TechTypes::None && !Broodwar->self()->hasResearched(BuildOrder::getFirstFocusTech()) && !Broodwar->self()->isResearching(BuildOrder::getFirstFocusTech()))
-                    return false;
             }
 
             if (Broodwar->self()->getRace() == Races::Protoss) {
@@ -94,16 +105,7 @@ namespace McRave::Researching {
             }
 
             else if (Broodwar->self()->getRace() == Races::Zerg) {
-                switch (tech) {
-                case Lurker_Aspect:
-                    return !BuildOrder::isFocusUnit(Zerg_Hydralisk) || (Upgrading::haveOrUpgrading(UpgradeTypes::Grooved_Spines, 1) && Upgrading::haveOrUpgrading(UpgradeTypes::Muscular_Augments, 1));
-                case Burrowing:
-                    return Stations::getStations(PlayerState::Self).size() >= 3 && Players::getSupply(PlayerState::Self, Races::Zerg) > 140;
-                case Consume:
-                    return true;
-                case Plague:
-                    return Broodwar->self()->hasResearched(Consume);
-                }
+                return false;
             }
             return false;
         }
@@ -155,7 +157,7 @@ namespace McRave::Researching {
 
                 if (!building.unit()
                     || building.getRole() != Role::Production
-                    || !building.unit()->isCompleted()
+                    || !building.isCompleted()
                     || building.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
                     || Upgrading::upgradedThisFrame()
                     || Researching::researchedThisFrame()

@@ -59,45 +59,50 @@ namespace McRave::Support {
 
         void getArmyPlacement(UnitInfo& unit)
         {
-            auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
+            // For each cluster, assign an overlord to the commander
             auto distBest = DBL_MAX;
-            auto posBest = Positions::Invalid;
-            for (auto &u : Units::getUnits(PlayerState::Self)) {
-                auto assignedDist = 320.0;
-                if (types.find(u->getType()) != types.end()) {
-                    for (auto &position : assignedOverlords)
-                        assignedDist = min(assignedDist, position.getDistance(u->getPosition()));
-                    auto dist = u->getPosition().getDistance(unit.getPosition()) / assignedDist;
+            for (auto &cluster : Combat::Clusters::getClusters()) {
+                auto commander = cluster.commander.lock();
+                if (commander && types.find(commander->getType()) != types.end() && assignedOverlords.find(commander->getPosition()) == assignedOverlords.end()) {
+                    auto dist = commander->getPosition().getDistance(unit.getPosition());
                     if (dist < distBest) {
-                        posBest = u->getPosition();
+                        unit.setDestination(commander->getPosition());
                         distBest = dist;
                     }
                 }
             }
-            if (posBest.isValid())
-                unit.setDestination(posBest);
 
-            // Move detectors between target and unit vs Terran
-            if (unit.getType().isDetector() && Players::PvT()) {
-                if (unit.hasTarget())
-                    unit.setDestination((unit.getTarget().lock()->getPosition() + unit.getDestination()) / 2);
-                else {
-                    auto closestEnemy = Util::getClosestUnit(unit.getDestination(), PlayerState::Enemy, [&](auto &u) {
-                        return !u->getType().isWorker() && !u->getType().isBuilding();
-                    });
+            // Find the closest unit without a detector assigned - this doesn't work great so far
+            if (!unit.getDestination().isValid()) {
+                distBest = DBL_MAX;
+                for (auto &u : Units::getUnits(PlayerState::Self)) {
+                    auto assignedDist = 320.0;
+                    if (types.find(u->getType()) != types.end()) {
+                        for (auto &position : assignedOverlords)
+                            assignedDist = min(assignedDist, position.getDistance(u->getPosition()));
 
-                    if (closestEnemy)
-                        unit.setDestination((closestEnemy->getPosition() + unit.getDestination()) / 2);
+                        auto dist = u->getPosition().getDistance(unit.getPosition()) / assignedDist;
+                        if (dist < distBest) {
+                            unit.setDestination(u->getPosition());
+                            distBest = dist;
+                        }
+                    }
                 }
-            }
-
-            // Move detectors between closest self station and destination if vulnerable
-            if (unit.getType() == Zerg_Overlord && closestStation) {
-                unit.setDestination(Util::shiftTowards(unit.getDestination(), closestStation->getBase()->Center(), 96.0));
             }
 
             // Assign placement
             assignedOverlords.insert(unit.getDestination());
+
+            // Adjust detectors between target and current destination
+            if (unit.getType().isDetector() && unit.hasTarget()) {
+                unit.setDestination((unit.getTarget().lock()->getPosition() + unit.getDestination()) / 2);
+            }
+
+            // Adjust detectors not in use between closest self station
+            auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
+            if (unit.getType() == Zerg_Overlord && closestStation) {
+                unit.setDestination(Util::shiftTowards(unit.getDestination(), closestStation->getBase()->Center(), 96.0));
+            }
         }
 
         void updateDestination(UnitInfo& unit)
@@ -107,19 +112,21 @@ namespace McRave::Support {
             auto enemyAir = Spy::getEnemyTransition() == "Corsair"
                 || Spy::getEnemyTransition() == "2PortWraith"
                 || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
-           
+
             auto followArmyPossible = any_of(types.begin(), types.end(), [&](auto &t) { return com(t) > 0; });
 
             if (Util::getTime() < Time(7, 00) && Stations::getStations(PlayerState::Self).size() >= 2 && !Players::ZvZ())
                 closestStation = Terrain::getMyNatural();
 
             // Set goal as destination
-            if (unit.getGoal().isValid() && unit.getUnitsTargetingThis().empty() && unit.getUnitsInReachOfThis().empty())
+            if (unit.getGoal().isValid() && unit.getUnitsTargetingThis().empty() && unit.getUnitsInReachOfThis().empty()) {
                 unit.setDestination(unit.getGoal());
+            }
 
             // Send support units to army
             else if (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) {
                 getArmyPlacement(unit);
+                Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
             }
 
             // Send Overlords to a safe home

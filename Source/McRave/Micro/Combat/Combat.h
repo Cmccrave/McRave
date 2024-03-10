@@ -25,7 +25,9 @@ namespace McRave::Combat {
         CommandShare commandShare;
         Shape shape;
         double spacing = 32.0;
+        double radius = 320.0;
         bool mobileCluster = false;
+        bool retreatCluster = false;
         BWAPI::Color color;
         BWEB::Path marchPath, retreatPath;
 
@@ -66,7 +68,7 @@ namespace McRave::Combat {
         void onFrame();
     }
 
-    namespace Destination {
+    namespace Bearings {
         void onFrame();
     }
 

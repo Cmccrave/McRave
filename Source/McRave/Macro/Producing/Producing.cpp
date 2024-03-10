@@ -369,10 +369,19 @@ namespace McRave::Producing {
                         auto &unit = *u;
                         return unit.getType() == Zerg_Larva && unit.unit()->getHatchery() && unit.unit()->getHatchery()->getTilePosition() == station->getBase()->Location();
                     });
+
+                    // Try to just use the larvas immediately, queue first
                     if (larvaCount >= 3 && bestType != Zerg_Drone)
-                        saturation = 1.0 / 24.0;
+                        saturation = 0.01;
+
+                    // Try not to queue drones at high saturation
+                    if (larvaCount < 3 && bestType.isWorker() && saturation >= 1.6)
+                        continue;
 
                     stations.emplace(saturation * larvaCount, station);
+
+                    if (bestType.isWorker())
+                        Broodwar->drawTextMap(station->getBase()->Center(), "%.2f", saturation);
                 }
 
                 for (auto &[val, station] : stations) {
@@ -435,12 +444,9 @@ namespace McRave::Producing {
 
     double scoreUnit(UnitType type)
     {
-        if (BuildOrder::getFirstFocusUnit() == type && Broodwar->self()->getRace() != Races::Zerg)
-            return DBL_MAX;
-
         // Check if we are saving larva but not for this type
         if (BuildOrder::getUnitReservation(type) == 0 && (BuildOrder::getUnitReservation(Zerg_Mutalisk) > 0 || BuildOrder::getUnitReservation(Zerg_Hydralisk) > 0)) {
-            auto larvaMinCost = (BuildOrder::getFirstFocusUnit().mineralPrice() * BuildOrder::getUnitReservation(Zerg_Mutalisk))
+            auto larvaMinCost = (Zerg_Mutalisk.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Mutalisk))
                 + (Zerg_Hydralisk.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Hydralisk))
                 + (Zerg_Scourge.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Scourge));
 

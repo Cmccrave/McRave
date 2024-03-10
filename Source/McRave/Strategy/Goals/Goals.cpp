@@ -194,9 +194,6 @@ namespace McRave::Goals {
                     }
                 }
             }
-
-            
-
         }
 
         void updateProtossGoals()
@@ -282,9 +279,10 @@ namespace McRave::Goals {
             }
 
             // Assign an Overlord to watch our Choke early on
-            if (Terrain::getNaturalChoke() && !Spy::enemyRush()) {
+            if (Terrain::getNaturalChoke() && !Spy::enemyRush() && com(Zerg_Overlord) >= 2) {
+                const auto natSpot = (Position(Terrain::getNaturalChoke()->Center()) + Terrain::getNaturalPosition()) / 2;
                 if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0))
-                    assignNumberToGoal(Position(Terrain::getNaturalChoke()->Center()), Zerg_Overlord, 1, GoalType::Escort);
+                    assignNumberToGoal(natSpot, Zerg_Overlord, 1, GoalType::Escort);
             }
 
             // Assign an Overlord to each natural Station

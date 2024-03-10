@@ -77,7 +77,8 @@ namespace McRave::Combat {
             const auto baseType = Broodwar->self()->getRace().getResourceDepot();
 
             // When we want to defend our natural
-            if (Terrain::getMyNatural() && Terrain::getNaturalChoke()) {
+            defendNatural = false;
+            if (Terrain::getMyNatural() && Terrain::getNaturalChoke() && !Stations::isBlocked(Terrain::getMyNatural())) {
                 defendNatural = BuildOrder::isWallNat()
                     || BuildOrder::takeNatural()
                     || BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural())
@@ -134,7 +135,7 @@ namespace McRave::Combat {
             }
 
             // Check if enemy lost all bases
-            auto lostAll = !Stations::getStations(PlayerState::Enemy).empty();
+            auto lostAll = Stations::getStations(PlayerState::Enemy).empty();
             for (auto &station : Stations::getStations(PlayerState::Enemy)) {
                 if (!Stations::isBaseExplored(station) || BWEB::Map::isUsed(station->getBase()->Location()) != UnitTypes::None)
                     lostAll = false;
@@ -238,7 +239,7 @@ namespace McRave::Combat {
         checkHoldChoke();
         Simulation::onFrame();
         State::onFrame();
-        Destination::onFrame();
+        Bearings::onFrame();
         Clusters::onFrame();
         Formations::onFrame();
         Navigation::onFrame();

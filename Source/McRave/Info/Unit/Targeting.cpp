@@ -7,6 +7,7 @@ using namespace UnitTypes;
 namespace McRave::Targets {
 
     set<UnitType> cancelPriority ={ Terran_Missile_Turret, Terran_Barracks, Terran_Bunker, Terran_Factory, Terran_Starport, Terran_Armory, Terran_Bunker };
+    set<UnitType> proxyTargeting ={ Protoss_Pylon, Protoss_Photon_Cannon, Terran_Barracks, Terran_Bunker, Zerg_Sunken_Colony };
     map<UnitInfo*, int> meleeSpotsAvailable;
 
     enum class Priority {
@@ -75,21 +76,30 @@ namespace McRave::Targets {
                 if (!targetMatters)
                     return Priority::Trivial;
 
-                // Generic critical priority
-                if (target.isProxy() && target.getType() == Protoss_Photon_Cannon)
-                    return Priority::Critical;
+                // Proxy worker
+                if (target.isProxy() && target.getType().isWorker())
+                    return Priority::Major;
+
+                // Proxy priority
+                if (target.isProxy() && target.getType().isBuilding() && Spy::enemyProxy() && (target.getType() != Zerg_Mutalisk || Util::getTime() > Time(8, 00))) {
+                    if (target.unit()->getBuildUnit())
+                        return Priority::Minor;
+                    else if (proxyTargeting.find(target.getType()) != proxyTargeting.end() && ((Players::getVisibleCount(PlayerState::Enemy, Terran_Marine) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) == 0) || !unit.getType().isWorker()))
+                        return Priority::Critical;
+                    else
+                        return Priority::Ignore;
+                }
 
                 // Generic major priority
-                if (target.isProxy()
-                    || (target.isThreatening() && Terrain::inTerritory(PlayerState::Self, unit.getPosition())))
-                    return Priority::Major;
+                if (!unit.getType().isWorker() && target.isThreatening() && !target.getType().isWorker() && target.canAttackGround() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()))
+                    return Priority::Critical;
 
                 // Generic ignore
                 if (target.getType().isSpell()
                     || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getUnitsTargetingThis().size()) >= 4 && !target.isBurrowed())                          // Don't over target spider mines
                     || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                                         // Don't target interceptors as a flying unit
                     || (target.getType().isWorker() && !allowWorkerTarget(unit, target))
-                    || (target.getType().isWorker() && !target.hasRepairedRecently() && !target.hasAttackedRecently() && !unit.getUnitsInRangeOfThis().empty())
+                    //|| (target.getType().isWorker() && !target.hasRepairedRecently() && !target.hasAttackedRecently() && !unit.getUnitsInRangeOfThis().empty())           // Broken: Should have 1 unit eject scout worker, doesnt work
                     || (target.getType() == Protoss_Corsair && !unit.isFlying() && target.getUnitsTargetingThis().size() > 2 && !unit.isWithinRange(target))
                     || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())           // Don't target if invisible and can't attack this unit or we have no detectors in PvP
                     || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))           // Don't target flyers that we can't reach
@@ -102,8 +112,8 @@ namespace McRave::Targets {
                         if (Players::ZvZ() && !target.canAttackGround() && !Spy::enemyFastExpand())                                                                 // Avoid non ground hitters to try and kill drones
                             return Priority::Ignore;
                     }
-                    if (unit.attemptingRunby() && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
-                        return Priority::Ignore;
+                    //if (unit.attemptingRunby() && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
+                    //    return Priority::Ignore;
                 }
 
                 // Mutalisk
@@ -112,9 +122,11 @@ namespace McRave::Targets {
                     auto anythingSupply = !Players::ZvZ() && Players::getSupply(PlayerState::Enemy, Races::None) < 20;
                     auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
 
-                    if (Players::ZvP() && Spy::getEnemyTransition() == "ZealotRush" && target.getType() == Protoss_Zealot && Util::getTime() < Time(9, 00))
+                    if (Players::ZvP() && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == "ZealotRush" && Util::getTime() < Time(9, 00))
                         return Priority::Major;
-                    if (Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
+                    if (Players::ZvZ() && target.getType() == Zerg_Zergling && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
+                        return Priority::Major;
+                    if (Players::ZvT() && target.isSiegeTank() && unit.isWithinReach(target))
                         return Priority::Major;
 
                     auto priorityAfterInfo = Terrain::foundEnemy() ? Priority::Trivial : Priority::Ignore;
@@ -182,19 +194,6 @@ namespace McRave::Targets {
 
             const auto bonusScore = [&]() {
 
-                //// Add bonus for expansion killing
-                //if (target.getType().isResourceDepot() && !Players::ZvZ() && (Util::getTime() > Time(8, 00) || Spy::enemyGreedy()) && !unit.isLightAir())
-                //    return 5000.0;
-
-                // Add penalty for targeting workers under defenses
-                if (unit.isLightAir() && target.getType().isWorker() && !target.hasRepairedRecently()) {
-                    auto countDamageInRange = 0;
-                    for (auto &e : Units::getUnits(PlayerState::Enemy)) {
-                        if (e->canAttackAir() && e->getType().isBuilding() && (e->getPosition().getDistance(target.getPosition()) < e->getAirRange() + 96.0 || e->getPosition().getDistance(unit.getPosition()) < e->getAirRange() + 96.0))
-                            return 0.0;
-                    }
-                }
-
                 // Add bonus for Observers that are vulnerable
                 if (target.getType() == Protoss_Observer && !target.isHidden())
                     return 20.0;
@@ -206,10 +205,6 @@ namespace McRave::Targets {
                 // Add penalty for a Terran building that has been repaired recently
                 if (target.getType().isBuilding() && target.hasRepairedRecently())
                     return 0.1;
-
-                // Add bonus for an SCV repairing a turret or building a turret
-                if (target.getType().isWorker() && ((target.unit()->isConstructing() && target.unit()->getBuildUnit() && cancelPriority.find(target.unit()->getBuildUnit()->getType()) != cancelPriority.end()) || (target.hasRepairedRecently())))
-                    return 10.0;
 
                 // Add bonus for a building warping in
                 if (Util::getTime() > Time(8, 00) && target.unit()->exists() && !target.unit()->isCompleted() && (target.getType() == Protoss_Photon_Cannon || (target.getType() == Terran_Missile_Turret && !target.unit()->getBuildUnit())))

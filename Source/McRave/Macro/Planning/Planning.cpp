@@ -316,9 +316,9 @@ namespace McRave::Planning {
 
             // If we are expanding, it must be on an expansion area and be when build order requests one
             const auto expand = Broodwar->self()->getRace() != Races::Zerg
-                || BuildOrder::shouldExpand()
                 || (int(Stations::getStations(PlayerState::Self).size()) <= 1 && BuildOrder::takeNatural() && !BuildOrder::shouldRamp())
-                || (int(Stations::getStations(PlayerState::Self).size()) <= 2 && BuildOrder::takeThird() && !BuildOrder::shouldRamp());
+                || (int(Stations::getStations(PlayerState::Self).size()) == 2 && BuildOrder::takeThird() && !BuildOrder::shouldRamp())
+                || (int(Stations::getStations(PlayerState::Self).size()) > 2 && BuildOrder::shouldExpand());
 
             if (!building.isResourceDepot()
                 || !expand
@@ -347,6 +347,14 @@ namespace McRave::Planning {
         {
             if (!isProductionType(building))
                 return false;
+
+            // Main gets hatcheries if we don't have a natural base yet
+            if (BuildOrder::isOpener() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None) {
+                auto desiredCenter = BWEB::Stations::getStartingMain()->getBase()->Center();
+                placement = closestLocation(building, desiredCenter);
+                if (placement.isValid())
+                    return true;
+            }
 
             // Figure out where we need to place a production building
             for (auto &[_, station] : Stations::getStationsByProduction()) {
@@ -422,18 +430,12 @@ namespace McRave::Planning {
             // Defense placements near stations
             for (auto &station : Stations::getStations(PlayerState::Self)) {
 
-                int colonies = 0;
-
                 // Place sunkens closest to the chokepoint by default
                 Position desiredCenter = Players::ZvT() ? station->getResourceCentroid() : Stations::getDefendPosition(station);
-
-                for (auto& tile : station->getDefenses()) {
-                    if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony || buildingsPlanned.find(tile) != buildingsPlanned.end())
-                        colonies++;
-                }
+                auto colonies = Stations::getColonyCount(station);
 
                 // If pocket defense is buildable
-                if (Stations::needGroundDefenses(station) > colonies || Stations::needAirDefenses(station) > colonies) {
+                if (Stations::needGroundDefenses(station) > colonies) {
                     if (isPlannable(Zerg_Creep_Colony, station->getPocketDefense()) && isBuildable(Zerg_Creep_Colony, station->getPocketDefense())) {
                         placement = station->getPocketDefense();
                         return true;
