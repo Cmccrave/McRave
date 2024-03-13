@@ -21,7 +21,7 @@ namespace McRave::BuildOrder::Zerg {
             planEarly =                                     (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
 
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 24);
-            buildQueue[Zerg_Spawning_Pool] =                (hatchCount() >= 2 && s >= 24);
+            buildQueue[Zerg_Spawning_Pool] =                (hatchCount() >= 2);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 16) + (s >= 32);
 
             // Composition

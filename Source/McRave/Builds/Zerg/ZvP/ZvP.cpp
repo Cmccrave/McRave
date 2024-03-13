@@ -52,8 +52,6 @@ namespace McRave::BuildOrder::Zerg {
                 initialValue = 6;
             else if (Spy::getEnemyOpener() == "Proxy9/9" || Spy::getEnemyOpener() == "9/9")
                 initialValue = 16;
-            else if (currentOpener == "12Hatch")
-                initialValue = 6;
             else
                 initialValue = 10;
         }
@@ -99,7 +97,7 @@ namespace McRave::BuildOrder::Zerg {
         }));
 
         // Inbound estimate (have information on army, they're inbound):
-        arrivalValue += int(1.5 * count_if(Units::getUnits(PlayerState::Enemy).begin(), Units::getUnits(PlayerState::Enemy).end(), [&](auto &u) {
+        arrivalValue += int(1.0 * count_if(Units::getUnits(PlayerState::Enemy).begin(), Units::getUnits(PlayerState::Enemy).end(), [&](auto &u) {
             if (trackables.find(u->getType()) != trackables.end()) {
                 const auto visDiff = !Terrain::inTerritory(PlayerState::Enemy, u->getPosition()) ? Broodwar->getFrameCount() - u->getLastVisibleFrame() : 0;
                 return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 28);
@@ -176,10 +174,13 @@ namespace McRave::BuildOrder::Zerg {
 
         // Build
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 26 && vis(Zerg_Drone) >= 11);
-        buildQueue[Zerg_Extractor] =                    (s >= 26 && vis(Zerg_Drone) >= 12 && hatchCount() >= 3) + (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 24);
+        buildQueue[Zerg_Extractor] =                    (s >= 26 && vis(Zerg_Drone) >= 12 && hatchCount() >= 3) + (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 20);
         buildQueue[Zerg_Lair] =                         (s >= 32 && gas(100) && hatchCount() >= 3);
         buildQueue[Zerg_Spire] =                        (s >= 32 && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 16);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (hatchCount() >=2 && s >= 32) + (s >= 48) + spireOverlords;
+
+        // Upgrades
+        upgradeQueue[Metabolic_Boost] =                 vis(Zerg_Lair) > 0;
 
         // Composition
         if ((com(Zerg_Spire) == 0 || Units::getImmThreat() > 0.0) && lingsNeeded_ZvP() > vis(Zerg_Zergling)) {

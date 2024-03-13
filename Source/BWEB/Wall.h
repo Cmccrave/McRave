@@ -28,7 +28,7 @@ namespace BWEB {
         bool valid, pylonWall, openWall, requireTight, movedStart, pylonWallPiece, allowLifted, flatRamp, angledChoke;
         int bestDoorCount = 25;
         int defenseArrangement = -1;
-        Station * station = nullptr;
+        const Station * station = nullptr;
         Path finalPath;
 
         Position findCentroid();
@@ -87,20 +87,23 @@ namespace BWEB {
         }
 
         /// <summary> Returns the Station this wall is close to if one exists. </summary>
-        Station* getStation() { return station; }
+        const Station * const getStation() { return station; }
 
         /// <summary> Returns the Path out if one exists. </summary>
         Path& getPath() { return finalPath; }
 
         /// <summary> Returns the Chokepoint associated with this Wall. </summary>
-        const BWEM::ChokePoint * getChokePoint() { return choke; }
+        const BWEM::ChokePoint * getChokePoint() const { return choke; }
 
         /// <summary> Returns the Area associated with this Wall. </summary>
-        const BWEM::Area * getArea() { return area; }
+        const BWEM::Area * getArea() const { return area; }
 
         /// <summary> Returns the defense locations associated with this Wall. </summary>
-        set<TilePosition>& getDefenses(int row = 0) {
-            return defenses[row];
+        const set<TilePosition>& getDefenses(int row = 0) const {
+            auto ptr = defenses.find(row);
+            if (ptr != defenses.end())
+                return (ptr->second);
+            return {};
         }
 
         /// <summary> Returns the TilePosition belonging to the opening of the wall. </summary>
@@ -110,47 +113,47 @@ namespace BWEB {
         Position getCentroid() { return centroid; }
 
         /// <summary> Returns the TilePosition belonging to large UnitType buildings. </summary>
-        set<TilePosition>& getLargeTiles() { return largeTiles; }
+        const set<TilePosition>& getLargeTiles() const { return largeTiles; }
 
         /// <summary> Returns the TilePosition belonging to medium UnitType buildings. </summary>
-        set<TilePosition>& getMediumTiles() { return mediumTiles; }
+        const set<TilePosition>& getMediumTiles() const { return mediumTiles; }
 
         /// <summary> Returns the TilePosition belonging to small UnitType buildings. </summary>
-        set<TilePosition>& getSmallTiles() { return smallTiles; }
+        const set<TilePosition>& getSmallTiles() const { return smallTiles; }
 
         /// <summary> Returns the raw vector of the buildings the wall was initialzied with. </summary>
-        vector<UnitType>& getRawBuildings() { return rawBuildings; }
+        const vector<UnitType>& getRawBuildings() const { return rawBuildings; }
 
         /// <summary> Returns the raw vector of the defenses the wall was initialzied with. </summary>
-        vector<UnitType>& getRawDefenses() { return rawDefenses; }
+        const vector<UnitType>& getRawDefenses() const { return rawDefenses; }
 
         /// <summary> Returns true if the Wall only contains Pylons. </summary>
-        bool isPylonWall() { return pylonWall; }
+        const bool isPylonWall() const { return pylonWall; }
 
         /// <summary> Returns the number of ground defenses associated with this Wall. </summary>
-        int getGroundDefenseCount();
+        const int getGroundDefenseCount() const;
 
         /// <summary> Returns the number of air defenses associated with this Wall. </summary>
-        int getAirDefenseCount();
+        const int getAirDefenseCount() const;
 
         /// <summary> Draws all the features of the Wall. </summary>
-        void draw();
+        const void draw();
     };
 
     namespace Walls {
 
         /// <summary> Returns a map containing every Wall keyed by Chokepoint. </summary>
-        map<const BWEM::ChokePoint *, Wall>& getWalls();
+        map<const BWEM::ChokePoint * const, Wall>& getWalls();
 
         /// <summary> <para> Returns a pointer to a Wall if it has been created in the given Area and ChokePoint. </para>
         /// <para> Note: If you only pass a Area or a ChokePoint (not both), it will imply and pick a Wall that exists within that Area or blocks that ChokePoint. </para></summary>
         /// <param name="area"> The Area that the Wall resides in. </param>
         /// <param name="choke"> The Chokepoint that the Wall blocks. </param>
-        Wall * getWall(const BWEM::ChokePoint *);
+        const Wall * const getWall(const BWEM::ChokePoint *);
 
         /// <summary> Returns the closest Wall to the given Point. </summary>
         template<typename T>
-        Wall* getClosestWall(T h)
+        const Wall * const getClosestWall(T h)
         {
             const auto here = Position(h);
             auto distBest = DBL_MAX;
@@ -176,22 +179,22 @@ namespace BWEB {
         /// <param name="defenses"> (Optional) A Vector of UnitTypes that you want the Wall to have defenses consisting of. </param>
         /// <param name="openWall"> (Optional) Set as true if you want an opening in the wall for unit movement. </param>
         /// <param name="requireTight"> (Optional) Set as true if you want pixel perfect placement. </param>
-        Wall * createWall(vector<UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, UnitType tight = UnitTypes::None, const vector<UnitType>& defenses ={}, bool openWall = false, bool requireTight = false);
+        const Wall * const createWall(vector<UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, UnitType tight = UnitTypes::None, const vector<UnitType>& defenses ={}, bool openWall = false, bool requireTight = false);
 
         /// I only added this to support Alchemist because it's a trash fucking map.
-        Wall* createHardWall(multimap<UnitType, TilePosition>&, const BWEM::Area *, const BWEM::ChokePoint *);
+        const Wall * const createHardWall(multimap<UnitType, TilePosition>&, const BWEM::Area * const, const BWEM::ChokePoint *);
 
         /// <summary><para> Creates a Forge Fast Expand at the natural. </para>
         /// <para> Places 1 Forge, 1 Gateway, 1 Pylon and Cannons. </para></summary>
-        Wall * createProtossWall();
+        const Wall * const createProtossWall();
 
         /// <summary><para> Creates a "Sim City" of Zerg buildings at the natural. </para>
         /// <para> Places Sunkens, 1 Evolution Chamber and 1 Hatchery. </para>
-        Wall * createZergWall();
+        const Wall * const createZergWall();
 
         /// <summary><para> Creates a full wall of Terran buildings at the main choke. </para>
         /// <para> Places 2 Depots and 1 Barracks. </para>
-        Wall * createTerranWall();
+        const Wall * const createTerranWall();
 
         /// <summary> Calls the draw function for each Wall that exists. </summary>
         void draw();

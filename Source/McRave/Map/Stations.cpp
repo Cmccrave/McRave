@@ -7,11 +7,11 @@ using namespace UnitTypes;
 namespace McRave::Stations
 {
     namespace {
-        map<BWEB::Station*, PlayerState> stations;
-        map<BWEB::Station*, Position> defendPositions;
-        multimap<double, BWEB::Station *> stationsBySaturation;
-        multimap<double, BWEB::Station *> stationsByProduction;
-        map<BWEB::Station *, int> airDefenseCount, groundDefenseCount, remainingMinerals, remainingGas, initialMinerals, initialGas;
+        map<const BWEB::Station * const, PlayerState> stations;
+        map<const BWEB::Station * const, Position> defendPositions;
+        multimap<double, const BWEB::Station * const> stationsBySaturation;
+        multimap<double, const BWEB::Station * const> stationsByProduction;
+        map<const BWEB::Station * const, int> airDefenseCount, groundDefenseCount, remainingMinerals, remainingGas, initialMinerals, initialGas;
         int miningStations = 0, gasingStations = 0;
 
         void updateSaturation() {
@@ -171,7 +171,7 @@ namespace McRave::Stations
             }
         }
 
-        int calcGroundDefPvP(BWEB::Station * station)
+        int calcGroundDefPvP(const BWEB::Station * const station)
         {
             auto groundCount = getGroundDefenseCount(station);
 
@@ -188,7 +188,7 @@ namespace McRave::Stations
             return 0;
         }
 
-        int calcGroundDefPvT(BWEB::Station * station)
+        int calcGroundDefPvT(const BWEB::Station * const station)
         {
             if (station->isMain()) {
             }
@@ -199,7 +199,7 @@ namespace McRave::Stations
             return 0;
         }
 
-        int calcGroundDefPvZ(BWEB::Station * station)
+        int calcGroundDefPvZ(const BWEB::Station * const station)
         {
             auto groundCount = getGroundDefenseCount(station);
 
@@ -216,7 +216,7 @@ namespace McRave::Stations
             return 0;
         }
 
-        int calcGroundDefZvP(BWEB::Station * station)
+        int calcGroundDefZvP(const BWEB::Station * const station)
         {
             auto groundCount = getGroundDefenseCount(station);
 
@@ -239,7 +239,7 @@ namespace McRave::Stations
             return 0;
         }
 
-        int calcGroundDefZvT(BWEB::Station * station)
+        int calcGroundDefZvT(const BWEB::Station * const station)
         {
             auto groundCount = getGroundDefenseCount(station);
 
@@ -257,7 +257,7 @@ namespace McRave::Stations
             return 0;
         }
 
-        int calcGroundDefZvZ(BWEB::Station * station)
+        int calcGroundDefZvZ(const BWEB::Station * const station)
         {
             auto groundCount = getGroundDefenseCount(station);
             auto desiredDefenses = 0;
@@ -319,12 +319,23 @@ namespace McRave::Stations
             return desiredDefenses - groundCount;
         }
 
-        int calcGroundDefZvFFA(BWEB::Station * station)
+        int calcGroundDefZvFFA(const BWEB::Station * const station)
         {
             auto groundCount = getGroundDefenseCount(station);
 
             if (Players::ZvFFA() && !station->isMain() && !station->isNatural())
                 return 2 - groundCount;
+            return 0;
+        }
+
+        int TvZ_groundDef(const BWEB::Station * const station)
+        {
+            auto groundCount = getGroundDefenseCount(station);
+
+            if (Players::TvFFA() && station->isMain() && com(Terran_Marine) > 0)
+                return 1 - groundCount;
+            if (Players::TvZ() && station->isMain() && (Spy::getEnemyOpener() == "4Pool" || Spy::getEnemyOpener() == "9Pool"))
+                return 1 - groundCount;
             return 0;
         }
     }
@@ -418,7 +429,7 @@ namespace McRave::Stations
         Terrain::removeTerritory(unit->getPlayer() == Broodwar->self() ? PlayerState::Self : PlayerState::Enemy, newStation);
     }
 
-    int getColonyCount(BWEB::Station * station)
+    int getColonyCount(const BWEB::Station *  const station)
     {
         auto colonies = 0;
         auto wallNeeds = station->getChokepoint() && BWEB::Walls::getWall(station->getChokepoint()) && (Walls::needGroundDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0 || Walls::needAirDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0);
@@ -433,7 +444,7 @@ namespace McRave::Stations
         return colonies;
     }
 
-    int needGroundDefenses(BWEB::Station * station) {
+    int needGroundDefenses(const BWEB::Station * const station) {
 
         if (BuildOrder::isRush()
             || BuildOrder::isPressure()
@@ -456,10 +467,12 @@ namespace McRave::Stations
             return calcGroundDefZvT(station);
         if (Players::ZvZ())
             return calcGroundDefZvZ(station);
+        if (Players::TvZ())
+            return TvZ_groundDef(station);
         return 0;
     }
 
-    int needAirDefenses(BWEB::Station * station) {
+    int needAirDefenses(const BWEB::Station * const station) {
 
         // We don't want to pull workers to build things if none are nearby
         if (getSaturationRatio(station) == 0.0 && getColonyCount(station) == 0)
@@ -490,12 +503,14 @@ namespace McRave::Stations
         if (Broodwar->self()->getRace() == Races::Terran) {
             if (Spy::enemyInvis())
                 return 2 - airCount;
+            if (Players::TvZ() && Util::getTime() > Time(4, 30))
+                return 3 - airCount;
         }
 
         return 0;
     }
 
-    bool needPower(BWEB::Station * station) {
+    bool needPower(const BWEB::Station * const station) {
         auto count = 0;
         for (auto &defense : station->getDefenses()) {
             if (Pylons::hasPowerSoon(defense, UnitTypes::Protoss_Photon_Cannon))
@@ -504,12 +519,12 @@ namespace McRave::Stations
         return count < 2;
     }
 
-    bool isBaseExplored(BWEB::Station * station) {
+    bool isBaseExplored(const BWEB::Station * const station) {
         auto botRight = station->getBase()->Location() + TilePosition(3, 2);
         return (Broodwar->isExplored(station->getBase()->Location()) && Broodwar->isExplored(botRight));
     }
 
-    bool isGeyserExplored(BWEB::Station * station) {
+    bool isGeyserExplored(const BWEB::Station * const station) {
         for (auto &geyser : Resources::getMyGas()) {
             if (!Broodwar->isExplored(geyser->getTilePosition()) || !Broodwar->isExplored(geyser->getTilePosition() + TilePosition(3, 1)))
                 return false;
@@ -517,7 +532,7 @@ namespace McRave::Stations
         return true;
     }
 
-    bool isCompleted(BWEB::Station * station)
+    bool isCompleted(const BWEB::Station * const station)
     {
         // TODO: This is really slow
         const auto base = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) {
@@ -526,7 +541,7 @@ namespace McRave::Stations
         return base && base->unit()->isCompleted();
     }
 
-    bool isBlocked(BWEB::Station * station)
+    bool isBlocked(const BWEB::Station * const station)
     {
         auto stationptr = stations.find(station);
         if (stationptr != stations.end())
@@ -542,12 +557,12 @@ namespace McRave::Stations
         return false;
     }
 
-    int lastVisible(BWEB::Station * station) {
+    int lastVisible(const BWEB::Station * const station) {
         auto botRight = station->getBase()->Location() + TilePosition(4, 3);
         return min(Grids::getLastVisibleFrame(station->getBase()->Location()), Grids::getLastVisibleFrame(botRight));
     }
 
-    double getSaturationRatio(BWEB::Station * station)
+    double getSaturationRatio(const BWEB::Station * const station)
     {
         for (auto &[r, s] : stationsBySaturation) {
             if (s == station)
@@ -556,7 +571,7 @@ namespace McRave::Stations
         return 0.0;
     }
 
-    PlayerState ownedBy(BWEB::Station * station)
+    PlayerState ownedBy(const BWEB::Station * const station)
     {
         auto stationptr = stations.find(station);
         if (stationptr != stations.end())
@@ -564,7 +579,7 @@ namespace McRave::Stations
         return PlayerState::None;
     }
 
-    BWEB::Station * getClosestRetreatStation(UnitInfo& unit)
+    const BWEB::Station * const getClosestRetreatStation(UnitInfo& unit)
     {
         const auto closerThanSim = [&](auto &defendPosition) {
             return !unit.hasSimTarget()
@@ -627,15 +642,15 @@ namespace McRave::Stations
         return bestStation;
     }
 
-    std::vector<BWEB::Station*> getStations(PlayerState player) {
+    std::vector<const BWEB::Station *> getStations(PlayerState player) {
         return getStations(player, [](auto) {
             return true;
         });
     }
 
     template<typename F>
-    std::vector<BWEB::Station*> getStations(PlayerState player, F &&pred) {
-        vector<BWEB::Station*> returnVector;
+    std::vector<const BWEB::Station *> getStations(PlayerState player, F &&pred) {
+        vector<const BWEB::Station*> returnVector;
         for (auto &[station, stationPlayer] : stations) {
             if (stationPlayer == player && pred(station))
                 returnVector.push_back(station);
@@ -643,7 +658,7 @@ namespace McRave::Stations
         return returnVector;
     }
 
-    double getStationSaturation(BWEB::Station * station) {
+    double getStationSaturation(const BWEB::Station * station) {
         for (auto &[saturation, s] : stationsBySaturation) {
             if (s == station)
                 return saturation;
@@ -651,15 +666,15 @@ namespace McRave::Stations
         return 0.0;
     }
 
-    Position getDefendPosition(BWEB::Station * station) { return defendPositions[station]; }
-    multimap<double, BWEB::Station *>& getStationsBySaturation() { return stationsBySaturation; }
-    multimap<double, BWEB::Station *>& getStationsByProduction() { return stationsByProduction; }
+    Position getDefendPosition(const BWEB::Station * const station) { return defendPositions[station]; }
+    multimap<double, const BWEB::Station * const>& getStationsBySaturation() { return stationsBySaturation; }
+    multimap<double, const BWEB::Station * const>& getStationsByProduction() { return stationsByProduction; }
     int getGasingStationsCount() { return gasingStations; }
     int getMiningStationsCount() { return miningStations; }
-    int getGroundDefenseCount(BWEB::Station * station) { return groundDefenseCount[station]; }
-    int getAirDefenseCount(BWEB::Station * station) { return airDefenseCount[station]; }
-    int getMineralsRemaining(BWEB::Station * station) { return remainingMinerals[station]; }
-    int getGasRemaining(BWEB::Station * station) { return remainingGas[station]; }
-    int getMineralsInitial(BWEB::Station * station) { return initialMinerals[station]; }
-    int getGasInitial(BWEB::Station * station) { return initialGas[station]; }
+    int getGroundDefenseCount(const BWEB::Station * const station) { return groundDefenseCount[station]; }
+    int getAirDefenseCount(const BWEB::Station * const station) { return airDefenseCount[station]; }
+    int getMineralsRemaining(const BWEB::Station * const station) { return remainingMinerals[station]; }
+    int getGasRemaining(const BWEB::Station * const station) { return remainingGas[station]; }
+    int getMineralsInitial(const BWEB::Station * const station) { return initialMinerals[station]; }
+    int getGasInitial(const BWEB::Station * const station) { return initialGas[station]; }
 }

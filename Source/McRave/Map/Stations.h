@@ -3,46 +3,47 @@
 
 namespace McRave::Stations
 {
-    std::multimap<double, BWEB::Station *>& getStationsBySaturation();
-    std::multimap<double, BWEB::Station *>& getStationsByProduction();
+    std::multimap<double, const BWEB::Station * const>& getStationsBySaturation();
+    std::multimap<double, const BWEB::Station * const>& getStationsByProduction();
 
     void onFrame();
     void onStart();
     void storeStation(BWAPI::Unit);
     void removeStation(BWAPI::Unit);
-    int getColonyCount(BWEB::Station*);
-    int needGroundDefenses(BWEB::Station*);
-    int needAirDefenses(BWEB::Station*);
-    int getGroundDefenseCount(BWEB::Station*);
-    int getAirDefenseCount(BWEB::Station*);
-    bool needPower(BWEB::Station*);
-    bool isIsland(BWEB::Station*);
-    bool isBaseExplored(BWEB::Station*);
-    bool isGeyserExplored(BWEB::Station*);
-    bool isCompleted(BWEB::Station*);
-    bool isBlocked(BWEB::Station*);
-    int lastVisible(BWEB::Station*);
-    double getSaturationRatio(BWEB::Station *);
-    BWAPI::Position getDefendPosition(BWEB::Station *);
-    BWEB::Station * getClosestRetreatStation(UnitInfo&);
+    int getColonyCount(const BWEB::Station * const);
+    int needGroundDefenses(const BWEB::Station * const);
+    int needAirDefenses(const BWEB::Station * const);
+    int getGroundDefenseCount(const BWEB::Station * const);
+    int getAirDefenseCount(const BWEB::Station * const);
+    bool needPower(const BWEB::Station * const);
+    bool isIsland(const BWEB::Station * const);
+    bool isBaseExplored(const BWEB::Station * const);
+    bool isGeyserExplored(const BWEB::Station * const);
+    bool isCompleted(const BWEB::Station * const);
+    bool isBlocked(const BWEB::Station * const);
+    int lastVisible(const BWEB::Station * const);
+    double getSaturationRatio(const BWEB::Station * const);
+    double getStationSaturation(const BWEB::Station * const);
+    BWAPI::Position getDefendPosition(const BWEB::Station * const);
+    const BWEB::Station * const getClosestRetreatStation(UnitInfo&);
     int getGasingStationsCount();
     int getMiningStationsCount();
-    int getMineralsRemaining(BWEB::Station *);
-    int getGasRemaining(BWEB::Station *);
-    int getMineralsInitial(BWEB::Station *);
-    int getGasInitial(BWEB::Station *);
+    int getMineralsRemaining(const BWEB::Station * const);
+    int getGasRemaining(const BWEB::Station * const);
+    int getMineralsInitial(const BWEB::Station * const);
+    int getGasInitial(const BWEB::Station * const);
 
-    PlayerState ownedBy(BWEB::Station *);
+    PlayerState ownedBy(const BWEB::Station * const);
 
-    std::vector<BWEB::Station*> getStations(PlayerState);
+    std::vector<const BWEB::Station *> getStations(PlayerState);
     template<typename F>
-    std::vector<BWEB::Station*> getStations(PlayerState, F &&pred);
+    std::vector<const BWEB::Station *> getStations(PlayerState, F &&pred);
 
     template<typename F>
-    BWEB::Station* getClosestStationAir(BWAPI::Position here, PlayerState player, F &&pred) {
+    const BWEB::Station * getClosestStationAir(BWAPI::Position here, PlayerState player, F &&pred) {
         auto &list = getStations(player);
         auto distBest = DBL_MAX;
-        BWEB::Station * closestStation = nullptr;
+        const BWEB::Station * closestStation = nullptr;
         for (auto &station : list) {
             double dist = here.getDistance(station->getBase()->Center());
             if (dist < distBest && pred(station)) {
@@ -53,17 +54,17 @@ namespace McRave::Stations
         return closestStation;
     }
 
-    inline BWEB::Station* getClosestStationAir(BWAPI::Position here, PlayerState player) {
+    inline const BWEB::Station * const getClosestStationAir(BWAPI::Position here, PlayerState player) {
         return getClosestStationAir(here, player, [](auto) {
             return true;
         });
     }
 
     template<typename F>
-    BWEB::Station* getClosestStationGround(BWAPI::Position here, PlayerState player, F &&pred) {
+    const BWEB::Station * getClosestStationGround(BWAPI::Position here, PlayerState player, F &&pred) {
         auto &list = getStations(player);
         auto distBest = DBL_MAX;
-        BWEB::Station * closestStation = nullptr;
+        const BWEB::Station * closestStation = nullptr;
         for (auto &station : list) {
             double dist = BWEB::Map::getGroundDistance(here, station->getBase()->Center());
             if (dist < distBest && pred(station)) {
@@ -74,11 +75,9 @@ namespace McRave::Stations
         return closestStation;
     }
 
-    inline BWEB::Station* getClosestStationGround(BWAPI::Position here, PlayerState player) {
+    inline const BWEB::Station * const getClosestStationGround(BWAPI::Position here, PlayerState player) {
         return getClosestStationGround(here, player, [](auto) {
             return true;
         });
-    }
-
-    double getStationSaturation(BWEB::Station *);
+    }    
 };

@@ -341,7 +341,7 @@ namespace McRave::Producing {
                     }
                 }
 
-                auto validLarva = [&](UnitInfo &larva, double saturation, BWEB::Station * station) {
+                auto validLarva = [&](UnitInfo &larva, double saturation, const BWEB::Station * station) {
                     if (!larva.unit()
                         || larva.getType() != Zerg_Larva
                         || larva.getRole() != Role::Production
@@ -362,7 +362,7 @@ namespace McRave::Producing {
 
                 // Find a station that we should morph at based on the UnitType we want.
                 auto produced = false;
-                multimap<double, BWEB::Station*> stations;
+                multimap<double, const BWEB::Station *> stations;
                 for (auto &[val, station] : Stations::getStationsBySaturation()) {
                     auto saturation = bestType.isWorker() ? val : 1.0 / val;
                     auto larvaCount = count_if(Units::getUnits(PlayerState::Self).begin(), Units::getUnits(PlayerState::Self).end(), [&](auto &u) {

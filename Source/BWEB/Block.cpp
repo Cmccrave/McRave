@@ -46,7 +46,7 @@ namespace BWEB::Blocks
             map<Piece, int> pieces;
             int count(Piece p) { return pieces[p]; }
         };
-        map<const BWEM::Area *, PieceCount> piecePerArea;
+        map<const BWEM::Area * const, PieceCount> piecePerArea;
 
         int countPieces(vector<Piece> pieces, Piece type)
         {
@@ -241,7 +241,7 @@ namespace BWEB::Blocks
             return pieceLayout;
         }
 
-        bool canAddBlock(const TilePosition here, const int width, const int height, multimap<TilePosition, Piece> pieces, BlockType type)
+        bool canAddBlock(const TilePosition here, const int width, const int height, multimap<TilePosition, Piece>& pieces, BlockType type)
         {
             const auto blockWalkable = [&](const TilePosition &t) {
                 return (t.x < here.x || t.x > here.x + width || t.y < here.y || t.y > here.y + height) && !blockGrid[t.x][t.y] && !BWEB::Map::isReserved(t);
@@ -295,7 +295,7 @@ namespace BWEB::Blocks
             return true;
         }
 
-        void createBlock(TilePosition here, multimap<TilePosition, Piece> pieceLayout, int width, int height, BlockType type)
+        void createBlock(TilePosition here, multimap<TilePosition, Piece>& pieceLayout, int width, int height, BlockType type)
         {
             Block newBlock(here, pieceLayout, width, height, type);
             auto area = Map::mapBWEM.GetArea(here);
@@ -417,7 +417,7 @@ namespace BWEB::Blocks
             multimap<double, TilePosition> tilesByPathDist;
             multimap<double, TilePosition> inverseTilesByPathDist;
             for (auto &station : Stations::getStations()) {
-                if (station.isNatural())
+                if (station.isNatural() || &station != Stations::getStartingMain())
                     continue;
                 for (int x = 0; x < Broodwar->mapWidth(); x++) {
                     for (int y = 0; y < Broodwar->mapHeight(); y++) {
@@ -426,21 +426,23 @@ namespace BWEB::Blocks
                             const auto p = Position(t) + Position(16, 16);
                             const auto distStation = p.getDistance(station.getBase()->Center());
                             auto distChoke = station.getChokepoint() ? p.getDistance(Position(station.getChokepoint()->Center())) : 1.0;
+                            auto distCenter = Map::mapBWEM.Center().getDistance(p);
                             if (Broodwar->self()->getRace() == Races::Zerg)
                                 distChoke /= 2.0;
                             tilesByPathDist.emplace(make_pair(distStation + distChoke, t));
                             if (station.isMain())
-                                inverseTilesByPathDist.emplace(make_pair(1.0 / (distChoke), t));
+                                inverseTilesByPathDist.emplace(make_pair(1.0 / (distCenter), t));
                         }
                     }
                 }
             }
 
             // Iterate tiles looking to add supply areas far from the main chokepoint
-            map<const BWEM::Area *, TilePosition> firstPerArea;
+            map<const BWEM::Area * const, TilePosition> firstPerArea;
             if (Broodwar->self()->getRace() != Races::Zerg) {
+                const vector<Piece> pieces ={ Broodwar->self()->getRace() == Races::Protoss ? Piece::Small : Piece::Medium };
                 for (auto &[v, tile] : inverseTilesByPathDist) {
-                    auto area = Map::mapBWEM.GetArea(tile);
+                    const auto area = Map::mapBWEM.GetArea(tile);
                     if (!area)
                         continue;
 
@@ -449,13 +451,15 @@ namespace BWEB::Blocks
                         continue;
 
                     const vector<TilePosition> layout ={ tile };
-                    const vector<Piece> pieces ={ Broodwar->self()->getRace() == Races::Protoss ? Piece::Small : Piece::Medium };
                     multimap<TilePosition, Piece> pieceLayout = generatePieceLayout(pieces, layout);
                     if (canAddBlock(tile, supplyWidth, 2, pieceLayout, BlockType::Supply)) {
                         createBlock(tile, pieceLayout, supplyWidth, 2, BlockType::Supply);
+                        Broodwar << "B: " << piecePerArea[area].pieces[Piece::Medium] << endl;
                         firstPerArea[area] = tile;
-                        if (piecePerArea[area].pieces[Piece::Small] >= 20 || piecePerArea[area].pieces[Piece::Medium] >= 20)
+                        if ((supplyWidth == 2 && piecePerArea[area].pieces[Piece::Small] >= 20) || (supplyWidth == 3 && piecePerArea[area].pieces[Piece::Medium] >= 20)) {
+                            
                             break;
+                        }
                     }
                 }
             }
@@ -499,11 +503,11 @@ namespace BWEB::Blocks
                                 continue;
                         }
 
-                        // Terran only need about 20 depot spots and 8 production spots
+                        // Terran only need about 20 depot spots and 12 production spots
                         if (Broodwar->self()->getRace() == Races::Terran) {
                             if (mediumCount > 0)
                                 continue;
-                            if (largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 8)
+                            if (largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 12)
                                 continue;
                         }
 

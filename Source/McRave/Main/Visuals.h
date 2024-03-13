@@ -24,7 +24,7 @@ namespace McRave::Visuals {
     void drawCircle(BWAPI::WalkPosition, int, BWAPI::Color, bool solid = false);
     void drawCircle(BWAPI::TilePosition, int, BWAPI::Color, bool solid = false);
 
-    void drawLine(const BWEM::ChokePoint *, BWAPI::Color);
+    void drawLine(const BWEM::ChokePoint * const, BWAPI::Color);
     void drawLine(BWAPI::Position, BWAPI::Position, BWAPI::Color);
     void drawLine(BWAPI::WalkPosition, BWAPI::WalkPosition, BWAPI::Color);
     void drawLine(BWAPI::TilePosition, BWAPI::TilePosition, BWAPI::Color);

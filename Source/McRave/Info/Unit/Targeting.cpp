@@ -7,7 +7,7 @@ using namespace UnitTypes;
 namespace McRave::Targets {
 
     set<UnitType> cancelPriority ={ Terran_Missile_Turret, Terran_Barracks, Terran_Bunker, Terran_Factory, Terran_Starport, Terran_Armory, Terran_Bunker };
-    set<UnitType> proxyTargeting ={ Protoss_Pylon, Protoss_Photon_Cannon, Terran_Barracks, Terran_Bunker, Zerg_Sunken_Colony };
+    set<UnitType> proxyTargeting ={ Protoss_Pylon, Terran_Barracks, Terran_Bunker, Zerg_Sunken_Colony };
     map<UnitInfo*, int> meleeSpotsAvailable;
 
     enum class Priority {
@@ -77,14 +77,17 @@ namespace McRave::Targets {
                     return Priority::Trivial;
 
                 // Proxy worker
-                if (target.isProxy() && target.getType().isWorker())
+                if (target.isProxy() && target.getType().isWorker() && target.unit()->exists())
                     return Priority::Major;
 
                 // Proxy priority
-                if (target.isProxy() && target.getType().isBuilding() && Spy::enemyProxy() && (target.getType() != Zerg_Mutalisk || Util::getTime() > Time(8, 00))) {
+                if (target.isProxy() && target.getType().isBuilding() && Spy::enemyProxy() && unit.getType() != Zerg_Mutalisk) {
+                    Visuals::drawCircle(target.getPosition(), 10, Colors::Yellow, true);
                     if (target.unit()->getBuildUnit())
                         return Priority::Minor;
-                    else if (proxyTargeting.find(target.getType()) != proxyTargeting.end() && ((Players::getVisibleCount(PlayerState::Enemy, Terran_Marine) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) == 0) || !unit.getType().isWorker()))
+                    else if (proxyTargeting.find(target.getType()) != proxyTargeting.end() && ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Marine) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) == 0) || !unit.getType().isWorker()))
+                        return Priority::Critical;
+                    else if (target.canAttackGround())
                         return Priority::Critical;
                     else
                         return Priority::Ignore;
@@ -172,6 +175,17 @@ namespace McRave::Targets {
                 if (unit.getType() == Terran_Ghost) {
                     if (!target.getType().isResourceDepot())
                         return Priority::Ignore;
+                }
+
+                // Medic
+                if (unit.getType() == Terran_Medic) {
+                    if (target.getType() == Terran_Marine || target.getType() == Terran_Firebat || (target.getType() == Terran_Medic && target.getHealth() < target.getType().maxHitPoints()))
+                        return Priority::Critical;
+                    else if (target.getType() == Terran_SCV)
+                        return Priority::Major;
+                    else if (target.getType().isOrganic())
+                        return Priority::Minor;
+                    return Priority::Ignore;
                 }
             }
             return Priority::Minor;
@@ -309,8 +323,6 @@ namespace McRave::Targets {
                     return 0.1 / dist;
                 return 1.0 / dist;
             }
-            if (unit.getType() == Zerg_Mutalisk)
-                Broodwar->drawTextMap(target.getPosition(), "%.2f", targetScore / dist);
             return targetScore / dist;
         }
 
@@ -360,7 +372,9 @@ namespace McRave::Targets {
 
             const auto isValidTarget = [&](auto &target) {
                 if (!target.unit()
+                    || (unit.targetsFriendly() && !target.isCompleted())
                     || target.isInvincible()
+                    || unit == target
                     || !target.getWalkPosition().isValid())
                     return false;
                 return true;
@@ -376,7 +390,6 @@ namespace McRave::Targets {
                     continue;
 
                 auto priority = getPriority(unit, target);
-
                 if (priority == Priority::Ignore || priority < priorityBest)
                     continue;
 

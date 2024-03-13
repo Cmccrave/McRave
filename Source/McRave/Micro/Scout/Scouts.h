@@ -10,5 +10,5 @@ namespace McRave::Scouts
     bool gotFullScout();
     bool isSacrificeScout();
     bool enemyDeniedScout();
-    std::vector<BWEB::Station*> getScoutOrder(BWAPI::UnitType);
+    std::vector<const BWEB::Station *> getScoutOrder(BWAPI::UnitType);
 }

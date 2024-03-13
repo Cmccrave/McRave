@@ -99,6 +99,8 @@ namespace McRave {
         // HACK: Hacky stuff that was added quickly for testing
         bool movedFlag = false;
         bool saveUnit = false;
+        bool stunned = false;
+
         bool isValid() { return unit() && unit()->exists(); }
         bool isAvailable() { return !unit()->isLockedDown() && !unit()->isMaelstrommed() && !unit()->isStasised() && unit()->isCompleted(); }
         UnitInfo();

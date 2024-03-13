@@ -29,19 +29,17 @@ namespace McRave::Combat::State {
 
         // Zerglings
         if (BuildOrder::isUnitUnlocked(Zerg_Zergling) || vis(Zerg_Zergling) > 0) {
-            const auto lingSpeed = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Metabolic_Boost);
+            const auto speedLing = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Metabolic_Boost);
             const auto crackling = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Adrenal_Glands);
-            const auto onlyLings = !BuildOrder::isUnitUnlocked(Zerg_Hydralisk) && !BuildOrder::isUnitUnlocked(Zerg_Mutalisk);
-            const auto limitedTech = (!staticRetreatTypes.empty() && onlyLings) || (find(staticRetreatTypes.begin(), staticRetreatTypes.end(), Zerg_Hydralisk) != staticRetreatTypes.end());
 
             if (!crackling && !BuildOrder::isRush()) {
                 if (Players::ZvP()) {
-                    const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && Spy::getEnemyBuild() != "CannonRush" && limitedTech && !lingSpeed;
+                    const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && !Spy::enemyProxy() && !speedLing;
                     if (scaryOpeners)
                         staticRetreatTypes.push_back(Zerg_Zergling);
                 }
                 if (Players::ZvT()) {
-                    const auto defendSunkens = com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0 && !lingSpeed;
+                    const auto defendSunkens = com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0 && !speedLing;
                     const auto vultureThreat = Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy()
                         && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0);
                     if (defendSunkens || vultureThreat)
@@ -63,6 +61,16 @@ namespace McRave::Combat::State {
         // Corsairs
 
         // Carriers
+
+
+        // Marines
+        if (BuildOrder::isUnitUnlocked(Terran_Marine) && vis(Terran_Marine) > 0) {
+            if (Players::TvZ()) {
+                auto stim = Players::getPlayerInfo(Broodwar->self())->hasTech(TechTypes::Stim_Packs);
+                if (!stim)
+                    staticRetreatTypes.push_back(Terran_Marine);
+            }
+        }
     }
 
     bool forceLocalAttack(UnitInfo& unit)

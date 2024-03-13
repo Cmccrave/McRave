@@ -17,7 +17,7 @@ namespace McRave::BuildOrder::Zerg {
             transitionReady =                               hatchCount() >= 2;
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
             gasLimit =                                      0;
-            scout =                                         scout || (hatchCount() >= 2 && int(Broodwar->getStartLocations().size()) > 2);
+            scout =                                         scout || (hatchCount() >= 2);
 
             if (Spy::enemyFastExpand())
                 unitLimits[Zerg_Drone] =                    INT_MAX;

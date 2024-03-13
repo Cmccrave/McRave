@@ -310,6 +310,15 @@
     <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyZerg.cpp">
       <Filter>McRave\Strategy\Spy</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ.cpp">
+      <Filter>McRave\Builds\Terran\TvZ</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ_2Rax.cpp">
+      <Filter>McRave\Builds\Terran\TvZ</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Micro\All\Spells.cpp">
+      <Filter>McRave\Micro\All</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -652,6 +661,9 @@
     </Filter>
     <Filter Include="McRave\Map\Walls">
       <UniqueIdentifier>{8fea8213-ca8d-42e3-9d82-ed68a47eab0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Terran\TvZ">
+      <UniqueIdentifier>{2affacfe-3f62-4e6a-a073-26efc79fc7cf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

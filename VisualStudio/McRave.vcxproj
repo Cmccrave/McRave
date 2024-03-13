@@ -52,6 +52,8 @@
     <ClCompile Include="..\Source\McRave\Builds\Protoss\PvZ\PvZ_2Gate.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Terran\TerranBuildOrder.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvFFA\TvA.cpp" />
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ.cpp" />
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ_2Rax.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZergBuildOrder.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZvFFA.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZvFFA_HatchPool.cpp" />
@@ -93,6 +95,7 @@
     <ClCompile Include="..\Source\McRave\Map\Walls\Walls.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\All\Commands.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\All\Specials.cpp" />
+    <ClCompile Include="..\Source\McRave\Micro\All\Spells.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\Combat\Clusters.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\Combat\Combat.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\Combat\Decision.cpp" />

@@ -142,8 +142,8 @@ namespace McRave::Combat::Simulation {
             maxWinPercent = 1.4;
         }
         if (Players::TvZ()) {
-            minWinPercent = 1.0;
-            maxWinPercent = 1.4;
+            minWinPercent = 0.8;
+            maxWinPercent = 1.2;
         }
         if (Players::TvT()) {
             minWinPercent = 1.0;
@@ -167,13 +167,6 @@ namespace McRave::Combat::Simulation {
             }
         }
 
-        // Adjust winrates based on how close to self station we are
-        const auto insideDefendingChoke = (Combat::holdAtChoke() || Combat::isDefendNatural()) && Terrain::inArea(Combat::getDefendArea(), target.getPosition());
-        if (insideDefendingChoke || target.isThreatening()) {
-            minWinPercent = 0.0;
-            maxWinPercent = 0.5;
-        }
-
         // Adjust winrates if we have static defense that would make the fight easier
         if (Util::getTime() < Time(8, 00) && !unit.isFlying() && com(Zerg_Sunken_Colony) > 0 && (unit.getGlobalState() == GlobalState::Retreat || unit.getGlobalState() == GlobalState::ForcedRetreat)) {
             const auto defendStation = Stations::getClosestStationAir(unit.retreatPos, PlayerState::Self);
@@ -189,6 +182,15 @@ namespace McRave::Combat::Simulation {
                     minWinPercent *=2;
                     maxWinPercent *=2;
                 }
+            }
+        }
+
+        // Adjust winrates based on how close to self station we are
+        if (Util::getTime() < Time(4, 00)) {
+            const auto insideDefendingChoke = (Combat::holdAtChoke() || Combat::isDefendNatural()) && Terrain::inTerritory(PlayerState::Self, target.getPosition()) && Terrain::inArea(Combat::getDefendArea(), target.getPosition());
+            if (insideDefendingChoke || target.isThreatening()) {
+                minWinPercent = 0.0;
+                maxWinPercent = 0.5;
             }
         }
 

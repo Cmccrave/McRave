@@ -59,8 +59,8 @@ namespace McRave::Scouts {
         bool sacrifice = false;
         bool workerScoutDenied = false;
         bool firstOverlord = false;
-        vector<BWEB::Station*> scoutOrder, scoutOrderFirstOverlord;
-        map<BWEB::Station *, Position> safePositions;
+        vector<const BWEB::Station *> scoutOrder, scoutOrderFirstOverlord;
+        map<const BWEB::Station * const, Position> safePositions;
         bool resourceWalkPossible[256][256];
 
         void drawScouting()
@@ -298,7 +298,7 @@ namespace McRave::Scouts {
             auto &army = scoutTargets[ScoutType::Army];
             
             // No threat at home, we should use a ling to scout the enemy
-            if (Units::getImmThreat() <= 0.1) {
+            if (Units::getImmThreat() <= 0.1 && Util::getTime() > Time(1, 00)) {
                 if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
                     || (Players::ZvP() && Util::getTime() < Time(8, 00))
                     || (Players::ZvZ() && !Terrain::foundEnemy() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0))
@@ -403,10 +403,10 @@ namespace McRave::Scouts {
         {
             scoutOrder.clear();
             scoutOrderFirstOverlord.clear();
-            vector<BWEB::Station*> mainStations;
+            vector<const BWEB::Station *> mainStations;
 
             // Get first natural by air for overlord order
-            BWEB::Station * closestNatural = nullptr;
+            const BWEB::Station * closestNatural = nullptr;
             auto distBest = DBL_MAX;
             for (auto &station : BWEB::Stations::getStations()) {
 
@@ -685,7 +685,7 @@ namespace McRave::Scouts {
     bool gotFullScout() { return mainScouted && natScouted; }
     bool isSacrificeScout() { return sacrifice; }
     bool enemyDeniedScout() { return workerScoutDenied; }
-    vector<BWEB::Station*> getScoutOrder(UnitType type) {
+    vector<const BWEB::Station *> getScoutOrder(UnitType type) {
         if (type == Zerg_Overlord || !Players::ZvZ())
             return scoutOrderFirstOverlord;
         return scoutOrder;

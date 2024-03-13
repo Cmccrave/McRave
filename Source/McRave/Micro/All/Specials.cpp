@@ -36,12 +36,6 @@ namespace McRave::Command
                 return (u->getType() == Terran_Bunker && u->unit()->getSpaceRemaining() > 0);
             });
 
-            if (bunker) {
-                unit.setCommand(Right_Click_Unit, *bunker);
-                unit.setCommandText("LoadBunker");
-                return true;
-            }
-
             if (bunker && bunker->unit() && unit.hasTarget()) {
                 if (unit.getTarget().lock()->unit()->exists() && unit.getTarget().lock()->getPosition().getDistance(unit.getPosition()) <= 320) {
                     unit.setCommand(Right_Click_Unit, *bunker);
@@ -142,16 +136,16 @@ namespace McRave::Command
             //    return true;
             //}
 
-            //// Repair closest injured building
-            //auto &building = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-            //    return u.getPercentHealth() < 0.35 || (u.getType() == Terran_Bunker && u.getPercentHealth() < 1.0);
-            //});
+            // Repair closest injured building
+            auto building = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                return u->getPercentTotal() < 0.35 || (u->getType() == Terran_Bunker && u->getPercentTotal() < 1.0) || (u->getType() == Terran_Missile_Turret && u->getPercentTotal() < 1.0);
+            });
 
-            //if (building && building->unit() && (!Spy::enemyRush() || building->getType() == Terran_Bunker)) {
-            //    if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != building->unit())
-            //        unit.unit()->repair(building->unit());
-            //    return true;
-            //}
+            if (building && building->unit()) {
+                if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != building->unit())
+                    unit.unit()->repair(building->unit());
+                return true;
+            }
         }
         return false;
     }
@@ -191,7 +185,7 @@ namespace McRave::Command
             auto &list = unit.isBurrowed() ? unit.getUnitsInReachOfThis() : unit.getUnitsInRangeOfThis();
             for (auto &t : list) {
                 if (auto targeter = t.lock())
-                    dmg+= targeter->getGroundDamage() * 2;
+                    dmg += int(targeter->getGroundDamage()) * 2;
             }
             if (dmg >= unit.getHealth())
                 threatened = true;
@@ -256,13 +250,15 @@ namespace McRave::Command
             unit.unit()->useTech(TechTypes::Stim_Packs);
 
         // Science Vessel - Defensive Matrix
-        else if (unit.getType() == Terran_Science_Vessel && unit.getEnergy() >= TechTypes::Defensive_Matrix) {
+        else if (unit.getType() == Terran_Science_Vessel && unit.getEnergy() >= TechTypes::Defensive_Matrix.energyCost()) {
             auto ally = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 return (u->unit()->isUnderAttack());
             });
-            if (ally && ally->getPosition().getDistance(unit.getPosition()) < 640)
+            if (ally && ally->getPosition().getDistance(unit.getPosition()) < 640) {
                 unit.unit()->useTech(TechTypes::Defensive_Matrix, ally->unit());
-            return true;
+                unit.setCommandText("DefenseMatrix");
+                return true;
+            }
         }
 
         // Scanner
@@ -641,7 +637,6 @@ namespace McRave::Command
             || click(unit)
             || siege(unit)
             || repair(unit)
-            || cast(unit)
             || morph(unit)
             || train(unit)
             || returnResource(unit)

@@ -13,7 +13,7 @@ namespace McRave::Workers {
         int boulderWorkers = 0;
         map<Position, double> distChecker;
 
-        BWEB::Station * getTransferStation(UnitInfo& unit)
+        const BWEB::Station * const getTransferStation(UnitInfo& unit)
         {
             // Transfer counts depending on if we think it's safe or not
             auto desiredTransfer = 3;
@@ -54,9 +54,9 @@ namespace McRave::Workers {
             return nullptr;
         }
 
-        vector<BWEB::Station*> getSafeStations(UnitInfo& unit)
+        vector<const BWEB::Station *> getSafeStations(UnitInfo& unit)
         {
-            vector<BWEB::Station *> safeStations;
+            vector<const BWEB::Station *> safeStations;
 
             auto stationGrdOkay = unit.hasResource() && Stations::getGroundDefenseCount(unit.getResource().lock()->getStation()) > 0;
             auto stationAirOkay = unit.hasResource() && Stations::getAirDefenseCount(unit.getResource().lock()->getStation()) > 0;

@@ -41,21 +41,7 @@ namespace McRave::Combat::Bearings {
     // What is the "forward" bearing for this unit
     void updateMarch(UnitInfo& unit)
     {
-        // TODO: March station (depending on goal), like retreat       
-        if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat || unit.getGlobalState() == GlobalState::ForcedRetreat) {
-            auto retreat = Stations::getClosestRetreatStation(unit);
-            unit.marchPos = Stations::getDefendPosition(retreat);
-        }
-        else if (unit.hasTarget()) {
-            unit.marchPos = unit.getTarget().lock()->getPosition();
-        }
-        else if (Combat::getAttackPosition().isValid() && unit.canAttackGround()) {
-            unit.marchPos = Combat::getAttackPosition();
-        }
-        else {
-            unit.marchPos = unit.getDestination();
-            Broodwar->drawLineMap(unit.getPosition(), unit.marchPos, Colors::Green);
-        }
+        unit.marchPos = unit.getDestination();
     }
 
     void updateDestination(UnitInfo& unit)
@@ -104,21 +90,27 @@ namespace McRave::Combat::Bearings {
         else {
             if (unit.getGoal().isValid()) {
                 unit.setDestination(unit.getGoal());
+                Broodwar->drawTextMap(unit.getPosition(), "a_goal");
             }
             else if (unit.attemptingRegroup()) {
                 unit.setDestination(unit.getCommander().lock()->getPosition());
+                Broodwar->drawTextMap(unit.getPosition(), "a_regrp");
             }
             else if (unit.attemptingHarass()) {
                 unit.setDestination(Combat::getHarassPosition());
+                Broodwar->drawTextMap(unit.getPosition(), "a_harass");
             }
             else if (unit.hasTarget()) {
                 unit.setDestination(unit.getTarget().lock()->getPosition());
+                Broodwar->drawTextMap(unit.getPosition(), "a_target");
             }
             else if (Combat::getAttackPosition().isValid() && unit.canAttackGround()) {
                 unit.setDestination(Combat::getAttackPosition());
+                Broodwar->drawTextMap(unit.getPosition(), "a_atkpos");
             }
             else {
                 getCleanupPosition(unit);
+                Broodwar->drawTextMap(unit.getPosition(), "a_clean");
             }
         }
     }

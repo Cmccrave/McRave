@@ -11,6 +11,7 @@ namespace McRave::BuildOrder::Terran {
 
     namespace {
         bool againstRandom = false;
+        bool needTurrets = false;
 
         void queueWallDefenses()
         {
@@ -21,8 +22,16 @@ namespace McRave::BuildOrder::Terran {
         {
             // Adding Station Defenses
             for (auto &station : Stations::getStations(PlayerState::Self)) {
-                if (vis(Terran_Engineering_Bay) > 0 && Stations::needAirDefenses(station) > 0)
+                auto airNeeded = Stations::needAirDefenses(station);
+                auto grdNeeded = Stations::needGroundDefenses(station);
+
+                if (airNeeded > 0)
+                    needTurrets = true;                
+
+                if (airNeeded > 0 && atPercent(Terran_Engineering_Bay, 0.80))
                     buildQueue[Terran_Missile_Turret] = vis(Terran_Missile_Turret) + 1;
+                if (grdNeeded > 0)
+                    buildQueue[Terran_Bunker] = vis(Terran_Bunker) + 1;
             }
         }
 
@@ -51,30 +60,35 @@ namespace McRave::BuildOrder::Terran {
                 buildQueue[Terran_Control_Tower] = com(Terran_Starport);
 
             // Machine Shop
-            if (com(Terran_Factory) >= 3)
+            if (com(Terran_Factory) >= 3 && rampType == Terran_Factory)
                 buildQueue[Terran_Machine_Shop] = Stations::getGasingStationsCount();
 
             // Academy
             if (Spy::enemyInvis()) {
                 if (desiredDetection == Terran_Missile_Turret)
-                    buildQueue[Terran_Engineering_Bay] = 1;                
+                    buildQueue[Terran_Engineering_Bay] = 1;
                 else {
                     buildQueue[Terran_Academy] = 1;
                     buildQueue[Terran_Comsat_Station] = 2;
                 }
             }
 
+            // Turrets
+            if (needTurrets)
+                buildQueue[Terran_Engineering_Bay] = 1;
+
             // If we're not in our opener
             if (!inOpening) {
 
                 // Armory
-                buildQueue[Terran_Armory] = (s > 160) + (s > 200);
+                if (rampType == Terran_Factory)
+                    buildQueue[Terran_Armory] = (s > 160) + (s > 200);
 
-                if (com(Terran_Science_Facility) > 0)
+                if (com(Terran_Science_Facility) > 0 && isFocusUnit(Terran_Battlecruiser) && vis(Terran_Physics_Lab) == 0)
                     buildQueue[Terran_Physics_Lab] = 1;
 
                 // Engineering Bay
-                if (s > 200)
+                if ((rampType == Terran_Barracks && s > 200) || (Util::getTime() > Time(5, 00) && Players::TvZ()))
                     buildQueue[Terran_Engineering_Bay] = 1;
             }
         }
@@ -89,7 +103,7 @@ namespace McRave::BuildOrder::Terran {
                     || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2)
                     || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1);
 
-                buildQueue[Terran_Command_Center] = vis(Terran_Command_Center) + expandDesired;
+                buildQueue[Terran_Command_Center] = min(2, vis(Terran_Command_Center) + expandDesired);
             }
         }
 
@@ -100,13 +114,30 @@ namespace McRave::BuildOrder::Terran {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
 
                 // Adding production
-                auto maxFacts = 8;
-                auto factsPerBase = 3;
-                productionSat = (vis(Terran_Factory) >= int(factsPerBase * vis(Terran_Command_Center)) || vis(Terran_Command_Center) >= maxFacts);
-                rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
-                if (rampDesired) {
-                    auto factCount = min({ maxFacts, int(round(com(Terran_Command_Center) * factsPerBase)), vis(Terran_Factory) + 1 });
-                    buildQueue[Terran_Factory] = factCount;
+                // Mech play
+                if (rampType == Terran_Factory) {
+                    auto maxFacts = 8;
+                    auto factsPerBase = 3;
+                    productionSat = (vis(Terran_Factory) >= int(factsPerBase * vis(Terran_Command_Center)) || vis(Terran_Command_Center) >= maxFacts);
+                    rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
+
+                    if (rampDesired) {
+                        auto factCount = min({ maxFacts, int(round(com(Terran_Command_Center) * factsPerBase)), vis(Terran_Factory) + 1 });
+                        buildQueue[Terran_Factory] = factCount;
+                    }
+                }
+
+                // Bio play
+                if (rampType == Terran_Barracks) {
+                    auto maxRax = 10;
+                    auto raxPerBase = 3;
+                    productionSat = (vis(Terran_Barracks) >= int(raxPerBase * vis(Terran_Command_Center)) || vis(Terran_Command_Center) >= maxRax);
+                    rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
+
+                    if (rampDesired) {
+                        auto raxCount = min({ maxRax, int(round(com(Terran_Command_Center) * raxPerBase)), vis(Terran_Barracks) + 1 });
+                        buildQueue[Terran_Barracks] = raxCount;
+                    }
                 }
             }
         }
@@ -130,17 +161,29 @@ namespace McRave::BuildOrder::Terran {
 
     void opener()
     {
-        TvA();
+        if (Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0 && !Players::ZvFFA() && !Players::ZvTVB())
+            againstRandom = true;
+
+        //// TODO: Team melee / Team FFA support
+        //if (Broodwar->getGameType() == GameTypes::Team_Free_For_All || Broodwar->getGameType() == GameTypes::Team_Melee) {
+        //    TvFFA();
+        //    return;
+        //}
+
+        if (Players::TvZ())
+            TvZ();
+        else
+            TvA();
     }
 
     void tech()
     {
-        auto techVal = int(focusUnits.size());
-        techSat = (techVal > vis(Terran_Command_Center));
+        auto techVal = int(focusUnits.size()) + 1;
+        techSat = (techVal > com(Terran_Command_Center));
         unitOrder ={ Terran_Vulture, Terran_Siege_Tank_Tank_Mode };
 
         if (techComplete())
-            focusUnit = None;   
+            focusUnit = None;
         if (Spy::enemyInvis() || (!inOpening && !getTech && !techSat && focusUnit == None))
             getTech = true;
 
@@ -173,15 +216,28 @@ namespace McRave::BuildOrder::Terran {
 
         // Optimize our gas mining by dropping gas mining at specific excessive values
         removeExcessGas();
-
-        // Main bunker defense
-        if (Spy::enemyRush() && !wallMain)
-            buildQueue[Terran_Bunker] = 1;
     }
 
     void composition()
     {
+        // Clear composition before setting
+        if (!inOpening)
+            armyComposition.clear();
 
+        if (Players::TvZ()) {
+
+            if (isFocusUnit(Terran_Science_Vessel)) {
+                armyComposition[Terran_Marine] = 0.80;
+                armyComposition[Terran_Medic] = 0.20;
+                armyComposition[Terran_Science_Vessel] = 1.00;
+                armyComposition[Terran_SCV] = 1.00;
+            }
+            else if (isFocusUnit(Terran_Medic)) {
+                armyComposition[Terran_Marine] = 0.80;
+                armyComposition[Terran_Medic] = 0.20;
+                armyComposition[Terran_SCV] = 1.00;
+            }
+        }
     }
 
     void unlocks()

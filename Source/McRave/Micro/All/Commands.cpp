@@ -301,6 +301,9 @@ namespace McRave::Command {
             // Combats can move as long as they're not already in range of their target
             if (unit.getRole() == Role::Combat) {
 
+                if (unit.isBurrowed() || unit.stunned || unit.getSpeed() == 0.0)
+                    return false;
+
                 if (unit.attemptingSurround())
                     return true;
 
@@ -308,10 +311,7 @@ namespace McRave::Command {
                     auto unitTarget = unit.getTarget().lock();
                     if (unit.getType() == Zerg_Mutalisk && unit.isWithinRange(*unitTarget) && unit.canStartAttack() && !unit.isWithinAngle(*unitTarget))
                         return true;
-                    if (unitTarget->unit()->exists() && unit.isWithinRange(*unitTarget) && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack) && (unit.getType() != Zerg_Lurker || unit.isBurrowed()))
-                        return false;
                 }
-
                 return true;
             }
 
@@ -326,8 +326,17 @@ namespace McRave::Command {
         auto shouldMove = [&]() {
 
             // Combats should move if we're not retreating
-            if (unit.getRole() == Role::Combat)
+            if (unit.getRole() == Role::Combat) {
+                if (unit.hasTarget()) {
+                    auto unitTarget = unit.getTarget().lock();
+                    auto attackInstead = !unit.targetsFriendly() && unitTarget->unit()->exists() && unit.isWithinRange(*unitTarget);
+
+                    if (attackInstead && !unit.attemptingSurround() && !unit.isLightAir() && !unit.isSuicidal())
+                        return false;
+                }
+
                 return unit.getLocalState() != LocalState::Retreat;
+            }
 
             // Workers should move if they need to get to a new gather or construction job
             if (unit.getRole() == Role::Worker) {
@@ -353,9 +362,6 @@ namespace McRave::Command {
 
         // If unit can move and should move
         if (canMove() && shouldMove()) {
-
-            if (unit.hasTarget() && !unit.attemptingSurround() && !unit.isLightAir() && !unit.isSuicidal() && unit.isWithinRange(*unit.getTarget().lock()))
-                return false;
 
             // Necessary for mutas to not overshoot
             if (unit.getRole() == Role::Combat && unit.hasTarget() && !unit.attemptingSurround() && !unit.isSuicidal() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(*unit.getTarget().lock()) && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack)) {
@@ -626,13 +632,14 @@ namespace McRave::Command {
         };
 
         // Escorting
-        auto shouldEscort = unit.getRole() == Role::Support || unit.getRole() == Role::Transport;
+        auto shouldEscort = (unit.getRole() == Role::Support || unit.getRole() == Role::Transport);
         if (!shouldEscort)
             return false;
 
         // Try to save on APM
         if (unit.getPosition().getDistance(unit.getDestination()) < 32.0)
             return false;
+
         if (unit.getPosition().getDistance(unit.getDestination()) < 64.0) {
             unit.setCommand(Right_Click_Position, unit.getDestination());
             unit.setCommandText("Escort");

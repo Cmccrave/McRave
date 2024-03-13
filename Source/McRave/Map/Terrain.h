@@ -5,17 +5,17 @@ namespace McRave::Terrain {
     BWAPI::Position getClosestMapCorner(BWAPI::Position);
     BWAPI::Position getClosestMapEdge(BWAPI::Position);
     BWAPI::Position getOldestPosition(const BWEM::Area *);
-    BWAPI::Position getSafeSpot(BWEB::Station *);
+    BWAPI::Position getSafeSpot(const BWEB::Station *);
     void onStart();
     void onFrame();
 
     std::set <const BWEM::Base*>& getAllBases();
 
     BWAPI::Position getEnemyStartingPosition();
-    BWEB::Station * getEnemyMain();
-    BWEB::Station * getEnemyNatural();
-    BWEB::Station * getMyMain();
-    BWEB::Station * getMyNatural();
+    const BWEB::Station * getEnemyMain();
+    const BWEB::Station * getEnemyNatural();
+    const BWEB::Station * const getMyMain();
+    const BWEB::Station * const getMyNatural();
     BWAPI::TilePosition getEnemyExpand();
     BWAPI::TilePosition getEnemyStartingTilePosition();
 
@@ -27,8 +27,8 @@ namespace McRave::Terrain {
     bool inArea(const BWEM::Area *, BWAPI::Position);
     bool inTerritory(PlayerState, BWAPI::Position);
     bool inTerritory(PlayerState, const BWEM::Area*);
-    void addTerritory(PlayerState, BWEB::Station*);
-    void removeTerritory(PlayerState, BWEB::Station*);
+    void addTerritory(PlayerState, const BWEB::Station*);
+    void removeTerritory(PlayerState, const BWEB::Station*);
     std::vector<BWAPI::Position>& getGroundCleanupPositions();
     std::vector<BWAPI::Position>& getAirCleanupPositions();
 

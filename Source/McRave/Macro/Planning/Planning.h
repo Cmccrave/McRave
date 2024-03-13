@@ -17,5 +17,5 @@ namespace McRave::Planning {
     bool overlapsPlan(UnitInfo&, BWAPI::Position);
     int getPlannedMineral();
     int getPlannedGas();
-    BWEB::Station * getCurrentExpansion();
+    const BWEB::Station * getCurrentExpansion();
 };

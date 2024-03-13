@@ -96,14 +96,14 @@ namespace McRave::Spy::Protoss {
         void enemyProtossOpeners(PlayerInfo& player, StrategySpy& theSpy)
         {
             // 2Gate Openers
-            if (theSpy.build.name == "2Gate" || theSpy.build.name == "CannonRush") {
-                if (theSpy.proxy.possible || arrivesBy(1, Protoss_Zealot, Time(2, 50)) || arrivesBy(2, Protoss_Zealot, Time(3, 00)) || arrivesBy(4, Protoss_Zealot, Time(3, 25))) {
+            if (theSpy.build.name == "2Gate") {
+                if (theSpy.proxy.possible || arrivesBy(1, Protoss_Zealot, Time(2, 50)) || arrivesBy(2, Protoss_Zealot, Time(3, 15)) || arrivesBy(4, Protoss_Zealot, Time(3, 40))) {
                     theSpy.opener.name = "Proxy9/9";
                     theSpy.proxy.possible = true;
                 }
-                else if (arrivesBy(1, Protoss_Zealot, Time(3, 20)) || arrivesBy(2, Protoss_Zealot, Time(3, 25)) || arrivesBy(3, Protoss_Zealot, Time(3, 35)) || arrivesBy(4, Protoss_Zealot, Time(4, 10)) || arrivesBy(5, Protoss_Zealot, Time(4, 10))
+                else if (arrivesBy(1, Protoss_Zealot, Time(3, 00)) || arrivesBy(2, Protoss_Zealot, Time(3, 15)) || arrivesBy(3, Protoss_Zealot, Time(3, 20)) || arrivesBy(4, Protoss_Zealot, Time(3, 30)) || arrivesBy(5, Protoss_Zealot, Time(3, 35))
                     || completesBy(2, Protoss_Zealot, Time(2, 45)) || completesBy(3, Protoss_Zealot, Time(2, 50)) || completesBy(4, Protoss_Zealot, Time(3, 10)) || completesBy(5, Protoss_Zealot, Time(3, 15))
-                    || completesBy(2, Protoss_Gateway, Time(2, 15)))
+                    || completesBy(2, Protoss_Gateway, Time(2, 20)))
                     theSpy.opener.name = "9/9";
                 else if (arrivesBy(3, Protoss_Zealot, Time(4, 05)) || arrivesBy(4, Protoss_Zealot, Time(4, 20)))
                     theSpy.opener.name = "10/12";

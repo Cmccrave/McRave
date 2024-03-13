@@ -8,7 +8,7 @@ using namespace UnitTypes;
 namespace BWEB {
 
     namespace {
-        map<const BWEM::ChokePoint *, Wall> walls;
+        map<const BWEM::ChokePoint * const, Wall> walls;
         bool logInfo = true;
 
         int failedPlacement = 0;
@@ -638,7 +638,7 @@ namespace BWEB {
 
         // If it's a natural wall, path between the closest main and end of the perpendicular line
         if (isNatural) {
-            Station * closestMain = Stations::getClosestMainStation(TilePosition(choke->Center()));
+            const auto closestMain = Stations::getClosestMainStation(TilePosition(choke->Center()));
             initialPathStart = closestMain ? TilePosition(Map::mapBWEM.GetPath(station->getBase()->Center(), closestMain->getBase()->Center()).front()->Center()) : TilePosition(lineStart);
             initialPathEnd = TilePosition(lineEnd);
         }
@@ -1076,11 +1076,11 @@ namespace BWEB {
         }
     }
 
-    int Wall::getGroundDefenseCount()
+    const int Wall::getGroundDefenseCount() const
     {
         // Returns how many visible ground defensive structures exist in this Walls defense locations
         int count = 0;
-        for (auto &tile : defenses[0]) {
+        for (auto &tile : defenses.at(0)) {
             auto type = Map::isUsed(tile);
             if (type == UnitTypes::Protoss_Photon_Cannon
                 || type == UnitTypes::Zerg_Sunken_Colony
@@ -1090,11 +1090,11 @@ namespace BWEB {
         return count;
     }
 
-    int Wall::getAirDefenseCount()
+    const int Wall::getAirDefenseCount() const
     {
         // Returns how many visible air defensive structures exist in this Walls defense locations
         int count = 0;
-        for (auto &tile : defenses[0]) {
+        for (auto &tile : defenses.at(0)) {
             auto type = Map::isUsed(tile);
             if (type == UnitTypes::Protoss_Photon_Cannon
                 || type == UnitTypes::Zerg_Spore_Colony
@@ -1104,7 +1104,7 @@ namespace BWEB {
         return count;
     }
 
-    void Wall::draw()
+    const void Wall::draw()
     {
         set<Position> anglePositions;
         int color = Broodwar->self()->getColor();
@@ -1177,7 +1177,7 @@ namespace BWEB {
 
 namespace BWEB::Walls {
 
-    Wall* createWall(vector<UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, const UnitType tightType, const vector<UnitType>& defenses, const bool openWall, const bool requireTight)
+    const Wall * const createWall(vector<UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, const UnitType tightType, const vector<UnitType>& defenses, const bool openWall, const bool requireTight)
     {
         ofstream writeFile;
         string buffer;
@@ -1252,7 +1252,7 @@ namespace BWEB::Walls {
         return nullptr;
     }
 
-    Wall* createProtossWall()
+    const Wall * const createProtossWall()
     {
         vector<UnitType> buildings ={ Protoss_Forge, Protoss_Gateway, Protoss_Pylon };
         return createWall(buildings,
@@ -1264,7 +1264,7 @@ namespace BWEB::Walls {
             false);
     }
 
-    Wall* createTerranWall()
+    const Wall * const createTerranWall()
     {
         vector<UnitType> buildings ={ Terran_Barracks, Terran_Supply_Depot, Terran_Supply_Depot };
         auto tightType = Broodwar->enemy()->getRace() == Races::Zerg ? Zerg_Zergling : Protoss_Zealot;
@@ -1277,7 +1277,7 @@ namespace BWEB::Walls {
             true);
     }
 
-    Wall* createZergWall()
+    const Wall * const createZergWall()
     {
         vector<UnitType> buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber };
         return createWall(buildings,
@@ -1289,7 +1289,7 @@ namespace BWEB::Walls {
             false);
     }
 
-    Wall* getWall(const BWEM::ChokePoint * choke)
+    const Wall * const getWall(const BWEM::ChokePoint * choke)
     {
         if (!choke)
             return nullptr;
@@ -1301,7 +1301,7 @@ namespace BWEB::Walls {
         return nullptr;
     }
 
-    map<const BWEM::ChokePoint *, Wall>& getWalls() {
+    map<const BWEM::ChokePoint * const, Wall>& getWalls() {
         return walls;
     }
 

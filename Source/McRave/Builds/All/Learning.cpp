@@ -120,7 +120,10 @@ namespace McRave::Learning {
 
             // Terran
             if (Broodwar->self()->getRace() == Races::Terran) {
-                BuildOrder::setLearnedBuild("RaxFact", "10Rax", "2Fact");
+                if (Players::TvZ())
+                    BuildOrder::setLearnedBuild("2Rax", "11/13", "Academy");
+                else
+                    BuildOrder::setLearnedBuild("RaxFact", "10Rax", "2Fact");
             }
         }
 
@@ -372,7 +375,7 @@ namespace McRave::Learning {
 
 
             if (Broodwar->self()->getRace() == Races::Terran) {
-                BuildOrder::setLearnedBuild("RaxFact", "10Rax", "2Fact");
+                BuildOrder::setLearnedBuild("2Rax", "11/13", "Academy");
                 isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
                 return;// Don't know what to do yet
             }

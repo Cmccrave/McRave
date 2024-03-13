@@ -112,6 +112,7 @@ namespace McRave
             // Flags
             flying                      = unit()->isFlying() || getType().isFlyer() || unit()->getOrder() == Orders::LiftingOff || unit()->getOrder() == Orders::BuildingLiftOff;
             movedFlag                   = false;
+            stunned                     = !unit()->isPowered() || unit()->isMaelstrommed() || unit()->isStasised() || unit()->isLockedDown() || unit()->isMorphing();
 
             // McRave Stats
             data.groundRange            = Math::groundRange(*this);
@@ -515,7 +516,7 @@ namespace McRave
         const auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
         const auto cancelAttackRisk = frameSinceAttack <= data.minStopFrame - Broodwar->getLatencyFrames();
 
-        auto frames = 5; //isLightAir() ? 6 : 12;
+        auto frames = isLightAir() ? 3 : 12;
         auto newCommandPosition = commandPosition.getDistance(here) > 32;
         auto newCommandType = commandType != cmd;
         auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() > frames;
@@ -562,7 +563,7 @@ namespace McRave
         auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
         auto cancelAttackRisk = frameSinceAttack <= data.minStopFrame - Broodwar->getLatencyFrames();
 
-        auto frames = 5; //isLightAir() ? 6 : 12;
+        auto frames = isLightAir() ? 3 : 12;
         auto newCommandTarget = unit()->getLastCommand().getTarget() != targetUnit.unit();
         auto newCommandType = commandType != cmd;
         auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() > frames;
@@ -597,14 +598,17 @@ namespace McRave
     bool UnitInfo::canStartAttack()
     {
         if (!hasTarget()
-            || (getGroundDamage() == 0 && getAirDamage() == 0)
-            || isSpellcaster()
+            || (!targetsFriendly() && getGroundDamage() == 0 && getAirDamage() == 0)
             || (getType() == UnitTypes::Zerg_Lurker && !isBurrowed()))
             return false;
         auto unitTarget = getTarget().lock();
 
         if (isSuicidal())
             return true;
+
+        // Special Case: Medics
+        if (getType() == Terran_Medic)
+            return unitTarget->getPercentTotal() < 1.0 && getEnergy() > 0;
 
         // Special Case: Carriers
         if (getType() == UnitTypes::Protoss_Carrier) {

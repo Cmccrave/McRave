@@ -6,9 +6,9 @@ using namespace UnitTypes;
 
 namespace McRave::Expansion {
     namespace {
-        vector<BWEB::Station*> expansionOrder, dangerousStations, islandStations;
-        map<BWEB::Station *, map<BWEB::Station*, BWEB::Path>> expansionNetwork;
-        map<BWEB::Station*, vector<UnitInfo*>> blockingNeutrals;
+        vector<const BWEB::Station *> expansionOrder, dangerousStations, islandStations;
+        map<const BWEB::Station * const, map<const BWEB::Station *, BWEB::Path>> expansionNetwork;
+        map<const BWEB::Station * const, vector<UnitInfo*>> blockingNeutrals;
         bool blockersExists = false;
 
         void updateDangerousStations()
@@ -106,7 +106,7 @@ namespace McRave::Expansion {
 
             for (int i = 0; i < int(BWEB::Stations::getStations().size()); i++) {
                 auto costBest = DBL_MAX;
-                BWEB::Station * stationBest = nullptr;
+                const BWEB::Station * stationBest = nullptr;
                 auto home = Terrain::getNaturalChoke() ? Position(Terrain::getNaturalChoke()->Center()) : Terrain::getMainPosition();
 
                 for (auto &station : BWEB::Stations::getStations()) {
@@ -137,8 +137,8 @@ namespace McRave::Expansion {
                     if ((station.getBase()->GetArea() == mapBWEM.GetArea(TilePosition(mapBWEM.Center())) && expansionOrder.size() < 4)
                         || (find_if(expansionOrder.begin(), expansionOrder.end(), [&](auto &s) { return s == &station; }) != expansionOrder.end())
                         || (find_if(islandStations.begin(), islandStations.end(), [&](auto &s) { return s == &station; }) != islandStations.end())
-                        || (Terrain::getEnemyMain() && station == Terrain::getEnemyMain())
-                        || (Terrain::getEnemyNatural() && station == Terrain::getEnemyNatural())
+                        || (Terrain::getEnemyMain() && &station == Terrain::getEnemyMain())
+                        || (Terrain::getEnemyNatural() && &station == Terrain::getEnemyNatural())
                         || (station.getBase()->Geysers().empty() && int(expansionOrder.size()) < allowedFirstMineralBase)
                         || (station.getBase()->Geysers().empty() && geysersOwned + int(station.getBase()->Geysers().size()) < allowedFirstMineralBase)
                         || (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea())))
@@ -203,7 +203,7 @@ namespace McRave::Expansion {
         // Create a path to each station that only obeys terrain
         for (auto &station : BWEB::Stations::getStations()) {
             for (auto &otherStation : BWEB::Stations::getStations()) {
-                if (station == otherStation)
+                if (&station == &otherStation)
                     continue;
 
                 BWEB::Path path(station.getBase()->Center(), otherStation.getBase()->Center(), Protoss_Dragoon, true, false);
@@ -214,5 +214,5 @@ namespace McRave::Expansion {
     }
 
     bool expansionBlockersExists() { return blockersExists; }
-    vector<BWEB::Station*> getExpandOrder() { return expansionOrder; }
+    vector<const BWEB::Station *> getExpandOrder() { return expansionOrder; }
 }

@@ -69,12 +69,6 @@ namespace McRave::Spy::Terran {
                 theSpy.proxy.possible = true;
             }
 
-            // 2Rax Proxy - Marine estimation
-            if (arrivesBy(4, Terran_Marine, Time(3, 45))) {
-                theSpy.build.name = "2Rax";
-                theSpy.proxy.possible = true;
-            }
-
             // Rax/Gas/Rax estimation - consider 2Rax
             if (completesBy(1, Terran_Academy, Time(3, 30)) || arrivesBy(1, Terran_Medic, Time(5, 30))) {
                 theSpy.build.name = "2Rax";

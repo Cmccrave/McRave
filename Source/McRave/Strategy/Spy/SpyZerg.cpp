@@ -50,31 +50,28 @@ namespace McRave::Spy::Zerg {
             theSpy.opener.framesRequired = 24;
 
             // Pool timing
-            if (theSpy.build.name == "PoolHatch" || theSpy.build.name == "PoolLair" || (vis(Zerg_Zergling) > 0 && Util::getTime() < Time(3, 45))) {
-                if (theSpy.rushArrivalTime < Time(2, 45)
-                    || completesBy(1, Zerg_Zergling, Time(2, 05))
-                    || completesBy(1, Zerg_Spawning_Pool, Time(1, 40))
-                    || arrivesBy(8, Zerg_Zergling, Time(3, 00)))
-                    theSpy.opener.name = "4Pool";
-                else if (theSpy.rushArrivalTime < Time(2, 55)
-                    || completesBy(1, Zerg_Zergling, Time(2, 15))
-                    || completesBy(1, Zerg_Spawning_Pool, Time(1, 50)))
-                    theSpy.opener.name = "7Pool";
-                else if (theSpy.rushArrivalTime < Time(3, 15)
-                    || completesBy(1, Zerg_Zergling, Time(2, 40))
-                    || completesBy(8, Zerg_Zergling, Time(3, 00))
-                    || completesBy(10, Zerg_Zergling, Time(3, 20))
-                    || completesBy(12, Zerg_Zergling, Time(3, 30))
-                    || completesBy(14, Zerg_Zergling, Time(3, 40))
-                    || completesBy(1, Zerg_Spawning_Pool, Time(2, 00))
-                    || completesBy(1, Zerg_Lair, Time(3, 45)))
-                    theSpy.opener.name = "9Pool";
-                else if (theSpy.rushArrivalTime < Time(3, 50)
-                    || theSpy.expand.possible
-                    || completesBy(1, Zerg_Zergling, Time(3, 00))
-                    || completesBy(1, Zerg_Spawning_Pool, Time(2, 00)))
-                    theSpy.opener.name = "12Pool";
-            }
+            if (theSpy.rushArrivalTime < Time(2, 45)
+                || completesBy(1, Zerg_Zergling, Time(2, 05))
+                || completesBy(1, Zerg_Spawning_Pool, Time(1, 40))
+                || arrivesBy(8, Zerg_Zergling, Time(3, 00)))
+                theSpy.opener.name = "4Pool";
+            else if (theSpy.rushArrivalTime < Time(2, 55)
+                || completesBy(1, Zerg_Zergling, Time(2, 15))
+                || completesBy(1, Zerg_Spawning_Pool, Time(1, 50)))
+                theSpy.opener.name = "7Pool";
+            else if (theSpy.rushArrivalTime < Time(3, 15)
+                || completesBy(1, Zerg_Zergling, Time(2, 40))
+                || completesBy(8, Zerg_Zergling, Time(3, 00))
+                || completesBy(10, Zerg_Zergling, Time(3, 20))
+                || completesBy(12, Zerg_Zergling, Time(3, 30))
+                || completesBy(14, Zerg_Zergling, Time(3, 40))
+                || completesBy(1, Zerg_Spawning_Pool, Time(2, 00))
+                || completesBy(1, Zerg_Lair, Time(3, 45)))
+                theSpy.opener.name = "9Pool";
+            else if (theSpy.rushArrivalTime < Time(3, 50)
+                || completesBy(1, Zerg_Zergling, Time(3, 00))
+                || completesBy(1, Zerg_Spawning_Pool, Time(2, 00)))
+                theSpy.opener.name = "12Pool";
 
             // Hatch timing
             if (theSpy.build.name == "HatchPool") {

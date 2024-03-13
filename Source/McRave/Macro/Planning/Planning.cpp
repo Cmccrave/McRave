@@ -12,8 +12,8 @@ namespace McRave::Planning {
         map<TilePosition, int> buildingTimer;
         set<TilePosition> validDefenses, plannedGround, plannedAir;
         bool expansionPlanned = false;
-        BWEB::Station * currentExpansion = nullptr;
-        BWEB::Station * nextExpansion = nullptr;
+        const BWEB::Station * currentExpansion = nullptr;
+        const BWEB::Station * nextExpansion = nullptr;
         vector<TilePosition> unreachablePositions;
 
         UnitInfo* getBuilder(UnitType building, Position here)
@@ -457,9 +457,7 @@ namespace McRave::Planning {
 
                 // How to dictate first placement position
                 if (wall.getGroundDefenseCount() < 2) {
-                    if (closestMain && closestMain->getChokepoint() && wall.getStation() && Players::ZvT())
-                        desiredCenter = (Position(closestMain->getChokepoint()->Center()) + Position(wall.getStation()->getBase()->Center())) / 2;
-                    else if (wall.getStation())
+                    if (wall.getStation())
                         desiredCenter = Position(wall.getStation()->getBase()->Center());
                 }
 
@@ -598,7 +596,7 @@ namespace McRave::Planning {
                 return false;
 
             // Pylon is separated because we want one unique best buildable position to check, rather than next best buildable position
-            const auto stationNeedsPylon = [&](BWEB::Station * station) {
+            const auto stationNeedsPylon = [&](const BWEB::Station * station) {
                 auto distBest = DBL_MAX;
                 auto tileBest = TilePositions::Invalid;
                 auto natOrMain = station->isMain() || station->isNatural();
@@ -689,7 +687,7 @@ namespace McRave::Planning {
             if (building != Terran_Supply_Depot)
                 return false;
 
-            placement = furthestLocation(building, Terrain::getMainPosition());
+            placement = furthestLocation(building, mapBWEM.Center());
             return placement.isValid();
         }
 
@@ -812,6 +810,7 @@ namespace McRave::Planning {
                     if (here.isValid() && builder && Workers::shouldMoveToBuild(*builder, here, building)) {
                         Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::White);
                         Visuals::drawLine(builder->getPosition(), center, Colors::White);
+                        Broodwar->drawTextMap(builder->getPosition(), "%s", building.c_str());
                         builder->setBuildingType(building);
                         builder->setBuildPosition(here);
                         buildingsPlanned[here] = building;
@@ -1038,5 +1037,5 @@ namespace McRave::Planning {
 
     int getPlannedMineral() { return plannedMineral; }
     int getPlannedGas() { return plannedGas; }
-    BWEB::Station * getCurrentExpansion() { return currentExpansion; }
+    const BWEB::Station * getCurrentExpansion() { return currentExpansion; }
 }

@@ -78,7 +78,7 @@ namespace McRave::Combat {
 
     const BWEM::ChokePoint * getDefendChoke();
     const BWEM::Area * getDefendArea();
-    BWEB::Station * getDefendStation();
+    const BWEB::Station * getDefendStation();
 
     BWAPI::Position getAttackPosition();
     BWAPI::Position getDefendPosition();

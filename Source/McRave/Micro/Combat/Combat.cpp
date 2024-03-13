@@ -152,7 +152,7 @@ namespace McRave::Combat {
             }
 
             // Create a list of valid positions to harass/check
-            vector<BWEB::Station*> stations = Stations::getStations(PlayerState::Enemy);
+            vector<const BWEB::Station *> stations = Stations::getStations(PlayerState::Enemy);
             if (Util::getTime() < Time(10, 00)) {
                 stations.push_back(Terrain::getEnemyMain());
                 stations.push_back(Terrain::getEnemyNatural());
@@ -202,8 +202,13 @@ namespace McRave::Combat {
             }
 
             // Terran
-            if (Broodwar->self()->getRace() == Races::Terran && Players::getSupply(PlayerState::Self, Races::None) > 40)
-                holdChoke = true;
+            if (Broodwar->self()->getRace() == Races::Terran ) {
+                holdChoke = !defendNatural && Players::getSupply(PlayerState::Self, Races::None) > 50;
+
+                const auto defCount = Stations::getGroundDefenseCount(getDefendStation());
+                if (defCount > 0)
+                    holdChoke = false;
+            }
 
             // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
@@ -257,7 +262,7 @@ namespace McRave::Combat {
 
     const ChokePoint * getDefendChoke() { return defendChoke; }
     const Area * getDefendArea() { return defendArea; }
-    BWEB::Station * getDefendStation() { return defendNatural ? Terrain::getMyNatural() : Terrain::getMyMain(); }
+    const BWEB::Station * getDefendStation() { return defendNatural ? Terrain::getMyNatural() : Terrain::getMyMain(); }
     bool isDefendNatural() { return defendNatural; }
 
     bool holdAtChoke() { return holdChoke; }

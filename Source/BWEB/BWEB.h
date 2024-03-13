@@ -64,7 +64,7 @@ namespace BWEB::Map
     double getGroundDistance(BWAPI::Position start, BWAPI::Position end);
 
     /// Returns the closest BWAPI::Position that makes up the geometry of a BWEM::ChokePoint to another BWAPI::Position.
-    BWAPI::Position getClosestChokeTile(const BWEM::ChokePoint *, BWAPI::Position);
+    BWAPI::Position getClosestChokeTile(const BWEM::ChokePoint * const, BWAPI::Position);
 
     /// Returns two BWAPI::Positions perpendicular to a line at a given distance away in pixels.
     std::pair<BWAPI::Position, BWAPI::Position> perpendicularLine(std::pair<BWAPI::Position, BWAPI::Position>, double);

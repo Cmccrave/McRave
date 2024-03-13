@@ -46,7 +46,7 @@ namespace McRave::Combat::Clusters {
             }
         }
 
-        bool generateCluster(ClusterNode &root, int id, int minsize)
+        bool generateCluster(ClusterNode &root, int id, int minsize, int maxsize)
         {
             auto matching = [&](auto &parent, auto &child) {
                 auto matchedGoal = (parent.unit->getGoal() == child.unit->getGoal());
@@ -62,8 +62,6 @@ namespace McRave::Combat::Clusters {
                 for (auto &child : clusterNodes) {
                     if (parent.unit != child.unit && child.id == 0 && matching(parent, child))
                         queue.push(&child);
-                    if (int(queue.size()) >= 24 && !parent.unit->isFlying())
-                        break;
                 }
             };
 
@@ -86,6 +84,9 @@ namespace McRave::Combat::Clusters {
                 auto &node = nodeQueue.front();
                 nodeQueue.pop();
 
+                if (int(newCluster.units.size()) >= maxsize && !node->unit->isFlying())
+                    break;
+
                 if (node->id == 0) {
                     node->id = id;
                     newCluster.units.push_back(node->unit);
@@ -100,7 +101,7 @@ namespace McRave::Combat::Clusters {
         {
             auto id = 1;
             for (auto &node : clusterNodes) {
-                if (node.id == 0 && generateCluster(node, id, 0))
+                if (node.id == 0 && generateCluster(node, id, 0, 18))
                     id++;
             }
         }
@@ -122,12 +123,12 @@ namespace McRave::Combat::Clusters {
 
             // Get closest unit to centroid
             auto closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
-                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker()
+                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && !u->targetsFriendly()
                     && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && !u->isTargetedBySuicide();
             });
             if (!closestToCentroid) {
                 closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
-                    return find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end();
+                    return !u->targetsFriendly() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end();
                 });
             }
             if (closestToCentroid) {
@@ -282,7 +283,7 @@ namespace McRave::Combat::Clusters {
                         cluster.commandShare = CommandShare::Parallel;
 
                     // Determine the shape we want
-                    if (!commander->isLightAir() && !commander->isSuicidal())
+                    if (!commander->isLightAir() && !commander->isSuicidal() && !commander->getType().isWorker())
                         cluster.shape = Shape::Concave;
 
                     // Assign commander to each unit
@@ -327,7 +328,7 @@ namespace McRave::Combat::Clusters {
         shapeClusters();
         finishClusters();
         fixNavigations();
-        drawClusters();
+        //drawClusters();
     }
 
     vector<Cluster>& getClusters() { return clusters; }

@@ -25,11 +25,11 @@ namespace McRave::BuildOrder {
         inline bool hideTech = false;
         inline bool rush = false;
         inline bool pressure = false;
-        inline bool gasTrick = false;
+
         inline bool inBookSupply = false;
         inline bool transitionReady = false;
         inline bool planEarly = false;
-        inline bool reserveLarva = false;
+        inline bool gasTrick = false;
 
         inline bool gasDesired = false;
         inline bool expandDesired = false;
@@ -59,6 +59,14 @@ namespace McRave::BuildOrder {
         inline BWAPI::UnitType desiredDetection = BWAPI::UnitTypes::None;        
         inline std::set <BWAPI::UnitType> unlockedType;
         inline std::map <BWAPI::UnitType, double> armyComposition;
+    }
+
+    namespace Zerg {
+        inline bool reserveLarva = false;
+    }
+
+    namespace Terran {
+        inline BWAPI::UnitType rampType = BWAPI::UnitTypes::Terran_Barracks;
     }
 
     double getCompositionPercentage(BWAPI::UnitType);

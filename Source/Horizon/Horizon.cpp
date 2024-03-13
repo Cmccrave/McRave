@@ -15,8 +15,7 @@ namespace McRave::Horizon {
         bool addToSim(UnitInfo& u) {
             if (!u.unit()
                 || (u.getType().isWorker() && Util::getTime() > Time(6, 00) && ((u.unit()->exists() && u.unit()->getOrder() != Orders::AttackUnit) || !u.hasAttackedRecently()))
-                || (u.unit()->exists() && !u.unit()->isCompleted())
-                || (u.unit()->exists() && (u.unit()->isStasised() || u.unit()->isMorphing()))
+                || (u.stunned)
                 || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0)
                 || (u.getRole() != Role::None && u.getRole() != Role::Combat && u.getRole() != Role::Defender)
                 || !u.hasTarget())
@@ -80,7 +79,7 @@ namespace McRave::Horizon {
 
             // If enemy doesn't move, calculate how long it will remain in range once in range
             if (enemy.getSpeed() <= 0.0) {
-                const auto distance =               distTarget - targetDisplacement;// min(distPerp, distTarget);
+                const auto distance =               distTarget;// min(distPerp, distTarget);
                 const auto speed =                  enemyTarget->getSpeed() * 24.0;
                 const auto engageTime =             max(0.0, (distance - range) / speed);
                 simRatio =                          max(0.0, simulationTime - engageTime);

@@ -6,8 +6,8 @@ namespace McRave::Walls {
     void onStart();
     void onFrame();
     
-    int needGroundDefenses(BWEB::Wall&);
-    int needAirDefenses(BWEB::Wall&);
-    BWEB::Wall* getMainWall();
-    BWEB::Wall* getNaturalWall();
+    int needGroundDefenses(const BWEB::Wall&);
+    int needAirDefenses(const BWEB::Wall&);
+    const BWEB::Wall * const getMainWall();
+    const BWEB::Wall * const getNaturalWall();
 }

@@ -13,7 +13,7 @@ namespace McRave
         BWAPI::UnitType type;
         BWAPI::Position position;
         BWAPI::TilePosition tilePosition;
-        BWEB::Station * station;
+        const BWEB::Station * station;
         ResourceState rState;
         std::map<std::weak_ptr<UnitInfo>, int> framesPerTrips;
         std::vector<std::weak_ptr<UnitInfo>> targetedBy;
@@ -44,8 +44,8 @@ namespace McRave
         bool isBoulder() { return type.isMineralField() && initialResources <= 50; }
         bool isPocket() { return pocket; }
         bool hasStation() { return station != nullptr; }
-        BWEB::Station * getStation() { return station; }
-        void setStation(BWEB::Station* newStation) { station = newStation; }
+        const BWEB::Station * getStation() { return station; }
+        void setStation(const BWEB::Station* newStation) { station = newStation; }
         int getGathererCount() { return int(targetedBy.size()); }
         int getRemainingResources() { return remainingResources; }
         int getWorkerCap() { return workerCap; }

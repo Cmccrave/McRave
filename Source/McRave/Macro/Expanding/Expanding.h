@@ -7,5 +7,5 @@ namespace McRave::Expansion {
     void onStart();
 
     bool expansionBlockersExists();
-    std::vector<BWEB::Station*> getExpandOrder();
+    std::vector<const BWEB::Station*> getExpandOrder();
 }

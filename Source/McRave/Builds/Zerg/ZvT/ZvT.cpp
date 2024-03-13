@@ -83,7 +83,7 @@ namespace McRave::BuildOrder::Zerg {
         return 0;
     }
 
-    void ZvT2HatchMuta()
+    void ZvT_2HatchMuta()
     {
         inTransition =                                  vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        (com(Zerg_Spawning_Pool) > 0 ? 28 : 15 - hatchCount());
@@ -123,7 +123,7 @@ namespace McRave::BuildOrder::Zerg {
         }
     }
 
-    void ZvT3HatchMuta()
+    void ZvT_3HatchMuta()
     {
         inTransition =                                  vis(Zerg_Lair) > 0;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : 15 - hatchCount();
@@ -155,7 +155,7 @@ namespace McRave::BuildOrder::Zerg {
         }
     }
 
-    void ZvT2HatchSpeedling()
+    void ZvT_2HatchSpeedling()
     {
         unitLimits[Zerg_Drone] =                        total(Zerg_Zergling) >= 12 ? 11 : 9;
         unitLimits[Zerg_Zergling] =                     INT_MAX;
@@ -177,7 +177,7 @@ namespace McRave::BuildOrder::Zerg {
         armyComposition[Zerg_Zergling] =                1.00;
     }
 
-    void ZvT3HatchSpeedling()
+    void ZvT_3HatchSpeedling()
     {
         unitLimits[Zerg_Drone] =                        13;
         unitLimits[Zerg_Zergling] =                     hatchCount() >= 3 ? INT_MAX : 0;
@@ -200,7 +200,7 @@ namespace McRave::BuildOrder::Zerg {
         armyComposition[Zerg_Zergling] =                0.80;
     }
 
-    void ZvT6HatchCrackling()
+    void ZvT_6HatchCrackling()
     {
         // Uhhh, yeah who knows what this build is
         inTransition =                                  vis(Zerg_Lair) > 0;
@@ -263,8 +263,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Reactions
         if (!inTransition) {
-
-            if (Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush") {
+            if (Spy::getEnemyTransition() == "WorkerRush") {
                 currentBuild = "PoolHatch";
                 currentOpener = "12Pool";
                 currentTransition = "2HatchMuta";
@@ -274,15 +273,15 @@ namespace McRave::BuildOrder::Zerg {
         // Transitions
         if (transitionReady) {
             if (currentTransition == "2HatchMuta")
-                ZvT2HatchMuta();
+                ZvT_2HatchMuta();
             if (currentTransition == "3HatchMuta")
-                ZvT3HatchMuta();
+                ZvT_3HatchMuta();
             if (currentTransition == "2HatchSpeedling")
-                ZvT2HatchSpeedling();
+                ZvT_2HatchSpeedling();
             if (currentTransition == "3HatchSpeedling")
-                ZvT3HatchSpeedling();
+                ZvT_3HatchSpeedling();
             if (currentTransition == "6HatchCrackling")
-                ZvT6HatchCrackling();
+                ZvT_6HatchCrackling();
         }
     }
 }

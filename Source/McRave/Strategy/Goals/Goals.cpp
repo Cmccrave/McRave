@@ -327,8 +327,15 @@ namespace McRave::Goals {
 
             // Assign an Overlord to each main choke
             for (auto &station : Stations::getStations(PlayerState::Self)) {
-                if (station->isMain() && station->getChokepoint() && ((Players::ZvZ() && Players::getStrength(PlayerState::Enemy).airToAir == 0.0) || Stations::getStations(PlayerState::Self).size() >= 2 || Util::getTime() < Time(4, 00)))
-                    assignNumberToGoal(station->getChokepoint()->Center(), Zerg_Overlord, 1, GoalType::Escort);
+                if (station->isMain()) {
+                    auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
+                    if (Players::ZvP() || Players::ZvT()) {
+                        if (closestNatural && Stations::ownedBy(closestNatural) == PlayerState::Self && station->getChokepoint())
+                            assignNumberToGoal(station->getChokepoint()->Center(), Zerg_Overlord, 1, GoalType::Escort);
+                    }
+                    if (Players::ZvZ() && Players::getStrength(PlayerState::Enemy).airToAir == 0.0)
+                        assignNumberToGoal(station->getChokepoint()->Center(), Zerg_Overlord, 1, GoalType::Escort);
+                }
             }
 
             // Assign an Overlord to each possible expansion the enemy can take

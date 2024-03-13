@@ -8,4 +8,7 @@ namespace McRave::BuildOrder::Terran {
     void unlocks();
 
     void TvA();
+    void TvZ();
+
+    void TvZ_2Rax();
 }

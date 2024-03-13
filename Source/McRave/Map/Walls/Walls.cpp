@@ -8,8 +8,8 @@ using namespace UnitTypes;
 namespace McRave::Walls {
 
     namespace {
-        BWEB::Wall* mainWall = nullptr;
-        BWEB::Wall* naturalWall = nullptr;
+        const BWEB::Wall * mainWall = nullptr;
+        const BWEB::Wall * naturalWall = nullptr;
         vector<UnitType> buildings;
         vector<UnitType> defenses;
         bool tight;
@@ -104,7 +104,7 @@ namespace McRave::Walls {
             mainWall = BWEB::Walls::getWall(Terrain::getMainChoke());
         }
 
-        int ZvPOpener(BWEB::Wall& wall)
+        int ZvPOpener(const BWEB::Wall& wall)
         {
             // If we are opening 12 hatch, we sometimes need a faster sunken
             auto greedyStart = BuildOrder::getCurrentOpener() == "12Hatch";
@@ -173,7 +173,7 @@ namespace McRave::Walls {
             return Util::getTime() > Time(3, 45);
         }
 
-        int ZvPTransition(BWEB::Wall& wall)
+        int ZvPTransition(const BWEB::Wall& wall)
         {
             // See if they expanded or got some tech at a reasonable point for 1 base play
             auto noExpand = !Spy::enemyFastExpand();
@@ -184,10 +184,9 @@ namespace McRave::Walls {
                 && Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) == 0
                 && Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) == 0;
             auto noExpandOrTech = noExpand && noTech;
-            auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
 
             // 1 base transitions
-            if (!threeHatch && (Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore")) {
+            if (Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") {
 
                 // 4Gate
                 if (Spy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(9, 00)) {
@@ -231,9 +230,9 @@ namespace McRave::Walls {
                 if (Spy::getEnemyTransition() == "ZealotRush") {
                     return (Util::getTime() > Time(4, 00))
                         + (noExpand && Util::getTime() > Time(4, 00))
-                        + (noExpand && Util::getTime() > Time(4, 30))
+                        + (noExpand && Util::getTime() > Time(4, 20))
+                        + (noExpand && Util::getTime() > Time(4, 40))
                         + (noExpand && Util::getTime() > Time(5, 00))
-                        + (noExpand && Util::getTime() > Time(5, 30))
                         + (noExpand && Util::getTime() > Time(6, 00))
                         + (noExpand && Util::getTime() > Time(6, 30));
                 }
@@ -260,7 +259,7 @@ namespace McRave::Walls {
             return 0;
         }
 
-        int ZvTOpener(BWEB::Wall& wall)
+        int ZvTOpener(const BWEB::Wall& wall)
         {
             // If we are opening 12 hatch into a 2h tech, we sometimes need a faster sunken
             auto greedyStart = BuildOrder::getCurrentOpener() == "12Hatch" || BuildOrder::getCurrentOpener() == "12Pool";
@@ -301,7 +300,7 @@ namespace McRave::Walls {
             return (Util::getTime() > Time(3, 45));
         }
 
-        int ZvTTransition(BWEB::Wall& wall)
+        int ZvTTransition(const BWEB::Wall& wall)
         {
             // See if they expanded or got some tech at a reasonable point for 1 base play
             auto noExpand = !Spy::enemyFastExpand();
@@ -326,7 +325,7 @@ namespace McRave::Walls {
             return 0;
         }
 
-        int groundDefensesNeededZvP(BWEB::Wall& wall) {
+        int groundDefensesNeededZvP(const BWEB::Wall& wall) {
 
             // Determine how much we have traded
             auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot)
@@ -344,12 +343,12 @@ namespace McRave::Walls {
 
             // Kind of hacky solution to build less with 3h
             if (threeHatch && expected > 1)
-                expected /= 2;
+                expected /= 1.5;
 
             return max(minimum, expected);
         }
 
-        int groundDefensesNeededZvT(BWEB::Wall& wall)
+        int groundDefensesNeededZvT(const BWEB::Wall& wall)
         {
             // Determine how much we have traded
             auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Terran_Marine)
@@ -368,11 +367,11 @@ namespace McRave::Walls {
             return max(minimum, expected);
         }
 
-        int groundDefensesNeededZvZ(BWEB::Wall& wall) {
+        int groundDefensesNeededZvZ(const BWEB::Wall& wall) {
             return 0;
         }
 
-        int groundDefensesNeededZvFFA(BWEB::Wall& wall) {
+        int groundDefensesNeededZvFFA(const BWEB::Wall& wall) {
             return 1
                 + (Util::getTime() > Time(5, 20))
                 + (Util::getTime() > Time(5, 40));
@@ -390,7 +389,7 @@ namespace McRave::Walls {
 
     }
 
-    int needGroundDefenses(BWEB::Wall& wall)
+    int needGroundDefenses(const BWEB::Wall& wall)
     {
         auto groundCount = wall.getGroundDefenseCount();
         if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
@@ -451,7 +450,7 @@ namespace McRave::Walls {
         return 0;
     }
 
-    int needAirDefenses(BWEB::Wall& wall)
+    int needAirDefenses(const BWEB::Wall& wall)
     {
         auto airCount = wall.getAirDefenseCount();
         const auto enemyAir = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0
@@ -482,6 +481,6 @@ namespace McRave::Walls {
         return 0;
     }
 
-    BWEB::Wall* getMainWall() { return mainWall; }
-    BWEB::Wall* getNaturalWall() { return naturalWall; }
+    const BWEB::Wall * const getMainWall() { return mainWall; }
+    const BWEB::Wall * const getNaturalWall() { return naturalWall; }
 }

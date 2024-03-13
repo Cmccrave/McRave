@@ -9,8 +9,8 @@ namespace BWEB::Map
         bool drawReserveOverlap, drawUsed, drawWalk, drawArea;
 
         map<BWAPI::Key, bool> lastKeyState;
-        map<const BWEM::ChokePoint *, set<TilePosition>> chokeTiles;
-        map<const BWEM::ChokePoint *, pair<Position, Position>> chokeLines;
+        map<const BWEM::ChokePoint * const, set<TilePosition>> chokeTiles;
+        map<const BWEM::ChokePoint * const, pair<Position, Position>> chokeLines;
 
         int reserveGrid[256][256] ={};
         UnitType usedGrid[256][256] ={};

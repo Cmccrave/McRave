@@ -14,8 +14,8 @@ namespace McRave::Terrain {
         map<WalkPosition, PlayerState> territoryChokeGeometry;
 
         // Enemy
-        BWEB::Station * enemyNatural = nullptr;
-        BWEB::Station * enemyMain = nullptr;
+        const BWEB::Station * enemyNatural = nullptr;
+        const BWEB::Station * enemyMain = nullptr;
         Position enemyStartingPosition = Positions::Invalid;
         TilePosition enemyStartingTilePosition = TilePositions::Invalid;
         TilePosition enemyExpand = TilePositions::Invalid;
@@ -34,7 +34,7 @@ namespace McRave::Terrain {
         vector<Position> airCleanupPositions;
 
         // Overlord scouting
-        map<BWEB::Station *, Position> safeSpots;
+        map<const BWEB::Station * const, Position> safeSpots;
 
         void findEnemy()
         {
@@ -138,7 +138,7 @@ namespace McRave::Terrain {
                 if (BWEB::Map::isUsed(station.getBase()->Location()) != None
                     || enemyStartingTilePosition == station.getBase()->Location()
                     || !station.getBase()->GetArea()->AccessibleFrom(getMainArea())
-                    || station == enemyNatural)
+                    || &station == enemyNatural)
                     continue;
 
                 // Get value of the expansion
@@ -292,7 +292,7 @@ namespace McRave::Terrain {
         return Position(oldestTile) + Position(16, 16);
     }
 
-    Position getSafeSpot(BWEB::Station * station) {
+    Position getSafeSpot(const BWEB::Station * station) {
         if (station && safeSpots.find(station) != safeSpots.end())
             return safeSpots[station];
         return Positions::Invalid;
@@ -321,12 +321,12 @@ namespace McRave::Terrain {
         return (area && territoryArea[area] == playerState) || (!area && territoryChokeGeometry[WalkPosition(here)] == playerState);
     }
 
-    bool inTerritory(PlayerState playerState, const BWEM::Area* area)
+    bool inTerritory(PlayerState playerState, const BWEM::Area * area)
     {
         return (area && territoryArea[area] == playerState);
     }
 
-    void addTerritory(PlayerState playerState, BWEB::Station* station)
+    void addTerritory(PlayerState playerState, const BWEB::Station * station)
     {
         // Add the current station area to territory
         if (territoryArea[station->getBase()->GetArea()] == PlayerState::None) {
@@ -362,7 +362,7 @@ namespace McRave::Terrain {
         }
     }
 
-    void removeTerritory(PlayerState playerState, BWEB::Station* station)
+    void removeTerritory(PlayerState playerState, const BWEB::Station * const station)
     {
         // Remove the current station area from territory
         if (territoryArea[station->getBase()->GetArea()] == playerState) {
@@ -452,8 +452,8 @@ namespace McRave::Terrain {
     set<const Base*>& getAllBases() { return allBases; }
 
     Position getEnemyStartingPosition() { return enemyStartingPosition; }
-    BWEB::Station * getEnemyMain() { return enemyMain; }
-    BWEB::Station * getEnemyNatural() { return enemyNatural; }
+    const BWEB::Station * getEnemyMain() { return enemyMain; }
+    const BWEB::Station * getEnemyNatural() { return enemyNatural; }
     TilePosition getEnemyExpand() { return enemyExpand; }
     TilePosition getEnemyStartingTilePosition() { return enemyStartingTilePosition; }
 
@@ -466,14 +466,14 @@ namespace McRave::Terrain {
     vector<Position>& getAirCleanupPositions() { return airCleanupPositions; }
 
     // Main information
-    BWEB::Station * getMyMain() { return  BWEB::Stations::getStartingMain(); }
+    const BWEB::Station * const getMyMain() { return  BWEB::Stations::getStartingMain(); }
     BWAPI::Position getMainPosition() { return BWEB::Stations::getStartingMain()->getBase()->Center(); }
     BWAPI::TilePosition getMainTile() { return BWEB::Stations::getStartingMain()->getBase()->Location(); }
     const BWEM::Area * getMainArea() { return BWEB::Stations::getStartingMain()->getBase()->GetArea(); }
     const BWEM::ChokePoint * getMainChoke() { return BWEB::Stations::getStartingMain()->getChokepoint(); }
 
     // Natural information
-    BWEB::Station * getMyNatural() { return BWEB::Stations::getStartingNatural(); }
+    const BWEB::Station * const getMyNatural() { return BWEB::Stations::getStartingNatural(); }
     BWAPI::Position getNaturalPosition() { return BWEB::Stations::getStartingNatural()->getBase()->Center(); }
     BWAPI::TilePosition getNaturalTile() { return BWEB::Stations::getStartingNatural()->getBase()->Location(); }
     const BWEM::Area * getNaturalArea() { return BWEB::Stations::getStartingNatural()->getBase()->GetArea(); }

@@ -6,14 +6,14 @@ using namespace BWAPI;
 namespace BWEB {
 
     namespace {
-        Station * startMainStation = nullptr;
-        Station * startNatStation = nullptr;
+        const Station * startMainStation = nullptr;
+        const Station * startNatStation = nullptr;
         vector<Station> stations;
         vector<const BWEM::Base *> mainBases;
         vector<const BWEM::Base *> natBases;
         vector<const BWEM::ChokePoint*> mainChokes;
         vector<const BWEM::ChokePoint*> natChokes;
-        map<const BWEM::Mineral *, vector<TilePosition>> testTiles;
+        map<const BWEM::Mineral * const, vector<TilePosition>> testTiles;
         vector<BWEB::Path> testPaths;
         UnitType defenseType;
     }
@@ -336,7 +336,7 @@ namespace BWEB {
 
         const auto distCalc = [&](const auto& position) {
             if (natural && partnerBase) {
-                auto closestMain = Stations::getClosestMainStation(base->Location());
+                const auto closestMain = Stations::getClosestMainStation(base->Location());
                 if (closestMain && closestMain->getChokepoint())
                     return Position(closestMain->getChokepoint()->Center()).getDistance(position);
             }
@@ -514,7 +514,7 @@ namespace BWEB {
         }
     }
 
-    void Station::draw()
+    const void Station::draw() const
     {
         int color = Broodwar->self()->getColor();
         int textColor = color == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
@@ -693,14 +693,14 @@ namespace BWEB::Stations {
             station.draw();
     }
 
-    Station * getStartingMain() { return startMainStation; }
+    const Station * getStartingMain() { return startMainStation; }
 
-    Station * getStartingNatural() { return startNatStation; }
+    const Station * getStartingNatural() { return startNatStation; }
 
-    Station * getClosestStation(TilePosition here)
+    const Station * getClosestStation(TilePosition here)
     {
         auto distBest = DBL_MAX;
-        Station* bestStation = nullptr;
+        const Station * bestStation = nullptr;
         for (auto &station : stations) {
             const auto dist = here.getDistance(station.getBase()->Location());
 
@@ -712,10 +712,10 @@ namespace BWEB::Stations {
         return bestStation;
     }
 
-    Station * getClosestMainStation(TilePosition here)
+    const Station * getClosestMainStation(TilePosition here)
     {
         auto distBest = DBL_MAX;
-        Station * bestStation = nullptr;
+        const Station * bestStation = nullptr;
         for (auto &station : stations) {
             if (!station.isMain())
                 continue;
@@ -729,10 +729,10 @@ namespace BWEB::Stations {
         return bestStation;
     }
 
-    Station * getClosestNaturalStation(TilePosition here)
+    const Station * getClosestNaturalStation(TilePosition here)
     {
         auto distBest = DBL_MAX;
-        Station* bestStation = nullptr;
+        const Station * bestStation = nullptr;
         for (auto &station : stations) {
             if (!station.isNatural())
                 continue;
@@ -746,7 +746,7 @@ namespace BWEB::Stations {
         return bestStation;
     }
 
-    vector<Station>& getStations() {
+    const vector<Station>& getStations() {
         return stations;
     }
 }

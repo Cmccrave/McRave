@@ -237,7 +237,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
-        drawFormations();
+        //drawFormations();
     }
 
     vector<Formation>& getFormations() { return formations; }
