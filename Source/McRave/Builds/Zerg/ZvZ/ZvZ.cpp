@@ -11,7 +11,7 @@ namespace McRave::BuildOrder::Zerg {
 
     int lingsNeeded_ZvZ() {
         if (currentBuild == "2HatchMuta")
-            return max(18, int(0.9 * Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling)));
+            return max(24, int(0.9 * Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling)));
         else if (vis(Zerg_Drone) >= 11 || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) > 1)
             return 18;
         else if (vis(Zerg_Spire) > 0)
@@ -121,8 +121,8 @@ namespace McRave::BuildOrder::Zerg {
         }
         else {
             armyComposition[Zerg_Drone] =               0.40;
-            armyComposition[Zerg_Zergling] =            0.00;
-            armyComposition[Zerg_Mutalisk] =            0.60;
+            armyComposition[Zerg_Zergling] =            0.30;
+            armyComposition[Zerg_Mutalisk] =            0.30;
         }
     }
 

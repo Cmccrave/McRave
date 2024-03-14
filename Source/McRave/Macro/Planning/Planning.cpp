@@ -29,9 +29,9 @@ namespace McRave::Planning {
             return builder;
         }
 
-        bool isPathable(UnitType building, TilePosition here) 
+        bool isPathable(UnitType building, TilePosition here)
         {
-            return find(unreachablePositions.begin(), unreachablePositions.end(), here) == unreachablePositions.end(); 
+            return find(unreachablePositions.begin(), unreachablePositions.end(), here) == unreachablePositions.end();
         }
 
         bool creepOrPowerReadyOnArrival(UnitType building, TilePosition here, UnitInfo& builder)
@@ -269,10 +269,14 @@ namespace McRave::Planning {
             // Generate a list of Blocks sorted by closest to here
             auto &list = BWEB::Blocks::getBlocks();
             multimap<double, BWEB::Block*> listByDist;
+            auto cost = 1.0;
             for (auto &block : list) {
                 if (!closestStation
-                    || (!Terrain::inTerritory(PlayerState::Self, block.getCenter()) && !BuildOrder::isProxy()))
+                    || (!Terrain::inTerritory(PlayerState::Self, block.getCenter()) && !BuildOrder::isProxy())
+                    || block.getPlacements(building).empty())
                     continue;
+
+                auto dist = block.getCenter().getDistance(here);
 
                 // Zerg
                 if (Broodwar->self()->getRace() == Races::Zerg) {
@@ -286,18 +290,17 @@ namespace McRave::Planning {
                 if (Broodwar->self()->getRace() == Races::Protoss) {
                     if (building == Protoss_Pylon) {
                         if ((Pylons::countPoweredPositions(Protoss_Gateway) < 2 && block.getLargeTiles().empty())
-                            || (Pylons::countPoweredPositions(Protoss_Forge) < 2 && block.getMediumTiles().empty()))
-                            continue;
+                            || (Pylons::countPoweredPositions(Protoss_Forge) < 2 && block.getMediumTiles().empty())) {
+                            cost = 5.0;
+                        }
 
+                        // Discount block if it has lots of open space
                         if (!block.getPlacements(building).empty()) {
-                            listByDist.emplace(make_pair(block.getCenter().getDistance(here) / (1 + block.getLargeTiles().size() + block.getMediumTiles().size()), &block));
-                            continue;
+                            cost = 1.0 / double(1 + block.getLargeTiles().size() + block.getMediumTiles().size());
                         }
                     }
                 }
-
-                if (!block.getPlacements(building).empty())
-                    listByDist.emplace(make_pair(block.getCenter().getDistance(here), &block));
+                listByDist.emplace(make_pair(dist * cost, &block));
             }
 
             // Iterate sorted list and find a suitable block
@@ -884,26 +887,6 @@ namespace McRave::Planning {
                     validDefenses.insert(defTile);
                 }
                 validDefenses.insert(station.getPocketDefense());
-            }
-
-            // Erase positions that are blockers
-            if (Util::getTime() > Time(12, 00)) {
-                if (total(Protoss_Dragoon) > 0
-                    || total(Zerg_Ultralisk) > 0
-                    || total(Zerg_Lurker) > 0
-                    || (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Grooved_Spines) > 0 && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Muscular_Augments) > 0)) {
-                    for (auto &[_, wall] : BWEB::Walls::getWalls()) {
-                        for (auto &pathTile : wall.getPath().getTiles()) {
-                            for (auto &defTile : wall.getDefenses())
-                                checkDefense(defTile, pathTile);
-
-                            if (wall.getStation()) {
-                                for (auto &defTile : wall.getStation()->getDefenses())
-                                    checkDefense(defTile, pathTile);
-                            }
-                        }
-                    }
-                }
             }
         }
     }

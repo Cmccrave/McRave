@@ -243,7 +243,7 @@ namespace McRave::Scouts {
                     natScouted = true;
 
                 // Add natural position as a target
-                if (Util::getTime() > Time(4, 00))
+                if (Util::getTime() > Time(4, 00) || Players::TvZ() || Players::PvZ())
                     natural.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
             }
         }

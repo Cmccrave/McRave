@@ -239,9 +239,9 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (false) {
+            if (Players::PvZ()) {
                 if (Players::PvZ()) {
-                    BuildOrder::setLearnedBuild("2Gate", "Main", "4Gate");
+                    BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                     return;
                 }
                 if (Players::PvP()) {

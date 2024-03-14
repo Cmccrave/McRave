@@ -63,12 +63,12 @@ namespace McRave::Roles {
             int visibleDefenders = vis(Protoss_Photon_Cannon) + vis(Protoss_Zealot);
 
             // If trying to hide tech, pull 2 probes with a Zealot
-            if (!BuildOrder::isRush() && BuildOrder::isHideTech() && com(Protoss_Zealot) == 1 && total(Protoss_Zealot) == 1 && com(Protoss_Dragoon) == 0 && total(Protoss_Dragoon) == 0)
+            if (!BuildOrder::isRush() && BuildOrder::isHideTech() && com(Protoss_Dragoon) == 0 && total(Protoss_Dragoon) == 0)
                 forceCombatWorker(2, Position(Terrain::getMainChoke()->Center()), LocalState::None, GlobalState::Retreat);
 
             // If trying to FFE, pull based on Cannon/Zealot numbers, or lack of scouting information
             else if (BuildOrder::getCurrentBuild() == "FFE") {
-                if (Spy::enemyRush() && Spy::getEnemyOpener() == "4Pool" && visibleDefenders >= 1)
+                if (Spy::getEnemyOpener() == "4Pool" && visibleDefenders >= 1)
                     forceCombatWorker(8 - 2 * completedDefenders, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
                 else if (Spy::enemyRush() && Spy::getEnemyOpener() == "9Pool" && Util::getTime() > Time(3, 15) && completedDefenders < 3)
                     forceCombatWorker(3, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);

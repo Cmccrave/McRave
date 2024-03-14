@@ -246,8 +246,10 @@ namespace McRave::Command
         }
 
         // Marine / Firebat - Stim Packs
-        else if (Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && (unit.getType() == Terran_Marine || unit.getType() == Terran_Firebat) && !unit.unit()->isStimmed() && unit.hasTarget() && unit.getTarget().lock()->getPosition().isValid() && unit.unit()->getDistance(unit.getTarget().lock()->getPosition()) <= unit.getGroundRange())
+        else if ((unit.getType() == Terran_Marine || unit.getType() == Terran_Firebat) && Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && !unit.unit()->isStimmed() && unit.hasTarget() && unit.isWithinRange(*unit.getTarget().lock())) {
             unit.unit()->useTech(TechTypes::Stim_Packs);
+            return true;
+        }
 
         // Science Vessel - Defensive Matrix
         else if (unit.getType() == Terran_Science_Vessel && unit.getEnergy() >= TechTypes::Defensive_Matrix.energyCost()) {
@@ -633,7 +635,8 @@ namespace McRave::Command
 
     bool special(UnitInfo& unit)
     {
-        return burrow(unit)
+        return cast(unit)
+            || burrow(unit)
             || click(unit)
             || siege(unit)
             || repair(unit)

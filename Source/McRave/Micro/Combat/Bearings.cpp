@@ -48,8 +48,9 @@ namespace McRave::Combat::Bearings {
     {
         auto retreat = Stations::getClosestRetreatStation(unit);
 
-        if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore) {
+        if (unit.getGoal().isValid()) {
             unit.setDestination(unit.getGoal());
+            Broodwar->drawTextMap(unit.getPosition(), "u_goal");
         }
 
         // If attacking and target is close, set as destination

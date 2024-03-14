@@ -13,8 +13,12 @@ namespace McRave::Combat::State {
     {
         staticRetreatTypes.clear();
 
+        const auto unlockedOrVis = [&](auto &t) {
+            return vis(t) > 0 || BuildOrder::isUnitUnlocked(t);
+        };
+
         // Hydralisks
-        if (Spy::getEnemyBuild() != "FFE" && (BuildOrder::isUnitUnlocked(Zerg_Hydralisk) || vis(Zerg_Hydralisk) > 0 || BuildOrder::getCurrentTransition().find("Hydra") != string::npos)) {
+        if (Spy::getEnemyBuild() != "FFE" && (unlockedOrVis(Zerg_Hydralisk) || BuildOrder::getCurrentTransition().find("Hydra") != string::npos)) {
             const auto hydraSpeed = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments);
             const auto hydraRange = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines);
             if (!hydraRange || !hydraSpeed)
@@ -22,13 +26,13 @@ namespace McRave::Combat::State {
         }
 
         // Mutalisks
-        if (BuildOrder::isUnitUnlocked(Zerg_Mutalisk) || vis(Zerg_Mutalisk) > 0 || BuildOrder::getCurrentTransition().find("Muta") != string::npos) {
+        if (unlockedOrVis(Zerg_Mutalisk) || BuildOrder::getCurrentTransition().find("Muta") != string::npos) {
             if (!Players::ZvZ() && com(Zerg_Mutalisk) < (Stations::getStations(PlayerState::Self).size() >= 2 ? 5 : 3) && total(Zerg_Mutalisk) < 9)
                 staticRetreatTypes.push_back(Zerg_Mutalisk);
         }
 
         // Zerglings
-        if (BuildOrder::isUnitUnlocked(Zerg_Zergling) || vis(Zerg_Zergling) > 0) {
+        if (unlockedOrVis(Zerg_Zergling)) {
             const auto speedLing = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Metabolic_Boost);
             const auto crackling = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Adrenal_Glands);
 
@@ -52,16 +56,42 @@ namespace McRave::Combat::State {
                     const auto enemyLingVomit = (Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling") && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0;
                     const auto avoidDiceRoll = Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 00) && !Terrain::getEnemyStartingPosition().isValid();
                     const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45);
-                    if (slowerPool || equalPool || enemyLingVomit || avoidDiceRoll || enemyDroneScouted)
+                    if (Util::getTime() < Time(6, 00) && (slowerPool || equalPool || enemyLingVomit || avoidDiceRoll || enemyDroneScouted))
                         staticRetreatTypes.push_back(Zerg_Zergling);
                 }
             }
         }
 
         // Corsairs
+        if (unlockedOrVis(Protoss_Corsair)) {
+            if (Players::PvZ()) {
+                if (Players::getCompleteCount(PlayerState::Enemy, Zerg_Scourge) > 0 && !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Protoss_Air_Weapons) && com(Protoss_Corsair) < 6)
+                    staticRetreatTypes.push_back(Protoss_Corsair);
+            }
+        }
 
         // Carriers
+        static bool carrierCountReady = carrierCountReady || com(Protoss_Carrier) >= 4;
+        if (unlockedOrVis(Protoss_Carrier)) {
+            if (Players::PvT()) {
+                if (!carrierCountReady)
+                    staticRetreatTypes.push_back(Protoss_Carrier);
+            }
+        }
 
+        const auto lockGateways = [&]() {
+            staticRetreatTypes.push_back(Protoss_Zealot);
+            staticRetreatTypes.push_back(Protoss_Dragoon);
+        };
+
+        // Zealots / Dragoons
+        if (BuildOrder::isUnitUnlocked(Protoss_Zealot) || BuildOrder::isUnitUnlocked(Protoss_Dragoon)) {
+            if (Players::PvZ()) {
+                auto gateUnits = total(Protoss_Zealot) + total(Protoss_Dragoon);
+                if ((gateUnits < 8 && int(Stations::getStations(PlayerState::Enemy).size()) < 2) || gateUnits < 3)
+                    lockGateways();
+            }
+        }
 
         // Marines
         if (BuildOrder::isUnitUnlocked(Terran_Marine) && vis(Terran_Marine) > 0) {

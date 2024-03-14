@@ -224,6 +224,15 @@ namespace McRave::Goals {
                     assignPercentToGoal(posBest, Protoss_Zealot, 0.15);
             }
 
+            // Zealots need to block the holes in walls in PvZ
+            if (Players::PvZ() && Combat::State::isStaticRetreat(Protoss_Zealot)) {
+                if (Walls::getNaturalWall()) {
+                    for (auto &opening : Walls::getNaturalWall()->getOpenings()) {
+                        assignNumberToGoal(Position(opening) + Position(16, 16), Protoss_Zealot, 1, GoalType::Block);
+                    }
+                }
+            }
+
             // Send a DT / Zealot + Goon squad to enemys furthest station
             if (Stations::getStations(PlayerState::Self).size() >= 3) {
                 auto distBest = 0.0;

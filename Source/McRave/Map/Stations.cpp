@@ -65,7 +65,7 @@ namespace McRave::Stations
             }
 
             // Determine how many mining and gasing stations we have
-            miningStations = int(ceil(double(mineralsLeftTotal) / 1500.0));
+            miningStations = int(ceil(double(mineralsLeftTotal) / 13500.0));
             gasingStations = int(ceil(double(gasLeftTotal) / 5000.0));
         }
 
@@ -544,8 +544,8 @@ namespace McRave::Stations
     bool isBlocked(const BWEB::Station * const station)
     {
         auto stationptr = stations.find(station);
-        if (stationptr != stations.end())
-            return stationptr->second != PlayerState::Self;
+        if (stationptr != stations.end() && stationptr->second != PlayerState::Self && stationptr->second != PlayerState::None)
+            return true;
 
         for (auto x = 0; x < 4; x++) {
             for (auto y = 0; y < 3; y++) {

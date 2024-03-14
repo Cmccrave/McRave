@@ -593,10 +593,11 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvZ
         if (Players::ZvZ() && !inOpening) {
-            if (isFocusUnit(Zerg_Mutalisk) && hatchCount() >= 4) {
-                armyComposition[Zerg_Drone] =                   0.40;
-                armyComposition[Zerg_Zergling] =                0.10;
-                armyComposition[Zerg_Mutalisk] =                0.50;
+            Broodwar << Stations::getMiningStationsCount() << endl;
+            if (isFocusUnit(Zerg_Mutalisk) && hatchCount() > Stations::getMiningStationsCount()) {
+                armyComposition[Zerg_Drone] =                   0.45;
+                armyComposition[Zerg_Zergling] =                0.35;
+                armyComposition[Zerg_Mutalisk] =                0.20;
             }
             else if (isFocusUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.50;

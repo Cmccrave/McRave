@@ -192,10 +192,9 @@ namespace McRave::Combat::Formations {
         // Create formations of each cluster
         // Each cluster has a UnitType and count, make a formation that considers each
         // TODO: For now we only make a concave of 1 size and ignore types, eventually want to size the concaves based on unittype counts
-        // TODO: Fuck mobile formations for now, they're really bad
         for (auto &cluster : Clusters::getClusters()) {
             auto commander = cluster.commander.lock();
-            if (!commander)
+            if (!commander || commander->getGoalType() == GoalType::Block)
                 continue;
 
             for_each(cluster.units.begin(), cluster.units.end(), [&](auto &u) {

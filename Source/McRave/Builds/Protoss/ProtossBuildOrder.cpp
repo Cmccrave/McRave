@@ -121,12 +121,22 @@ namespace McRave::BuildOrder::Protoss
             // If we're not in our opener
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || Stations::getGasingStationsCount() >= 3)) || availableMinerals >= 300);
+                auto maxGates = Players::vT() ? 16 : 12;
+                auto gatesPerBase = 3.5;
+
+                if (isFocusUnit(Protoss_Carrier) || isFocusUnit(Protoss_Scout)) {
+                    auto gatesPerBase = 2.5;
+                    productionSat = (vis(Protoss_Gateway) >= int(gatesPerBase * Stations::getGasingStationsCount())) || vis(Protoss_Gateway) >= maxGates;
+                }
+                else {
+                    productionSat = (vis(Protoss_Gateway) >= int(gatesPerBase * Stations::getGasingStationsCount())) || vis(Protoss_Gateway) >= maxGates;
+                }
 
                 // Adding production
-                auto maxGates = Players::vT() ? 16 : 12;
-                auto gatesPerBase = 3.0 - (1.0 * (int(isFocusUnit(Protoss_Carrier) || isFocusUnit(Protoss_Scout)) || int(Stations::getStations(PlayerState::Self).size()) >= 3));
-                productionSat = (vis(Protoss_Gateway) + vis(Protoss_Stargate)) >= int(2.5 * Stations::getGasingStationsCount()) || vis(Protoss_Gateway) >= maxGates;
+                
+                
+                rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || Stations::getGasingStationsCount() >= 3)) || availableMinerals >= 300);
+
                 if (rampDesired) {
                     auto gateCount = min({ maxGates, int(round(Stations::getGasingStationsCount() * gatesPerBase)), vis(Protoss_Gateway) + 1 });
                     auto stargateCount = min({ 4, int(isFocusUnit(Protoss_Carrier) || isFocusUnit(Protoss_Scout)) * Stations::getGasingStationsCount(), vis(Protoss_Stargate) + 1 });
@@ -177,8 +187,9 @@ namespace McRave::BuildOrder::Protoss
         if (!atPercent(Protoss_Cybernetics_Core, 1.00))
             return;
 
-        const auto skipOneTech = int(focusUnit == None || (focusUnit != None && Stations::getStations(PlayerState::Self).size() >= 2) || Spy::getEnemyBuild() == "FFE" || (Spy::enemyGasSteal() && !Terrain::isNarrowNatural()));
-        const auto techVal = int(focusUnits.size()) + skipOneTech - isFocusUnit(Protoss_Shuttle) + isFocusUnit(Protoss_Arbiter) - (com(Protoss_Nexus) >= 3 && isFocusUnit(Protoss_Dark_Templar));
+        auto techVal = int(focusUnits.size()) - isFocusUnit(Protoss_Shuttle) + isFocusUnit(Protoss_Arbiter);
+        if (isFocusUnit(Protoss_Dark_Templar) && isFocusUnit(Protoss_High_Templar))
+            techVal--;
 
         // PvP
         if (Players::PvP()) {

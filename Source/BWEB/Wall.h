@@ -12,43 +12,23 @@ namespace BWEB {
     class Wall
     {
         UnitType tightType;
-        Position centroid;
-        TilePosition opening, initialPathStart, initialPathEnd, pathStart, pathEnd, creationStart;
-        set<TilePosition> allDefenses, smallTiles, mediumTiles, largeTiles;
+        set<TilePosition> smallTiles, mediumTiles, largeTiles, openings;
         map<int, set<TilePosition>> defenses;
-        set<Position> notableLocations;
-        vector<UnitType>::iterator typeIterator;
         vector<UnitType> rawBuildings, rawDefenses;
         vector<const BWEM::Area *> accessibleNeighbors;
-        map<TilePosition, UnitType> currentLayout, bestLayout;
         const BWEM::Area * area = nullptr;
         const BWEM::ChokePoint * choke = nullptr;
         const BWEM::Base * base = nullptr;
-        double chokeAngle, bestWallScore, jpsDist;
-        bool valid, pylonWall, openWall, requireTight, movedStart, pylonWallPiece, allowLifted, flatRamp, angledChoke;
-        int bestDoorCount = 25;
-        int defenseArrangement = -1;
-        const Station * station = nullptr;
-        Path finalPath;
+        const BWEB::Station * station = nullptr;
+        double chokeAngle;
+        bool valid, pylonWall, openWall, requireTight, flatRamp, angledChoke;
+        int defenseArrangement;
 
-        Position findCentroid();
-        TilePosition findOpening();
-        Path findPathOut();
-        bool powerCheck(const UnitType, const TilePosition);
-        bool angleCheck(const UnitType, const TilePosition);
-        bool placeCheck(const UnitType, const TilePosition);
-        bool tightCheck(const UnitType, const TilePosition, bool visual = false);
-        bool spawnCheck(const UnitType, const TilePosition);
-        bool wallWalkable(const TilePosition&);
         void initialize();
-        void initializePathPoints();
-        void checkPathPoints();
         void addPieces();
-        void addNextPiece(TilePosition);
         void addDefenses();
-        void scoreWall();
         void cleanup();
-        void tryLocations(vector<TilePosition>&, set<TilePosition>&, UnitType, bool, bool);
+        bool tryLocations(vector<TilePosition>&, set<TilePosition>&, UnitType);
 
     public:
         Wall(const BWEM::Area * _area, const BWEM::ChokePoint * _choke, vector<UnitType> _buildings, vector<UnitType> _defenses, UnitType _tightType, bool _requireTight, bool _openWall) {
@@ -63,16 +43,8 @@ namespace BWEB {
             // Create Wall layout and find basic features
             initialize();
             addPieces();
-            currentLayout       = bestLayout;
-            centroid            = findCentroid();
-            opening             = findOpening();
             valid               = (getSmallTiles().size() + getMediumTiles().size() + getLargeTiles().size()) == getRawBuildings().size();
-
-            // Add defenses
             addDefenses();
-
-            // Verify opening and cleanup Wall
-            opening             = findOpening();
             cleanup();
         }
 
@@ -89,9 +61,6 @@ namespace BWEB {
         /// <summary> Returns the Station this wall is close to if one exists. </summary>
         const Station * const getStation() { return station; }
 
-        /// <summary> Returns the Path out if one exists. </summary>
-        Path& getPath() { return finalPath; }
-
         /// <summary> Returns the Chokepoint associated with this Wall. </summary>
         const BWEM::ChokePoint * getChokePoint() const { return choke; }
 
@@ -107,10 +76,7 @@ namespace BWEB {
         }
 
         /// <summary> Returns the TilePosition belonging to the opening of the wall. </summary>
-        TilePosition getOpening() { return opening; }
-
-        /// <summary> Returns the TilePosition belonging to the centroid of the wall pieces. </summary>
-        Position getCentroid() { return centroid; }
+        const set<TilePosition>& getOpenings() const { return openings; }
 
         /// <summary> Returns the TilePosition belonging to large UnitType buildings. </summary>
         const set<TilePosition>& getLargeTiles() const { return largeTiles; }

@@ -684,7 +684,8 @@ namespace BWEB::Stations {
         }
 
         startMainStation = Stations::getClosestMainStation(Broodwar->self()->getStartLocation());
-        startNatStation = Stations::getClosestNaturalStation(startMainStation->getChokepoint() ? TilePosition(startMainStation->getChokepoint()->Center()) : TilePosition(startMainStation->getBase()->Center()));
+        if (startMainStation)
+            startNatStation = Stations::getClosestNaturalStation(startMainStation->getChokepoint() ? TilePosition(startMainStation->getChokepoint()->Center()) : TilePosition(startMainStation->getBase()->Center()));
     }
 
     void draw()

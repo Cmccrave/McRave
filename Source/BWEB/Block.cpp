@@ -454,12 +454,9 @@ namespace BWEB::Blocks
                     multimap<TilePosition, Piece> pieceLayout = generatePieceLayout(pieces, layout);
                     if (canAddBlock(tile, supplyWidth, 2, pieceLayout, BlockType::Supply)) {
                         createBlock(tile, pieceLayout, supplyWidth, 2, BlockType::Supply);
-                        Broodwar << "B: " << piecePerArea[area].pieces[Piece::Medium] << endl;
                         firstPerArea[area] = tile;
-                        if ((supplyWidth == 2 && piecePerArea[area].pieces[Piece::Small] >= 20) || (supplyWidth == 3 && piecePerArea[area].pieces[Piece::Medium] >= 20)) {
-                            
+                        if ((supplyWidth == 2 && piecePerArea[area].pieces[Piece::Small] >= 10) || (supplyWidth == 3 && piecePerArea[area].pieces[Piece::Medium] >= 20))
                             break;
-                        }
                     }
                 }
             }
