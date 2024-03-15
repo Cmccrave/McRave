@@ -1,5 +1,6 @@
 #include "Main/McRave.h"
 #include <chrono>
+#include <windows.h>
 
 using namespace BWAPI;
 using namespace std;
@@ -42,6 +43,7 @@ namespace McRave::Visuals {
         bool scores = true;
         bool roles = false;
         bool stations = false;
+        bool gameFocused = false;
 
         Diagnostic currentDiagnostic = Diagnostic::None;
 
@@ -260,29 +262,42 @@ namespace McRave::Visuals {
 
         void checkSpeed()
         {
-            static BWAPI::Key lastKeyState = BWAPI::Key(0);
-            static int localSpeed = 0;
-            auto mb_back = BWAPI::Key(5);
-            auto mb_forward = BWAPI::Key(6);
+            if (gameFocused) {
+                static BWAPI::Key lastKeyState = BWAPI::Key(0);
+                static int localSpeed = 0;
+                auto mb_back = BWAPI::Key(5);
+                auto mb_forward = BWAPI::Key(6);
 
-            // Back mouse button pressed
-            if (Broodwar->getKeyState(mb_back) && lastKeyState == BWAPI::Key(0)) {
-                lastKeyState = mb_back;
-                localSpeed = min(100, localSpeed + 10);
-                Broodwar->setLocalSpeed(localSpeed);
-                Broodwar << "Set gamespeed to " << localSpeed << endl;
+                // Back mouse button pressed
+                if (Broodwar->getKeyState(mb_back) && lastKeyState == BWAPI::Key(0)) {
+                    lastKeyState = mb_back;
+                    localSpeed = min(100, localSpeed + 10);
+                    Broodwar->setLocalSpeed(localSpeed);
+                    Broodwar << "Set gamespeed to " << localSpeed << endl;
+                }
+
+                // Back mouse button pressed
+                if (Broodwar->getKeyState(mb_forward) && lastKeyState == BWAPI::Key(0)) {
+                    lastKeyState = mb_forward;
+                    localSpeed = max(0, localSpeed - 10);
+                    Broodwar->setLocalSpeed(localSpeed);
+                    Broodwar << "Set gamespeed to " << localSpeed << endl;
+                }
+
+                if (!Broodwar->getKeyState(mb_back) && !Broodwar->getKeyState(mb_forward))
+                    lastKeyState = BWAPI::Key(0);
             }
+        }
 
-            // Back mouse button pressed
-            if (Broodwar->getKeyState(mb_forward) && lastKeyState == BWAPI::Key(0)) {
-                lastKeyState = mb_forward;
-                localSpeed = max(0, localSpeed - 10);
-                Broodwar->setLocalSpeed(localSpeed);
-                Broodwar << "Set gamespeed to " << localSpeed << endl;
-            }
-
-            if (!Broodwar->getKeyState(mb_back) && !Broodwar->getKeyState(mb_forward))
-                lastKeyState = BWAPI::Key(0);
+        void getCurrentWindow()
+        {
+            // Thanks random cpp forum user
+            char wnd_title[256];
+            string str_title;
+            HWND hwnd=GetForegroundWindow();
+            GetWindowText(hwnd, wnd_title, sizeof(wnd_title));
+            str_title = string(wnd_title);
+            gameFocused = (str_title == "Brood War");
         }
     }
 
@@ -293,6 +308,7 @@ namespace McRave::Visuals {
 
     void onFrame()
     {
+        getCurrentWindow();
         drawInformation();
         drawAllyInfo();
         drawEnemyInfo();

@@ -180,16 +180,31 @@ namespace McRave::Command
         // Drone
         else if (unit.getType().isWorker() && Broodwar->self()->hasResearched(TechTypes::Burrowing) && unit.getRole() == Role::Worker) {
 
+            // Check if station is protected
+            auto grdDef = false;
+            auto airDef = false;
+            if (unit.hasResource() && unit.isWithinGatherRange()) {
+                auto resource = unit.getResource().lock();
+                if (Stations::getGroundDefenseCount(resource->getStation()) > 0)
+                    grdDef = true;
+                if (Stations::getAirDefenseCount(resource->getStation()) > 0)
+                    airDef = true;
+            }
+
+            // Count how much damage is around the drone
             auto threatened = false;
             auto dmg = 0;
             auto &list = unit.isBurrowed() ? unit.getUnitsInReachOfThis() : unit.getUnitsInRangeOfThis();
             for (auto &t : list) {
-                if (auto targeter = t.lock())
-                    dmg += int(targeter->getGroundDamage()) * 2;
+                if (auto targeter = t.lock()) {
+                    if ((targeter->isFlying() && !airDef) || (!targeter->isFlying() && !grdDef))
+                        dmg += int(targeter->getGroundDamage()) * 2;
+                }
             }
             if (dmg >= unit.getHealth())
                 threatened = true;
 
+            // Burrow/unburrow as needed
             if (!unit.isBurrowed() && threatened) {
                 unit.unit()->burrow();
                 return true;

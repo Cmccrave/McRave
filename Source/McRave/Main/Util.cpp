@@ -147,14 +147,14 @@ namespace McRave::Util {
         auto ovDown = hereBotRight.y % 8;
 
         // Checks if this walkposition touches the current bounding box of the unit
-        const auto rectanglesTouch = [&](WalkPosition w) {
+        const auto rectanglesTouch = [&](const WalkPosition& w) {
             return rectangleIntersect(currTopLeft, currBotRight, Position(w))
                 || rectangleIntersect(currTopLeft, currBotRight, Position(w) + Position(0, 8))
                 || rectangleIntersect(currTopLeft, currBotRight, Position(w) + Position(8, 0))
                 || rectangleIntersect(currTopLeft, currBotRight, Position(w) + Position(8, 8));
         };
 
-        const auto pixelSpace = [&](WalkPosition w, int curr, function<int(WalkPosition, PlayerState)> collision) {
+        const auto pixelSpace = [&](const WalkPosition& w, int curr, function<int(WalkPosition, PlayerState)> collision) {
             if (!w.isValid())
                 return 0;
             if (!rectanglesTouch(w)) {
@@ -168,7 +168,7 @@ namespace McRave::Util {
         // Check if inside the new rectangle there is collision
         for (auto x = hereTopLeft.x / 8 + 1; x <= hereBotRight.x / 8 - 1; x++) {
             for (auto y = hereTopLeft.y / 8 + 1; y <= hereBotRight.y / 8 - 1; y++) {
-                WalkPosition w(x, y);
+                const WalkPosition w(x, y);
                 if (!w.isValid() || rectanglesTouch(w))
                     continue;
                 //if (visual)

@@ -105,7 +105,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.95);
 
         // Upgrades
-        //techQueue[TechTypes::Burrowing] =               !Spy::enemyFastExpand() && com(Zerg_Lair) > 0 && !Spy::enemyRush() && !Spy::enemyProxy();
+        techQueue[TechTypes::Burrowing] =               Spy::getEnemyBuild() == "RaxFact" && Util::getTime() > Time(4, 15);
 
         // Reactions
         if (Spy::getEnemyOpener() == "8Rax" && total(Zerg_Zergling) < 6) 
@@ -142,6 +142,9 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + (atPercent(Zerg_Spire, 0.5) * 3);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        (s >= 42 && atPercent(Zerg_Lair, 0.80));
+
+        // Upgrades
+        techQueue[TechTypes::Burrowing] =               Spy::getEnemyBuild() == "RaxFact" && Util::getTime() > Time(4, 15);
 
         // Composition
         if (com(Zerg_Spire) == 0 && lingsNeeded_ZvT() > vis(Zerg_Zergling)) {

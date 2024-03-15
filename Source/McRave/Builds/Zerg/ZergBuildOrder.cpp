@@ -281,7 +281,7 @@ namespace McRave::BuildOrder::Zerg {
             using namespace UpgradeTypes;
 
             // Overlord speed can be done inside openings
-            const auto queueOvieSpeed = (Players::ZvT() && Spy::getEnemyTransition() == "2PortWraith")
+            const auto queueOvieSpeed = (Players::ZvT() && Spy::getEnemyTransition() == "2PortWraith" && Util::getTime() > Time(6, 00))
                 || (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 160)
                 || (Spy::enemyInvis() && (BuildOrder::isFocusUnit(Zerg_Hydralisk) || BuildOrder::isFocusUnit(Zerg_Ultralisk)))
                 || (Players::getSupply(PlayerState::Self, Races::Zerg) >= 200);
@@ -466,8 +466,8 @@ namespace McRave::BuildOrder::Zerg {
 
                 if (s > 360 || (Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode)) > 12) {
                     armyComposition[Zerg_Drone] =               0.50;
-                    armyComposition[Zerg_Zergling] =            0.15;
-                    armyComposition[Zerg_Mutalisk] =            0.20;
+                    armyComposition[Zerg_Zergling] =            0.35;
+                    armyComposition[Zerg_Mutalisk] =            0.00;
                     armyComposition[Zerg_Ultralisk] =           0.10;
                     armyComposition[Zerg_Defiler] =             0.05;
                 }
@@ -482,15 +482,15 @@ namespace McRave::BuildOrder::Zerg {
             // Ultralisk tech
             else if (isFocusUnit(Zerg_Ultralisk) && com(Zerg_Hive)) {
                 if (s > 360 || (Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode)) > 6) {
-                    armyComposition[Zerg_Drone] =               0.45;
+                    armyComposition[Zerg_Drone] =               0.40;
                     armyComposition[Zerg_Mutalisk] =            0.20;
-                    armyComposition[Zerg_Zergling] =            0.25;
-                    armyComposition[Zerg_Ultralisk] =           0.10;
+                    armyComposition[Zerg_Zergling] =            0.40;
+                    armyComposition[Zerg_Ultralisk] =           0.00;
                 }
                 else {
-                    armyComposition[Zerg_Drone] =               0.55;
-                    armyComposition[Zerg_Mutalisk] =            0.05;
-                    armyComposition[Zerg_Zergling] =            0.30;
+                    armyComposition[Zerg_Drone] =               0.45;
+                    armyComposition[Zerg_Mutalisk] =            0.00;
+                    armyComposition[Zerg_Zergling] =            0.45;
                     armyComposition[Zerg_Ultralisk] =           0.10;
                 }
             }

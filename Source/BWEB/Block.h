@@ -8,7 +8,7 @@ namespace BWEB {
         Small, Medium, Large, Addon, Row, Space
     };
     enum class BlockType {
-        None, Start, Production, Proxy, Defensive, Supply
+        None, Start, Production, Proxy, Defensive, Supply, Tech
     };
 
     class Block

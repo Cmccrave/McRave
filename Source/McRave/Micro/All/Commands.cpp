@@ -383,7 +383,7 @@ namespace McRave::Command {
             }
 
             // Find the best position to move to
-            auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), 10, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
                 unit.setCommandText("MoveC");
@@ -517,7 +517,7 @@ namespace McRave::Command {
             }
 
             // If we found a valid position, move to it
-            auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), 10, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
                 unit.setCommandText("Kite");
@@ -567,7 +567,7 @@ namespace McRave::Command {
 
         if (canExplore && shouldExplore) {
 
-            auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), 10, scoreFunction);
 
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
@@ -609,7 +609,7 @@ namespace McRave::Command {
 
         if (canRetreat() && shouldRetreat()) {
 
-            auto bestPosition = findViablePosition(unit, unit.getNavigation(), 12, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getNavigation(), 10, scoreFunction);
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
                 unit.setCommandText("Retreat");
@@ -647,7 +647,7 @@ namespace McRave::Command {
         }
 
         // If we found a valid position, move to it
-        auto bestPosition = findViablePosition(unit, unit.getPosition(), 20, scoreFunction);
+        auto bestPosition = findViablePosition(unit, unit.getPosition(), 10, scoreFunction);
         if (bestPosition.isValid()) {
             unit.setCommand(Move, bestPosition);
             unit.setCommandText("Escort");
@@ -689,7 +689,7 @@ namespace McRave::Command {
             return score;
         };
 
-        auto bestPosition = findViablePosition(unit, unit.getNavigation(), 20, scoreFunction);
+        auto bestPosition = findViablePosition(unit, unit.getNavigation(), 10, scoreFunction);
         if (bestPosition.isValid()) {
             unit.setCommand(Move, bestPosition);
             unit.setCommandText("Transport");

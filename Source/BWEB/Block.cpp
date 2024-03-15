@@ -33,6 +33,8 @@ namespace BWEB::Blocks
     namespace {
         vector<Block> allBlocks;
         int blockGrid[256][256];
+        multimap<double, TilePosition> tilesByPathDist;
+        multimap<double, TilePosition> inverseTilesByPathDist;
 
         void addToBlockGrid(TilePosition start, TilePosition end)
         {
@@ -219,6 +221,8 @@ namespace BWEB::Blocks
                         pieces ={ Piece::Large, Piece::Addon, Piece::Row, Piece::Large, Piece::Addon };
                     if (width == 10)
                         pieces ={ Piece::Large, Piece::Large, Piece::Addon, Piece::Row, Piece::Large, Piece::Large, Piece::Addon };
+                    if (width == 14)
+                        pieces ={ Piece::Large, Piece::Large, Piece::Large, Piece::Addon, Piece::Row, Piece::Large, Piece::Large, Piece::Large, Piece::Addon };
                 }
             }
             return pieces;
@@ -270,17 +274,6 @@ namespace BWEB::Blocks
             for (auto &[tile, piece] : pieces) {
                 if (piece == Piece::Large && Broodwar->self()->getRace() == BWAPI::Races::Zerg && !Broodwar->canBuildHere(tile, UnitTypes::Zerg_Hatchery))
                     return false;
-            }
-
-            // A block of entirely supply doesn't care about map edge or neighbors, but cannot be built near edge of terrain
-            if (type == BlockType::Supply) {
-                for (auto x = here.x - 1; x < here.x + width + 1; x++) {
-                    for (auto y = here.y - 1; y < here.y + height + 1; y++) {
-                        const TilePosition t(x, y);
-                        if (t.isValid() && !Map::mapBWEM.GetTile(t).Buildable())
-                            return false;
-                    }
-                }
             }
 
             // Check if a Block of specified size would overlap any bases, resources or other blocks
@@ -412,54 +405,9 @@ namespace BWEB::Blocks
         }
 
         void findProductionBlocks()
-        {
-            // Calculate distance for each tile to our natural choke, we want to place bigger blocks closer to the chokes
-            multimap<double, TilePosition> tilesByPathDist;
-            multimap<double, TilePosition> inverseTilesByPathDist;
-            for (auto &station : Stations::getStations()) {
-                if (station.isNatural() || &station != Stations::getStartingMain())
-                    continue;
-                for (int x = 0; x < Broodwar->mapWidth(); x++) {
-                    for (int y = 0; y < Broodwar->mapHeight(); y++) {
-                        const TilePosition t(x, y);
-                        if (t.isValid() && Broodwar->isBuildable(t) && Map::mapBWEM.GetArea(t) && Map::mapBWEM.GetArea(t) == station.getBase()->GetArea()) {
-                            const auto p = Position(t) + Position(16, 16);
-                            const auto distStation = p.getDistance(station.getBase()->Center());
-                            auto distChoke = station.getChokepoint() ? p.getDistance(Position(station.getChokepoint()->Center())) : 1.0;
-                            auto distCenter = Map::mapBWEM.Center().getDistance(p);
-                            if (Broodwar->self()->getRace() == Races::Zerg)
-                                distChoke /= 2.0;
-                            tilesByPathDist.emplace(make_pair(distStation + distChoke, t));
-                            if (station.isMain())
-                                inverseTilesByPathDist.emplace(make_pair(1.0 / (distCenter), t));
-                        }
-                    }
-                }
-            }
+        {         
 
-            // Iterate tiles looking to add supply areas far from the main chokepoint
-            map<const BWEM::Area * const, TilePosition> firstPerArea;
-            if (Broodwar->self()->getRace() != Races::Zerg) {
-                const vector<Piece> pieces ={ Broodwar->self()->getRace() == Races::Protoss ? Piece::Small : Piece::Medium };
-                for (auto &[v, tile] : inverseTilesByPathDist) {
-                    const auto area = Map::mapBWEM.GetArea(tile);
-                    if (!area)
-                        continue;
-
-                    auto supplyWidth = Broodwar->self()->getRace() == Races::Protoss ? 2 : 3;
-                    if (firstPerArea.find(area) != firstPerArea.end() && (tile.x % supplyWidth != firstPerArea[area].x % supplyWidth || tile.y % 2 != firstPerArea[area].y % 2))
-                        continue;
-
-                    const vector<TilePosition> layout ={ tile };
-                    multimap<TilePosition, Piece> pieceLayout = generatePieceLayout(pieces, layout);
-                    if (canAddBlock(tile, supplyWidth, 2, pieceLayout, BlockType::Supply)) {
-                        createBlock(tile, pieceLayout, supplyWidth, 2, BlockType::Supply);
-                        firstPerArea[area] = tile;
-                        if ((supplyWidth == 2 && piecePerArea[area].pieces[Piece::Small] >= 10) || (supplyWidth == 3 && piecePerArea[area].pieces[Piece::Medium] >= 20))
-                            break;
-                    }
-                }
-            }
+            
 
             // Iterate every tile
             for (int i = 20; i > 0; i--) {
@@ -516,6 +464,72 @@ namespace BWEB::Blocks
                 }
             }
         }
+
+        void findSupplyBlocks()
+        {
+            // Iterate tiles looking to add supply areas far from the main chokepoint            
+            if (Broodwar->self()->getRace() != Races::Zerg) {
+                map<const BWEM::Area * const, TilePosition> firstPerArea;
+                const vector<Piece> pieces ={ Broodwar->self()->getRace() == Races::Protoss ? Piece::Small : Piece::Medium };
+                for (auto &[_, tile] : inverseTilesByPathDist) {
+                    const auto area = Map::mapBWEM.GetArea(tile);
+                    if (!area)
+                        continue;
+
+                    auto supplyWidth = Broodwar->self()->getRace() == Races::Protoss ? 2 : 3;
+                    if (firstPerArea.find(area) != firstPerArea.end() && (tile.x % supplyWidth != firstPerArea[area].x % supplyWidth || tile.y % 2 != firstPerArea[area].y % 2))
+                        continue;
+
+                    const vector<TilePosition> layout ={ tile };
+                    multimap<TilePosition, Piece> pieceLayout = generatePieceLayout(pieces, layout);
+                    if (canAddBlock(tile, supplyWidth, 2, pieceLayout, BlockType::Supply)) {
+                        createBlock(tile, pieceLayout, supplyWidth, 2, BlockType::Supply);
+                        firstPerArea[area] = tile;
+                        if ((supplyWidth == 2 && piecePerArea[area].pieces[Piece::Small] >= 10) || (supplyWidth == 3 && piecePerArea[area].pieces[Piece::Medium] >= 20))
+                            break;
+                    }
+                }
+            }
+        }
+
+        void findTechBlocks()
+        {
+
+        }
+
+        void generateTileDistances()
+        {
+            // Tiles at the bottom of the map are buildable but dont have an area
+            const auto validTile = [&](auto &t, auto station) {
+                if (Map::mapBWEM.GetArea(t) && Map::mapBWEM.GetArea(t) == station.getBase()->GetArea())
+                    return true;
+                auto tileAbove = t - TilePosition(0, 1);
+                return (tileAbove.isValid() && Map::mapBWEM.GetArea(tileAbove) && Map::mapBWEM.GetArea(tileAbove) == station.getBase()->GetArea());
+            };
+
+            // Calculate distance for each tile to our natural choke, we want to place bigger blocks closer to the chokes
+            for (auto &station : Stations::getStations()) {
+                if (station.isNatural() || &station != Stations::getStartingMain())
+                    continue;
+                for (int x = 0; x < Broodwar->mapWidth(); x++) {
+                    for (int y = 0; y < Broodwar->mapHeight(); y++) {
+                        const TilePosition t(x, y);
+
+                        if (t.isValid() && Broodwar->isBuildable(t) && validTile(t, station)) {
+                            const auto p = Position(t) + Position(16, 16);
+                            const auto distStation = p.getDistance(station.getBase()->Center());
+                            auto distChoke = station.getChokepoint() ? p.getDistance(Position(station.getChokepoint()->Center())) : 1.0;
+                            auto distCenter = Map::mapBWEM.Center().getDistance(p);
+                            if (Broodwar->self()->getRace() == Races::Zerg)
+                                distChoke /= 2.0;
+                            tilesByPathDist.emplace(make_pair(distStation + distChoke, t));
+                            if (station.isMain())
+                                inverseTilesByPathDist.emplace(make_pair(1.0 / (distCenter), t));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     void eraseBlock(const TilePosition here)
@@ -532,8 +546,11 @@ namespace BWEB::Blocks
     void findBlocks()
     {
         initialize();
+        generateTileDistances();
         findMainStartBlocks();
         findProductionBlocks();
+        findSupplyBlocks();
+        findTechBlocks();
         Pathfinding::clearCacheFully();
     }
 

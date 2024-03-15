@@ -28,7 +28,7 @@ namespace McRave::Combat::Navigation {
 
         const auto closestFriend = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
             return u->getType() == unit.getType() && *u != unit && u->getPosition().getDistance(unit.getPosition()) < 64.0
-                && u->getDestination() == unit.getDestination() && u->getDestinationPath().getTarget() == TilePosition(unit.getDestination());
+                && !u->getDestinationPath().getTiles().empty();
         });
         if (closestFriend) {
             unit.setDestinationPath(closestFriend->getDestinationPath());
@@ -44,6 +44,10 @@ namespace McRave::Combat::Navigation {
     {
         auto pathPoint = unit.getFormation().isValid() ? Util::getPathPoint(unit, unit.getFormation()) : Util::getPathPoint(unit, unit.getDestination());
         auto newPathNeeded = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)));
+
+        if (unit.hasCommander()) {
+            unit.setDestinationPath(unit.getCommander().lock()->getDestinationPath());
+        }
 
         if (newPathNeeded) {
             BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
