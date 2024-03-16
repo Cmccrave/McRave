@@ -38,8 +38,6 @@ namespace McRave::Pathing {
             // Create a binary search tree in a circle around the target
             else {
                 const auto calc = [&](auto p) {
-                    if (!BWEB::Map::isWalkable(TilePosition(p), unit.getType()))
-                        return DBL_MAX;
                     return BWEB::Map::getGroundDistance(p, unit.getPosition()) + BWEB::Map::getGroundDistance(p, target.getPosition());
                 };
                 auto engage = Util::findPointOnCircle(unit.getPosition(), target.getPosition(), range + 32.0, calc);

@@ -160,7 +160,6 @@ namespace McRave::Goals {
 
         void updateGenericGoals()
         {
-
             // Send a worker early when we want to
             if (BuildOrder::isPlanEarly() && Planning::getCurrentExpansion() && !Planning::whatPlannedHere(Planning::getCurrentExpansion()->getBase()->Location()).isResourceDepot()) {
                 if (int(Stations::getStations(PlayerState::Self).size() < 2))
@@ -363,12 +362,20 @@ namespace McRave::Goals {
             if (Combat::State::isStaticRetreat(Zerg_Hydralisk)) {
                 auto &stations = Stations::getStations(PlayerState::Self);
                 if (!stations.empty()) {
+                    auto enemyAir = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith);
                     auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto& s) { return s->isMain(); }));
                     auto percentPer = 1.0 / double(stations.size() - mainStations);
+
+                    if (enemyAir > 0) {
+                        for (auto &station : stations) {
+                            if (station->isMain())
+                                assignNumberToGoal(station->getBase()->Center(), Zerg_Hydralisk, 1, GoalType::Defend);
+                        }
+                    }
+
                     for (auto &station : stations) {
-                        if (station->isMain())
-                            continue;
-                        assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, percentPer, GoalType::Defend);
+                        if (!station->isMain())
+                            assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, percentPer, GoalType::Defend);
                     }
                 }
             }

@@ -12,7 +12,7 @@ namespace McRave::Combat::Decision {
         //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
 
         // Iterate commands, if one is executed then don't try to execute other commands
-        static const auto commands ={ Command::misc, Command::special, Command::attack, Command::approach, Command::kite, Command::defend, Command::explore, Command::escort, Command::retreat, Command::move };
+        static const auto commands ={ Command::misc, Command::special, Command::kite, Command::attack, Command::approach, Command::defend, Command::explore, Command::escort, Command::retreat, Command::move };
         for (auto cmd : commands) {
             if (cmd(unit))
                 return;

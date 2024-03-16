@@ -198,8 +198,11 @@ namespace McRave::Targets {
             auto reach =          target.getType().isFlyer() ? unit.getAirReach() : unit.getGroundReach();
             auto enemyRange =     unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange();
             auto enemyReach =     unit.getType().isFlyer() ? target.getAirReach() : target.getGroundReach();
+
+            const auto flatCheckOK =    mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea(target.getTilePosition()) && mapBWEM.GetArea(unit.getTilePosition())->AccessibleFrom(mapBWEM.GetArea(target.getTilePosition()));
             const auto boxDistance =    double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
-            const auto dist =           exp(0.0125 * boxDistance);
+            const auto actualDist =     flatCheckOK ? BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) : boxDistance;
+            const auto dist =           exp(0.0125 * actualDist);
 
             if (unit.isSiegeTank()) {
                 range = 384.0;

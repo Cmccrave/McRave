@@ -18,7 +18,7 @@ namespace McRave::Combat::State {
         };
 
         // Hydralisks
-        if (Spy::getEnemyBuild() != "FFE" && (unlockedOrVis(Zerg_Hydralisk) || BuildOrder::getCurrentTransition().find("Hydra") != string::npos)) {
+        if (unlockedOrVis(Zerg_Hydralisk) || BuildOrder::getCurrentTransition() == "4HatchHydra" || BuildOrder::getCurrentTransition() == "6HatchHydra") {
             const auto hydraSpeed = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments);
             const auto hydraRange = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines);
             if (!hydraRange || !hydraSpeed)
@@ -26,7 +26,7 @@ namespace McRave::Combat::State {
         }
 
         // Mutalisks
-        if (unlockedOrVis(Zerg_Mutalisk) || BuildOrder::getCurrentTransition().find("Muta") != string::npos) {
+        if (unlockedOrVis(Zerg_Mutalisk) || BuildOrder::getCurrentTransition() == "2HatchMuta" || BuildOrder::getCurrentTransition() == "3HatchMuta") {
             if (!Players::ZvZ() && com(Zerg_Mutalisk) < (Stations::getStations(PlayerState::Self).size() >= 2 ? 5 : 3) && total(Zerg_Mutalisk) < 9)
                 staticRetreatTypes.push_back(Zerg_Mutalisk);
         }

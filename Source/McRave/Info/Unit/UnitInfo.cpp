@@ -529,7 +529,7 @@ namespace McRave
         }
 
         // Check if we should overshoot for halting distance
-        if (cmd == UnitCommandTypes::Move && !getBuildPosition().isValid() && (getType().isFlyer() || isHovering() || getType() == Protoss_High_Templar || attemptingSurround())) {
+        if (cmd == UnitCommandTypes::Move && !getBuildPosition().isValid() && (isFlying() || isHovering() || getType() == Protoss_High_Templar || attemptingSurround())) {
             auto distance = int(getPosition().getDistance(here));
             auto haltDistance = max({ distance, 32, getType().haltDistance() / 256 });
             auto overShootHere = here;
@@ -538,7 +538,7 @@ namespace McRave
                 overShootHere = getPosition() - ((getPosition() - here) * int(round(haltDistance / distance)));
                 overShootHere = Util::clipLine(getPosition(), overShootHere);
             }
-            if (getType().isFlyer() || (isHovering() && Util::findWalkable(*this, overShootHere)))
+            if (isFlying() || (isHovering() && Util::findWalkable(*this, overShootHere)))
                 here = overShootHere;
         }
 

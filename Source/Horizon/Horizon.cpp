@@ -31,7 +31,7 @@ namespace McRave::Horizon {
             if (u.isHidden())
                 simRatio *= 2.0;
             if (!u.isFlying() && !t.isFlying() && u.getGroundRange() > 32.0 && Broodwar->getGroundHeight(u.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(t.getEngagePosition())))
-                simRatio *= 2.0;
+                simRatio *= 1.5;
             if (u.getType().isWorker() && Util::getTime() < Time(6, 00))
                 simRatio /= 1.5;
             return;

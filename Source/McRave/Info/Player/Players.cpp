@@ -226,6 +226,24 @@ namespace McRave::Players
             || getTotalCount(state, Zerg_Overlord) > 0;
     }
 
+    bool hasResearched(PlayerState state, TechType type)
+    {
+        for (auto&[_, player] : thePlayers) {
+            if (player.getPlayerState() == state && player.hasTech(type))
+                return true;
+        }
+        return false;
+    }
+
+    bool hasUpgraded(PlayerState state, UpgradeType type)
+    {
+        for (auto&[_, player] : thePlayers) {
+            if (player.getPlayerState() == state && player.hasUpgrade(type))
+                return true;
+        }
+        return false;
+    }
+
     int getSupply(PlayerState state, Race race)
     {
         auto combined = 0;

@@ -36,7 +36,7 @@ namespace McRave::Math {
         const auto surv = log(survivability(unit));
         const auto eff = grdEffectiveness(unit);
         const auto range = log(unit.getGroundRange() / 4.0 + 32.0);
-        return dps * range * surv * eff;
+        return dps * range * surv /** eff*/;
     }
 
     double visibleGroundStrength(UnitInfo& unit)
@@ -71,7 +71,7 @@ namespace McRave::Math {
         const auto surv = log(survivability(unit));
         const auto eff = airEffectiveness(unit);
         const auto range = log(unit.getAirRange() / 4.0 + 32.0);
-        return dps * range * surv * eff;
+        return dps * range * surv /** eff*/;
     }
 
     double visibleAirStrength(UnitInfo& unit)

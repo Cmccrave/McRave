@@ -9,7 +9,7 @@ namespace McRave::Scouts {
     namespace {
 
         enum class ScoutType {
-            None, Main, Natural, Proxy, Safe, Army
+            None, Main, Natural, Proxy, Safe, Army, Expansion
         };
 
         struct ScoutTarget {
@@ -316,6 +316,23 @@ namespace McRave::Scouts {
             army.addTargets(safeTarget, 32);
         }
 
+        void updateExpansionScouting()
+        {
+            auto &army = scoutTargets[ScoutType::Army];
+            if (army.desiredTypeCounts[Zerg_Zergling] == 1)
+                return;
+
+            auto &expansion = scoutTargets[ScoutType::Expansion];
+            expansion.desiredTypeCounts[Zerg_Zergling] = 2;
+
+
+            for (auto &station : Stations::getStations(PlayerState::None)) {
+                if (station != Terrain::getEnemyMain() && station != Terrain::getEnemyNatural()) {
+                    expansion.addTargets(station->getBase()->Center());
+                }
+            }
+        }
+
         void updateScoutRoles()
         {
             const auto assign = [&](UnitType type) {
@@ -390,7 +407,7 @@ namespace McRave::Scouts {
             }
 
             for (auto &[type, count] : totalDesiredScoutTypeCounts) {
-                if (scoutTypeDeaths[type] > 0)
+                if (scoutTypeDeaths[type] > 0 && scoutTargets[ScoutType::Army].desiredTypeCounts[Zerg_Zergling] != 0)
                     continue;
                 if (totalCurrentScoutTypeCounts[type] < totalDesiredScoutTypeCounts[type])
                     assign(type);
@@ -461,8 +478,6 @@ namespace McRave::Scouts {
             for (auto &[type, target] : scoutTargets) {
 
                 if (unit.getDestination().isValid()
-                    || (type == ScoutType::Army && unit.getType() != Zerg_Zergling)
-                    || (type != ScoutType::Army && Terrain::getEnemyStartingPosition().isValid() && unit.getType() == Zerg_Zergling)
                     || (type == ScoutType::Safe && unit.getHealth() != unit.getType().maxHitPoints() && target.center != safePositions[Terrain::getEnemyNatural()])
                     || target.currentTypeCounts[unit.getType()] >= target.desiredTypeCounts[unit.getType()])
                     continue;
@@ -602,6 +617,7 @@ namespace McRave::Scouts {
         updateSafeScouting();
         updateProxyScouting();
         updateArmyScouting();
+        updateExpansionScouting();
         updateScoutRoles();
         updateScouts();
         drawScouting();

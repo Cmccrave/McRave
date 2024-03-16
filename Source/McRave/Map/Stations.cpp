@@ -248,6 +248,8 @@ namespace McRave::Stations
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
                 if (BuildOrder::isOpener() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None)
                     return (Util::getTime() > Time(3, 00)) - groundCount;
+                if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters))
+                    return 1 - groundCount;
             }
             else if (station->isNatural()) {
             }
@@ -488,11 +490,14 @@ namespace McRave::Stations
             || (Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 && Util::getTime() > Time(4, 45));
 
         if (Broodwar->self()->getRace() == Races::Zerg) {
+            auto mutaBuild = BuildOrder::getCurrentTransition().find("Muta") != string::npos;
+            auto hydraBuild = BuildOrder::getCurrentTransition().find("Hydra") != string::npos;
+
             if (Players::ZvZ() && Util::getTime() > Time(4, 15) && Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
                 return 1 - airCount;
-            if (Players::ZvP() && Util::getTime() > Time(4, 35) && !station->isMain() && Spy::getEnemyBuild() == "1GateCore" && Spy::getEnemyTransition() == "Corsair")
+            if (Players::ZvP() && Util::getTime() > Time(4, 35) && !hydraBuild && !station->isMain() && Spy::getEnemyBuild() == "1GateCore" && Spy::getEnemyTransition() == "Corsair")
                 return 1 - airCount;
-            if (Players::ZvP() && Util::getTime() > Time(5, 00) && !station->isMain() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() == "3HatchMuta")
+            if (Players::ZvP() && Util::getTime() > Time(5, 00) && !hydraBuild && !station->isMain() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() == "3HatchMuta")
                 return 1 - airCount;
             if (Players::ZvT() && Util::getTime() > Time(5, 30) && Spy::getEnemyTransition() == "2PortWraith" && BuildOrder::getCurrentTransition() == "3HatchMuta")
                 return 1 - airCount;
@@ -544,8 +549,11 @@ namespace McRave::Stations
     bool isBlocked(const BWEB::Station * const station)
     {
         auto stationptr = stations.find(station);
-        if (stationptr != stations.end() && stationptr->second != PlayerState::Self && stationptr->second != PlayerState::None)
+        if (stationptr != stations.end() && stationptr->second != PlayerState::None) {
+            if (stationptr->second == PlayerState::Self)
+                return false;
             return true;
+        }
 
         for (auto x = 0; x < 4; x++) {
             for (auto y = 0; y < 3; y++) {
@@ -613,7 +621,6 @@ namespace McRave::Stations
         auto here = unit.getPosition();
         if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Defend) {
             here = unit.getGoal();
-            Visuals::drawLine(unit.getPosition(), unit.getGoal(), Colors::Yellow);
         }
         else {
             const auto lowGroundCount = Broodwar->self()->getRace() == Races::Zerg && vis(Zerg_Zergling) < 12 && vis(Zerg_Hydralisk) < 6;
