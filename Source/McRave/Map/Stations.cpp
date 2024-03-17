@@ -13,6 +13,7 @@ namespace McRave::Stations
         multimap<double, const BWEB::Station * const> stationsByProduction;
         map<const BWEB::Station * const, int> airDefenseCount, groundDefenseCount, remainingMinerals, remainingGas, initialMinerals, initialGas;
         int miningStations = 0, gasingStations = 0;
+        map<const BWEB::Station * const, map<const BWEB::Station *, BWEB::Path>> stationNetwork;
 
         void updateSaturation() {
 
@@ -359,6 +360,18 @@ namespace McRave::Stations
                 initialGas[&station] += gas->InitialAmount();
             stations[&station] = PlayerState::None;
         }
+
+        // Create a path to each station that only obeys terrain
+        for (auto &station : BWEB::Stations::getStations()) {
+            for (auto &otherStation : BWEB::Stations::getStations()) {
+                if (&station == &otherStation)
+                    continue;
+
+                BWEB::Path path(station.getBase()->Center(), otherStation.getBase()->Center(), Protoss_Dragoon, true, false);
+                path.generateJPS([&](auto &t) { return path.unitWalkable(t); });
+                stationNetwork[&station][&otherStation] = path;
+            }
+        }
     }
 
     void storeStation(Unit unit) {
@@ -671,6 +684,23 @@ namespace McRave::Stations
                 return saturation;
         }
         return 0.0;
+    }
+
+    BWEB::Path getPathBetween(const BWEB::Station * station1, const BWEB::Station * station2)
+    {
+        auto station1ptr = stationNetwork.find(station1);
+        if (station1ptr != stationNetwork.end()) {
+            auto station2ptr = station1ptr->second.find(station2);
+            if (station2ptr != station1ptr->second.end())
+                return station2ptr->second;
+        }
+        return {};
+    }
+
+    std::map<const BWEB::Station *, BWEB::Path> getStationNetwork(const BWEB::Station * station)
+    {
+        auto stationptr = stationNetwork.find(station);
+        return stationptr->second;
     }
 
     Position getDefendPosition(const BWEB::Station * const station) { return defendPositions[station]; }

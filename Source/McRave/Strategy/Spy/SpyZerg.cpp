@@ -55,11 +55,11 @@ namespace McRave::Spy::Zerg {
                 || completesBy(1, Zerg_Spawning_Pool, Time(1, 40))
                 || arrivesBy(8, Zerg_Zergling, Time(3, 00)))
                 theSpy.opener.name = "4Pool";
-            else if (theSpy.rushArrivalTime < Time(2, 55)
+            else if (arrivesBy(1, Zerg_Zergling, Time(2, 50))
                 || completesBy(1, Zerg_Zergling, Time(2, 15))
                 || completesBy(1, Zerg_Spawning_Pool, Time(1, 50)))
                 theSpy.opener.name = "7Pool";
-            else if (theSpy.rushArrivalTime < Time(3, 15)
+            else if (completesBy(1, Zerg_Zergling, Time(3, 15))
                 || completesBy(1, Zerg_Zergling, Time(2, 40))
                 || completesBy(8, Zerg_Zergling, Time(3, 00))
                 || completesBy(10, Zerg_Zergling, Time(3, 20))

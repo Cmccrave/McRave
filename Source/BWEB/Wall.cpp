@@ -287,12 +287,7 @@ namespace BWEB {
         for (auto &[_, tiles] : defenses) {
             for (auto &tile : tiles)
                 Map::removeUsed(tile, 2, 2);
-        }
-
-        if (!valid) {
-            Broodwar << "small: " << smallTiles.size() << "medium: " << mediumTiles.size() << "large: " << largeTiles.size() << endl;
-            return;
-        }
+        }    
     }
 
     const int Wall::getGroundDefenseCount() const

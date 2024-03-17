@@ -15,7 +15,7 @@ namespace McRave::Walls {
         bool tight;
         bool openWall;
         UnitType tightType = None;
-        constexpr bool wantTerranWalls = false;
+        bool wantTerranWalls = false;
 
         void initializeWallParameters()
         {
@@ -104,7 +104,53 @@ namespace McRave::Walls {
             mainWall = BWEB::Walls::getWall(Terrain::getMainChoke());
         }
 
-        int ZvPOpener(const BWEB::Wall& wall)
+        // PvP
+        int PvP_Defenses(const BWEB::Wall& wall)
+        {
+            return 0;
+        }
+
+        // PvZ
+        int PvZ_Opener(const BWEB::Wall& wall)
+        {
+            if (Spy::getEnemyOpener() == "4Pool")
+                return 2 + (Players::getSupply(PlayerState::Self, Races::Protoss) >= 24);
+            return 0;
+        }
+
+        int PvZ_Transition(const BWEB::Wall& wall)
+        {
+            auto cannonCount = int(com(Protoss_Forge) > 0)
+                + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 6)
+                + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 12)
+                + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 24)
+                + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk) / 2);
+
+            if (Spy::getEnemyTransition() == "2HatchHydra")
+                return 5;
+            else if (Spy::getEnemyTransition() == "3HatchHydra")
+                return 4;
+            else if (Spy::getEnemyTransition() == "2HatchMuta" && Util::getTime() > Time(4, 0))
+                return 3;
+            else if (Spy::getEnemyTransition() == "3HatchMuta" && Util::getTime() > Time(5, 0))
+                return 3;
+            return 0;
+        }
+
+        int PvZ_Defenses(const BWEB::Wall& wall)
+        {
+            // Determine how much we have traded
+            auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Zerg_Hydralisk) / 2
+                + Players::getDeadCount(PlayerState::Enemy, Zerg_Zergling) / 4;
+
+            auto minimum = 0;
+            auto expected = max(PvZ_Opener(wall), PvZ_Transition(wall)) - max(0, unitsKilled / 8);
+
+            return max(minimum, expected);
+        }
+
+        // ZvP
+        int ZvP_Opener(const BWEB::Wall& wall)
         {
             // If we are opening 12 hatch, we sometimes need a faster sunken
             auto greedyStart = BuildOrder::getCurrentOpener() == "12Hatch";
@@ -173,7 +219,7 @@ namespace McRave::Walls {
             return Util::getTime() > Time(3, 45);
         }
 
-        int ZvPTransition(const BWEB::Wall& wall)
+        int ZvP_Transition(const BWEB::Wall& wall)
         {
             // See if they expanded or got some tech at a reasonable point for 1 base play
             auto noExpand = !Spy::enemyFastExpand();
@@ -259,7 +305,31 @@ namespace McRave::Walls {
             return 0;
         }
 
-        int ZvTOpener(const BWEB::Wall& wall)
+        int ZvP_Defenses(const BWEB::Wall& wall) {
+
+            // Determine how much we have traded
+            auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot)
+                + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);
+
+            // Make at least one sunken once if below criteria fulfilled
+            auto minimum = 0;
+            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2
+                || Players::getTotalCount(PlayerState::Self, Zerg_Drone) >= 30)
+                minimum = 1;
+
+            auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
+            auto expected = max(ZvP_Opener(wall), ZvP_Transition(wall)) - max(0, unitsKilled / 4);
+
+            // Kind of hacky solution to build less with 3h
+            if (threeHatch && expected > 1)
+                expected /= 1.5;
+
+            return max(minimum, expected);
+        }
+
+        // ZvT
+        int ZvT_Opener(const BWEB::Wall& wall)
         {
             // If we are opening 12 hatch into a 2h tech, we sometimes need a faster sunken
             auto greedyStart = BuildOrder::getCurrentOpener() == "12Hatch" || BuildOrder::getCurrentOpener() == "12Pool";
@@ -300,7 +370,7 @@ namespace McRave::Walls {
             return (Util::getTime() > Time(3, 45));
         }
 
-        int ZvTTransition(const BWEB::Wall& wall)
+        int ZvT_Transition(const BWEB::Wall& wall)
         {
             // See if they expanded or got some tech at a reasonable point for 1 base play
             auto noExpand = !Spy::enemyFastExpand();
@@ -319,36 +389,13 @@ namespace McRave::Walls {
             if (Spy::getEnemyTransition() == "2PortWraith")
                 return 1 * (Util::getTime() > Time(5, 30));
 
-            if (Spy::getEnemyTransition() == "Academy")
+            if (Spy::getEnemyTransition() == "Academy" || !Spy::enemyFastExpand())
                 return 2 * (Util::getTime() > Time(4, 30));
 
             return 0;
-        }
+        } 
 
-        int groundDefensesNeededZvP(const BWEB::Wall& wall) {
-
-            // Determine how much we have traded
-            auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot)
-                + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);
-
-            // Make at least one sunken once if below criteria fulfilled
-            auto minimum = 0;
-            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2
-                || Players::getTotalCount(PlayerState::Self, Zerg_Drone) >= 30)
-                minimum = 1;
-
-            auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
-            auto expected = max(ZvPOpener(wall), ZvPTransition(wall)) - max(0, unitsKilled / 4);
-
-            // Kind of hacky solution to build less with 3h
-            if (threeHatch && expected > 1)
-                expected /= 1.5;
-
-            return max(minimum, expected);
-        }
-
-        int groundDefensesNeededZvT(const BWEB::Wall& wall)
+        int ZvT_Defenses(const BWEB::Wall& wall)
         {
             // Determine how much we have traded
             auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Terran_Marine)
@@ -358,7 +405,7 @@ namespace McRave::Walls {
             auto minimum = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 ? 1 : 0;
 
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
-            auto expected = max(ZvTOpener(wall), ZvTTransition(wall)) - max(0, unitsKilled / 8);
+            auto expected = max(ZvT_Opener(wall), ZvT_Transition(wall)) - max(0, unitsKilled / 8);
 
             // Kind of hacky solution to build less with 3h
             if (threeHatch && expected > 1)
@@ -367,11 +414,13 @@ namespace McRave::Walls {
             return max(minimum, expected);
         }
 
-        int groundDefensesNeededZvZ(const BWEB::Wall& wall) {
+        // ZvZ
+        int ZvZ_Defenses(const BWEB::Wall& wall) {
             return 0;
         }
 
-        int groundDefensesNeededZvFFA(const BWEB::Wall& wall) {
+        // ZvFFA
+        int ZvFFA_Defenses(const BWEB::Wall& wall) {
             return 1
                 + (Util::getTime() > Time(5, 20))
                 + (Util::getTime() > Time(5, 40));
@@ -405,33 +454,10 @@ namespace McRave::Walls {
 
         // Protoss
         if (Broodwar->self()->getRace() == Races::Protoss) {
-            auto prepareExpansionDefenses = Util::getTime() < Time(10, 0) && vis(Protoss_Nexus) >= 2 && com(Protoss_Forge) > 0;
-
-            if (Players::vP() && prepareExpansionDefenses && BuildOrder::isWallNat()) {
-                auto cannonCount = 2 + int(1 + Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) + Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) - com(Protoss_Zealot) - com(Protoss_Dragoon) - com(Protoss_High_Templar) - com(Protoss_Dark_Templar)) / 2;
-                return cannonCount - groundCount;
-            }
-
-            if (Players::vZ() && BuildOrder::isWallNat()) {
-                auto cannonCount = int(com(Protoss_Forge) > 0)
-                    + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 6)
-                    + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 12)
-                    + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 24)
-                    + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk) / 2);
-
-                // TODO: If scout died, go to 2 cannons, if next scout dies, go 3 cannons   
-                if (Spy::getEnemyTransition() == "2HatchHydra")
-                    return 5 - groundCount;
-                else if (Spy::getEnemyTransition() == "3HatchHydra")
-                    return 4 - groundCount;
-                else if (Spy::getEnemyTransition() == "2HatchMuta" && Util::getTime() > Time(4, 0))
-                    return 3 - groundCount;
-                else if (Spy::getEnemyTransition() == "3HatchMuta" && Util::getTime() > Time(5, 0))
-                    return 3 - groundCount;
-                else if (Spy::getEnemyOpener() == "4Pool")
-                    return 2 + (Players::getSupply(PlayerState::Self, Races::Protoss) >= 24) - groundCount;
-                return cannonCount - groundCount;
-            }
+            if (Players::PvP())
+                return PvP_Defenses(wall) - groundCount;
+            if (Players::PvZ())
+                return PvZ_Defenses(wall) - groundCount;
         }
 
         // Terran
@@ -439,13 +465,13 @@ namespace McRave::Walls {
         // Zerg
         if (Broodwar->self()->getRace() == Races::Zerg) {
             if (Players::ZvP())
-                return groundDefensesNeededZvP(wall) - groundCount;
+                return ZvP_Defenses(wall) - groundCount;
             if (Players::ZvT())
-                return groundDefensesNeededZvT(wall) - groundCount;
+                return ZvT_Defenses(wall) - groundCount;
             if (Players::ZvZ())
-                return groundDefensesNeededZvZ(wall) - groundCount;
+                return ZvZ_Defenses(wall) - groundCount;
             if (Players::ZvFFA())
-                return groundDefensesNeededZvFFA(wall) - groundCount;
+                return ZvFFA_Defenses(wall) - groundCount;
         }
         return 0;
     }

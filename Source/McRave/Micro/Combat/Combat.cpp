@@ -215,7 +215,7 @@ namespace McRave::Combat {
                 holdChoke = !defendNatural && Players::getSupply(PlayerState::Self, Races::None) < 60;
 
                 if (Players::ZvZ()) {
-                    if (!defendNatural && com(Zerg_Zergling) >= 8)
+                    if (!defendNatural && com(Zerg_Zergling) >= Players::getCompleteCount(PlayerState::Enemy, Zerg_Zergling))
                         holdChoke = true;
                 }
                 if (Players::ZvP()) {

@@ -60,6 +60,7 @@ namespace McRave::Workers {
 
             auto stationGrdOkay = unit.hasResource() && Stations::getGroundDefenseCount(unit.getResource().lock()->getStation()) > 0;
             auto stationAirOkay = unit.hasResource() && Stations::getAirDefenseCount(unit.getResource().lock()->getStation()) > 0;
+            auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
 
             // Current station is a fortress, we can stay
             if (unit.hasResource() && stationGrdOkay && stationAirOkay) {
@@ -87,19 +88,17 @@ namespace McRave::Workers {
                 if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(unit.getTilePosition()) == station->getBase()->GetArea())
                     safeStations.push_back(station);
 
-                // If unit is far from home, it's probably safe
-                else if (!Terrain::inTerritory(PlayerState::Self, unit.getPosition()))
-                    safeStations.push_back(station);
-
                 // If station has defenses, it's probably safe
                 else if (Stations::getGroundDefenseCount(station) > 0 || Stations::getAirDefenseCount(station) > 0)
                     safeStations.push_back(station);
-            }
 
-            // If we have no safe stations, every station is fine
-            if (safeStations.empty()) {
-                for (auto &station : Stations::getStations(PlayerState::Self)) {
-                    safeStations.push_back(station);
+                else {
+                    auto &path = Stations::getPathBetween(closestStation, station);
+                    auto threatPos = Util::findPointOnPath(path, [&](auto &t) {
+                        return Grids::getGroundThreat(t, PlayerState::Enemy) > 0.0;
+                    });
+                    if (!threatPos)
+                        safeStations.push_back(station);
                 }
             }
 
@@ -245,7 +244,6 @@ namespace McRave::Workers {
             const auto threatened =         unit.hasResource() && unit.getResource().lock()->isThreatened() && unit.getHealth() < unit.getType().maxHitPoints();
             const auto excessAssigned =     isResourceFlooded(unit);
             const auto transferStation =    getTransferStation(unit);
-            const auto closestStation =     Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
 
             // Check if unit needs a re-assignment
             const auto needGas =            unit.unit()->isCarryingMinerals() && !Resources::isGasSaturated() && isMineralunit && gasWorkers < BuildOrder::gasWorkerLimit();

@@ -473,8 +473,17 @@ namespace McRave::Command {
             if (unit.getRole() == Role::Combat || unit.getRole() == Role::Scout) {
 
                 // Special Case: early "duels"
-                if (!unit.isFlying() && Util::getTime() < Time(6, 30) && target.isWithinReach(unit) && target.getType() == Protoss_Zealot && unit.getHealth() <= 16 && int(unit.getUnitsTargetingThis().size()) <= 1)
-                    return true;
+                if (unit.getType() == Zerg_Zergling) {
+                    if (Util::getTime() < Time(6, 30) && target.isWithinReach(unit) && target.getType() == Protoss_Zealot && unit.getHealth() <= 16 && int(unit.getUnitsTargetingThis().size()) >= 1)
+                        return true;
+                    if (Util::getTime() < Time(5, 30) && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10 && int(unit.getUnitsTargetingThis().size()) >= 1)
+                        return true;
+                    if (Util::getTime() < Time(5, 30) && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 15 && int(unit.getUnitsTargetingThis().size()) >= 2)
+                        return true;
+                    if (Util::getTime() < Time(5, 30) && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 20 && int(unit.getUnitsTargetingThis().size()) >= 3)
+                        return true;
+                }
+
 
                 if (unit.isTargetedBySuicide() && !unit.isFlying())
                     return false;

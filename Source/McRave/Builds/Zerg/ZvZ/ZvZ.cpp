@@ -59,7 +59,7 @@ namespace McRave::BuildOrder::Zerg {
         armyComposition[Zerg_Zergling] =                0.40;
     }
 
-    void ZvZ_PL_1HatchMuta()
+    void ZvZ_1HatchMuta()
     {
         inOpening =                                     total(Zerg_Mutalisk) < 4;
         inTransition =                                  vis(Zerg_Lair) > 0;
@@ -97,7 +97,7 @@ namespace McRave::BuildOrder::Zerg {
         }
     }
 
-    void ZvZ_PH_2HatchMuta()
+    void ZvZ_2HatchMuta()
     {
         inOpening =                                     total(Zerg_Mutalisk) < 3;
         inTransition =                                  vis(Zerg_Lair) > 0;
@@ -126,6 +126,46 @@ namespace McRave::BuildOrder::Zerg {
         }
     }
 
+    void ZvZ_2HatchHydra()
+    {
+        inOpening =                                     total(Zerg_Hydralisk) < 6;
+        unitLimits[Zerg_Drone] =                        20;
+        unitLimits[Zerg_Zergling] =                     max(lingsNeeded_ZvZ(), Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) + 4);
+
+        focusUnit =                                     Zerg_Hydralisk;
+        inBookSupply =                                  vis(Zerg_Overlord) < 3;
+        wantNatural =                                   true;        
+
+        // Build
+        buildQueue[Zerg_Overlord] =                     2 + (s >= 32) + (s >= 46);
+        buildQueue[Zerg_Extractor] =                    1;
+        buildQueue[Zerg_Hatchery] =                     2 + (vis(Zerg_Drone) >= 11 && total(Zerg_Zergling) >= 10) + (vis(Zerg_Drone) >= 18);
+        buildQueue[Zerg_Hydralisk_Den] =                hatchCount() >= 4;
+
+        // Pumping
+        auto pumpLings = vis(Zerg_Zergling) < unitLimits[Zerg_Zergling];
+        auto pumpHydras = Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 && com(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Hydralisk) < Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) + 6;
+
+        upgradeQueue[UpgradeTypes::Muscular_Augments] = vis(Zerg_Hydralisk_Den) > 0;
+        upgradeQueue[UpgradeTypes::Grooved_Spines] = vis(Zerg_Hydralisk_Den) > 0 && hydraSpeed();
+
+        // Gas
+        gasLimit = 3;
+        if (vis(Zerg_Hydralisk_Den) > 0)
+            gasLimit = gasMax();
+        else if (lingSpeed())
+            gasLimit = 1;
+
+        // Composition
+        armyComposition.clear();
+        if (pumpHydras)
+            armyComposition[Zerg_Hydralisk] =           1.00;
+        else if (pumpLings)
+            armyComposition[Zerg_Zergling] =            1.00;
+        else
+            armyComposition[Zerg_Drone] =               1.00;
+    }
+
     void ZvZ()
     {
         defaultZvZ();
@@ -145,9 +185,11 @@ namespace McRave::BuildOrder::Zerg {
         // Transitions
         if (transitionReady) {
             if (currentTransition == "1HatchMuta")
-                ZvZ_PL_1HatchMuta();
+                ZvZ_1HatchMuta();
             if (currentTransition == "2HatchMuta")
-                ZvZ_PH_2HatchMuta();
+                ZvZ_2HatchMuta();
+            if (currentTransition == "2HatchHydra")
+                ZvZ_2HatchHydra();
         }
     }
 }

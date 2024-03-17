@@ -18,8 +18,8 @@ void McRaveModule::onStart()
     Terrain::onStart();
     Walls::onStart();
     Planning::onStart();
-    Expansion::onStart();
     Stations::onStart();
+    Expansion::onStart();
     Grids::onStart();
     Learning::onStart();
     Util::onStart();

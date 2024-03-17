@@ -53,10 +53,10 @@ namespace McRave::Combat::State {
                     const auto slowerPool = (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "12Pool")
                         || (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != "HatchPool" && BuildOrder::getCurrentBuild() == "HatchPool");
                     const auto equalPool = (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "9Pool");
-                    const auto enemyLingVomit = (Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling") && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0;
+                    const auto enemyLingVomit = (Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling");
                     const auto avoidDiceRoll = Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 00) && !Terrain::getEnemyStartingPosition().isValid();
                     const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45);
-                    if (Util::getTime() < Time(6, 00) && (slowerPool || equalPool || enemyLingVomit || avoidDiceRoll || enemyDroneScouted))
+                    if (slowerPool || equalPool || enemyLingVomit || avoidDiceRoll || enemyDroneScouted)
                         staticRetreatTypes.push_back(Zerg_Zergling);
                 }
             }

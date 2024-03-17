@@ -6,8 +6,7 @@ using namespace UnitTypes;
 
 namespace McRave::Expansion {
     namespace {
-        vector<const BWEB::Station *> expansionOrder, dangerousStations, islandStations;
-        map<const BWEB::Station * const, map<const BWEB::Station *, BWEB::Path>> expansionNetwork;
+        vector<const BWEB::Station *> expansionOrder, dangerousStations, islandStations;        
         map<const BWEB::Station * const, vector<UnitInfo*>> blockingNeutrals;
         bool blockersExists = false;
 
@@ -16,7 +15,7 @@ namespace McRave::Expansion {
             // Check if any base goes through enemy territory currently
             dangerousStations.clear();
             for (auto &station : BWEB::Stations::getStations()) {
-                auto& path = expansionNetwork[Terrain::getMyMain()][&station];
+                auto& path = Stations::getPathBetween(Terrain::getMyMain(), &station);
                 if (!path.getTiles().empty()) {
                     auto danger = Util::findPointOnPath(path, [&](auto &p) {
                         return Terrain::inTerritory(PlayerState::Enemy, p);
@@ -46,7 +45,7 @@ namespace McRave::Expansion {
         {
             // Create a map of blocking neutrals per station
             blockingNeutrals.clear();
-            for (auto &[station, path] : expansionNetwork[Terrain::getMyMain()]) {
+            for (auto &[station, path] : Stations::getStationNetwork(Terrain::getMyMain())) {
                 Util::testPointOnPath(path, [&](Position &p) {
                     auto type = BWEB::Map::isUsed(TilePosition(p));
                     if (type != UnitTypes::None) {
@@ -110,7 +109,7 @@ namespace McRave::Expansion {
                 auto home = Terrain::getNaturalChoke() ? Position(Terrain::getNaturalChoke()->Center()) : Terrain::getMainPosition();
 
                 for (auto &station : BWEB::Stations::getStations()) {
-                    auto &stationIndex =    expansionNetwork[&station];
+                    auto &stationIndex =    Stations::getStationNetwork(&station);
                     auto grdParent =        stationIndex[parentStation].getDistance();
                     auto grdHome =          stationIndex[Terrain::getMyMain()].getDistance();
 
@@ -130,7 +129,7 @@ namespace McRave::Expansion {
                             station.getBase()->Center().getDistance(Terrain::getEnemyMain()->getBase()->Center()) });
                     }
                     else if (enemyStation) {
-                        grdEnemy = expansionNetwork[enemyStation][&station].getDistance();
+                        grdEnemy = Stations::getPathBetween(enemyStation, &station).getDistance();
                         airEnemy = station.getBase()->Center().getDistance(enemyStation->getBase()->Center());
                     }
 
@@ -200,17 +199,7 @@ namespace McRave::Expansion {
 
     void onStart()
     {
-        // Create a path to each station that only obeys terrain
-        for (auto &station : BWEB::Stations::getStations()) {
-            for (auto &otherStation : BWEB::Stations::getStations()) {
-                if (&station == &otherStation)
-                    continue;
 
-                BWEB::Path path(station.getBase()->Center(), otherStation.getBase()->Center(), Protoss_Dragoon, true, false);
-                path.generateJPS([&](auto &t) { return path.unitWalkable(t); });
-                expansionNetwork[&station][&otherStation] = path;
-            }
-        }
     }
 
     bool expansionBlockersExists() { return blockersExists; }

@@ -192,9 +192,7 @@ namespace McRave::Transports {
                     setState(TransportState::Reinforcing);
                 else if (readyToEngage(cargo, cargoTarget)) {
                     setState(TransportState::Engaging);
-                    Broodwar << "A" << endl;
                     if (readyToDrop(cargo, cargoTarget)) {
-                        Broodwar << "B" << endl;
                         unit.unit()->unload(cargo.unit());
                     }
                 }

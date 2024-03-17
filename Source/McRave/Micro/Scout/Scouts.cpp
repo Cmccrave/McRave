@@ -319,7 +319,7 @@ namespace McRave::Scouts {
         void updateExpansionScouting()
         {
             auto &army = scoutTargets[ScoutType::Army];
-            if (army.desiredTypeCounts[Zerg_Zergling] == 1)
+            if (army.desiredTypeCounts[Zerg_Zergling] == 1 || Players::ZvZ() || Util::getTime() < Time(8, 00))
                 return;
 
             auto &expansion = scoutTargets[ScoutType::Expansion];

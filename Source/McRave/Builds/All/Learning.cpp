@@ -239,7 +239,7 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (Players::ZvP()) {
+            if (false) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                     return;
@@ -253,7 +253,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvZ()) {
-                    BuildOrder::setLearnedBuild("PoolHatch", "12Pool", "2HatchMuta");
+                    BuildOrder::setLearnedBuild("PoolHatch", "12Pool", "2HatchHydra");
                     return;
                 }
                 if (Players::ZvT()) {
@@ -350,7 +350,7 @@ namespace McRave::Learning {
 
             if (Players::ZvZ()) {
                 PoolHatch.setOpeners({ "12Pool"});
-                PoolHatch.setTransitions({ "2HatchMuta"});
+                PoolHatch.setTransitions({ "2HatchMuta"/*, "2HatchHydra"*/});
 
                 PoolLair.setOpeners({ "9Pool"});
                 PoolLair.setTransitions({ "1HatchMuta"});

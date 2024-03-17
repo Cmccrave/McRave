@@ -134,7 +134,7 @@ namespace McRave::BuildOrder::Zerg {
                 buildQueue[Zerg_Evolution_Chamber] = max(buildQueue[Zerg_Evolution_Chamber], 1);
 
             // Adding a Lair
-            if (Spy::enemyInvis() && Util::getTime() > Time(4, 45)) {
+            if (Spy::enemyInvis() && !Players::ZvZ() && Util::getTime() > Time(4, 45)) {
                 buildQueue[Zerg_Lair] = 1;
                 buildQueue[Zerg_Extractor] = max(vis(Zerg_Extractor), 2);
             }
@@ -397,8 +397,12 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         // ZvZ
-        if (Players::ZvZ())
-            unitOrder ={ Zerg_Mutalisk };
+        if (Players::ZvZ()) {
+            if (focusUnit == Zerg_Hydralisk)
+                unitOrder ={ Zerg_Hydralisk };
+            else
+                unitOrder ={ Zerg_Mutalisk };
+        }
 
         // ZvFFA
         if (Players::ZvFFA())
@@ -595,7 +599,6 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvZ
         if (Players::ZvZ() && !inOpening) {
-            Broodwar << Stations::getMiningStationsCount() << endl;
             if (isFocusUnit(Zerg_Mutalisk) && hatchCount() > Stations::getMiningStationsCount()) {
                 armyComposition[Zerg_Drone] =                   0.45;
                 armyComposition[Zerg_Zergling] =                0.35;
@@ -604,6 +607,9 @@ namespace McRave::BuildOrder::Zerg {
             else if (isFocusUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.50;
                 armyComposition[Zerg_Mutalisk] =                0.50;
+            }
+            else if (isFocusUnit(Zerg_Hydralisk)) {
+                armyComposition[Zerg_Hydralisk] =               1.00;
             }
             else {
                 armyComposition[Zerg_Drone] =                   0.50;
