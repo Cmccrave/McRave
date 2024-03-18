@@ -43,8 +43,8 @@ namespace McRave::Walls {
 
             // Terran wall parameters
             if (Broodwar->self()->getRace() == Races::Terran) {
-                tight = true;
-                buildings ={ Terran_Barracks, Terran_Supply_Depot, Terran_Supply_Depot };
+                tight = false;
+                buildings ={ Terran_Barracks, Terran_Bunker };
             }
 
             // Zerg wall parameters
@@ -63,40 +63,31 @@ namespace McRave::Walls {
             const auto genWall = [&](auto buildings, auto area, auto choke) {
                 while (!BWEB::Walls::getWall(choke)) {
                     BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
-                    if (Players::PvZ() || buildings.empty())
+                    if (Broodwar->self()->getRace() != Races::Zerg || buildings.empty())
                         break;
 
-                    UnitType lastBuilding = *buildings.rbegin();
-                    buildings.pop_back();
-                    if (lastBuilding == Zerg_Hatchery)
-                        buildings.push_back(Zerg_Evolution_Chamber);
+                    if (Broodwar->self()->getRace() == Races::Zerg) {
+                        UnitType lastBuilding = *buildings.rbegin();
+                        buildings.pop_back();
+                        if (lastBuilding == Zerg_Hatchery)
+                            buildings.push_back(Zerg_Evolution_Chamber);
+                    }
                 }
             };
 
-            // Create a Zerg/Protoss wall at every natural
-            if (Broodwar->self()->getRace() != Races::Terran) {
-                openWall = true;
+            // Create an open wall at every natural
+            openWall = true;
 
-                // In FFA just make a wall at our natural (if we have one)
-                if (Players::vFFA() && Terrain::getMyNatural() && Terrain::getNaturalChoke()) {
-                    genWall(buildings, Terrain::getMyNatural()->getBase()->GetArea(), Terrain::getNaturalChoke());
-                }
-                else {
-                    for (auto &station : BWEB::Stations::getStations()) {
-                        initializeWallParameters();
-                        if (!station.isNatural())
-                            continue;
-                        genWall(buildings, station.getBase()->GetArea(), station.getChokepoint());
-                    }
-                }
+            // In FFA just make a wall at our natural (if we have one)
+            if (Players::vFFA() && Terrain::getMyNatural() && Terrain::getNaturalChoke()) {
+                genWall(buildings, Terrain::getMyNatural()->getBase()->GetArea(), Terrain::getNaturalChoke());
             }
-
-            // Create a Terran wall at every main
-            else if (wantTerranWalls) {
+            else {
                 for (auto &station : BWEB::Stations::getStations()) {
-                    if (!station.isMain())
+                    initializeWallParameters();
+                    if (!station.isNatural())
                         continue;
-                    BWEB::Walls::createWall(buildings, station.getBase()->GetArea(), station.getChokepoint(), tightType, defenses, openWall, tight);
+                    genWall(buildings, station.getBase()->GetArea(), station.getChokepoint());
                 }
             }
 
@@ -393,7 +384,7 @@ namespace McRave::Walls {
                 return 2 * (Util::getTime() > Time(4, 30));
 
             return 0;
-        } 
+        }
 
         int ZvT_Defenses(const BWEB::Wall& wall)
         {

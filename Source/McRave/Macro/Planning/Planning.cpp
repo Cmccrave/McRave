@@ -86,10 +86,6 @@ namespace McRave::Planning {
 
         bool isPlannable(UnitType building, TilePosition here)
         {
-            // Check if we have specifically marked this position invalid
-            if (isDefensiveType(building) && validDefenses.find(here) == validDefenses.end())
-                return false;
-
             // Check if there's a building queued there already
             for (auto &queued : buildingsPlanned) {
                 if (queued.first == here)
@@ -551,7 +547,7 @@ namespace McRave::Planning {
             set<TilePosition> placements;
             for (auto &[_, wall] : BWEB::Walls::getWalls()) {
 
-                if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
+                if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) && Combat::getDefendArea() != wall.getArea())
                     continue;
 
                 // Setup placements
@@ -1011,8 +1007,8 @@ namespace McRave::Planning {
         return building == Protoss_Forge
             || building == Protoss_Gateway
             || building == Protoss_Pylon
+            || building == Terran_Bunker
             || building == Terran_Barracks
-            || building == Terran_Supply_Depot
             || building == Zerg_Hydralisk_Den
             || building == Zerg_Evolution_Chamber
             || building == Zerg_Hatchery;

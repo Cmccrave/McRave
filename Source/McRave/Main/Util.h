@@ -27,6 +27,8 @@ namespace McRave::Util {
     void onStart();
     void onFrame();
 
+    double log10(int);
+
     template<typename F>
     UnitInfo* getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
         auto distBest = DBL_MAX;

@@ -85,7 +85,7 @@ namespace McRave::Combat::State {
         };
 
         // Zealots / Dragoons
-        if (BuildOrder::isUnitUnlocked(Protoss_Zealot) || BuildOrder::isUnitUnlocked(Protoss_Dragoon)) {
+        if (unlockedOrVis(Protoss_Zealot) || unlockedOrVis(Protoss_Dragoon)) {
             if (Players::PvZ()) {
                 auto gateUnits = total(Protoss_Zealot) + total(Protoss_Dragoon);
                 if ((gateUnits < 8 && int(Stations::getStations(PlayerState::Enemy).size()) < 2) || gateUnits < 3)
@@ -94,11 +94,26 @@ namespace McRave::Combat::State {
         }
 
         // Marines
-        if (BuildOrder::isUnitUnlocked(Terran_Marine) && vis(Terran_Marine) > 0) {
+        if (unlockedOrVis(Terran_Marine) > 0) {
             if (Players::TvZ()) {
                 auto stim = Players::getPlayerInfo(Broodwar->self())->hasTech(TechTypes::Stim_Packs);
                 if (!stim)
                     staticRetreatTypes.push_back(Terran_Marine);
+            }
+            if (Players::TvP()) {
+                if (!BuildOrder::isRush())
+                    staticRetreatTypes.push_back(Terran_Marine);
+            }
+        }
+
+        // Tanks / Goliaths
+        if (unlockedOrVis(Terran_Siege_Tank_Tank_Mode) || unlockedOrVis(Terran_Siege_Tank_Siege_Mode)) {
+            if (Players::TvP()) {
+                if (Util::getTime() < Time(12, 00)) {
+                    staticRetreatTypes.push_back(Terran_Siege_Tank_Tank_Mode);
+                    staticRetreatTypes.push_back(Terran_Siege_Tank_Siege_Mode);
+                    staticRetreatTypes.push_back(Terran_Goliath);
+                }
             }
         }
     }
@@ -218,7 +233,7 @@ namespace McRave::Combat::State {
             || (!unit.isFlying() && Actions::overlapsActions(unit.unit(), unit.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
             || (unit.isTargetedBySuicide() && !unit.isFlying())
             || (unit.getType() == Terran_Ghost && com(Terran_Nuclear_Missile) > 0 && unit.unit()->isLoaded())
-            || engagingWithWorkers();
+            || (engagingWithWorkers() && unit.isWithinReach(target));
     }
 
     bool forceGlobalRetreat(UnitInfo& unit)

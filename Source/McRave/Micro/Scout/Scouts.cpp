@@ -144,6 +144,8 @@ namespace McRave::Scouts {
             // Terran
             if (Broodwar->self()->getRace() == Races::Terran) {
                 main.desiredTypeCounts[Terran_SCV] = (BuildOrder::shouldScout() || Spy::enemyPossibleProxy() || Spy::enemyProxy());
+                if (Util::getTime() > Time(4, 00) || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
+                    main.desiredTypeCounts[Terran_SCV] = 0;
             }
 
             // Zerg
@@ -298,11 +300,25 @@ namespace McRave::Scouts {
             auto &army = scoutTargets[ScoutType::Army];
             
             // No threat at home, we should use a ling to scout the enemy
-            if (Units::getImmThreat() <= 0.1 && Util::getTime() > Time(1, 00)) {
-                if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
-                    || (Players::ZvP() && Util::getTime() < Time(8, 00))
-                    || (Players::ZvZ() && !Terrain::foundEnemy() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0))
-                    army.desiredTypeCounts[Zerg_Zergling] = 1;
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                if (Units::getImmThreat() <= 0.1 && Util::getTime() > Time(1, 00)) {
+                    if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
+                        || (Players::ZvP() && Util::getTime() < Time(8, 00))
+                        || (Players::ZvZ() && !Terrain::foundEnemy() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0))
+                        army.desiredTypeCounts[Zerg_Zergling] = 1;
+                }
+            }
+
+            // Terran
+            if (Broodwar->self()->getRace() == Races::Terran) {
+                if (Util::getTime() > Time(4, 00))
+                    army.desiredTypeCounts[Terran_SCV] = 1;
+            }
+
+            // Protoss
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+                if (Util::getTime() > Time(4, 00))
+                    army.desiredTypeCounts[Protoss_Probe] = 1;
             }
 
             // Army scouting between my natural and enemy natural

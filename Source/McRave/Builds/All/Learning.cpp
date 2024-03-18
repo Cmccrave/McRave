@@ -123,7 +123,7 @@ namespace McRave::Learning {
                 if (Players::TvZ())
                     BuildOrder::setLearnedBuild("2Rax", "11/13", "Academy");
                 else
-                    BuildOrder::setLearnedBuild("RaxFact", "10Rax", "2Fact");
+                    BuildOrder::setLearnedBuild("RaxFact", "2FactFE", "5Fact");
             }
         }
 
@@ -366,19 +366,41 @@ namespace McRave::Learning {
             }
         }
 
+        void terranBuildMaps()
+        {
+            Build TwoRax("2Rax");
+            Build RaxFact("RaxFact");
+
+            if (Players::TvP()) {
+                RaxFact.setOpeners({ "1FactFE", "2FactFE" });
+                RaxFact.setTransitions({ "5Fact" });
+
+                myBuilds ={ RaxFact };
+            }
+
+            if (Players::TvT()) {
+                RaxFact.setOpeners({ "1FactFE" });
+                RaxFact.setTransitions({ "5Fact" });
+
+                myBuilds ={ RaxFact };
+            }
+
+            if (Players::TvZ()) {
+                TwoRax.setOpeners({ "11/13" });
+                TwoRax.setTransitions({ "Academny" });
+
+                myBuilds ={ TwoRax };
+            }
+        }
+
         void createBuildMaps()
         {
             if (Broodwar->self()->getRace() == Races::Protoss)
                 protossBuildMaps();
             if (Broodwar->self()->getRace() == Races::Zerg)
                 zergBuildMaps();
-
-
-            if (Broodwar->self()->getRace() == Races::Terran) {
-                BuildOrder::setLearnedBuild("2Rax", "11/13", "Academy");
-                isBuildPossible(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener());
-                return;// Don't know what to do yet
-            }
+            if (Broodwar->self()->getRace() == Races::Terran)
+                terranBuildMaps();
         }
     }
 

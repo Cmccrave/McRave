@@ -164,16 +164,16 @@ namespace McRave::BuildOrder::Terran {
         if (Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0 && !Players::ZvFFA() && !Players::ZvTVB())
             againstRandom = true;
 
-        //// TODO: Team melee / Team FFA support
-        //if (Broodwar->getGameType() == GameTypes::Team_Free_For_All || Broodwar->getGameType() == GameTypes::Team_Melee) {
-        //    TvFFA();
-        //    return;
-        //}
+        // TODO: Team melee / Team FFA support
+        if (Broodwar->getGameType() == GameTypes::Team_Free_For_All || Broodwar->getGameType() == GameTypes::Team_Melee) {
+            TvA();
+            return;
+        }
 
         if (Players::TvZ())
             TvZ();
         else
-            TvA();
+            TvP();
     }
 
     void tech()
@@ -184,7 +184,7 @@ namespace McRave::BuildOrder::Terran {
 
         if (techComplete())
             focusUnit = None;
-        if (Spy::enemyInvis() || (!inOpening && !getTech && !techSat && focusUnit == None))
+        if (!inOpening && !getTech && !techSat && focusUnit == None)
             getTech = true;
 
         if (Players::TvZ())
@@ -224,7 +224,7 @@ namespace McRave::BuildOrder::Terran {
         if (!inOpening)
             armyComposition.clear();
 
-        if (Players::TvZ()) {
+        if (Players::TvZ() && !inOpening) {
 
             if (isFocusUnit(Terran_Science_Vessel)) {
                 armyComposition[Terran_Marine] = 0.80;
@@ -237,6 +237,13 @@ namespace McRave::BuildOrder::Terran {
                 armyComposition[Terran_Medic] = 0.20;
                 armyComposition[Terran_SCV] = 1.00;
             }
+        }
+
+        if ((Players::TvT() || Players::TvP()) && !inOpening) {
+            armyComposition[Terran_Vulture] =                   0.50;
+            armyComposition[Terran_Siege_Tank_Tank_Mode] =      0.40;
+            armyComposition[Terran_Goliath] =                   0.10;
+            armyComposition[Terran_SCV] =                       1.00;
         }
     }
 

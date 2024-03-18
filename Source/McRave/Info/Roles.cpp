@@ -85,7 +85,25 @@ namespace McRave::Roles {
 
         void tPullWorker()
         {
+            if (Broodwar->self()->getRace() != Races::Terran)
+                return;
 
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &unit = *u;
+                if (unit.isCompleted()) {
+                    auto damaged = unit.getHealth() != unit.getType().maxHitPoints();
+                    auto threatened = Units::getImmThreat() > 0.0 || !unit.getUnitsInReachOfThis().empty();
+
+                    if (damaged || threatened) {
+                        if (unit.getType() == Terran_Missile_Turret)
+                            forceCombatWorker(3, unit.getPosition(), LocalState::Retreat, GlobalState::Retreat);
+                        if (unit.getType() == Terran_Bunker)
+                            forceCombatWorker(3, unit.getPosition(), LocalState::Retreat, GlobalState::Retreat);
+                        if (unit.getType().isMechanical() && damaged && Terrain::inTerritory(PlayerState::Self, unit.getPosition()))
+                            forceCombatWorker(1, unit.getPosition(), LocalState::Retreat, GlobalState::Retreat);
+                    }
+                }
+            }
         }
 
         void zPullWorker()

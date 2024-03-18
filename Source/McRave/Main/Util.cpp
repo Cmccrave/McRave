@@ -8,6 +8,7 @@ namespace McRave::Util {
 
     namespace {
         Time gameTime(0, 0);
+        double log10Lookup[1000];
 
         /// Approximation of Euclidian distance
         /// This is the same approximation that StarCraft's engine uses
@@ -301,7 +302,15 @@ namespace McRave::Util {
 
     void onStart()
     {
+        log10Lookup[0] = 0;
+        for (auto x = 1; x < 1000; x++) {
+            log10Lookup[x] = log(x);
+        }
+    }
 
+    double log10(int index)
+    {
+        return log10Lookup[index];
     }
 
     void onFrame()

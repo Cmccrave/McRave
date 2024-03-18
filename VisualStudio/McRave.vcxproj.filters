@@ -319,6 +319,12 @@
     <ClCompile Include="..\Source\McRave\Micro\All\Spells.cpp">
       <Filter>McRave\Micro\All</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvP\TvP.cpp">
+      <Filter>McRave\Builds\Terran\TvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvP\TvP_RaxFact.cpp">
+      <Filter>McRave\Builds\Terran\TvP</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -664,6 +670,9 @@
     </Filter>
     <Filter Include="McRave\Builds\Terran\TvZ">
       <UniqueIdentifier>{2affacfe-3f62-4e6a-a073-26efc79fc7cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Terran\TvP">
+      <UniqueIdentifier>{166561e7-c028-4604-9361-2273838157f6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

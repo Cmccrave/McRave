@@ -14,6 +14,7 @@ using namespace McRave;
 
 void McRaveModule::onStart()
 {
+    Util::onStart();
     Players::onStart();
     Terrain::onStart();
     Walls::onStart();
@@ -22,7 +23,6 @@ void McRaveModule::onStart()
     Expansion::onStart();
     Grids::onStart();
     Learning::onStart();
-    Util::onStart();
     Resources::onStart();
     Scouts::onStart();
     Combat::onStart();

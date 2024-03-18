@@ -52,6 +52,8 @@
     <ClCompile Include="..\Source\McRave\Builds\Protoss\PvZ\PvZ_2Gate.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Terran\TerranBuildOrder.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvFFA\TvA.cpp" />
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvP\TvP.cpp" />
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvP\TvP_RaxFact.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ_2Rax.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZergBuildOrder.cpp" />
@@ -292,7 +294,8 @@
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(TargetDir)$(ProjectName).dll" "C:\Users\Christian\AppData\Roaming\scbw\bots\McRave\AI\McRave.dll"
-copy /Y "$(TargetDir)$(ProjectName).dll" "C:\Users\Christian\AppData\Roaming\scbw\bots\McRaveZ\AI\McRave.dll"</Command>
+copy /Y "$(TargetDir)$(ProjectName).dll" "C:\Users\Christian\AppData\Roaming\scbw\bots\McRaveZ\AI\McRave.dll"
+copy /Y "$(TargetDir)$(ProjectName).dll" "C:\Users\Christian\AppData\Roaming\scbw\bots\McRaveT\AI\McRave.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

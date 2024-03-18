@@ -23,12 +23,8 @@ namespace McRave::Command {
             return max(1.0, p.getDistance(unit.getNavigation()));
         }
 
-        double visible(UnitInfo& unit, WalkPosition w) {
-            return log(clamp(double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(w))), 100.0, 1000.0));
-        }
-
         double mobility(UnitInfo& unit, WalkPosition w) {
-            return unit.isFlying() ? 1.0 : log(10.0 + double(Grids::getMobility(w)));
+            return unit.isFlying() ? 1.0 : Util::log10(10 + Grids::getMobility(w));
         }
 
         double threat(UnitInfo& unit, WalkPosition w, float current = 0.0f)
@@ -59,7 +55,7 @@ namespace McRave::Command {
             return 1.0;
         }
 
-        Position findViablePosition(UnitInfo& unit, Position pstart, int radius, function<double(WalkPosition)> score)
+        Position findViablePosition(UnitInfo& unit, Position pstart, function<double(WalkPosition)> score)
         {
             // Check if this is a viable position for movement
             const auto viablePosition = [&](const WalkPosition& w, Position& p) {
@@ -77,6 +73,7 @@ namespace McRave::Command {
             const auto start = WalkPosition(pstart);
 
             // Create a box, keep units outside a tile of the edge of the map if it's a flyer
+            auto radius = 20;
             const auto left = max(0, start.x - radius - unit.getWalkWidth());
             const auto right = min(Broodwar->mapWidth() * 4, start.x + radius + unit.getWalkWidth());
             const auto up = max(0, start.y - radius - unit.getWalkHeight());
@@ -156,7 +153,7 @@ namespace McRave::Command {
     {
         if (!unit.hasTarget())
             return false;
-        auto target = *unit.getTarget().lock();
+        auto &target = *unit.getTarget().lock();
 
         const auto canAttack = [&]() {
             if (!target.unit()->exists()
@@ -210,7 +207,7 @@ namespace McRave::Command {
     {
         if (!unit.hasTarget())
             return false;
-        auto target = *unit.getTarget().lock();
+        auto &target = *unit.getTarget().lock();
 
         const auto canApproach = [&]() {
             if (unit.getSpeed() <= 0.0
@@ -308,7 +305,7 @@ namespace McRave::Command {
                     return true;
 
                 if (unit.hasTarget()) {
-                    auto target = *unit.getTarget().lock();
+                    auto &target = *unit.getTarget().lock();
                     if (unit.getType() == Zerg_Mutalisk && unit.isWithinRange(target) && unit.canStartAttack() && !unit.isWithinAngle(target))
                         return true;
                 }
@@ -328,7 +325,7 @@ namespace McRave::Command {
             // Combats should move if we're not retreating
             if (unit.getRole() == Role::Combat) {
                 if (unit.hasTarget()) {
-                    auto target = *unit.getTarget().lock();
+                    auto &target = *unit.getTarget().lock();
                     auto attackInstead = !unit.targetsFriendly() && target.unit()->exists() && unit.isWithinRange(target);
 
                     if (attackInstead && !unit.attemptingSurround() && !unit.isLightAir() && !unit.isSuicidal())
@@ -344,7 +341,7 @@ namespace McRave::Command {
 
                 auto hasMineableResource = false;
                 if (unit.hasResource()) {
-                    auto resource = unit.getResource().lock();
+                    auto &resource = unit.getResource().lock();
                     hasMineableResource = resource->getResourceState() == ResourceState::Mineable;
                 }
 
@@ -383,7 +380,7 @@ namespace McRave::Command {
             }
 
             // Find the best position to move to
-            auto bestPosition = findViablePosition(unit, unit.getPosition(), 10, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
                 unit.setCommandText("MoveC");
@@ -404,7 +401,7 @@ namespace McRave::Command {
         // If we don't have a target, we can't kite it
         if (!unit.hasTarget())
             return false;
-        auto target = *unit.getTarget().lock();
+        auto &target = *unit.getTarget().lock();
 
         // Find the best possible position to kite towards
         auto kiteTowards = Positions::Invalid;
@@ -532,7 +529,7 @@ namespace McRave::Command {
             }
 
             // If we found a valid position, move to it
-            auto bestPosition = findViablePosition(unit, unit.getPosition(), 10, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
                 unit.setCommandText("Kite");
@@ -569,7 +566,7 @@ namespace McRave::Command {
         }
         return false;
     }
-
+    
     bool explore(UnitInfo& unit)
     {
         const auto scoreFunction = [&](WalkPosition w) {
@@ -582,7 +579,7 @@ namespace McRave::Command {
 
         if (canExplore && shouldExplore) {
 
-            auto bestPosition = findViablePosition(unit, unit.getPosition(), 10, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
 
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
@@ -624,7 +621,7 @@ namespace McRave::Command {
 
         if (canRetreat() && shouldRetreat()) {
 
-            auto bestPosition = findViablePosition(unit, unit.getNavigation(), 10, scoreFunction);
+            auto bestPosition = findViablePosition(unit, unit.getNavigation(), scoreFunction);
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
                 unit.setCommandText("Retreat");
@@ -662,7 +659,7 @@ namespace McRave::Command {
         }
 
         // If we found a valid position, move to it
-        auto bestPosition = findViablePosition(unit, unit.getPosition(), 10, scoreFunction);
+        auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
         if (bestPosition.isValid()) {
             unit.setCommand(Move, bestPosition);
             unit.setCommandText("Escort");
@@ -704,7 +701,7 @@ namespace McRave::Command {
             return score;
         };
 
-        auto bestPosition = findViablePosition(unit, unit.getNavigation(), 10, scoreFunction);
+        auto bestPosition = findViablePosition(unit, unit.getNavigation(), scoreFunction);
         if (bestPosition.isValid()) {
             unit.setCommand(Move, bestPosition);
             unit.setCommandText("Transport");

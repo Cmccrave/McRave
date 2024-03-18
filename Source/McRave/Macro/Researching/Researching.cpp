@@ -57,9 +57,11 @@ namespace McRave::Researching {
             // If we have an upgrade order, follow it
             auto incompleteQueue = false;
             for (auto &[t, cnt] : BuildOrder::getTechQueue()) {
+                if (cnt == 0)
+                    incompleteQueue = true;
                 if (!haveOrResearching(t)) {
                     incompleteQueue = true;
-                    if (tech == t)
+                    if (tech == t && cnt > 0)
                         return true;
                 }
             }

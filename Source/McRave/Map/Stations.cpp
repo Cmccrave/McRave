@@ -697,7 +697,7 @@ namespace McRave::Stations
         return {};
     }
 
-    std::map<const BWEB::Station *, BWEB::Path> getStationNetwork(const BWEB::Station * station)
+    std::map<const BWEB::Station *, BWEB::Path>& getStationNetwork(const BWEB::Station * station)
     {
         auto stationptr = stationNetwork.find(station);
         return stationptr->second;

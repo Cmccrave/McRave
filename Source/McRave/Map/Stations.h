@@ -40,7 +40,7 @@ namespace McRave::Stations
     std::vector<const BWEB::Station *> getStations(PlayerState, F &&pred);
 
     BWEB::Path getPathBetween(const BWEB::Station *, const BWEB::Station *);
-    std::map<const BWEB::Station *, BWEB::Path> getStationNetwork(const BWEB::Station *);
+    std::map<const BWEB::Station *, BWEB::Path>& getStationNetwork(const BWEB::Station *);
 
     template<typename F>
     const BWEB::Station * getClosestStationAir(BWAPI::Position here, PlayerState player, F &&pred) {
