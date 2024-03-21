@@ -19,6 +19,8 @@ namespace McRave::BuildOrder
         {
             // Set s for better build readability - TODO: better build order management
             buildQueue.clear();
+            upgradeQueue.clear();
+            techQueue.clear();
             armyComposition.clear();
 
             // TODO: Check if we own a <race> unit - have a build order allowed PER race for FFA weirdness and maybe mind control shenanigans

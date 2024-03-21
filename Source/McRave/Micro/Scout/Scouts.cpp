@@ -279,6 +279,7 @@ namespace McRave::Scouts {
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 safe.desiredTypeCounts[Zerg_Overlord] = 1;
                 if (total(Zerg_Mutalisk) >= 6
+                    || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0)
                     || Spy::getEnemyBuild() == "FFE"
                     || (Players::ZvT() && Spy::getEnemyOpener() == "8Rax")
                     || (!Players::ZvZ() && Stations::getStations(PlayerState::Enemy).size() >= 2)
@@ -344,7 +345,7 @@ namespace McRave::Scouts {
 
             for (auto &station : Stations::getStations(PlayerState::None)) {
                 if (station != Terrain::getEnemyMain() && station != Terrain::getEnemyNatural()) {
-                    expansion.addTargets(station->getBase()->Center());
+                    expansion.addTargets(station->getResourceCentroid());
                 }
             }
         }
@@ -423,7 +424,7 @@ namespace McRave::Scouts {
             }
 
             for (auto &[type, count] : totalDesiredScoutTypeCounts) {
-                if (scoutTypeDeaths[type] > 0 && scoutTargets[ScoutType::Army].desiredTypeCounts[Zerg_Zergling] != 0)
+                if (scoutTypeDeaths[type] > 0 && type != Zerg_Zergling)
                     continue;
                 if (totalCurrentScoutTypeCounts[type] < totalDesiredScoutTypeCounts[type])
                     assign(type);

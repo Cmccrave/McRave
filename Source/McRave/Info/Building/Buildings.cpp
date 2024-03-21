@@ -162,6 +162,14 @@ namespace McRave::Buildings {
                     morphType = Zerg_Sunken_Colony;
             }
 
+            //// Timing Sunkens if we have vision of their army
+            //if (Terrain::getEnemyNatural()) {
+            //    auto distSelf = BWEB::Map::getGroundDistance(u->getPosition(), Terrain::getNaturalPosition());
+            //    auto distEnemy = BWEB::Map::getGroundDistance(u->getPosition(), Terrain::getEnemyNatural()->getBase()->Center());
+            //    if (distSelf > distEnemy)
+            //        morphType = None;
+            //}
+
             // Morph
             if (morphType.isValid() && building.isCompleted()) {
                 building.unit()->morph(morphType);

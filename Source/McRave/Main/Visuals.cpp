@@ -11,6 +11,44 @@ namespace McRave::Visuals {
         chrono::steady_clock::time_point start;
         int screenOffset = 0;
 
+        // Yoinked from https://github.com/dgant/PurpleWave/blob/master/src/Debugging/Visualizations/Rendering/DrawMap.scala#L126
+        struct TextBox {
+            vector<string> textLines;
+            Position position;
+            Color color = Colors::Black;
+            int textColor = Text::White;
+            Color border = Colors::White;
+
+            TextBox(vector<string> t, Position p) {
+                textLines = t;
+                position = p;
+
+                auto maxWidth = 0;
+                for (auto &s : textLines) {
+                    const auto len = s.length();
+                    if (len > maxWidth)
+                        maxWidth = len;
+                }
+
+                auto horizontalMargin = 2;
+                auto estimatedTextWidth = (11 * maxWidth) / 2;
+                auto boxWidth = estimatedTextWidth + ((estimatedTextWidth > 0) ? 2 * horizontalMargin : 0);
+                auto boxHeight = 11 * textLines.size();
+                auto textX = position.x - boxWidth / 2;
+                auto textY = position.y - boxHeight / 2;
+                auto boxX = textX - horizontalMargin;
+                auto boxY = textY;
+
+                
+                Visuals::drawBox(Position(boxX, boxY), Position(boxX + boxWidth, boxY + boxHeight), color, true);
+                Visuals::drawBox(Position(boxX - 1, boxY - 1), Position(boxX + boxWidth + 1, boxY + boxHeight + 1), border);
+                for (auto &s : textLines) {
+                    Broodwar->drawTextMap(Position(textX, textY), "%s", s.c_str());
+                    textY += 11;
+                }            
+            }
+        };
+
         struct FrameTest {
             double current = 0.0;
             double average = 0.0;
@@ -44,6 +82,7 @@ namespace McRave::Visuals {
         bool roles = false;
         bool stations = false;
         bool gameFocused = false;
+        bool bo_switch = false;
 
         Diagnostic currentDiagnostic = Diagnostic::None;
 
@@ -143,6 +182,22 @@ namespace McRave::Visuals {
                 Broodwar->drawTextScreen(Position(4, 80), "%cReserved: %d", Text::Green, Producing::getReservedGas());
                 Broodwar->drawTextScreen(Position(4, 96), "%cPlanned: %d", Text::GreyBlue, Planning::getPlannedMineral());
                 Broodwar->drawTextScreen(Position(4, 112), "%cPlanned: %d", Text::Green, Planning::getPlannedGas());
+            }
+
+            if (bo_switch) {
+                vector<string> text;
+                for (auto &build : Learning::getBuilds()) {
+                    text.push_back(build.name);
+
+                    for (auto &opener : build.openers) {
+                        text.push_back("--" + opener.name);
+                    }
+
+                    for (auto &transition : build.transitions) {
+                        text.push_back("----" + transition.name);
+                    }
+                }
+                TextBox box(text, Broodwar->getScreenPosition() + Position(150, 200));
             }
 
 
@@ -338,6 +393,21 @@ namespace McRave::Visuals {
 
     void onSendText(string text)
     {
+        if (bo_switch) {
+            for (auto &build : Learning::getBuilds()) {
+                if (text == build.name)
+                    BuildOrder::setLearnedBuild(text, BuildOrder::getCurrentOpener(), BuildOrder::getCurrentTransition());
+                for (auto &opener : build.openers) {
+                    if (text == opener.name)
+                        BuildOrder::setLearnedBuild(build.name, text, BuildOrder::getCurrentTransition());
+                }
+                for (auto &transition : build.transitions) {
+                    if (text == transition.name)
+                        BuildOrder::setLearnedBuild(BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener(), text);
+                }
+            }
+        }
+
         if (text == "/targets")              targets = !targets;
         else if (text == "/sim")             sim = !sim;
         else if (text == "/strengths")       strengths = !strengths;
@@ -350,6 +420,7 @@ namespace McRave::Visuals {
         else if (text == "/resources")       resources = !resources;
         else if (text == "/timers")          timers = !timers;
         else if (text == "/roles")           roles = !roles;
+        else if (text == "/bo")              bo_switch = !bo_switch;
         else                                 Broodwar->sendText("%s", text.c_str());
         return;
     }

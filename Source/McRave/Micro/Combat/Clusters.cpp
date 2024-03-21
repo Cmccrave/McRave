@@ -51,9 +51,8 @@ namespace McRave::Combat::Clusters {
             auto matching = [&](auto &parent, auto &child) {
                 auto matchedGoal = (parent.unit->getGoal() == child.unit->getGoal());
                 auto matchedType = (parent.unit->isFlying() == child.unit->isFlying());
-                auto matchedStrat = (parent.unit->getGlobalState() == child.unit->getGlobalState());
+                auto matchedStrat = (parent.unit->getGlobalState() == child.unit->getGlobalState()) && (parent.unit->getLocalState() == child.unit->getLocalState());
                 auto matchedDistance = BWEB::Map::getGroundDistance(child.position, parent.position) < 256.0
-                    //|| (Terrain::inTerritory(PlayerState::Self, parent.unit->getPosition()) && Terrain::inTerritory(PlayerState::Self, child.unit->getPosition()))
                     || (parent.unit->isLightAir() && child.unit->isLightAir());
                 return matchedType && matchedStrat && matchedDistance && matchedGoal;
             };
@@ -101,7 +100,7 @@ namespace McRave::Combat::Clusters {
         {
             auto id = 1;
             for (auto &node : clusterNodes) {
-                if (node.id == 0 && generateCluster(node, id, 0, 18))
+                if (node.id == 0 && generateCluster(node, id, 0, 200))
                     id++;
             }
         }
@@ -267,11 +266,12 @@ namespace McRave::Combat::Clusters {
                 if (auto commander = cluster.commander.lock()) {
                     auto atHome = Terrain::inTerritory(PlayerState::Self, cluster.avgPosition);
 
-                    for (auto &unit : cluster.units) {
-                        if (unit->getLocalState() == LocalState::Retreat || unit->getLocalState() == LocalState::ForcedRetreat || unit->getGlobalState() == GlobalState::Retreat || unit->getGlobalState() == GlobalState::ForcedRetreat)
-                            cluster.retreatCluster = true;
-                    }
+                    //for (auto &unit : cluster.units) {
+                    //    if (unit->getLocalState() == LocalState::Retreat || unit->getLocalState() == LocalState::ForcedRetreat || unit->getGlobalState() == GlobalState::Retreat || unit->getGlobalState() == GlobalState::ForcedRetreat)
+                    //        cluster.retreatCluster = true;
+                    //}
 
+                    cluster.retreatCluster = commander->getLocalState() == LocalState::Retreat || commander->getLocalState() == LocalState::ForcedRetreat || commander->getGlobalState() == GlobalState::Retreat || commander->getGlobalState() == GlobalState::ForcedRetreat;
                     cluster.marchPosition = commander->marchPos;
                     cluster.retreatPosition = commander->retreatPos;
                     cluster.mobileCluster = !atHome || !cluster.retreatCluster;

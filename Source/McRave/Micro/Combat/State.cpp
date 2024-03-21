@@ -13,6 +13,9 @@ namespace McRave::Combat::State {
     {
         staticRetreatTypes.clear();
 
+        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings)
+            return;
+
         const auto unlockedOrVis = [&](auto &t) {
             return vis(t) > 0 || BuildOrder::isUnitUnlocked(t);
         };
@@ -53,7 +56,7 @@ namespace McRave::Combat::State {
                     const auto slowerPool = (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "12Pool")
                         || (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != "HatchPool" && BuildOrder::getCurrentBuild() == "HatchPool");
                     const auto equalPool = (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "9Pool");
-                    const auto enemyLingVomit = (Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling");
+                    const auto enemyLingVomit = (Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling") && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0;
                     const auto avoidDiceRoll = Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 00) && !Terrain::getEnemyStartingPosition().isValid();
                     const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45);
                     if (slowerPool || equalPool || enemyLingVomit || avoidDiceRoll || enemyDroneScouted)
@@ -88,19 +91,19 @@ namespace McRave::Combat::State {
         if (unlockedOrVis(Protoss_Zealot) || unlockedOrVis(Protoss_Dragoon)) {
             if (Players::PvZ()) {
                 auto gateUnits = total(Protoss_Zealot) + total(Protoss_Dragoon);
-                if ((gateUnits < 8 && int(Stations::getStations(PlayerState::Enemy).size()) < 2) || gateUnits < 3)
+                if ((gateUnits < 24 && int(Stations::getStations(PlayerState::Enemy).size()) < 2) || gateUnits < 3)
                     lockGateways();
             }
         }
 
         // Marines
-        if (unlockedOrVis(Terran_Marine) > 0) {
+        if (unlockedOrVis(Terran_Marine)) {
             if (Players::TvZ()) {
                 auto stim = Players::getPlayerInfo(Broodwar->self())->hasTech(TechTypes::Stim_Packs);
                 if (!stim)
                     staticRetreatTypes.push_back(Terran_Marine);
             }
-            if (Players::TvP()) {
+            if (Players::TvP() || Players::TvT()) {
                 if (!BuildOrder::isRush())
                     staticRetreatTypes.push_back(Terran_Marine);
             }

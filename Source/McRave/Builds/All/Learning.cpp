@@ -11,49 +11,6 @@ using namespace McRave::BuildOrder::All;
 namespace McRave::Learning {
     namespace {
 
-        struct BuildComponent {
-            int w = 0;
-            int l = 0;
-            double ucb1 = 0.0;
-            string name = "";
-            BuildComponent(string _name) {
-                name = _name;
-            }
-        };
-
-        struct Build {
-            int w = 0;
-            int l = 0;
-            double ucb1 = 0.0;
-            string name = "";
-            vector<BuildComponent> openers, transitions;
-            BuildComponent * getComponent(string name) {
-                for (auto &opener : openers) {
-                    if (opener.name == name)
-                        return &opener;
-                }
-                for (auto &transition : transitions) {
-                    if (transition.name == name)
-                        return &transition;
-                }
-                return nullptr;
-            }
-
-            void setOpeners(vector<string> newOpeners) {
-                for (auto &opener : newOpeners)
-                    openers.push_back(BuildComponent(opener));
-            }
-
-            void setTransitions(vector<string> newTransitions) {
-                for (auto &transition : newTransitions)
-                    transitions.push_back(BuildComponent(transition));
-            }
-
-            Build(string _name) {
-                name = _name;
-            }
-        };
-
         bool mapLearning;
         vector<Build> myBuilds;
         stringstream ss;
@@ -84,7 +41,7 @@ namespace McRave::Learning {
 
             // Terran wall requirements
             if (Broodwar->self()->getRace() == Races::Terran)
-                return Walls::getMainWall();
+                return true;
             return false;
         }
 
@@ -329,38 +286,38 @@ namespace McRave::Learning {
             Build PoolLair("PoolLair");
 
             if (Players::ZvP()) {
-                PoolHatch.setOpeners({ "Overpool"});
-                PoolHatch.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra"});
+                PoolHatch.setOpeners({ "Overpool" });
+                PoolHatch.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra" });
 
-                HatchPool.setOpeners({ "10Hatch", "12Hatch"});
-                HatchPool.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra"});
+                HatchPool.setOpeners({ "10Hatch", "12Hatch" });
+                HatchPool.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra" });
 
-                myBuilds = { PoolHatch, HatchPool };
+                myBuilds ={ PoolHatch, HatchPool };
             }
 
             if (Players::ZvT()) {
-                PoolHatch.setOpeners({ "4Pool", "Overpool", "12Pool"});
-                PoolHatch.setTransitions({ "2HatchMuta", "3HatchMuta"});
+                PoolHatch.setOpeners({ "4Pool", "Overpool", "12Pool" });
+                PoolHatch.setTransitions({ "2HatchMuta", "3HatchMuta" });
 
-                HatchPool.setOpeners({ "12Hatch"});
-                HatchPool.setTransitions({ "2HatchMuta", "3HatchMuta"});
+                HatchPool.setOpeners({ "12Hatch" });
+                HatchPool.setTransitions({ "2HatchMuta", "3HatchMuta" });
 
-                myBuilds = { PoolHatch, HatchPool };
+                myBuilds ={ PoolHatch, HatchPool };
             }
 
             if (Players::ZvZ()) {
-                PoolHatch.setOpeners({ "12Pool"});
-                PoolHatch.setTransitions({ "2HatchMuta"/*, "2HatchHydra"*/});
+                PoolHatch.setOpeners({ "12Pool" });
+                PoolHatch.setTransitions({ "2HatchMuta"/*, "2HatchHydra"*/ });
 
-                PoolLair.setOpeners({ "9Pool"});
-                PoolLair.setTransitions({ "1HatchMuta"});
+                PoolLair.setOpeners({ "9Pool" });
+                PoolLair.setTransitions({ "1HatchMuta" });
 
                 myBuilds ={ PoolHatch, PoolLair };
             }
 
             if (Players::ZvR()) {
-                PoolHatch.setOpeners({ "Overpool"});
-                PoolHatch.setTransitions({ "2HatchMuta"});
+                PoolHatch.setOpeners({ "Overpool" });
+                PoolHatch.setTransitions({ "2HatchMuta" });
 
                 myBuilds ={ PoolHatch };
             }
@@ -387,7 +344,7 @@ namespace McRave::Learning {
 
             if (Players::TvZ()) {
                 TwoRax.setOpeners({ "11/13" });
-                TwoRax.setTransitions({ "Academny" });
+                TwoRax.setTransitions({ "Academy" });
 
                 myBuilds ={ TwoRax };
             }
@@ -403,6 +360,8 @@ namespace McRave::Learning {
                 terranBuildMaps();
         }
     }
+
+    vector<Build>& getBuilds() { return myBuilds; }
 
     void onEnd(bool isWinner)
     {

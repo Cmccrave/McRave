@@ -29,7 +29,7 @@ void McRaveModule::onStart()
     Goals::onStart();
 
     Broodwar->enableFlag(Flag::UserInput);
-    Broodwar->setCommandOptimizationLevel(1);
+    Broodwar->setCommandOptimizationLevel(0);
     Broodwar->setLatCom(true);
     Broodwar->sendText("glhf");
     Broodwar->setLocalSpeed(Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings ? 0 : 42);

@@ -56,9 +56,9 @@ namespace McRave::Combat::Bearings {
             //else if (unit.getInterceptPosition().isValid()) {
             //    unit.setDestination(unit.getInterceptPosition());
             //}
-            //else if (unit.getSurroundPosition().isValid()) {
-            //    unit.setDestination(unit.getSurroundPosition());
-            //}
+            else if (unit.getSurroundPosition().isValid()) {
+                unit.setDestination(unit.getSurroundPosition());
+            }
             else if (!unit.isFlying() && unit.getEngagePosition().isValid()) {
                 unit.setDestination(unit.getEngagePosition());
             }

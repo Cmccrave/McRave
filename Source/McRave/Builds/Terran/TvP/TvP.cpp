@@ -59,7 +59,7 @@ namespace McRave::BuildOrder::Terran
         upgradeQueue[UpgradeTypes::Ion_Thrusters] =     (s >= 100);
 
         // Upgrades
-        upgradeQueue[UpgradeTypes::Terran_Vehicle_Weapons] = (com(Terran_Armory) > 0);
+        upgradeQueue[UpgradeTypes::Terran_Vehicle_Weapons] = (com(Terran_Armory) > 0) * 2;
 
         // Gas
         gasLimit = 1;

@@ -510,7 +510,7 @@ namespace McRave::Planning {
                 if (Walls::needAirDefenses(wall) > colonies) {
 
                     // Try to always place in middle rows first
-                    for (int i = 2; i <= 3; i++) {
+                    for (int i = 2; i <= 2; i++) {
                         placement = returnClosest(building, wall.getDefenses(i), desiredCenter);
                         if (placement.isValid()) {
                             plannedAir.insert(placement);

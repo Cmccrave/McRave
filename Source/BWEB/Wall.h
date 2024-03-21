@@ -69,10 +69,11 @@ namespace BWEB {
 
         /// <summary> Returns the defense locations associated with this Wall. </summary>
         const set<TilePosition>& getDefenses(int row = 0) const {
+            row = std::clamp(row, 0, 2);
             auto ptr = defenses.find(row);
             if (ptr != defenses.end())
                 return (ptr->second);
-            return {};
+            throw row;
         }
 
         /// <summary> Returns the TilePosition belonging to the opening of the wall. </summary>

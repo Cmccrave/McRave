@@ -186,13 +186,11 @@ namespace McRave::BuildOrder::Protoss
     {
         if (!atPercent(Protoss_Cybernetics_Core, 1.00))
             return;
-
-        auto techVal = int(focusUnits.size()) - isFocusUnit(Protoss_Shuttle) + isFocusUnit(Protoss_Arbiter);
-        if (isFocusUnit(Protoss_Dark_Templar) && isFocusUnit(Protoss_High_Templar))
-            techVal--;
+        auto techOffset = 0;
 
         // PvP
         if (Players::PvP()) {
+            techOffset = 1;
             if (focusUnit == Protoss_Dark_Templar)
                 unitOrder ={ Protoss_High_Templar, Protoss_Observer };
             else
@@ -201,6 +199,7 @@ namespace McRave::BuildOrder::Protoss
 
         // PvZ
         if (Players::PvZ()) {
+            techOffset = 1;
             if (focusUnit == Protoss_Reaver)
                 unitOrder ={ Protoss_Corsair, Protoss_High_Templar };
             else if (focusUnit == Protoss_Corsair)
@@ -215,6 +214,7 @@ namespace McRave::BuildOrder::Protoss
 
         // PvT
         if (Players::PvT()) {
+            techOffset = 1;
             if (focusUnit == Protoss_Dark_Templar)
                 unitOrder ={ Protoss_Arbiter, Protoss_Observer, Protoss_High_Templar };
             else if (focusUnit == Protoss_Carrier)
@@ -227,7 +227,10 @@ namespace McRave::BuildOrder::Protoss
         if (Players::PvFFA()) {
             unitOrder ={ Protoss_Observer, Protoss_Reaver, Protoss_Carrier };
         }
-        techSat = techVal >= Stations::getGasingStationsCount();
+
+        const auto endOfTech = !unitOrder.empty() && isFocusUnit(unitOrder.back());
+        const auto techVal = int(focusUnits.size()) + techOffset + mineralThird;
+        techSat = (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
 
         // If we have our tech unit, set to none
         if (techComplete())
@@ -252,12 +255,6 @@ namespace McRave::BuildOrder::Protoss
         // If we need detection
         if (getTech && Spy::enemyInvis() && !isFocusUnit(desiredDetection))
             focusUnit = desiredDetection;
-
-        // Various hardcoded tech choices
-        else if (getTech && currentTransition == "DoubleExpand" && !isFocusUnit(Protoss_High_Templar))
-            focusUnit = Protoss_High_Templar;
-        else if (getTech && Spy::getEnemyTransition() == "4Gate" && !isFocusUnit(Protoss_Dark_Templar) && !Spy::enemyGasSteal())
-            focusUnit = Protoss_Dark_Templar;
 
         getNewTech();
         getTechBuildings();

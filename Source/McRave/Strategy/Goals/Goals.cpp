@@ -51,7 +51,7 @@ namespace McRave::Goals {
             for (int current = 0; current < count; current++) {
                 if (type.isFlyer()) {
                     const auto closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
-                        if (gType == GoalType::Attack && u->getGlobalState() == GlobalState::ForcedRetreat)
+                        if (gType == GoalType::Attack && (u->getGlobalState() == GlobalState::ForcedRetreat || u->getLocalState() != LocalState::None))
                             return false;
                         return u->getType() == type && !u->getGoal().isValid();
                     });
@@ -64,7 +64,7 @@ namespace McRave::Goals {
 
                 else {
                     const auto closest = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
-                        if (gType == GoalType::Attack && u->getGlobalState() == GlobalState::ForcedRetreat)
+                        if (gType == GoalType::Attack && (u->getGlobalState() == GlobalState::ForcedRetreat || u->getLocalState() != LocalState::None))
                             return false;
                         return u->getType() == type && !u->getGoal().isValid();
                     });
@@ -277,6 +277,7 @@ namespace McRave::Goals {
                 return;
 
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
+            auto enemyAir = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith);
 
             // Clear out base early game
             if (Util::getTime() < Time(4, 00) && !Spy::enemyProxy() && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
@@ -329,20 +330,22 @@ namespace McRave::Goals {
                     assignNumberToGoal(closestSpore->getPosition(), Zerg_Overlord, 1, GoalType::Escort);
                 else if (closestSunk)
                     assignNumberToGoal(closestSunk->getPosition(), Zerg_Overlord, 1, GoalType::Escort);
-                else
+                else if (!enemyAir)
                     assignNumberToGoal(station->getBase()->Center(), Zerg_Overlord, 1, GoalType::Escort);
             }
 
             // Assign an Overlord to each main choke
-            for (auto &station : Stations::getStations(PlayerState::Self)) {
-                if (station->isMain()) {
-                    auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
-                    if (Players::ZvP() || Players::ZvT()) {
-                        if (closestNatural && Stations::ownedBy(closestNatural) == PlayerState::Self && station->getChokepoint())
+            if (!enemyAir) {
+                for (auto &station : Stations::getStations(PlayerState::Self)) {
+                    if (station->isMain()) {
+                        auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
+                        if (Players::ZvP() || Players::ZvT()) {
+                            if (closestNatural && Stations::ownedBy(closestNatural) == PlayerState::Self && station->getChokepoint())
+                                assignNumberToGoal(station->getChokepoint()->Center(), Zerg_Overlord, 1, GoalType::Escort);
+                        }
+                        if (Players::ZvZ() && Players::getStrength(PlayerState::Enemy).airToAir == 0.0)
                             assignNumberToGoal(station->getChokepoint()->Center(), Zerg_Overlord, 1, GoalType::Escort);
                     }
-                    if (Players::ZvZ() && Players::getStrength(PlayerState::Enemy).airToAir == 0.0)
-                        assignNumberToGoal(station->getChokepoint()->Center(), Zerg_Overlord, 1, GoalType::Escort);
                 }
             }
 
@@ -358,21 +361,14 @@ namespace McRave::Goals {
                 }
             }
 
+            // Before we have a spore, we need to defend overlords            
+            auto &stations = Stations::getStations(PlayerState::Self);
+            auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto& s) { return s->isMain(); }));
+
             // Before Hydras have upgrades, defend vulnerable bases
             if (Combat::State::isStaticRetreat(Zerg_Hydralisk)) {
-                auto &stations = Stations::getStations(PlayerState::Self);
+                auto percentPer = 1.0 / double(stations.size() - mainStations);
                 if (!stations.empty()) {
-                    auto enemyAir = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith);
-                    auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto& s) { return s->isMain(); }));
-                    auto percentPer = 1.0 / double(stations.size() - mainStations);
-
-                    if (enemyAir > 0) {
-                        for (auto &station : stations) {
-                            if (station->isMain())
-                                assignNumberToGoal(station->getBase()->Center(), Zerg_Hydralisk, 1, GoalType::Defend);
-                        }
-                    }
-
                     for (auto &station : stations) {
                         if (!station->isMain())
                             assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, percentPer, GoalType::Defend);

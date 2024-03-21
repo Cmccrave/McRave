@@ -67,12 +67,9 @@ namespace McRave::Upgrading {
             // If we have an upgrade order, follow it
             auto incompleteQueue = false;
             for (auto &[u, cnt] : BuildOrder::getUpgradeQueue()) {
-                if (cnt == 0)
-                    incompleteQueue = true;
                 if (!haveOrUpgrading(u, cnt)) {
                     incompleteQueue = true;
-                    Broodwar << upgrade.c_str() << cnt << endl;
-                    if (upgrade == u && cnt > 0)
+                    if (u == upgrade && cnt > 0)
                         return true;
                 }
             }

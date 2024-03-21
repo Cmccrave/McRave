@@ -41,7 +41,9 @@ namespace McRave::Combat::Simulation {
         auto belowAirtoAirLimit = false;
         auto belowAirtoGrdLimit = false;
         auto unitTarget = unit.getTarget().lock();
-        auto somethingEngaged = false;
+        auto selfEngaged = false;
+        auto enemyEngaged = false;
+        auto allyEngaged = false;
 
         // Check if any allied unit is below the limit to synchronize sim values
         for (auto &u : Units::getUnits(PlayerState::Self)) {
@@ -49,8 +51,8 @@ namespace McRave::Combat::Simulation {
 
             if (self.hasTarget()) {
                 auto selfTarget = self.getTarget().lock();
-                if (self.isWithinRange(*selfTarget))
-                    somethingEngaged = true;
+                if (self.isWithinRange(*selfTarget) && self.getSimState() == SimState::Win)
+                    selfEngaged = true;
                 if (selfTarget == unitTarget && self.getSimValue() <= minThreshold && self.getSimValue() != 0.0) {
                     self.isFlying() ?
                         (selfTarget->isFlying() ? belowAirtoAirLimit = true : belowAirtoGrdLimit = true) :
@@ -63,8 +65,8 @@ namespace McRave::Combat::Simulation {
 
             if (enemy.hasTarget()) {
                 auto enemyTarget = enemy.getTarget().lock();
-                if (enemy.isWithinRange(*enemyTarget))
-                    somethingEngaged = true;
+                if (enemy.isWithinRange(*enemyTarget) && enemy.hasAttackedRecently())
+                    enemyEngaged = true;
             }
         }
         for (auto &u : Units::getUnits(PlayerState::Ally)) {
@@ -72,8 +74,8 @@ namespace McRave::Combat::Simulation {
 
             if (ally.hasTarget()) {
                 auto allyTarget = ally.getTarget().lock();
-                if (ally.isWithinRange(*allyTarget))
-                    somethingEngaged = true;
+                if (ally.isWithinRange(*allyTarget) && ally.hasAttackedRecently())
+                    allyEngaged = true;
                 if (ally.getTarget() == unit.getTarget() && ally.getSimValue() <= minThreshold && ally.getSimValue() != 0.0) {
                     ally.isFlying() ?
                         (allyTarget->isFlying() ? belowAirtoAirLimit = true : belowAirtoGrdLimit = true) :
@@ -81,16 +83,18 @@ namespace McRave::Combat::Simulation {
                 }
             }
         }
-        auto engagedAlreadyOffset = somethingEngaged ? 0.2 : 0.0;
+
+        if (selfEngaged || !enemyEngaged)
+            maxThreshold = minThreshold;
 
         // If above/below thresholds, it's a sim win/loss
-        if (unit.getSimValue() >= maxThreshold - engagedAlreadyOffset)
+        if (unit.getSimValue() >= maxThreshold)
             unit.setSimState(SimState::Win);
         else if (unit.getSimValue() < minThreshold || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
             unit.setSimState(SimState::Loss);
 
         // Check for hardcoded directional losses
-        if (unit.getSimValue() < maxThreshold - engagedAlreadyOffset) {
+        if (unit.getSimValue() < maxThreshold) {
             if (unit.isFlying()) {
                 if (unitTarget->isFlying() && belowAirtoAirLimit)
                     unit.setSimState(SimState::Loss);
@@ -186,12 +190,10 @@ namespace McRave::Combat::Simulation {
         }
 
         // Adjust winrates based on how close to self station we are
-        if (Util::getTime() < Time(4, 00)) {
-            const auto insideDefendingChoke = (Combat::holdAtChoke() || Combat::isDefendNatural()) && Terrain::inTerritory(PlayerState::Self, target.getPosition()) && Terrain::inArea(Combat::getDefendArea(), target.getPosition());
-            if (insideDefendingChoke || target.isThreatening()) {
-                minWinPercent = 0.0;
-                maxWinPercent = 0.5;
-            }
+        const auto insideDefendingChoke = (Combat::holdAtChoke() || Combat::isDefendNatural()) && Terrain::inTerritory(PlayerState::Self, target.getPosition()) && Terrain::inArea(Combat::getDefendArea(), target.getPosition());
+        if (insideDefendingChoke || target.isThreatening()) {
+            minWinPercent -= 0.5;
+            maxWinPercent -= 0.5;
         }
 
         minThreshold = minWinPercent;

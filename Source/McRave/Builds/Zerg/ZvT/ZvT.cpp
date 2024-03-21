@@ -94,11 +94,8 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit =                                     Zerg_Mutalisk;
         inBookSupply =                                  total(Zerg_Mutalisk) < 6;
 
-        auto thirdHatch =  (total(Zerg_Mutalisk) >= 6) || (wantThird && s >= 48);
-        planEarly = inOpening && hatchCount() == 2 && wantThird && Util::getTime() > Time(3, 45);
-
         // Buildings
-        buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
+        buildQueue[Zerg_Hatchery] =                     2 + (s >= 48);
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 16);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (2 * atPercent(Zerg_Spire, 0.25));
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));

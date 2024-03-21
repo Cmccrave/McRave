@@ -89,6 +89,8 @@ namespace McRave::Combat::Formations {
         auto checkPosition = [&](Position &p, Position &last, bool& skip, int& bump) {            
             if (skip
                 || !p.isValid()
+                || (p == lastPositions.first)
+                || (p == lastPositions.second)
                 //|| Planning::overlapsPlan(p) impl?
                 || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None
                 || (p.getDistance(first) > concave.leash)
@@ -222,7 +224,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
-        //drawFormations();
+        drawFormations();
     }
 
     vector<Formation>& getFormations() { return formations; }

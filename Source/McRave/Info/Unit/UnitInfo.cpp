@@ -137,8 +137,8 @@ namespace McRave
 
             // Attack Frame
             if ((getType() == Protoss_Reaver && unit()->getGroundWeaponCooldown() >= 59)
-                || (getType() != Protoss_Reaver && canAttackGround() && unit()->getGroundWeaponCooldown() >= type.groundWeapon().damageCooldown() - 1)
-                || (getType() != Protoss_Reaver && canAttackAir() && unit()->getAirWeaponCooldown() >= type.airWeapon().damageCooldown() - 1)
+                //|| (getType() != Protoss_Reaver && canAttackGround() && unit()->getGroundWeaponCooldown() >= type.groundWeapon().damageCooldown() - 1)
+                //|| (getType() != Protoss_Reaver && canAttackAir() && unit()->getAirWeaponCooldown() >= type.airWeapon().damageCooldown() - 1)
                 || unit()->isStartingAttack())
                 lastAttackFrame         = Broodwar->getFrameCount();
 
@@ -231,7 +231,14 @@ namespace McRave
             });
         }
 
-        target.reset();
+        if (commandText != "") {
+            const auto color = Text::White;
+            const auto height = getType().height() / 2;
+            const auto pText = getPosition() + Position(-4 * int(commandText.length() / 2), height);
+            Broodwar->drawTextMap(pText, "%c%s", color, commandText.c_str());
+        }
+
+        target_.reset();
         unitsTargetingThis.clear();
     }
 
@@ -320,8 +327,11 @@ namespace McRave
     void UnitInfo::checkThreatening()
     {
         if (!getPlayer()->isEnemy(Broodwar->self())
-            || getType() == Zerg_Overlord)
+            || getType() == Zerg_Overlord
+            || !hasTarget())
             return;
+
+        auto &target = *target_.lock();
 
         // Determine how close it is to strategic locations
         const auto choke = Combat::isDefendNatural() ? Terrain::getNaturalChoke() : Terrain::getMainChoke();
@@ -338,19 +348,9 @@ namespace McRave
         const auto nearMe = atHome || atChoke;
 
         // If the unit attacked defenders, workers or buildings
-        const auto attackedDefender = hasAttackedRecently() && hasTarget() && Terrain::inTerritory(PlayerState::Self, getTarget().lock()->getPosition()) && getTarget().lock()->getRole() == Role::Defender;
-        const auto attackedWorkers = hasAttackedRecently() && hasTarget() && Terrain::inTerritory(PlayerState::Self, getTarget().lock()->getPosition()) && getTarget().lock()->getRole() == Role::Worker;
-        const auto attackedBuildings = hasAttackedRecently() && hasTarget() && getTarget().lock()->getType().isBuilding();
-
-        auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-            return u->getRole() == Role::Defender && u->canAttackGround() && u->isCompleted();
-        });
-        auto closestBuilder = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-            return u->getRole() == Role::Worker && u->getBuildPosition().isValid() && u->getBuildType().isValid();
-        });
-        auto fragileBuilding = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-            return !u->isHealthy() && u->getType().isBuilding() && (u->isCompleted() || isWithinRange(*u)) && Terrain::inTerritory(PlayerState::Self, u->getPosition());
-        });
+        const auto attackedDefender = hasAttackedRecently() && Terrain::inTerritory(PlayerState::Self, target.getPosition()) && target.getRole() == Role::Defender;
+        const auto attackedWorkers = hasAttackedRecently() && Terrain::inTerritory(PlayerState::Self, target.getPosition()) && (target.getRole() == Role::Worker || target.getRole() == Role::Support);
+        const auto attackedBuildings = hasAttackedRecently() && target.getType().isBuilding();
 
         // Some hardcoded checks
         auto aggroTime = Time(0, 00);
@@ -376,6 +376,9 @@ namespace McRave
         auto nearDefenders = [&]() {
             if (Util::getTime() < aggroTime)
                 return false;
+            auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
+                return u->getRole() == Role::Defender && u->canAttackGround() && u->isCompleted();
+            });
             return (closestDefender && closestDefender->isWithinRange(*this) && Terrain::inTerritory(PlayerState::Self, position))
                 || (closestDefender && isWithinRange(*closestDefender))
                 || Zones::getZone(getPosition()) == ZoneType::Defend
@@ -384,12 +387,18 @@ namespace McRave
 
         // Checks if it can damage an already damaged building
         auto nearFragileBuilding = [&]() {
+            auto fragileBuilding = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
+                return !u->isHealthy() && u->getType().isBuilding() && (u->isCompleted() || isWithinRange(*u)) && Terrain::inTerritory(PlayerState::Self, u->getPosition());
+            });
             return fragileBuilding && canAttackGround() && Util::boxDistance(fragileBuilding->getType(), fragileBuilding->getPosition(), getType(), getPosition()) < proximityCheck;
         };
 
         // Check if any builders can be hit or blocked
         auto nearBuildPosition = [&]() {
             if (atHome && !isFlying() && Util::getTime() < Time(5, 00)) {
+                auto closestBuilder = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
+                    return u->getRole() == Role::Worker && u->getBuildPosition().isValid() && u->getBuildType().isValid();
+                });
                 if (closestBuilder) {
                     auto center = Position(closestBuilder->getBuildPosition()) + Position(closestBuilder->getBuildType().tileWidth() * 16, closestBuilder->getBuildType().tileHeight() * 16);
                     if (Util::boxDistance(getType(), getPosition(), closestBuilder->getBuildType(), center) < proximityCheck
@@ -438,9 +447,17 @@ namespace McRave
         else
             threateningFrames = 0;
 
-        if (threateningFrames > 24)
+        if (threateningFrames > 8)
             lastThreateningFrame = Broodwar->getFrameCount();
         threatening = Broodwar->getFrameCount() - lastThreateningFrame <= 8;
+
+        if (threatening) {
+            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                auto &unit = *u;
+                if (unit.getPosition().getDistance(getPosition()) < 320.0)
+                    unit.threatening = true;
+            }
+        }
     }
 
     void UnitInfo::checkProxy()
@@ -519,23 +536,24 @@ namespace McRave
         auto frames = isLightAir() ? 3 : 12;
         auto newCommandPosition = commandPosition.getDistance(here) > 32;
         auto newCommandType = commandType != cmd;
-        auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() > frames;
+        auto newCommandFrame = Broodwar->getFrameCount() - commandFrame > frames;
 
         // Allows skipping the command but still printing the result to screen
         auto executeCommand = (!cancelAttackRisk || isLightAir()) && (newCommandPosition || newCommandType || newCommandFrame);
         if (executeCommand) {
             commandPosition = here;
             commandType = cmd;
+            commandFrame = Broodwar->getFrameCount();
         }
 
         // Check if we should overshoot for halting distance
         if (cmd == UnitCommandTypes::Move && !getBuildPosition().isValid() && (isFlying() || isHovering() || getType() == Protoss_High_Templar || attemptingSurround())) {
-            auto distance = int(getPosition().getDistance(here));
-            auto haltDistance = max({ distance, 32, getType().haltDistance() / 256 });
+            auto distance = getPosition().getDistance(here);
+            auto haltDistance = max({ distance, 32.0, double(getType().haltDistance()) / 256.0 });
             auto overShootHere = here;
 
-            if (distance > 0) {
-                overShootHere = getPosition() - ((getPosition() - here) * int(round(haltDistance / distance)));
+            if (haltDistance > 0) {
+                overShootHere = Util::shiftTowards(getPosition(), here, haltDistance);
                 overShootHere = Util::clipLine(getPosition(), overShootHere);
             }
             if (isFlying() || (isHovering() && Util::findWalkable(*this, overShootHere)))
@@ -566,13 +584,14 @@ namespace McRave
         auto frames = isLightAir() ? 3 : 12;
         auto newCommandTarget = unit()->getLastCommand().getTarget() != targetUnit.unit();
         auto newCommandType = commandType != cmd;
-        auto newCommandFrame = Broodwar->getFrameCount() - unit()->getLastCommandFrame() > frames;
+        auto newCommandFrame = Broodwar->getFrameCount() - commandFrame > frames;
 
         // Allows skipping the command but still printing the result to screen
         auto executeCommand = (!cancelAttackRisk || isLightAir()) && (newCommandTarget || newCommandType || newCommandFrame);
         if (executeCommand) {
             commandPosition = targetUnit.getPosition();
             commandType = cmd;
+            commandFrame = Broodwar->getFrameCount();
         }
 
         // Add action
@@ -587,33 +606,25 @@ namespace McRave
         }
     }
 
-    void UnitInfo::setCommandText(string text)
-    {
-        const auto color = Text::White;
-        const auto height = getType().height() / 2;
-        const auto pText = getPosition() + Position(-4 * int(text.length() / 2), height);
-        Broodwar->drawTextMap(pText, "%c%s", color, text.c_str());
-    }
-
     bool UnitInfo::canStartAttack()
     {
         if (!hasTarget()
             || (!targetsFriendly() && getGroundDamage() == 0 && getAirDamage() == 0)
             || (getType() == UnitTypes::Zerg_Lurker && !isBurrowed()))
             return false;
-        auto unitTarget = getTarget().lock();
+        auto& target = *getTarget().lock();
 
-        if (isSuicidal())
+        if (isSuicidal() || getType().topSpeed() <= 0.0)
             return true;
 
         // Special Case: Medics
         if (getType() == Terran_Medic)
-            return unitTarget->getPercentTotal() < 1.0 && getEnergy() > 0;
+            return target.getPercentTotal() < 1.0 && getEnergy() > 0;
 
         // Special Case: Carriers
         if (getType() == UnitTypes::Protoss_Carrier) {
             auto leashRange = 320;
-            if (getPosition().getDistance(unitTarget->getPosition()) >= leashRange)
+            if (getPosition().getDistance(target.getPosition()) >= leashRange)
                 return true;
             for (auto &interceptor : unit()->getInterceptors()) {
                 if (interceptor->getOrder() != Orders::InterceptorAttack && interceptor->getShields() == interceptor->getType().maxShields() && interceptor->getHitPoints() == interceptor->getType().maxHitPoints() && interceptor->isCompleted())
@@ -624,16 +635,52 @@ namespace McRave
 
         // Special Case: Reavers - Shuttles reset the cooldown of their attacks to 30 frames not 60 frames
         if (getType() == Protoss_Reaver && hasTransport() && unit()->isLoaded()) {
-            auto dist = Util::boxDistance(getType(), getPosition(), unitTarget->getType(), unitTarget->getPosition());
+            auto dist = Util::boxDistance(getType(), getPosition(), target.getType(), target.getPosition());
             return (dist <= getGroundRange());
         }
 
-        auto weaponCooldown = getType() == Protoss_Reaver ? 60 : (unitTarget->getType().isFlyer() ? getType().airWeapon().damageCooldown() : getType().groundWeapon().damageCooldown());
-        auto cooldown = lastAttackFrame + (weaponCooldown / 2) - Broodwar->getFrameCount() + Broodwar->getLatencyFrames();
-        auto speed = hasTransport() ? getTransport().lock()->getSpeed() : getSpeed();
-        auto range = (unitTarget->getType().isFlyer() ? getAirRange() : getGroundRange());
-        auto boxDistance = Util::boxDistance(getType(), getPosition(), unitTarget->getType(), unitTarget->getPosition()) + (currentSpeed * Broodwar->getLatencyFrames());
-        auto cooldownReady = getSpeed() > 0.0 ? max(0, cooldown) <= max(0.0, boxDistance - range) / speed : cooldown <= 0.0;
+        // Last attack frame - confirmed
+        auto weaponCooldown = (getType() == Protoss_Reaver) ? 60 : (target.getType().isFlyer() ? getType().airWeapon().damageCooldown() : getType().groundWeapon().damageCooldown());
+        const auto framesSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
+        auto cooldown = weaponCooldown - framesSinceAttack;
+
+
+        auto angle = BWEB::Map::getAngle(getPosition(), target.getPosition());
+        auto facingAngle = 6.18 - unit()->getAngle(); // Reverse direction to counter clockwise, as it should be
+        auto angleDiff = (M_PI - fabs(fmod(fabs(angle - facingAngle), 2 * M_PI) - M_PI));
+
+        // Time to turn and face - confirmed
+        auto turnFrames = 0.0;
+        if (getType().turnRadius() > 0.0) {
+            auto turnSpeed = (getType().turnRadius() * 0.0174533); // Degs/framme -> Rads/frame, muta is 40deg per frame, so a turn around takes 5 frames ceil(180/40)
+            turnFrames = angleDiff / turnSpeed;
+        }
+
+        // Time to arrive in range - confirmed
+        auto arrivalFrames = 0.0;
+        if (getSpeed() > 0.0) {
+            auto boxDistance = double(Util::boxDistance(getType(), getPosition(), target.getType(), target.getPosition()));
+            auto range = (target.getType().isFlyer() ? getAirRange() : getGroundRange());
+            auto speed = hasTransport() ? getTransport().lock()->getSpeed() : getSpeed();
+            arrivalFrames = max(0.0, (boxDistance - range) / speed);
+        }
+
+        // Time to deccel/accel - WIP it's kinda fucked idk?
+        auto celcelFrames = 0.0;
+        if (isFlying() || isHovering()) {
+            auto velocityVector = getPosition() + Position(32.0 * unit()->getVelocityX(), 32.0 * unit()->getVelocityY()); // You think I care it's a Position?
+            auto velocityDirection = BWEB::Map::getAngle(getPosition(), velocityVector);
+            auto directionDiff = (M_PI - fabs(fmod(fabs(angle - velocityDirection), 2 * M_PI) - M_PI));
+            auto allowableAngle = 0.279253; // Mutas (TODO)
+            directionDiff = max(0.0, directionDiff - allowableAngle);
+            auto directionPercent = clamp(directionDiff / angleDiff, 0.0, 1.0);
+
+            auto velocityPercent = clamp((getType().topSpeed() - currentSpeed) / getType().topSpeed(), 0.0, 1.0);
+            auto accelPercent = clamp(velocityPercent + directionPercent, 0.0, 2.0);
+            celcelFrames =  accelPercent / (getType().acceleration() / 256.0);
+        }
+
+        auto cooldownReady = cooldown <= min(int(turnFrames + arrivalFrames + celcelFrames), weaponCooldown / 2);
         return cooldownReady;
     }
 
@@ -751,9 +798,9 @@ namespace McRave
         if (!isFlying())
             return true;
 
-        auto desiredAngle = BWEB::Map::getAngle(make_pair(getPosition(), otherUnit.getPosition()));
-        auto currentAngle = 6.18 - unit()->getAngle(); // Reverse direction to counter clockwise, as it should be
-        return abs(desiredAngle - currentAngle) < 0.9;
+        auto angle = BWEB::Map::getAngle(make_pair(getPosition(), otherUnit.getPosition()));
+        auto facingAngle = 6.18 - unit()->getAngle(); // Reverse direction to counter clockwise, as it should be
+        return (M_PI - fabs(fmod(fabs(angle - facingAngle), 2 * M_PI) - M_PI)) < 0.279253;
     }
 
     bool UnitInfo::isWithinBuildRange()
@@ -849,7 +896,7 @@ namespace McRave
     bool UnitInfo::attemptingSurround()
     {
         return false;
-        if (attemptingRunby() || !hasTarget() || (hasTarget() && (getTarget().lock()->getType().isWorker() || getTarget().lock()->getCurrentSpeed() <= 0.0)))
+        if (attemptingRunby() || Util::getTime() < Time(4, 00) || !hasTarget() || (hasTarget() && getTarget().lock()->getType().isWorker()))
             return false;
         if (surroundPosition.isValid() && !Terrain::inTerritory(PlayerState::Enemy, surroundPosition) && position.getDistance(surroundPosition) > 16.0)
             return true;

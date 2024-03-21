@@ -38,7 +38,8 @@ namespace McRave::Pathing {
             // Create a binary search tree in a circle around the target
             else {
                 const auto calc = [&](auto p) {
-                    return BWEB::Map::getGroundDistance(p, unit.getPosition()) + BWEB::Map::getGroundDistance(p, target.getPosition());
+                    return p.getDistance(unit.getPosition());
+                    //return BWEB::Map::getGroundDistance(p, unit.getPosition()) + BWEB::Map::getGroundDistance(p, target.getPosition());
                 };
                 auto engage = Util::findPointOnCircle(unit.getPosition(), target.getPosition(), range + 32.0, calc);
                 unit.setEngagePosition(engage.second);
@@ -126,7 +127,7 @@ namespace McRave::Pathing {
 
                     // Get time to arrive to the surround position
                     if (closestTargeter) {
-                        auto framesToArrive = clamp((2.0 * (closestTargeter->getPosition().getDistance(pos)) / max(1.0, (closestTargeter->getSpeed() - unit.getSpeed()))), double(Broodwar->getLatencyFrames() * 2), 128.0);
+                        auto framesToArrive = clamp(closestTargeter->getPosition().getDistance(pos) / unit.getSpeed(), double(Broodwar->getLatencyFrames() * 2), 128.0);
                         auto dirx = (trapTowards.x - unit.getPosition().x) / unit.getPosition().getDistance(trapTowards);
                         auto diry = (trapTowards.y - unit.getPosition().y) / unit.getPosition().getDistance(trapTowards);
                         auto correctedPos = pos + Position(int(dirx * framesToArrive), int(diry * framesToArrive));

@@ -123,7 +123,7 @@ namespace McRave::Spy::Terran {
             auto hasGols = Players::getVisibleCount(PlayerState::Enemy, Terran_Goliath) > 0;
             auto hasWraiths = Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > 0;
 
-            if (theSpy.workersPulled >= 5 && Util::getTime() < Time(3, 00))
+            if (theSpy.workersPulled >= 4 && Util::getTime() < Time(3, 00))
                 theSpy.transition.name = "WorkerRush";
 
             // PvT

@@ -36,7 +36,7 @@ namespace McRave::Math {
         const auto surv = log(survivability(unit));
         const auto eff = grdEffectiveness(unit);
         const auto range = log(unit.getGroundRange() / 4.0 + 32.0);
-        return dps * range * surv /** eff*/;
+        return dps * range * surv * eff;
     }
 
     double visibleGroundStrength(UnitInfo& unit)
@@ -114,7 +114,7 @@ namespace McRave::Math {
             }
         }
 
-        auto ff = unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding() ? 1.00 : 0;
+        auto ff = (unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding()) ? 1.00 : 0;
         auto dps = ff + max(groundDPS(unit) / maxGrdDps, airDPS(unit) / maxAirDps);
         auto cost = relativeCost(unit) / maxCost;
         auto surv = survivability(unit) / maxSurv;
@@ -201,42 +201,26 @@ namespace McRave::Math {
             return 2.00;
         if (unit.getType() == Terran_Valkyrie || unit.getType() == Zerg_Mutalisk)
             return 1.50;
-        if (unit.getType() == Zerg_Lurker && Players::ZvT())
+        if (unit.getType() == Zerg_Lurker)
             return 2.00;
         return 1.00;
     }
 
     double grdEffectiveness(UnitInfo& unit)
     {
-        auto &sizes = unit.getPlayer() == Broodwar->self() ? Units::getEnemyGrdSizes() : Units::getAllyGrdSizes();
-        auto large = double(sizes[UnitSizeTypes::Large]);
-        auto medium = double(sizes[UnitSizeTypes::Medium]);
-        auto small = double(sizes[UnitSizeTypes::Small]);
-        auto total = double(large + medium + small);
+        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
 
-        if (total > 0.0) {
-            if (unit.getType().groundWeapon().damageType() == DamageTypes::Explosive)
-                return ((large*1.0) + (medium*0.75) + (small*0.5)) / total;
-            else if (unit.getType().groundWeapon().damageType() == DamageTypes::Concussive)
-                return ((large*0.25) + (medium*0.5) + (small*1.0)) / total;
-        }
+        if (unit.getType().groundWeapon().damageType() == DamageTypes::Explosive || unit.getType().groundWeapon().damageType() == DamageTypes::Concussive)
+            return Units::getDamageRatioGrd(state, unit.getType().groundWeapon().damageType());
         return 1.0;
     }
 
     double airEffectiveness(UnitInfo& unit)
     {
-        auto &sizes = unit.getPlayer() == Broodwar->self() ? Units::getEnemyAirSizes() : Units::getAllyAirSizes();
-        auto large = double(sizes[UnitSizeTypes::Large]);
-        auto medium = double(sizes[UnitSizeTypes::Medium]);
-        auto small = double(sizes[UnitSizeTypes::Small]);
-        auto total = double(large + medium + small);
+        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
 
-        if (total > 0.0) {
-            if (unit.getType().airWeapon().damageType() == DamageTypes::Explosive)
-                return ((large*1.0) + (medium*0.75) + (small*0.5)) / total;
-            else if (unit.getType().airWeapon().damageType() == DamageTypes::Concussive)
-                return ((large*0.25) + (medium*0.5) + (small*1.0)) / total;
-        }
+        if (unit.getType().airWeapon().damageType() == DamageTypes::Explosive || unit.getType().airWeapon().damageType() == DamageTypes::Concussive)
+            return Units::getDamageRatioAir(state, unit.getType().airWeapon().damageType());
         return 1.0;
     }
 
@@ -249,8 +233,11 @@ namespace McRave::Math {
         };
 
         const auto avgUnitSpeed = 4.34;
-        const auto speed = (unit.getSpeed() + avgUnitSpeed) / avgUnitSpeed;
-        const auto health = (double(unit.getType().maxHitPoints() + unit.getType().maxShields())) / 35.0;
+        auto speed = (unit.getSpeed() + avgUnitSpeed) / avgUnitSpeed;
+        if (unit.isSiegeTank() || unit.getType() == Zerg_Lurker)
+            speed = 1.0;
+
+        const auto health = (double(unit.getType().maxHitPoints() + (unit.getType().maxShields() / 4.0))) / 35.0;
         return speed * armor() * health;
     }
 
@@ -280,7 +267,7 @@ namespace McRave::Math {
         if (unit.getType() == Zerg_Ultralisk)
             return 48.0;
         if (unit.getType() == Zerg_Lurker)
-            return 192.0 - (96.0 * !unit.isBurrowed());
+            return 192.0;
         return double(unit.getType().groundWeapon().maxRange());
     }
 

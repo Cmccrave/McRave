@@ -23,7 +23,6 @@ namespace McRave::Support {
             });
 
             if (closestSpore) {
-                unit.setDestination(closestSpore->getPosition());
                 for (int x = -1; x <= 1; x++) {
                     for (int y = -1; y <= 1; y++) {
                         auto center = Position(closestSpore->getTilePosition() + TilePosition(x, y)) + Position(16, 16);
@@ -36,9 +35,12 @@ namespace McRave::Support {
                         }
                     }
                 }
+
+                unit.setDestination(closestSpore->getPosition());
+                return;
             }
 
-            if (Stations::needAirDefenses(Terrain::getMyNatural()) > 0) {
+            if (Stations::needAirDefenses(Terrain::getMyNatural()) > 0 || (Players::ZvP() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0)) {
                 unit.setDestination(Terrain::getMyNatural()->getBase()->Center());
                 return;
             }
@@ -54,6 +56,10 @@ namespace McRave::Support {
                             unit.setDestination(position);
                     }
                 }
+            }
+
+            if (closestStation) {
+                unit.setDestination(closestStation->getBase()->Center());
             }
         }
 

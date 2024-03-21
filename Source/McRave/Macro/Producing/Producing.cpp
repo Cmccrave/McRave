@@ -345,7 +345,7 @@ namespace McRave::Producing {
                     if (!larva.unit()
                         || larva.getType() != Zerg_Larva
                         || larva.getRole() != Role::Production
-                        || (bestType == Zerg_Overlord && !station->isNatural() && Players::ZvP() && Util::getTime() > Time(4, 00) && Util::getTime() < Time(7, 00) && Spy::getEnemyTransition() == "Corsair")
+                        || (bestType == Zerg_Overlord && !station->isNatural() && Players::ZvP() && Util::getTime() > Time(4, 00))
                         || ((bestType == Zerg_Overlord || bestType.isWorker()) && larva.isProxy())
                         || (larva.isProxy() && bestType != Zerg_Hydralisk && BuildOrder::getCurrentTransition().find("Lurker") != string::npos)
                         || (!larva.isProxy() && BuildOrder::isProxy() && bestType == Zerg_Hydralisk)

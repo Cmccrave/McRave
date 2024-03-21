@@ -6,6 +6,8 @@ using namespace UnitTypes;
 
 namespace McRave::Combat::Decision {
 
+    multimap<int, UnitInfo&> commandQueue;
+
     void updateDecision(UnitInfo& unit)
     {
         //Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
@@ -34,16 +36,18 @@ namespace McRave::Combat::Decision {
 
     void onFrame()
     {
+        int x = 0;
+        commandQueue.clear();
         for (auto &cluster : Clusters::getClusters()) {
 
             // Update the commander first
             auto commander = cluster.commander.lock();
-            if (commander)
+            if (commander && commander->isLightAir())
                 updateDecision(*commander);
 
             // Update remaining units
             for (auto &unit : cluster.units) {
-                if (unit == &*commander)
+                if (unit == &*commander && commander->isLightAir())
                     continue;
 
                 auto sharedDecision = cluster.commandShare == CommandShare::Exact && unit->getLocalState() != LocalState::ForcedRetreat && unit->getGlobalState() != GlobalState::ForcedRetreat && !unit->isNearSuicide()
@@ -53,8 +57,17 @@ namespace McRave::Combat::Decision {
                 if (sharedDecision)
                     updateSharedDecision(*unit, *commander);
                 else
-                    updateDecision(*unit);
+                    commandQueue.emplace(unit->commandFrame, *unit);
             }
+        }
+
+        for (auto &[_, unit] : commandQueue) {
+            if (Broodwar->getFrameCount() - unit.commandFrame > Broodwar->getLatencyFrames() + 3) {
+                x++;
+                updateDecision(unit);
+            }
+            if (x >= 60)
+                break;
         }
     }
 }

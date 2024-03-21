@@ -451,8 +451,8 @@ namespace McRave::Stations
         for (auto& tile : station->getDefenses()) {
             if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony)
                 colonies++;
-            if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony && wallNeeds && BWEB::Walls::getWall(station->getChokepoint())->getDefenses().find(tile) != BWEB::Walls::getWall(station->getChokepoint())->getDefenses().end())
-                colonies--;
+            //if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony && wallNeeds && BWEB::Walls::getWall(station->getChokepoint())->getDefenses().find(tile) != BWEB::Walls::getWall(station->getChokepoint())->getDefenses().end())
+            //    colonies--;
         }
         if (BWEB::Map::isUsed(station->getPocketDefense()) == Zerg_Creep_Colony)
             colonies++;
@@ -515,6 +515,9 @@ namespace McRave::Stations
             if (Players::ZvT() && Util::getTime() > Time(5, 30) && Spy::getEnemyTransition() == "2PortWraith" && BuildOrder::getCurrentTransition() == "3HatchMuta")
                 return 1 - airCount;
             if (Players::ZvT() && Spy::getEnemyTransition() == "2PortWraith" && Spy::enemyInvis())
+                return 1 - airCount;
+
+            if (Players::ZvP() && station->isNatural() && hydraBuild && Util::getTime() > Time(6, 30) && enemyAir)
                 return 1 - airCount;
         }
 

@@ -125,6 +125,9 @@ namespace McRave::Roles {
                     (u->isThreatening() || (proxyBuilding && u->getPosition().getDistance(proxyBuilding->getPosition()) < 160.0) || (proxyDangerousBuilding && u->getPosition().getDistance(proxyDangerousBuilding->getPosition()) < 160.0));
             });
 
+
+            static bool likelyProxy = likelyProxy || (proxyWorker && Util::getTime() < Time(2, 00));
+
             // ZvZ
             if (Players::ZvZ() && Util::getTime() < Time(6, 00)) {
                 if (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "12Pool" && total(Zerg_Zergling) < 16 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
@@ -143,12 +146,16 @@ namespace McRave::Roles {
                     forceCombatWorker(2, proxyBuildingWorker->getPosition());
 
                 // Probe arrived early, 1 drone
-                else if (proxyWorker && Util::getTime() < Time(3, 00) && com(Zerg_Zergling) == 0)
+                else if (proxyWorker && Util::getTime() < Time(3, 00) && vis(Zerg_Spawning_Pool) == 0)
                     forceCombatWorker(1, proxyWorker->getPosition());
 
                 // Proxy building, 1 drone
                 else if (proxyBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(1, proxyBuilding->getPosition());
+
+                // Likely proxy, worker arrived way too early
+                else if (likelyProxy && Util::getTime() < Time(3, 00))
+                    forceCombatWorker(1, proxyWorker->getPosition());
             }
 
             // ZvT

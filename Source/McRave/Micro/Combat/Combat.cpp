@@ -205,9 +205,11 @@ namespace McRave::Combat {
             if (Broodwar->self()->getRace() == Races::Terran ) {
                 holdChoke = !defendNatural && Players::getSupply(PlayerState::Self, Races::None) > 50;
 
-                const auto defCount = Stations::getGroundDefenseCount(getDefendStation());
-                if (defCount > 0)
-                    holdChoke = false;
+                if (getDefendStation()) {
+                    const auto defCount = Stations::getGroundDefenseCount(getDefendStation());
+                    if (defCount > 0)
+                        holdChoke = false;
+                }
             }
 
             // Zerg

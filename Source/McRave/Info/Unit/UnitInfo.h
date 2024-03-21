@@ -46,7 +46,7 @@ namespace McRave {
         bool markedForDeath = false;
         bool invincible = false;
         std::weak_ptr<UnitInfo> transport;
-        std::weak_ptr<UnitInfo> target;
+        std::weak_ptr<UnitInfo> target_;
         std::weak_ptr<UnitInfo> commander;
         std::weak_ptr<UnitInfo> simTarget;
         std::weak_ptr<ResourceInfo> resource;
@@ -100,6 +100,8 @@ namespace McRave {
         bool movedFlag = false;
         bool saveUnit = false;
         bool stunned = false;
+        int commandFrame = 0;
+        bool sharedCommand = false;
 
         bool isValid() { return unit() && unit()->exists(); }
         bool isAvailable() { return !unit()->isLockedDown() && !unit()->isMaelstrommed() && !unit()->isStasised() && unit()->isCompleted(); }
@@ -114,7 +116,7 @@ namespace McRave {
 
         bool hasResource() { return !resource.expired(); }
         bool hasTransport() { return !transport.expired(); }
-        bool hasTarget() { return !target.expired(); }
+        bool hasTarget() { return !target_.expired(); }
         bool hasCommander() { return !commander.expired(); }
         bool hasSimTarget() { return !simTarget.expired(); }
         bool hasAttackedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 120); }
@@ -158,7 +160,7 @@ namespace McRave {
         BWAPI::UnitCommandType getCommandType() { return commandType; }
 
         // Debug text
-        void setCommandText(std::string);
+        std::string commandText;
         void setDestinationText(std::string);
 
         // Information about frame timings
@@ -207,7 +209,7 @@ namespace McRave {
 
         std::weak_ptr<ResourceInfo> getResource() { return resource; }
         std::weak_ptr<UnitInfo> getTransport() { return transport; }
-        std::weak_ptr<UnitInfo> getTarget() { return target; }
+        std::weak_ptr<UnitInfo> getTarget() { return target_; }
         std::weak_ptr<UnitInfo> getCommander() { return commander; }
         std::weak_ptr<UnitInfo> getSimTarget() { return simTarget; }
 
@@ -285,7 +287,7 @@ namespace McRave {
         void setLocalState(LocalState newState) { lState = newState; }
         void setResource(ResourceInfo* unit) { unit ? resource = unit->weak_from_this() : resource.reset(); }
         void setTransport(UnitInfo* unit) { unit ? transport = unit->weak_from_this() : transport.reset(); }
-        void setTarget(UnitInfo* unit) { unit ? target = unit->weak_from_this() : target.reset(); }
+        void setTarget(UnitInfo* unit) { unit ? target_ = unit->weak_from_this() : target_.reset(); }
         void setCommander(UnitInfo* unit) { unit ? commander = unit->weak_from_this() : commander.reset(); }
         void setSimTarget(UnitInfo* unit) { unit ? simTarget = unit->weak_from_this() : simTarget.reset(); }
         void setRole(Role newRole) { role = newRole; }

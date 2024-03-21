@@ -561,12 +561,12 @@ namespace McRave::Targets {
             auto &myStrength = Players::getStrength(PlayerState::Self);
 
             enemyHasGround = true;
-            enemyHasAir = enemyStrength.airToGround > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0;
+            enemyHasAir = enemyStrength.airToGround > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Overlord) > 0;
             enemyCanHitAir = enemyStrength.groundToAir > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0;
             enemyCanHitGround = enemyStrength.groundToGround > 0.0 || enemyStrength.airToGround > 0.0 || enemyStrength.groundDefense > 0.0;
 
             selfHasGround = true;
-            selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0;
+            selfHasAir = myStrength.airToGround > 0.0 || myStrength.airToAir > 0.0 || total(Zerg_Overlord) > 0;
             selfCanHitAir = myStrength.groundToAir > 0.0 || myStrength.airToAir > 0.0 || myStrength.airDefense > 0.0;
             selfCanHitGround = myStrength.groundToGround > 0.0 || myStrength.airToGround > 0.0 || myStrength.groundDefense > 0.0;
         }

@@ -72,11 +72,16 @@ namespace BWEB::Map
     /// Returns the angle of a pair of BWAPI::Point in degrees.
     template <class T>
     double getAngle(std::pair<T, T> p) {
-        auto dy = double(p.second.y - p.first.y);
-        auto dx = double(p.second.x - p.first.x);
+        return getAngle(p.first, p.second);
+    }
+
+    template <class T>
+    double getAngle(T p1, T p2) {
+        auto dy = double(p2.y - p1.y);
+        auto dx = double(p2.x - p1.x);
         if (std::abs(dx) > 1.0)
             return fmod(std::atan2(-dy, dx) + M_PI_T2, M_PI_T2);
-        else if (p.first.y < p.second.y)
+        else if (p1.y < p2.y)
             return M_PI + M_PI_D2;
         return M_PI_D2;
     }

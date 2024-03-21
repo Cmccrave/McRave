@@ -144,7 +144,7 @@ namespace McRave::Spy::Protoss {
                     theSpy.transition.name = "ZealotRush";
             }
 
-            if (theSpy.workersPulled >= 3 && Util::getTime() < Time(3, 00))
+            if (theSpy.workersPulled >= 4 && Util::getTime() < Time(3, 00))
                 theSpy.transition.name = "WorkerRush";
 
             // 2Gate

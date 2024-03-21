@@ -44,6 +44,7 @@ namespace McRave::Walls {
             // Terran wall parameters
             if (Broodwar->self()->getRace() == Races::Terran) {
                 tight = false;
+                defenses ={ Terran_Missile_Turret };
                 buildings ={ Terran_Barracks, Terran_Bunker };
             }
 
@@ -163,7 +164,7 @@ namespace McRave::Walls {
                     + (Util::getTime() > Time(4, 30))
                     + (Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown")
-                    return (greedyStart && Util::getTime() > Time(3, 35))
+                    return (greedyStart && Util::getTime() > Time(3, 00))
                     + (Util::getTime() > Time(4, 00))
                     + (Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
@@ -175,7 +176,7 @@ namespace McRave::Walls {
             // FFE
             if (Spy::getEnemyBuild() == "FFE") {
                 if (BuildOrder::getCurrentTransition() == "6HatchHydra")
-                    return 2 * (Util::getTime() > Time(5, 45));
+                    return 2 * (Util::getTime() > Time(6, 45));
                 if (Spy::getEnemyTransition() == "Carriers")
                     return 0;
                 if (Spy::getEnemyTransition() == "NeoBisu" && Util::getTime() < Time(6, 30))
@@ -305,8 +306,7 @@ namespace McRave::Walls {
             // Make at least one sunken once if below criteria fulfilled
             auto minimum = 0;
             if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2
-                || Players::getTotalCount(PlayerState::Self, Zerg_Drone) >= 30)
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2)
                 minimum = 1;
 
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
@@ -380,8 +380,10 @@ namespace McRave::Walls {
             if (Spy::getEnemyTransition() == "2PortWraith")
                 return 1 * (Util::getTime() > Time(5, 30));
 
-            if (Spy::getEnemyTransition() == "Academy" || !Spy::enemyFastExpand())
-                return 2 * (Util::getTime() > Time(4, 30));
+            if (Spy::getEnemyBuild() == "2Rax" || Spy::getEnemyBuild() == "RaxCC") {
+                if (Spy::getEnemyTransition() == "Academy" || !Spy::enemyFastExpand())
+                    return 2 * (Util::getTime() > Time(4, 30));
+            }
 
             return 0;
         }

@@ -281,6 +281,8 @@ namespace BWEB::Blocks
             for (auto x = here.x - ff; x < here.x + width + ff; x++) {
                 for (auto y = here.y - ff; y < here.y + height + ff; y++) {
                     const TilePosition t(x, y);
+                    if (type == BlockType::Supply && Map::mapBWEM.GetTile(t).MinAltitude() > 170)
+                        return false;
                     if (!t.isValid() || !Map::mapBWEM.GetTile(t).Buildable() || Map::isReserved(t))
                         return false;
                 }
@@ -405,10 +407,7 @@ namespace BWEB::Blocks
         }
 
         void findProductionBlocks()
-        {         
-
-            
-
+        {
             // Iterate every tile
             for (int i = 20; i > 0; i--) {
                 for (int j = 20; j > 0; j--) {
@@ -485,7 +484,7 @@ namespace BWEB::Blocks
                     if (canAddBlock(tile, supplyWidth, 2, pieceLayout, BlockType::Supply)) {
                         createBlock(tile, pieceLayout, supplyWidth, 2, BlockType::Supply);
                         firstPerArea[area] = tile;
-                        if ((supplyWidth == 2 && piecePerArea[area].pieces[Piece::Small] >= 10) || (supplyWidth == 3 && piecePerArea[area].pieces[Piece::Medium] >= 20))
+                        if ((supplyWidth == 2 && piecePerArea[area].pieces[Piece::Small] >= 10) || (supplyWidth == 3 && piecePerArea[area].pieces[Piece::Medium] >= 25))
                             break;
                     }
                 }

@@ -247,14 +247,14 @@ namespace McRave::Terrain {
 
     Position getClosestMapEdge(Position here)
     {
-        mapEdges ={ {here.x, 0}, {here.x, Broodwar->mapHeight() * 32 }, {0, here.y}, {Broodwar->mapWidth() * 32, here.y} };
         auto closestCorner = Positions::Invalid;
         auto closestDist = DBL_MAX;
-        for (auto &corner : mapEdges) {
-            auto dist = corner.getDistance(here);
+        for (auto &e : mapEdges) {
+            auto edge = (e.x == -1) ? Position(here.x, e.y) : Position(e.x, here.y);
+            auto dist = edge.getDistance(here);
             if (dist < closestDist) {
                 closestDist = dist;
-                closestCorner = corner;
+                closestCorner = edge;
             }
         }
         return closestCorner;
@@ -432,7 +432,8 @@ namespace McRave::Terrain {
                     areaChokeGeometry[walk] = choke->GetAreas();
             }
         }
-
+        
+        mapEdges ={ {-1, 0}, {-1, Broodwar->mapHeight() * 32}, {0, -1}, {Broodwar->mapWidth() * 32, -1} };
         mapCorners ={ {0, 0}, {0, Broodwar->mapHeight() * 32 }, {Broodwar->mapWidth() * 32, 0}, {Broodwar->mapWidth() * 32, Broodwar->mapHeight() * 32} };
 
         reverseRamp = Broodwar->getGroundHeight(getMainTile()) < Broodwar->getGroundHeight(getNaturalTile());

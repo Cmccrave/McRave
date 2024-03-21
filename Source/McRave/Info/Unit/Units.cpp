@@ -9,6 +9,13 @@ namespace McRave::Units {
 
     namespace {
 
+        struct DamageRatio {
+            map<DamageType, double> ratio;
+            int count;
+        };
+        map<PlayerState, DamageRatio> grdDamageRatios;
+        map<PlayerState, DamageRatio> airDamageRatios;
+
         set<shared_ptr<UnitInfo>> enemyUnits;
         set<shared_ptr<UnitInfo>> myUnits;
         set<shared_ptr<UnitInfo>> neutralUnits;
@@ -125,6 +132,27 @@ namespace McRave::Units {
 
             allyGrdSizes.clear();
             enemyGrdSizes.clear();
+            grdDamageRatios.clear();
+            airDamageRatios.clear();
+
+            const auto addToRatios = [&](auto &ratios, auto& unit) {
+                auto hp = double(unit.getType().maxHitPoints());
+                auto shield = double(unit.getType().maxShields());
+                if (unit.getType().size() == UnitSizeTypes::Small) {
+                    ratios.ratio[DamageTypes::Explosive] += (hp + shield) / (hp * 2.0 + shield);
+                    ratios.ratio[DamageTypes::Concussive] += 1.0;
+                }
+
+                if (unit.getType().size() == UnitSizeTypes::Medium) {
+                    ratios.ratio[DamageTypes::Explosive] += (hp + shield) / (hp * 1.333 + shield);
+                    ratios.ratio[DamageTypes::Concussive] += (hp + shield) / (hp * 2.0 + shield);
+                }
+
+                if (unit.getType().size() == UnitSizeTypes::Large) {
+                    ratios.ratio[DamageTypes::Explosive] += 1.0;
+                    ratios.ratio[DamageTypes::Concussive] += (hp + shield) / (hp * 4.0 + shield);
+                }
+            };
 
             for (auto &p : Players::getPlayers()) {
                 PlayerInfo &player = p.second;
@@ -133,18 +161,43 @@ namespace McRave::Units {
                         UnitInfo &unit = *u;
 
                         myUnits.insert(u);
-                        if (unit.getRole() == Role::Combat)
+                        if (unit.getRole() == Role::Combat) {
                             unit.getType().isFlyer() ? allyAirSizes[unit.getType().size()]++ : allyGrdSizes[unit.getType().size()]++;
+
+                            auto &ratios = unit.isFlying() ? airDamageRatios[PlayerState::Enemy] : grdDamageRatios[PlayerState::Enemy];
+                            ratios.count++;
+                            addToRatios(ratios, unit);
+                        }
                     }
+
                 }
                 if (player.isEnemy()) {
                     for (auto &u : player.getUnits()) {
                         UnitInfo &unit = *u;
 
                         enemyUnits.insert(u);
-                        if (!unit.getType().isBuilding() && !unit.getType().isWorker())
+                        if (!unit.getType().isBuilding() && !unit.getType().isWorker()) {
                             unit.getType().isFlyer() ? enemyAirSizes[unit.getType().size()]++ : enemyGrdSizes[unit.getType().size()]++;
+                            auto &ratios = unit.isFlying() ? airDamageRatios[PlayerState::Self] : grdDamageRatios[PlayerState::Self];
+                            ratios.count++;
+                            addToRatios(ratios, unit);
+                        }
                     }
+                }
+            }
+
+            // Now divide the damage ratios by the count
+            for (auto &[_, grd] : grdDamageRatios) {
+                if (grd.count > 0) {
+                    for (auto &[type, ratio] : grd.ratio)
+                        ratio /= double(grd.count);
+                }
+            }
+            // Now divide the damage ratios by the count
+            for (auto &[_, air] : airDamageRatios) {
+                if (air.count > 0) {
+                    for (auto &[type, ratio] : air.ratio)
+                        ratio /= double(air.count);
                 }
             }
         }
@@ -191,6 +244,17 @@ namespace McRave::Units {
             return myUnits;
         }
         return myUnits;
+    }
+
+    double getDamageRatioGrd(PlayerState state, DamageType type) {
+        if (grdDamageRatios[state].count == 0)
+            return 1.0;
+        return grdDamageRatios[state].ratio[type];
+    }
+    double getDamageRatioAir(PlayerState state, DamageType type) {
+        if (airDamageRatios[state].count == 0)
+            return 1.0;
+        return airDamageRatios[state].ratio[type];
     }
 
     map<UnitSizeType, int>& getAllyGrdSizes() { return allyGrdSizes; }
