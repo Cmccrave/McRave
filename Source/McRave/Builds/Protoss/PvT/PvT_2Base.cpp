@@ -1,9 +1,11 @@
 #include "Main/McRave.h"
 
-using namespace BWAPI;
 using namespace std;
+using namespace BWAPI;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
+using namespace UpgradeTypes;
+using namespace TechTypes;
 
 #include "../ProtossBuildOrder.h"
 
@@ -14,17 +16,20 @@ namespace McRave::BuildOrder::Protoss {
         void PvT_2B_12Nexus()
         {
             // "http://liquipedia.net/starcraft/12_Nexus"
-            focusUpgrade =                                      vis(Protoss_Dragoon) >= 1 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
             gasLimit =                                          goonRange() && com(Protoss_Nexus) < 2 ? 2 : INT_MAX;
             unitLimits[Protoss_Zealot] =                        1;
             scout =                                             vis(Protoss_Pylon) > 0;
             transitionReady =                                   vis(Protoss_Gateway) >= 2;
 
+            // Buildings
             buildQueue[Protoss_Nexus] =                         1 + (s >= 24);
             buildQueue[Protoss_Pylon] =                         (s >= 16) + (s >= 44);
             buildQueue[Protoss_Assimilator] =                   s >= 30;
             buildQueue[Protoss_Gateway] =                       (s >= 28) + (s >= 34);
             buildQueue[Protoss_Cybernetics_Core] =              vis(Protoss_Gateway) >= 2;
+
+            // Upgrades
+            upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
         }
 
         void PvT_2B_21Nexus()

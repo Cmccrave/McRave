@@ -133,8 +133,8 @@ namespace McRave::BuildOrder::Protoss
                 }
 
                 // Adding production
-                
-                
+
+
                 rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || Stations::getGasingStationsCount() >= 3)) || availableMinerals >= 300);
 
                 if (rampDesired) {
@@ -161,8 +161,74 @@ namespace McRave::BuildOrder::Protoss
         {
 
         }
+
+        void queueUpgrades()
+        {
+            using namespace UpgradeTypes;
+            if (inOpening)
+                return;
+
+            // Speed upgrades
+            upgradeQueue[Gravitic_Drive] = vis(Protoss_Shuttle) > 0 && (vis(Protoss_High_Templar) > 0 || com(Protoss_Reaver) >= 2);
+            upgradeQueue[Gravitic_Thrusters] = BuildOrder::isFocusUnit(Protoss_Scout);
+            upgradeQueue[Gravitic_Boosters] = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+            upgradeQueue[Leg_Enhancements] = (vis(Protoss_Nexus) >= 3) || Players::PvZ();
+
+            // Range upgrades
+            upgradeQueue[Singularity_Charge] = vis(Protoss_Dragoon) >= 1;
+
+            // Energy upgrades
+            upgradeQueue[Khaydarin_Amulet] = (vis(Protoss_Assimilator) >= 4 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) && Broodwar->self()->gas() >= 750);
+            upgradeQueue[Khaydarin_Core] = true;
+
+            // Sight upgrades
+            upgradeQueue[Apial_Sensors] = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+            upgradeQueue[Sensor_Array] = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+
+            // Capacity upgrades
+            upgradeQueue[Carrier_Capacity] = vis(Protoss_Carrier) >= 2;
+            upgradeQueue[Reaver_Capacity] = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+            upgradeQueue[Scarab_Damage] = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+
+            // Ground unit upgrades
+            auto upgradingGrdWeapon = (Broodwar->self()->getUpgradeLevel(Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Ground_Armor)) || Broodwar->self()->isUpgrading(Protoss_Ground_Weapons);
+            upgradeQueue[Protoss_Ground_Weapons] = true;
+            upgradeQueue[Protoss_Ground_Armor] = upgradingGrdWeapon;
+            upgradeQueue[Protoss_Plasma_Shields] = Upgrading::haveOrUpgrading(Protoss_Ground_Weapons, 3) && Upgrading::haveOrUpgrading(Protoss_Ground_Armor, 3);
+
+            // Want 3x upgrades by default
+            upgradeQueue[Protoss_Ground_Weapons] *= 3;
+            upgradeQueue[Protoss_Ground_Armor] *= 3;
+            upgradeQueue[Protoss_Plasma_Shields] *= 3;
+
+            // Air unit upgrades
+            auto upgradingAirAttack = (Broodwar->self()->getUpgradeLevel(Protoss_Air_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Air_Armor)) || Broodwar->self()->isUpgrading(Protoss_Air_Weapons);
+            auto PvZAirAttack = Players::PvZ() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0;
+            auto PvTAirAttack = Players::PvT() && Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0;
+            auto PvPAirAttack = false;
+
+            if (vis(Protoss_Stargate) > 0) {
+                upgradeQueue[Protoss_Air_Weapons] = PvZAirAttack || PvTAirAttack || PvTAirAttack;
+                upgradeQueue[Protoss_Air_Armor] = upgradingAirAttack;
+            }
+
+            // Want 3x upgrades by default
+            upgradeQueue[Protoss_Air_Weapons] *= 3;
+            upgradeQueue[Protoss_Air_Armor] *= 3;
+        }
+
+        void queueResearch()
+        {
+            using namespace TechTypes;
+            if (inOpening)
+                return;
+
+            techQueue[Psionic_Storm] = isFocusUnit(Protoss_High_Templar);
+            techQueue[Stasis_Field] = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Khaydarin_Core) > 0;
+            techQueue[Disruption_Web] = vis(Protoss_Corsair) >= 10;
+        }
     }
-    
+
     bool goonRange() {
         return Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);
     }
@@ -278,12 +344,10 @@ namespace McRave::BuildOrder::Protoss
 
         // Optimize our gas mining by dropping gas mining at specific excessive values
         removeExcessGas();
-
-        // If we want to wall at the natural but we don't have a wall there, check main
-        if (wallNat && !Walls::getNaturalWall() && Walls::getMainWall()) {
-            wallNat = false;
-            wallMain = true;
-        }
+        
+        // Queue upgrades/research
+        queueUpgrades();
+        queueResearch();
     }
 
     void composition()
@@ -321,7 +385,7 @@ namespace McRave::BuildOrder::Protoss
                 armyComposition[Protoss_Dragoon] = 0.60;
             }
             else
-                armyComposition[Protoss_Dragoon] = 1.00;            
+                armyComposition[Protoss_Dragoon] = 1.00;
         }
 
         if (Players::vZ()) {

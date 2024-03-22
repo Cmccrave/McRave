@@ -1,16 +1,18 @@
 #include "Main/McRave.h"
 
-using namespace BWAPI;
 using namespace std;
+using namespace BWAPI;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
+using namespace UpgradeTypes;
+using namespace TechTypes;
 
 #include "../ProtossBuildOrder.h"
 
 namespace McRave::BuildOrder::Protoss {
 
     void defaultPvT() {
-        inOpening =                                 true;
+        inOpening =                                     true;
         inBookSupply =                                  vis(Protoss_Pylon) < 2;
         wallNat =                                       com(Protoss_Pylon) >= 6 || currentOpener == "Natural";
         wallMain =                                      false;
@@ -28,9 +30,6 @@ namespace McRave::BuildOrder::Protoss {
         unitLimits[Protoss_Probe] =                     INT_MAX;
 
         desiredDetection =                              Protoss_Observer;
-        focusUpgrade =                                  UpgradeTypes::Singularity_Charge;
-        focusTech =                                     TechTypes::None;
-        focusUnit =                                     None;
 
         armyComposition[Protoss_Probe] =                1.00;
         armyComposition[Protoss_Dragoon] =              1.00;

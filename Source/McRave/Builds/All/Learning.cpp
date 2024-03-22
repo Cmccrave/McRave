@@ -196,7 +196,7 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (false) {
+            if (Players::ZvP()) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                     return;
@@ -218,7 +218,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "4HatchHydra");
+                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "3HatchMuta");
                     return;
                 }
             }
@@ -365,7 +365,7 @@ namespace McRave::Learning {
 
     void onEnd(bool isWinner)
     {
-        if (!Broodwar->enemy() || Players::ZvFFA() || Players::ZvTVB())
+        if (!Broodwar->enemy() || Players::ZvFFA() || Players::ZvTVB() || !Broodwar->isMultiplayer())
             return;
 
         // HACK: Don't touch records if we play islands, since islands aren't fully implemented yet
@@ -441,7 +441,7 @@ namespace McRave::Learning {
 
     void onStart()
     {
-        if (!Broodwar->enemy() || Players::vFFA() || Players::vTVB()) {
+        if (!Broodwar->enemy() || Players::vFFA() || Players::vTVB() || !Broodwar->isMultiplayer()) {
             getDefaultBuild();
             return;
         }

@@ -157,6 +157,64 @@ namespace McRave::BuildOrder::Terran {
         {
 
         }
+
+        void queueUpgrades()
+        {
+            using namespace UpgradeTypes;
+            if (inOpening)
+                return;
+
+            // Speed upgrades
+            upgradeQueue[Ion_Thrusters] = true;
+
+            // Range upgrades
+            upgradeQueue[Charon_Boosters] = vis(Terran_Goliath) > 0;
+            upgradeQueue[U_238_Shells] = Researching::haveOrResearching(TechTypes::Stim_Packs);
+
+            // Mech unit upgrades
+            auto upgradingMechAttack = (Broodwar->self()->getUpgradeLevel(Terran_Vehicle_Weapons) > Broodwar->self()->getUpgradeLevel(Terran_Vehicle_Plating)) || Broodwar->self()->isUpgrading(Terran_Vehicle_Weapons);
+            auto TvZMechAttack = Players::TvZ() && rampType == Terran_Factory;
+            auto TvTMechAttack = Players::TvT();
+            auto TvPMechAttack = Players::TvP();
+
+            if (vis(Terran_Armory) > 0) {
+                upgradeQueue[Terran_Vehicle_Weapons] = TvZMechAttack || TvTMechAttack || TvPMechAttack;
+                upgradeQueue[Terran_Vehicle_Plating] = upgradingMechAttack;
+            }
+
+            // Want 3x upgrades by default
+            upgradeQueue[Terran_Vehicle_Weapons] *= 3;
+            upgradeQueue[Terran_Vehicle_Plating] *= 3;
+
+            // Bio unit upgrades
+            auto upgradingBioAttack = (Broodwar->self()->getUpgradeLevel(Terran_Infantry_Weapons) > Broodwar->self()->getUpgradeLevel(Terran_Infantry_Armor)) || Broodwar->self()->isUpgrading(Terran_Infantry_Weapons);
+            auto TvZBioAttack = Players::TvZ() && rampType == Terran_Barracks;
+            auto TvTBioAttack = false;
+            auto TvPBioAttack = false;
+
+            if (vis(Terran_Engineering_Bay) > 0) {
+                upgradeQueue[Terran_Infantry_Weapons] = TvZBioAttack || TvTBioAttack || TvPBioAttack;
+                upgradeQueue[Terran_Infantry_Armor] = upgradingBioAttack;
+            }
+
+            // Want 3x upgrades by default
+            upgradeQueue[Terran_Infantry_Weapons] *= 3;
+            upgradeQueue[Terran_Infantry_Armor] *= 3;
+        }
+
+        void queueResearch()
+        {
+            using namespace TechTypes;
+            if (inOpening)
+                return;
+
+            techQueue[Stim_Packs] = Players::TvZ();
+            techQueue[Spider_Mines] = true;
+            techQueue[Tank_Siege_Mode] = Researching::haveOrResearching(Spider_Mines);
+            techQueue[Cloaking_Field] = isFocusUnit(Terran_Wraith);
+            techQueue[Yamato_Gun] = isFocusUnit(Terran_Battlecruiser);
+            techQueue[Personnel_Cloaking] = isFocusUnit(Terran_Ghost);
+        }
     }
 
     void opener()
@@ -216,6 +274,10 @@ namespace McRave::BuildOrder::Terran {
 
         // Optimize our gas mining by dropping gas mining at specific excessive values
         removeExcessGas();
+
+        // Queue upgrades/research
+        queueUpgrades();
+        queueResearch();
     }
 
     void composition()

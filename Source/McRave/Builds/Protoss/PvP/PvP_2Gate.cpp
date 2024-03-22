@@ -13,9 +13,8 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvP_2G_DT()
         {
-            inTransition =                          total(Protoss_Citadel_of_Adun) > 0;
-            inOpening =                             s < 80;
-            focusUpgrade =                              UpgradeTypes::None;
+            inTransition =                              total(Protoss_Citadel_of_Adun) > 0;
+            inOpening =                                 s < 80;
             focusUnit =                                 Protoss_Dark_Templar;
             wallNat =                                   (com(Protoss_Forge) > 0 && com(Protoss_Dark_Templar) > 0);
             hideTech =                                  com(Protoss_Dark_Templar) <= 0;

@@ -16,14 +16,11 @@ namespace McRave::BuildOrder::Zerg {
             // 'https://liquipedia.net/starcraft/Overpool_(vs._Protoss)'
             transitionReady =                               hatchCount() >= 2;
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
+            unitLimits[Zerg_Drone] =                        Spy::enemyFastExpand() ? 16 : 12 - vis(Zerg_Hatchery);
             gasLimit =                                      0;
             scout =                                         scout || (hatchCount() >= 2);
 
-            if (Spy::enemyFastExpand())
-                unitLimits[Zerg_Drone] =                    INT_MAX;
-            else
-                unitLimits[Zerg_Drone] =                    12 - vis(Zerg_Hatchery);
-
+            // Buildings
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 22 && vis(Zerg_Spawning_Pool) > 0);
             buildQueue[Zerg_Spawning_Pool] =                (vis(Zerg_Overlord) >= 2);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 30);
@@ -39,6 +36,7 @@ namespace McRave::BuildOrder::Zerg {
             scout =                                         scout || (vis(Zerg_Spawning_Pool) > 0 && com(Zerg_Drone) >= 4 && !Terrain::getEnemyStartingPosition().isValid());
             rush =                                          true;
 
+            // Buildings
             buildQueue[Zerg_Hatchery] =                     1;
             buildQueue[Zerg_Spawning_Pool] =                s >= 8;
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18);
@@ -48,12 +46,13 @@ namespace McRave::BuildOrder::Zerg {
         {
             // 'https://liquipedia.net/starcraft/9_Pool_(vs._Protoss)'
             transitionReady =                               hatchCount() >= 2;
-            unitLimits[Zerg_Drone] =                        Spy::enemyFastExpand() ? INT_MAX : (12 - hatchCount());
+            unitLimits[Zerg_Drone] =                        Spy::enemyFastExpand() ? 16 : (12 - hatchCount());
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
             gasLimit =                                      0;
             gasTrick =                                      vis(Zerg_Spawning_Pool) > 0 && total(Zerg_Overlord) < 2;
             scout =                                         scout || (vis(Zerg_Spawning_Pool) > 0 && s >= 22);
 
+            // Buildings
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0 && atPercent(Zerg_Spawning_Pool, 0.8 && total(Zerg_Zergling) >= 6) && vis(Zerg_Overlord) >= 2 && (!Spy::enemyProxy() || vis(Zerg_Sunken_Colony) >= 2));
             buildQueue[Zerg_Spawning_Pool] =                s >= 18;
             buildQueue[Zerg_Overlord] =                     1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0) + (s >= 30);

@@ -53,6 +53,8 @@ namespace McRave::Goals {
                     const auto closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
                         if (gType == GoalType::Attack && (u->getGlobalState() == GlobalState::ForcedRetreat || u->getLocalState() != LocalState::None))
                             return false;
+                        if (gType == GoalType::Defend && (u->getLocalState() == LocalState::Retreat || u->getLocalState() == LocalState::ForcedRetreat))
+                            return false;
                         return u->getType() == type && !u->getGoal().isValid();
                     });
 
@@ -65,6 +67,8 @@ namespace McRave::Goals {
                 else {
                     const auto closest = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
                         if (gType == GoalType::Attack && (u->getGlobalState() == GlobalState::ForcedRetreat || u->getLocalState() != LocalState::None))
+                            return false;
+                        if (gType == GoalType::Defend && (u->getLocalState() == LocalState::Retreat || u->getLocalState() == LocalState::ForcedRetreat))
                             return false;
                         return u->getType() == type && !u->getGoal().isValid();
                     });

@@ -21,6 +21,7 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Drone] =                        11;
             planEarly =                                     !Spy::enemyProxy() && (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
 
+            // Buildings
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 22);
             buildQueue[Zerg_Spawning_Pool] =                hatchCount() >= 2;
             buildQueue[Zerg_Overlord] =                     1 + (s >= 16) + (s >= 30);
@@ -37,6 +38,7 @@ namespace McRave::BuildOrder::Zerg {
             planEarly =                                     !Spy::enemyProxy() && hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150;
             gasTrick =                                      s >= 18 && hatchCount() < 2 && total(Zerg_Spawning_Pool) == 0;
 
+            // Buildings
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 20);
             buildQueue[Zerg_Spawning_Pool] =                hatchCount() >= 2;
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18 && vis(Zerg_Spawning_Pool) > 0) + (s >= 36);

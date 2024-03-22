@@ -163,6 +163,7 @@ namespace McRave::Resources {
             storeResource(resource);
 
         // Grab only the alpha characters from the map name to remove version numbers
+        mapName = "z";
         for (auto &c : Broodwar->mapFileName()) {
             if (isalpha(c))
                 mapName.push_back(c);

@@ -1,9 +1,11 @@
 #include "Main/McRave.h"
 
-using namespace BWAPI;
 using namespace std;
+using namespace BWAPI;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
+using namespace UpgradeTypes;
+using namespace TechTypes;
 
 #include "../ProtossBuildOrder.h"
 
@@ -54,20 +56,21 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvZ_StormRush()
         {
-            inOpening =                             s < 100;
-            inTransition =                          total(Protoss_Citadel_of_Adun) > 0;
-            focusUpgrade =                              UpgradeTypes::None;
-            focusTech =                                 TechTypes::Psionic_Storm;
+            inOpening =                                 s < 100;
+            inTransition =                              total(Protoss_Citadel_of_Adun) > 0;
             focusUnit =                                 Protoss_High_Templar;
 
-            // Build
+            // Buildings
             buildQueue[Protoss_Assimilator] =           (s >= 38) + (s >= 60);
             buildQueue[Protoss_Cybernetics_Core] =      s >= 42;
             buildQueue[Protoss_Citadel_of_Adun] =       atPercent(Protoss_Cybernetics_Core, 1.00);
             buildQueue[Protoss_Templar_Archives] =      atPercent(Protoss_Citadel_of_Adun, 1.00);
             buildQueue[Protoss_Stargate] =              0;
 
-            // Army Composition
+            // Research
+            techQueue[Psionic_Storm] =                  true;
+
+            // Composition
             armyComposition[Protoss_Zealot] =           0.75;
             armyComposition[Protoss_High_Templar] =     0.15;
             armyComposition[Protoss_Dark_Templar] =     0.10;
@@ -75,20 +78,22 @@ namespace McRave::BuildOrder::Protoss {
 
         void PvZ_2Stargate()
         {
-            inOpening =                             s < 100;
-            inTransition =                          total(Protoss_Stargate) >= 2;
-            focusUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
-            focusTech =                                 TechTypes::None;
+            inOpening =                                 s < 100;
+            inTransition =                              total(Protoss_Stargate) >= 2;
+
             focusUnit =                                 Protoss_Corsair;
 
-            // Build
+            // Buildings
             buildQueue[Protoss_Assimilator] =           (s >= 38) + (atPercent(Protoss_Cybernetics_Core, 0.75));
             buildQueue[Protoss_Cybernetics_Core] =      s >= 36;
             buildQueue[Protoss_Citadel_of_Adun] =       0;
             buildQueue[Protoss_Templar_Archives] =      0;
             buildQueue[Protoss_Stargate] =              (vis(Protoss_Corsair) > 0) + (atPercent(Protoss_Cybernetics_Core, 1.00));
 
-            // Army Composition
+            // Upgrades
+            upgradeQueue[Protoss_Air_Weapons] =         vis(Protoss_Stargate) > 0;
+
+            // Composition
             armyComposition[Protoss_Zealot] =           0.60;
             armyComposition[Protoss_Corsair] =          0.25;
             armyComposition[Protoss_High_Templar] =     0.05;
@@ -98,38 +103,41 @@ namespace McRave::BuildOrder::Protoss {
         void PvZ_5GateGoon()
         {
             // "https://liquipedia.net/starcraft/5_Gate_Ranged_Goons_(vs._Zerg)"
-            inOpening =                             s < 160;
-            inTransition =                          total(Protoss_Gateway) >= 3;
+            inOpening =                                 s < 160;
+            inTransition =                              total(Protoss_Gateway) >= 3;
+
             unitLimits[Protoss_Zealot] =                2;
             unitLimits[Protoss_Dragoon] =               INT_MAX;
-            focusUpgrade =                              UpgradeTypes::Singularity_Charge;
-            focusTech =                                 TechTypes::None;
-            focusUnit =                                 UnitTypes::None;
 
-            // Build
+            // Buildings
             buildQueue[Protoss_Cybernetics_Core] =      s >= 40;
             buildQueue[Protoss_Gateway] =               (vis(Protoss_Cybernetics_Core) > 0) + (4 * (s >= 64));
             buildQueue[Protoss_Assimilator] =           1 + (s >= 116);
 
-            // Army Composition
+            // Upgrades
+            upgradeQueue[Singularity_Charge] =          true;
+
+            // Composition
             armyComposition[Protoss_Dragoon] =          1.00;
         }
 
         void PvZ_4StargateScout()
         {
-            inOpening =                             s < 100;
-            inTransition =                          total(Protoss_Stargate) >= 2;
-            focusUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
-            focusTech =                                 TechTypes::None;
+            inOpening =                                 s < 100;
+            inTransition =                              total(Protoss_Stargate) >= 2;
+
             focusUnit =                                 Protoss_Scout;
 
-            // Build
+            // Buildings
             buildQueue[Protoss_Assimilator] =           (s >= 38) + (atPercent(Protoss_Cybernetics_Core, 0.75));
             buildQueue[Protoss_Cybernetics_Core] =      s >= 36;
             buildQueue[Protoss_Fleet_Beacon] =          com(Protoss_Stargate) > 0;
             buildQueue[Protoss_Stargate] =              (vis(Protoss_Scout) > 0) + (atPercent(Protoss_Cybernetics_Core, 1.00)) + (vis(Protoss_Fleet_Beacon) > 0) * 2;
 
-            // Army Composition
+            // Upgrades
+            upgradeQueue[Protoss_Air_Weapons] =         vis(Protoss_Stargate) > 0;
+
+            // Composition
             armyComposition[Protoss_Zealot] =           0.60;
             armyComposition[Protoss_Scout] =            0.25;
             armyComposition[Protoss_High_Templar] =     0.05;
@@ -139,13 +147,12 @@ namespace McRave::BuildOrder::Protoss {
         void PvZ_NeoBisu()
         {
             // "https://liquipedia.net/starcraft/%2B1_Sair/Speedlot_(vs._Zerg)"
-            inOpening =                             s < 100;
-            inTransition =                          total(Protoss_Citadel_of_Adun) > 0 && total(Protoss_Stargate) > 0;
-            focusUpgrade =                              total(Protoss_Stargate) > 0 ? UpgradeTypes::Protoss_Air_Weapons : UpgradeTypes::None;
-            focusTech =                                 TechTypes::None;
+            inOpening =                                 s < 100;
+            inTransition =                              total(Protoss_Citadel_of_Adun) > 0 && total(Protoss_Stargate) > 0;
+
             focusUnit =                                 Protoss_Corsair;
 
-            // Build
+            // Buildings
             buildQueue[Protoss_Assimilator] =           (s >= 34) + (vis(Protoss_Cybernetics_Core) > 0);
             buildQueue[Protoss_Gateway] =               1 + (vis(Protoss_Citadel_of_Adun) > 0);
             buildQueue[Protoss_Cybernetics_Core] =      s >= 36;
@@ -160,7 +167,10 @@ namespace McRave::BuildOrder::Protoss {
                 unlockedType.insert(Protoss_Dark_Templar);
             }
 
-            // Army Composition
+            // Upgrades
+            upgradeQueue[Protoss_Air_Weapons] =         vis(Protoss_Stargate) > 0;
+
+            // Composition
             armyComposition[Protoss_Zealot] =           0.60;
             armyComposition[Protoss_Corsair] =          0.15;
             armyComposition[Protoss_High_Templar] =     0.10;

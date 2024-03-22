@@ -4,6 +4,8 @@ using namespace std;
 using namespace BWAPI;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
+using namespace UpgradeTypes;
+using namespace TechTypes;
 
 #include "../ZergBuildOrder.h"
 
@@ -51,9 +53,7 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Drone] =                        dronesNeeded_ZvZ();
 
         desiredDetection =                              Zerg_Overlord;
-        focusUpgrade =                                  ((vis(Zerg_Zergling) >= 6 && gas(100)) || lingSpeed()) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
-        focusTech =                                     TechTypes::None;
-        focusUnit =                                     None;
+        focusUnit =                                     UnitTypes::None;
 
         armyComposition[Zerg_Drone] =                   0.60;
         armyComposition[Zerg_Zergling] =                0.40;
@@ -63,11 +63,11 @@ namespace McRave::BuildOrder::Zerg {
     {
         inOpening =                                     total(Zerg_Mutalisk) < 4;
         inTransition =                                  vis(Zerg_Lair) > 0;
+        inBookSupply =                                  total(Zerg_Mutalisk) < 3;
+
         unitLimits[Zerg_Drone] =                        (vis(Zerg_Lair) > 0) ? 11 : 9;;
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvZ();
-        gasLimit =                                      ((lingSpeed() || gas(80)) && total(Zerg_Lair) == 0) ? 2 : gasMax();
         focusUnit =                                     Zerg_Mutalisk;
-        inBookSupply =                                  total(Zerg_Mutalisk) < 3;
 
         auto secondHatch = (Spy::getEnemyTransition() == "1HatchMuta" && total(Zerg_Mutalisk) >= 4)
             || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) >= 2 && Util::getTime() < Time(3, 30));
@@ -79,34 +79,28 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Hatchery] =                     1 + secondHatch;
         buildQueue[Zerg_Overlord] =                     (com(Zerg_Spire) == 0 && atPercent(Zerg_Spire, 0.35) && (s >= 34)) ? 4 : 1 + ((vis(Zerg_Extractor) + Spy::enemyGasSteal() >= 1) && s >= 15) + (s >= 32) + (s >= 46);
 
-        // Army Composition
-        if (com(Zerg_Spire) == 0 && lingsNeeded_ZvZ() > vis(Zerg_Zergling)) {
-            armyComposition[Zerg_Drone] =               0.00;
-            armyComposition[Zerg_Zergling] =            1.00;
-            armyComposition[Zerg_Mutalisk] =            0.00;
-        }
-        else if (atPercent(Zerg_Spire, 0.9)) {
-            armyComposition[Zerg_Drone] =               0.40;
-            armyComposition[Zerg_Zergling] =            0.00;
-            armyComposition[Zerg_Mutalisk] =            0.60;
-        }
-        else {
-            armyComposition[Zerg_Drone] =               1.00;
-            armyComposition[Zerg_Zergling] =            0.00;
-            armyComposition[Zerg_Mutalisk] =            0.00;
-        }
+        // Upgrades
+        upgradeQueue[Metabolic_Boost] =                 (vis(Zerg_Zergling) >= 6 && gas(100));
+
+        // Pumping
+        pumpLings = lingsNeeded_ZvZ() > vis(Zerg_Zergling);
+        pumpMutas = atPercent(Zerg_Spire, 0.9) && gas(100);
+
+        // Gas
+        gasLimit = gasMax();
+        if ((lingSpeed() || gas(80) && total(Zerg_Lair) == 0))
+            gasLimit = 2;
     }
 
     void ZvZ_2HatchMuta()
     {
         inOpening =                                     total(Zerg_Mutalisk) < 3;
         inTransition =                                  vis(Zerg_Lair) > 0;
+        inBookSupply =                                  vis(Zerg_Overlord) < 3;
+
         unitLimits[Zerg_Drone] =                        dronesNeeded_ZvZ();
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvZ();
-        gasLimit =                                      lingSpeed() ? 2 : gasMax();
-
         focusUnit =                                     Zerg_Mutalisk;
-        inBookSupply =                                  vis(Zerg_Overlord) < 3;
 
         // Build
         buildQueue[Zerg_Extractor] =                    (s >= 24) + (atPercent(Zerg_Spire, 0.5));
@@ -114,27 +108,29 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && com(Zerg_Drone) >= 11;
         buildQueue[Zerg_Overlord] =                     1 + (vis(Zerg_Extractor) + Spy::enemyGasSteal() >= 1) + (s >= 32) + (s >= 46);
 
-        // Army Composition
-        if (com(Zerg_Spire) == 0 && lingsNeeded_ZvZ() > vis(Zerg_Zergling)) {
-            armyComposition[Zerg_Drone] =               0.00;
-            armyComposition[Zerg_Zergling] =            1.00;
-        }
-        else {
-            armyComposition[Zerg_Drone] =               0.40;
-            armyComposition[Zerg_Zergling] =            0.30;
-            armyComposition[Zerg_Mutalisk] =            0.30;
-        }
+        // Upgrades
+        upgradeQueue[Metabolic_Boost] =                 (vis(Zerg_Zergling) >= 6 && gas(100));
+
+        // Pumping
+        pumpLings = lingsNeeded_ZvZ() > vis(Zerg_Zergling);
+        pumpMutas = atPercent(Zerg_Spire, 0.9) && gas(100);
+
+        // Gas
+        gasLimit = gasMax();
+        if ((lingSpeed() || gas(80) && total(Zerg_Lair) == 0))
+            gasLimit = 2;
     }
 
     void ZvZ_2HatchHydra()
     {
         inOpening =                                     total(Zerg_Hydralisk) < 6;
+        inTransition =                                  vis(Zerg_Hydralisk_Den) > 0;
+        inBookSupply =                                  vis(Zerg_Overlord) < 3;
+
         unitLimits[Zerg_Drone] =                        20;
         unitLimits[Zerg_Zergling] =                     max(lingsNeeded_ZvZ(), Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) + 4);
-
         focusUnit =                                     Zerg_Hydralisk;
-        inBookSupply =                                  vis(Zerg_Overlord) < 3;
-        wantNatural =                                   true;        
+        wantNatural =                                   true;
 
         // Build
         buildQueue[Zerg_Overlord] =                     2 + (s >= 32) + (s >= 46);
@@ -142,12 +138,13 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Hatchery] =                     2 + (vis(Zerg_Drone) >= 11 && total(Zerg_Zergling) >= 10) + (vis(Zerg_Drone) >= 18);
         buildQueue[Zerg_Hydralisk_Den] =                hatchCount() >= 4;
 
-        // Pumping
-        auto pumpLings = vis(Zerg_Zergling) < unitLimits[Zerg_Zergling];
-        auto pumpHydras = Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 && com(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Hydralisk) < Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) + 6;
-
+        // Upgrades
         upgradeQueue[UpgradeTypes::Muscular_Augments] = vis(Zerg_Hydralisk_Den) > 0;
         upgradeQueue[UpgradeTypes::Grooved_Spines] = vis(Zerg_Hydralisk_Den) > 0 && hydraSpeed();
+
+        // Pumping
+        pumpLings = vis(Zerg_Zergling) < unitLimits[Zerg_Zergling];
+        pumpHydras = Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 && com(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Hydralisk) < Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) + 6;
 
         // Gas
         gasLimit = 3;
@@ -155,15 +152,6 @@ namespace McRave::BuildOrder::Zerg {
             gasLimit = gasMax();
         else if (lingSpeed())
             gasLimit = 1;
-
-        // Composition
-        armyComposition.clear();
-        if (pumpHydras)
-            armyComposition[Zerg_Hydralisk] =           1.00;
-        else if (pumpLings)
-            armyComposition[Zerg_Zergling] =            1.00;
-        else
-            armyComposition[Zerg_Drone] =               1.00;
     }
 
     void ZvZ()

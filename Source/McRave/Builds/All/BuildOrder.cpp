@@ -23,6 +23,9 @@ namespace McRave::BuildOrder
             techQueue.clear();
             armyComposition.clear();
 
+            // TODO: Dont wipe this here, use a queue instead
+            focusUnit = UnitTypes::None;
+
             // TODO: Check if we own a <race> unit - have a build order allowed PER race for FFA weirdness and maybe mind control shenanigans
             if (Players::getSupply(PlayerState::Self, Races::Protoss) > 0) {
                 s = Players::getSupply(PlayerState::Self, Races::Protoss);
@@ -48,11 +51,6 @@ namespace McRave::BuildOrder
                 Zerg::situational();
                 Zerg::unlocks();
             }
-
-            if (focusUpgrade != UpgradeTypes::None)
-                upgradeQueue[focusUpgrade] = 1;
-            if (focusTech != TechTypes::None)
-                techQueue[focusTech] = 1;
         }
     }
 
@@ -290,8 +288,6 @@ namespace McRave::BuildOrder
 
     // Focus
     UnitType getFirstFocusUnit() { return focusUnit; }
-    UpgradeType getFirstFocusUpgrade() { return focusUpgrade; }
-    TechType getFirstFocusTech() { return focusTech; }
 
     // getFocusTechs
     // getFocusUpgrades

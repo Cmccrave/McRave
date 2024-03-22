@@ -1,9 +1,11 @@
 #include "Main/McRave.h"
 
-using namespace BWAPI;
 using namespace std;
+using namespace BWAPI;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
+using namespace UpgradeTypes;
+using namespace TechTypes;
 
 #include "../ProtossBuildOrder.h"
 
@@ -14,19 +16,21 @@ namespace McRave::BuildOrder::Protoss {
         void PvZ_1GC_DT()
         {
             // Experimental build from Best
-            focusUpgrade =                                  UpgradeTypes::None;
-            focusTech =                                     vis(Protoss_Dark_Templar) >= 2 ? TechTypes::Psionic_Storm : TechTypes::None;
-            inOpening =                                 s < 70;
+            inOpening =                                     s < 70;
+
             unitLimits[Protoss_Dragoon] =                   1;
-            inTransition =                              total(Protoss_Citadel_of_Adun) > 0;
+            inTransition =                                  total(Protoss_Citadel_of_Adun) > 0;
             focusUnit =                                     Protoss_Dark_Templar;
 
-            // Build
+            // Buildings
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 42);
             buildQueue[Protoss_Citadel_of_Adun] =           s >= 34;
             buildQueue[Protoss_Templar_Archives] =          vis(Protoss_Gateway) >= 2;
 
-            // Army Composition
+            // Research
+            techQueue[Psionic_Storm] =                      vis(Protoss_Dark_Templar) >= 2;
+
+            // Composition
             armyComposition[Protoss_Zealot] =               0.80;
             armyComposition[Protoss_Dragoon] =              0.10;
             armyComposition[Protoss_Dark_Templar] =         0.10;

@@ -19,7 +19,6 @@ namespace McRave::BuildOrder::Protoss {
             inOpening =                                     s < 70;
             focusUnit =                                     Protoss_Dark_Templar;
             hideTech =                                      true;
-            focusUpgrade =                                  UpgradeTypes::None;
 
             // Build
             buildQueue[Protoss_Nexus] =                     1 + (vis(Protoss_Templar_Archives) > 0);

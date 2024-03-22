@@ -31,81 +31,28 @@ namespace McRave::Researching {
 
         bool isCreateable(Unit building, TechType tech)
         {
-            // First tech check
-            if (tech == BuildOrder::getFirstFocusTech() && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
-                return true;
-
             // Avoid researching Burrow with a Lair/Hive
             if (tech == TechTypes::Burrowing && building->getType() != Zerg_Hatchery)
                 return false;
 
             // Tech that require a building
             if (tech == TechTypes::Lurker_Aspect && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
-                return (com(Zerg_Lair) > 0 || com(Zerg_Hive) > 0) && BuildOrder::isUnitUnlocked(Zerg_Lurker);
+                return (com(Zerg_Lair) > 0 || com(Zerg_Hive) > 0);
 
-            for (auto &unit : tech.whatUses()) {
-                if (BuildOrder::isUnitUnlocked(unit) && !Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
-                    return true;
-            }
+            // If we aren't researching it and don't have it researched, we can research it
+            if (!Broodwar->self()->hasResearched(tech) && !Broodwar->self()->isResearching(tech))
+                return true;
             return false;
         }
 
         bool isSuitable(TechType tech)
         {
-            using namespace TechTypes;
-
             // If we have an upgrade order, follow it
-            auto incompleteQueue = false;
             for (auto &[t, cnt] : BuildOrder::getTechQueue()) {
                 if (!haveOrResearching(t)) {
-                    incompleteQueue = true;
                     if (t == tech && cnt > 0)
                         return true;
                 }
-            }
-            if (incompleteQueue)
-                return false;
-
-            // If this is a specific unit tech, check if it's unlocked
-            if (tech != BuildOrder::getFirstFocusTech() && tech.whatUses().size() == 1) {
-                for (auto &unit : tech.whatUses()) {
-                    if (!BuildOrder::isUnitUnlocked(unit))
-                        return false;
-                }
-            }
-
-            if (Broodwar->self()->getRace() == Races::Protoss) {
-                switch (tech) {
-                case Psionic_Storm:
-                    return true;
-                case Stasis_Field:
-                    return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Khaydarin_Core) > 0;
-                case Recall:
-                    return (Broodwar->self()->hasResearched(TechTypes::Stasis_Field) && Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
-                case Disruption_Web:
-                    return (vis(Protoss_Corsair) >= 10);
-                }
-            }
-
-            else if (Broodwar->self()->getRace() == Races::Terran) {
-                switch (tech) {
-                case Stim_Packs:
-                    return true;
-                case Spider_Mines:
-                    return Broodwar->self()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters) > 0 || Broodwar->self()->isUpgrading(UpgradeTypes::Ion_Thrusters);
-                case Tank_Siege_Mode:
-                    return Broodwar->self()->hasResearched(TechTypes::Spider_Mines) || Broodwar->self()->isResearching(TechTypes::Spider_Mines) || vis(Terran_Siege_Tank_Tank_Mode) > 0;
-                case Cloaking_Field:
-                    return vis(Terran_Wraith) >= 2;
-                case Yamato_Gun:
-                    return vis(Terran_Battlecruiser) >= 0;
-                case Personnel_Cloaking:
-                    return vis(Terran_Ghost) >= 2;
-                }
-            }
-
-            else if (Broodwar->self()->getRace() == Races::Zerg) {
-                return false;
             }
             return false;
         }

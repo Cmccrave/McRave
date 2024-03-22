@@ -1,29 +1,28 @@
 #include "Main/McRave.h"
 
-using namespace BWAPI;
 using namespace std;
+using namespace BWAPI;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
+using namespace UpgradeTypes;
+using namespace TechTypes;
 
 #include "../TerranBuildOrder.h"
 
 namespace McRave::BuildOrder::Terran
 {
     void defaultTvP() {
-        inOpening =                                 true;
-        inBookSupply =                              true;
-        mineralThird =                              true;
-        proxy =                                     false;
-        hideTech =                                  false;
-        rush =                                      false;
-        pressure =                                  false;
-        transitionReady =                           false;
-        planEarly =                                 false;
+        inOpening =                                         true;
+        inBookSupply =                                      true;
+        mineralThird =                                      true;
+        proxy =                                             false;
+        hideTech =                                          false;
+        rush =                                              false;
+        pressure =                                          false;
+        transitionReady =                                   false;
+        planEarly =                                         false;
 
-        desiredDetection =                          Terran_Missile_Turret;
-        focusUpgrade =                              UpgradeTypes::None;
-        focusTech =                                 TechTypes::None;
-        focusUnit =                                 None;
+        desiredDetection =                                  Terran_Missile_Turret;
 
         armyComposition[Terran_Vulture] =                   0.50;
         armyComposition[Terran_Siege_Tank_Tank_Mode] =      0.40;
@@ -31,8 +30,8 @@ namespace McRave::BuildOrder::Terran
         armyComposition[Terran_SCV] =                       1.00;
         armyComposition[Terran_Marine] =                    1.00;
 
-        wallNat =                                   vis(Terran_Factory) > 0;
-        wallMain =                                  false;
+        wallNat =                                           false;
+        wallMain =                                          false;
     }
 
     void TvP_5Fact()

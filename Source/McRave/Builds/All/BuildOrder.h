@@ -47,11 +47,7 @@ namespace McRave::BuildOrder {
 
         // Focus queue
         inline BWAPI::UnitType focusUnit = BWAPI::UnitTypes::None;
-        inline BWAPI::UpgradeType focusUpgrade = BWAPI::UpgradeTypes::None;
-        inline BWAPI::TechType focusTech = BWAPI::TechTypes::None;
         inline std::vector<BWAPI::UnitType> unitOrder;
-        inline std::vector<BWAPI::TechType> techOrder;
-        inline std::vector<BWAPI::UpgradeType> upgradeOrder;
 
         // Focus complete
         inline std::set <BWAPI::UnitType> focusUnits;
@@ -63,6 +59,9 @@ namespace McRave::BuildOrder {
 
     namespace Zerg {
         inline bool reserveLarva = false;
+        inline bool pumpLings = false;
+        inline bool pumpHydras = false;
+        inline bool pumpMutas = false;
     }
 
     namespace Terran {
@@ -90,8 +89,6 @@ namespace McRave::BuildOrder {
     std::map<BWAPI::UpgradeType, int>& getUpgradeQueue();
     std::map<BWAPI::TechType, int>& getTechQueue();
     BWAPI::UnitType getFirstFocusUnit();
-    BWAPI::UpgradeType getFirstFocusUpgrade();
-    BWAPI::TechType getFirstFocusTech();
     std::set <BWAPI::UnitType>& getUnlockedList();
     int gasWorkerLimit();
     int getUnitReservation(BWAPI::UnitType);

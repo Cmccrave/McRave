@@ -18,7 +18,6 @@ namespace McRave::BuildOrder::Zerg {
         bool againstRandom = false;
         bool needSpores = false;
         bool needSunks = false;
-        map<UnitType, int> forcedCount;
 
         void queueGasTrick()
         {
@@ -172,28 +171,6 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueProduction()
         {
-            //// Adding Hatcheries
-            //auto desiredProduction = int(Stations::getStations(PlayerState::Self).size());
-            //if (Players::ZvT())
-            //    desiredProduction = int(Stations::getStations(PlayerState::Self).size()) + max(0, int(Stations::getStations(PlayerState::Self).size()) - 3) + max(0, int(Stations::getStations(PlayerState::Self).size()) - 4);
-            //if (Players::ZvP())
-            //    desiredProduction = int(Stations::getStations(PlayerState::Self).size()) + (2 * max(0, int(Stations::getStations(PlayerState::Self).size()) - 2));
-            //if (Players::ZvZ())
-            //    desiredProduction = int(Stations::getStations(PlayerState::Self).size()) + max(0, int(Stations::getStations(PlayerState::Self).size()) - 1) - (int(Stations::getStations(PlayerState::Enemy).size() >= 2));
-            //if (Players::ZvFFA())
-            //    desiredProduction = int(Stations::getStations(PlayerState::Self).size()) + max(0, int(Stations::getStations(PlayerState::Self).size()) - 1);
-
-            //// ZvP trapped in base
-            //if (Spy::getEnemyTransition() == "4Gate" && int(Stations::getStations(PlayerState::Self).size()) <= 2)
-            //    desiredProduction = 6;
-
-            //// ZvT going hydras
-            //if (Players::ZvT() && vis(Zerg_Drone) >= 22 && total(Zerg_Hydralisk) == 0 && find(unitOrder.begin(), unitOrder.end(), Zerg_Hydralisk) != unitOrder.end() && int(Stations::getStations(PlayerState::Self).size()) <= 3) {
-            //    desiredProduction = 5;
-            //    forcedCount[Zerg_Hatchery] = 5;
-            //    forcedCount[Zerg_Drone] = 28;
-            //}
-
             // Idk
             auto hatchPerbase = 1.0;
             if (armyComposition[Zerg_Zergling] > 0.0)
@@ -214,8 +191,7 @@ namespace McRave::BuildOrder::Zerg {
 
                 rampDesired = (availableMinerals >= waitForMinerals && Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && !productionSat)
                     || (availableMinerals >= waitForMinerals && vis(Zerg_Larva) + (3 * incompleteHatch) < min(3, hatchCount()) && !productionSat)
-                    || (availableMinerals >= 600 && hatchCount() < maxSat && productionSat && vis(Zerg_Larva) < 12) // ???
-                    || (vis(Zerg_Drone) >= forcedCount[Zerg_Drone] && hatchCount() < forcedCount[Zerg_Hatchery]);
+                    || (availableMinerals >= 600 && hatchCount() < maxSat && productionSat && vis(Zerg_Larva) < 12); // ???
 
                 buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + rampDesired);
             }
@@ -382,7 +358,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvP
         if (Players::ZvP()) {
-            techOffset = 2;
+            techOffset = 2 - (BuildOrder::getCurrentTransition().find("Muta") != string::npos); // Muta builds should make hydras before a 4th
             if (Spy::getEnemyTransition() == "Carriers")
                 unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
             else if (focusUnit == Zerg_Hydralisk)
@@ -460,9 +436,22 @@ namespace McRave::BuildOrder::Zerg {
 
     void composition()
     {
-        // Clear composition before setting
-        if (!inOpening)
-            armyComposition.clear();
+        if (!transitionReady)
+            return;
+
+        // Composition
+        armyComposition.clear();
+        if (inOpening) {
+            if (pumpMutas)
+                armyComposition[Zerg_Mutalisk] =            1.00;            
+            else if (pumpHydras)
+                armyComposition[Zerg_Hydralisk] =           1.00;
+            else if (pumpLings)
+                armyComposition[Zerg_Zergling] =            1.00;
+            else
+                armyComposition[Zerg_Drone] =               1.00;
+            return;
+        }
 
         const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5GateGoon" || Spy::getEnemyTransition() == "CorsairGoon" || Spy::getEnemyTransition() == "5FactGoliath";
 
@@ -643,40 +632,38 @@ namespace McRave::BuildOrder::Zerg {
             }
         }
 
-        // When switching techs, wait for ideal production before starting
+        // Make lings if we're fully saturated, need to pump lings or we are behind on sunkens
         if (!inOpening) {
-            auto switching = false;
-            for (auto &[type, cnt] : armyComposition) {
-                if (total(type) <= 0)
-                    switching = true;
+            int minimumLings = 2;
+            if (Players::ZvP() && Util::getTime() > Time(7, 30) && focusUnits.find(Zerg_Hydralisk) == focusUnits.end() && hatchCount() >= 6 && int(Stations::getStations(PlayerState::Self).size()) >= 3)
+                minimumLings = 12;
+            if (Spy::getEnemyTransition() == "Robo")
+                minimumLings = 12;
+            if (Spy::getEnemyBuild() == "FFE") {
+                if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() > Time(6, 45) && Util::getTime() < Time(7, 45))
+                    minimumLings = 24;
             }
-            if (switching && (hatchCount() < forcedCount[Zerg_Hatchery] || vis(Zerg_Drone) < forcedCount[Zerg_Drone])) {
+            if (Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && vis(Zerg_Drone) > Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone))
+                minimumLings = Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling);
+
+            if (vis(Zerg_Zergling) < minimumLings) {
                 armyComposition.clear();
-                armyComposition[Zerg_Drone] =               0.60;
-                armyComposition[Zerg_Zergling] =            0.00;
-                armyComposition[Zerg_Mutalisk] =            0.40;
+                armyComposition[Zerg_Zergling] = 1.00;
             }
         }
 
-        // Make lings if we're fully saturated, need to pump lings or we are behind on sunkens
-        if (!inOpening) {
-            int pumpLings = 2;
-            if (Players::ZvP() && Util::getTime() > Time(7, 30) && focusUnits.find(Zerg_Hydralisk) == focusUnits.end() && hatchCount() >= 6 && int(Stations::getStations(PlayerState::Self).size()) >= 3)
-                pumpLings = 12;
-            if (Spy::getEnemyTransition() == "Robo")
-                pumpLings = 12;
-            if (Spy::getEnemyBuild() == "FFE") {
-                if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() > Time(6, 45) && Util::getTime() < Time(7, 45))
-                    pumpLings = 24;
+        // Remove Lings if we're against Vults, adding at Hive
+        if (Players::ZvT()) {
+            if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && total(Zerg_Hive) == 0 && unitLimits[Zerg_Zergling] <= vis(Zerg_Zergling)) {
+                armyComposition[Zerg_Drone] += armyComposition[Zerg_Zergling];
+                armyComposition[Zerg_Zergling] = 0.00;
             }
-            if (Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && vis(Zerg_Drone) > Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone))
-                pumpLings = Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling);
+        }
 
-            if (vis(Zerg_Zergling) < pumpLings) {
-                armyComposition[Zerg_Zergling] = armyComposition[Zerg_Drone];
-                armyComposition[Zerg_Drone] = 0.0;
-                unitLimits[Zerg_Zergling] = pumpLings;
-            }
+        // Removing mutas temporarily if they overdefended
+        if (!inOpening && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) >= 6 && Util::getTime() < Time(9, 00) && total(Zerg_Mutalisk) >= 9 && !vsGoonsGols) {
+            armyComposition[Zerg_Drone] += armyComposition[Zerg_Mutalisk];
+            armyComposition[Zerg_Mutalisk] = 0.00;
         }
 
         // Specific compositions
@@ -731,20 +718,6 @@ namespace McRave::BuildOrder::Zerg {
                 else
                     unlockedType.erase(type.first);
             }
-        }
-
-        // Remove Lings if we're against Vults, adding at Hive
-        if (Players::ZvT()) {
-            if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && total(Zerg_Hive) == 0 && unitLimits[Zerg_Zergling] <= vis(Zerg_Zergling))
-                unlockedType.erase(Zerg_Zergling);
-            if (total(Zerg_Hive) > 0)
-                unlockedType.insert(Zerg_Zergling);
-        }
-
-        // Removing mutas temporarily if they overdefended
-        const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5GateGoon" || Spy::getEnemyTransition() == "CorsairGoon" || Spy::getEnemyTransition() == "5FactGoliath";
-        if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) >= 6 && Util::getTime() < Time(9, 00) && total(Zerg_Mutalisk) >= 9 && !vsGoonsGols) {
-            unlockedType.erase(Zerg_Mutalisk);
         }
 
         // UMS Unlocking

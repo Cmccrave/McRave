@@ -305,7 +305,7 @@ namespace McRave::Scouts {
                 if (Units::getImmThreat() <= 0.1 && Util::getTime() > Time(1, 00)) {
                     if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
                         || (Players::ZvP() && Util::getTime() < Time(8, 00))
-                        || (Players::ZvZ() && !Terrain::foundEnemy() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0))
+                        || (Players::ZvZ() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0))
                         army.desiredTypeCounts[Zerg_Zergling] = 1;
                 }
             }

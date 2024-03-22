@@ -17,9 +17,9 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Drone] =                        4;
             unitLimits[Zerg_Zergling] =                     INT_MAX;
             transitionReady =                               total(Zerg_Zergling) >= 24;
-            focusUpgrade =                                  gas(100) ? UpgradeTypes::Metabolic_Boost : UpgradeTypes::None;
             rush =                                          true;
 
+            // Buildings
             buildQueue[Zerg_Spawning_Pool] =                s >= 8;
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18);
         }
@@ -33,6 +33,7 @@ namespace McRave::BuildOrder::Zerg {
             scout =                                         scout || vis(Zerg_Spawning_Pool) > 0;
             proxy =                                         false;
 
+            // Buildings
             buildQueue[Zerg_Hatchery] =                     1 + (Spy::enemyProxy() ? total(Zerg_Zergling) >= 6 : s >= 22);
             buildQueue[Zerg_Spawning_Pool] =                (vis(Zerg_Overlord) >= 2);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 30);
@@ -46,6 +47,7 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Drone] =                        13;
             scout =                                         scout || (com(Zerg_Drone) >= 9);
 
+            // Buildings
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 24 && vis(Zerg_Spawning_Pool) > 0);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18);
             buildQueue[Zerg_Spawning_Pool] =                s >= 26;

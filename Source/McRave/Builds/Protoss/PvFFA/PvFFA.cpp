@@ -28,9 +28,6 @@ namespace McRave::BuildOrder::Protoss {
         unitLimits[Protoss_Probe] =                     INT_MAX;
 
         desiredDetection =                              Protoss_Observer;
-        focusUpgrade =                                  vis(Protoss_Dragoon) > 0 ? UpgradeTypes::Singularity_Charge : UpgradeTypes::None;
-        focusTech =                                     TechTypes::None;
-        focusUnit =                                     None;
 
         armyComposition[Protoss_Probe] =                1.00;
         armyComposition[Protoss_Zealot] =               0.10;

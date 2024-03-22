@@ -1,9 +1,11 @@
 #include "Main/McRave.h"
 
-using namespace BWAPI;
 using namespace std;
+using namespace BWAPI;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
+using namespace UpgradeTypes;
+using namespace TechTypes;
 
 #include "../TerranBuildOrder.h"
 
@@ -21,9 +23,6 @@ namespace McRave::BuildOrder::Terran
         planEarly =                                 false;
 
         desiredDetection =                          Terran_Missile_Turret;
-        focusUpgrade =                              UpgradeTypes::None;
-        focusTech =                                 TechTypes::None;
-        focusUnit =                                 None;
 
         armyComposition[Terran_Marine] =            0.80;
         armyComposition[Terran_Medic] =             0.20;
@@ -35,18 +34,20 @@ namespace McRave::BuildOrder::Terran
 
     void TvZ_Academy()
     {
-        rampType = Terran_Barracks;
-        gasLimit = 3;
-        inBookSupply = vis(Terran_Supply_Depot) < 3;
-        inOpening = vis(Terran_Comsat_Station) == 0;
+        rampType =          Terran_Barracks;
+        gasLimit =          3;
+        inBookSupply =      vis(Terran_Supply_Depot) < 3;
+        inOpening =         vis(Terran_Comsat_Station) == 0;
 
+        // Buildings
         buildQueue[Terran_Supply_Depot] =                   1 + (s >= 28) + (s >= 48);
         buildQueue[Terran_Barracks] =                       (s >= 22) + (s >= 26);
         buildQueue[Terran_Refinery] =                       (s >= 36);
         buildQueue[Terran_Academy] =                        (s >= 38);
         buildQueue[Terran_Comsat_Station] =                 (s >= 56);
 
-        techQueue[TechTypes::Stim_Packs] =                  (s >= 52);
+        // Research
+        techQueue[Stim_Packs] =                             (s >= 52);
     }
 
     void TvZ()
