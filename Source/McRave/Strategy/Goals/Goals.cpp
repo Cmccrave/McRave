@@ -188,7 +188,7 @@ namespace McRave::Goals {
                     });
                     auto type = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
 
-                    if (closestBuilder) {
+                    if (closestBuilder && !closestBuilder->isWithinBuildRange()) {
                         assignNumberToGoal(closestBuilder->getPosition(), type, 1, GoalType::Escort);
                         for (auto &t : closestBuilder->getUnitsTargetingThis()) {
                             if (auto targeter = t.lock())

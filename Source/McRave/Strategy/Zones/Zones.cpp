@@ -15,11 +15,11 @@ namespace McRave::Zones
             for (auto &zone : zones)
                 zone.duration--;
 
-            //if (!zones.empty()) {
-            //    zones.erase(remove_if(zones.begin(), zones.end(), [&](auto &zone) {
-            //        return zone.duration <= 0;
-            //    }), zones.end());
-            //}
+            if (!zones.empty()) {
+                zones.erase(remove_if(zones.begin(), zones.end(), [&](auto &zone) {
+                    return zone.duration <= 0;
+                }), zones.end());
+            }
         }
 
         void drawZones()
@@ -44,12 +44,6 @@ namespace McRave::Zones
 
     void addZone(Position position, ZoneType zone, int frames, int radius)
     {
-        if (!zones.empty()) {
-            zones.erase(remove_if(zones.begin(), zones.end(), [&](auto &zone) {
-                return zone.position == position;
-            }), zones.end());
-        }
-
         auto newZone = Zone(position, zone, frames, radius);
         zones.push_back(newZone);
     }

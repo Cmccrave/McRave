@@ -560,10 +560,6 @@ namespace McRave
                 here = overShootHere;
         }
 
-        // Add action and grid movement
-        if ((cmd == UnitCommandTypes::Move || cmd == UnitCommandTypes::Right_Click_Position) && getPosition().getDistance(here) < 160.0)
-            Actions::addAction(unit(), here, getType(), PlayerState::Self);
-
         // If this is a new order or new command than what we're requesting, we can issue it
         if (executeCommand) {
             if (cmd == UnitCommandTypes::Move)
@@ -593,9 +589,6 @@ namespace McRave
             commandType = cmd;
             commandFrame = Broodwar->getFrameCount();
         }
-
-        // Add action
-        Actions::addAction(unit(), targetUnit.getPosition(), getType(), PlayerState::Self);
 
         // If this is a new order or new command than what we're requesting, we can issue it
         if (executeCommand) {
@@ -928,6 +921,20 @@ namespace McRave
             if (closestTank && closestTank->getPosition().getDistance(Terrain::getNaturalPosition()) < closestTank->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center()))
                 return false;
         }
+
+        // ZvP
+        if (Players::ZvP()) {
+            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Util::getTime() > Time(8, 00))
+                return true;
+
+            const auto closestMelee = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
+                return u->getType() == Protoss_Zealot || u->getType() == Protoss_Dark_Templar;
+            });
+
+            if (closestMelee && closestMelee->getPosition().getDistance(Terrain::getNaturalPosition()) < closestMelee->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center()))
+                return false;
+        }
+
         return true;
     }
 

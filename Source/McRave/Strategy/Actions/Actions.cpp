@@ -24,6 +24,11 @@ namespace McRave::Actions {
                     auto botRight = action.pos + Position(48, 48);
                     Visuals::drawBox(topLeft, botRight, Colors::Red);
                 }
+                for (auto &action : myActions) {
+                    auto topLeft = action.pos - Position(48, 48);
+                    auto botRight = action.pos + Position(48, 48);
+                    Visuals::drawBox(topLeft, botRight, Colors::Green);
+                }
             }
         }
 
@@ -34,6 +39,18 @@ namespace McRave::Actions {
             myActions.clear();
             allyActions.clear();
             enemyActions.clear();
+
+            const auto trackable = [&](TechType type) {
+                return type == TechTypes::Dark_Swarm
+                    || type == TechTypes::Disruption_Web
+                    || type == TechTypes::EMP_Shockwave
+                    || type == TechTypes::Ensnare
+                    || type == TechTypes::Irradiate
+                    || type == TechTypes::Maelstrom
+                    || type == TechTypes::Nuclear_Strike
+                    || type == TechTypes::Plague
+                    || type == TechTypes::Psionic_Storm;
+            };
 
             const auto whatTech = [&](Order order) {
                 switch (order) {
@@ -76,14 +93,14 @@ namespace McRave::Actions {
                 // Add action for previous orders that may or may not physically exist yet
                 for (auto &[frame, order] : unit.getOrderHistory()) {
                     auto techUsed = whatTech(order.first);
-                    if (frame >= Broodwar->getFrameCount() - 7 && techUsed != TechTypes::None)
-                        Actions::addAction(unit.unit(), order.second, techUsed, PlayerState::Neutral);
+                    if (frame >= Broodwar->getFrameCount() - 7 && trackable(techUsed))
+                        addAction(unit.unit(), order.second, techUsed, PlayerState::Neutral);
                 }
 
                 if (unit.getType() == Terran_Vulture_Spider_Mine && unit.hasTarget())
-                    addAction(unit.unit(), unit.getPosition(), UnitTypes::Terran_Vulture_Spider_Mine, PlayerState::Enemy);
+                    addAction(unit.unit(), unit.getTarget().lock()->getPosition(), UnitTypes::Terran_Vulture_Spider_Mine, PlayerState::Neutral);
                 if (unit.getType() == Protoss_Scarab && unit.hasTarget())
-                    addAction(unit.unit(), unit.getPosition(), UnitTypes::Protoss_Scarab, PlayerState::Enemy);
+                    addAction(unit.unit(), unit.getTarget().lock()->getPosition(), UnitTypes::Protoss_Scarab, PlayerState::Enemy);
             }
 
             // Check my Actions
@@ -93,12 +110,18 @@ namespace McRave::Actions {
                 if (unit.getType().isDetector() && unit.unit()->isCompleted())
                     addAction(unit.unit(), unit.getPosition(), unit.getType(), PlayerState::Self);
 
+                if (Broodwar->getFrameCount() - unit.unit()->getLastCommandFrame() < 7 && unit.unit()->getLastCommand().getTechType() == TechTypes::Scanner_Sweep)
+                    addAction(unit.unit(), unit.unit()->getLastCommand().getTargetPosition(), Spell_Scanner_Sweep, PlayerState::Self);
+
                 // Add action for previous orders that may or may not physically exist yet
                 for (auto &[frame, order] : unit.getOrderHistory()) {
                     auto techUsed = whatTech(order.first);
-                    if (frame >= Broodwar->getFrameCount() - 7 && techUsed != TechTypes::None)
-                        Actions::addAction(unit.unit(), order.second, techUsed, PlayerState::Neutral);
+                    if (frame >= Broodwar->getFrameCount() - 7 && trackable(techUsed))
+                        addAction(unit.unit(), order.second, techUsed, PlayerState::Neutral);                    
                 }
+
+                if (unit.getType() == Terran_Vulture_Spider_Mine && unit.hasTarget())
+                    addAction(unit.unit(), unit.getTarget().lock()->getPosition(), UnitTypes::Terran_Vulture_Spider_Mine, PlayerState::Neutral);
             }
 
             // Check neutral actions
@@ -193,14 +216,11 @@ namespace McRave::Actions {
 
         // Detection checks use a radial check
         for (auto &action : *actions) {
-            if (action.unit == unit)
-                continue;
-
             if (action.type == Spell_Scanner_Sweep) {
                 if (action.pos.getDistance(here) < 420.0)
                     return true;
             }
-            else if (action.type.isDetector()) {
+            else if (action.unit != unit && action.type.isDetector()) {
                 double range = action.type.isBuilding() ? 224.0 : action.type.sightRange();
                 if (action.pos.getDistance(here) < range)
                     return true;

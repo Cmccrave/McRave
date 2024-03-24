@@ -30,10 +30,13 @@ namespace McRave::Combat::Formations {
                 return (u->getType().isBuilding() && u->canAttackGround() && u->getRole() == Role::Defender && u->getFormation().getDistance(cluster.marchPosition) < 64.0);
             });
 
-            const auto extra = 96.0;
 
-            if (closestBuilding && !closestDefender && !Combat::holdAtChoke())
+            auto extra = 96.0;
+            if (closestBuilding && !closestDefender && !Combat::holdAtChoke()) {
+                if (Util::getTime() < Time(4, 00))
+                    extra = -96.0;
                 formation.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition) + extra;
+            }
             if (closestDefender) {
                 formation.leash = closestDefender->getGroundRange() + extra;
                 formation.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition) + extra;
@@ -59,11 +62,8 @@ namespace McRave::Combat::Formations {
                 closestUnit = &*unit;
             }
         }
-        if (closestUnit) {
+        if (closestUnit)
             closestUnit->setFormation(p);
-            if (Terrain::inTerritory(PlayerState::Self, closestUnit->getPosition()))
-                Zones::addZone(closestUnit->getFormation(), ZoneType::Engage, 160, 320);
-        }
     }
 
     void generatePositions(Formation& concave, Cluster& cluster, double size)
@@ -224,7 +224,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
-        drawFormations();
+        //drawFormations();
     }
 
     vector<Formation>& getFormations() { return formations; }

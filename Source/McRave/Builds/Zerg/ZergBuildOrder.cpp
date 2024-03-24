@@ -690,7 +690,7 @@ namespace McRave::BuildOrder::Zerg {
     void unlocks()
     {
         // Saving larva to burst out tech units
-        const auto limitBy = int(Stations::getStations(PlayerState::Self).size()) * 3;
+        const auto limitBy = Stations::getGasingStationsCount() * 3;
         const auto reserveAt = Players::ZvZ() ? 10 : 16;
         unitReservations.clear();
         if ((inOpening && reserveLarva) || (!inOpening && focusUnits.size() <= 1)) {
@@ -700,6 +700,13 @@ namespace McRave::BuildOrder::Zerg {
             }
             if (vis(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Drone) >= reserveAt && focusUnit == Zerg_Hydralisk)
                 unitReservations[Zerg_Hydralisk] = max(0, limitBy - total(Zerg_Hydralisk));
+        }
+
+        // Queue enough overlords to fit the reservations
+        if (reserveLarva && atPercent(Zerg_Spire, 0.25) && com(Zerg_Spire) == 0) {
+            auto expectedSupply = s + (limitBy * 4);
+            auto expectedOverlords = int(ceil(double(expectedSupply - 2 * hatchCount()) / 16.0));
+            buildQueue[Zerg_Overlord] = expectedOverlords;
         }
 
         // Unlocking units

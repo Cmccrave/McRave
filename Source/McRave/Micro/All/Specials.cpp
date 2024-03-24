@@ -325,9 +325,14 @@ namespace McRave::Command
             }
         }
 
-        // Scanner
-        else if (unit.getType() == Spell_Scanner_Sweep)
-            Actions::addAction(unit.unit(), unit.getPosition(), Spell_Scanner_Sweep, PlayerState::Self);
+        // Comsat scans - Move to special manager
+        else if (unit.getType() == Terran_Comsat_Station && unit.hasTarget()) {
+            auto buildingTarget = unit.getTarget().lock();
+            if (buildingTarget->unit()->exists() && !Actions::overlapsDetection(unit.unit(), buildingTarget->getPosition(), PlayerState::Self)) {
+                unit.unit()->useTech(TechTypes::Scanner_Sweep, buildingTarget->getPosition());
+                Actions::addAction(unit.unit(), buildingTarget->getPosition(), Spell_Scanner_Sweep, PlayerState::Self);
+            }
+        }
 
         // Wraith - Cloak
         else if (unit.getType() == Terran_Wraith) {

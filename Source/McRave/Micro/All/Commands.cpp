@@ -7,6 +7,9 @@ using namespace UnitCommandTypes;
 
 namespace McRave::Command {
 
+    //
+    vector<pair<double, Position>> positionsByCost;
+
     namespace {
 
         double grouping(UnitInfo& unit, WalkPosition w) {
@@ -58,7 +61,7 @@ namespace McRave::Command {
         Position findViablePosition(UnitInfo& unit, Position pstart, function<double(WalkPosition)> score)
         {
             // Check if this is a viable position for movement
-            const auto viablePosition = [&](const WalkPosition& w, Position& p) {
+            const auto viablePosition = [&](Position& p) {
                 if (!unit.getType().isFlyer()) {
                     if (Planning::overlapsPlan(unit, p) || !Util::findWalkable(unit, p))
                         return false;
@@ -68,40 +71,40 @@ namespace McRave::Command {
                 return true;
             };
 
-            auto bestPosition = Positions::Invalid;
-            auto best = 0.0;
-            const auto start = WalkPosition(pstart);
+            const auto cost = [&](Position& p) {
+                const auto w = WalkPosition(p);
+                auto current = score(w);
+
+                if (unit.isLightAir() && unit.getLocalState() != LocalState::Attack && unit.getLocalState() != LocalState::ForcedAttack) {
+                    auto edgePush = clamp(Terrain::getClosestMapEdge(unit.getPosition()).getDistance(p) / 160.0, 0.01, 1.00);
+                    auto cornerPush = clamp(Terrain::getClosestMapCorner(unit.getPosition()).getDistance(p) / 320.0, 0.01, 1.00);
+                    current = current * cornerPush * edgePush;
+                }
+
+                // TODO: make things a cost rather than score
+                return 1.0 / current;
+            };
 
             // Create a box, keep units outside a tile of the edge of the map if it's a flyer
             auto radius = 20;
-            const auto left = max(0, start.x - radius - unit.getWalkWidth());
-            const auto right = min(Broodwar->mapWidth() * 4, start.x + radius + unit.getWalkWidth());
-            const auto up = max(0, start.y - radius - unit.getWalkHeight());
-            const auto down = min(Broodwar->mapHeight() * 4, start.y + radius + unit.getWalkHeight());
+            const auto vectorSize = size_t(radius * radius);
+            positionsByCost.clear();
+            positionsByCost.reserve(vectorSize);
 
-            // Iterate the WalkPositions inside the box
-            for (auto x = left; x < right; x++) {
-                for (auto y = up; y < down; y++) {
-                    const WalkPosition w(x, y);
-                    Position p = Position(w) + Position(4, 4);
-
-                    if (p.getDistance(pstart) > radius * 8)
-                        continue;
-
-                    auto current = score(w);
-                    if (unit.isLightAir() && unit.getLocalState() != LocalState::Attack && unit.getLocalState() != LocalState::ForcedAttack) {
-                        auto edgePush = clamp(Terrain::getClosestMapEdge(unit.getPosition()).getDistance(p) / 160.0, 0.01, 1.00);
-                        auto cornerPush = clamp(Terrain::getClosestMapCorner(unit.getPosition()).getDistance(p) / 320.0, 0.01, 1.00);
-                        current = current * cornerPush * edgePush;
-                    }
-
-                    if (current > best && viablePosition(w, p)) {
-                        best = current;
-                        bestPosition = p;
-                    }
-                }
+            for (auto &walk : Util::getWalkCircle(radius)) {
+                const auto w = WalkPosition(walk) + WalkPosition(unit.getPosition());
+                auto p = Position(w) + Position(4, 4);
+                positionsByCost.push_back(make_pair(cost(p), p));
             }
-            return bestPosition;
+
+            sort(positionsByCost.begin(), positionsByCost.end(), [&](auto &p1, auto &p2) {
+                return p1.first < p2.first;
+            });
+
+            for (auto &[cost, p] : positionsByCost) {                
+                if (viablePosition(p))
+                    return p;
+            }
         }
     }
 
@@ -382,6 +385,7 @@ namespace McRave::Command {
             // Find the best position to move to
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
             if (bestPosition.isValid()) {
+                Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Green);
                 unit.setCommand(Move, bestPosition);
                 unit.commandText = "Move_C";
                 return true;
@@ -471,7 +475,7 @@ namespace McRave::Command {
 
                 // Special Case: early "duels"
                 if (unit.getType() == Zerg_Zergling) {
-                    if (Util::getTime() < Time(6, 30) && target.isWithinReach(unit) && target.getType() == Protoss_Zealot && unit.getHealth() <= 16 && int(unit.getUnitsTargetingThis().size()) >= 1)
+                    if (Util::getTime() < Time(6, 30) && target.isWithinReach(unit) && target.getType() == Protoss_Zealot && unit.getHealth() <= 16 && !target.isThreatening())
                         return true;
                     if (Util::getTime() < Time(5, 30) && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10 && int(unit.getUnitsTargetingThis().size()) >= 1)
                         return true;
@@ -570,7 +574,7 @@ namespace McRave::Command {
         }
         return false;
     }
-    
+
     bool explore(UnitInfo& unit)
     {
         const auto scoreFunction = [&](WalkPosition w) {

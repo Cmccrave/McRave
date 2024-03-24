@@ -9,6 +9,7 @@ namespace McRave::Util {
     namespace {
         Time gameTime(0, 0);
         double log10Lookup[1000];
+        map<int, vector<WalkPosition>> circleCache;
 
         /// Approximation of Euclidian distance
         /// This is the same approximation that StarCraft's engine uses
@@ -306,6 +307,21 @@ namespace McRave::Util {
         for (auto x = 1; x < 1000; x++) {
             log10Lookup[x] = log(x);
         }
+
+        auto center = WalkPosition(0, 0);
+        auto centerp = Position(center) + Position(4, 4);
+        for (auto i = 1; i < 256; i++) {
+            auto &cache = circleCache[i];
+            for (auto x = -i; x <= i; x++) {
+                for (auto y = -i; y <= i; y++) {
+                    auto w = WalkPosition(x, y);
+                    auto p = Position(w) + Position(4, 4);
+                    if (p.getDistance(centerp) < i * 8) {
+                        cache.push_back(w);
+                    }
+                }
+            }
+        }
     }
 
     double log10(int index)
@@ -382,5 +398,10 @@ namespace McRave::Util {
             }
         }
         return pathPoint;
+    }
+
+    vector<WalkPosition>& getWalkCircle(int radius)
+    {
+        return circleCache[radius];
     }
 }

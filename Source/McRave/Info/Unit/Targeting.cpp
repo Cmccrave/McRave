@@ -54,7 +54,7 @@ namespace McRave::Targets {
             bool targetCanAttack = !unit.isHidden() && (((unit.getType().isFlyer() && target.canAttackAir()) || (!unit.getType().isFlyer() && target.canAttackGround()) || (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine)));
             bool unitCanAttack = !target.isHidden() && ((target.isFlying() && unit.canAttackAir()) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));
 
-            if (target.movedFlag || !unitCanAttack)
+            if (unit.getRole() != Role::Support && (target.movedFlag || !unitCanAttack))
                 return Priority::Ignore;
 
             // Check if the target is important right now to attack
@@ -68,6 +68,12 @@ namespace McRave::Targets {
                 || (Players::ZvZ() && Spy::enemyFastExpand())
                 || Util::getTime() > Time(6, 00)
                 || Spy::enemyGreedy();
+
+            // Support Role
+            if (unit.getRole() == Role::Support) {
+                if (target.isHidden() && (unit.getType().isDetector() || unit.getType() == Terran_Comsat_Station))
+                    return Priority::Critical;
+            }
 
             // Combat Role
             if (unit.getRole() == Role::Combat) {
@@ -199,9 +205,11 @@ namespace McRave::Targets {
             auto enemyRange =     unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange();
             auto enemyReach =     unit.getType().isFlyer() ? target.getAirReach() : target.getGroundReach();
 
-            const auto flatCheckOK =    mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea(target.getTilePosition()) && mapBWEM.GetArea(unit.getTilePosition())->AccessibleFrom(mapBWEM.GetArea(target.getTilePosition()));
+            const auto useGrd =         !unit.getType().isWorker() && !unit.isFlying() && !target.isFlying()
+                && mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea(target.getTilePosition())
+                && mapBWEM.GetArea(unit.getTilePosition())->AccessibleFrom(mapBWEM.GetArea(target.getTilePosition()));
             const auto boxDistance =    double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
-            const auto actualDist =     flatCheckOK ? BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) : boxDistance;
+            const auto actualDist =     useGrd ? BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) : boxDistance;
             const auto dist =           exp(0.0125 * actualDist);
 
             if (unit.isSiegeTank()) {
@@ -507,7 +515,7 @@ namespace McRave::Targets {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo& unit = *u;
                 auto closestEnemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return (u->isFlying() && unit.canAttackAir()) || (!u->isFlying() && unit.canAttackGround());
+                    return (u->isFlying() && unit.canAttackAir()) || (!u->isFlying() && unit.canAttackGround()) || (unit.getRole() == Role::Support);
                 });
                 if (closestEnemy) {
                     const auto dist = unit.getPosition().getDistance(closestEnemy->getPosition());

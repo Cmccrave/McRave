@@ -441,7 +441,7 @@ namespace McRave::Learning {
 
     void onStart()
     {
-        if (!Broodwar->enemy() || Players::vFFA() || Players::vTVB() || !Broodwar->isMultiplayer()) {
+        if (!Broodwar->enemy() || Players::vFFA() || Players::vTVB()) {
             getDefaultBuild();
             return;
         }

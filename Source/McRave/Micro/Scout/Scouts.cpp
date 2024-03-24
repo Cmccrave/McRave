@@ -557,11 +557,6 @@ namespace McRave::Scouts {
                     };
 
                     const auto walkable = [&](const TilePosition &t) {
-                        if (unit.getType().isWorker()) {
-                            const auto type = BWEB::Map::isUsed(t);
-                            if (type != UnitTypes::None && !type.isBuilding() && resourceWalkPossible[t.x][t.y])
-                                return true;
-                        }
                         return newPath.unitWalkable(t);
                     };
 

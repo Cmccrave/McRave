@@ -22,6 +22,8 @@ namespace McRave::Util {
 
     BWAPI::Position getPathPoint(UnitInfo&, BWAPI::Position);
 
+    std::vector<BWAPI::WalkPosition>& getWalkCircle(int);
+
     Time getTime();
 
     void onStart();

@@ -6,13 +6,14 @@ using namespace UnitTypes;
 
 namespace McRave {
 
+    static vector<TilePosition> directions ={ {-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 1}, {2, -1}, {2, 0}, {2, 1} };
+
     void ResourceInfo::updatePocketStatus()
     {
         if (!getType().isMineralField())
             return;
 
         // Determine if this resource is a pocket resource, useful to deter choosing a building worker (they get stuck)
-        vector<TilePosition> directions ={ {-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 1}, {2, -1}, {2, 0}, {2, 1} };
         vector<TilePosition> pocketTiles;
         for (auto &dir : directions) {
             auto tile = tilePosition + dir;

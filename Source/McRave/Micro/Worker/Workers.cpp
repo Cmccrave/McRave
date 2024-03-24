@@ -153,6 +153,7 @@ namespace McRave::Workers {
             // 2. Any threat exists, but we have burrow and they dont have detection
             // 3. A minor threat exists, move between resources
             // 4. A major threat exists, ditch the station (TODO?)
+            return true;
         }
 
         bool isResourceFlooded(UnitInfo& unit)
