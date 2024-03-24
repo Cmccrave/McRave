@@ -7,7 +7,6 @@ using namespace UnitCommandTypes;
 
 namespace McRave::Command {
 
-    //
     vector<pair<double, Position>> positionsByCost;
 
     namespace {
@@ -71,6 +70,7 @@ namespace McRave::Command {
                 return true;
             };
 
+            // Get cost for movement to this position
             const auto cost = [&](Position& p) {
                 const auto w = WalkPosition(p);
                 auto current = score(w);
@@ -85,22 +85,27 @@ namespace McRave::Command {
                 return 1.0 / current;
             };
 
-            // Create a box, keep units outside a tile of the edge of the map if it's a flyer
+            // Clear the vector and keep the space reserved
             auto radius = 20;
             const auto vectorSize = size_t(radius * radius);
             positionsByCost.clear();
             positionsByCost.reserve(vectorSize);
 
+            // Grab the expected circle representation of this radius
             for (auto &walk : Util::getWalkCircle(radius)) {
                 const auto w = WalkPosition(walk) + WalkPosition(unit.getPosition());
-                auto p = Position(w) + Position(4, 4);
-                positionsByCost.push_back(make_pair(cost(p), p));
+                if (w.isValid()) {
+                    auto p = Position(w) + Position(4, 4);
+                    positionsByCost.push_back(make_pair(cost(p), p));
+                }
             }
 
+            // Sort above positions by cost
             sort(positionsByCost.begin(), positionsByCost.end(), [&](auto &p1, auto &p2) {
                 return p1.first < p2.first;
             });
 
+            // Iterate ascending cost until a position is viable
             for (auto &[cost, p] : positionsByCost) {                
                 if (viablePosition(p))
                     return p;
