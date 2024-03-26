@@ -59,7 +59,7 @@ namespace BWEB {
         }
 
         /// <summary> Returns the Station this wall is close to if one exists. </summary>
-        const Station * const getStation() { return station; }
+        const Station * getStation() const { return station; }
 
         /// <summary> Returns the Chokepoint associated with this Wall. </summary>
         const BWEM::ChokePoint * getChokePoint() const { return choke; }

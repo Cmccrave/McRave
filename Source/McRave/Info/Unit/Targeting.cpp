@@ -138,7 +138,7 @@ namespace McRave::Targets {
                     if (Players::ZvT() && target.isSiegeTank() && unit.isWithinReach(target))
                         return Priority::Major;
 
-                    auto priorityAfterInfo = Terrain::foundEnemy() ? Priority::Trivial : Priority::Ignore;
+                    auto priorityAfterInfo = Terrain::foundEnemy() ? Priority::Minor : Priority::Trivial;
                     if (!anythingTime && !defendExpander) {
                         if (!Players::ZvZ() && !unit.canOneShot(target) && !unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding() && !target.getType().isWorker())
                             return priorityAfterInfo;

@@ -27,14 +27,13 @@ namespace McRave::BuildOrder::Zerg {
         void ZvT_PH_Overpool()
         {
             transitionReady =                               hatchCount() >= 2;
-            unitLimits[Zerg_Drone] =                        Spy::enemyFastExpand() ? INT_MAX : 14;
+            unitLimits[Zerg_Drone] =                        Spy::enemyFastExpand() ? 16 : 12 - vis(Zerg_Hatchery);
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
-            gasLimit =                                      com(Zerg_Drone) >= 11 ? gasMax() : 0;
-            scout =                                         scout || vis(Zerg_Spawning_Pool) > 0;
-            proxy =                                         false;
+            gasLimit =                                      0;
+            scout =                                         scout || (hatchCount() >= 2);
 
             // Buildings
-            buildQueue[Zerg_Hatchery] =                     1 + (Spy::enemyProxy() ? total(Zerg_Zergling) >= 6 : s >= 22);
+            buildQueue[Zerg_Hatchery] =                     1 + (s >= 22);
             buildQueue[Zerg_Spawning_Pool] =                (vis(Zerg_Overlord) >= 2);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 30);
         }

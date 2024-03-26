@@ -536,7 +536,7 @@ namespace McRave::Planning {
                 return false;
 
             // Don't wall if not needed
-            if ((!BuildOrder::isWallNat() && !BuildOrder::isWallMain()) || (Spy::enemyBust() && BuildOrder::isOpener()))
+            if (!BuildOrder::isWallNat() && !BuildOrder::isWallMain())
                 return false;
 
             // As Zerg, we have to place natural hatch before wall
@@ -645,7 +645,7 @@ namespace McRave::Planning {
             }
 
             // Check if we are being busted, add an extra pylon to the defenses
-            if (Spy::enemyBust() && Walls::getNaturalWall() && BuildOrder::isWallNat()) {
+            if ((Spy::getEnemyTransition() == "2HatchHydra" || Spy::getEnemyTransition() == "3HatchHydra") && Walls::getNaturalWall() && BuildOrder::isWallNat()) {
                 int cnt = 0;
                 TilePosition sum(0, 0);
                 TilePosition center(0, 0);

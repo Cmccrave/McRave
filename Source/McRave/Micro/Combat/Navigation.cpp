@@ -16,8 +16,6 @@ namespace McRave::Combat::Navigation {
                 return false;
             return unit.hasCommander() && unit.getPosition().getDistance(unit.getCommander().lock()->getPosition()) > 64.0;
         }
-
-
     }
 
     void getRegroupPath(UnitInfo& unit)

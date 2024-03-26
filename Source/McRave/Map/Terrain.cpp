@@ -82,6 +82,9 @@ namespace McRave::Terrain {
                         continue;
 
                     for (auto &start : Broodwar->getStartLocations()) {
+                        if (start == Terrain::getMainTile())
+                            continue;                        
+
                         auto startCenter = Position(start) + Position(64, 48);
                         auto frameDiff = abs(Broodwar->getFrameCount() - (unit.getPosition().getDistance(startCenter) / unit.getSpeed()));
 

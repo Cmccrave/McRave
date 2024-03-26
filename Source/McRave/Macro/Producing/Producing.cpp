@@ -15,6 +15,7 @@ namespace McRave::Producing {
         void reset()
         {
             trainedThisFrame.clear();
+            idleProduction.clear();
             reservedMineral = 0;
             reservedGas = 0;
         }
@@ -245,14 +246,6 @@ namespace McRave::Producing {
             auto best = 0.0;
             auto bestType = None;
 
-            // Clear idle checks
-            auto idleItr = idleProduction.find(building.unit());
-            if (idleItr != idleProduction.end()) {
-                reservedMineral -= idleItr->second.mineralPrice();
-                reservedGas -= idleItr->second.gasPrice();
-                idleProduction.erase(building.unit());
-            }
-
             // Choose an Overlord if we need one
             if (building.getType() == Zerg_Larva && BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord]) {
                 if (isAffordable(Zerg_Overlord)) {
@@ -291,7 +284,7 @@ namespace McRave::Producing {
                 }
 
                 // Else if this is a tech unit, add it to idle production
-                else if (BuildOrder::isFocusUnit(bestType) && Broodwar->self()->getRace() != Races::Zerg && (Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= bestType.mineralPrice()) && (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= bestType.gasPrice())) {
+                else if (BuildOrder::isFocusUnit(bestType) && (Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= bestType.mineralPrice()) && (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= bestType.gasPrice())) {
                     trainedThisFrame[bestType]++;
                     idleProduction[building.unit()] = bestType;
                     reservedMineral += bestType.mineralPrice();
@@ -371,11 +364,11 @@ namespace McRave::Producing {
                     });
 
                     // Try to just use the larvas immediately, queue first
-                    if (larvaCount >= 3 && bestType != Zerg_Drone)
+                    if (larvaCount >= 3)
                         saturation = 0.01;
 
                     // Try not to queue drones at high saturation
-                    if (larvaCount < 3 && bestType.isWorker() && saturation >= 1.6)
+                    if (larvaCount < 2 && !BuildOrder::isOpener() && bestType.isWorker() && saturation >= 1.6)
                         continue;
 
                     stations.emplace(saturation * larvaCount, station);
@@ -457,8 +450,8 @@ namespace McRave::Producing {
             auto larvaRequirements = BuildOrder::getUnitReservation(Zerg_Mutalisk) + BuildOrder::getUnitReservation(Zerg_Hydralisk) + (BuildOrder::getUnitReservation(Zerg_Scourge) / 2);
 
             if ((type != Zerg_Overlord && vis(Zerg_Larva) <= larvaRequirements)
-                || Broodwar->self()->minerals() - type.mineralPrice() < larvaMinCost
-                || Broodwar->self()->gas() - type.gasPrice() < larvaGasCost)
+                || (type.mineralPrice() > 0 && Broodwar->self()->minerals() - type.mineralPrice() < larvaMinCost)
+                || (type.gasPrice() > 0 && Broodwar->self()->gas() - type.gasPrice() < larvaGasCost))
                 return 0.0;
         }
 

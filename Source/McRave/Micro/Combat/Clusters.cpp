@@ -52,8 +52,9 @@ namespace McRave::Combat::Clusters {
                 auto matchedGoal = (parent.unit->getGoal() == child.unit->getGoal());
                 auto matchedType = (parent.unit->isFlying() == child.unit->isFlying());
                 auto matchedStrat = (parent.unit->getGlobalState() == child.unit->getGlobalState()) && (parent.unit->getLocalState() == child.unit->getLocalState());
-                auto matchedDistance = BWEB::Map::getGroundDistance(child.position, parent.position) < 256.0
-                    || (parent.unit->isLightAir() && child.unit->isLightAir());
+                auto matchedDistance = child.position.getDistance(parent.position) < 64.0
+                    || (parent.unit->isLightAir() && child.unit->isLightAir())
+                    || BWEB::Map::getGroundDistance(child.position, parent.position) < 256.0;
                 return matchedType && matchedStrat && matchedDistance && matchedGoal;
             };
 
@@ -274,7 +275,7 @@ namespace McRave::Combat::Clusters {
                     cluster.retreatCluster = commander->getLocalState() == LocalState::Retreat || commander->getLocalState() == LocalState::ForcedRetreat || commander->getGlobalState() == GlobalState::Retreat || commander->getGlobalState() == GlobalState::ForcedRetreat;
                     cluster.marchPosition = commander->marchPos;
                     cluster.retreatPosition = commander->retreatPos;
-                    cluster.mobileCluster = !atHome || !cluster.retreatCluster;
+                    cluster.mobileCluster = true; //!atHome || !cluster.retreatCluster;
 
                     // Determine how commands are sent out
                     if (commander->isLightAir())
@@ -304,8 +305,8 @@ namespace McRave::Combat::Clusters {
                 //    unit->circle(cluster.color);
                 //}
 
-                //Visuals::drawPath(cluster.marchPath);
-                //Visuals::drawPath(cluster.retreatPath);
+                Visuals::drawPath(cluster.marchPath);
+                Visuals::drawPath(cluster.retreatPath);
 
                 // March
                 Visuals::drawCircle(cluster.marchNavigation, 8, Colors::Green);

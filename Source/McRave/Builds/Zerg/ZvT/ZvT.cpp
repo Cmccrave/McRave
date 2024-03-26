@@ -100,9 +100,6 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.95);
 
-        // Upgrades
-        upgradeQueue[Metabolic_Boost] =                 vis(Zerg_Zergling) >= 6 && gas(80);
-
         // Research
         techQueue[TechTypes::Burrowing] =               Spy::getEnemyBuild() == "RaxFact" && Util::getTime() > Time(4, 15);
 

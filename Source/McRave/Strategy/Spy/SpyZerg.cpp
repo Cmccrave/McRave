@@ -122,14 +122,21 @@ namespace McRave::Spy::Zerg {
 
             // Mutalisk transition detection
             if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) == 0) {
-                if ((Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) > 0) && theSpy.productionCount == 3)
-                    theSpy.transition.name = "3HatchMuta";
-                else if (theSpy.productionCount == 2 && (completesBy(1, Zerg_Lair, Time(4, 25)) || completesBy(1, Zerg_Spire, Time(5, 45))))
-                    theSpy.transition.name = "2HatchMuta";
-                else if (theSpy.productionCount == 1 && ((Spy::getEnemyBuild() == "PoolLair" && Players::ZvZ()) || (completesBy(1, Zerg_Spire, Time(5, 15)))))
+                if (completesBy(1, Zerg_Lair, Time(4, 00)) || completesBy(1, Zerg_Spire, Time(5, 15)) || arrivesBy(1, Zerg_Mutalisk, Time(6, 00)))
                     theSpy.transition.name = "1HatchMuta";
+                else if (completesBy(1, Zerg_Lair, Time(4, 30)) || completesBy(1, Zerg_Spire, Time(5, 45)) || arrivesBy(1, Zerg_Mutalisk, Time(6, 30)))
+                    theSpy.transition.name = "2HatchMuta";
+                else if (completesBy(1, Zerg_Lair, Time(5, 00)) || completesBy(1, Zerg_Spire, Time(6, 15)) || arrivesBy(1, Zerg_Mutalisk, Time(7, 00)))
+                    theSpy.transition.name = "3HatchMuta";
             }
         }
+    }
+
+    void enemyZergMisc(PlayerInfo& player, StrategySpy& theSpy)
+    {
+        // Turtle detection
+        if (completesBy(2, Zerg_Sunken_Colony, Time(4, 00)) || completesBy(3, Zerg_Sunken_Colony, Time(5, 30)))            
+            theSpy.turtle.possible = true;        
     }
 
     void updateZerg(StrategySpy& theSpy)
@@ -143,6 +150,7 @@ namespace McRave::Spy::Zerg {
                     enemyZergOpeners(player, theSpy);
                 if (!theSpy.transition.confirmed || theSpy.transition.changeable)
                     enemyZergTransitions(player, theSpy);
+                enemyZergMisc(player, theSpy);
             }
         }
     }

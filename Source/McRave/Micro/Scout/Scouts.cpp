@@ -180,8 +180,13 @@ namespace McRave::Scouts {
                         main.desiredTypeCounts[Zerg_Drone] = 0;
                 }
 
-                if (Players::ZvZ())
+                if (Players::ZvZ()) {
                     main.desiredTypeCounts[Zerg_Drone] = 0;
+                    main.desiredTypeCounts[Zerg_Zergling] = 1;
+                    if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 0
+                        || (Util::getTime() > Time(3, 30) && !Terrain::foundEnemy() && Util::getTime() < Time(3, 30)))
+                        main.desiredTypeCounts[Zerg_Zergling] = 0;
+                }
 
                 auto enemyAir = Players::getStrength(PlayerState::Enemy).groundToAir > 0.0
                     || Players::getStrength(PlayerState::Enemy).airToAir > 0.0

@@ -160,11 +160,11 @@ namespace McRave::Walls {
                     + (Util::getTime() > Time(4, 10))
                     + (Util::getTime() > Time(4, 40));
                 if (Spy::getEnemyOpener() == "10/15")
-                    return (greedyStart && Util::getTime() > Time(3, 15))
+                    return (Util::getTime() > Time(3, 15))
                     + (Util::getTime() > Time(4, 30))
                     + (Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown")
-                    return (greedyStart && Util::getTime() > Time(3, 00))
+                    return (Util::getTime() > Time(3, 00))
                     + (Util::getTime() > Time(4, 00))
                     + (Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")

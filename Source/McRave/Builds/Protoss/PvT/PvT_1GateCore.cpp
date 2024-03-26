@@ -29,9 +29,10 @@ namespace McRave::BuildOrder::Protoss {
             // Upgrades
             upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
 
-            // Army Composition
-            armyComposition[Protoss_Zealot] =               0.05;
-            armyComposition[Protoss_Dragoon] =              0.75;
+            // Composition
+            armyComposition[Protoss_Zealot] =               0.10;
+            armyComposition[Protoss_Dragoon] =              0.90;
+
             armyComposition[Protoss_Reaver] =               0.50;
             armyComposition[Protoss_Observer] =             0.25;
             armyComposition[Protoss_Shuttle] =              0.25;
@@ -41,24 +42,25 @@ namespace McRave::BuildOrder::Protoss {
         {
             // "https://liquipedia.net/starcraft/DT_Fast_Expand_(vs._Terran)"
             inTransition =                                  total(Protoss_Citadel_of_Adun) > 0;
-            inOpening =                                     s <= 80;
+            inOpening =                                     total(Protoss_Dark_Templar) < 4;
             hideTech =                                      com(Protoss_Dark_Templar) <= 0;
             focusUnit =                                     Protoss_Dark_Templar;
 
             // Buildings
             buildQueue[Protoss_Gateway] =                   (s >= 20) + (vis(Protoss_Templar_Archives) > 0);
-            buildQueue[Protoss_Nexus] =                     1 + (vis(Protoss_Dark_Templar) > 0);
+            buildQueue[Protoss_Nexus] =                     1 + (total(Protoss_Dark_Templar) >= 2);
             buildQueue[Protoss_Assimilator] =               (s >= 24) + (vis(Protoss_Nexus) >= 2);
-            buildQueue[Protoss_Citadel_of_Adun] =           s >= 36;
-            buildQueue[Protoss_Templar_Archives] =          s >= 48;
+            buildQueue[Protoss_Citadel_of_Adun] =           (com(Protoss_Cybernetics_Core) > 0) && s >= 36;
+            buildQueue[Protoss_Templar_Archives] =          (com(Protoss_Citadel_of_Adun) > 0) && s >= 48;
 
             // Upgrades
-            upgradeQueue[Singularity_Charge] =              vis(Protoss_Dark_Templar) >= 2;
+            upgradeQueue[Singularity_Charge] =              vis(Protoss_Citadel_of_Adun) > 0;
 
-            // Army composition
-            armyComposition[Protoss_Dragoon] =              0.80;
-            armyComposition[Protoss_Zealot] =               0.10;
-            armyComposition[Protoss_Dark_Templar] =         0.10;
+            // Composition
+            if (com(Protoss_Templar_Archives) > 0 && total(Protoss_Dark_Templar) < 4)
+                armyComposition[Protoss_Dark_Templar] =         1.00;
+            else
+                armyComposition[Protoss_Dragoon] =              1.00;
         }
 
         void PvT_1GC_4Gate()

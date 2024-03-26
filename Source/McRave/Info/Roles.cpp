@@ -62,24 +62,14 @@ namespace McRave::Roles {
             int completedDefenders = com(Protoss_Photon_Cannon) + com(Protoss_Zealot);
             int visibleDefenders = vis(Protoss_Photon_Cannon) + vis(Protoss_Zealot);
 
-            // If trying to hide tech, pull 2 probes with a Zealot
-            if (!BuildOrder::isRush() && BuildOrder::isHideTech() && com(Protoss_Dragoon) == 0 && total(Protoss_Dragoon) == 0)
-                forceCombatWorker(2, Position(Terrain::getMainChoke()->Center()), LocalState::None, GlobalState::Retreat);
-
             // If trying to FFE, pull based on Cannon/Zealot numbers, or lack of scouting information
-            else if (BuildOrder::getCurrentBuild() == "FFE") {
+            if (BuildOrder::getCurrentBuild() == "FFE") {
                 if (Spy::getEnemyOpener() == "4Pool" && visibleDefenders >= 1)
                     forceCombatWorker(8 - 2 * completedDefenders, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
                 else if (Spy::enemyRush() && Spy::getEnemyOpener() == "9Pool" && Util::getTime() > Time(3, 15) && completedDefenders < 3)
                     forceCombatWorker(3, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
                 else if (!Terrain::getEnemyStartingPosition().isValid() && Spy::getEnemyBuild() == "Unknown" && completedDefenders < 1 && visibleDefenders > 0)
                     forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
-            }
-
-            // If trying to 1GateCore and scouted 2Gate late, pull workers to block choke when we are ready
-            else if (BuildOrder::getCurrentBuild() == "1GateCore" && Spy::getEnemyBuild() == "2Gate" && Combat::holdAtChoke()) {
-                if (Util::getTime() < Time(3, 30))
-                    forceCombatWorker(2, Position(Terrain::getMainChoke()->Center()), LocalState::None, GlobalState::Retreat);
             }
         }
 

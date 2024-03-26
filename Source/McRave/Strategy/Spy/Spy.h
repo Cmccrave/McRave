@@ -14,8 +14,11 @@ namespace McRave::Spy {
 
         void update() {
             (possible || name != "Unknown") ? framesTrue++ : framesTrue = 0;
-            if (framesTrue > framesRequired)
+            if (framesTrue > framesRequired) {
+                if (!confirmed)
+                    McRave::easyWrite(name + " confirmed at " + Util::getTime().toString());
                 confirmed = true;
+            }
             else {
                 possible = false;
                 name = "Unknown";
@@ -34,7 +37,7 @@ namespace McRave::Spy {
     };
 
     struct StrategySpy { // TODO: Impl multiple players
-        Strat build, opener, transition, expand, rush, wall, proxy, early, steal, pressure, greedy, invis, allin;
+        Strat build, opener, transition, expand, rush, wall, proxy, early, steal, pressure, greedy, invis, allin, turtle;
         Time buildTime, openerTime, transitionTime, rushArrivalTime;
         std::vector<Strat*> listOfStrats;
         std::map<BWAPI::UnitType, UnitTimings> enemyTimings;
@@ -46,13 +49,26 @@ namespace McRave::Spy {
         std::set<BWAPI::UnitType> typeUpgrading; // TODO: Better impl (doesn't look at current state)
 
         StrategySpy() {
-            listOfStrats ={ &build, &opener, &transition, &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &allin };
+            listOfStrats ={ &build, &opener, &transition, &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &allin, &turtle };
             build.framesRequired = 24;
             build.framesChangeable = 500;
             opener.framesRequired = 24;
             opener.framesChangeable = 500;
             transition.framesRequired = 240;
             transition.framesChangeable = 500;
+
+            // Attaching names to strats for logging purposes
+            expand.name = "Expand";
+            rush.name = "Rush";
+            wall.name = "Wall";
+            proxy.name = "Proxy";
+            early.name = "Early";
+            steal.name = "Steal";
+            pressure.name = "Pressure";
+            greedy.name = "Greedy";
+            invis.name = "Invis";
+            allin.name = "Allin";
+            turtle.name = "Turtle";
         }
     };
 
@@ -91,7 +107,7 @@ namespace McRave::Spy {
     bool enemyPressure();
     bool enemyWalled();
     bool enemyGreedy();
-    bool enemyBust();
+    bool enemyTurtle();
     int getWorkersPulled();
     int getEnemyGasMined();
 }

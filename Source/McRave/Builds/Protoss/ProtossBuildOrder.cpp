@@ -352,7 +352,7 @@ namespace McRave::BuildOrder::Protoss
 
     void composition()
     {
-        if (inOpening && focusUnits.empty())
+        if (inOpening)
             return;
 
         armyComposition.clear();

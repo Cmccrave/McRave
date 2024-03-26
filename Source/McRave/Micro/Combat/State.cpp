@@ -30,7 +30,12 @@ namespace McRave::Combat::State {
 
         // Mutalisks
         if (unlockedOrVis(Zerg_Mutalisk) || BuildOrder::getCurrentTransition() == "2HatchMuta" || BuildOrder::getCurrentTransition() == "3HatchMuta") {
-            if (!Players::ZvZ() && com(Zerg_Mutalisk) < (Stations::getStations(PlayerState::Self).size() >= 2 ? 5 : 3) && total(Zerg_Mutalisk) < 9)
+            if (Players::ZvZ()) {
+                const auto lessMutas = com(Zerg_Mutalisk) < Players::getCompleteCount(PlayerState::Enemy, Zerg_Mutalisk);
+                if (lessMutas)
+                    staticRetreatTypes.push_back(Zerg_Mutalisk);
+            }
+            else if (com(Zerg_Mutalisk) < (Stations::getStations(PlayerState::Self).size() >= 2 ? 5 : 3) && total(Zerg_Mutalisk) < 9)
                 staticRetreatTypes.push_back(Zerg_Mutalisk);
         }
 
@@ -57,10 +62,17 @@ namespace McRave::Combat::State {
                         || (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != "HatchPool" && BuildOrder::getCurrentBuild() == "HatchPool");
                     const auto equalPool = (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "9Pool");
                     const auto enemyLingVomit = (Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling") && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0;
-                    const auto avoidDiceRoll = Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 00) && !Terrain::getEnemyStartingPosition().isValid();
-                    const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(2, 45);
-                    if (slowerPool || equalPool || enemyLingVomit || avoidDiceRoll || enemyDroneScouted)
-                        staticRetreatTypes.push_back(Zerg_Zergling);
+                    const auto avoidDiceRoll = Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 15) && !Terrain::getEnemyStartingPosition().isValid();
+                    const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(3, 15);
+
+                    if (BuildOrder::getCurrentTransition() == "1HatchMuta") {
+                        if (slowerPool || equalPool || enemyLingVomit || avoidDiceRoll || enemyDroneScouted)
+                            staticRetreatTypes.push_back(Zerg_Zergling);
+                    }
+                    if (BuildOrder::getCurrentTransition() == "1HatchMuta") {
+                        if (avoidDiceRoll || enemyDroneScouted)
+                            staticRetreatTypes.push_back(Zerg_Zergling);
+                    }
                 }
             }
         }

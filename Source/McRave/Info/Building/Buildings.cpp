@@ -162,13 +162,24 @@ namespace McRave::Buildings {
                     morphType = Zerg_Sunken_Colony;
             }
 
-            //// Timing Sunkens if we have vision of their army
-            //if (Terrain::getEnemyNatural()) {
-            //    auto distSelf = BWEB::Map::getGroundDistance(u->getPosition(), Terrain::getNaturalPosition());
-            //    auto distEnemy = BWEB::Map::getGroundDistance(u->getPosition(), Terrain::getEnemyNatural()->getBase()->Center());
-            //    if (distSelf > distEnemy)
-            //        morphType = None;
-            //}
+            // Look for the closest possible non worker enemy
+            if (plannedType == Zerg_Sunken_Colony) {
+                auto closestThreat = Util::getClosestUnit(building.getPosition(), PlayerState::Enemy, [&](auto &u) {
+                    if (!u->getType().isWorker() && !u->getType().isBuilding()) {
+                        if (!Terrain::getEnemyMain())
+                            return true;
+                        const auto visDiff = Broodwar->getFrameCount() - u->getLastVisibleFrame();
+
+                        // Check if we know they weren't at home and are missing on the map for 15 seconds
+                        if (!Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), u->getPosition()) && !Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), u->getPosition()))
+                            return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 15);
+                        return false;
+                    }
+                    return false;
+                });
+                if (!closestThreat)
+                    return;
+            }
 
             // Morph
             if (morphType.isValid() && building.isCompleted()) {

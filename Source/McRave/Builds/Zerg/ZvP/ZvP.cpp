@@ -47,8 +47,8 @@ namespace McRave::BuildOrder::Zerg {
                 return true;
             const auto visDiff = Broodwar->getFrameCount() - u->getLastVisibleFrame();
 
-            // Check if we know they weren't at home and are missing on the map for 3 seconds
-            if (!Terrain::inTerritory(PlayerState::Enemy, u->getPosition()))
+            // Check if we know they weren't at home and are missing on the map for 30 seconds
+            if (!Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), u->getPosition()) && !Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), u->getPosition()))
                 return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 30);            
             return false;
         };
@@ -60,9 +60,9 @@ namespace McRave::BuildOrder::Zerg {
             auto &unit = *u;
 
             if (trackables.find(unit.getType()) != trackables.end()) {
-                arrivalValue += 0.5;
+                arrivalValue += 1.0;
                 if (inBoundUnit(u))
-                    arrivalValue += 1.5;
+                    arrivalValue += 1.0;
             }
         }
         return int(arrivalValue);
@@ -70,15 +70,13 @@ namespace McRave::BuildOrder::Zerg {
 
     int lingsNeeded_ZvP() {
         auto lings = 0;
-        auto initialValue = 6;
+        auto initialValue = 2;
         if (com(Zerg_Spawning_Pool) == 0)
             return 0;
 
         // 2Gate
         if (Spy::getEnemyBuild() == "2Gate") {
-            if (Spy::getEnemyOpener() == "10/15")
-                initialValue = 6;
-            else if (Spy::getEnemyOpener() == "Proxy9/9" || Spy::getEnemyOpener() == "9/9")
+            if (Spy::getEnemyOpener() == "Proxy9/9" || Spy::getEnemyOpener() == "9/9")
                 initialValue = 16;
             else
                 initialValue = 10;
@@ -93,7 +91,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // 1GC
         if (Spy::getEnemyBuild() == "1GateCore") {
-            initialValue = 6;
+            initialValue = 4;
             if (Spy::getEnemyOpener() == "1Zealot" || Spy::getEnemyOpener() == "2Zealot")
                 initialValue = 6;
         }
@@ -142,9 +140,6 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        (s >= 32 && atPercent(Zerg_Lair, 0.95));
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32);
-
-        // Upgrades
-        upgradeQueue[Metabolic_Boost] =                 (vis(Zerg_Lair) > 0);
 
         // Pumping
         pumpLings = lingsNeeded_ZvP() > vis(Zerg_Zergling);
@@ -233,7 +228,7 @@ namespace McRave::BuildOrder::Zerg {
         reserveLarva =                                  false;
 
         // Buildings
-        buildQueue[Zerg_Hatchery] =                     2 + (vis(Zerg_Drone) >= 11) + (s >= 54 && vis(Zerg_Drone) >= 18) + (s >= 84 && vis(Zerg_Drone) >= 24);
+        buildQueue[Zerg_Hatchery] =                     2 + (s >= 28) + (s >= 54 && vis(Zerg_Drone) >= 18) + (s >= 84 && vis(Zerg_Drone) >= 24);
         buildQueue[Zerg_Extractor] =                    (s >= 26 && vis(Zerg_Drone) >= 13 && hatchCount() >= 3) + (vis(Zerg_Drone) >= 24);
         buildQueue[Zerg_Hydralisk_Den] =                (s >= 38 && vis(Zerg_Drone) >= 16 && gas(30));
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + (s >= 60) + (s >= 74);

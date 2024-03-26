@@ -18,7 +18,8 @@ namespace McRave::Horizon {
                 || (u.stunned)
                 || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0)
                 || (u.getRole() != Role::None && u.getRole() != Role::Combat && u.getRole() != Role::Defender)
-                || !u.hasTarget())
+                || !u.hasTarget()
+                || (u.getRole() == Role::Combat && Combat::State::isStaticRetreat(u.getType()) && u.getLocalState() != LocalState::ForcedAttack))
                 return false;
             return true;
         }
