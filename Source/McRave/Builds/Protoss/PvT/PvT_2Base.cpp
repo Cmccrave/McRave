@@ -60,12 +60,12 @@ namespace McRave::BuildOrder::Protoss {
             gasLimit =                                          goonRange() && vis(Protoss_Pylon) < 3 ? 2 : INT_MAX;
             unitLimits[Protoss_Dragoon] =                       Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 || s >= 40 ? INT_MAX : 0;
             unitLimits[Protoss_Probe] =                         20;
-            transitionReady =                                   vis(Protoss_Gateway) >= 3;
+            transitionReady =                                   vis(Protoss_Gateway) >= 2;
 
             buildQueue[Protoss_Nexus] =                         1 + (s >= 40);
-            buildQueue[Protoss_Pylon] =                         (s >= 16) + (s >= 30) + (s >= 48);
+            buildQueue[Protoss_Pylon] =                         (s >= 16) + (s >= 30);
             buildQueue[Protoss_Assimilator] =                   s >= 24;
-            buildQueue[Protoss_Gateway] =                       (s >= 20) + (s >= 34) + (s >= 76);
+            buildQueue[Protoss_Gateway] =                       (s >= 20) + (s >= 34);
             buildQueue[Protoss_Cybernetics_Core] =              s >= 26;
 
             // Upgrades

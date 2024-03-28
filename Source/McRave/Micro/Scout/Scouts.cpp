@@ -167,6 +167,7 @@ namespace McRave::Scouts {
                         || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0
                         || Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0
                         || Players::getTotalCount(PlayerState::Enemy, Terran_Factory) > 0
+                        || (Terrain::getEnemyStartingPosition().isValid() && vis(Zerg_Zergling) > 0)
                         || Util::getTime() > Time(4, 00))
                         main.desiredTypeCounts[Zerg_Drone] = 0;
                 }
@@ -182,9 +183,9 @@ namespace McRave::Scouts {
 
                 if (Players::ZvZ()) {
                     main.desiredTypeCounts[Zerg_Drone] = 0;
-                    main.desiredTypeCounts[Zerg_Zergling] = 1;
-                    if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 0
-                        || (Util::getTime() > Time(3, 30) && !Terrain::foundEnemy() && Util::getTime() < Time(3, 30)))
+                    main.desiredTypeCounts[Zerg_Zergling] = !Terrain::getEnemyStartingPosition().isValid() || (Util::getTime() > Time(3, 30) && !Terrain::foundEnemy() && Util::getTime() < Time(4, 30));
+
+                    if (Spy::enemyRush() || Spy::enemyPressure())
                         main.desiredTypeCounts[Zerg_Zergling] = 0;
                 }
 

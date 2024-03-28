@@ -1,4 +1,5 @@
 #include "Main/McRave.h"
+#include "Main/Events.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -63,9 +64,21 @@ namespace McRave
 
     void UnitInfo::update()
     {
+        updateEvents();
         updateStatistics();
         verifyPaths();
         updateHistory();
+    }
+
+    void UnitInfo::updateEvents()
+    {
+        // If it was last known as flying
+        if (unit()->exists() && type.isBuilding()) {
+            if (!isFlying() && (unit()->getOrder() == Orders::LiftingOff || unit()->getOrder() == Orders::BuildingLiftOff || unit()->isFlying()))
+                Events::onUnitLift(*this);
+            else if (!isFlying() && getTilePosition().isValid() && BWEB::Map::isUsed(getTilePosition()) == None && Broodwar->isVisible(TilePosition(getPosition())))
+                Events::onUnitLand(*this);
+        }
     }
 
     void UnitInfo::updateStatistics()
@@ -87,7 +100,7 @@ namespace McRave
             invincible                  = unit()->isInvincible() || unit()->isStasised();
 
             data.health                 = unit()->getHitPoints() > 0 ? unit()->getHitPoints() : (data.health == 0 ? t.maxHitPoints() : data.health);
-            data.armor                  = player->getUpgradeLevel(t.armorUpgrade());
+            data.armor                  = type.armor() + player->getUpgradeLevel(t.armorUpgrade());
             data.shields                = unit()->getShields() > 0 ? unit()->getShields() : (data.shields == 0 ? t.maxShields() : data.shields);
             data.shieldArmor            = player->getUpgradeLevel(UpgradeTypes::Protoss_Plasma_Shields);
             data.energy                 = unit()->getEnergy();
@@ -112,7 +125,7 @@ namespace McRave
             // Flags
             flying                      = unit()->isFlying() || getType().isFlyer() || unit()->getOrder() == Orders::LiftingOff || unit()->getOrder() == Orders::BuildingLiftOff;
             movedFlag                   = false;
-            stunned                     = !unit()->isPowered() || unit()->isMaelstrommed() || unit()->isStasised() || unit()->isLockedDown() || unit()->isMorphing();
+            stunned                     = !unit()->isPowered() || unit()->isMaelstrommed() || unit()->isStasised() || unit()->isLockedDown() || unit()->isMorphing() || !unit()->isCompleted();
 
             // McRave Stats
             data.groundRange            = Math::groundRange(*this);
@@ -352,11 +365,6 @@ namespace McRave
         const auto attackedWorkers = hasAttackedRecently() && Terrain::inTerritory(PlayerState::Self, target.getPosition()) && (target.getRole() == Role::Worker || target.getRole() == Role::Support);
         const auto attackedBuildings = hasAttackedRecently() && target.getType().isBuilding();
 
-        // Some hardcoded checks
-        auto aggroTime = Time(0, 00);
-        if (Players::ZvP() && Spy::getEnemyBuild() == "2Gate")
-            aggroTime = Time(3, 40);
-
         // Check if our resources are in danger
         auto nearResources = [&]() {
             if (!atHome || !closestStation)
@@ -374,8 +382,6 @@ namespace McRave
 
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
-            if (Util::getTime() < aggroTime)
-                return false;
             auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
                 return u->getRole() == Role::Defender && u->canAttackGround() && u->isCompleted();
             });
@@ -539,7 +545,7 @@ namespace McRave
         auto newCommandFrame = Broodwar->getFrameCount() - commandFrame > frames;
 
         // Allows skipping the command but still printing the result to screen
-        auto executeCommand = (!cancelAttackRisk || isLightAir()) && (newCommandPosition || newCommandType || newCommandFrame);
+        auto executeCommand = (!cancelAttackRisk || isLightAir() || isHovering()) && (newCommandPosition || newCommandType || newCommandFrame);
         if (executeCommand) {
             commandPosition = here;
             commandType = cmd;
@@ -583,7 +589,7 @@ namespace McRave
         auto newCommandFrame = Broodwar->getFrameCount() - commandFrame > frames;
 
         // Allows skipping the command but still printing the result to screen
-        auto executeCommand = (!cancelAttackRisk || isLightAir()) && (newCommandTarget || newCommandType || newCommandFrame);
+        auto executeCommand = (!cancelAttackRisk || isLightAir() || isHovering()) && (newCommandTarget || newCommandType || newCommandFrame);
         if (executeCommand) {
             commandPosition = targetUnit.getPosition();
             commandType = cmd;
@@ -924,7 +930,7 @@ namespace McRave
 
         // ZvP
         if (Players::ZvP()) {
-            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Util::getTime() > Time(8, 00))
+            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Util::getTime() < Time(8, 00))
                 return true;
 
             const auto closestMelee = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {

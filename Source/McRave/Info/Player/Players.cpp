@@ -235,10 +235,10 @@ namespace McRave::Players
         return false;
     }
 
-    bool hasUpgraded(PlayerState state, UpgradeType type)
+    bool hasUpgraded(PlayerState state, UpgradeType type, int level)
     {
         for (auto&[_, player] : thePlayers) {
-            if (player.getPlayerState() == state && player.hasUpgrade(type))
+            if (player.getPlayerState() == state && player.hasUpgrade(type, level))
                 return true;
         }
         return false;

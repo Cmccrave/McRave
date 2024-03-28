@@ -11,6 +11,7 @@ namespace McRave::Units {
 
         struct DamageRatio {
             map<DamageType, double> ratio;
+            int armor;
             int count;
         };
         map<PlayerState, DamageRatio> grdDamageRatios;
@@ -41,20 +42,12 @@ namespace McRave::Units {
                 for (auto &u : player.getUnits()) {
                     UnitInfo &unit = *u;
 
-                    // If this is a flying building that we haven't recognized as being a flyer, remove overlap tiles
-                    auto flyingBuilding = unit.unit()->exists() && !unit.isFlying() && (unit.unit()->getOrder() == Orders::LiftingOff || unit.unit()->getOrder() == Orders::BuildingLiftOff || unit.unit()->isFlying());
-                    if (flyingBuilding && unit.getLastTile().isValid())
-                        Events::onUnitLift(unit);
-
                     // If this is a morphed unit that we haven't updated
                     if (unit.unit()->exists() && unit.getType() != unit.unit()->getType())
                         Events::onUnitMorph(unit.unit());
 
                     // Update
                     unit.update();
-
-                    if (unit.getType().isBuilding() && !unit.isFlying() && unit.getTilePosition().isValid() && BWEB::Map::isUsed(unit.getTilePosition()) == None && Broodwar->isVisible(TilePosition(unit.getPosition())))
-                        Events::onUnitLand(unit);
 
                     // Must see a 3x3 grid of Tiles to set a unit to invalid position
                     if (!unit.unit()->exists() && Broodwar->isVisible(TilePosition(unit.getPosition())) && (!unit.isBurrowed() || Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Self) || (unit.getPosition().isValid() && Grids::getGroundDensity(unit.getPosition(), PlayerState::Self) > 0)))
@@ -95,7 +88,6 @@ namespace McRave::Units {
                 // Iterate and update important information
                 for (auto &u : player.getUnits()) {
                     UnitInfo &unit = *u;
-
                     unit.update();
                 }
             }
@@ -152,6 +144,8 @@ namespace McRave::Units {
                     ratios.ratio[DamageTypes::Explosive] += 1.0;
                     ratios.ratio[DamageTypes::Concussive] += (hp + shield) / (hp * 4.0 + shield);
                 }
+
+                ratios.armor += unit.data.armor;
             };
 
             for (auto &p : Players::getPlayers()) {
@@ -161,12 +155,14 @@ namespace McRave::Units {
                         UnitInfo &unit = *u;
 
                         myUnits.insert(u);
-                        if (unit.getRole() == Role::Combat) {
+                        auto canAttack = (unit.canAttackGround() || unit.canAttackAir());
+                        auto attackingUnit = (unit.getType().isBuilding() && canAttack) || (!unit.getType().isBuilding() && !unit.getType().isWorker() && canAttack);
+                        if (attackingUnit) {
                             unit.getType().isFlyer() ? allyAirSizes[unit.getType().size()]++ : allyGrdSizes[unit.getType().size()]++;
 
                             auto &ratios = unit.isFlying() ? airDamageRatios[PlayerState::Enemy] : grdDamageRatios[PlayerState::Enemy];
                             ratios.count++;
-                            addToRatios(ratios, unit);
+                            addToRatios(ratios, unit);                            
                         }
                     }
 
@@ -176,7 +172,9 @@ namespace McRave::Units {
                         UnitInfo &unit = *u;
 
                         enemyUnits.insert(u);
-                        if (!unit.getType().isBuilding() && !unit.getType().isWorker()) {
+                        auto canAttack = (unit.canAttackGround() || unit.canAttackAir());
+                        auto attackingUnit = (unit.getType().isBuilding() && canAttack) || (!unit.getType().isBuilding() && !unit.getType().isWorker() && canAttack);
+                        if (attackingUnit) {
                             unit.getType().isFlyer() ? enemyAirSizes[unit.getType().size()]++ : enemyGrdSizes[unit.getType().size()]++;
                             auto &ratios = unit.isFlying() ? airDamageRatios[PlayerState::Self] : grdDamageRatios[PlayerState::Self];
                             ratios.count++;
@@ -191,13 +189,16 @@ namespace McRave::Units {
                 if (grd.count > 0) {
                     for (auto &[type, ratio] : grd.ratio)
                         ratio /= double(grd.count);
+                    grd.armor /= double(grd.count);
                 }
             }
+
             // Now divide the damage ratios by the count
             for (auto &[_, air] : airDamageRatios) {
                 if (air.count > 0) {
                     for (auto &[type, ratio] : air.ratio)
                         ratio /= double(air.count);
+                    air.armor /= double(air.count);
                 }
             }
         }
@@ -255,6 +256,13 @@ namespace McRave::Units {
         if (airDamageRatios[state].count == 0)
             return 1.0;
         return airDamageRatios[state].ratio[type];
+    }
+
+    double getDamageReductionGrd(PlayerState state) {
+        return grdDamageRatios[state].armor;
+    }
+    double getDamageReductionAir(PlayerState state) {
+        return airDamageRatios[state].armor;
     }
 
     map<UnitSizeType, int>& getAllyGrdSizes() { return allyGrdSizes; }

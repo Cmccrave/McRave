@@ -26,7 +26,7 @@ namespace McRave::BuildOrder::Terran {
                 auto grdNeeded = Stations::needGroundDefenses(station);
 
                 if (airNeeded > 0)
-                    needTurrets = true;                
+                    needTurrets = true;
 
                 if (airNeeded > 0 && atPercent(Terran_Engineering_Bay, 0.80))
                     buildQueue[Terran_Missile_Turret] = vis(Terran_Missile_Turret) + 1;
@@ -39,7 +39,7 @@ namespace McRave::BuildOrder::Terran {
         {
             if (!inBookSupply) {
                 if (vis(Terran_Supply_Depot) > 0) {
-                    int count = min(22, s / 14) - (com(Terran_Command_Center) - 1);
+                    int count = min(25, s / 14) - (com(Terran_Command_Center) - 1);
                     buildQueue[Terran_Supply_Depot] = count;
                 }
             }
@@ -103,7 +103,7 @@ namespace McRave::BuildOrder::Terran {
                     || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2)
                     || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1);
 
-                buildQueue[Terran_Command_Center] = min(2, vis(Terran_Command_Center) + expandDesired);
+                buildQueue[Terran_Command_Center] = vis(Terran_Command_Center) + expandDesired;
             }
         }
 

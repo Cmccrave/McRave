@@ -97,8 +97,13 @@ namespace McRave::Actions {
                         addAction(unit.unit(), order.second, techUsed, PlayerState::Neutral);
                 }
 
-                if (unit.getType() == Terran_Vulture_Spider_Mine && unit.hasTarget())
+                // Spider mines are hard to dodge abruptly
+                if (unit.getType() == Terran_Vulture_Spider_Mine && unit.hasTarget()) {
                     addAction(unit.unit(), unit.getTarget().lock()->getPosition(), UnitTypes::Terran_Vulture_Spider_Mine, PlayerState::Neutral);
+                    addAction(unit.unit(), unit.getPosition(), UnitTypes::Terran_Vulture_Spider_Mine, PlayerState::Neutral);
+                }
+
+                // Scarabs eventually go to their target
                 if (unit.getType() == Protoss_Scarab && unit.hasTarget())
                     addAction(unit.unit(), unit.getTarget().lock()->getPosition(), UnitTypes::Protoss_Scarab, PlayerState::Enemy);
             }
@@ -120,8 +125,11 @@ namespace McRave::Actions {
                         addAction(unit.unit(), order.second, techUsed, PlayerState::Neutral);                    
                 }
 
-                if (unit.getType() == Terran_Vulture_Spider_Mine && unit.hasTarget())
+                // Spider mines are hard to dodge abruptly
+                if (unit.getType() == Terran_Vulture_Spider_Mine && unit.hasTarget()) {
                     addAction(unit.unit(), unit.getTarget().lock()->getPosition(), UnitTypes::Terran_Vulture_Spider_Mine, PlayerState::Neutral);
+                    addAction(unit.unit(), unit.getPosition(), UnitTypes::Terran_Vulture_Spider_Mine, PlayerState::Neutral);
+                }
             }
 
             // Check neutral actions

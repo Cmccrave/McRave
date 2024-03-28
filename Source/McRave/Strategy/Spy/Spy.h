@@ -8,19 +8,33 @@ namespace McRave::Spy {
         bool confirmed = false;
         bool changeable = false;
         int framesTrue = 0;
-        int framesRequired = 50;
+        int framesRequired = 0;
         int framesChangeable = 200;
         std::string name = "Unknown";
 
-        void update() {
-            (possible || name != "Unknown") ? framesTrue++ : framesTrue = 0;
+        void debugLog() {
+            McRave::easyWrite(name + " confirmed at " + Util::getTime().toString());
+        }
+
+        void updateStrat() {
+            possible ? framesTrue++ : framesTrue = 0;
             if (framesTrue > framesRequired) {
-                if (!confirmed)
-                    McRave::easyWrite(name + " confirmed at " + Util::getTime().toString());
+                debugLog();
                 confirmed = true;
             }
             else {
                 possible = false;
+            }
+            changeable = framesTrue < framesChangeable;
+        }
+
+        void updateBlueprint() {
+            name != "Unknown" ? framesTrue++ : framesTrue = 0;
+            if (framesTrue > framesRequired) {
+                debugLog();
+                confirmed = true;
+            }
+            else {
                 name = "Unknown";
             }
             changeable = framesTrue < framesChangeable;
@@ -37,9 +51,11 @@ namespace McRave::Spy {
     };
 
     struct StrategySpy { // TODO: Impl multiple players
+
         Strat build, opener, transition, expand, rush, wall, proxy, early, steal, pressure, greedy, invis, allin, turtle;
         Time buildTime, openerTime, transitionTime, rushArrivalTime;
-        std::vector<Strat*> listOfStrats;
+        std::vector<Strat*> strats;
+        std::vector<Strat*> blueprints;
         std::map<BWAPI::UnitType, UnitTimings> enemyTimings;
         std::map<BWAPI::UpgradeType, int> upgradeLevel;
         std::map<BWAPI::TechType, bool> techResearched; // TODO: Impl
@@ -49,7 +65,8 @@ namespace McRave::Spy {
         std::set<BWAPI::UnitType> typeUpgrading; // TODO: Better impl (doesn't look at current state)
 
         StrategySpy() {
-            listOfStrats ={ &build, &opener, &transition, &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &allin, &turtle };
+            strats ={ &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &allin, &turtle };
+            blueprints ={ &build, &opener, &transition };
             build.framesRequired = 24;
             build.framesChangeable = 500;
             opener.framesRequired = 24;

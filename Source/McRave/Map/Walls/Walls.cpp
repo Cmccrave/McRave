@@ -136,9 +136,13 @@ namespace McRave::Walls {
                 + Players::getDeadCount(PlayerState::Enemy, Zerg_Zergling) / 4;
 
             auto minimum = 0;
-            auto expected = max(PvZ_Opener(wall), PvZ_Transition(wall)) - max(0, unitsKilled / 8);
+            auto expected = max(PvZ_Opener(wall), PvZ_Transition(wall));
+            auto reduction = max(0, unitsKilled / 8);
 
-            return max(minimum, expected);
+            if (expected > 0)
+                minimum = 1;
+
+            return max(minimum, expected - reduction);
         }
 
         // ZvP
@@ -310,28 +314,29 @@ namespace McRave::Walls {
                 minimum = 1;
 
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
-            auto expected = max(ZvP_Opener(wall), ZvP_Transition(wall)) - max(0, unitsKilled / 4);
+            auto expected = max(ZvP_Opener(wall), ZvP_Transition(wall));
+            auto reduction = max(0, unitsKilled / 4);
 
             // Kind of hacky solution to build less with 3h
             if (threeHatch && expected > 1)
-                expected /= 1.5;
+                expected /= 2.0;
+            if (expected > 0)
+                minimum = 1;
 
-            return max(minimum, expected);
+            return max(minimum, expected - reduction);
         }
 
         // ZvT
         int ZvT_Opener(const BWEB::Wall& wall)
         {
-            // If we are opening 12 hatch into a 2h tech, we sometimes need a faster sunken
-            auto greedyStart = BuildOrder::getCurrentOpener() == "12Hatch" || BuildOrder::getCurrentOpener() == "12Pool";
-
             // 2Rax
             if (Spy::getEnemyBuild() == "2Rax") {
                 if (Spy::enemyProxy())
-                    return greedyStart;
-                if (!Spy::enemyFastExpand() && !Spy::enemyRush() && Util::getTime() < Time(5, 00))
-                    return Util::getTime() > Time(3, 15)
-                    + (Util::getTime() > Time(4, 30));
+                    return (Util::getTime() > Time(4, 30));
+                if (!Spy::enemyFastExpand() && !Spy::enemyRush())
+                    return (Util::getTime() > Time(3, 15))
+                    + (Util::getTime() > Time(4, 30))
+                    + (Util::getTime() > Time(5, 00));
                 if (Spy::enemyRush() || Spy::getEnemyOpener() == "BBS")
                     return (Util::getTime() > Time(2, 50))
                     + (Util::getTime() > Time(4, 30));
@@ -340,9 +345,9 @@ namespace McRave::Walls {
             // RaxCC
             if (Spy::getEnemyBuild() == "RaxCC") {
                 if (Spy::getEnemyOpener() == "8Rax")
-                    return greedyStart;
+                    return (Util::getTime() > Time(4, 30));
                 if (Spy::enemyProxy())
-                    return greedyStart;
+                    return (Util::getTime() > Time(4, 30));
                 return (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00));
             }
 
@@ -351,7 +356,7 @@ namespace McRave::Walls {
                 if (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::enemyWalled())
                     return (Util::getTime() > Time(3, 30));
                 if (Spy::getEnemyOpener() == "8Rax")
-                    return greedyStart;
+                    return (Util::getTime() > Time(4, 30));
             }
 
             // Enemy walled, which delays any push they have
@@ -398,13 +403,16 @@ namespace McRave::Walls {
             auto minimum = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 ? 1 : 0;
 
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
-            auto expected = max(ZvT_Opener(wall), ZvT_Transition(wall)) - max(0, unitsKilled / 8);
+            auto expected = max(ZvT_Opener(wall), ZvT_Transition(wall));
+            auto reduction = max(0, unitsKilled / 8);
 
             // Kind of hacky solution to build less with 3h
             if (threeHatch && expected > 1)
                 expected /= 2;
+            if (expected > 0)
+                minimum = 1;
 
-            return max(minimum, expected);
+            return max(minimum, expected - reduction);
         }
 
         // ZvZ

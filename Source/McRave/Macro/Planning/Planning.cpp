@@ -130,12 +130,6 @@ namespace McRave::Planning {
                 }
             }
 
-            // Addon room check
-            if (building.canBuildAddon()) {
-                if (BWEB::Map::isUsed(here + TilePosition(4, 1)) != None)
-                    return false;
-            }
-
             // Psi check
             if (building.requiresPsi() && !Pylons::hasPowerSoon(here, building))
                 return false;
@@ -296,12 +290,37 @@ namespace McRave::Planning {
                         }
                     }
                 }
+                if (Broodwar->self()->getRace() == Races::Terran) {
+
+
+                }
+
                 listByDist.emplace(make_pair(dist * cost, &block));
             }
 
             // Iterate sorted list and find a suitable block
             for (auto &[_, block] : listByDist) {
-                tileBest = returnClosest(building, block->getPlacements(building), here);
+
+                // TOOD: Make this better
+                const auto hasAddonLocation = [&](BWEB::Block* block, TilePosition tile) {
+                    for (auto &small : block->getSmallTiles()) {
+                        if (tile + TilePosition(4, 1) == small)
+                            return true;
+                    }
+                    return false;
+                };
+
+                set<TilePosition> placements;
+                if (building == Terran_Factory && vis(Terran_Factory) < 2) {
+                    for (auto &tile : block->getLargeTiles()) {
+                        if (hasAddonLocation(block, tile))
+                            placements.insert(tile);
+                    }
+                }
+                else
+                    placements = block->getPlacements(building);
+
+                tileBest = returnClosest(building, placements, here);
                 if (tileBest.isValid())
                     return tileBest;
             }
@@ -683,7 +702,7 @@ namespace McRave::Planning {
 
         bool findDepotLocation(UnitType building, TilePosition& placement)
         {
-            if (building != Terran_Supply_Depot)
+            if (building != Terran_Supply_Depot && building != Terran_Academy && building != Terran_Armory)
                 return false;
 
             placement = furthestLocation(building, mapBWEM.Center());

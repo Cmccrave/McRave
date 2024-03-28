@@ -43,7 +43,7 @@ namespace McRave::BuildOrder::Zerg {
     int lingsNeeded_ZvT() {
 
         auto initialValue = 6;
-        if (!atPercent(Zerg_Spawning_Pool, 0.80))
+        if (com(Zerg_Spawning_Pool) == 0)
             return 0;
 
         // 2Rax
@@ -121,7 +121,7 @@ namespace McRave::BuildOrder::Zerg {
     {
         inTransition =                                  vis(Zerg_Lair) > 0;
         inOpening =                                     total(Zerg_Mutalisk) <= 9;
-        inBookSupply =                                  vis(Zerg_Overlord) < 7 || total(Zerg_Mutalisk) < 9;
+        inBookSupply =                                  vis(Zerg_Overlord) < 4;
 
         focusUnit =                                     Zerg_Mutalisk;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : 15 - hatchCount();
@@ -131,8 +131,8 @@ namespace McRave::BuildOrder::Zerg {
 
         // Buildings
         buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + (total(Zerg_Mutalisk) >= 9);
-        buildQueue[Zerg_Extractor] =                    (s >= 28 && vis(Zerg_Drone) >= 11) + (s >= 44 && vis(Zerg_Drone) >= 20);
-        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + (atPercent(Zerg_Spire, 0.5) * 3);
+        buildQueue[Zerg_Extractor] =                    (s >= 32) + (s >= 44 && vis(Zerg_Drone) >= 20);
+        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (vis(Zerg_Extractor) > 0 && s >= 32) + (s >= 48);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        (s >= 42 && atPercent(Zerg_Lair, 0.80));
 

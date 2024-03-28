@@ -118,7 +118,7 @@ namespace McRave::Spy::General {
 
                 // Monitor for invis units
                 if (unit.isHidden())
-                    theSpy.invis.confirmed = true;                
+                    theSpy.invis.possible = true;                
             }
         }
 
@@ -128,7 +128,7 @@ namespace McRave::Spy::General {
             auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self, Races::None) >= 70 : Players::getSupply(PlayerState::Self, Races::None) >= 90;
             theSpy.rush.possible = !supplySafe && (Spy::getEnemyTransition() == "MarineRush" || Spy::getEnemyTransition() == "ZealotRush" || Spy::getEnemyTransition() == "LingRush" || Spy::getEnemyTransition() == "WorkerRush");
             if (supplySafe)
-                theSpy.rush.confirmed = false;
+                theSpy.rush.possible = false;
         }
 
         void checkEnemyPressure(PlayerInfo& player, StrategySpy& theSpy)
@@ -137,7 +137,7 @@ namespace McRave::Spy::General {
             auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self, Races::None) >= 100 : Players::getSupply(PlayerState::Self, Races::None) >= 120;
             theSpy.pressure.possible = !supplySafe && (Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "Sparks" || Spy::getEnemyTransition() == "2Fact" || Spy::getEnemyTransition() == "Academy");
             if (supplySafe)
-                theSpy.pressure.confirmed = false;
+                theSpy.pressure.possible = false;
         }
 
         void checkEnemyInvis(PlayerInfo& player, StrategySpy& theSpy)
@@ -180,7 +180,7 @@ namespace McRave::Spy::General {
                     theSpy.early.possible = true;
             }
             if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) > 0 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0 || Util::getTime() > Time(2, 00))
-                theSpy.early.confirmed = false;
+                theSpy.early.possible = false;
         }
 
         void checkEnemyProxy(PlayerInfo& player, StrategySpy& theSpy)
@@ -188,7 +188,7 @@ namespace McRave::Spy::General {
             // Proxy builds are built closer to me than the enemy
             auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self, Races::None) >= 40 : Players::getSupply(PlayerState::Self, Races::None) >= 80;
             if (supplySafe)
-                theSpy.proxy.confirmed = false;
+                theSpy.proxy.possible = false;
         }
 
         void checkEnemyGreedy(PlayerInfo& player, StrategySpy& theSpy)
@@ -198,7 +198,7 @@ namespace McRave::Spy::General {
                 || (Players::ZvP() && Spy::getEnemyBuild() != "FFE" && theSpy.expand.confirmed && Util::getTime() < Time(6, 45))
                 || (Players::ZvT() && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(10, 00));
             if (Util::getTime() > Time(10, 00))
-                theSpy.greedy.confirmed = false;
+                theSpy.greedy.possible = false;
         }
 
         void checkEnemyUpgrade(PlayerInfo& player, StrategySpy& theSpy)
@@ -231,9 +231,13 @@ namespace McRave::Spy::General {
         }
 
         // Verify strategy checking for confirmations
-        for (auto &strat : theSpy.listOfStrats) {
-            if (strat)
-                strat->update();
+        for (auto &strat : theSpy.strats) {
+            if (strat && !strat->confirmed)
+                strat->updateStrat();
+        }
+        for (auto &blueprint : theSpy.blueprints) {
+            if (blueprint && !blueprint->confirmed)
+                blueprint->updateBlueprint();
         }
     }
 }

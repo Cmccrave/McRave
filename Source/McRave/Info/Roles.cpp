@@ -152,7 +152,7 @@ namespace McRave::Roles {
             if (Players::ZvT() && Util::getTime() < Time(6, 00)) {
 
                 // 8Rax proxy
-                if (Spy::getEnemyOpener() == "8Rax" && total(Zerg_Zergling) <= 2) {
+                if (Spy::getEnemyOpener() == "8Rax" && total(Zerg_Zergling) <= 6) {
                     if (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
                         forceCombatWorker(Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) * 3, Terrain::getNaturalPosition());
                     else if (proxyBuilding)
@@ -160,7 +160,7 @@ namespace McRave::Roles {
                 }
 
                 // BBS proxy
-                if (Spy::getEnemyOpener() == "BBS" && total(Zerg_Zergling) <= 8) {
+                else if (Spy::getEnemyOpener() == "BBS" && total(Zerg_Zergling) <= 8) {
                     if (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
                         forceCombatWorker(Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) * 3, Terrain::getNaturalPosition());
                     else if (proxyBuilding)
@@ -168,11 +168,11 @@ namespace McRave::Roles {
                 }
 
                 // Bunker
-                if (proxyDangerousBuilding && !proxyDangerousBuilding->isCompleted() && com(Zerg_Zergling) <= 2 && Terrain::inTerritory(PlayerState::Self, proxyDangerousBuilding->getPosition()))
+                else if (proxyDangerousBuilding && !proxyDangerousBuilding->isCompleted() && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(3, proxyDangerousBuilding->getPosition());
 
                 // All-in with marines
-                if (Spy::getEnemyTransition() == "WorkerRush" && total(Zerg_Zergling) < 12 && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
+                else if (Spy::getEnemyTransition() == "WorkerRush" && total(Zerg_Zergling) < 12 && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
                     forceCombatWorker(4, Position(Terrain::getNaturalChoke()->Center()));
             }
 
@@ -231,6 +231,20 @@ namespace McRave::Roles {
                 if (unit.getType().isWorker() && unit.getRole() == Role::Combat) {
                     unit.setRole(Role::Worker);
                     oldCombatWorkers.insert(&unit);
+                }
+
+                // Check for desired floating buildings
+                if (unit.getType() == Terran_Engineering_Bay) {
+                    if (!Players::TvZ() || (Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Terran_Infantry_Armor, 3) && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Terran_Infantry_Weapons, 3)))
+                        unit.setRole(Role::Support);
+                }
+                if (unit.getType() == Terran_Science_Facility) {
+                    if (!Players::TvZ() || Players::hasResearched(PlayerState::Self, TechTypes::Irradiate))
+                        unit.setRole(Role::Support);
+                }
+                if (unit.getType() == Terran_Barracks) {
+                    if (!Players::TvZ() && total(Terran_Marine) >= 4)
+                        unit.setRole(Role::Support);
                 }
 
                 // If we cancelled any buildings, we may need to re-assign the worker

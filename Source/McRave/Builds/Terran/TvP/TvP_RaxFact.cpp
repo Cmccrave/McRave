@@ -20,6 +20,8 @@ namespace McRave::BuildOrder::Terran {
             unitLimits[Terran_Marine] =                     4;
             scout =                                         scout || (s >= 26 && vis(Terran_Refinery) == 1);
 
+            wallNat = vis(Terran_Barracks) > 0;
+
             // Buildings
             buildQueue[Terran_Supply_Depot] =               (s >= 18);
             buildQueue[Terran_Barracks] =                   (s >= 22);
@@ -31,8 +33,10 @@ namespace McRave::BuildOrder::Terran {
         {
             transitionReady =                               total(Terran_Vulture) >= 2;
             gasLimit =                                      (vis(Terran_Factory) >= 2) ? 1 : 3;
-            unitLimits[Terran_Marine] =                     2;
+            unitLimits[Terran_Marine] =                     4;
             scout =                                         scout || (s >= 26 && vis(Terran_Refinery) == 1);
+
+            wallNat = vis(Terran_Barracks) > 0;
 
             // Buildings
             buildQueue[Terran_Supply_Depot] =               (s >= 18) + (vis(Terran_Factory) >= 1 && s >= 32) + (s >= 44);

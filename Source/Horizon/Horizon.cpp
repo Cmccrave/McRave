@@ -18,8 +18,7 @@ namespace McRave::Horizon {
                 || (u.stunned)
                 || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0)
                 || (u.getRole() != Role::None && u.getRole() != Role::Combat && u.getRole() != Role::Defender)
-                || !u.hasTarget()
-                || (u.getRole() == Role::Combat && Combat::State::isStaticRetreat(u.getType()) && u.getLocalState() != LocalState::ForcedAttack))
+                || !u.hasTarget())
                 return false;
             return true;
         }
@@ -121,7 +120,8 @@ namespace McRave::Horizon {
 
             // If the unit doesn't affect this simulation
             if ((self.getSpeed() <= 0.0 && self.getEngDist() > -16.0)
-                || (unit.hasTarget() && self.hasTarget() && self.getEngagePosition().getDistance(unitTarget->getPosition()) > reach * 2))
+                || (unit.hasTarget() && self.hasTarget() && self.getEngagePosition().getDistance(unitTarget->getPosition()) > reach * 2)
+                || (Combat::State::isStaticRetreat(self.getType()) && !Terrain::inTerritory(PlayerState::Self, self.getPosition())))
                 continue;
 
             // Add their values to the simulation

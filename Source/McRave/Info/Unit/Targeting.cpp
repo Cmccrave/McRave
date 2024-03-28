@@ -73,6 +73,8 @@ namespace McRave::Targets {
             if (unit.getRole() == Role::Support) {
                 if (target.isHidden() && (unit.getType().isDetector() || unit.getType() == Terran_Comsat_Station))
                     return Priority::Critical;
+                if (unit.getType() == Terran_Comsat_Station)
+                    return Priority::Ignore;
             }
 
             // Combat Role

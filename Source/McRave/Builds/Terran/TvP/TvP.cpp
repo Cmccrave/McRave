@@ -45,12 +45,14 @@ namespace McRave::BuildOrder::Terran
         buildQueue[Terran_Barracks] =                   1;
         buildQueue[Terran_Bunker] =                     vis(Terran_Factory) > 0;
         buildQueue[Terran_Refinery] =                   1 + (vis(Terran_Armory) >= 1);
-        buildQueue[Terran_Command_Center] =             1 + (s >= 46);
+        buildQueue[Terran_Command_Center] =             1 + (s >= 46) + (s >= 116);
         buildQueue[Terran_Academy] =                    (s >= 62);
-        buildQueue[Terran_Armory] =                     (s >= 72);
+        buildQueue[Terran_Armory] =                     (s >= 72) + vis(Terran_Science_Facility) > 0;
         buildQueue[Terran_Comsat_Station] =             2 * (s >= 88);
         buildQueue[Terran_Factory] =                    1 + (s >= 88) + 3 * (s >= 94);
         buildQueue[Terran_Machine_Shop] =               vis(Terran_Factory) > 0;
+        buildQueue[Terran_Starport] =                   vis(Terran_Command_Center) >= 3;
+        buildQueue[Terran_Science_Facility] =           com(Terran_Starport) > 0;
 
         // Research
         techQueue[TechTypes::Spider_Mines] =            (s >= 60);

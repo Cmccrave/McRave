@@ -18,13 +18,11 @@ namespace McRave::Combat::Formations {
         });
 
 
-        auto extra = 96.0;
-        if (closestBuilding && !closestDefender && !Combat::holdAtChoke()) {
-            if (Util::getTime() < Time(4, 00))
-                extra = -96.0;
-            formation.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition) + extra;
-        }
+        
+        if (closestBuilding && !closestDefender && !Combat::holdAtChoke())
+            formation.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition);        
         if (closestDefender) {
+            auto extra = 64.0;
             formation.leash = closestDefender->getGroundRange() + extra;
             formation.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition) + extra;
         }
@@ -240,7 +238,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
-        drawFormations();
+        //drawFormations();
     }
 
     vector<Formation>& getFormations() { return formations; }

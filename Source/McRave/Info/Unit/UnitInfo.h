@@ -9,7 +9,6 @@ namespace McRave {
     {
     #pragma region UnitData
 
-        UnitData data;
 
         double engageDist = 0.0;
         double simValue = 0.0;
@@ -89,12 +88,15 @@ namespace McRave {
         BWEB::Path destinationPath;
         void updateHistory();
         void updateStatistics();
+        void updateEvents();
         void checkStuck();
         void checkHidden();
         void checkThreatening();
         void checkProxy();
         void checkCompletion();
     public:
+
+        UnitData data;
 
         // HACK: Hacky stuff that was added quickly for testing
         bool movedFlag = false;

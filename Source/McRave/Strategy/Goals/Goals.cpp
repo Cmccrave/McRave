@@ -272,7 +272,17 @@ namespace McRave::Goals {
 
         void updateTerranGoals()
         {
+            if (Broodwar->self()->getRace() != Races::Terran)
+                return;
 
+            // Wall off natural if we have one
+            if (Combat::State::isStaticRetreat(Terran_Siege_Tank_Tank_Mode)) {
+                auto naturalWall = Walls::getNaturalWall();
+                if (naturalWall) {
+                    for (auto &tile : naturalWall->getLargeTiles())
+                        assignNumberToGoal(tile, Terran_Barracks, 1, GoalType::Defend);
+                }
+            }
         }
 
         void updateZergGoals()

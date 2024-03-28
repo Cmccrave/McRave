@@ -45,7 +45,9 @@ namespace McRave::Spy::Terran {
                 || arrivesBy(6, Terran_Marine, Time(4, 10))
                 || arrivesBy(8, Terran_Marine, Time(4, 30))
                 || arrivesBy(10, Terran_Marine, Time(4, 50))
-                || arrivesBy(12, Terran_Marine, Time(5, 10)))
+                || arrivesBy(12, Terran_Marine, Time(5, 10))
+                || arrivesBy(2, Terran_Medic, Time(5, 45))
+                || arrivesBy(3, Terran_Medic, Time(6, 15)))
                 theSpy.build.name = "2Rax";
 
             // RaxCC

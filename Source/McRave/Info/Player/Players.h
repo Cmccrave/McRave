@@ -13,7 +13,7 @@ namespace McRave
         bool hasMelee(PlayerState);
         bool hasRanged(PlayerState);
         bool hasResearched(PlayerState, BWAPI::TechType);
-        bool hasUpgraded(PlayerState, BWAPI::UpgradeType);
+        bool hasUpgraded(PlayerState, BWAPI::UpgradeType, int level = 1);
 
         int getSupply(PlayerState, BWAPI::Race);
         int getRaceCount(BWAPI::Race, PlayerState);

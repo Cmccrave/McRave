@@ -73,9 +73,6 @@ namespace McRave::BuildOrder::Zerg {
                     auto airNeeded = Stations::needAirDefenses(station);
                     auto grdNeeded = Stations::needGroundDefenses(station);
 
-                    if (colonies > 0)
-                        continue;
-
                     if (airNeeded > colonies)
                         needSpores = true;
                     if (grdNeeded > colonies)
@@ -155,7 +152,7 @@ namespace McRave::BuildOrder::Zerg {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 const auto availableGas = Broodwar->self()->gas() - BuildOrder::getGasQueued();
                 const auto incompleteHatch = vis(Zerg_Hatchery) - com(Zerg_Hatchery);
-                const auto resourceSat = incompleteHatch == 0 && Resources::isGasSaturated() && (int(Stations::getStations(PlayerState::Self).size()) >= 4 ? Resources::isMineralSaturated() : Resources::isHalfMineralSaturated());                
+                const auto resourceSat = (Resources::isGasSaturated() && (int(Stations::getStations(PlayerState::Self).size()) >= 4 ? Resources::isMineralSaturated() : Resources::isHalfMineralSaturated()));                
                 const auto waitForMinerals = 300 * (1 + incompleteHatch);
 
                 expandDesired = (resourceSat && techSat && productionSat)

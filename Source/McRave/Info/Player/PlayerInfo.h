@@ -35,7 +35,7 @@ namespace McRave
 
     class PlayerInfo
     {
-        std::set<BWAPI::UpgradeType> playerUpgrades;
+        std::map<BWAPI::UpgradeType, int> playerUpgrades;
         std::set<BWAPI::TechType> playerTechs;
         std::set<std::shared_ptr<UnitInfo>> units;
         std::map<BWAPI::UnitType, int> visibleTypeCounts;
@@ -101,9 +101,10 @@ namespace McRave
         void setOpener(std::string newOpener) { opener = newOpener; }
         void setTransition(std::string newTransition) { transition = newTransition; }
 
-        bool hasUpgrade(BWAPI::UpgradeType upgrade) {
-            if (playerUpgrades.find(upgrade) != playerUpgrades.end())
-                return true;
+        bool hasUpgrade(BWAPI::UpgradeType upgrade, int level = 0) {
+            auto ptr = playerUpgrades.find(upgrade);
+            if (ptr != playerUpgrades.end())
+                return ptr->second >= level;
             return false;
         }
         bool hasTech(BWAPI::TechType tech) {

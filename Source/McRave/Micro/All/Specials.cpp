@@ -11,6 +11,39 @@ namespace McRave::Command
         set<Position> testPositions;
     }
 
+    bool lift(UnitInfo& unit)
+    {
+        // If we need to lift
+        if (!unit.isFlying()) {
+            if (unit.getType() == Terran_Engineering_Bay || unit.getType() == Terran_Science_Facility)
+                unit.unit()->lift();
+        }
+
+        // If we don't need barracks, lift it, TODO: Check ramp type?
+        if (unit.getType() == Terran_Barracks) {
+
+            auto wallPiece = false;
+            for (auto &[choke, wall] : BWEB::Walls::getWalls()) {
+                for (auto &tile : wall.getLargeTiles()) {
+                    if (unit.getTilePosition() == tile)
+                        wallPiece = true;
+                }
+            }
+
+            // Wall off if we need to
+            if (unit.getGoal().isValid() && unit.getPosition().getDistance(unit.getGoal()) < 96.0) {
+                if (unit.isFlying() && unit.unit()->getLastCommand().getType() != UnitCommandTypes::Land)
+                    unit.unit()->land(TilePosition(unit.getGoal()));               
+                return true;
+            }
+
+            // Lift if we need to
+            else if (!unit.isFlying())
+                unit.unit()->lift();            
+        }
+        return false;
+    }
+
     bool click(UnitInfo& unit)
     {
         // Shield Battery - Repair Shields
@@ -531,7 +564,7 @@ namespace McRave::Command
         // TODO: Check if we have a building to place first?
         if ((unit.unit()->isCarryingMinerals() || unit.unit()->isCarryingGas())) {
             if (unit.framesHoldingResource() >= 24 && (unit.unit()->isIdle() || (unit.unit()->getOrder() != Orders::ReturnMinerals && unit.unit()->getOrder() != Orders::ReturnGas)) && unit.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo)
-                unit.unit()->returnCargo();            
+                unit.unit()->returnCargo();
             unit.commandText = "Return";
             return true;
         }
@@ -728,6 +761,7 @@ namespace McRave::Command
             || returnResource(unit)
             || clearNeutral(unit)
             || build(unit)
+            || lift(unit)
             || gather(unit);
     }
 }

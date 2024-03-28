@@ -84,7 +84,7 @@ namespace McRave::Resources {
                 gassers += resource.getGathererCount();
 
             if (!resource.isBoulder()) {
-                if (resource.getResourceState() == ResourceState::Mineable || (resource.getResourceState() == ResourceState::Assignable && int(Stations::getStations(PlayerState::Self).size()) >= 2)) {
+                if (resource.getResourceState() == ResourceState::Mineable || resource.getResourceState() == ResourceState::Assignable) {
                     resource.getType().isMineralField() ? mineralCount++ : gasCount++;
                     resource.getType().isMineralField() ? maxMin+=resource.getWorkerCap() : maxGas+=resource.getWorkerCap();
                 }

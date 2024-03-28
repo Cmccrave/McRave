@@ -106,9 +106,10 @@ namespace McRave::Command {
             });
 
             // Iterate ascending cost until a position is viable
-            for (auto &[cost, p] : positionsByCost) {                
-                if (viablePosition(p))
-                    return p;
+            for (auto &[cost, p] : positionsByCost) {
+                auto position = p;
+                if (viablePosition(position))
+                    return position;
             }
         }
     }
@@ -390,7 +391,6 @@ namespace McRave::Command {
             // Find the best position to move to
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
             if (bestPosition.isValid()) {
-                Broodwar->drawLineMap(unit.getPosition(), bestPosition, Colors::Green);
                 unit.setCommand(Move, bestPosition);
                 unit.commandText = "Move_C";
                 return true;
@@ -480,7 +480,7 @@ namespace McRave::Command {
 
                 // Special Case: early "duels"
                 if (unit.getType() == Zerg_Zergling) {
-                    if (Util::getTime() < Time(6, 30) && target.isWithinReach(unit) && target.getType() == Protoss_Zealot && unit.getHealth() <= 16 && !target.isThreatening())
+                    if (Util::getTime() < Time(5, 00) && target.isWithinReach(unit) && target.getType() == Protoss_Zealot && unit.getHealth() <= 16)
                         return true;
                     if (Util::getTime() < Time(5, 30) && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10 && int(unit.getUnitsTargetingThis().size()) >= 1)
                         return true;

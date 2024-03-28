@@ -303,8 +303,13 @@ namespace McRave::Math {
 
     double groundDamage(UnitInfo& unit)
     {
-        auto attackCount = max(unit.getType().groundWeapon().damageFactor(), unit.getType().maxGroundHits());
+        auto attackCount = double(max(unit.getType().groundWeapon().damageFactor(), unit.getType().maxGroundHits()));
         auto upLevel = unit.getPlayer()->getUpgradeLevel(unit.getType().groundWeapon().upgradeType());
+
+        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
+        auto reduction = Units::getDamageReductionGrd(state);
+
+        auto dmgPerHit = double(unit.getType().groundWeapon().damageAmount() + (unit.getType().groundWeapon().damageBonus() * upLevel));
 
         // TODO Check Reaver upgrade type functional here or if needed hardcoding
         if (unit.getType() == Protoss_Reaver) {
@@ -312,33 +317,40 @@ namespace McRave::Math {
                 return 125.00;
             return 100.00;
         }
-        if (unit.getType() == Terran_Bunker)
-            return 24.0 + (4.0 * upLevel);
-        if (unit.getType() == Terran_Firebat || unit.getType() == Protoss_Zealot)
-            return 16.0 + (2.0 * upLevel);
-        if (unit.getType() == Protoss_Interceptor)
-            return 12.0 + (2.0 * upLevel);
+        // TODO: Check for bio damage upgrade
+        if (unit.getType() == Terran_Bunker) {
+            attackCount = 4;
+            dmgPerHit = 6;
+        }
         if (unit.getType() == Protoss_High_Templar)
             return 112.0;
-        return attackCount * (unit.getType().groundWeapon().damageAmount() + (unit.getType().groundWeapon().damageBonus() * upLevel));
+
+        return attackCount * (dmgPerHit - reduction);
     }
 
     double airDamage(UnitInfo& unit)
     {
-        auto attackCount = max(unit.getType().airWeapon().damageFactor(), unit.getType().maxAirHits());
+        auto attackCount = double(max(unit.getType().airWeapon().damageFactor(), unit.getType().maxAirHits()));
         auto upLevel = unit.getPlayer()->getUpgradeLevel(unit.getType().airWeapon().upgradeType());
 
-        if (unit.getType() == Terran_Bunker)
-            return 24.0 + (4.0 * upLevel);
-        if (unit.getType() == Protoss_Scout)
-            return 28.0 + (2.0 * upLevel);
-        if (unit.getType() == Protoss_Interceptor)
-            return 12.0 + (2.0 * upLevel);
-        if (unit.getType() == Terran_Valkyrie)
-            return (48.0 * 0.36) + (8.0 * upLevel);
+        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
+        auto reduction = Units::getDamageReductionAir(state);
+
+        auto dmgPerHit = double(unit.getType().airWeapon().damageAmount() + (unit.getType().airWeapon().damageBonus() * upLevel));
+
+        // TODO: This is an estimate of valks actual damage
+        if (unit.getType() == Terran_Valkyrie) {
+            dmgPerHit *= 0.36;
+        }
+        // TODO: Check for bio damage upgrade
+        if (unit.getType() == Terran_Bunker) {
+            attackCount = 4;
+            dmgPerHit = 6;
+        }        
         if (unit.getType() == Protoss_High_Templar)
             return 112.0;
-        return attackCount * (unit.getType().airWeapon().damageAmount() + (unit.getType().airWeapon().damageBonus() * upLevel));
+
+        return attackCount * (dmgPerHit - reduction);
     }
 
     double moveSpeed(UnitInfo& unit)

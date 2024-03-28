@@ -519,13 +519,21 @@ namespace McRave::Stations
                 // Need a spore with later mutas
                 if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() != "2HatchMuta")
                     return (Util::getTime() > Time(5, 00)) - airCount;
+
+                // Or we are playing blind
+                if (station->isNatural() && Spy::getEnemyTransition() == "Unknown" && BuildOrder::getCurrentTransition() == "3HatchMuta")
+                    return (total(Zerg_Spire) > 0) - airCount;
             }
 
             if (Players::ZvZ()) {
 
                 // Get a spore vs 1h muta if we aren't 1h muta
-                if (Util::getTime() > Time(4, 15) && Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
-                    return 1 - airCount;
+                if (Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
+                    return (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(6, 15)) - airCount;
+
+                // We have more bases
+                if (Stations::getStations(PlayerState::Self) > Stations::getStations(PlayerState::Enemy))
+                    return (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(6, 15)) - airCount;
             }
 
             if (Players::ZvT()) {

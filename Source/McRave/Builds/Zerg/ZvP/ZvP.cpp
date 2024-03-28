@@ -41,15 +41,15 @@ namespace McRave::BuildOrder::Zerg {
 
     int inboundUnits_ZvP()
     {
-        set<UnitType> trackables ={ Protoss_Zealot, Protoss_Dragoon, Protoss_Dark_Templar };
+        map<UnitType, double> trackables ={ {Protoss_Zealot, 2.5}, {Protoss_Dragoon, 2.5}, {Protoss_Dark_Templar, 8} };
         auto inBoundUnit = [&](auto &u) {
             if (!Terrain::getEnemyMain())
                 return true;
             const auto visDiff = Broodwar->getFrameCount() - u->getLastVisibleFrame();
 
-            // Check if we know they weren't at home and are missing on the map for 30 seconds
+            // Check if we know they weren't at home and are missing on the map for 35 seconds
             if (!Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), u->getPosition()) && !Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), u->getPosition()))
-                return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 30);            
+                return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 35);            
             return false;
         };
 
@@ -59,18 +59,16 @@ namespace McRave::BuildOrder::Zerg {
         for (auto &u : Units::getUnits(PlayerState::Enemy)) {
             auto &unit = *u;
 
-            if (trackables.find(unit.getType()) != trackables.end()) {
-                arrivalValue += 1.0;
-                if (inBoundUnit(u))
-                    arrivalValue += 1.0;
-            }
+            auto idx = trackables.find(unit.getType());
+            if (idx != trackables.end())
+                arrivalValue += (inBoundUnit(u) ? idx->second : idx->second / 2.0);
         }
         return int(arrivalValue);
     }
 
     int lingsNeeded_ZvP() {
         auto lings = 0;
-        auto initialValue = 2;
+        auto initialValue = 6;
         if (com(Zerg_Spawning_Pool) == 0)
             return 0;
 
@@ -153,7 +151,6 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvP3HatchMuta()
     {
-        // 'https://liquipedia.net/starcraft/3_Hatch_Spire_(vs._Protoss)'
         inTransition =                                  hatchCount() >= 3 || total(Zerg_Mutalisk) > 0;
         inOpening =                                     total(Zerg_Mutalisk) < 9;
         inBookSupply =                                  vis(Zerg_Overlord) < 4;
@@ -164,14 +161,14 @@ namespace McRave::BuildOrder::Zerg {
         planEarly =                                     wantThird && hatchCount() < 3 && Util::getTime() > Time(2, 30);
 
         // Build
-        buildQueue[Zerg_Hatchery] =                     2 + (s >= 28 && vis(Zerg_Extractor) > 0);
-        buildQueue[Zerg_Extractor] =                    (s >= 28 && vis(Zerg_Drone) >= 13) + (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 20);
+        buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + (total(Zerg_Mutalisk) >= 9);
+        buildQueue[Zerg_Extractor] =                    (s >= 32) + (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 20);
+        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (vis(Zerg_Extractor) > 0 && s >= 32) + (s >= 48);
         buildQueue[Zerg_Lair] =                         (s >= 32 && gas(100) && hatchCount() >= 3);
         buildQueue[Zerg_Spire] =                        (s >= 32 && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 16);
-        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (hatchCount() >= 2 && s >= 32) + (s >= 48);
 
         // Upgrades
-        upgradeQueue[Metabolic_Boost] =                 vis(Zerg_Lair) > 0;
+        upgradeQueue[Metabolic_Boost] =                 vis(Zerg_Spire) > 0;
 
         // Pumping
         pumpLings = lingsNeeded_ZvP() > vis(Zerg_Zergling);
@@ -248,7 +245,7 @@ namespace McRave::BuildOrder::Zerg {
         pumpLings = lingsNeeded_ZvP() > vis(Zerg_Zergling);
 
         // All-in
-        if (Spy::enemyFastExpand() && !needMinimumHydras) {
+        if (Spy::enemyFastExpand() && !needMinimumHydras && total(Zerg_Hydralisk) >= 2) {
             pumpHydras = false;
             pumpLings = true;
             unitLimits[Zerg_Zergling] = INT_MAX;

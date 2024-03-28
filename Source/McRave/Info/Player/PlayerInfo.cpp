@@ -15,8 +15,9 @@ namespace McRave
     {
         // Store any upgrades this player has
         for (auto &upgrade : BWAPI::UpgradeTypes::allUpgradeTypes()) {
-            if (thisPlayer->getUpgradeLevel(upgrade) > 0)
-                playerUpgrades.insert(upgrade);
+            auto level = thisPlayer->getUpgradeLevel(upgrade);
+            if (level > 0)
+                playerUpgrades.insert_or_assign(upgrade, level);
         }
 
         // Store any tech this player has
