@@ -65,12 +65,12 @@ namespace McRave::Combat::State {
                     const auto avoidDiceRoll = Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 15) && !Terrain::getEnemyStartingPosition().isValid();
                     const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(3, 15);
 
-                    if (BuildOrder::getCurrentTransition() == "1HatchMuta") {
+                    if (BuildOrder::getCurrentTransition() == "1HatchMuta" && Util::getTime() < Time(7, 00)) {
                         if (slowerPool || equalPool || enemyLingVomit || avoidDiceRoll || enemyDroneScouted)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
-                    if (BuildOrder::getCurrentTransition() == "1HatchMuta") {
-                        if (avoidDiceRoll || enemyDroneScouted)
+                    if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(4, 00)) {
+                        if (avoidDiceRoll || slowerPool || enemyDroneScouted)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
                 }
@@ -144,20 +144,16 @@ namespace McRave::Combat::State {
             for (auto &e : Units::getUnits(PlayerState::Enemy)) {
                 auto &enemy = *e;
                 if (enemy.canAttackAir() && enemy != target) {
-                    if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 32.0
-                        || enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 32.0
-                        || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 32.0)
+                    if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 64.0
+                        || enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 64.0
+                        || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 64.0)
                         countDefensesInRange += (enemy.getType().isBuilding() ? 1.0 : 0.25);
                 }
             }
 
-            if (unit.canOneShot(target)) {
+            if (unit.canOneShot(target) && !unit.isTargetedBySplash() && !unit.isNearSplash()) {
                 if ((countDefensesInRange < 2.0 && Util::getTime() < Time(8, 00))
                     || (countDefensesInRange < 3.0 && Util::getTime() < Time(10, 00)))
-                    return true;
-            }
-            else {
-                if (countDefensesInRange <= 0.0)
                     return true;
             }
         }
@@ -182,7 +178,7 @@ namespace McRave::Combat::State {
             auto &target = *unit.getTarget().lock();
             const auto slowZealotVsVulture = unit.getType() == Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && target.getType() == Terran_Vulture;
             const auto sparseCorsairVsScourge = unit.getType() == Protoss_Corsair && target.isSuicidal() && com(Protoss_Corsair) < 6; // TODO: Check density instead
-            const auto lowShieldFlyer = (unit.isLightAir() && unit.getType().maxShields() > 0 && target.getType() == Zerg_Overlord && Grids::getAirThreat(unit.getEngagePosition(), PlayerState::Enemy) * 5.0 > (double)unit.getShields());
+            const auto lowShieldFlyer = false;// (unit.isLightAir() && unit.getType().maxShields() > 0 && target.getType() == Zerg_Overlord && Grids::getAirThreat(unit.getEngagePosition(), PlayerState::Enemy) * 5.0 > (double)unit.getShields());
             const auto oomMedic = unit.getType() == Terran_Medic && unit.getEnergy() <= TechTypes::Healing.energyCost();
             const auto hurtLingVsWorker = (unit.getType() == Zerg_Zergling && !unit.isHealthy() && target.getType().isWorker());
             if (slowZealotVsVulture || sparseCorsairVsScourge || lowShieldFlyer || oomMedic || hurtLingVsWorker)
@@ -248,7 +244,8 @@ namespace McRave::Combat::State {
             || (!unit.isFlying() && Actions::overlapsActions(unit.unit(), unit.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
             || (unit.isTargetedBySuicide() && !unit.isFlying())
             || (unit.getType() == Terran_Ghost && com(Terran_Nuclear_Missile) > 0 && unit.unit()->isLoaded())
-            || (engagingWithWorkers() && unit.isWithinReach(target));
+            || (engagingWithWorkers() && unit.isWithinReach(target))
+            ;
     }
 
     bool forceGlobalRetreat(UnitInfo& unit)

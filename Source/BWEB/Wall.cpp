@@ -13,7 +13,7 @@ namespace BWEB {
 
         int existingDefenseGrid[256][256];
 
-        vector<TilePosition> testTiles;
+        map<TilePosition, BWAPI::Color> testTiles;
     }
 
     void Wall::initialize()
@@ -27,8 +27,14 @@ namespace BWEB {
 
     bool Wall::tryLocations(vector<TilePosition>& tryOrder, set<TilePosition>& insertList, UnitType type)
     {
+        auto debugColor = Colors::White;
+        if (type.tileWidth() == 3)
+            debugColor = Colors::Grey;
+        if (type.tileWidth() == 4)
+            debugColor == Colors::Black;
+
         // Defense types place every possible tile
-        if (type.tileWidth() == 2 && type.tileHeight() == 2 && type != Protoss_Pylon) {
+        if (type.tileWidth() == 2 && type.tileHeight() == 2 && type != Protoss_Pylon && type != Zerg_Spire) {
             for (auto placement : tryOrder) {
                 auto tile = station->getBase()->Location() + placement;
                 auto stationDefense = type.tileHeight() == 2 && type.tileHeight() == 2 && station->getDefenses().find(tile) != station->getDefenses().end();
@@ -57,7 +63,7 @@ namespace BWEB {
         else {
             for (auto placement : tryOrder) {
                 auto tile = station->getBase()->Location() + placement;
-                testTiles.push_back(tile);
+                testTiles[tile] = debugColor;
                 if (BWEB::Map::isPlaceable(type, tile)) {
                     insertList.insert(tile);
                     Map::addReserve(tile, type.tileWidth(), type.tileHeight());
@@ -182,8 +188,14 @@ namespace BWEB {
 
         // Zerg
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            tryLocations(medOrder, mediumTiles, Zerg_Evolution_Chamber);
-            tryLocations(lrgOrder, largeTiles, Zerg_Hatchery);
+            for (auto &building : rawBuildings) {
+                if (building.tileWidth() == 4)
+                    tryLocations(lrgOrder, largeTiles, Zerg_Hatchery);
+                if (building.tileWidth() == 3)
+                    tryLocations(medOrder, mediumTiles, Zerg_Evolution_Chamber);
+                if (building.tileWidth() == 2)
+                    tryLocations(smlOrder, smallTiles, Zerg_Spire);
+            }
         }
 
         // Protoss
@@ -512,8 +524,8 @@ namespace BWEB::Walls {
 
     void draw()
     {
-        for (auto tile : testTiles) {
-            Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(32, 32), Colors::White);
+        for (auto &[tile, color] : testTiles) {
+            Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(32, 32), color);
         }
         for (auto &[_, wall] : walls)
             wall.draw();

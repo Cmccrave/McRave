@@ -24,6 +24,34 @@ namespace McRave
                 return WalkPosition(unit->getTilePosition());
             return WalkPositions::None;
         }
+
+        bool allowCommand(UnitInfo* unit)
+        {
+            // Check if we need to wait a few frames before issuing a command due to stop frames
+            const auto frameSinceAttack = Broodwar->getFrameCount() - unit->getLastAttackFrame();
+            const auto cancelAttackRisk = frameSinceAttack <= unit->data.minStopFrame - Broodwar->getLatencyFrames();
+
+            // Allows skipping the command but still printing the result to screen
+            return (!cancelAttackRisk || unit->isLightAir() || unit->isHovering());
+        }
+
+        Position getOvershootPosition(UnitInfo* unit, Position here)
+        {
+            // Check if we should overshoot for halting distance
+            if (!unit->getBuildPosition().isValid() && (unit->isFlying() || unit->isHovering() || unit->getType() == Protoss_High_Templar || unit->attemptingSurround())) {
+                auto distance = unit->getPosition().getDistance(here);
+                auto haltDistance = max({ distance, 32.0, double(unit->getType().haltDistance()) / 256.0 });
+                auto overShootHere = here;
+
+                if (haltDistance > 0) {
+                    overShootHere = Util::shiftTowards(unit->getPosition(), here, haltDistance);
+                    overShootHere = Util::clipLine(unit->getPosition(), overShootHere);
+                }
+                if (unit->isFlying() || (unit->isHovering() && Util::findWalkable(*unit, overShootHere)))
+                    here = overShootHere;
+            }
+            return here;
+        }
     }
 
     void UnitInfo::circle(Color color) {
@@ -54,26 +82,17 @@ namespace McRave
         }
     }
 
-    void UnitInfo::verifyPaths()
-    {
-        if (lastTile != unit()->getTilePosition()) {
-            BWEB::Path emptyPath;
-            destinationPath = emptyPath;
-        }
-    }
-
     void UnitInfo::update()
     {
         updateEvents();
         updateStatistics();
-        verifyPaths();
         updateHistory();
     }
 
     void UnitInfo::updateEvents()
     {
         // If it was last known as flying
-        if (unit()->exists() && type.isBuilding()) {
+        if (unit()->exists() && type.isBuilding() && type.getRace() == Races::Terran) {
             if (!isFlying() && (unit()->getOrder() == Orders::LiftingOff || unit()->getOrder() == Orders::BuildingLiftOff || unit()->isFlying()))
                 Events::onUnitLift(*this);
             else if (!isFlying() && getTilePosition().isValid() && BWEB::Map::isUsed(getTilePosition()) == None && Broodwar->isVisible(TilePosition(getPosition())))
@@ -150,10 +169,12 @@ namespace McRave
 
             // Attack Frame
             if ((getType() == Protoss_Reaver && unit()->getGroundWeaponCooldown() >= 59)
-                //|| (getType() != Protoss_Reaver && canAttackGround() && unit()->getGroundWeaponCooldown() >= type.groundWeapon().damageCooldown() - 1)
-                //|| (getType() != Protoss_Reaver && canAttackAir() && unit()->getAirWeaponCooldown() >= type.airWeapon().damageCooldown() - 1)
                 || unit()->isStartingAttack())
                 lastAttackFrame         = Broodwar->getFrameCount();
+
+            // Clear last path
+            if (lastTile != tilePosition)
+                destinationPath = BWEB::Path();
 
             // Frames
             remainingTrainFrame         = max(0, remainingTrainFrame - 1);
@@ -255,6 +276,7 @@ namespace McRave
         unitsTargetingThis.clear();
     }
 
+    // Strategic flags
     void UnitInfo::checkStuck()
     {
         // Buildings and stationary units can't get stuck
@@ -387,7 +409,6 @@ namespace McRave
             });
             return (closestDefender && closestDefender->isWithinRange(*this) && Terrain::inTerritory(PlayerState::Self, position))
                 || (closestDefender && isWithinRange(*closestDefender))
-                || Zones::getZone(getPosition()) == ZoneType::Defend
                 || (Combat::isDefendNatural() && Terrain::inTerritory(PlayerState::Self, position) && !Terrain::inArea(Terrain::getNaturalArea(), position));
         };
 
@@ -533,78 +554,75 @@ namespace McRave
         }
     }
 
+    // Execute a command
     void UnitInfo::setCommand(UnitCommandType cmd, Position here)
     {
-        // Check if we need to wait a few frames before issuing a command due to stop frames
-        const auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
-        const auto cancelAttackRisk = frameSinceAttack <= data.minStopFrame - Broodwar->getLatencyFrames();
-
-        auto frames = isLightAir() ? 3 : 12;
+        // Check if this is very similar to the last command
+        auto frames = isFlying() ? 0 : 3;
         auto newCommandPosition = commandPosition.getDistance(here) > 32;
         auto newCommandType = commandType != cmd;
-        auto newCommandFrame = Broodwar->getFrameCount() - commandFrame > frames;
 
-        // Allows skipping the command but still printing the result to screen
-        auto executeCommand = (!cancelAttackRisk || isLightAir() || isHovering()) && (newCommandPosition || newCommandType || newCommandFrame);
-        if (executeCommand) {
+        if (allowCommand(this)) {
             commandPosition = here;
             commandType = cmd;
-            commandFrame = Broodwar->getFrameCount();
-        }
-
-        // Check if we should overshoot for halting distance
-        if (cmd == UnitCommandTypes::Move && !getBuildPosition().isValid() && (isFlying() || isHovering() || getType() == Protoss_High_Templar || attemptingSurround())) {
-            auto distance = getPosition().getDistance(here);
-            auto haltDistance = max({ distance, 32.0, double(getType().haltDistance()) / 256.0 });
-            auto overShootHere = here;
-
-            if (haltDistance > 0) {
-                overShootHere = Util::shiftTowards(getPosition(), here, haltDistance);
-                overShootHere = Util::clipLine(getPosition(), overShootHere);
-            }
-            if (isFlying() || (isHovering() && Util::findWalkable(*this, overShootHere)))
-                here = overShootHere;
-        }
-
-        // If this is a new order or new command than what we're requesting, we can issue it
-        if (executeCommand) {
-            if (cmd == UnitCommandTypes::Move)
+            
+            if (cmd == UnitCommandTypes::Move) {
+                here = getOvershootPosition(this, here);
                 unit()->move(here);
+            }
             if (cmd == UnitCommandTypes::Right_Click_Position)
-                unit()->rightClick(here);
+                unit()->move(here);
             if (cmd == UnitCommandTypes::Stop)
                 unit()->stop();
+            if (cmd == UnitCommandTypes::Burrow)
+                unit()->burrow();
+            if (cmd == UnitCommandTypes::Unburrow)
+                unit()->unburrow();
         }
     }
 
-    void UnitInfo::setCommand(UnitCommandType cmd, UnitInfo& targetUnit)
+    void UnitInfo::setCommand(UnitCommandType cmd, UnitInfo& target)
     {
-        // Check if we need to wait a few frames before issuing a command due to stop frames
-        auto frameSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
-        auto cancelAttackRisk = frameSinceAttack <= data.minStopFrame - Broodwar->getLatencyFrames();
+        // Check if this is identical to last command
+        if (commandType == cmd && unit()->getLastCommand().getTarget() == target.unit())
+            return;
 
-        auto frames = isLightAir() ? 3 : 12;
-        auto newCommandTarget = unit()->getLastCommand().getTarget() != targetUnit.unit();
-        auto newCommandType = commandType != cmd;
-        auto newCommandFrame = Broodwar->getFrameCount() - commandFrame > frames;
-
-        // Allows skipping the command but still printing the result to screen
-        auto executeCommand = (!cancelAttackRisk || isLightAir() || isHovering()) && (newCommandTarget || newCommandType || newCommandFrame);
-        if (executeCommand) {
-            commandPosition = targetUnit.getPosition();
-            commandType = cmd;
-            commandFrame = Broodwar->getFrameCount();
-        }
-
-        // If this is a new order or new command than what we're requesting, we can issue it
-        if (executeCommand) {
+        if (allowCommand(this)) {
+            commandPosition = target.getPosition();
+            commandType = cmd;      
+            
             if (cmd == UnitCommandTypes::Attack_Unit)
-                unit()->attack(targetUnit.unit());
+                unit()->attack(target.unit());
             else if (cmd == UnitCommandTypes::Right_Click_Unit)
-                unit()->rightClick(targetUnit.unit());
+                unit()->rightClick(target.unit());
         }
     }
 
+    void UnitInfo::setCommand(TechType tech, Position here)
+    {
+        if (allowCommand(this)) {
+            commandPosition = here;
+            unit()->useTech(tech, here);
+        }
+    }
+
+    void UnitInfo::setCommand(TechType tech, UnitInfo& target)
+    {
+        if (allowCommand(this)) {
+            commandPosition = target.getPosition();
+            unit()->useTech(tech, target.unit());
+        }
+    }
+
+    void UnitInfo::setCommand(TechType tech)
+    {
+        if (allowCommand(this)) {
+            commandPosition = getPosition();
+            unit()->useTech(tech);
+        }
+    }
+
+    // Check for ability to execute a command
     bool UnitInfo::canStartAttack()
     {
         if (!hasTarget()
@@ -691,7 +709,7 @@ namespace McRave
     bool UnitInfo::canStartCast(TechType tech, Position here)
     {
         if (!getPlayer()->hasResearched(tech)
-            || Actions::overlapsActions(unit(), here, tech, PlayerState::Self, int(Util::getCastRadius(tech))))
+            || Actions::overlapsActions(unit(), here, tech, PlayerState::Self, Util::getCastRadius(tech)))
             return false;
 
         auto energyNeeded = tech.energyCost() - data.energy;
@@ -787,8 +805,6 @@ namespace McRave
         auto range = otherUnit.getType().isFlyer() ? getAirRange() : getGroundRange();
         auto latencyDist = Broodwar->getLatencyFrames() * getSpeed();
         auto ff = (!isHovering() && !isFlying()) ? 0.0 : -8.0;
-        if (isSuicidal())
-            return getPosition().getDistance(otherUnit.getPosition()) <= 16.0;
         return max(64.0, range + ff + latencyDist) >= boxDistance;
     }
 
@@ -887,8 +903,8 @@ namespace McRave
 
     bool UnitInfo::attemptingRunby()
     {
-        if (Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate" && timeCompletesWhen() < Time(4, 30))
-            return true;
+        //if (Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate" && timeCompletesWhen() < Time(4, 30))
+        //    return true;
         return false;
     }
 
@@ -946,7 +962,7 @@ namespace McRave
 
     bool UnitInfo::attemptingRegroup()
     {
-        if (!isLightAir())
+        if (!isLightAir() || getGlobalState() == GlobalState::ForcedRetreat || getLocalState() == LocalState::ForcedRetreat)
             return false;
         return hasCommander() && getPosition().getDistance(getCommander().lock()->getPosition()) > 128.0;
     }

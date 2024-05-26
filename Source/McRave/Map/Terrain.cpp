@@ -72,7 +72,8 @@ namespace McRave::Terrain {
             }
 
             // Infer based on enemy Overlord
-            if (Players::vZ() && Util::getTime() < Time(3, 15)) {
+            static bool inferComplete = false;
+            if (Players::vZ() && Util::getTime() < Time(3, 15) && !inferComplete) {
                 auto inferedStart = TilePositions::Invalid;
                 auto inferedCount = 0;
                 for (auto &u : Units::getUnits(PlayerState::Enemy)) {
@@ -83,12 +84,19 @@ namespace McRave::Terrain {
 
                     for (auto &start : Broodwar->getStartLocations()) {
                         if (start == Terrain::getMainTile())
-                            continue;                        
+                            continue;
 
                         auto startCenter = Position(start) + Position(64, 48);
-                        auto frameDiff = abs(Broodwar->getFrameCount() - (unit.getPosition().getDistance(startCenter) / unit.getSpeed()));
+                        auto overlordStart = Positions::Invalid;
+                        auto left = (startCenter.x < 32 * Broodwar->mapWidth() / 2);
+                        auto up = (startCenter.y < 32 * Broodwar->mapHeight() / 2);
+                        overlordStart.x = startCenter.x + (left ? 99 : -99);
+                        overlordStart.y = startCenter.y + (up ? 65 : -65);
 
-                        if (frameDiff < 120) {
+                        auto maxTravelDist = Broodwar->getFrameCount() * unit.getSpeed();
+                        auto curTravelDist = unit.getPosition().getDistance(overlordStart);
+
+                        if (maxTravelDist > curTravelDist) {
                             inferedStart = start;
                             inferedCount++;
                         }
@@ -98,6 +106,8 @@ namespace McRave::Terrain {
                     if (inferedCount == 1 && inferedStart.isValid() && inferedStart != getMainTile()) {
                         enemyStartingPosition = Position(inferedStart) + Position(64, 48);
                         enemyStartingTilePosition = inferedStart;
+                        inferComplete = true;
+                        Util::debug(string("Inferred enemy start: ") + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
                     }
                 }
             }
@@ -124,7 +134,7 @@ namespace McRave::Terrain {
 
                 if (enemyMain) {
                     addTerritory(PlayerState::Enemy, enemyMain);
-                    Stations::getStations(PlayerState::Enemy).push_back(enemyMain);
+                    Stations::storeStation(enemyStartingPosition, PlayerState::Enemy);
                 }
             }
         }

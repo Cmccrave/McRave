@@ -52,9 +52,9 @@ namespace McRave::Combat::Clusters {
                 auto matchedGoal = (parent.unit->getGoal() == child.unit->getGoal());
                 auto matchedType = (parent.unit->isFlying() == child.unit->isFlying());
                 auto matchedStrat = (parent.unit->getGlobalState() == child.unit->getGlobalState()) && (parent.unit->getLocalState() == child.unit->getLocalState());
-                auto matchedDistance = child.position.getDistance(parent.position) < 64.0
-                    || (parent.unit->isLightAir() && child.unit->isLightAir())
-                    || BWEB::Map::getGroundDistance(child.position, parent.position) < 256.0;
+                auto matchedDistance = child.position.getDistance(root.position) < 320.0
+                    || child.position.getDistance(parent.position) < 96.0
+                    || (parent.unit->isLightAir() && child.unit->isLightAir());
                 return matchedType && matchedStrat && matchedDistance && matchedGoal;
             };
 
@@ -101,7 +101,7 @@ namespace McRave::Combat::Clusters {
         {
             auto id = 1;
             for (auto &node : clusterNodes) {
-                if (node.id == 0 && generateCluster(node, id, 0, 200))
+                if (node.id == 0 && generateCluster(node, id, 0, 500))
                     id++;
             }
         }

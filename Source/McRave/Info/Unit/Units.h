@@ -19,5 +19,7 @@ namespace McRave::Units {
     int getMyVisible(BWAPI::UnitType);
     int getMyComplete(BWAPI::UnitType);
 
+    bool commandAllowed(UnitInfo&);
+
     void onFrame();
 }

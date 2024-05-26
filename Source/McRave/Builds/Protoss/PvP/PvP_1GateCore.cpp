@@ -3,6 +3,7 @@
 using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
+using namespace UpgradeTypes;
 using namespace McRave::BuildOrder::All;
 
 #include "../ProtossBuildOrder.h"
@@ -15,8 +16,8 @@ namespace McRave::BuildOrder::Protoss {
         {
             // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"
             focusUnit =                                 enemyMaybeDT() ? Protoss_Observer : Protoss_Reaver;
-            inTransition =                          total(Protoss_Robotics_Facility) > 0;
-            inOpening =                             com(focusUnit) == 0;
+            inTransition =                              total(Protoss_Robotics_Facility) > 0;
+            inOpening =                                 com(focusUnit) == 0;
 
             // Build
             buildQueue[Protoss_Gateway] =               (s >= 20) + (vis(Protoss_Robotics_Facility) > 0);
@@ -33,7 +34,6 @@ namespace McRave::BuildOrder::Protoss {
         void PvP_1GC_3Gate()
         {
             // -nolink-
-            focusUnit =                                 None;
             inTransition =                              total(Protoss_Gateway) >= 3;
             inOpening =                                 Spy::enemyPressure() ? Broodwar->getFrameCount() < 9000 : Broodwar->getFrameCount() < 8000;
             gasLimit =                                  vis(Protoss_Gateway) >= 2 && com(Protoss_Gateway) < 3 ? 2 : INT_MAX;
@@ -41,6 +41,9 @@ namespace McRave::BuildOrder::Protoss {
 
             // Build
             buildQueue[Protoss_Gateway] =               (s >= 20) + (s >= 38) + (s >= 40);
+
+            // Upgrades
+            upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
 
             // Army Composition
             armyComposition[Protoss_Zealot] = 0.05;
@@ -50,7 +53,6 @@ namespace McRave::BuildOrder::Protoss {
         void PvP_1GC_4Gate()
         {
             // "https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)"
-            focusUnit =                                 None;
             inTransition =                              total(Protoss_Gateway) >= 3;
             inOpening =                                 s < 140;
             desiredDetection =                          Protoss_Forge;
@@ -68,6 +70,9 @@ namespace McRave::BuildOrder::Protoss {
                 buildQueue[Protoss_Gateway] =           (s >= 20) + (s >= 40) + (2 * (s >= 62));
                 buildQueue[Protoss_Cybernetics_Core] =  s >= 34;
             }
+
+            // Upgrades
+            upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
 
             // Army Composition
             armyComposition[Protoss_Zealot] = 0.05;

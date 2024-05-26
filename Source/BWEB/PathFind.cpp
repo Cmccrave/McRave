@@ -247,6 +247,14 @@ namespace BWEB
                 if (!t.isValid() || !passedWalkable(t))
                     continue;
 
+                // Check walkable neighbor tiles on diagnoal
+                if (diagonal && d.x != 0 && d.y != 0) {
+                    auto t1 = parent.tile + TilePosition(d.x, 0);
+                    auto t2 = parent.tile + TilePosition(0, d.y);
+                    if (!passedWalkable(t1) || !passedWalkable(t2))
+                        continue;
+                }
+
                 auto g = parent.g + passedHeuristic(t);
                 auto h = source.getDistance(t) + ((d.x != 0 && d.y != 0) ? 1.414 : 1.0);
                 auto f = g + h;

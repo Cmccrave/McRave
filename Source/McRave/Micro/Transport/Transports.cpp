@@ -274,6 +274,9 @@ namespace McRave::Transports {
 
         void updateDecision(UnitInfo& unit)
         {
+            if (!Units::commandAllowed(unit))
+                return;
+
             // Iterate commands, if one is executed then don't try to execute other commands
             static const auto commands ={ Command::escort, Command::retreat };
             for (auto cmd : commands) {

@@ -220,9 +220,6 @@
     <ClCompile Include="..\Source\McRave\Info\Unit\UnitInfo.cpp">
       <Filter>McRave\Info\Unit</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Info\Unit\UnitMath.cpp">
-      <Filter>McRave\Info\Unit</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Info\Unit\Units.cpp">
       <Filter>McRave\Info\Unit</Filter>
     </ClCompile>
@@ -324,6 +321,9 @@
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvP\TvP_RaxFact.cpp">
       <Filter>McRave\Builds\Terran\TvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Info\Unit\UnitMath.cpp">
+      <Filter>McRave\Info\Unit</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -480,9 +480,6 @@
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitInfo.h">
       <Filter>McRave\Info\Unit</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\Info\Unit\UnitMath.h">
-      <Filter>McRave\Info\Unit</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\Info\Unit\Units.h">
       <Filter>McRave\Info\Unit</Filter>
     </ClInclude>
@@ -527,6 +524,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Strategy\Spy\Spy.h">
       <Filter>McRave\Strategy\Spy</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Info\Unit\UnitMath.h">
+      <Filter>McRave\Info\Unit</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

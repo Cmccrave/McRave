@@ -11,7 +11,7 @@ namespace McRave::Targets {
     map<UnitInfo*, int> meleeSpotsAvailable;
 
     enum class Priority {
-        Ignore, Trivial, Minor, Major, Critical
+        Ignore, Trivial, Minor, Normal, Major, Critical
     };
 
     namespace {
@@ -91,7 +91,7 @@ namespace McRave::Targets {
                 // Proxy priority
                 if (target.isProxy() && target.getType().isBuilding() && Spy::enemyProxy() && unit.getType() != Zerg_Mutalisk) {
                     Visuals::drawCircle(target.getPosition(), 10, Colors::Yellow, true);
-                    if (target.unit()->getBuildUnit())
+                    if (target.unit()->getBuildUnit() || (target.getType().getRace() == Races::Terran && !target.isCompleted()))
                         return Priority::Minor;
                     else if (proxyTargeting.find(target.getType()) != proxyTargeting.end() && ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Marine) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) == 0) || !unit.getType().isWorker()))
                         return Priority::Critical;
@@ -102,7 +102,7 @@ namespace McRave::Targets {
                 }
 
                 // Generic major priority
-                if (!unit.getType().isWorker() && target.isThreatening() && !target.getType().isWorker() && target.canAttackGround() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()))
+                if (!unit.getType().isWorker() && target.isThreatening() && !target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()))
                     return Priority::Critical;
 
                 // Generic ignore
@@ -137,9 +137,8 @@ namespace McRave::Targets {
                         return Priority::Major;
                     if (Players::ZvZ() && target.getType() == Zerg_Zergling && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
                         return Priority::Major;
-                    if (Players::ZvT() && target.isSiegeTank() && unit.isWithinReach(target))
-                        return Priority::Major;
 
+                    // Low priority targets, ignore when we haven't found the enemy
                     auto priorityAfterInfo = Terrain::foundEnemy() ? Priority::Minor : Priority::Trivial;
                     if (!anythingTime && !defendExpander) {
                         if (!Players::ZvZ() && !unit.canOneShot(target) && !unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding() && !target.getType().isWorker())
@@ -161,8 +160,9 @@ namespace McRave::Targets {
                 if (unit.getType() == Zerg_Defiler) {
                     if (target.getType().isBuilding()
                         || target.getType().isWorker()
+                        || target.isFlying()
                         || (unit.targetsFriendly() && target.getType() != Zerg_Zergling)
-                        || target.isFlying())
+                        || (unit.targetsFriendly() && target.getRole() != Role::Combat))
                         return Priority::Ignore;
                 }
 
@@ -196,7 +196,7 @@ namespace McRave::Targets {
                     return Priority::Ignore;
                 }
             }
-            return Priority::Minor;
+            return Priority::Normal;
         }
 
         double scoreTarget(UnitInfo& unit, UnitInfo& target)

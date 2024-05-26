@@ -94,11 +94,17 @@ namespace McRave::Util {
         return 0.0;
     }
 
-    double getCastRadius(TechType tech)
+    int getCastRadius(TechType tech)
     {
+        if (tech == TechTypes::Scanner_Sweep)
+            return 160.0;
+        if (tech == TechTypes::Nuclear_Strike)
+            return 128.0;
         if (tech == TechTypes::Dark_Swarm)
             return 96.0;
-        if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Stasis_Field || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare)
+        if (tech == TechTypes::Spider_Mines)
+            return 50.0;
+        if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Stasis_Field || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare || tech == TechTypes::EMP_Shockwave)
             return 48.0;
         return 1.0;
     }

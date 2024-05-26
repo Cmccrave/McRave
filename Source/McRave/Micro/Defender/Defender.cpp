@@ -10,6 +10,9 @@ namespace McRave::Defender {
 
         void updateDecision(UnitInfo& unit)
         {
+            if (!Units::commandAllowed(unit))
+                return;
+
             // Iterate commands, if one is executed then don't try to execute other commands
             static const auto commands ={ Command::misc, Command::attack };
             for (auto cmd : commands) {

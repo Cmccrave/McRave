@@ -117,7 +117,7 @@ void McRaveModule::onPlayerLeft(Player player)
 
 void McRaveModule::onNukeDetect(Position target)
 {
-    Actions::addAction(nullptr, target, TechTypes::Nuclear_Strike, PlayerState::Neutral);
+    Actions::addAction(nullptr, target, TechTypes::Nuclear_Strike, PlayerState::Neutral, Util::getCastRadius(TechTypes::Nuclear_Strike));
 }
 
 void McRaveModule::onUnitDiscover(Unit unit)

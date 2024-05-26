@@ -8,7 +8,7 @@ namespace McRave::Support {
 
     namespace {
         set<Position> assignedOverlords;
-        set<UnitType> types ={ Zerg_Hydralisk, Zerg_Ultralisk, Protoss_Dragoon, Terran_Marine, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode };
+        set<UnitType> types ={ Zerg_Hydralisk, Zerg_Mutalisk, Protoss_Dragoon, Terran_Marine, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode };
 
         void updateCounters()
         {
@@ -119,7 +119,7 @@ namespace McRave::Support {
                 || Spy::getEnemyTransition() == "2PortWraith"
                 || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
 
-            auto followArmyPossible = any_of(types.begin(), types.end(), [&](auto &t) { return com(t) > 0; });
+            auto followArmyPossible = unit.isHealthy() && (unit.getType() != Zerg_Overlord || any_of(types.begin(), types.end(), [&](auto &t) { return com(t) >= 6; }) && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace));
 
             if (Util::getTime() < Time(7, 00) && Stations::getStations(PlayerState::Self).size() >= 2 && !Players::ZvZ())
                 closestStation = Terrain::getMyNatural();
@@ -130,13 +130,13 @@ namespace McRave::Support {
             }
 
             // Send support units to army
-            else if (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) {
+            else if (followArmyPossible) {
                 getArmyPlacement(unit);
                 Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
             }
 
             // Send Overlords to a safe home
-            else if (unit.getType() == Zerg_Overlord && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || !unit.isHealthy() || !followArmyPossible || enemyAir)) {
+            else if (!followArmyPossible) {
                 getSafeHome(unit);
             }
 
@@ -178,6 +178,9 @@ namespace McRave::Support {
 
         void updateDecision(UnitInfo& unit)
         {
+            if (!Units::commandAllowed(unit))
+                return;
+
             // Convert our commands to strings to display what the unit is doing for debugging
             static auto commands ={ Command::misc, Command::special, Command::escort };
             for (auto cmd : commands) {

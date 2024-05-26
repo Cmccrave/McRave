@@ -145,15 +145,15 @@ namespace McRave::Visuals {
 
                 if (overall > 10000) {
                     Broodwar << "10s DQ at: " << Util::getTime() << endl;
-                    McRave::easyWrite("10s DQ at: " + Util::getTime().toString());
+                    Util::debug("10s DQ at: " + Util::getTime().toString());
                 }
                 else if (overall > 1000) {
                     Broodwar << "1s DQ at: " << Util::getTime() << endl;
-                    McRave::easyWrite("1s DQ at: " + Util::getTime().toString());
+                    Util::debug("1s DQ at: " + Util::getTime().toString());
                 }
                 else if (overall > 55) {
                     Broodwar << "55ms DQ at: " << Util::getTime() << endl;
-                    McRave::easyWrite("55ms DQ at: " + Util::getTime().toString());
+                    Util::debug("55ms DQ at: " + Util::getTime().toString());
                 }
             }
 

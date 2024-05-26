@@ -273,6 +273,19 @@ namespace McRave::Players
         return nullptr;
     }
 
+    PlayerState getPlayerState(Unit unit) {
+        auto state = PlayerState::None;
+        if (unit->getPlayer() == Broodwar->self())
+            state = PlayerState::Self;
+        else if (unit->getPlayer()->isEnemy(Broodwar->self()))
+            state = PlayerState::Enemy;
+        else if (unit->getPlayer()->isAlly(Broodwar->self()))
+            state = PlayerState::Enemy;
+        else
+            state = PlayerState::Neutral;
+        return state;
+    }
+
     Strength getStrength(PlayerState state) { return allPlayerStrengths[state]; }
     map <Player, PlayerInfo>& getPlayers() { return thePlayers; }
     bool vP() { return (thePlayers.size() == 3 && raceCount[Races::Protoss] > 0); }

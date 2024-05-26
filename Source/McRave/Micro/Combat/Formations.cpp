@@ -10,14 +10,14 @@ namespace McRave::Combat::Formations {
 
     void formationWithBuilding(Formation& formation, Cluster& cluster)
     {
+        auto maxRadius = 160; // TODO: Check what units they have, make radius at least this max range
+
         auto closestBuilding = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
             return (u->getType().isBuilding() && u->getFormation().getDistance(cluster.marchPosition) < 64.0 && u->getType() != Zerg_Creep_Colony);
         });
         auto closestDefender = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
             return (u->getType().isBuilding() && u->canAttackGround() && u->getRole() == Role::Defender && u->getFormation().getDistance(cluster.marchPosition) < 64.0);
         });
-
-
         
         if (closestBuilding && !closestDefender && !Combat::holdAtChoke())
             formation.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition);        
@@ -26,7 +26,6 @@ namespace McRave::Combat::Formations {
             formation.leash = closestDefender->getGroundRange() + extra;
             formation.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition) + extra;
         }
-        formation.angle = BWEB::Map::getAngle(make_pair(cluster.marchPosition, cluster.retreatPosition));
     }
 
     void formationWithNothing(Formation& formation, Cluster& cluster)
@@ -40,9 +39,8 @@ namespace McRave::Combat::Formations {
 
         // Offset the center by a distance of the radius towards the navigation point if needed
         if (cluster.mobileCluster) {
-            auto radius = ((cluster.units.size() * cluster.spacing / 1.3) * 1.2);
-            auto shift =  max(160.0, radius);
-            formation.radius = cluster.retreatCluster ? (radius + 64.0) : (radius - 64.0);
+            auto radius = clamp((cluster.units.size() * cluster.spacing / 1.3), 16.0, 640.0);
+            auto shift = max(160.0, radius);
 
             if (cluster.retreatCluster && (cluster.marchNavigation.getDistance(cluster.marchPosition) <= radius * 2 || cluster.retreatNavigation.getDistance(cluster.retreatPosition) <= radius * 2)) {
                 formation.center = cluster.marchPosition;
@@ -50,6 +48,7 @@ namespace McRave::Combat::Formations {
                 formationWithBuilding(formation, cluster);
             }
             else {
+                formation.radius = cluster.retreatCluster ? (radius + 64.0) : (radius - 64.0);
                 formation.center = cluster.retreatCluster ? Util::shiftTowards(cluster.retreatNavigation, cluster.avgPosition, shift) : Util::shiftTowards(cluster.avgPosition, cluster.marchNavigation, shift);
                 formation.angle = cluster.retreatCluster ? BWEB::Map::getAngle(cluster.avgPosition, cluster.retreatNavigation) : BWEB::Map::getAngle(cluster.marchNavigation, cluster.avgPosition);
             }
@@ -163,7 +162,7 @@ namespace McRave::Combat::Formations {
                 bumpedNeg = 0;
             }
 
-            if (assignmentsRemaining <= 0 || wrap >= 10 || concave.radius <= 64)
+            if (assignmentsRemaining <= 0 || wrap >= 50 || concave.radius <= 64)
                 break;
         }
 
@@ -238,7 +237,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
-        //drawFormations();
+        drawFormations();
     }
 
     vector<Formation>& getFormations() { return formations; }

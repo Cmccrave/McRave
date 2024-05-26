@@ -56,32 +56,39 @@ namespace McRave::Workers {
 
         vector<const BWEB::Station *> getSafeStations(UnitInfo& unit)
         {
-            vector<const BWEB::Station *> safeStations;
+            vector<const BWEB::Station *> safeStations;            
 
-            auto stationGrdOkay = unit.hasResource() && Stations::getGroundDefenseCount(unit.getResource().lock()->getStation()) > 0;
-            auto stationAirOkay = unit.hasResource() && Stations::getAirDefenseCount(unit.getResource().lock()->getStation()) > 0;
-            auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
+            // Check if current station is safe
+            auto stationGrdOkay = false;
+            auto stationAirOkay = false;
+            if (unit.hasResource()) {
+                auto station = unit.getResource().lock()->getStation();
+                stationGrdOkay = (Stations::getGroundDefenseCount(station) > 0 || Stations::getColonyCount(station) > 0);
+                stationAirOkay = (Stations::getAirDefenseCount(station) > 0 || Stations::getColonyCount(station) > 0);
 
-            // Current station is a fortress, we can stay
-            if (unit.hasResource() && stationGrdOkay && stationAirOkay) {
-                safeStations.push_back(unit.getResource().lock()->getStation());
-                return safeStations;
-            }
-
-            // If this station has a defense to deal with whatever is near us, stay at this station
-            auto currentStationSafe = true;
-            for (auto &t : unit.getUnitsInReachOfThis()) {
-                if (auto targeter = t.lock()) {
-                    if ((targeter->isFlying() && !stationAirOkay) || (!targeter->isFlying() && !stationGrdOkay))
-                        currentStationSafe = false;
+                // Current station is a fortress, we can stay
+                if (stationGrdOkay && stationAirOkay) {
+                    safeStations.push_back(station);
+                    return safeStations;
                 }
-            }
-            if (unit.hasResource() && currentStationSafe) {
-                safeStations.push_back(unit.getResource().lock()->getStation());
-                return safeStations;
+
+                // If this station has a defense to deal with whatever is near us, stay at this station
+                auto currentStationSafe = true;
+                for (auto &t : unit.getUnitsInReachOfThis()) {
+                    if (auto targeter = t.lock()) {
+                        if ((targeter->isFlying() && !stationAirOkay) || (!targeter->isFlying() && !stationGrdOkay))
+                            currentStationSafe = false;
+                    }
+                }
+
+                if (currentStationSafe) {
+                    safeStations.push_back(unit.getResource().lock()->getStation());
+                    return safeStations;
+                }
             }
 
             // Find safe stations to mine resources from
+            auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
             for (auto &station : Stations::getStations(PlayerState::Self)) {
 
                 // If unit is close, it must be safe
@@ -200,6 +207,7 @@ namespace McRave::Workers {
                 if (newDestination.isValid())
                     unit.setNavigation(newDestination);
             }
+            //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
             //Visuals::drawPath(unit.getDestinationPath());
         }
 
@@ -358,6 +366,9 @@ namespace McRave::Workers {
 
         void updateDecision(UnitInfo& unit)
         {
+            if (!Units::commandAllowed(unit))
+                return;
+
             // Iterate commands, if one is executed then don't try to execute other commands
             static const auto commands ={ Command::misc, Command::attack, Command::burrow, Command::returnResource, Command::build, Command::clearNeutral, Command::click, Command::move, Command::gather };
             for (auto cmd : commands) {

@@ -10,14 +10,6 @@ namespace McRave
     class ResourceInfo;
     class PlayerInfo;
 
-    /// Writes to a file, very slow function!
-    static void easyWrite(std::string& stuff)
-    {
-        std::ofstream writeFile;
-        writeFile.open("bwapi-data/write/McRave_Debug_Log.txt", std::ios::app);
-        writeFile << stuff << std::endl;
-    }
-
     struct Time {
         int minutes;
         int seconds;

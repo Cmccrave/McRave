@@ -127,9 +127,9 @@ namespace McRave::Roles {
             // ZvP
             if (Players::ZvP() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && Util::getTime() < Time(6, 00)) {
 
-                // 2Gate or Cannon proxy, 3 drones
-                if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 && (Spy::getEnemyBuild() == "CannonRush" || Spy::getEnemyBuild() == "2Gate") && com(Zerg_Zergling) <= 2)
-                    forceCombatWorker(Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) * 3, proxyDangerousBuilding->getPosition());
+                // 2Gate or Cannon proxy, 4 drones
+                if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 && (Spy::getEnemyBuild() == "CannonRush" || Spy::getEnemyBuild() == "2Gate") && com(Zerg_Zergling) <= 6)
+                    forceCombatWorker(4, proxyDangerousBuilding->getPosition());
 
                 // Probe actively building proxy, 2 drones
                 else if (proxyBuilding && proxyBuildingWorker)
@@ -146,6 +146,10 @@ namespace McRave::Roles {
                 // Likely proxy, worker arrived way too early
                 else if (likelyProxy && Util::getTime() < Time(3, 00))
                     forceCombatWorker(1, proxyWorker->getPosition());
+
+                // We know it's likely a proxy, watch the natural for now
+                else if (Spy::enemyPossibleProxy() && Util::getTime() < Time(2, 00))
+                    forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()));
             }
 
             // ZvT
@@ -153,7 +157,7 @@ namespace McRave::Roles {
 
                 // 8Rax proxy
                 if (Spy::getEnemyOpener() == "8Rax" && total(Zerg_Zergling) <= 6) {
-                    if (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
+                    if (proxyBuilding && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
                         forceCombatWorker(Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) * 3, Terrain::getNaturalPosition());
                     else if (proxyBuilding)
                         forceCombatWorker(3, proxyBuilding->getPosition());

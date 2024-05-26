@@ -101,7 +101,7 @@ namespace McRave::Planning {
 
             // See if it's being blocked
             auto closestEnemy = Util::getClosestUnit(center, PlayerState::Enemy, [&](auto &u) {
-                return !u->isFlying() && u->getType() != Terran_Vulture_Spider_Mine;
+                return !u->isFlying() && !u->getType().isWorker() && !u->getType().isBuilding() && u->getType() != Terran_Vulture_Spider_Mine;
             });
             if (closestEnemy && Util::boxDistance(closestEnemy->getType(), closestEnemy->getPosition(), building, center) < 32.0)
                 return false;
@@ -475,8 +475,8 @@ namespace McRave::Planning {
 
                 // How to dictate first placement position
                 if (wall.getGroundDefenseCount() < 2) {
-                    if (wall.getStation())
-                        desiredCenter = Position(wall.getStation()->getBase()->Center());
+                    if (closestMain)
+                        desiredCenter = Position(closestMain->getChokepoint()->Center());
                 }
 
                 // How to dictate row order
@@ -566,7 +566,7 @@ namespace McRave::Planning {
             set<TilePosition> placements;
             for (auto &[_, wall] : BWEB::Walls::getWalls()) {
 
-                if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) && Combat::getDefendArea() != wall.getArea())
+                if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
                     continue;
 
                 // Setup placements
@@ -577,6 +577,9 @@ namespace McRave::Planning {
                 else
                     placements.insert(wall.getSmallTiles().begin(), wall.getSmallTiles().end());
             }
+
+            if (building == Zerg_Spire)
+                Broodwar << placements.size() << endl;
 
             // Get closest placement
             auto desired = !Stations::getStationsBySaturation().empty() ? Stations::getStationsBySaturation().begin()->second->getBase()->Center() : Terrain::getMainPosition();
@@ -1028,6 +1031,7 @@ namespace McRave::Planning {
             || building == Protoss_Pylon
             || building == Terran_Bunker
             || building == Terran_Barracks
+            || building == Zerg_Spire
             || building == Zerg_Hydralisk_Den
             || building == Zerg_Evolution_Chamber
             || building == Zerg_Hatchery;

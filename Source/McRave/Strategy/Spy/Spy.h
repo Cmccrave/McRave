@@ -13,7 +13,7 @@ namespace McRave::Spy {
         std::string name = "Unknown";
 
         void debugLog() {
-            McRave::easyWrite(name + " confirmed at " + Util::getTime().toString());
+            Util::debug(name + " confirmed.");
         }
 
         void updateStrat() {

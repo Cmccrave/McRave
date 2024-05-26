@@ -58,7 +58,7 @@ namespace McRave::BuildOrder {
     }
 
     namespace Zerg {
-        inline bool reserveLarva = false;
+        inline int reserveLarva = 0;
         inline bool pumpLings = false;
         inline bool pumpHydras = false;
         inline bool pumpMutas = false;

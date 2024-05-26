@@ -24,7 +24,7 @@ namespace McRave::BuildOrder::Zerg {
         transitionReady =                           false;
         planEarly =                                 false;
         gasTrick =                                  false;
-        reserveLarva =                              true;
+        reserveLarva =                              0;
 
         gasLimit =                                  gasMax();
         unitLimits[Zerg_Zergling] =                 lingsNeeded_ZvT();
@@ -67,7 +67,7 @@ namespace McRave::BuildOrder::Zerg {
         // RaxFact
         if (Spy::getEnemyBuild() == "RaxFact") {
             initialValue = 2;
-            if (Util::getTime() > Time(3, 45))
+            if (Util::getTime() > Time(4, 15))
                 initialValue = 6;
         }
 
@@ -92,9 +92,10 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit =                                     Zerg_Mutalisk;
         unitLimits[Zerg_Drone] =                        (com(Zerg_Spawning_Pool) > 0 ? 28 : 15 - hatchCount());
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
+        reserveLarva =                                  6;
 
         // Buildings
-        buildQueue[Zerg_Hatchery] =                     2 + (s >= 48);
+        buildQueue[Zerg_Hatchery] =                     2 + (vis(Zerg_Spire) > 0);
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 16);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (2 * atPercent(Zerg_Spire, 0.25));
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
@@ -128,9 +129,10 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
         wantThird =                                     !Spy::enemyPressure() && !Spy::enemyRush() && Spy::getEnemyOpener() != "8Rax" && Spy::getEnemyBuild() != "RaxFact";
         planEarly =                                     hatchCount() < 3 && s >= 26;
+        reserveLarva =                                  9;
 
         // Buildings
-        buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + (total(Zerg_Mutalisk) >= 9);
+        buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + (vis(Zerg_Spire) > 0 && s >= 66);
         buildQueue[Zerg_Extractor] =                    (s >= 32) + (s >= 44 && vis(Zerg_Drone) >= 20);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (vis(Zerg_Extractor) > 0 && s >= 32) + (s >= 48);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));

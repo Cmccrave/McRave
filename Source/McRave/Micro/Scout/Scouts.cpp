@@ -55,6 +55,7 @@ namespace McRave::Scouts {
 
         bool mainScouted = false;
         bool natScouted = false;
+        bool fullScout = false;
         bool info = false;
         bool sacrifice = false;
         bool workerScoutDenied = false;
@@ -96,6 +97,10 @@ namespace McRave::Scouts {
                 if (!Stations::isBaseExplored(&station))
                     list.insert(station.getBase()->Center());
             }
+
+            fullScout = mainScouted && natScouted;
+            if (Players::ZvZ)
+                fullScout = mainScouted;
         }
 
         void checkScoutDenied()
@@ -118,7 +123,7 @@ namespace McRave::Scouts {
                 auto enemyInMain = closestEnemy && mapBWEM.GetArea(closestEnemy->getTilePosition()) == closestMain->getBase()->GetArea();
 
                 if (closeToChoke && deniedFromMain) {
-                    easyWrite("Worker scout denied at " + Util::getTime().toString());
+                    Util::debug(string("Worker scout denied."));
                     workerScoutDenied = true;
                 }
             }
@@ -192,11 +197,12 @@ namespace McRave::Scouts {
                 auto enemyAir = Players::getStrength(PlayerState::Enemy).groundToAir > 0.0
                     || Players::getStrength(PlayerState::Enemy).airToAir > 0.0
                     || Players::getStrength(PlayerState::Enemy).airDefense > 0.0
-                    || Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0
-                    || Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) > 0
-                    || Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) > 0
-                    || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0
-                    || Players::ZvT();
+                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0
+                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) > 0
+                    || Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0
+                    || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0
+                    || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0
+                    || Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) > 0;
 
                 // Main overlord scouting counts
                 main.desiredTypeCounts[Zerg_Overlord] = 1 + !Terrain::getEnemyStartingPosition().isValid();
@@ -279,24 +285,27 @@ namespace McRave::Scouts {
         void updateSafeScouting()
         {
             auto &safe = scoutTargets[ScoutType::Safe];
-            safe.center = safePositions[Terrain::getEnemyNatural()];
 
-            // Zerg
-            if (Broodwar->self()->getRace() == Races::Zerg) {
-                safe.desiredTypeCounts[Zerg_Overlord] = 1;
-                if (total(Zerg_Mutalisk) >= 6
-                    || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0)
-                    || Spy::getEnemyBuild() == "FFE"
-                    || (Players::ZvT() && Spy::getEnemyOpener() == "8Rax")
-                    || (!Players::ZvZ() && Stations::getStations(PlayerState::Enemy).size() >= 2)
-                    || (Players::ZvZ() && Util::getTime() > Time(5, 00)))
-                    safe.desiredTypeCounts[Zerg_Overlord] = 0;
-            }
+            if (Terrain::getEnemyNatural()) {
+                safe.center = safePositions[Terrain::getEnemyNatural()];
 
-            if (Terrain::getEnemyNatural() && vis(Zerg_Overlord) > 0) {
-                safe.addTargets(safePositions[Terrain::getEnemyNatural()]);
-                if (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())) >= 200)
-                    safe.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
+                // Zerg
+                if (Broodwar->self()->getRace() == Races::Zerg) {
+                    safe.desiredTypeCounts[Zerg_Overlord] = 1;
+                    if (total(Zerg_Mutalisk) >= 6
+                        || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0)
+                        || Spy::getEnemyBuild() == "FFE"
+                        || (Players::ZvT() && Spy::getEnemyOpener() == "8Rax")
+                        || (!Players::ZvZ() && Stations::getStations(PlayerState::Enemy).size() >= 2)
+                        || (Players::ZvZ() && Util::getTime() > Time(5, 00)))
+                        safe.desiredTypeCounts[Zerg_Overlord] = 0;
+                }
+
+                if (vis(Zerg_Overlord) > 0) {
+                    safe.addTargets(safePositions[Terrain::getEnemyNatural()]);
+                    if (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())) >= 200)
+                        safe.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
+                }
             }
         }
 
@@ -310,8 +319,7 @@ namespace McRave::Scouts {
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 if (Units::getImmThreat() <= 0.1 && Util::getTime() > Time(1, 00)) {
                     if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
-                        || (Players::ZvP() && Util::getTime() < Time(8, 00))
-                        || (Players::ZvZ() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0))
+                        || (Players::ZvP() && Util::getTime() < Time(8, 00)))
                         army.desiredTypeCounts[Zerg_Zergling] = 1;
                 }
             }
@@ -348,9 +356,9 @@ namespace McRave::Scouts {
             auto &expansion = scoutTargets[ScoutType::Expansion];
             expansion.desiredTypeCounts[Zerg_Zergling] = 2;
 
-
             for (auto &station : Stations::getStations(PlayerState::None)) {
                 if (station != Terrain::getEnemyMain() && station != Terrain::getEnemyNatural()) {
+                    expansion.center = station->getResourceCentroid();
                     expansion.addTargets(station->getResourceCentroid());
                 }
             }
@@ -497,10 +505,10 @@ namespace McRave::Scouts {
 
             // If we have scout targets, find the closest scout target
             auto best = -1.0;
-
             for (auto &[type, target] : scoutTargets) {
 
                 if (unit.getDestination().isValid()
+                    || !target.center.isValid()
                     || (type == ScoutType::Safe && unit.getHealth() != unit.getType().maxHitPoints() && target.center != safePositions[Terrain::getEnemyNatural()])
                     || target.currentTypeCounts[unit.getType()] >= target.desiredTypeCounts[unit.getType()])
                     continue;
@@ -523,7 +531,7 @@ namespace McRave::Scouts {
             }
 
             // Use scouting order if we don't know where the enemy is
-            if (!Terrain::getEnemyMain()) {
+            if (!Terrain::getEnemyMain() && !unit.getDestination().isValid()) {
                 auto &list = (firstOverlord && unit.getType() == Zerg_Overlord) ? scoutOrderFirstOverlord : scoutOrder;
                 for (auto &station : list) {
                     auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
@@ -584,6 +592,9 @@ namespace McRave::Scouts {
         {
             Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
             Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
+
+            if (!Units::commandAllowed(unit))
+                return;
 
             // Iterate commands, if one is executed then don't try to execute other commands
             static const auto commands ={ Command::attack, Command::kite, Command::gather, Command::explore, Command::move };
@@ -716,7 +727,7 @@ namespace McRave::Scouts {
     }
 
     bool gatheringInformation() { return info; }
-    bool gotFullScout() { return mainScouted && natScouted; }
+    bool gotFullScout() { return fullScout; }
     bool isSacrificeScout() { return sacrifice; }
     bool enemyDeniedScout() { return workerScoutDenied; }
     vector<const BWEB::Station *> getScoutOrder(UnitType type) {

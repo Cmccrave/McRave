@@ -28,6 +28,9 @@ namespace McRave::Units {
         double immThreat;
         Position enemyArmyCenter;
 
+        // This is hacky
+        vector<UnitInfo*> commandQueue;
+
         void updateEnemies()
         {
             enemyArmyCenter = Position(0, 0);
@@ -80,6 +83,7 @@ namespace McRave::Units {
 
         void updateSelf()
         {
+            commandQueue.clear();
             for (auto &p : Players::getPlayers()) {
                 PlayerInfo &player = p.second;
                 if (!player.isSelf())
@@ -89,8 +93,19 @@ namespace McRave::Units {
                 for (auto &u : player.getUnits()) {
                     UnitInfo &unit = *u;
                     unit.update();
+                    auto validRole = unit.getRole() == Role::Combat || unit.getRole() == Role::Defender
+                        || unit.getRole() == Role::Scout || unit.getRole() == Role::Support || unit.getRole() == Role::Transport
+                        || unit.getRole() == Role::Worker;
+
+                    if (validRole)
+                        commandQueue.push_back(&unit);
                 }
             }
+
+            // Sort command queue
+            sort(commandQueue.begin(), commandQueue.end(), [&](auto &u1, auto &u2) {
+                return u1->commandFrame < u2->commandFrame;
+            });
         }
 
         void updateNeutrals()
@@ -162,7 +177,7 @@ namespace McRave::Units {
 
                             auto &ratios = unit.isFlying() ? airDamageRatios[PlayerState::Enemy] : grdDamageRatios[PlayerState::Enemy];
                             ratios.count++;
-                            addToRatios(ratios, unit);                            
+                            addToRatios(ratios, unit);
                         }
                     }
 
@@ -197,7 +212,7 @@ namespace McRave::Units {
             for (auto &[_, air] : airDamageRatios) {
                 if (air.count > 0) {
                     for (auto &[type, ratio] : air.ratio)
-                        ratio /= double(air.count);
+                        ratio /= double(air.count);                    
                     air.armor /= double(air.count);
                 }
             }
@@ -248,12 +263,12 @@ namespace McRave::Units {
     }
 
     double getDamageRatioGrd(PlayerState state, DamageType type) {
-        if (grdDamageRatios[state].count == 0)
+        if (type == DamageTypes::Normal || grdDamageRatios[state].count == 0)
             return 1.0;
         return grdDamageRatios[state].ratio[type];
     }
     double getDamageRatioAir(PlayerState state, DamageType type) {
-        if (airDamageRatios[state].count == 0)
+        if (type == DamageTypes::Normal || airDamageRatios[state].count == 0)
             return 1.0;
         return airDamageRatios[state].ratio[type];
     }
@@ -271,4 +286,18 @@ namespace McRave::Units {
     map<UnitSizeType, int>& getEnemyAirSizes() { return enemyAirSizes; }
     Position getEnemyArmyCenter() { return enemyArmyCenter; }
     double getImmThreat() { return immThreat; }
+
+    bool commandAllowed(UnitInfo& unit) {
+        auto idx = find_if(commandQueue.begin(), commandQueue.end(), [&](auto &u) {
+            return u == &unit;
+        });
+        auto frames = unit.isFlying() ? 0 : 9;
+        auto newCommandFrame = Broodwar->getFrameCount() - unit.commandFrame > frames;
+        if (!newCommandFrame)
+            return false;
+
+        if (idx != commandQueue.end() && idx - commandQueue.begin() < 60)
+            unit.commandFrame = Broodwar->getFrameCount();        
+        return idx != commandQueue.end() && idx - commandQueue.begin() < 60;
+    }
 }

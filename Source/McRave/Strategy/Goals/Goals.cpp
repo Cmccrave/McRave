@@ -190,9 +190,9 @@ namespace McRave::Goals {
 
                     if (closestBuilder && !closestBuilder->isWithinBuildRange()) {
                         assignNumberToGoal(closestBuilder->getPosition(), type, 1, GoalType::Escort);
-                        for (auto &t : closestBuilder->getUnitsTargetingThis()) {
-                            if (auto targeter = t.lock())
-                                assignNumberToGoal(targeter->getPosition(), type, 1, GoalType::Escort);
+                        for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
+                            if (unit->getPosition().getDistance(closestBuilder->getPosition()) < 640.0)
+                                assignNumberToGoal(unit->getPosition(), type, 1, GoalType::Escort);
                         }
                     }
                 }
@@ -303,7 +303,7 @@ namespace McRave::Goals {
 
             // Assign an Overlord to watch our Choke early on
             if (Terrain::getNaturalChoke() && !Spy::enemyRush() && com(Zerg_Overlord) >= 2) {
-                const auto natSpot = (Position(Terrain::getNaturalChoke()->Center()) + Terrain::getNaturalPosition()) / 2;
+                const auto natSpot = Position(Terrain::getNaturalChoke()->Center());
                 if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0))
                     assignNumberToGoal(natSpot, Zerg_Overlord, 1, GoalType::Escort);
             }

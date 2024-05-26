@@ -31,9 +31,9 @@ namespace McRave::Spy::General {
                     auto count = int(theSpy.enemyTimings[unit.getType()].countStartedWhen.size());
 
                     if (!unit.getType().isBuilding())
-                        McRave::easyWrite(string(unit.getType().c_str()) + " " + to_string(count) + " arrives at " + unit.timeArrivesWhen().toString() + ", observed at " + Util::getTime().toString());
+                        Util::debug(string(unit.getType().c_str()) + " " + to_string(count) + " arrives at " + unit.timeArrivesWhen().toString());
                     else
-                        McRave::easyWrite(string(unit.getType().c_str()) + " " + to_string(count) + " completes at " + unit.timeCompletesWhen().toString() + ", observed at " + Util::getTime().toString());
+                        Util::debug(string(unit.getType().c_str()) + " " + to_string(count) + " completes at " + unit.timeCompletesWhen().toString());
 
                     if (theSpy.enemyTimings[unit.getType()].firstArrivesWhen == Time(999, 0) || unit.timeArrivesWhen() < theSpy.enemyTimings[unit.getType()].firstArrivesWhen)
                         theSpy.enemyTimings[unit.getType()].firstArrivesWhen = unit.timeArrivesWhen();

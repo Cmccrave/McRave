@@ -3,6 +3,7 @@
 using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
+using namespace UpgradeTypes;
 using namespace McRave::BuildOrder::All;
 
 #include "../ProtossBuildOrder.h"
@@ -47,6 +48,9 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 3;
             buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 5 && vis(Protoss_Assimilator) >= 1);
             buildQueue[Protoss_Robotics_Facility] =     com(Protoss_Dragoon) >= 2;
+
+            // Upgrades
+            upgradeQueue[Singularity_Charge] =          vis(Protoss_Dragoon) > 0;
 
             // Army Composition
             armyComposition[Protoss_Zealot] =           0.05;

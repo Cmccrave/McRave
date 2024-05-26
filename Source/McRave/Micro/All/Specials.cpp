@@ -4,6 +4,7 @@ using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 using namespace UnitCommandTypes;
+using namespace TechTypes;
 
 namespace McRave::Command
 {
@@ -33,13 +34,13 @@ namespace McRave::Command
             // Wall off if we need to
             if (unit.getGoal().isValid() && unit.getPosition().getDistance(unit.getGoal()) < 96.0) {
                 if (unit.isFlying() && unit.unit()->getLastCommand().getType() != UnitCommandTypes::Land)
-                    unit.unit()->land(TilePosition(unit.getGoal()));               
+                    unit.unit()->land(TilePosition(unit.getGoal()));
                 return true;
             }
 
             // Lift if we need to
             else if (!unit.isFlying())
-                unit.unit()->lift();            
+                unit.unit()->lift();
         }
         return false;
     }
@@ -56,6 +57,7 @@ namespace McRave::Command
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit || unit.unit()->getLastCommand().getTarget() != battery->unit()) {
                     unit.setCommand(Right_Click_Unit, *battery);
                     unit.commandText = "Regen";
+                    unit.commandFrame = Broodwar->getFrameCount();
                 }
                 return true;
             }
@@ -87,6 +89,7 @@ namespace McRave::Command
                 if (!unit.unit()->isLoaded() && loadBunker) {
                     unit.setCommand(Right_Click_Unit, *bunker);
                     unit.commandText = "LoadBunker";
+                    unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }
                 if (unit.unit()->isLoaded() && unloadBunker)
@@ -123,6 +126,7 @@ namespace McRave::Command
             if (closestResource) {
                 unit.unit()->gather(closestResource->unit());
                 unit.commandText = "MineralWalk";
+                unit.commandFrame = Broodwar->getFrameCount();
                 return true;
             }
         }
@@ -167,10 +171,12 @@ namespace McRave::Command
             if (siege) {
                 unit.unit()->siege();
                 unit.commandText = "Siege";
+                unit.commandFrame = Broodwar->getFrameCount();
             }
             else if (unsiege) {
                 unit.unit()->unsiege();
                 unit.commandText = "Unsiege";
+                unit.commandFrame = Broodwar->getFrameCount();
             }
         }
         return false;
@@ -190,6 +196,7 @@ namespace McRave::Command
                 if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != mech->unit())
                     unit.unit()->repair(mech->unit());
                 unit.commandText = "Repair";
+                unit.commandFrame = Broodwar->getFrameCount();
                 Broodwar->drawLineMap(unit.getPosition(), mech->getPosition(), Colors::Yellow);
                 return true;
             }
@@ -203,6 +210,7 @@ namespace McRave::Command
                 if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != building->unit())
                     unit.unit()->repair(building->unit());
                 unit.commandText = "Repair";
+                unit.commandFrame = Broodwar->getFrameCount();
                 Broodwar->drawLineMap(unit.getPosition(), building->getPosition(), Colors::Red);
                 return true;
             }
@@ -214,9 +222,9 @@ namespace McRave::Command
     {
         // Vulture spider mine burrowing
         if (unit.getType() == Terran_Vulture) {
-            if (Broodwar->self()->hasResearched(TechTypes::Spider_Mines) && unit.unit()->getSpiderMineCount() > 0 && unit.hasSimTarget() && unit.getPosition().getDistance(unit.getSimTarget().lock()->getPosition()) <= 400 && Broodwar->getUnitsInRadius(unit.getPosition(), 128, Filter::GetType == Terran_Vulture_Spider_Mine).size() <= 3) {
-                if (unit.unit()->getLastCommand().getTechType() != TechTypes::Spider_Mines || unit.unit()->getLastCommand().getTargetPosition().getDistance(unit.getPosition()) > 8) {
-                    unit.unit()->useTech(TechTypes::Spider_Mines, unit.getPosition());
+            if (Broodwar->self()->hasResearched(Spider_Mines) && unit.unit()->getSpiderMineCount() > 0 && unit.hasSimTarget() && unit.getPosition().getDistance(unit.getSimTarget().lock()->getPosition()) <= 400 && Broodwar->getUnitsInRadius(unit.getPosition(), 128, Filter::GetType == Terran_Vulture_Spider_Mine).size() <= 3) {
+                if (unit.unit()->getLastCommand().getTechType() != Spider_Mines || unit.unit()->getLastCommand().getTargetPosition().getDistance(unit.getPosition()) > 8) {
+                    unit.setCommand(Spider_Mines, unit.getPosition());
                     unit.commandText = "Planting";
                 }
                 return true;
@@ -225,25 +233,25 @@ namespace McRave::Command
 
         // Lurker burrowing
         else if (unit.getType() == Zerg_Lurker) {
-            if (!unit.unit()->isBurrowed() && unit.getFormation().isValid() && unit.getPosition().getDistance(unit.getFormation()) < 64.0) {
-                unit.unit()->burrow();
+            if (!unit.isBurrowed() && unit.getFormation().isValid() && unit.getPosition().getDistance(unit.getFormation()) < 64.0) {
+                unit.setCommand(Burrow, unit.getPosition());
                 unit.commandText = "Burrowing";
                 return true;
             }
-            else if (!unit.unit()->isBurrowed() && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack) && unit.getPosition().getDistance(unit.getEngagePosition()) < 16.0) {
-                unit.unit()->burrow();
+            else if (!unit.isBurrowed() && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack) && unit.getPosition().getDistance(unit.getEngagePosition()) < 16.0) {
+                unit.setCommand(Burrow, unit.getPosition());
                 unit.commandText = "Burrowing";
                 return true;
             }
-            else if (unit.unit()->isBurrowed() && unit.getPosition().getDistance(unit.getEngagePosition()) > 32.0) {
-                unit.unit()->unburrow();
+            else if (unit.isBurrowed() && unit.getPosition().getDistance(unit.getEngagePosition()) > 32.0) {
+                unit.setCommand(Unburrow, unit.getPosition());
                 unit.commandText = "Unburrowing";
                 return true;
             }
         }
 
         // Drone
-        else if (unit.getType().isWorker() && Broodwar->self()->hasResearched(TechTypes::Burrowing) && unit.getRole() == Role::Worker) {
+        else if (unit.getType().isWorker() && Broodwar->self()->hasResearched(Burrowing) && unit.getRole() == Role::Worker) {
 
             // Check if station is protected
             auto grdDef = false;
@@ -271,28 +279,28 @@ namespace McRave::Command
 
             // Burrow/unburrow as needed
             if (!unit.isBurrowed() && threatened) {
-                unit.unit()->burrow();
+                unit.setCommand(Burrow, unit.getPosition());
                 unit.commandText = "Burrowing";
                 return true;
             }
             else if (unit.isBurrowed() && !threatened) {
-                unit.unit()->unburrow();
+                unit.setCommand(Unburrow, unit.getPosition());
                 unit.commandText = "Unburrowing";
                 return true;
             }
         }
 
         // Zergling burrowing
-        else if (unit.getType() == Zerg_Zergling && Broodwar->self()->hasResearched(TechTypes::Burrowing)) {
+        else if (unit.getType() == Zerg_Zergling && Broodwar->self()->hasResearched(Burrowing)) {
             auto fullHealth = unit.getHealth() == unit.getType().maxHitPoints();
 
             if (!unit.isBurrowed() && unit.getGoalType() == GoalType::Contain && !Planning::overlapsPlan(unit, unit.getPosition()) && unit.getGoal().getDistance(unit.getPosition()) < 16.0 && !Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Enemy)) {
-                unit.unit()->burrow();
+                unit.setCommand(Burrow, unit.getPosition());
                 unit.commandText = "Burrowing";
                 return true;
             }
             if (unit.isBurrowed() && (unit.getGoalType() != GoalType::Contain || Planning::overlapsPlan(unit, unit.getPosition()) || unit.getGoal().getDistance(unit.getPosition()) > 16.0 || Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Enemy))) {
-                unit.unit()->unburrow();
+                unit.setCommand(Unburrow, unit.getPosition());
                 unit.commandText = "Burrowing";
                 return true;
             }
@@ -301,93 +309,37 @@ namespace McRave::Command
         return false;
     }
 
-    bool cast(UnitInfo& unit)
+    bool castSelf(UnitInfo& unit)
     {
-        // Battlecruiser - Yamato
-        if (unit.getType() == Terran_Battlecruiser) {
-            if ((unit.unit()->getOrder() == Orders::FireYamatoGun || (Broodwar->self()->hasResearched(TechTypes::Yamato_Gun) && unit.getEnergy() >= TechTypes::Yamato_Gun.energyCost()) && unit.getTarget().lock()->unit()->getHitPoints() >= 80) && unit.hasTarget() && unit.getTarget().lock()->unit()->exists()) {
-                if ((unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech || unit.unit()->getLastCommand().getTarget() != unit.getTarget().lock()->unit())) {
-                    unit.unit()->useTech(TechTypes::Yamato_Gun, unit.getTarget().lock()->unit());
-                    unit.commandText = "Yamato";
-                }
-
-                Actions::addAction(unit.unit(), unit.getTarget().lock()->getPosition(), TechTypes::Yamato_Gun, PlayerState::Self);
-                return true;
-            }
-        }
-
-        // Ghost - Cloak / Nuke
-        else if (unit.getType() == Terran_Ghost) {
-
+        // Ghost - Cloak
+        if (unit.getType() == Terran_Ghost) {
             if (!unit.unit()->isCloaked() && unit.getEnergy() >= 50 && (Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) || unit.getPosition().getDistance(unit.getEngagePosition()) < unit.getEngageRadius())) {
-                unit.unit()->useTech(TechTypes::Personnel_Cloaking);
+                unit.setCommand(Personnel_Cloaking);
                 unit.commandText = "Cloak";
             }
-
-            if (com(Terran_Nuclear_Missile) > 0 && unit.hasTarget() && unit.unit()->isCloaked() && unit.getPosition().getDistance(unit.getTarget().lock()->getPosition()) > 200) {
-                if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech_Position || unit.unit()->getLastCommand().getTargetPosition() != unit.getTarget().lock()->getPosition()) {
-                    unit.unit()->useTech(TechTypes::Nuclear_Strike, unit.getTarget().lock()->getPosition());
-                    unit.commandText = "Nuke";
-                    Actions::addAction(unit.unit(), unit.getTarget().lock()->getPosition(), TechTypes::Nuclear_Strike, PlayerState::Self);
-                    return true;
-                }
-            }
-            if (unit.unit()->getOrder() == Orders::NukePaint || unit.unit()->getOrder() == Orders::NukeTrack || unit.unit()->getOrder() == Orders::CastNuclearStrike) {
-                Actions::addAction(unit.unit(), unit.unit()->getOrderTargetPosition(), TechTypes::Nuclear_Strike, PlayerState::Self);
-                unit.commandText = "Nuke";
-                return true;
-            }
-        }
-
-        // Marine / Firebat - Stim Packs
-        else if ((unit.getType() == Terran_Marine || unit.getType() == Terran_Firebat) && Broodwar->self()->hasResearched(TechTypes::Stim_Packs) && !unit.unit()->isStimmed() && unit.hasTarget() && unit.isWithinRange(*unit.getTarget().lock())) {
-            unit.unit()->useTech(TechTypes::Stim_Packs);
-            unit.commandText = "Stim";
-            return true;
         }
 
         // Science Vessel - Defensive Matrix
-        else if (unit.getType() == Terran_Science_Vessel && unit.getEnergy() >= TechTypes::Defensive_Matrix.energyCost()) {
+        else if (unit.getType() == Terran_Science_Vessel && unit.getEnergy() >= Defensive_Matrix.energyCost()) {
             auto ally = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 return (u->unit()->isUnderAttack());
             });
             if (ally && ally->getPosition().getDistance(unit.getPosition()) < 640) {
-                unit.unit()->useTech(TechTypes::Defensive_Matrix, ally->unit());
+                unit.setCommand(Defensive_Matrix, *ally);
                 unit.commandText = "DefenseMatrix";
                 return true;
-            }
-        }
-
-        // Comsat scans - Move to special manager
-        else if (unit.getType() == Terran_Comsat_Station && unit.hasTarget()) {
-            auto buildingTarget = unit.getTarget().lock();
-            if (buildingTarget->unit()->exists() && !Actions::overlapsDetection(unit.unit(), buildingTarget->getPosition(), PlayerState::Self)) {
-                unit.unit()->useTech(TechTypes::Scanner_Sweep, buildingTarget->getPosition());
-                Actions::addAction(unit.unit(), buildingTarget->getPosition(), Spell_Scanner_Sweep, PlayerState::Self);
             }
         }
 
         // Wraith - Cloak
         else if (unit.getType() == Terran_Wraith) {
             if (unit.getHealth() >= 120 && !unit.unit()->isCloaked() && unit.getEnergy() >= 50 && unit.getPosition().getDistance(unit.getEngagePosition()) < 320 && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy)) {
-                unit.unit()->useTech(TechTypes::Cloaking_Field);
+                unit.setCommand(Cloaking_Field);
                 unit.commandText = "Cloak";
             }
             else if (unit.getHealth() <= 90 && unit.unit()->isCloaked()) {
-                unit.unit()->useTech(TechTypes::Cloaking_Field);
+                unit.setCommand(Cloaking_Field);
                 unit.commandText = "Cloak";
-            }
-        }
-
-        // Arbiters - Stasis Field       
-        else if (unit.getType() == Protoss_Arbiter) {
-
-            // If close to target and can cast Stasis Field
-            if (unit.hasTarget() && unit.canStartCast(TechTypes::Stasis_Field, unit.getTarget().lock()->getPosition())) {
-                unit.unit()->useTech(TechTypes::Stasis_Field, unit.getTarget().lock()->unit());
-                unit.commandText = "Stasis";
-                Actions::addAction(unit.unit(), unit.getTarget().lock()->getPosition(), TechTypes::Stasis_Field, PlayerState::Self);
-                return true;
             }
         }
 
@@ -395,17 +347,84 @@ namespace McRave::Command
         else if (unit.getType() == Protoss_Corsair) {
 
             // If close to a slow enemy and can cast disruption web
-            if (unit.getEnergy() >= TechTypes::Disruption_Web.energyCost() && Broodwar->self()->hasResearched(TechTypes::Disruption_Web)) {
+            if (unit.getEnergy() >= Disruption_Web.energyCost() && Broodwar->self()->hasResearched(Disruption_Web)) {
                 auto slowEnemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u->getPosition().getDistance(unit.getPosition()) < 256.0 && !Actions::overlapsActions(unit.unit(), u->getPosition(), TechTypes::Disruption_Web, PlayerState::Self, 96) && u->hasAttackedRecently() && u->getSpeed() <= Protoss_Reaver.topSpeed();
+                    return u->getPosition().getDistance(unit.getPosition()) < 256.0 && !Actions::overlapsActions(unit.unit(), u->getPosition(), Disruption_Web, PlayerState::Self, 96) && u->hasAttackedRecently() && u->getSpeed() <= Protoss_Reaver.topSpeed();
                 });
 
                 if (slowEnemy) {
-                    Actions::addAction(unit.unit(), slowEnemy->getPosition(), TechTypes::Disruption_Web, PlayerState::Self);
-                    unit.unit()->useTech(TechTypes::Disruption_Web, slowEnemy->getPosition());
+                    Actions::addAction(unit.unit(), slowEnemy->getPosition(), Disruption_Web, PlayerState::Self, Util::getCastRadius(TechTypes::Disruption_Web));
+                    unit.setCommand(Disruption_Web, slowEnemy->getPosition());
                     unit.commandText = "DWeb";
                     return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    bool castTarget(UnitInfo& unit)
+    {
+        if (!unit.hasTarget())
+            return false;
+        auto &target = *unit.getTarget().lock();
+
+        // Battlecruiser - Yamato
+        if (unit.getType() == Terran_Battlecruiser && Broodwar->self()->hasResearched(Yamato_Gun)) {
+            if ((unit.unit()->getOrder() == Orders::FireYamatoGun || (unit.getEnergy() >= Yamato_Gun.energyCost()) && target.getHealth() >= 80)) {
+                if ((unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech || unit.unit()->getLastCommand().getTarget() != target.unit())) {
+                    unit.setCommand(Yamato_Gun, target);
+                    unit.commandText = "Yamato";
+                }
+                Actions::addAction(unit.unit(), target.getPosition(), Yamato_Gun, PlayerState::Self);
+                return true;
+            }
+        }
+
+        // Ghost - Nuke
+        else if (unit.getType() == Terran_Ghost) {
+
+            if (com(Terran_Nuclear_Missile) > 0 && unit.unit()->isCloaked() && unit.getPosition().getDistance(target.getPosition()) > 200) {
+                if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech_Position || unit.unit()->getLastCommand().getTargetPosition() != target.getPosition()) {
+                    unit.setCommand(Nuclear_Strike, target.getPosition());
+                    unit.commandText = "Nuke";
+                    Actions::addAction(unit.unit(), target.getPosition(), Nuclear_Strike, PlayerState::Self, Util::getCastRadius(Nuclear_Strike));
+                    return true;
+                }
+            }
+            if (unit.unit()->getOrder() == Orders::NukePaint || unit.unit()->getOrder() == Orders::NukeTrack || unit.unit()->getOrder() == Orders::CastNuclearStrike) {
+                unit.commandText = "Nuke";
+                Actions::addAction(unit.unit(), unit.unit()->getOrderTargetPosition(), Nuclear_Strike, PlayerState::Self, Util::getCastRadius(Nuclear_Strike));
+                return true;
+            }
+        }
+
+        // Marine / Firebat - Stim Packs
+        else if ((unit.getType() == Terran_Marine || unit.getType() == Terran_Firebat) && Broodwar->self()->hasResearched(Stim_Packs) && !unit.isStimmed() && unit.isWithinRange(target)) {
+            unit.setCommand(Stim_Packs);
+            unit.commandText = "Stim";
+            return true;
+        }
+
+        // Comsat scans
+        else if (unit.getType() == Terran_Comsat_Station) {
+            if (target.unit()->exists() && !Actions::overlapsDetection(unit.unit(), target.getPosition(), PlayerState::Self)) {
+                unit.setCommand(Scanner_Sweep, target.getPosition());
+                unit.commandText = "Scan";
+                Actions::addAction(unit.unit(), target.getPosition(), Spell_Scanner_Sweep, PlayerState::Self, Util::getCastRadius(Scanner_Sweep));
+                return true;
+            }
+        }
+
+        // Arbiters - Stasis Field       
+        else if (unit.getType() == Protoss_Arbiter) {
+
+            // If close to target and can cast Stasis Field
+            if (unit.canStartCast(Stasis_Field, target.getPosition())) {
+                unit.setCommand(Stasis_Field, target);
+                unit.commandText = "Stasis";
+                Actions::addAction(unit.unit(), target.getPosition(), Stasis_Field, PlayerState::Self, Util::getCastRadius(Stasis_Field));
+                return true;
             }
         }
 
@@ -413,47 +432,45 @@ namespace McRave::Command
         else if (unit.getType() == Protoss_High_Templar) {
 
             // If close to target and can cast Psi Storm
-            if (unit.hasTarget() && unit.getPosition().getDistance(unit.getTarget().lock()->getPosition()) <= 320 && unit.canStartCast(TechTypes::Psionic_Storm, unit.getTarget().lock()->getPosition())) {
-                unit.unit()->useTech(TechTypes::Psionic_Storm, unit.getTarget().lock()->getPosition());
-                Actions::addAction(unit.unit(), unit.getTarget().lock()->getPosition(), TechTypes::Psionic_Storm, PlayerState::Neutral);
+            if (unit.getPosition().getDistance(target.getPosition()) <= 320 && unit.canStartCast(Psionic_Storm, target.getPosition())) {
+                unit.setCommand(Psionic_Storm, target);
                 unit.commandText = "Storm";
+                Actions::addAction(unit.unit(), target.getPosition(), Psionic_Storm, PlayerState::Neutral, Util::getCastRadius(Psionic_Storm));
                 return true;
             }
         }
 
-        // Defiler - Consume / Dark Swarm / Plague
+        // Defiler - Dark Swarm / Plague
         else if (unit.getType() == Zerg_Defiler && !unit.isBurrowed()) {
 
             // If close to target and can cast Plague
-            if (unit.hasTarget() && unit.getLocalState() != LocalState::None && unit.canStartCast(TechTypes::Plague, unit.getTarget().lock()->getPosition())) {
-                //if (unit.unit()->getLastCommand().getTechType() != TechTypes::Plague)
-                unit.unit()->useTech(TechTypes::Plague, unit.getTarget().lock()->getPosition());
-                Actions::addAction(unit.unit(), unit.getTarget().lock()->getPosition(), TechTypes::Plague, PlayerState::Neutral);
+            if (unit.getLocalState() != LocalState::None && unit.canStartCast(Plague, target.getPosition())) {
+                unit.setCommand(Plague, target.getPosition());
                 unit.commandText = "Plague";
+                Actions::addAction(unit.unit(), target.getPosition(), Plague, PlayerState::Neutral, Util::getCastRadius(Plague));
                 return true;
             }
 
             // If close to target and can cast Dark Swarm
-            if (unit.hasTarget() && Players::ZvT() && unit.getPosition().getDistance(unit.getTarget().lock()->getPosition()) <= 400 && unit.canStartCast(TechTypes::Dark_Swarm, unit.getTarget().lock()->getPosition())) {
-                //if (unit.unit()->getLastCommand().getTechType() != TechTypes::Dark_Swarm)
-                unit.unit()->useTech(TechTypes::Dark_Swarm, unit.getTarget().lock()->getPosition());
-                Actions::addAction(unit.unit(), unit.getTarget().lock()->getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral);
+            if (Players::ZvT() && unit.getPosition().getDistance(target.getPosition()) <= 400 && unit.canStartCast(Dark_Swarm, target.getPosition())) {
+                unit.setCommand(Dark_Swarm, target.getPosition());
                 unit.commandText = "DarkSwarm";
+                Actions::addAction(unit.unit(), target.getPosition(), Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
                 return true;
             }
 
             // If within range of an intermediate point within engaging distance
-            if (unit.hasTarget() && Players::ZvT()) {
+            if (Players::ZvT()) {
                 for (auto &tile : unit.getDestinationPath().getTiles()) {
                     auto center = Position(tile) + Position(16, 16);
 
                     auto distMin = BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0 ? 200.0 : 0.0;
-                    auto dist = center.getDistance(unit.getTarget().lock()->getPosition());
+                    auto dist = center.getDistance(target.getPosition());
 
-                    if (dist <= 400 && dist > distMin && unit.canStartCast(TechTypes::Dark_Swarm, center)) {
-                        if (unit.unit()->getLastCommand().getTechType() != TechTypes::Dark_Swarm)
-                            unit.unit()->useTech(TechTypes::Dark_Swarm, center);
-                        Actions::addAction(unit.unit(), center, TechTypes::Dark_Swarm, PlayerState::Neutral);
+                    if (dist <= 400 && dist > distMin && unit.canStartCast(Dark_Swarm, center)) {
+                        if (unit.unit()->getLastCommand().getTechType() != Dark_Swarm)
+                            unit.setCommand(Dark_Swarm, center);
+                        Actions::addAction(unit.unit(), center, Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
                         unit.commandText = "DarkSwarm";
                         return true;
                     }
@@ -461,8 +478,8 @@ namespace McRave::Command
             }
 
             // If close to target and need to Consume
-            if (unit.hasTarget() && unit.getEnergy() < 150 && unit.getPosition().getDistance(unit.getTarget().lock()->getPosition()) <= 160.0 && unit.canStartCast(TechTypes::Consume, unit.getTarget().lock()->getPosition())) {
-                unit.unit()->useTech(TechTypes::Consume, unit.getTarget().lock()->unit());
+            if (unit.getEnergy() < 150 && unit.getPosition().getDistance(target.getPosition()) <= 160.0 && unit.canStartCast(Consume, target.getPosition())) {
+                unit.setCommand(Consume, target);
                 unit.commandText = "Consume";
                 return true;
             }
@@ -480,7 +497,7 @@ namespace McRave::Command
 
         // High Templar - Archon Morph
         if (unit.getType() == Protoss_High_Templar) {
-            auto lowEnergyThreat = unit.getEnergy() < TechTypes::Psionic_Storm.energyCost() && Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) > 0.0f;
+            auto lowEnergyThreat = unit.getEnergy() < Psionic_Storm.energyCost() && Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) > 0.0f;
             auto wantArchons = vis(Protoss_Archon) / BuildOrder::getCompositionPercentage(Protoss_Archon) < vis(Protoss_High_Templar) / BuildOrder::getCompositionPercentage(Protoss_High_Templar);
 
             if (!Players::vT() && (lowEnergyThreat || wantArchons)) {
@@ -492,15 +509,16 @@ namespace McRave::Command
 
                 if (templar) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
-                        unit.unit()->useTech(TechTypes::Archon_Warp, templar->unit());
+                        unit.unit()->useTech(Archon_Warp, templar->unit());
                     unit.commandText = "Archonification";
+                    unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }
             }
         }
 
         // Hydralisk - Lurker Morph
-        else if (unit.getType() == Zerg_Hydralisk && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect)) {
+        else if (unit.getType() == Zerg_Hydralisk && Broodwar->self()->hasResearched(Lurker_Aspect)) {
             const auto wantLurkers = (vis(Zerg_Lurker) + vis(Zerg_Lurker_Egg)) / BuildOrder::getCompositionPercentage(Zerg_Lurker) < vis(Zerg_Hydralisk) / BuildOrder::getCompositionPercentage(Zerg_Hydralisk);
             const auto onlyLurkers = BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00 || (Players::ZvT() && BuildOrder::getCompositionPercentage(Zerg_Lurker) == 0.0 && BuildOrder::getCompositionPercentage(Zerg_Hydralisk) == 0.0);
 
@@ -512,6 +530,7 @@ namespace McRave::Command
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->morph(Zerg_Lurker);
                     unit.commandText = "Lurkification";
+                    unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }
             }
@@ -530,6 +549,7 @@ namespace McRave::Command
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->morph(Zerg_Guardian);
                     unit.commandText = "Guardianification";
+                    unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }
             }
@@ -538,6 +558,7 @@ namespace McRave::Command
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->morph(Zerg_Devourer);
                     unit.commandText = "Devoification";
+                    unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }
             }
@@ -566,6 +587,7 @@ namespace McRave::Command
             if (unit.framesHoldingResource() >= 24 && (unit.unit()->isIdle() || (unit.unit()->getOrder() != Orders::ReturnMinerals && unit.unit()->getOrder() != Orders::ReturnGas)) && unit.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo)
                 unit.unit()->returnCargo();
             unit.commandText = "Return";
+            unit.commandFrame = Broodwar->getFrameCount();
             return true;
         }
 
@@ -601,6 +623,7 @@ namespace McRave::Command
                 if (unit.unit()->getOrderTarget() != boulder.unit())
                     unit.unit()->gather(boulder.unit());
                 unit.commandText = "Bouldering";
+                unit.commandFrame = Broodwar->getFrameCount();
                 return true;
             }
         }
@@ -624,6 +647,7 @@ namespace McRave::Command
             if (unit.unit()->getLastCommandFrame() < Broodwar->getFrameCount() - 8)
                 unit.unit()->build(unit.getBuildType(), unit.getBuildPosition());
             unit.commandText = "Build";
+            unit.commandFrame = Broodwar->getFrameCount();
             return true;
         }
         return false;
@@ -724,6 +748,7 @@ namespace McRave::Command
                         if (furthest) {
                             unit.unit()->gather(furthest->Unit());
                             unit.commandText = "Gather";
+                            unit.commandFrame = Broodwar->getFrameCount();
                             return true;
                         }
                     }
@@ -738,11 +763,13 @@ namespace McRave::Command
             if (canClick(resource)) {
                 unit.unit()->rightClick(resource->unit());
                 unit.commandText = "Gather";
+                unit.commandFrame = Broodwar->getFrameCount();
                 return true;
             }
             if (canGather(resource)) {
                 unit.unit()->gather(resource->unit());
                 unit.commandText = "Gather";
+                unit.commandFrame = Broodwar->getFrameCount();
                 return true;
             }
         }
@@ -751,7 +778,8 @@ namespace McRave::Command
 
     bool special(UnitInfo& unit)
     {
-        return cast(unit)
+        return castSelf(unit)
+            || castTarget(unit)
             || burrow(unit)
             || click(unit)
             || siege(unit)

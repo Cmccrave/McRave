@@ -196,7 +196,7 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (Players::ZvP()) {
+            if (false) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                     return;
@@ -453,7 +453,7 @@ namespace McRave::Learning {
             if (c == '.')
                 break;
         }
-        McRave::easyWrite("New game on " + mapName);
+        Util::debug("New game on " + mapName);
 
         // File extension including our race initial;
         mapLearning         = false;

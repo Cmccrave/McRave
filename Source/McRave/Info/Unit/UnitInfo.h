@@ -95,6 +95,13 @@ namespace McRave {
         void checkProxy();
         void checkCompletion();
     public:
+        UnitInfo();
+
+        UnitInfo(BWAPI::Unit u) {
+            bwUnit = u;
+        }
+
+        void update();
 
         UnitData data;
 
@@ -102,16 +109,11 @@ namespace McRave {
         bool movedFlag = false;
         bool saveUnit = false;
         bool stunned = false;
-        int commandFrame = 0;
+        int commandFrame = -999;
         bool sharedCommand = false;
 
         bool isValid() { return unit() && unit()->exists(); }
         bool isAvailable() { return !unit()->isLockedDown() && !unit()->isMaelstrommed() && !unit()->isStasised() && unit()->isCompleted(); }
-        UnitInfo();
-
-        UnitInfo(BWAPI::Unit u) {
-            bwUnit = u;
-        }
 
         BWAPI::Position retreatPos = BWAPI::Positions::Invalid;
         BWAPI::Position marchPos = BWAPI::Positions::Invalid;
@@ -123,7 +125,11 @@ namespace McRave {
         bool hasSimTarget() { return !simTarget.expired(); }
         bool hasAttackedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 120); }
         bool hasRepairedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastRepairFrame < 120); }
-        bool targetsFriendly() { return type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || (type == BWAPI::UnitTypes::Zerg_Defiler && data.energy < 100); }
+        bool targetsFriendly() {
+            return (type == BWAPI::UnitTypes::Terran_Medic && data.energy > 0)
+                || type == BWAPI::UnitTypes::Terran_Science_Vessel
+                || (type == BWAPI::UnitTypes::Zerg_Defiler && data.energy < 100 && com(BWAPI::UnitTypes::Zerg_Zergling) > 0);
+        }
 
         bool isSuicidal() { return type == BWAPI::UnitTypes::Protoss_Scarab || type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || type == BWAPI::UnitTypes::Zerg_Scourge || type == BWAPI::UnitTypes::Zerg_Infested_Terran; }
         bool isSplasher() { return type == BWAPI::UnitTypes::Protoss_Reaver || type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || type == BWAPI::UnitTypes::Protoss_Archon || type == BWAPI::UnitTypes::Protoss_Corsair || type == BWAPI::UnitTypes::Terran_Valkyrie || type == BWAPI::UnitTypes::Zerg_Devourer; }
@@ -133,10 +139,9 @@ namespace McRave {
         bool isTransport() { return type == BWAPI::UnitTypes::Protoss_Shuttle || type == BWAPI::UnitTypes::Terran_Dropship || type == BWAPI::UnitTypes::Zerg_Overlord; }
         bool isSpellcaster() { return type == BWAPI::UnitTypes::Protoss_High_Templar || type == BWAPI::UnitTypes::Protoss_Dark_Archon || type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || type == BWAPI::UnitTypes::Zerg_Defiler; }
         bool isSiegeTank() { return type == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode || type == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode; }
-        bool isNearMapEdge() { return tilePosition.x < 2 || tilePosition.x > BWAPI::Broodwar->mapWidth() - 2 || tilePosition.y < 2 || tilePosition.y > BWAPI::Broodwar->mapHeight() - 2; }
         bool isCompleted() { return completed; }
         bool isStimmed() { return BWAPI::Broodwar->getFrameCount() - lastStimFrame < 300; }
-        bool isStuck() { return BWAPI::Broodwar->getFrameCount() - lastMoveFrame > 10; }
+        bool isStuck() { return BWAPI::Broodwar->getFrameCount() - lastMoveFrame > 48; }
         bool isInvincible() { return invincible; }
         bool wasStuckRecently() { return BWAPI::Broodwar->getFrameCount() - lastStuckFrame < 240; }
 
@@ -158,12 +163,15 @@ namespace McRave {
         // General commands that verify we aren't spamming the same command and sticking the unit
         void setCommand(BWAPI::UnitCommandType, BWAPI::Position);
         void setCommand(BWAPI::UnitCommandType, UnitInfo&);
+        void setCommand(BWAPI::UnitCommandType);
+        void setCommand(BWAPI::TechType, BWAPI::Position);
+        void setCommand(BWAPI::TechType, UnitInfo&);
+        void setCommand(BWAPI::TechType);
         BWAPI::Position getCommandPosition() { return commandPosition; }
         BWAPI::UnitCommandType getCommandType() { return commandType; }
 
         // Debug text
         std::string commandText;
-        void setDestinationText(std::string);
 
         // Information about frame timings
         int frameStartedWhen() {
@@ -192,9 +200,6 @@ namespace McRave {
         bool attemptingSurround();
         bool attemptingHarass();
         bool attemptingRegroup();
-
-        void update();
-        void verifyPaths();
 
         std::vector<std::weak_ptr<UnitInfo>>& getAssignedCargo() { return assignedCargo; }
         std::vector<std::weak_ptr<UnitInfo>>& getUnitsTargetingThis() { return unitsTargetingThis; }

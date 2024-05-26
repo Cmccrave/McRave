@@ -71,7 +71,7 @@ namespace McRave::Math {
         const auto surv = log(survivability(unit));
         const auto eff = airEffectiveness(unit);
         const auto range = log(unit.getAirRange() / 4.0 + 32.0);
-        return dps * range * surv /** eff*/;
+        return dps * range * surv * eff;
     }
 
     double visibleAirStrength(UnitInfo& unit)
@@ -195,46 +195,43 @@ namespace McRave::Math {
     {
         if (unit.getType() == Protoss_Archon || unit.getType() == Terran_Firebat || unit.getType() == Protoss_Reaver)
             return 1.25;
-        if (unit.getType() == Protoss_High_Templar)
-            return 2.00;
-        if (unit.isSiegeTank())
-            return 2.00;
-        if (unit.getType() == Terran_Valkyrie || unit.getType() == Zerg_Mutalisk)
-            return 1.50;
-        if (unit.getType() == Zerg_Lurker)
+        if (unit.isSiegeTank() || unit.getType() == Protoss_High_Templar || unit.getType() == Zerg_Lurker || unit.getType() == Terran_Valkyrie)
             return 2.00;
         return 1.00;
     }
 
     double grdEffectiveness(UnitInfo& unit)
     {
-        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
+        if (unit.getType().groundWeapon().damageType() != DamageTypes::Concussive && unit.getType().groundWeapon().damageType() != DamageTypes::Explosive)
+            return 1.0;
 
-        if (unit.getType().groundWeapon().damageType() == DamageTypes::Explosive || unit.getType().groundWeapon().damageType() == DamageTypes::Concussive)
-            return Units::getDamageRatioGrd(state, unit.getType().groundWeapon().damageType());
-        return 1.0;
+        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
+        auto ratio = Units::getDamageRatioGrd(state, unit.getType().groundWeapon().damageType());
+        return ratio;
     }
 
     double airEffectiveness(UnitInfo& unit)
     {
-        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
+        if (unit.getType().airWeapon().damageType() != DamageTypes::Concussive && unit.getType().airWeapon().damageType() != DamageTypes::Explosive)
+            return 1.0;
 
-        if (unit.getType().airWeapon().damageType() == DamageTypes::Explosive || unit.getType().airWeapon().damageType() == DamageTypes::Concussive)
-            return Units::getDamageRatioAir(state, unit.getType().airWeapon().damageType());
-        return 1.0;
+        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
+        auto ratio = Units::getDamageRatioAir(state, unit.getType().airWeapon().damageType());
+        return ratio;
     }
 
     double survivability(UnitInfo& unit)
     {
         const auto armor = [&]() {
+            auto baseArmor = unit.getType().armor();
             auto upgrades = unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade());
             auto miscUpgrades = (unit.getType() == Zerg_Ultralisk) * 2 * unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Chitinous_Plating);
-            return double(1 + upgrades + miscUpgrades);
+            return double(1 + baseArmor + upgrades + miscUpgrades);
         };
 
         const auto avgUnitSpeed = 4.34;
         auto speed = (unit.getSpeed() + avgUnitSpeed) / avgUnitSpeed;
-        if (unit.isSiegeTank() || unit.getType() == Zerg_Lurker)
+        if (unit.isSiegeTank() || unit.getType() == Zerg_Lurker || unit.getType().isBuilding())
             speed = 1.0;
 
         const auto health = (double(unit.getType().maxHitPoints() + (unit.getType().maxShields() / 4.0))) / 35.0;
@@ -338,10 +335,6 @@ namespace McRave::Math {
 
         auto dmgPerHit = double(unit.getType().airWeapon().damageAmount() + (unit.getType().airWeapon().damageBonus() * upLevel));
 
-        // TODO: This is an estimate of valks actual damage
-        if (unit.getType() == Terran_Valkyrie) {
-            dmgPerHit *= 0.36;
-        }
         // TODO: Check for bio damage upgrade
         if (unit.getType() == Terran_Bunker) {
             attackCount = 4;
@@ -349,7 +342,6 @@ namespace McRave::Math {
         }        
         if (unit.getType() == Protoss_High_Templar)
             return 112.0;
-
         return attackCount * (dmgPerHit - reduction);
     }
 
@@ -376,7 +368,8 @@ namespace McRave::Math {
             return 0.0;
 
         if (unit.isFlying()) {
-            if (Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0)
+            if (Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0)
                 return 352.0;
             if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0
                 || Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0
@@ -385,7 +378,6 @@ namespace McRave::Math {
                 || Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0)
                 return 320.0;
             if (Players::getTotalCount(PlayerState::Enemy, Terran_Ghost) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0
                 || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) > 0)
                 return 288.0;
             return 256.0;

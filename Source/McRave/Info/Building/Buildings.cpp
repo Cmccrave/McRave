@@ -69,8 +69,8 @@ namespace McRave::Buildings {
 
             // Cancelling refineries for our gas trick
             if (BuildOrder::isGasTrick() && building.getType().isRefinery() && !building.unit()->isCompleted() && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
-                building.unit()->cancelMorph();
                 BWEB::Map::removeUsed(building.getTilePosition(), 4, 2);
+                building.unit()->cancelMorph();
             }
 
             // Cancelling refineries we don't want
@@ -85,7 +85,7 @@ namespace McRave::Buildings {
             }
 
             // Cancelling hatcheries if we're being proxy 2gated
-            if (building.getType() == Zerg_Hatchery && isStation && Terrain::getMyNatural() && building.getTilePosition() == Terrain::getMyNatural()->getBase()->Location() && Util::getTime() < Time(4, 00) && Spy::getEnemyBuild() == "2Gate" && Spy::enemyProxy()) {
+            if (building.getType() == Zerg_Hatchery && !BuildOrder::takeNatural() && isStation && Terrain::getMyNatural() && building.getTilePosition() == Terrain::getMyNatural()->getBase()->Location() && Util::getTime() < Time(4, 00) && Spy::getEnemyBuild() == "2Gate" && Spy::enemyProxy()) {
                 Events::onUnitCancelBecauseBWAPISucks(building);
                 building.unit()->cancelConstruction();
             }

@@ -52,7 +52,10 @@ namespace McRave::Walls {
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 tight = false;
                 defenses ={ Zerg_Sunken_Colony };
-                buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber };
+                if (Players::ZvT())
+                    buildings ={ Zerg_Evolution_Chamber, Zerg_Spire };
+                else
+                    buildings ={ Zerg_Evolution_Chamber, Zerg_Hatchery };
             }
         }
 
@@ -62,17 +65,9 @@ namespace McRave::Walls {
 
             // Create a wall and reduce the building count on each iteration
             const auto genWall = [&](auto buildings, auto area, auto choke) {
-                while (!BWEB::Walls::getWall(choke)) {
-                    BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
-                    if (Broodwar->self()->getRace() != Races::Zerg || buildings.empty())
-                        break;
-
-                    if (Broodwar->self()->getRace() == Races::Zerg) {
-                        UnitType lastBuilding = *buildings.rbegin();
-                        buildings.pop_back();
-                        if (lastBuilding == Zerg_Hatchery)
-                            buildings.push_back(Zerg_Evolution_Chamber);
-                    }
+                BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
+                if (!BWEB::Walls::getWall(choke)) {
+                    Broodwar << "Failed to make a wall" << endl;
                 }
             };
 
@@ -180,7 +175,9 @@ namespace McRave::Walls {
             // FFE
             if (Spy::getEnemyBuild() == "FFE") {
                 if (BuildOrder::getCurrentTransition() == "6HatchHydra")
-                    return 2 * (Util::getTime() > Time(6, 45));
+                    return (Util::getTime() > Time(5, 00));
+
+                // Need to check all these, probably wrong now
                 if (Spy::getEnemyTransition() == "Carriers")
                     return 0;
                 if (Spy::getEnemyTransition() == "NeoBisu" && Util::getTime() < Time(6, 30))
@@ -208,7 +205,7 @@ namespace McRave::Walls {
                     + (Util::getTime() > Time(6, 15))
                     + (Util::getTime() > Time(6, 45))
                     + 2 * (Util::getTime() > Time(7, 15));
-                return 0;
+                return (Util::getTime() > Time(5, 00));
             }
 
             // Always make one that is a safety measure vs unknown builds
@@ -360,8 +357,14 @@ namespace McRave::Walls {
             }
 
             // Enemy walled, which delays any push they have
-            if (Spy::enemyWalled() && Util::getTime() < Time(4, 30))
-                return (Util::getTime() > Time(4, 00));
+            if (Spy::enemyWalled() && Util::getTime() < Time(5, 00))
+                return (Util::getTime() > Time(3, 30));
+
+            // Enemy not expanding, probably something scary coming
+            if (!Spy::enemyFastExpand() && !Spy::enemyRush())
+                return (Util::getTime() > Time(3, 45))
+                + (Util::getTime() > Time(4, 30))
+                + (Util::getTime() > Time(5, 00));
 
             return (Util::getTime() > Time(3, 45));
         }

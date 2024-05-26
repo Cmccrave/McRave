@@ -25,7 +25,7 @@ namespace McRave::BuildOrder::Protoss {
             buildQueue[Protoss_Nexus] =                         1 + (s >= 24);
             buildQueue[Protoss_Pylon] =                         (s >= 16) + (s >= 44);
             buildQueue[Protoss_Assimilator] =                   s >= 30;
-            buildQueue[Protoss_Gateway] =                       (s >= 28) + (s >= 34);
+            buildQueue[Protoss_Gateway] =                       (s >= 28);
             buildQueue[Protoss_Cybernetics_Core] =              vis(Protoss_Gateway) >= 2;
 
             // Upgrades
@@ -55,8 +55,7 @@ namespace McRave::BuildOrder::Protoss {
         void PvT_2B_20Nexus()
         {
             // "https://liquipedia.net/starcraft/2_Gate_Range_Expand"
-            scout =                                             vis(Protoss_Cybernetics_Core) > 0;
-            inBookSupply =                                      vis(Protoss_Pylon) < 3;
+            scout =                                             vis(Protoss_Cybernetics_Core) > 0;            
             gasLimit =                                          goonRange() && vis(Protoss_Pylon) < 3 ? 2 : INT_MAX;
             unitLimits[Protoss_Dragoon] =                       Util::getTime() > Time(4, 0) || vis(Protoss_Nexus) >= 2 || s >= 40 ? INT_MAX : 0;
             unitLimits[Protoss_Probe] =                         20;
@@ -75,25 +74,37 @@ namespace McRave::BuildOrder::Protoss {
         void PvT_2B_Obs()
         {
             inOpening =                                     s < 80;
-            focusUnit =                                     Protoss_Observer;
             inTransition =                                  total(Protoss_Nexus) >= 2;
+            focusUnit =                                     Protoss_Observer;
 
+            // Buildings
             buildQueue[Protoss_Assimilator] =               s >= 24;
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
             buildQueue[Protoss_Robotics_Facility] =         s >= 62;
+            buildQueue[Protoss_Observatory] =               com(Protoss_Robotics_Facility) > 0;
+
+            // Composition
+            armyComposition[Protoss_Dragoon] =              1.00;
+
+            armyComposition[Protoss_Observer] =             1.00;
+
         }
 
         void PvT_2B_Carrier()
         {
-            inOpening =                                     s < 160;
+            inOpening =                                     total(Protoss_Stargate) < 2;
             focusUnit =                                     Protoss_Carrier;
             inTransition =                                  total(Protoss_Stargate) > 0;
 
             // Buildings
             buildQueue[Protoss_Assimilator] =               (s >= 24) + (s >= 60);
             buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
-            buildQueue[Protoss_Stargate] =                  vis(Protoss_Dragoon) >= 6;
+            buildQueue[Protoss_Stargate] =                  (vis(Protoss_Dragoon) >= 6) + (vis(Protoss_Carrier) > 0);
             buildQueue[Protoss_Fleet_Beacon] =              atPercent(Protoss_Stargate, 1.00);
+
+            // Upgrades
+            upgradeQueue[Protoss_Air_Weapons] =             vis(Protoss_Stargate) > 0;
+            upgradeQueue[Carrier_Capacity] =                com(Protoss_Fleet_Beacon) > 0;
 
             // Composition
             armyComposition[Protoss_Zealot] =               0.10;
@@ -156,7 +167,7 @@ namespace McRave::BuildOrder::Protoss {
         if (transitionReady) {
             if (currentTransition == "Obs")
                 PvT_2B_Obs();
-            if (currentTransition == "Carrer")
+            if (currentTransition == "Carrier")
                 PvT_2B_Carrier();
             if (currentTransition == "ReaverCarrier")
                 PvT_2B_ReaverCarrier();

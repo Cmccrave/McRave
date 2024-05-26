@@ -5,7 +5,7 @@ namespace McRave::Util {
 
     const BWEM::ChokePoint * getClosestChokepoint(BWAPI::Position);
 
-    double getCastRadius(BWAPI::TechType);
+    int getCastRadius(BWAPI::TechType);
     double getCastLimit(BWAPI::TechType);
 
     int boxDistance(BWAPI::UnitType, BWAPI::Position, BWAPI::UnitType, BWAPI::Position);
@@ -30,6 +30,15 @@ namespace McRave::Util {
     void onFrame();
 
     double log10(int);
+
+    /// Log a thing
+    static void debug(std::string& stuff)
+    {
+        auto frameString = "[" + std::to_string(BWAPI::Broodwar->getFrameCount()) + "]:";
+        std::ofstream writeFile;
+        writeFile.open("bwapi-data/write/McRave_Debug_Log.txt", std::ios::app);
+        writeFile << Util::getTime().toString() << frameString << stuff << std::endl;
+    }
 
     template<typename F>
     UnitInfo* getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred) {

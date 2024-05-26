@@ -16,17 +16,18 @@ namespace McRave::Pathing {
                 return;
             }
 
-            // No need to calculate for units already in range
-            if (unit.isWithinRange(target) || unit.getRole() == Role::Defender) {
+            auto distance = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition());
+            auto range = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
+
+            // No need to calculate for units that don't move or are in range
+            if (unit.getRole() == Role::Defender || unit.getSpeed() <= 0.0 || distance <= range) {
                 unit.setEngagePosition(unit.getPosition());
                 unit.setEngDist(0.0);
                 return;
             }
 
             // Create an air distance calculation for engage position for flyers
-            auto range = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
-            if (unit.isFlying() || unit.hasTransport()) {
-                auto distance = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition());
+            if (unit.isFlying() || unit.hasTransport()) {                
                 auto direction = ((distance - range) / distance);
                 auto engageX = int((unit.getPosition().x - target.getPosition().x) * direction);
                 auto engageY = int((unit.getPosition().y - target.getPosition().y) * direction);

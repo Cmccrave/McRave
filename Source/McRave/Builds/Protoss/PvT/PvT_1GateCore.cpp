@@ -58,9 +58,9 @@ namespace McRave::BuildOrder::Protoss {
 
             // Composition
             if (com(Protoss_Templar_Archives) > 0 && total(Protoss_Dark_Templar) < 4)
-                armyComposition[Protoss_Dark_Templar] =         1.00;
+                armyComposition[Protoss_Dark_Templar] =     1.00;
             else
-                armyComposition[Protoss_Dragoon] =              1.00;
+                armyComposition[Protoss_Dragoon] =          1.00;
         }
 
         void PvT_1GC_4Gate()

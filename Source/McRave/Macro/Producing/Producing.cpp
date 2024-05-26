@@ -135,7 +135,7 @@ namespace McRave::Producing {
                 return com(Zerg_Ultralisk_Cavern) > 0;
             }
             return false;
-        }       
+        }
 
         bool isSuitable(UnitType unit)
         {
@@ -311,85 +311,81 @@ namespace McRave::Producing {
 
         void updateLarva()
         {
-            for (int i = 0; i < vis(Zerg_Larva); i++) {
+            // Find the best UnitType
+            auto best = 0.0;
+            auto bestType = None;
 
-                // Find the best UnitType
-                auto best = 0.0;
-                auto bestType = None;
+            // Rules for choosing a valid larva
+            auto validLarva = [&](UnitInfo &larva, double saturation, const BWEB::Station * station) {
+                if (!larva.unit()
+                    || larva.getType() != Zerg_Larva
+                    || larva.getRole() != Role::Production
+                    || (larva.isProxy() && bestType != Zerg_Hydralisk && BuildOrder::getCurrentTransition().find("Lurker") != string::npos)
+                    || (!larva.isProxy() && BuildOrder::isProxy() && bestType == Zerg_Hydralisk)
+                    || !larva.unit()->getHatchery()
+                    || !larva.unit()->isCompleted()
+                    || larva.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
+                    || lastProduceFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4
+                    || (Planning::overlapsPlan(larva, larva.getPosition()) && Util::getTime() > Time(4, 00)))
+                    return false;
 
-                // Choose an Overlord if we need one
-                if (BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord])
-                    bestType = Zerg_Overlord;
-                else {
-                    for (auto &type : Zerg_Larva.buildsWhat()) {
-                        if (!isCreateable(nullptr, type)
-                            || !isSuitable(type))
+                // Strategic checks
+                if (bestType == Zerg_Overlord && vis(Zerg_Larva) > 1 && !station->isNatural() && Players::ZvP() && Util::getTime() > Time(4, 00))
+                    return false;
+
+                auto closestStation = Stations::getClosestStationAir(larva.getPosition(), PlayerState::Self);
+                return station == closestStation;
+            };
+
+            // Find the best type to train right now
+            for (auto &type : Zerg_Larva.buildsWhat()) {
+                if (!isCreateable(nullptr, type)
+                    || !isSuitable(type))
+                    continue;
+
+                const auto value = scoreUnit(type);
+                if (value >= best) {
+                    best = value;
+                    bestType = type;
+                }
+            }
+
+            // Find a station that we should morph at based on the UnitType we want.
+            auto produced = false;
+            multimap<double, const BWEB::Station *> stations;
+            for (auto &[val, station] : Stations::getStationsBySaturation()) {
+                auto saturation = bestType.isWorker() ? val : 1.0 / val;
+                auto larvaCount = count_if(Units::getUnits(PlayerState::Self).begin(), Units::getUnits(PlayerState::Self).end(), [&](auto &u) {
+                    auto &unit = *u;
+                    return unit.getType() == Zerg_Larva && unit.unit()->getHatchery() && unit.unit()->getHatchery()->getTilePosition() == station->getBase()->Location();
+                });
+
+                // Try to just use the larvas immediately, queue first
+                if (larvaCount >= 3)
+                    saturation = 0.01;
+
+                // Try not to queue drones at high saturation
+                if (larvaCount < 2 && !BuildOrder::isOpener() && bestType.isWorker() && saturation >= 1.6)
+                    continue;
+
+                stations.emplace(saturation * larvaCount, station);
+
+                if (bestType.isWorker())
+                    Broodwar->drawTextMap(station->getBase()->Center(), "%.2f", saturation);
+            }
+
+            for (auto &[val, station] : stations) {
+                for (auto &u : Units::getUnits(PlayerState::Self)) {
+                    UnitInfo &larva = *u;
+                    if (!larvaTrickRequired(larva)) {
+                        if (validLarva(larva, val, station)) {
+                            produce(larva);
+                            produced = true;
+                        }
+                        else if (larvaTrickOptional(larva))
                             continue;
-
-                        const auto value = scoreUnit(type);
-                        if (value >= best) {
-                            best = value;
-                            bestType = type;
-                        }
-                    }
-                }
-
-                auto validLarva = [&](UnitInfo &larva, double saturation, const BWEB::Station * station) {
-                    if (!larva.unit()
-                        || larva.getType() != Zerg_Larva
-                        || larva.getRole() != Role::Production
-                        || (bestType == Zerg_Overlord && !station->isNatural() && Players::ZvP() && Util::getTime() > Time(4, 00))
-                        || ((bestType == Zerg_Overlord || bestType.isWorker()) && larva.isProxy())
-                        || (larva.isProxy() && bestType != Zerg_Hydralisk && BuildOrder::getCurrentTransition().find("Lurker") != string::npos)
-                        || (!larva.isProxy() && BuildOrder::isProxy() && bestType == Zerg_Hydralisk)
-                        || !larva.unit()->getHatchery()
-                        || !larva.unit()->isCompleted()
-                        || larva.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
-                        || lastProduceFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4
-                        || (Planning::overlapsPlan(larva, larva.getPosition()) && Util::getTime() > Time(4, 00)))
-                        return false;
-
-                    auto closestStation = Stations::getClosestStationAir(larva.getPosition(), PlayerState::Self);
-                    return station == closestStation;
-                };
-
-                // Find a station that we should morph at based on the UnitType we want.
-                auto produced = false;
-                multimap<double, const BWEB::Station *> stations;
-                for (auto &[val, station] : Stations::getStationsBySaturation()) {
-                    auto saturation = bestType.isWorker() ? val : 1.0 / val;
-                    auto larvaCount = count_if(Units::getUnits(PlayerState::Self).begin(), Units::getUnits(PlayerState::Self).end(), [&](auto &u) {
-                        auto &unit = *u;
-                        return unit.getType() == Zerg_Larva && unit.unit()->getHatchery() && unit.unit()->getHatchery()->getTilePosition() == station->getBase()->Location();
-                    });
-
-                    // Try to just use the larvas immediately, queue first
-                    if (larvaCount >= 3)
-                        saturation = 0.01;
-
-                    // Try not to queue drones at high saturation
-                    if (larvaCount < 2 && !BuildOrder::isOpener() && bestType.isWorker() && saturation >= 1.6)
-                        continue;
-
-                    stations.emplace(saturation * larvaCount, station);
-
-                    if (bestType.isWorker())
-                        Broodwar->drawTextMap(station->getBase()->Center(), "%.2f", saturation);
-                }
-
-                for (auto &[val, station] : stations) {
-                    for (auto &u : Units::getUnits(PlayerState::Self)) {
-                        UnitInfo &larva = *u;
-                        if (!larvaTrickRequired(larva)) {
-                            if (validLarva(larva, val, station)) {
-                                produce(larva);
-                                produced = true;
-                            }
-                            else if (larvaTrickOptional(larva))
-                                continue;
-                            if (produced)
-                                return;
-                        }
+                        if (produced)
+                            return;
                     }
                 }
             }
@@ -437,6 +433,10 @@ namespace McRave::Producing {
 
     double scoreUnit(UnitType type)
     {
+        // If we need an Overlord, it's highest priority
+        if (BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord])
+            return 10000.0;
+
         // Check if we are saving larva but not for this type
         if (BuildOrder::getUnitReservation(type) == 0 && (BuildOrder::getUnitReservation(Zerg_Mutalisk) > 0 || BuildOrder::getUnitReservation(Zerg_Hydralisk) > 0)) {
             auto larvaMinCost = (Zerg_Mutalisk.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Mutalisk))

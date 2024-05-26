@@ -8,8 +8,14 @@ namespace McRave::Stations
 
     void onFrame();
     void onStart();
+
+    void storeStation(BWAPI::Position, PlayerState);
+    void removeStation(BWAPI::Position, PlayerState);
+
     void storeStation(BWAPI::Unit);
+    void storeStation(BWAPI::Point<int> , PlayerState);
     void removeStation(BWAPI::Unit);
+
     int getColonyCount(const BWEB::Station * const);
     int needGroundDefenses(const BWEB::Station * const);
     int needAirDefenses(const BWEB::Station * const);
@@ -82,5 +88,5 @@ namespace McRave::Stations
         return getClosestStationGround(here, player, [](auto) {
             return true;
         });
-    }    
+    }
 };

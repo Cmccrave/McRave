@@ -19,7 +19,8 @@ namespace McRave::Command {
     bool siege(UnitInfo&);
     bool repair(UnitInfo&);
     bool burrow(UnitInfo&);
-    bool cast(UnitInfo&);
+    bool castSelf(UnitInfo&);
+    bool castTarget(UnitInfo&);
     bool morph(UnitInfo&);
     bool train(UnitInfo&);
     bool returnResource(UnitInfo&);

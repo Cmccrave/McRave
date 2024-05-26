@@ -27,6 +27,7 @@ namespace McRave
 
         std::map <BWAPI::Player, PlayerInfo>& getPlayers();
         PlayerInfo * getPlayerInfo(BWAPI::Player);
+        PlayerState getPlayerState(BWAPI::Unit);
 
         bool vP();
         bool vT();
