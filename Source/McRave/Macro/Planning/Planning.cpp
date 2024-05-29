@@ -10,7 +10,7 @@ namespace McRave::Planning {
         int plannedMineral, plannedGas;
         map<TilePosition, UnitType> buildingsPlanned;
         map<TilePosition, int> buildingTimer;
-        set<TilePosition> validDefenses, plannedGround, plannedAir;
+        set<TilePosition> plannedGround, plannedAir;
         bool expansionPlanned = false;
         const BWEB::Station * currentExpansion = nullptr;
         const BWEB::Station * nextExpansion = nullptr;
@@ -881,32 +881,6 @@ namespace McRave::Planning {
             //    }
             //}
         }
-
-        void validateDefenses()
-        {
-            validDefenses.clear();
-
-            const auto checkDefense = [&](TilePosition tile, TilePosition pathTile) {
-                if (tile == pathTile
-                    || tile + TilePosition(0, 1) == pathTile
-                    || tile + TilePosition(1, 0) == pathTile
-                    || tile + TilePosition(1, 1) == pathTile)
-                    validDefenses.erase(tile);
-                return;
-            };
-
-            // Create valid defenses based on needing to allow a path or not
-            for (auto &[_, wall] : BWEB::Walls::getWalls()) {
-                for (auto &defTile : wall.getDefenses())
-                    validDefenses.insert(defTile);
-            }
-            for (auto &station : BWEB::Stations::getStations()) {
-                for (auto &defTile : station.getDefenses()) {
-                    validDefenses.insert(defTile);
-                }
-                validDefenses.insert(station.getPocketDefense());
-            }
-        }
     }
 
     void onUnitDestroy(Unit unit)
@@ -928,7 +902,6 @@ namespace McRave::Planning {
         expansionPlanned = false;
 
         updateReachable();
-        validateDefenses();
         updateNextExpand();
         updatePlan();
     }
@@ -956,7 +929,7 @@ namespace McRave::Planning {
     bool overlapsPlan(UnitInfo& unit, Position here)
     {
         // If this is a defensive building and we don't have a plan for it here anymore
-        if (isDefensiveType(unit.getType()) && unit.getPlayer() == Broodwar->self() && validDefenses.find(unit.getTilePosition()) == validDefenses.end())
+        if (isDefensiveType(unit.getType()) && unit.getPlayer() == Broodwar->self())
             return true;
 
         // Check if there's a building queued there already

@@ -23,8 +23,9 @@ namespace McRave::Combat::Clusters {
             // Store previous commanders
             previousCommanders.clear();
             for (auto &cluster : clusters) {
-                if (!cluster.commander.expired())
+                if (!cluster.commander.expired()) {
                     previousCommanders.push_back(cluster.commander);
+                }
             }
             clusters.clear();
 
@@ -51,11 +52,11 @@ namespace McRave::Combat::Clusters {
             auto matching = [&](auto &parent, auto &child) {
                 auto matchedGoal = (parent.unit->getGoal() == child.unit->getGoal());
                 auto matchedType = (parent.unit->isFlying() == child.unit->isFlying());
-                auto matchedStrat = (parent.unit->getGlobalState() == child.unit->getGlobalState()) && (parent.unit->getLocalState() == child.unit->getLocalState());
+                auto matchedStrat = (parent.unit->getGlobalState() == child.unit->getGlobalState());
                 auto matchedDistance = child.position.getDistance(root.position) < 320.0
                     || child.position.getDistance(parent.position) < 96.0
                     || (parent.unit->isLightAir() && child.unit->isLightAir());
-                return matchedType && matchedStrat && matchedDistance && matchedGoal;
+                return matchedType /*&& matchedStrat*/ && matchedDistance && matchedGoal;
             };
 
             auto getNeighbors = [&](auto &parent, auto &queue) {
@@ -246,8 +247,6 @@ namespace McRave::Combat::Clusters {
                 auto avgPosition = Position(0, 0);
                 auto cnt = 0;
                 for (auto &unit : cluster.units) {
-                    if (unit->saveUnit)
-                        continue;
                     avgPosition += unit->getPosition();
                     cnt++;
                 }

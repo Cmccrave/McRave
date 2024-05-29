@@ -114,6 +114,9 @@ namespace McRave::Roles {
                 return u->getType().isWorker() &&
                     (u->isThreatening() || (proxyBuilding && u->getPosition().getDistance(proxyBuilding->getPosition()) < 160.0) || (proxyDangerousBuilding && u->getPosition().getDistance(proxyDangerousBuilding->getPosition()) < 160.0));
             });
+            auto proxyCombatUnit = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy, [&](auto &u) {
+                return !u->getType().isWorker() && !u->getType().isBuilding() && u->canAttackGround();
+            });
 
 
             static bool likelyProxy = likelyProxy || (proxyWorker && Util::getTime() < Time(2, 00));
@@ -154,30 +157,36 @@ namespace McRave::Roles {
 
             // ZvT
             if (Players::ZvT() && Util::getTime() < Time(6, 00)) {
+                auto workersPerMarine = Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) * 3;
 
-                // 8Rax proxy
-                if (Spy::getEnemyOpener() == "8Rax" && total(Zerg_Zergling) <= 6) {
-                    if (proxyBuilding && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
-                        forceCombatWorker(Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) * 3, Terrain::getNaturalPosition());
-                    else if (proxyBuilding)
-                        forceCombatWorker(3, proxyBuilding->getPosition());
-                }
+                // Choose the location we expect to be fighting at to get closest worker, descending priority
+                auto location = Position(Terrain::getNaturalChoke()->Center());
+                if (proxyCombatUnit)
+                    location = proxyCombatUnit->getPosition();
+                else if (proxyDangerousBuilding)
+                    location = proxyDangerousBuilding->getPosition();
+                else if (proxyWorker)
+                    location = proxyWorker->getPosition();
 
-                // BBS proxy
-                else if (Spy::getEnemyOpener() == "BBS" && total(Zerg_Zergling) <= 8) {
-                    if (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
-                        forceCombatWorker(Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) * 3, Terrain::getNaturalPosition());
-                    else if (proxyBuilding)
-                        forceCombatWorker(3, proxyBuilding->getPosition());
-                }
+                // Bunker being built, 3 drones per marine and 3 extra for the bunker
+                if (proxyDangerousBuilding && !proxyDangerousBuilding->isCompleted() && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8)
+                    forceCombatWorker(3 + workersPerMarine, location);
 
-                // Bunker
-                else if (proxyDangerousBuilding && !proxyDangerousBuilding->isCompleted() && com(Zerg_Zergling) <= 2)
-                    forceCombatWorker(3, proxyDangerousBuilding->getPosition());
+                // Proxy, 3 drones per marine
+                else if (Spy::enemyProxy() && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0 && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8)
+                    forceCombatWorker(workersPerMarine, location);
 
                 // All-in with marines
                 else if (Spy::getEnemyTransition() == "WorkerRush" && total(Zerg_Zergling) < 12 && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
-                    forceCombatWorker(4, Position(Terrain::getNaturalChoke()->Center()));
+                    forceCombatWorker(4, location);
+
+                // Likely proxy, worker arrived way too early
+                else if (likelyProxy && Util::getTime() < Time(3, 00))
+                    forceCombatWorker(1, location);
+
+                // We know it's likely a proxy, watch the natural for now
+                else if (Spy::enemyPossibleProxy() && Util::getTime() < Time(2, 00))
+                    forceCombatWorker(1, location);
             }
 
             // Misc

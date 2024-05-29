@@ -589,7 +589,7 @@ namespace McRave::Stations
                     return (Util::getTime() > Time(5, 30)) - airCount;
 
                 // Late game we want a spore protecting ovies from stray valks/wraiths
-                if (Stations::getStations(PlayerState::Self).size() >= 4 && (Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) >= 4 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) >= 8))
+                if (Stations::getStations(PlayerState::Self).size() >= 3 && (Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) >= 4 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) >= 8))
                     return 1 - airCount;
             }
         }

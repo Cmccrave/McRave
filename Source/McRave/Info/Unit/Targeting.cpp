@@ -85,8 +85,12 @@ namespace McRave::Targets {
                     return Priority::Trivial;
 
                 // Proxy worker
-                if (target.isProxy() && target.getType().isWorker() && target.unit()->exists())
-                    return Priority::Major;
+                if (target.isProxy() && target.getType().isWorker() && target.unit()->exists()) {
+                    if (target.unit()->isConstructing())
+                        return Priority::Critical;
+                    else
+                        return Priority::Major;
+                }
 
                 // Proxy priority
                 if (target.isProxy() && target.getType().isBuilding() && Spy::enemyProxy() && unit.getType() != Zerg_Mutalisk) {

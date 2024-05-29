@@ -52,9 +52,10 @@ namespace McRave::Combat::State {
                 }
                 if (Players::ZvT()) {
                     const auto defendSunkens = com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0 && !speedLing;
-                    const auto vultureThreat = Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy()
-                        && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0);
-                    if (defendSunkens || vultureThreat)
+                    const auto vulturesExist = Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0;
+                    const auto vultureThreat = Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy() && !Spy::enemyProxy()
+                        && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled());
+                    if (defendSunkens || vulturesExist || vultureThreat)
                         staticRetreatTypes.push_back(Zerg_Zergling);
                 }
                 if (Players::ZvZ()) {
@@ -64,9 +65,10 @@ namespace McRave::Combat::State {
                     const auto enemyLingVomit = (Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling") && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0;
                     const auto avoidDiceRoll = Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 15) && !Terrain::getEnemyStartingPosition().isValid();
                     const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(3, 15);
+                    const auto enemyTurtle = Spy::enemyTurtle();
 
                     if (BuildOrder::getCurrentTransition() == "1HatchMuta" && Util::getTime() < Time(7, 00)) {
-                        if (slowerPool || equalPool || enemyLingVomit || avoidDiceRoll || enemyDroneScouted)
+                        if (slowerPool || equalPool || enemyLingVomit || avoidDiceRoll || enemyDroneScouted || enemyTurtle)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
                     if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(4, 00)) {
@@ -262,12 +264,15 @@ namespace McRave::Combat::State {
             // Try to save scouts as they have high shield counts
             const auto scoutSavingRequired = unit.getType() == Protoss_Scout && !unit.isWithinRange(target) && unit.getHealth() + unit.getShields() <= 80;
 
-            if (mutaSavingRequired || scoutSavingRequired)
-                unit.saveUnit = true;
+            // TODO: turned this off for now as it was causing clusters to shift and suicide
+            //if (mutaSavingRequired || scoutSavingRequired)
+            //    unit.saveUnit = true;
             if (unit.saveUnit) {
                 if (unit.getType() == Zerg_Mutalisk && unit.getHealth() >= 100)
                     unit.saveUnit = false;
                 if (unit.getType() == Protoss_Scout && unit.getShields() >= 90)
+                    unit.saveUnit = false;
+                if (unit.getGoal().isValid())
                     unit.saveUnit = false;
             }
         }

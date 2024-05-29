@@ -78,7 +78,7 @@ namespace McRave::Combat {
             // When we want to defend our natural
             defendNatural = false;
             if (Terrain::getMyNatural() && Terrain::getNaturalChoke() && !Stations::isBlocked(Terrain::getMyNatural())) {
-                defendNatural = BuildOrder::takeNatural()
+                defendNatural = (BuildOrder::takeNatural() && !Players::ZvZ())
                     || (Broodwar->self()->getRace() != Races::Zerg && BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural()))
                     || Stations::getStations(PlayerState::Self).size() >= 2
                     || (!Players::PvZ() && Players::getSupply(PlayerState::Self, Races::Protoss) > 140)

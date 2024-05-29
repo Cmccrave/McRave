@@ -230,15 +230,15 @@ namespace McRave::Util {
 
         // Check if we need to nudge the position vertically
         if (availableUp < ovUp)
-            here.y += max(availableUp - ovUp, availableDown - ovDown);
+            here.y += max(availableUp - ovUp, availableDown - ovDown) + 1;
         if (availableDown < ovDown)
-            here.y -= max(availableUp - ovUp, availableDown - ovDown);
+            here.y -= max(availableUp - ovUp, availableDown - ovDown) - 1;
 
         // Check if we need to nudge the position horizontally
         if (availableLeft < ovLeft)
-            here.x += max(availableLeft - ovLeft, availableRight - ovRight);
+            here.x += max(availableLeft - ovLeft, availableRight - ovRight) + 1;
         if (availableRight < ovRight)
-            here.x -= max(availableLeft - ovLeft, availableRight - ovRight);
+            here.x -= max(availableLeft - ovLeft, availableRight - ovRight) - 1;
         return true;
     }
 

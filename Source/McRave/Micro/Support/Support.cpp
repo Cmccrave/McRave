@@ -127,6 +127,7 @@ namespace McRave::Support {
             // Set goal as destination
             if (unit.getGoal().isValid() && unit.getUnitsTargetingThis().empty() && unit.getUnitsInReachOfThis().empty()) {
                 unit.setDestination(unit.getGoal());
+                Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
             }
 
             // Send support units to army

@@ -14,6 +14,8 @@ namespace McRave::BuildOrder::Zerg {
     void defaultZvT() {
         inOpening =                                 true;
         inBookSupply =                              true;
+        wallNat =                                   false;
+        wallMain =                                  false;
         wantNatural =                               true;
         wantThird =                                 false;
         mineralThird =                              false;
@@ -35,9 +37,33 @@ namespace McRave::BuildOrder::Zerg {
 
         armyComposition[Zerg_Drone] =               0.60;
         armyComposition[Zerg_Zergling] =            0.40;
+    }
 
-        wallNat =                                   false;
-        wallMain =                                  false;
+    int inboundUnits_ZvT()
+    {
+        static map<UnitType, double> trackables ={ {Terran_Marine, 1.0}, {Terran_Medic, 2.0}, {Terran_Firebat, 1} };
+        auto inBoundUnit = [&](auto &u) {
+            if (!Terrain::getEnemyMain())
+                return true;
+            const auto visDiff = Broodwar->getFrameCount() - u->getLastVisibleFrame();
+
+            // Check if we know they weren't at home and are missing on the map for 35 seconds
+            if (!Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), u->getPosition()) && !Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), u->getPosition()))
+                return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 35);
+            return false;
+        };
+
+        // Economic estimate (have information on army, they aren't close):
+        // For each unit, assume it arrives with enough time for us to create defenders
+        auto arrivalValue = 0.0;
+        for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+            auto &unit = *u;
+
+            auto idx = trackables.find(unit.getType());
+            if (idx != trackables.end())
+                arrivalValue += (inBoundUnit(u) ? idx->second : idx->second / 2.0);
+        }
+        return int(arrivalValue);
     }
 
     int lingsNeeded_ZvT() {
@@ -67,19 +93,26 @@ namespace McRave::BuildOrder::Zerg {
         // RaxFact
         if (Spy::getEnemyBuild() == "RaxFact") {
             initialValue = 2;
-            if (Util::getTime() > Time(4, 15))
+            if (Util::getTime() > Time(4, 00))
                 initialValue = 6;
         }
 
         // TODO: Fix T spy
         if (Spy::getEnemyOpener() == "8Rax")
-            initialValue = 10;
+            initialValue = 10;        
+        if (Spy::getEnemyTransition() == "WorkerRush")
+            initialValue = 24;
 
         if (total(Zerg_Zergling) < initialValue)
             return initialValue;
 
-        if (Spy::getEnemyTransition() == "WorkerRush")
-            return 24;
+        // If this is a 2Hatch build, we prefer sunkens over lings, don't make any after initial
+        if (currentTransition.find("2Hatch") != string::npos)
+            return 0;
+
+        auto inbound = inboundUnits_ZvT();
+        if (vis(Zerg_Zergling) < inbound && vis(Zerg_Zergling) < 36)
+            return inbound;
         return 0;
     }
 
@@ -90,7 +123,7 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                                  total(Zerg_Mutalisk) < 6;
 
         focusUnit =                                     Zerg_Mutalisk;
-        unitLimits[Zerg_Drone] =                        (com(Zerg_Spawning_Pool) > 0 ? 28 : 15 - hatchCount());
+        unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 28 : unitLimits[Zerg_Drone];
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
         reserveLarva =                                  6;
 
@@ -125,7 +158,7 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                                  vis(Zerg_Overlord) < 4;
 
         focusUnit =                                     Zerg_Mutalisk;
-        unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : 15 - hatchCount();
+        unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : unitLimits[Zerg_Drone];
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
         wantThird =                                     !Spy::enemyPressure() && !Spy::enemyRush() && Spy::getEnemyOpener() != "8Rax" && Spy::getEnemyBuild() != "RaxFact";
         planEarly =                                     hatchCount() < 3 && s >= 26;

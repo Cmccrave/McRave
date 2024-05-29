@@ -43,7 +43,6 @@ namespace BWEB {
             // Create Wall layout and find basic features
             initialize();
             addPieces();
-            valid               = (getSmallTiles().size() + getMediumTiles().size() + getLargeTiles().size()) == getRawBuildings().size();
             addDefenses();
             cleanup();
         }

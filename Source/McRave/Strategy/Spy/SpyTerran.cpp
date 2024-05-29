@@ -113,6 +113,7 @@ namespace McRave::Spy::Terran {
             // 8Rax opener
             if (theSpy.build.name != "2Rax") {
                 if (arrivesBy(1, Terran_Marine, Time(3, 00))
+                    || arrivesBy(2, Terran_Marine, Time(3, 20))
                     || completesBy(1, Terran_Barracks, Time(2, 00))
                     || completesBy(1, Terran_Marine, Time(2, 15)))
                     theSpy.opener.name = "8Rax";

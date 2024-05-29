@@ -31,7 +31,7 @@ namespace BWEB {
         if (type.tileWidth() == 3)
             debugColor = Colors::Grey;
         if (type.tileWidth() == 4)
-            debugColor == Colors::Black;
+            debugColor = Colors::Black;
 
         // Defense types place every possible tile
         if (type.tileWidth() == 2 && type.tileHeight() == 2 && type != Protoss_Pylon && type != Zerg_Spire) {
@@ -40,8 +40,8 @@ namespace BWEB {
                 auto stationDefense = type.tileHeight() == 2 && type.tileHeight() == 2 && station->getDefenses().find(tile) != station->getDefenses().end();
                 if ((!Map::isReserved(tile, 2, 2) && BWEB::Map::isPlaceable(type, tile)) || stationDefense) {
                     insertList.insert(tile);
-                    Map::addReserve(tile, type.tileWidth(), type.tileHeight());
                     Map::addUsed(tile, type);
+                    return true;
                 }
             }
         }
@@ -52,7 +52,6 @@ namespace BWEB {
                 auto tile = station->getBase()->Location() + placement;
                 if (BWEB::Map::isPlaceable(type, tile)) {
                     openings.insert(tile);
-                    Map::addReserve(tile, type.tileWidth(), type.tileHeight());
                     Map::addUsed(tile, type);
                     return true;
                 }
@@ -66,7 +65,6 @@ namespace BWEB {
                 testTiles[tile] = debugColor;
                 if (BWEB::Map::isPlaceable(type, tile)) {
                     insertList.insert(tile);
-                    Map::addReserve(tile, type.tileWidth(), type.tileHeight());
                     Map::addUsed(tile, type);
                     return true;
                 }
@@ -87,7 +85,6 @@ namespace BWEB {
 
             if (BWEB::Map::isPlaceable(type, tileBest)) {
                 insertList.insert(tileBest);
-                Map::addReserve(tileBest, type.tileWidth(), type.tileHeight());
                 Map::addUsed(tileBest, type);
                 return true;
             }
@@ -97,12 +94,6 @@ namespace BWEB {
 
     void Wall::addPieces()
     {
-        // If not adding any buildings to the wall
-        if (rawBuildings.empty()) {
-            Broodwar << "Cant generate a wall without buildings" << endl;
-            return;
-        }
-
         // For each piece, try to place it a known distance away depending on how the angles of chokes look     
         auto closestMain = Stations::getClosestMainStation(station->getBase()->Location());
         auto mainChokeCenter = Position(closestMain->getChokepoint()->Center());
@@ -117,104 +108,132 @@ namespace BWEB {
                 tile = tile + diff;
         };
 
-        // 0/8 - Horizontal
-        if (defenseArrangement == 0) {
-            lrgOrder        ={ {-4, -6}, {-3, -6}, {-2, -6}, {-1, -6}, {0, -6}, {1, -6}, {2, -6}, {3, -6}, {4, -6} };
-            medOrder        ={ {-4, -5}, {-3, -5}, {-2, -5}, {-1, -5}, {0, -5}, {1, -5}, {2, -5}, {3, -5}, {4, -5} };
-            smlOrder        ={ {-2, -5}, {-1, -5}, { 0, -5}, { 1, -5}, {2, -5}, {3, -5}, {4, -5}, {5, -5} };
-            flipOrder       = mainChokeCenter.x > base->Center().x;
-            flipVertical    = base->Center().y < Position(choke->Center()).y;
+        // Iteration attempts move buildings closer
+        auto itr = 0;
+        while ((getSmallTiles().size() + getMediumTiles().size() + getLargeTiles().size()) != getRawBuildings().size()) {
+            cleanup();
+            smallTiles.clear();
+            mediumTiles.clear();
+            largeTiles.clear();
 
-            // Shift positions based on chokepoint offset
-            auto diffX = TilePosition(choke->Center()).x - base->Location().x - 2;
-            adjustOrder(lrgOrder, TilePosition(diffX, 0));
-            adjustOrder(medOrder, TilePosition(diffX, 0));
-            adjustOrder(smlOrder, TilePosition(diffX, 0));
-        }
+            // 0/8 - Horizontal
+            if (defenseArrangement == 0) {
+                lrgOrder        ={ {-4, -6}, {-3, -6}, {-2, -6}, {-1, -6}, {0, -6}, {1, -6}, {2, -6}, {3, -6}, {4, -6} };
+                medOrder        ={ {-4, -5}, {-3, -5}, {-2, -5}, {-1, -5}, {0, -5}, {1, -5}, {2, -5}, {3, -5}, {4, -5} };
+                smlOrder        ={ {-2, -5}, {-1, -5}, { 0, -5}, { 1, -5}, {2, -5}, {3, -5}, {4, -5}, {5, -5} };
+                flipOrder       = mainChokeCenter.x > base->Center().x;
+                flipVertical    = base->Center().y < Position(choke->Center()).y;
 
-        // pi/4 - Angled
-        else if (defenseArrangement == 1 || defenseArrangement == 3) {
-            lrgOrder        ={ {-1, -8}, {-3, -6}, {-5, -4}, {-7, -2}, {-9,  0} };
-            medOrder        ={ { 2, -9}, { 0, -7}, {-2, -5}, {-4, -3}, {-6, -1}, {-8, 1} };
+                // Shift positions based on chokepoint offset and iteration
+                auto diffX = TilePosition(choke->Center()).x - base->Location().x - 2;
+                adjustOrder(lrgOrder, TilePosition(diffX, itr));
+                adjustOrder(medOrder, TilePosition(diffX, itr));
+                adjustOrder(smlOrder, TilePosition(diffX, itr));
+            }
 
-            // TODO: these flips don't really work as intended
-            flipOrder       = (mainChokeCenter.x < base->Center().x && mainChokeCenter.y > base->Center().y) || (mainChokeCenter.x > base->Center().x && mainChokeCenter.y < base->Center().y);
-            flipVertical    = base->Center().y < Position(choke->Center()).y;
-            flipHorizontal  = base->Center().x < Position(choke->Center()).x;
-        }
+            // pi/4 - Angled
+            else if (defenseArrangement == 1 || defenseArrangement == 3) {
+                lrgOrder        ={ {-1, -8}, {-3, -6}, {-5, -4}, {-7, -2}, {-9,  0} };
+                medOrder        ={ { 2, -9}, { 0, -7}, {-2, -5}, {-4, -3}, {-6, -1}, {-8, 1} };
+                smlOrder        ={ { 1, -7}, {-1, -5}, {-3, -3}, {-5, -1} };
 
-        // pi/2 - Vertical
-        else if (defenseArrangement == 2) {
-            lrgOrder        ={ {-7, -4}, {-7, -3}, {-7, -2}, {-7, -1}, {-7,  0}, {-7,  1}, {-7,  2}, {-7,  3}, {-7,  4} };
-            medOrder        ={ {-6, -3}, {-6, -2}, {-6, -1}, {-6,  0}, {-6,  1}, {-6,  2}, {-6,  3}, {-6,  4} };
-            smlOrder        ={ {-5, -1}, {-5,  0}, {-5,  1}, {-5,  2} };
-            flipOrder       = mainChokeCenter.y > base->Center().y;
-            flipHorizontal  = base->Center().x < Position(choke->Center()).x;
+                // TODO: these flips don't really work as intended
+                flipOrder       = (mainChokeCenter.x < base->Center().x && mainChokeCenter.y > base->Center().y) || (mainChokeCenter.x > base->Center().x && mainChokeCenter.y < base->Center().y);
+                flipVertical    = base->Center().y < Position(choke->Center()).y;
+                flipHorizontal  = base->Center().x < Position(choke->Center()).x;
 
-            // Shift positions based on chokepoint offset
-            auto diffY = TilePosition(choke->Center()).y - base->Location().y - 1;
-            adjustOrder(lrgOrder, TilePosition(0, diffY));
-            adjustOrder(medOrder, TilePosition(0, diffY));
-            adjustOrder(smlOrder, TilePosition(0, diffY));
-        }
+                // Shift positions based on iteration
+                adjustOrder(lrgOrder, TilePosition(itr, itr));
+                adjustOrder(medOrder, TilePosition(itr, itr));
+                adjustOrder(smlOrder, TilePosition(itr, itr));
+            }
 
-        // Flip them vertically / horizontally as needed
-        const auto flipPositions = [&](auto& tryOrder, auto type) {
-            if (flipVertical) {
-                for (auto &placement : tryOrder) {
-                    auto diff = 3 - type.tileHeight();
-                    placement.y = -(placement.y - diff);
+            // pi/2 - Vertical
+            else if (defenseArrangement == 2) {
+                lrgOrder        ={ {-7, -4}, {-7, -3}, {-7, -2}, {-7, -1}, {-7,  0}, {-7,  1}, {-7,  2}, {-7,  3}, {-7,  4} };
+                medOrder        ={ {-6, -3}, {-6, -2}, {-6, -1}, {-6,  0}, {-6,  1}, {-6,  2}, {-6,  3}, {-6,  4} };
+                smlOrder        ={ {-5, -1}, {-5,  0}, {-5,  1}, {-5,  2} };
+                flipOrder       = mainChokeCenter.y > base->Center().y;
+                flipHorizontal  = base->Center().x < Position(choke->Center()).x;
+
+                // Shift positions based on chokepoint offset and iteration
+                auto diffY = TilePosition(choke->Center()).y - base->Location().y - 1;
+                adjustOrder(lrgOrder, TilePosition(itr, diffY));
+                adjustOrder(medOrder, TilePosition(itr, diffY));
+                adjustOrder(smlOrder, TilePosition(itr, diffY));
+            }
+
+            // Flip them vertically / horizontally as needed
+            const auto flipPositions = [&](auto& tryOrder, auto type) {
+                if (flipVertical) {
+                    for (auto &placement : tryOrder) {
+                        auto diff = 3 - type.tileHeight();
+                        placement.y = -(placement.y - diff);
+                    }
+                }
+                if (flipHorizontal) {
+                    for (auto &placement : tryOrder) {
+                        auto diff = 4 - type.tileWidth();
+                        placement.x = -(placement.x - diff);
+                    }
+                }
+                if (flipOrder)
+                    std::reverse(tryOrder.begin(), tryOrder.end());
+            };
+
+            // Reverse order if these are "blocking" pieces to lengthen time to enter main
+            opnOrder = smlOrder;
+            std::reverse(opnOrder.begin(), opnOrder.end());
+
+            // Check if positions need to be flipped vertically or horizontally
+            flipPositions(smlOrder, Protoss_Pylon);
+            flipPositions(medOrder, Protoss_Forge);
+            flipPositions(lrgOrder, Protoss_Gateway);
+            flipPositions(opnOrder, Protoss_Dragoon);
+
+            // Zerg
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                for (auto &building : rawBuildings) {
+                    if (building.tileWidth() == 4)
+                        tryLocations(lrgOrder, largeTiles, Zerg_Hatchery);
+                    if (building.tileWidth() == 3)
+                        tryLocations(medOrder, mediumTiles, Zerg_Evolution_Chamber);
+                    if (building.tileWidth() == 2)
+                        tryLocations(smlOrder, smallTiles, Zerg_Spire);
                 }
             }
-            if (flipHorizontal) {
-                for (auto &placement : tryOrder) {
-                    auto diff = 4 - type.tileWidth();
-                    placement.x = -(placement.x - diff);
-                }
+
+            // Protoss
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+                std::reverse(lrgOrder.begin(), lrgOrder.end());
+                tryLocations(medOrder, mediumTiles, Protoss_Forge);
+                tryLocations(lrgOrder, largeTiles, Protoss_Gateway);
+                tryLocations(opnOrder, smallTiles, Protoss_Dragoon); // Make sure we always have an opening before placing a Pylon
+                tryLocations(smlOrder, smallTiles, Protoss_Pylon);
             }
-            if (flipOrder)
-                std::reverse(tryOrder.begin(), tryOrder.end());
-        };
 
-        // Reverse order if these are "blocking" pieces to lengthen time to enter main
-        opnOrder = smlOrder;
-        std::reverse(opnOrder.begin(), opnOrder.end());
-
-        // Check if positions need to be flipped vertically or horizontally
-        flipPositions(smlOrder, Protoss_Pylon);
-        flipPositions(medOrder, Protoss_Forge);
-        flipPositions(lrgOrder, Protoss_Gateway);
-        flipPositions(opnOrder, Protoss_Dragoon);
-
-        // Zerg
-        if (Broodwar->self()->getRace() == Races::Zerg) {
-            for (auto &building : rawBuildings) {
-                if (building.tileWidth() == 4)
-                    tryLocations(lrgOrder, largeTiles, Zerg_Hatchery);
-                if (building.tileWidth() == 3)
-                    tryLocations(medOrder, mediumTiles, Zerg_Evolution_Chamber);
-                if (building.tileWidth() == 2)
-                    tryLocations(smlOrder, smallTiles, Zerg_Spire);
+            // Terran
+            if (Broodwar->self()->getRace() == Races::Terran) {
+                tryLocations(lrgOrder, largeTiles, Terran_Barracks);
+                tryLocations(medOrder, mediumTiles, Terran_Bunker);
             }
-        }
-
-        // Protoss
-        if (Broodwar->self()->getRace() == Races::Protoss) {
-            std::reverse(lrgOrder.begin(), lrgOrder.end());
-            tryLocations(medOrder, mediumTiles, Protoss_Forge);
-            tryLocations(lrgOrder, largeTiles, Protoss_Gateway);
-            tryLocations(opnOrder, smallTiles, Protoss_Dragoon); // Make sure we always have an opening before placing a Pylon
-            tryLocations(smlOrder, smallTiles, Protoss_Pylon);
-        }
-
-        // Terran
-        if (Broodwar->self()->getRace() == Races::Terran) {
-            tryLocations(lrgOrder, largeTiles, Terran_Barracks);
-            tryLocations(medOrder, mediumTiles, Terran_Bunker);
+            itr++;
+            if (itr >= 3)
+                break;
         }
 
         // Find remaining openings
         while (tryLocations(opnOrder, smallTiles, Protoss_Dragoon)) {}
+
+        // Found a wall, add reserve tiles
+        for (auto &tile : smallTiles)
+            Map::addReserve(tile, 2, 2);
+        for (auto &tile : mediumTiles)
+            Map::addReserve(tile, 3, 2);
+        for (auto &tile : largeTiles)
+            Map::addReserve(tile, 4, 3);
+        for (auto &tile : openings)
+            Map::addReserve(tile, 1, 1);
     }
 
     void Wall::addDefenses()
@@ -294,16 +313,16 @@ namespace BWEB {
     {
         // Remove used from tiles
         for (auto &tile : smallTiles)
-            Map::removeUsed(tile, 2, 2);
+            Map::removeUsed(tile, 2, 2);        
         for (auto &tile : mediumTiles)
-            Map::removeUsed(tile, 3, 2);
+            Map::removeUsed(tile, 3, 2);        
         for (auto &tile : largeTiles)
-            Map::removeUsed(tile, 4, 3);
+            Map::removeUsed(tile, 4, 3);        
         for (auto &tile : openings)
             Map::removeUsed(tile, 1, 1);
         for (auto &[_, tiles] : defenses) {
             for (auto &tile : tiles)
-                Map::removeUsed(tile, 2, 2);
+                Map::removeUsed(tile, 2, 2);            
         }
     }
 

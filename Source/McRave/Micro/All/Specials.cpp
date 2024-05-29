@@ -277,13 +277,15 @@ namespace McRave::Command
             if (dmg >= unit.getHealth())
                 threatened = true;
 
+            auto burrowUnit = (!unit.getBuildPosition().isValid() || !unit.isWithinBuildRange()) && threatened;
+
             // Burrow/unburrow as needed
-            if (!unit.isBurrowed() && threatened) {
+            if (!unit.isBurrowed() && burrowUnit) {
                 unit.setCommand(Burrow, unit.getPosition());
                 unit.commandText = "Burrowing";
                 return true;
             }
-            else if (unit.isBurrowed() && !threatened) {
+            else if (unit.isBurrowed() && !burrowUnit) {
                 unit.setCommand(Unburrow, unit.getPosition());
                 unit.commandText = "Unburrowing";
                 return true;

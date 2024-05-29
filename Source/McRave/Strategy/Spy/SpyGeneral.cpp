@@ -146,7 +146,7 @@ namespace McRave::Spy::General {
             theSpy.invis.possible = (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) >= 1 || (Players::getTotalCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) >= 1 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0) || Players::getTotalCount(PlayerState::Enemy, Protoss_Templar_Archives) >= 1)
                 || (Players::getTotalCount(PlayerState::Enemy, Terran_Ghost) >= 1 || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 4)
                 || (Players::getTotalCount(PlayerState::Enemy, Zerg_Lurker) >= 1 || (Players::getTotalCount(PlayerState::Enemy, Zerg_Lair) >= 1 && Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) >= 1))
-                || (Spy::getEnemyTransition() == "1HatchLurker" || Spy::getEnemyTransition() == "2HatchLurker" || Spy::getEnemyTransition() == "DT");
+                || (Spy::getEnemyTransition() == "1HatchLurker" || Spy::getEnemyTransition() == "2HatchLurker" || Spy::getEnemyTransition() == "DT"  || Spy::getEnemyTransition() == "2PortWraith");
 
             // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss) {

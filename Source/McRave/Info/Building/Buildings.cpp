@@ -29,23 +29,6 @@ namespace McRave::Buildings {
             if (building.getType().requiresPsi() && !Pylons::hasPowerSoon(building.getTilePosition(), building.getType()))
                 unpoweredPositions.insert(building.getTilePosition());
 
-            // If this is a defensive building and is no longer planned here, mark it for suicide
-            if (building.getRole() == Role::Defender && Planning::overlapsPlan(building, building.getPosition())) {
-
-                for (auto &[_, wall] : BWEB::Walls::getWalls()) {
-                    for (auto &defTile : wall.getDefenses()) {
-                        if (defTile == building.getTilePosition())
-                            building.setMarkForDeath(true);
-                    }
-                }
-                for (auto &station : BWEB::Stations::getStations()) {
-                    for (auto &defTile : station.getDefenses()) {
-                        if (defTile == building.getTilePosition())
-                            building.setMarkForDeath(true);
-                    }
-                }
-            }
-
             if (Util::getTime() > Time(6, 00)) {
                 auto range = int(max({ building.getGroundRange(), building.getAirRange(), double(building.getType().sightRange()) }));
                 Zones::addZone(building.getPosition(), ZoneType::Defend, 1, range);

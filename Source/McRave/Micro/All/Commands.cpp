@@ -165,19 +165,14 @@ namespace McRave::Command {
             return false;
         auto &target = *unit.getTarget().lock();
 
-        const auto canAttack = [&]() {
-            if (!target.unit()->exists()
-                || target.isHidden())
-                return false;
-            return unit.canStartAttack() || unit.getRole() == Role::Defender;
-        };
+        if (!target.unit()->exists()
+            || target.isHidden()
+            || !unit.canStartAttack())
+            return false;
 
         const auto shouldAttack = [&]() {
-
-            // Combat will attack when in range
+            // Combat will attack when in range unless surrounding
             if (unit.getRole() == Role::Combat) {
-                //if (unit.getType() == Zerg_Mutalisk && unit.isWithinRange(target) && unit.canStartAttack() && !unit.isWithinAngle(target))
-                //    return false;
                 if (unit.attemptingSurround())
                     return false;
                 return unit.isWithinRange(target) && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack);
@@ -198,12 +193,11 @@ namespace McRave::Command {
             // Defenders will attack when in range
             if (unit.getRole() == Role::Defender)
                 return unit.isWithinRange(target);
-
             return false;
         };
 
         // If unit can move and should attack
-        if (canAttack() && shouldAttack()) {
+        if (shouldAttack()) {
             unit.setCommand(Attack_Unit, target);
             unit.commandText = "AttackTarget";
             return true;
@@ -217,53 +211,31 @@ namespace McRave::Command {
             return false;
         auto &target = *unit.getTarget().lock();
 
-        const auto canApproach = [&]() {
-            if (unit.getSpeed() <= 0.0
-                || unit.canStartAttack())
-                return false;
-            return true;
-        };
-
         const auto shouldApproach = [&]() {
+            // Don't approach if
+            if (unit.getSpeed() <= 0.0
+                || unit.canStartAttack()
+                || unit.isCapitalShip()
+                || target.isSuicidal()
+                || unit.isSpellcaster()
+                || unit.getLocalState() == LocalState::Retreat
+                || (unit.getType() == Zerg_Lurker && !unit.isBurrowed())
+                || (!unit.isTargetedBySplash() && !unit.isTargetedBySuicide() && (target.isSplasher() || target.isSuicidal()))
+                || (unit.getGroundRange() <= 32.0 && unit.getAirRange() <= 32.0 && !unit.isHovering())
+                || (unit.isFlying() && unit.getPosition().getDistance(target.getPosition()) < 32.0))
+                return false;
 
-            if (unit.getRole() == Role::Combat) {
-
-                auto interceptDistance = unit.getInterceptPosition().getDistance(unit.getPosition());
-
-                if (unit.isCapitalShip()
-                    || target.isSuicidal()
-                    || unit.isSpellcaster()
-                    || unit.getLocalState() == LocalState::Retreat
-                    || (unit.getGroundRange() <= 32.0 && !unit.getType().isWorker())
-                    || (unit.getType() == Zerg_Lurker && !unit.isBurrowed())
-                    || (unit.isFlying() && unit.getPosition().getDistance(target.getPosition()) < 32.0))
-                    return false;
-
-                if (unit.isTargetedBySuicide())
-                    return true;
-
-                // Approach units that are moving away from us
-                if ((!unit.isLightAir() || target.isFlying()) && unit.getInterceptPosition().isValid() && interceptDistance > unit.getPosition().getDistance(target.getPosition()))
-                    return true;
-
-                // If crushing victory, push forward
-                if (!unit.isLightAir() && unit.getSimValue() >= 25.0 && target.getGroundRange() > 32.0)
-                    return true;
-
-                if (!unit.isTargetedBySplash() && !unit.isTargetedBySuicide() && (target.isSplasher() || target.isSuicidal()))
-                    return false;
-            }
-
-            // If this units range is lower and target isn't a building
             auto unitRange = (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
             auto enemyRange = (unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange());
-            if (!unit.isLightAir() && unitRange < enemyRange && !target.getType().isBuilding())
-                return true;
-            return false;
+            auto interceptDistance = unit.getInterceptPosition().getDistance(unit.getPosition());
+            auto canApproach = (unit.isTargetedBySuicide())
+                || (unit.getInterceptPosition().isValid() && interceptDistance > unit.getPosition().getDistance(target.getPosition()))  // Approach units that are moving away from us
+                || (!unit.isLightAir() && unit.getSimValue() >= 5.0 && target.getGroundRange() > 32.0)                                  // If crushing victory, push forward
+                || (!unit.isLightAir() && unitRange < enemyRange && !target.getType().isBuilding());                                    // If this units range is lower and target isn't a building
         };
 
         // If unit can move and should approach
-        if (canApproach() && shouldApproach()) {
+        if (shouldApproach()) {
             if (!unit.isSuicidal() && !unit.getType().isWorker() && target.getSpeed() < unit.getSpeed()) {
                 unit.setCommand(Right_Click_Position, target.getPosition());
                 unit.commandText = "Approach";
@@ -293,9 +265,9 @@ namespace McRave::Command {
             if (unit.getRole() == Role::Worker && !atHome)
                 score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w) * threat(unit, w));
             else if ((unit.isLightAir() && regrouping && sim.isValid()) || unit.attemptingRunby())
-                score = mobility(unit, w) * avoidance(unit, p, sim) * grouping(unit, w) / (distance(unit, w));
+                score = mobility(unit, w) * avoidance(unit, p, sim) / (distance(unit, w));
             else if (harassing)
-                score = mobility(unit, w) * avoidance(unit, p, sim) * grouping(unit, w) / (distance(unit, w) * threat(unit, w, current));
+                score = mobility(unit, w) * avoidance(unit, p, sim) / (distance(unit, w) * threat(unit, w, current));
             else
                 score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w));
             return score;
@@ -332,15 +304,14 @@ namespace McRave::Command {
 
             // Combats should move if we're not retreating
             if (unit.getRole() == Role::Combat) {
-                if (unit.hasTarget()) {
-                    auto &target = *unit.getTarget().lock();
-                    auto attackInstead = !unit.targetsFriendly() && target.unit()->exists() && unit.isWithinRange(target);
+                //if (unit.hasTarget()) {
+                //    auto &target = *unit.getTarget().lock();
+                //    auto attackInstead = !unit.targetsFriendly() && target.unit()->exists() && unit.isWithinRange(target);
 
-                    if (attackInstead && !unit.attemptingSurround() && !unit.isLightAir() && !unit.isSuicidal())
-                        return false;
-                }
-
-                return unit.getLocalState() != LocalState::Retreat;
+                //    if (attackInstead && !unit.attemptingSurround() && !unit.isLightAir() && !unit.isSuicidal())
+                //        return false;
+                //}
+                return unit.getLocalState() != LocalState::Retreat && unit.getLocalState() != LocalState::ForcedRetreat;
             }
 
             // Workers should move if they need to get to a new gather or construction job
@@ -368,8 +339,18 @@ namespace McRave::Command {
         // If unit can move and should move
         if (canMove() && shouldMove()) {
 
+            // Testing
+            if (unit.getType() == Zerg_Zergling && unit.hasTarget() && unit.isWithinReach(*unit.getTarget().lock())) {
+                auto target = *unit.getTarget().lock();
+                auto dist = unit.getPosition().getDistance(target.getPosition());
+                auto pTest = Util::shiftTowards(unit.getPosition(), target.getPosition(), dist + 16.0);
+                unit.setCommand(Right_Click_Position, pTest);
+                unit.commandText = "Move_T";
+                return true;
+            }
+
             // Necessary for mutas to not overshoot
-            if (unit.getRole() == Role::Combat && unit.hasTarget() && !unit.attemptingRunby() && !unit.attemptingSurround() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(*unit.getTarget().lock()) && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack)) {
+            if (unit.getRole() == Role::Combat && unit.hasTarget() && !unit.attemptingRegroup() && !unit.attemptingRunby() && !unit.attemptingSurround() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(*unit.getTarget().lock()) && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack)) {
                 unit.setCommand(Right_Click_Position, unit.getTarget().lock()->getPosition());
                 unit.commandText = "Move_A";
                 return true;
@@ -504,8 +485,7 @@ namespace McRave::Command {
                 if (!target.canAttackGround() && !target.canAttackAir() && !unit.getType().isFlyer())      // Don't kite non attackers unless we're a flying unit
                     return false;
 
-                if (unit.getType() == Zerg_Zergling || unit.getType() == Protoss_Corsair
-                    || (unit.getGroundRange() <= 32.0 && unit.getAirRange() <= 32.0))
+                if (unit.getGroundRange() <= 32.0 && unit.getAirRange() <= 32.0)
                     return false;
 
                 if (unit.getType() == Protoss_Zealot && Util::getTime() < Time(4, 00) && Players::PvZ())

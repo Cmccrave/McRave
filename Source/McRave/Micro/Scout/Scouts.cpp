@@ -99,7 +99,7 @@ namespace McRave::Scouts {
             }
 
             fullScout = mainScouted && natScouted;
-            if (Players::ZvZ)
+            if (Players::ZvZ())
                 fullScout = mainScouted;
         }
 
@@ -205,7 +205,7 @@ namespace McRave::Scouts {
                     || Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) > 0;
 
                 // Main overlord scouting counts
-                main.desiredTypeCounts[Zerg_Overlord] = 1 + !Terrain::getEnemyStartingPosition().isValid();
+                main.desiredTypeCounts[Zerg_Overlord] = 1;
                 if (enemyAir || Spy::enemyFastExpand())
                     main.desiredTypeCounts[Zerg_Overlord] = 0;
             }
@@ -249,6 +249,7 @@ namespace McRave::Scouts {
         void updateNaturalScouting()
         {
             auto &natural = scoutTargets[ScoutType::Natural];
+            auto &main = scoutTargets[ScoutType::Main];
 
             // Check if fully scouted
             if (Terrain::getEnemyNatural()) {
@@ -259,6 +260,14 @@ namespace McRave::Scouts {
                 // Add natural position as a target
                 if (Util::getTime() > Time(4, 00) || Players::TvZ() || Players::PvZ())
                     natural.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
+
+                // If we scouted the main, scout the nat to get a full scout
+                if (Broodwar->self()->getRace() == Races::Zerg) {
+                    if (mainScouted && !natScouted) {
+                        main.desiredTypeCounts[Zerg_Drone] = 0;
+                        natural.desiredTypeCounts[Zerg_Drone] = 1;
+                    }
+                }
             }
         }
 
@@ -285,13 +294,14 @@ namespace McRave::Scouts {
         void updateSafeScouting()
         {
             auto &safe = scoutTargets[ScoutType::Safe];
+            auto &main = scoutTargets[ScoutType::Main];
 
             if (Terrain::getEnemyNatural()) {
                 safe.center = safePositions[Terrain::getEnemyNatural()];
 
                 // Zerg
                 if (Broodwar->self()->getRace() == Races::Zerg) {
-                    safe.desiredTypeCounts[Zerg_Overlord] = 1;
+                    safe.desiredTypeCounts[Zerg_Overlord] = 1 - main.desiredTypeCounts[Zerg_Overlord];
                     if (total(Zerg_Mutalisk) >= 6
                         || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0)
                         || Spy::getEnemyBuild() == "FFE"
@@ -317,7 +327,7 @@ namespace McRave::Scouts {
             
             // No threat at home, we should use a ling to scout the enemy
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                if (Units::getImmThreat() <= 0.1 && Util::getTime() > Time(1, 00)) {
+                if (Units::getImmThreat() <= 0.1 && Util::getTime() > Time(1, 00) && !Spy::enemyRush() && !Spy::enemyProxy()) {
                     if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
                         || (Players::ZvP() && Util::getTime() < Time(8, 00)))
                         army.desiredTypeCounts[Zerg_Zergling] = 1;

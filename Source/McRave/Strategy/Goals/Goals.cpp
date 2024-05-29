@@ -37,7 +37,7 @@ namespace McRave::Goals {
             int countCached = 0;
             for (int current = 0; current < count; current++) {
                 for (auto &[unit, goalPair] : oldGoals) {
-                    if (!unit->getGoal().isValid() && unit->getType() == type && goalPair.first == here && goalPair.second == gType) {
+                    if (!unit->getGoal().isValid() && unit->getRole() != Role::Scout && unit->getType() == type && goalPair.first == here && goalPair.second == gType) {
                         unit->setGoal(here);
                         unit->setGoalType(gType);
                         countCached++;
@@ -54,6 +54,8 @@ namespace McRave::Goals {
                         if (gType == GoalType::Attack && (u->getGlobalState() == GlobalState::ForcedRetreat || u->getLocalState() != LocalState::None))
                             return false;
                         if (gType == GoalType::Defend && (u->getLocalState() == LocalState::Retreat || u->getLocalState() == LocalState::ForcedRetreat))
+                            return false;
+                        if (u->getRole() == Role::Scout)
                             return false;
                         return u->getType() == type && !u->getGoal().isValid();
                     });
@@ -182,7 +184,7 @@ namespace McRave::Goals {
                 }
 
                 // Escort expanders
-                if (nextExpand.isValid() && (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 2 || Stations::getStations(PlayerState::Self).size() <= 1 || Spy::getEnemyTransition() == "4Gate")) {
+                if (nextExpand.isValid() && (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Stations::getStations(PlayerState::Self).size() <= 1 || Spy::getEnemyTransition() == "4Gate")) {
                     auto closestBuilder = Util::getClosestUnit(nextExpand, PlayerState::Self, [&](auto &u) {
                         return u->getBuildType().isResourceDepot();
                     });
@@ -302,11 +304,14 @@ namespace McRave::Goals {
             }
 
             // Assign an Overlord to watch our Choke early on
-            if (Terrain::getNaturalChoke() && !Spy::enemyRush() && com(Zerg_Overlord) >= 2) {
+            if (Terrain::getNaturalChoke() && !Spy::enemyRush()) {
                 const auto natSpot = Position(Terrain::getNaturalChoke()->Center());
-                if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0))
+                if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0)) {
                     assignNumberToGoal(natSpot, Zerg_Overlord, 1, GoalType::Escort);
+                    return;
+                }
             }
+            return;
 
             // Assign an Overlord to each natural Station
             for (auto &station : Stations::getStations(PlayerState::Self)) {

@@ -10,7 +10,7 @@ namespace McRave::Walls {
     namespace {
         const BWEB::Wall * mainWall = nullptr;
         const BWEB::Wall * naturalWall = nullptr;
-        vector<UnitType> buildings;
+        vector<UnitType> buildings, backup;
         vector<UnitType> defenses;
         bool tight;
         bool openWall;
@@ -52,10 +52,14 @@ namespace McRave::Walls {
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 tight = false;
                 defenses ={ Zerg_Sunken_Colony };
-                if (Players::ZvT())
-                    buildings ={ Zerg_Evolution_Chamber, Zerg_Spire };
-                else
-                    buildings ={ Zerg_Evolution_Chamber, Zerg_Hatchery };
+                if (Players::ZvT()) {
+                    buildings ={ Zerg_Evolution_Chamber, Zerg_Hatchery, Zerg_Spire };
+                    backup ={ Zerg_Evolution_Chamber, Zerg_Spire };
+                }
+                else {
+                    buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
+                    backup ={ Zerg_Hatchery, Zerg_Evolution_Chamber };
+                }
             }
         }
 
@@ -63,11 +67,14 @@ namespace McRave::Walls {
         {
             initializeWallParameters();
 
-            // Create a wall and reduce the building count on each iteration
-            const auto genWall = [&](auto buildings, auto area, auto choke) {
+            // Create a wall and attempt a backup if needed
+            const auto genWall = [&](auto area, auto choke) {                
                 BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
-                if (!BWEB::Walls::getWall(choke)) {
-                    Broodwar << "Failed to make a wall" << endl;
+                if (!BWEB::Walls::getWall(choke) && !backup.empty()) {
+                    Util::debug(string("Wall failed, falling to backup."));
+                    BWEB::Walls::createWall(backup, area, choke, tightType, defenses, openWall, tight);
+                    if (!BWEB::Walls::getWall(choke))
+                        Util::debug(string("Backup wall failed, we're fucked."));
                 }
             };
 
@@ -76,14 +83,14 @@ namespace McRave::Walls {
 
             // In FFA just make a wall at our natural (if we have one)
             if (Players::vFFA() && Terrain::getMyNatural() && Terrain::getNaturalChoke()) {
-                genWall(buildings, Terrain::getMyNatural()->getBase()->GetArea(), Terrain::getNaturalChoke());
+                genWall(Terrain::getMyNatural()->getBase()->GetArea(), Terrain::getNaturalChoke());
             }
             else {
                 for (auto &station : BWEB::Stations::getStations()) {
                     initializeWallParameters();
                     if (!station.isNatural())
                         continue;
-                    genWall(buildings, station.getBase()->GetArea(), station.getChokepoint());
+                    genWall(station.getBase()->GetArea(), station.getChokepoint());
                 }
             }
 
@@ -316,7 +323,7 @@ namespace McRave::Walls {
 
             // Kind of hacky solution to build less with 3h
             if (threeHatch && expected > 1)
-                expected /= 2.0;
+                expected /= 2;
             if (expected > 0)
                 minimum = 1;
 
@@ -326,10 +333,12 @@ namespace McRave::Walls {
         // ZvT
         int ZvT_Opener(const BWEB::Wall& wall)
         {
+            // Proxy
+            if (Spy::enemyProxy())
+                return (Util::getTime() > Time(3, 30));
+
             // 2Rax
             if (Spy::getEnemyBuild() == "2Rax") {
-                if (Spy::enemyProxy())
-                    return (Util::getTime() > Time(4, 30));
                 if (!Spy::enemyFastExpand() && !Spy::enemyRush())
                     return (Util::getTime() > Time(3, 15))
                     + (Util::getTime() > Time(4, 30))
@@ -342,9 +351,7 @@ namespace McRave::Walls {
             // RaxCC
             if (Spy::getEnemyBuild() == "RaxCC") {
                 if (Spy::getEnemyOpener() == "8Rax")
-                    return (Util::getTime() > Time(4, 30));
-                if (Spy::enemyProxy())
-                    return (Util::getTime() > Time(4, 30));
+                    return (Util::getTime() > Time(4, 00));
                 return (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00));
             }
 

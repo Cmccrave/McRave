@@ -58,7 +58,7 @@ namespace McRave::BuildOrder::Zerg {
         };
 
         // Economic estimate (have information on army, they aren't close):
-        // For each Zealot or Dragoon, assume it arrives with 40 seconds for us to create Zerglings/Hydralisks
+        // For each unit, assume it arrives with enough time for us to create defenders
         auto arrivalValue = 0.0;
         for (auto &u : Units::getUnits(PlayerState::Enemy)) {
             auto &unit = *u;
@@ -128,7 +128,7 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
 
         focusUnit =                                     Zerg_Mutalisk;
-        unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 26 : unitLimits[Zerg_Drone] - vis(Zerg_Extractor);
+        unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 26 : unitLimits[Zerg_Drone];
         wantThird =                                     Spy::enemyFastExpand() || hatchCount() >= 3 || Spy::getEnemyTransition() == "Corsair";
         reserveLarva =                                  6;
 

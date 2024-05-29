@@ -25,7 +25,7 @@ namespace McRave::Visuals {
 
                 auto maxWidth = 0;
                 for (auto &s : textLines) {
-                    const auto len = s.length();
+                    const auto len = int(s.length());
                     if (len > maxWidth)
                         maxWidth = len;
                 }
@@ -39,13 +39,13 @@ namespace McRave::Visuals {
                 auto boxX = textX - horizontalMargin;
                 auto boxY = textY;
 
-                
+
                 Visuals::drawBox(Position(boxX, boxY), Position(boxX + boxWidth, boxY + boxHeight), color, true);
                 Visuals::drawBox(Position(boxX - 1, boxY - 1), Position(boxX + boxWidth + 1, boxY + boxHeight + 1), border);
                 for (auto &s : textLines) {
                     Broodwar->drawTextMap(Position(textX, textY), "%s", s.c_str());
                     textY += 11;
-                }            
+                }
             }
         };
 
@@ -70,12 +70,10 @@ namespace McRave::Visuals {
         bool targets = false;
         bool builds = true;
         bool bweb = false;
-        bool sim = false;
         bool paths = true;
         bool strengths = false;
         bool orders = false;
-        bool local = false;
-        bool global = false;
+        bool states = false;
         bool resources = false;
         bool timers = true;
         bool scores = true;
@@ -85,6 +83,28 @@ namespace McRave::Visuals {
         bool bo_switch = false;
 
         Diagnostic currentDiagnostic = Diagnostic::None;
+
+        void drawStates(UnitInfo& unit)
+        {
+            int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
+            width += -32;
+
+            if (unit.getRole() == Role::Combat) {
+                auto color = (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack) ? Text::Green : Text::Red;
+                Broodwar->drawTextMap(unit.getPosition() + Position(-width, -8), "L: %c%d", color, unit.getLocalState());
+            }
+
+            if (unit.getRole() == Role::Combat) {
+                auto color = (unit.getGlobalState() == GlobalState::Attack || unit.getGlobalState() == GlobalState::ForcedAttack) ? Text::Green : Text::Red;
+                Broodwar->drawTextMap(unit.getPosition() + Position(-width, 0), "G: %c%d", color, unit.getGlobalState());
+            }
+
+            if (unit.getRole() == Role::Combat) {
+                auto color = unit.getSimState() == SimState::Win ? Text::Green : Text::Red;
+                Broodwar->drawTextMap(unit.getPosition() + Position(-width, 8), "S: %c%.2f", color, unit.getSimValue());
+            }
+
+        }
 
         void drawInformation()
         {
@@ -218,6 +238,9 @@ namespace McRave::Visuals {
                 if (unit.unit()->isLoaded())
                     continue;
 
+                if (states)
+                    drawStates(unit);
+
                 if (targets) {
                     if (unit.hasTarget())
                         Visuals::drawLine(unit.getTarget().lock()->getPosition(), unit.getPosition(), color);
@@ -250,23 +273,6 @@ namespace McRave::Visuals {
                             Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, unit.unit()->getUpgrade().c_str());
                         else if (unit.unit()->isResearching())
                             Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, unit.unit()->getTech().c_str());
-                    }
-                }
-
-                if (local) {
-                    if (unit.getRole() == Role::Combat)
-                        Broodwar->drawTextMap(unit.getPosition(), "%c%d", textColor, unit.getLocalState());
-                }
-                if (global) {
-                    if (unit.getRole() == Role::Combat)
-                        Broodwar->drawTextMap(unit.getPosition(), "%c%d", textColor, unit.getGlobalState());
-                }
-
-                if (sim) {
-                    if (unit.getRole() == Role::Combat) {
-                        int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-                        auto color = unit.getSimState() == SimState::Win ? Text::Green : Text::Red;
-                        Broodwar->drawTextMap(unit.getPosition() + Position(width, 8), "%c%.2f", color, unit.getSimValue());
                     }
                 }
 
@@ -304,7 +310,7 @@ namespace McRave::Visuals {
             }
         }
 
-        void drawStations() 
+        void drawStations()
         {
             if (stations) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
@@ -409,14 +415,12 @@ namespace McRave::Visuals {
         }
 
         if (text == "/targets")              targets = !targets;
-        else if (text == "/sim")             sim = !sim;
+        else if (text == "/states")          states = !states;
         else if (text == "/strengths")       strengths = !strengths;
         else if (text == "/builds")          builds = !builds;
         else if (text == "/bweb")            bweb = !bweb;
         else if (text == "/paths")           paths = !paths;
         else if (text == "/orders")          orders = !orders;
-        else if (text == "/local")           local = !local;
-        else if (text == "/global")          global = !global;
         else if (text == "/resources")       resources = !resources;
         else if (text == "/timers")          timers = !timers;
         else if (text == "/roles")           roles = !roles;

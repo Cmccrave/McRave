@@ -402,14 +402,20 @@ namespace McRave
             return false;
         };
 
+        // Check if enemy is generally in our territory
+        auto nearTerritory = [&]() {
+            return (Util::getTime() > Time(5, 00) && Terrain::inArea(Terrain::getMainArea(), position))
+                || (Util::getTime() > Time(7, 00) && Terrain::inArea(Terrain::getNaturalArea(), position))
+                || (Util::getTime() > Time(9, 00) && atHome);
+        };
+
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
             auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
                 return u->getRole() == Role::Defender && u->canAttackGround() && u->isCompleted();
             });
             return (closestDefender && closestDefender->isWithinRange(*this) && Terrain::inTerritory(PlayerState::Self, position))
-                || (closestDefender && isWithinRange(*closestDefender))
-                || (Combat::isDefendNatural() && Terrain::inTerritory(PlayerState::Self, position) && !Terrain::inArea(Terrain::getNaturalArea(), position));
+                || (closestDefender && isWithinRange(*closestDefender));
         };
 
         // Checks if it can damage an already damaged building
@@ -417,7 +423,7 @@ namespace McRave
             auto fragileBuilding = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
                 return !u->isHealthy() && u->getType().isBuilding() && (u->isCompleted() || isWithinRange(*u)) && Terrain::inTerritory(PlayerState::Self, u->getPosition());
             });
-            return fragileBuilding && canAttackGround() && Util::boxDistance(fragileBuilding->getType(), fragileBuilding->getPosition(), getType(), getPosition()) < proximityCheck;
+            return fragileBuilding && getType().groundWeapon().damageType() != DamageTypes::Concussive && canAttackGround() && Util::boxDistance(fragileBuilding->getType(), fragileBuilding->getPosition(), getType(), getPosition()) < proximityCheck;
         };
 
         // Check if any builders can be hit or blocked
@@ -452,8 +458,8 @@ namespace McRave
 
         // Unit
         else
-            threateningThisFrame = /*attackedDefender
-            || */attackedWorkers
+            threateningThisFrame = attackedWorkers
+            //|| nearTerritory()
             || nearResources()
             || nearFragileBuilding()
             || nearBuildPosition()
@@ -803,9 +809,9 @@ namespace McRave
     {
         auto boxDistance = Util::boxDistance(getType(), getPosition(), otherUnit.getType(), otherUnit.getPosition());
         auto range = otherUnit.getType().isFlyer() ? getAirRange() : getGroundRange();
-        auto latencyDist = Broodwar->getLatencyFrames() * getSpeed();
+        auto latencyDist = (Broodwar->getLatencyFrames() * getSpeed()) - (Broodwar->getLatencyFrames() * otherUnit.getSpeed());
         auto ff = (!isHovering() && !isFlying()) ? 0.0 : -8.0;
-        return max(64.0, range + ff + latencyDist) >= boxDistance;
+        return range + latencyDist + ff >= boxDistance;
     }
 
     bool UnitInfo::isWithinAngle(UnitInfo& otherUnit)

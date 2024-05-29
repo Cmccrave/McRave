@@ -54,13 +54,13 @@ namespace McRave::Pathing {
             if (!target.unit()->exists()
                 || unit.getSpeed() == 0.0
                 || target.getSpeed() == 0.0
-                || !target.getPosition().isValid()
-                || !Terrain::getEnemyStartingPosition().isValid())
+                || !target.getPosition().isValid())
                 return;
 
             auto range = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
-            auto framesToArrive = clamp((unit.getPosition().getDistance(target.getPosition()) - range) / unit.getSpeed(), 0.0, 24.0);
-            auto intercept = target.getPosition() + Position(int(unit.unit()->getVelocityX() * framesToArrive), int(unit.unit()->getVelocityY() * framesToArrive));
+            auto boxDistance = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition());
+            auto framesToArrive = clamp((boxDistance - range) / unit.getSpeed(), 0.0, 24.0);
+            auto intercept = target.getPosition() + Position(int(target.unit()->getVelocityX() * framesToArrive), int(target.unit()->getVelocityY() * framesToArrive));
             unit.setInterceptPosition(intercept);
         }
 
