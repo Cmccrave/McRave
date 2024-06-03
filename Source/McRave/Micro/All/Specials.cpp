@@ -73,7 +73,7 @@ namespace McRave::Command
 
             auto loadBunker = false;
             auto unloadBunker = false;
-            auto alwaysLoad = unit.getGlobalState() == GlobalState::Retreat || unit.getGlobalState() == GlobalState::ForcedRetreat;
+            auto alwaysLoad = unit.getGlobalState() == GlobalState::Retreat;
 
             if (bunker) {
                 if (unit.hasTarget()) {
@@ -163,7 +163,7 @@ namespace McRave::Command
         }
 
         auto siege = (unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(Combat::getDefendPosition()) < 280.0)
-            || (unit.hasTarget() && targetDist <= 520.0 && unit.getLocalState() != LocalState::Retreat && unit.getLocalState() != LocalState::ForcedRetreat);
+            || (unit.hasTarget() && targetDist <= 520.0 && unit.getLocalState() != LocalState::Retreat);
         auto unsiege = unit.hasTarget() && targetDist > 320.0;
 
         // Siege Tanks - Siege
@@ -238,7 +238,7 @@ namespace McRave::Command
                 unit.commandText = "Burrowing";
                 return true;
             }
-            else if (!unit.isBurrowed() && (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack) && unit.getPosition().getDistance(unit.getEngagePosition()) < 16.0) {
+            else if (!unit.isBurrowed() && unit.getLocalState() == LocalState::Attack && unit.getPosition().getDistance(unit.getEngagePosition()) < 16.0) {
                 unit.setCommand(Burrow, unit.getPosition());
                 unit.commandText = "Burrowing";
                 return true;

@@ -33,7 +33,7 @@ namespace McRave::BuildOrder::Zerg {
         void queueWallDefenses()
         {
             // Adding Wall defenses
-            auto needLarvaSpending = vis(Zerg_Larva) > 3 && Broodwar->self()->supplyUsed() < Broodwar->self()->supplyTotal() && unitLimits[Zerg_Larva] == 0 && Util::getTime() < Time(4, 30) && com(Zerg_Sunken_Colony) >= 2;
+            auto needLarvaSpending = vis(Zerg_Larva) > 3 && Broodwar->self()->supplyUsed() < Broodwar->self()->supplyTotal() && Util::getTime() < Time(4, 30) && com(Zerg_Sunken_Colony) >= 2;
             if (!needLarvaSpending && !rush && !pressure && (vis(Zerg_Drone) >= 9 || Players::ZvZ())) {
                 for (auto &[_, wall] : BWEB::Walls::getWalls()) {
 
@@ -161,13 +161,13 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueExpansions()
         {
-            if (!inOpening && unitLimits[Zerg_Larva] == 0) {
+            if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 const auto availableGas = Broodwar->self()->gas() - BuildOrder::getGasQueued();
                 const auto incompleteHatch = vis(Zerg_Hatchery) - com(Zerg_Hatchery);
 
                 const auto waitForMinerals = 300 + (150 * incompleteHatch);
-                const auto resourceSat = (availableMinerals >= waitForMinerals && Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && techSat && productionSat);
+                const auto resourceSat = (availableMinerals >= waitForMinerals && Resources::isHalfMineralSaturated() && Resources::isGasSaturated());
 
                 expandDesired = (resourceSat && techSat && productionSat)
                     || (Players::ZvZ() && Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0 && Stations::getStations(PlayerState::Self).size() < Stations::getStations(PlayerState::Enemy).size() && availableMinerals > waitForMinerals && availableGas < 150)
@@ -196,7 +196,7 @@ namespace McRave::BuildOrder::Zerg {
             // Log if we have a change in production expectations
             static double oldHatchPerBase = 0.0;
             if (hatchPerBase != oldHatchPerBase) {
-                Util::debug("Changed production to " + to_string(hatchPerBase) + " from " + to_string(oldHatchPerBase));
+                Util::debug("[BuildOrder]: Changed production to " + to_string(hatchPerBase) + " from " + to_string(oldHatchPerBase));
             }
             oldHatchPerBase = hatchPerBase;
 
@@ -206,7 +206,7 @@ namespace McRave::BuildOrder::Zerg {
             auto maxSat = productionSat * 2;
 
             // Queue production if we need it
-            if (!inOpening && unitLimits[Zerg_Larva] == 0) {
+            if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 const auto incompleteHatch = vis(Zerg_Hatchery) - com(Zerg_Hatchery);
                 const auto waitForMinerals = 300 + (150 * incompleteHatch);
@@ -264,12 +264,14 @@ namespace McRave::BuildOrder::Zerg {
                 auto dropGasRush        = !Players::ZvZ() && Spy::enemyRush();
                 auto dropGasDrones      = !Players::ZvZ() && vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 18;
                 auto dropGasLarva       = !Players::ZvZ() && vis(Zerg_Larva) >= 3 && Util::getTime() < Time(5, 00) && unitReservations.empty();
+                auto dropGasBroke       = (Util::getTime() < Time(4, 30) || Players::ZvZ());
                 auto dropGasDefenses    = needSunks && (Players::ZvZ() || Spy::enemyProxy() || Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "8Rax");
 
-                auto mineralToGasRatio  = minRemaining < max(200, 15 * vis(Zerg_Drone)) && gasRemaining > max(200, 15 * vis(Zerg_Drone));
+                auto mineralToGasRatio  = minRemaining < max(100, 5 * vis(Zerg_Drone)) && gasRemaining > max(200, 10 * vis(Zerg_Drone));
 
-                if (mineralToGasRatio && !rush && !pressure && unitLimits[Zerg_Larva] < 3) {
+                if (mineralToGasRatio && !rush && !pressure) {
                     if (dropGasRush
+                        || dropGasBroke
                         || dropGasDrones
                         || dropGasLarva
                         || dropGasDefenses
@@ -467,7 +469,9 @@ namespace McRave::BuildOrder::Zerg {
         // Composition
         armyComposition.clear();
         if (inOpening) {
-            if (pumpMutas)
+            if (pumpScourge)
+                armyComposition[Zerg_Scourge] =             1.00;
+            else if (pumpMutas)
                 armyComposition[Zerg_Mutalisk] =            1.00;
             else if (pumpHydras)
                 armyComposition[Zerg_Hydralisk] =           1.00;
@@ -542,7 +546,7 @@ namespace McRave::BuildOrder::Zerg {
 
             // Mutalisk tech
             else if (isFocusUnit(Zerg_Mutalisk)) {
-                if (total(Zerg_Mutalisk) >= 24 || vis(Zerg_Hive) > 0) {
+                if (vis(Zerg_Hive) > 0) {
                     armyComposition[Zerg_Drone] =               0.60;
                     armyComposition[Zerg_Zergling] =            0.20;
                     armyComposition[Zerg_Mutalisk] =            0.20;
@@ -716,7 +720,7 @@ namespace McRave::BuildOrder::Zerg {
         if (com(Zerg_Spire) > 0) {
             auto airCount = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) + Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith);
             auto needScourgeZvP = Players::ZvP() && airCount > 0 && vis(Zerg_Mutalisk) < 3 && vis(Zerg_Scourge) < min(6, airCount * 2);
-            auto needScourgeZvZ = Players::ZvZ() && airCount > 0 && vis(Zerg_Extractor) >= 2 && Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() && total(Zerg_Scourge) < 6;
+            auto needScourgeZvZ = false;
             auto needScourgeZvT = Players::ZvT() && airCount > 0 && vis(Zerg_Mutalisk) < 3 && vis(Zerg_Scourge) < min(6, airCount * 2);
 
             if (needScourgeZvP || needScourgeZvZ || needScourgeZvT) {
@@ -757,11 +761,11 @@ namespace McRave::BuildOrder::Zerg {
 
         // Unit limiting in opening book
         if (inOpening) {
-            for (auto &type : unitLimits) {
-                if (type.second > vis(type.first))
-                    unlockedType.insert(type.first);
+            for (auto &[type, limit] : unitLimits) {
+                if (limit > vis(type) || armyComposition[type] == 1.0)
+                    unlockedType.insert(type);
                 else
-                    unlockedType.erase(type.first);
+                    unlockedType.erase(type);
             }
         }
 

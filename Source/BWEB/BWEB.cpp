@@ -375,9 +375,9 @@ namespace BWEB::Map
             return DBL_MAX;
 
         // If not in an area, return DBL_MAX
-        if (!mapBWEM.GetArea(WalkPosition(start))
-            || !mapBWEM.GetArea(WalkPosition(end))
-            || !mapBWEM.GetArea(WalkPosition(start))->AccessibleFrom(mapBWEM.GetArea(WalkPosition(end))))
+        if (mapBWEM.GetArea(WalkPosition(start))
+            && mapBWEM.GetArea(WalkPosition(end))
+            && !mapBWEM.GetArea(WalkPosition(start))->AccessibleFrom(mapBWEM.GetArea(WalkPosition(end))))
             return DBL_MAX;
 
         // Find the closest chokepoint node

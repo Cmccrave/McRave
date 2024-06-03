@@ -67,6 +67,7 @@ namespace McRave::Visuals {
         };
         vector<FrameTest> frameTests;
 
+        bool commands = false;
         bool targets = false;
         bool builds = true;
         bool bweb = false;
@@ -90,12 +91,12 @@ namespace McRave::Visuals {
             width += -32;
 
             if (unit.getRole() == Role::Combat) {
-                auto color = (unit.getLocalState() == LocalState::Attack || unit.getLocalState() == LocalState::ForcedAttack) ? Text::Green : Text::Red;
+                auto color = unit.getLocalState() == LocalState::Attack ? Text::Green : Text::Red;
                 Broodwar->drawTextMap(unit.getPosition() + Position(-width, -8), "L: %c%d", color, unit.getLocalState());
             }
 
             if (unit.getRole() == Role::Combat) {
-                auto color = (unit.getGlobalState() == GlobalState::Attack || unit.getGlobalState() == GlobalState::ForcedAttack) ? Text::Green : Text::Red;
+                auto color = unit.getGlobalState() == GlobalState::Attack ? Text::Green : Text::Red;
                 Broodwar->drawTextMap(unit.getPosition() + Position(-width, 0), "G: %c%d", color, unit.getGlobalState());
             }
 
@@ -165,15 +166,15 @@ namespace McRave::Visuals {
 
                 if (overall > 10000) {
                     Broodwar << "10s DQ at: " << Util::getTime() << endl;
-                    Util::debug("10s DQ at: " + Util::getTime().toString());
+                    Util::debug(string("[Timing]: 10s DQ."));
                 }
                 else if (overall > 1000) {
                     Broodwar << "1s DQ at: " << Util::getTime() << endl;
-                    Util::debug("1s DQ at: " + Util::getTime().toString());
+                    Util::debug(string("[Timing]: 1s DQ."));
                 }
                 else if (overall > 55) {
                     Broodwar << "55ms DQ at: " << Util::getTime() << endl;
-                    Util::debug("55ms DQ at: " + Util::getTime().toString());
+                    Util::debug(string("[Timing]: 55ms DQ."));
                 }
             }
 
@@ -255,6 +256,15 @@ namespace McRave::Visuals {
                     if (unit.getVisibleGroundStrength() > 0.0 || unit.getVisibleAirStrength() > 0.0) {
                         Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "Grd: %c %.2f", Text::Brown, unit.getVisibleGroundStrength());
                         Broodwar->drawTextMap(unit.getPosition() + Position(5, 2), "Air: %c %.2f", Text::Blue, unit.getVisibleAirStrength());
+                    }
+                }
+
+                if (commands) {
+                    if (unit.commandText != "") {
+                        const auto color = Text::White;
+                        const auto height = unit.getType().height() / 2;
+                        const auto pText = unit.getPosition() + Position(-4 * int(unit.commandText.length() / 2), height);
+                        Broodwar->drawTextMap(pText, "%c%s", color, unit.commandText.c_str());
                     }
                 }
 
@@ -414,7 +424,8 @@ namespace McRave::Visuals {
             }
         }
 
-        if (text == "/targets")              targets = !targets;
+        if (text == "/commands")             commands = !commands;
+        else if (text == "/targets")         targets = !targets;
         else if (text == "/states")          states = !states;
         else if (text == "/strengths")       strengths = !strengths;
         else if (text == "/builds")          builds = !builds;

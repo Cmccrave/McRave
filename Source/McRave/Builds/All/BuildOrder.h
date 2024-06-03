@@ -62,6 +62,7 @@ namespace McRave::BuildOrder {
         inline bool pumpLings = false;
         inline bool pumpHydras = false;
         inline bool pumpMutas = false;
+        inline bool pumpScourge = false;
     }
 
     namespace Terran {

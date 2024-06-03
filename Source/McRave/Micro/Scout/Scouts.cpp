@@ -123,7 +123,7 @@ namespace McRave::Scouts {
                 auto enemyInMain = closestEnemy && mapBWEM.GetArea(closestEnemy->getTilePosition()) == closestMain->getBase()->GetArea();
 
                 if (closeToChoke && deniedFromMain) {
-                    Util::debug(string("Worker scout denied."));
+                    Util::debug(string("[Scouts]: Worker scout denied."));
                     workerScoutDenied = true;
                 }
             }
@@ -188,7 +188,8 @@ namespace McRave::Scouts {
 
                 if (Players::ZvZ()) {
                     main.desiredTypeCounts[Zerg_Drone] = 0;
-                    main.desiredTypeCounts[Zerg_Zergling] = !Terrain::getEnemyStartingPosition().isValid() || (Util::getTime() > Time(3, 30) && !Terrain::foundEnemy() && Util::getTime() < Time(4, 30));
+                    main.desiredTypeCounts[Zerg_Zergling] = !Terrain::getEnemyStartingPosition().isValid()
+                        || (Util::getTime() > Time(3, 30) && Players::getTotalCount(PlayerState::Enemy, Zerg_Sunken_Colony) == 0 && !Terrain::foundEnemy() && Util::getTime() < Time(4, 30));
 
                     if (Spy::enemyRush() || Spy::enemyPressure())
                         main.desiredTypeCounts[Zerg_Zergling] = 0;
@@ -202,10 +203,13 @@ namespace McRave::Scouts {
                     || Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0
                     || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0
                     || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0
-                    || Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) > 0;
+                    || Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) > 0
+                    || (Players::ZvT() && Terrain::getEnemyStartingPosition().isValid());
 
                 // Main overlord scouting counts
                 main.desiredTypeCounts[Zerg_Overlord] = 1;
+                if (Players::ZvZ() && !Terrain::getEnemyStartingPosition().isValid())
+                    main.desiredTypeCounts[Zerg_Overlord] = 2;
                 if (enemyAir || Spy::enemyFastExpand())
                     main.desiredTypeCounts[Zerg_Overlord] = 0;
             }
@@ -301,7 +305,8 @@ namespace McRave::Scouts {
 
                 // Zerg
                 if (Broodwar->self()->getRace() == Races::Zerg) {
-                    safe.desiredTypeCounts[Zerg_Overlord] = 1 - main.desiredTypeCounts[Zerg_Overlord];
+
+                    safe.desiredTypeCounts[Zerg_Overlord] = 1;
                     if (total(Zerg_Mutalisk) >= 6
                         || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0)
                         || Spy::getEnemyBuild() == "FFE"

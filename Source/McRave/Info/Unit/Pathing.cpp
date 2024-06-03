@@ -42,7 +42,7 @@ namespace McRave::Pathing {
                     return p.getDistance(unit.getPosition());
                     //return BWEB::Map::getGroundDistance(p, unit.getPosition()) + BWEB::Map::getGroundDistance(p, target.getPosition());
                 };
-                auto engage = Util::findPointOnCircle(unit.getPosition(), target.getPosition(), range + 32.0, calc);
+                auto engage = Util::findPointOnCircle(unit.getPosition(), target.getPosition(), range, calc);
                 unit.setEngagePosition(engage.second);
                 unit.setEngDist(engage.first);
             }
@@ -66,7 +66,7 @@ namespace McRave::Pathing {
 
         void updateSurroundPositions()
         {
-            return; // TODO
+            return;
             if (Players::ZvZ())
                 return;
 
@@ -129,13 +129,18 @@ namespace McRave::Pathing {
 
                     // Get time to arrive to the surround position
                     if (closestTargeter) {
-                        auto framesToArrive = clamp(closestTargeter->getPosition().getDistance(pos) / unit.getSpeed(), double(Broodwar->getLatencyFrames() * 2), 128.0);
+                        auto framesToArrive = clamp(closestTargeter->getPosition().getDistance(pos) / unit.getSpeed(), 0.0, 48.0);
                         auto dirx = (trapTowards.x - unit.getPosition().x) / unit.getPosition().getDistance(trapTowards);
                         auto diry = (trapTowards.y - unit.getPosition().y) / unit.getPosition().getDistance(trapTowards);
-                        auto correctedPos = pos + Position(int(dirx * framesToArrive), int(diry * framesToArrive));
+
+                        auto expandx = (pos.x - unit.getPosition().x) / unit.getPosition().getDistance(pos);
+                        auto expandy = (pos.y - unit.getPosition().y) / unit.getPosition().getDistance(pos);
+
+                        auto correctedPos = pos + Position(int(dirx * framesToArrive), int(diry * framesToArrive)) + Position(int(expandx * framesToArrive), int(expandy * framesToArrive));
 
                         if (Util::findWalkable(*closestTargeter, correctedPos)) {
                             closestTargeter->setSurroundPosition(correctedPos);
+                            Visuals::drawLine(closestTargeter->getPosition(), correctedPos, Colors::Green);
                             Broodwar->drawCircleMap(correctedPos, 4, Colors::Green);
                         }
                     }

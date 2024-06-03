@@ -97,16 +97,16 @@ namespace McRave::Util {
     int getCastRadius(TechType tech)
     {
         if (tech == TechTypes::Scanner_Sweep)
-            return 160.0;
+            return 160;
         if (tech == TechTypes::Nuclear_Strike)
-            return 128.0;
+            return 128;
         if (tech == TechTypes::Dark_Swarm)
-            return 96.0;
+            return 96;
         if (tech == TechTypes::Spider_Mines)
-            return 50.0;
+            return 50;
         if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Stasis_Field || tech == TechTypes::Maelstrom || tech == TechTypes::Plague || tech == TechTypes::Ensnare || tech == TechTypes::EMP_Shockwave)
-            return 48.0;
-        return 1.0;
+            return 48;
+        return 1;
     }
 
     int boxDistance(BWAPI::UnitType typeA, BWAPI::Position posA, BWAPI::UnitType typeB, BWAPI::Position posB) {

@@ -8,11 +8,18 @@ namespace McRave::Spy::General {
 
     namespace {
         set<Unit> unitsStored; // A bit hacky way to say if we've stored a unit
+        string nodeName = "[Spy]: ";
 
         void enemyUnitTimings(PlayerInfo& player, StrategySpy& theSpy)
         {
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit =*u;
+
+                // Don't track these
+                if (unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva || unit.getType() == Zerg_Lurker_Egg
+                    || unit.getType() == Zerg_Creep_Colony
+                    || !unit.unit()->exists())
+                    continue;
 
                 // If unit type is changing now, remove it from the timings
                 if ((unit.getType() == Zerg_Lair || unit.getType() == Zerg_Hive
@@ -22,29 +29,41 @@ namespace McRave::Spy::General {
                     continue;
                 }
 
-                // Estimate the finishing frame - HACK: Sometimes time arrival was negative
-                if (unitsStored.find(unit.unit()) == unitsStored.end() && (unit.getType().isBuilding() || unit.timeArrivesWhen().minutes > 0)) {
-                    theSpy.enemyTimings[unit.getType()].countStartedWhen.push_back(unit.timeStartedWhen());
-                    theSpy.enemyTimings[unit.getType()].countCompletedWhen.push_back(unit.timeCompletesWhen());
-                    theSpy.enemyTimings[unit.getType()].countArrivesWhen.push_back(unit.timeArrivesWhen());
-
-                    auto count = int(theSpy.enemyTimings[unit.getType()].countStartedWhen.size());
-
-                    if (!unit.getType().isBuilding())
-                        Util::debug(string(unit.getType().c_str()) + " " + to_string(count) + " arrives at " + unit.timeArrivesWhen().toString());
-                    else
-                        Util::debug(string(unit.getType().c_str()) + " " + to_string(count) + " completes at " + unit.timeCompletesWhen().toString());
-
-                    if (theSpy.enemyTimings[unit.getType()].firstArrivesWhen == Time(999, 0) || unit.timeArrivesWhen() < theSpy.enemyTimings[unit.getType()].firstArrivesWhen)
-                        theSpy.enemyTimings[unit.getType()].firstArrivesWhen = unit.timeArrivesWhen();
-
-                    if (theSpy.enemyTimings[unit.getType()].firstStartedWhen == Time(999, 0) || unit.timeStartedWhen() < theSpy.enemyTimings[unit.getType()].firstStartedWhen)
-                        theSpy.enemyTimings[unit.getType()].firstStartedWhen = unit.timeStartedWhen();
-
-                    if (theSpy.enemyTimings[unit.getType()].firstCompletedWhen == Time(999, 0) || unit.timeCompletesWhen() < theSpy.enemyTimings[unit.getType()].firstCompletedWhen)
-                        theSpy.enemyTimings[unit.getType()].firstCompletedWhen = unit.timeCompletesWhen();
-
+                // If not tracked, store timing metrics
+                if (unitsStored.find(unit.unit()) == unitsStored.end()) {
                     unitsStored.insert(unit.unit());
+                    auto &ut = theSpy.unitTimings[unit.getType()];
+                    ut.countStartedWhen.push_back(unit.timeStartedWhen());
+                    ut.countCompletedWhen.push_back(unit.timeCompletesWhen());
+                    ut.countArrivesWhen.push_back(unit.timeArrivesWhen());
+
+                    // Debug log
+                    auto count = int(ut.countStartedWhen.size());
+                    if (!unit.getType().isBuilding())
+                        Util::debug(nodeName + string(unit.getType().c_str()) + " " + to_string(count) + " arrives at " + unit.timeArrivesWhen().toString());
+                    else
+                        Util::debug(nodeName + string(unit.getType().c_str()) + " " + to_string(count) + " completes at " + unit.timeCompletesWhen().toString());
+
+                    // If this timing is sooner than arrival, start or completion, overwrite existing data
+                    if (ut.firstArrivesWhen.isUnknown() || unit.timeArrivesWhen() < ut.firstArrivesWhen)
+                        ut.firstArrivesWhen = unit.timeArrivesWhen();
+                    if (ut.firstStartedWhen.isUnknown() || unit.timeStartedWhen() < ut.firstStartedWhen)
+                        ut.firstStartedWhen = unit.timeStartedWhen();
+                    if (ut.firstCompletedWhen.isUnknown() || unit.timeCompletesWhen() < ut.firstCompletedWhen)
+                        ut.firstCompletedWhen = unit.timeCompletesWhen();                    
+                }
+            }
+        }
+
+        void enemyUpgradeTimings(PlayerInfo& player, StrategySpy& theSpy) 
+        {
+            // TODO: More than 1 upgrade level
+            for (auto &upgrade : UpgradeTypes::allUpgradeTypes()) {
+                auto &ut = theSpy.upgradeTimings[upgrade];
+                if (player.hasUpgrade(upgrade) && theSpy.upgradeTimings[upgrade].firstCompletedWhen.isUnknown()) {
+                    ut.firstCompletedWhen = Util::getTime();
+                    ut.countCompletedWhen.push_back(Util::getTime());
+                    Util::debug(nodeName + string(upgrade.c_str()) +  " completes at " + Util::getTime().toString());
                 }
             }
         }
@@ -80,7 +99,7 @@ namespace McRave::Spy::General {
 
                 // Monitor the soonest the enemy will scout us
                 if (unit.getType().isWorker()) {
-                    if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) || unit.isProxy() || !Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()))
+                    if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) || unit.isProxy())
                         theSpy.workersPulled++;
                 }
 
@@ -200,13 +219,6 @@ namespace McRave::Spy::General {
             if (Util::getTime() > Time(10, 00))
                 theSpy.greedy.possible = false;
         }
-
-        void checkEnemyUpgrade(PlayerInfo& player, StrategySpy& theSpy)
-        {
-            for (auto &upgrade : UpgradeTypes::allUpgradeTypes()) {
-                theSpy.upgradeLevel[upgrade] = player.hasUpgrade(upgrade);
-            }
-        }
     }
 
     void updateGeneral(StrategySpy& theSpy)
@@ -217,6 +229,7 @@ namespace McRave::Spy::General {
 
             if (player.isEnemy()) {
                 enemyUnitTimings(player, theSpy);
+                enemyUpgradeTimings(player, theSpy);
                 checkEnemyUnits(player, theSpy);
 
                 // TODO: Impl multiple players
@@ -226,17 +239,18 @@ namespace McRave::Spy::General {
                 checkEnemyEarly(player, theSpy);
                 checkEnemyProxy(player, theSpy);
                 checkEnemyGreedy(player, theSpy);
-                checkEnemyUpgrade(player, theSpy);
             }
         }
 
         // Verify strategy checking for confirmations
         for (auto &strat : theSpy.strats) {
-            if (strat && !strat->confirmed)
+            strat->debugLog();
+            if (!strat->confirmed)
                 strat->updateStrat();
         }
         for (auto &blueprint : theSpy.blueprints) {
-            if (blueprint && !blueprint->confirmed)
+            blueprint->debugLog();
+            if (!blueprint->confirmed)
                 blueprint->updateBlueprint();
         }
     }

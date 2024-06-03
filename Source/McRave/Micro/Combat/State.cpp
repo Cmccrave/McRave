@@ -66,13 +66,18 @@ namespace McRave::Combat::State {
                     const auto avoidDiceRoll = Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 15) && !Terrain::getEnemyStartingPosition().isValid();
                     const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(3, 15);
                     const auto enemyTurtle = Spy::enemyTurtle();
+                    const auto enemyFasterSpeed = (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost, 1) && !Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost, 1)) || (slowerPool && !Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost, 1));
 
                     if (BuildOrder::getCurrentTransition() == "1HatchMuta" && Util::getTime() < Time(7, 00)) {
                         if (slowerPool || equalPool || enemyLingVomit || avoidDiceRoll || enemyDroneScouted || enemyTurtle)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
                     if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(4, 00)) {
-                        if (avoidDiceRoll || slowerPool || enemyDroneScouted)
+                        if (slowerPool || avoidDiceRoll || enemyDroneScouted)
+                            staticRetreatTypes.push_back(Zerg_Zergling);
+                    }
+                    if (BuildOrder::getCurrentTransition() == "2HatchMuta"&& Util::getTime() < Time(8, 00)) {
+                        if (Spy::getEnemyTransition() == "3HatchSpeedling" || enemyFasterSpeed)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
                 }
@@ -236,7 +241,7 @@ namespace McRave::Combat::State {
         return (atHome && unit.getSimState() == SimState::Win)
             || (atHome && freeAttacks())
             || (atHome && !unit.getType().isWorker() && !Spy::enemyRush() && (unit.getGroundRange() > target.getGroundRange() || target.getType().isWorker()) && !target.isHidden())
-            || (target.isThreatening() && !target.isHidden() && (Util::getTime() < Time(10, 00) || unit.getSimState() == SimState::Win || Players::ZvZ() || unit.getType() == Zerg_Zergling))
+            || (target.isThreatening() && !target.isHidden())
             || (unit.isSuicidal() && (Terrain::inTerritory(PlayerState::Self, target.getPosition()) || target.isThreatening() || target.getPosition().getDistance(unit.getGoal()) < 160.0))
             || (unit.isSuicidal() && Players::getStrength(PlayerState::Enemy).groundToAir <= 0.0 && !nearEnemyDefenseStructure())
             || (unit.isHidden() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
@@ -259,18 +264,24 @@ namespace McRave::Combat::State {
             const auto mutaSavingRequired = unit.getType() == Zerg_Mutalisk &&
                 (Players::ZvZ() ? (Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) == 0) : (Util::getTime() > Time(8, 00)))
                 && !unit.isWithinRange(target) && !target.isWithinRange(unit) && unit.getHealth() <= 60
-                && !Terrain::inTerritory(PlayerState::Enemy, unit.getPosition());
+                && !Terrain::inTerritory(PlayerState::Enemy, unit.getPosition())
+                && (Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0);
 
             // Try to save scouts as they have high shield counts
             const auto scoutSavingRequired = unit.getType() == Protoss_Scout && !unit.isWithinRange(target) && unit.getHealth() + unit.getShields() <= 80;
 
+            // Try to save zerglings in ZvZ
+            const auto zerglingSaving = Players::ZvZ() && unit.getType() == Zerg_Zergling && !unit.isWithinRange(target) && unit.getHealth() < 10;
+
             // TODO: turned this off for now as it was causing clusters to shift and suicide
-            //if (mutaSavingRequired || scoutSavingRequired)
-            //    unit.saveUnit = true;
+            if (mutaSavingRequired || scoutSavingRequired || zerglingSaving)
+                unit.saveUnit = true;
             if (unit.saveUnit) {
                 if (unit.getType() == Zerg_Mutalisk && unit.getHealth() >= 100)
                     unit.saveUnit = false;
                 if (unit.getType() == Protoss_Scout && unit.getShields() >= 90)
+                    unit.saveUnit = false;
+                if (unit.getType() == Zerg_Zergling && unit.getHealth() >= 30)
                     unit.saveUnit = false;
                 if (unit.getGoal().isValid())
                     unit.saveUnit = false;
@@ -295,21 +306,21 @@ namespace McRave::Combat::State {
         const auto distTarget = double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
 
         const auto insideRetreatRadius = distSim < unit.getRetreatRadius();
-        const auto insideEngageRadius = distTarget < unit.getEngageRadius() && (unit.getGlobalState() == GlobalState::Attack || unit.getGlobalState() == GlobalState::ForcedAttack || atHome);
+        const auto insideEngageRadius = distTarget < unit.getEngageRadius() && (unit.getGlobalState() == GlobalState::Attack || atHome);
         const auto exploringGoal = unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore && unit.getUnitsInReachOfThis().empty() && Util::getTime() > Time(4, 00);
 
         // Regardless of any decision, determine if Unit is in danger and needs to retreat
         if ((Actions::isInDanger(unit, unit.getPosition()) && !unit.isTargetedBySuicide())
             || (Actions::isInDanger(unit, unit.getEngagePosition()) && insideEngageRadius && !unit.isTargetedBySuicide())
             || (unit.isNearSuicide() && unit.isFlying())) {
-            unit.setLocalState(LocalState::ForcedRetreat);
+            unit.setLocalState(LocalState::Retreat);
         }
 
         // Forced states
         else if (insideEngageRadius && forceLocalAttack(unit))
-            unit.setLocalState(LocalState::ForcedAttack);
+            unit.setLocalState(LocalState::Attack);
         else if (insideRetreatRadius && forceLocalRetreat(unit))
-            unit.setLocalState(LocalState::ForcedRetreat);
+            unit.setLocalState(LocalState::Retreat);
 
         // If within local decision range, determine if Unit needs to attack or retreat
         else if (insideEngageRadius && (unit.getSimState() == SimState::Win || exploringGoal))
@@ -328,12 +339,12 @@ namespace McRave::Combat::State {
             return;
 
         if (forceGlobalAttack(unit)) {
-            unit.setGlobalState(GlobalState::ForcedAttack);
-            unit.setLocalState(LocalState::ForcedAttack);
+            unit.setGlobalState(GlobalState::Attack);
+            unit.setLocalState(LocalState::Attack);
         }
         else if (forceGlobalRetreat(unit)) {
-            unit.setGlobalState(GlobalState::ForcedRetreat);
-            unit.setLocalState(LocalState::ForcedRetreat);
+            unit.setGlobalState(GlobalState::Retreat);
+            unit.setLocalState(LocalState::Retreat);
         }
         else if (isStaticRetreat(unit.getType()))
             unit.setGlobalState(GlobalState::Retreat);

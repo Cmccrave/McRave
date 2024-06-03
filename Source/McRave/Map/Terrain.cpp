@@ -107,7 +107,7 @@ namespace McRave::Terrain {
                         enemyStartingPosition = Position(inferedStart) + Position(64, 48);
                         enemyStartingTilePosition = inferedStart;
                         inferComplete = true;
-                        Util::debug(string("Inferred enemy start: ") + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
+                        Util::debug(string("[Terrain]: Inferred enemy start: ") + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
                     }
                 }
             }

@@ -153,7 +153,7 @@ namespace McRave::Spy::Terran {
 
                     if ((Players::getTotalCount(PlayerState::Enemy, Terran_Machine_Shop) >= 2 && (theSpy.typeUpgrading.find(Terran_Machine_Shop) != theSpy.typeUpgrading.end() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture_Spider_Mine) > 0))
                         || (Players::getTotalCount(PlayerState::Enemy, Terran_Machine_Shop) >= 2 && Util::getTime() < Time(6, 00))
-                        || (theSpy.upgradeLevel[UpgradeTypes::Ion_Thrusters] && Util::getTime() < Time(6, 15)))
+                        || completesBy(1, UpgradeTypes::Ion_Thrusters, Time(6, 15)))
                         theSpy.transition.name = "2Fact";
                 }
 
@@ -188,12 +188,12 @@ namespace McRave::Spy::Terran {
                 if (completesBy(2, Terran_Goliath, Time(5, 00))
                     || completesBy(4, Terran_Goliath, Time(5, 30))
                     || completesBy(6, Terran_Goliath, Time(6, 00))
-                    || (theSpy.upgradeLevel[UpgradeTypes::Charon_Boosters] > 0) && Util::getTime() < Time(7, 15))
+                    || completesBy(1, UpgradeTypes::Charon_Boosters, Time(7, 15)))
                     theSpy.transition.name = "3FactGoliath";
                 if (completesBy(3, Terran_Goliath, Time(6, 15))
                     || completesBy(5, Terran_Goliath, Time(6, 45))
                     || completesBy(7, Terran_Goliath, Time(7, 15))
-                    || (theSpy.upgradeLevel[UpgradeTypes::Charon_Boosters] > 0) && Util::getTime() < Time(8, 30))
+                    || completesBy(1, UpgradeTypes::Charon_Boosters, Time(8, 30)))
                     theSpy.transition.name = "5FactGoliath";
             }
         }

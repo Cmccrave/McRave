@@ -34,7 +34,7 @@ namespace McRave::Util {
     /// Log a thing
     static void debug(std::string& stuff)
     {
-        auto frameString = "[" + std::to_string(BWAPI::Broodwar->getFrameCount()) + "]:";
+        auto frameString = "[" + std::to_string(BWAPI::Broodwar->getFrameCount()) + "]";
         std::ofstream writeFile;
         writeFile.open("bwapi-data/write/McRave_Debug_Log.txt", std::ios::app);
         writeFile << Util::getTime().toString() << frameString << stuff << std::endl;

@@ -21,7 +21,6 @@ namespace McRave {
         int lastVisibleFrame = -999;
         int lastMoveFrame = -999;
         int lastStuckFrame = 0;
-        int lastThreateningFrame = 0;
         int lastStimFrame = 0;
         int threateningFrames = 0;
         int resourceHeldFrames = -999;
@@ -110,6 +109,7 @@ namespace McRave {
         bool saveUnit = false;
         bool stunned = false;
         int commandFrame = -999;
+        int lastThreateningFrame = -999;
         bool sharedCommand = false;
 
         bool isValid() { return unit() && unit()->exists(); }

@@ -97,7 +97,10 @@ namespace McRave::Units {
                         || unit.getRole() == Role::Scout || unit.getRole() == Role::Support || unit.getRole() == Role::Transport
                         || unit.getRole() == Role::Worker;
 
-                    if (validRole)
+                    auto frames = unit.isLightAir() ? 3 : 9;
+                    auto newCommandFrame = Broodwar->getFrameCount() - unit.commandFrame > frames;
+
+                    if (newCommandFrame && validRole)
                         commandQueue.push_back(&unit);
                 }
             }
@@ -212,7 +215,7 @@ namespace McRave::Units {
             for (auto &[_, air] : airDamageRatios) {
                 if (air.count > 0) {
                     for (auto &[type, ratio] : air.ratio)
-                        ratio /= double(air.count);                    
+                        ratio /= double(air.count);
                     air.armor /= double(air.count);
                 }
             }
@@ -291,13 +294,9 @@ namespace McRave::Units {
         auto idx = find_if(commandQueue.begin(), commandQueue.end(), [&](auto &u) {
             return u == &unit;
         });
-        auto frames = unit.isFlying() ? 0 : 9;
-        auto newCommandFrame = Broodwar->getFrameCount() - unit.commandFrame > frames;
-        if (!newCommandFrame)
-            return false;
-
-        if (idx != commandQueue.end() && idx - commandQueue.begin() < 60)
-            unit.commandFrame = Broodwar->getFrameCount();        
-        return idx != commandQueue.end() && idx - commandQueue.begin() < 60;
+        auto allowed = idx != commandQueue.end() && idx - commandQueue.begin() < 50;
+        if (allowed)
+            unit.commandFrame = Broodwar->getFrameCount();
+        return allowed;
     }
 }

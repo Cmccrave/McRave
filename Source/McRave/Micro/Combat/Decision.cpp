@@ -48,8 +48,8 @@ namespace McRave::Combat::Decision {
                 if (!Units::commandAllowed(*unit))
                     continue;
 
-                auto sharedDecision = cluster.commandShare == CommandShare::Exact && unit->getLocalState() != LocalState::ForcedRetreat && unit->getGlobalState() != GlobalState::ForcedRetreat && !unit->isNearSuicide()
-                    && !unit->attemptingRegroup() && (unit->getType() == commander->getType() || unit->getLocalState() != LocalState::Attack || unit->getLocalState() != LocalState::ForcedAttack);
+                auto sharedDecision = cluster.commandShare == CommandShare::Exact && unit->getGlobalState() != GlobalState::Retreat && !unit->isNearSuicide()
+                    && !unit->attemptingRegroup() && (unit->getType() == commander->getType() || unit->getLocalState() != LocalState::Attack);
 
                 // If it's a shared decision, replicate the commanders command
                 if (sharedDecision)

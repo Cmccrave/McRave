@@ -132,8 +132,8 @@ namespace McRave::Combat::Simulation {
             maxWinPercent = 1.4;
         }
         if (Players::ZvZ()) {
-            minWinPercent = 0.8;
-            maxWinPercent = 1.2;
+            minWinPercent = 0.7;
+            maxWinPercent = 1.3;
         }
         if (Players::ZvT()) {
             minWinPercent = 1.0;

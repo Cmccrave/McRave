@@ -254,7 +254,7 @@ namespace McRave
         if (getPlayer() == Broodwar->self()) {
             nearHidden = false;
             auto closestHidden = Util::getClosestUnit(position, PlayerState::Enemy, [&](auto &u) {
-                return u->isHidden() && u->unit()->exists() && ((!this->isFlying() && u->canAttackGround()) || (this->isFlying() && u->canAttackAir()));
+                return u->isHidden() && u->unit()->exists() && ((!this->isFlying() && u->canAttackGround() && u->getType() != Terran_Wraith && u->getType() != Terran_Ghost) || (this->isFlying() && u->canAttackAir() && u->getType() != Terran_Ghost));
             });
 
             if (closestHidden && closestHidden->isWithinReach(*this))
@@ -263,13 +263,6 @@ namespace McRave
             targetedByHidden = any_of(unitsTargetingThis.begin(), unitsTargetingThis.end(), [&](auto &t) {
                 return !t.expired() && t.lock()->isHidden();
             });
-        }
-
-        if (commandText != "") {
-            const auto color = Text::White;
-            const auto height = getType().height() / 2;
-            const auto pText = getPosition() + Position(-4 * int(commandText.length() / 2), height);
-            Broodwar->drawTextMap(pText, "%c%s", color, commandText.c_str());
         }
 
         target_.reset();
@@ -404,9 +397,16 @@ namespace McRave
 
         // Check if enemy is generally in our territory
         auto nearTerritory = [&]() {
-            return (Util::getTime() > Time(5, 00) && Terrain::inArea(Terrain::getMainArea(), position))
-                || (Util::getTime() > Time(7, 00) && Terrain::inArea(Terrain::getNaturalArea(), position))
-                || (Util::getTime() > Time(9, 00) && atHome);
+            if (Combat::holdAtChoke() && Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural()
+                || (Combat::holdAtChoke() && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
+                return true;
+
+            if (!Players::ZvZ()) {
+                return (Util::getTime() > Time(5, 00) && Terrain::inArea(Terrain::getMainArea(), position))
+                    || (Util::getTime() > Time(7, 00) && Terrain::inArea(Terrain::getNaturalArea(), position))
+                    || (Util::getTime() > Time(9, 00) && atHome);
+            }
+            return false;
         };
 
         // Check if our defenses can hit or be hit
@@ -459,7 +459,7 @@ namespace McRave
         // Unit
         else
             threateningThisFrame = attackedWorkers
-            //|| nearTerritory()
+            || nearTerritory()
             || nearResources()
             || nearFragileBuilding()
             || nearBuildPosition()
@@ -482,13 +482,17 @@ namespace McRave
 
         if (threateningFrames > 8)
             lastThreateningFrame = Broodwar->getFrameCount();
-        threatening = Broodwar->getFrameCount() - lastThreateningFrame <= 8;
 
-        if (threatening) {
-            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
-                auto &unit = *u;
-                if (unit.getPosition().getDistance(getPosition()) < 320.0)
-                    unit.threatening = true;
+        // Linger threatening for 0.5 seconds
+        threatening = Broodwar->getFrameCount() - lastThreateningFrame <= 12;
+
+        // Apply to others
+        if (threatening && threateningFrames > 8) {
+            for (auto unit : Units::getUnits(PlayerState::Enemy)) {
+                if (*unit != *this) {
+                    if (unit->getPosition().getDistance(position) < 320.0)
+                        unit->lastThreateningFrame = Broodwar->getFrameCount();
+                }
             }
         }
     }
@@ -571,7 +575,7 @@ namespace McRave
         if (allowCommand(this)) {
             commandPosition = here;
             commandType = cmd;
-            
+
             if (cmd == UnitCommandTypes::Move) {
                 here = getOvershootPosition(this, here);
                 unit()->move(here);
@@ -595,8 +599,8 @@ namespace McRave
 
         if (allowCommand(this)) {
             commandPosition = target.getPosition();
-            commandType = cmd;      
-            
+            commandType = cmd;
+
             if (cmd == UnitCommandTypes::Attack_Unit)
                 unit()->attack(target.unit());
             else if (cmd == UnitCommandTypes::Right_Click_Unit)
@@ -808,7 +812,7 @@ namespace McRave
     bool UnitInfo::isWithinRange(UnitInfo& otherUnit)
     {
         auto boxDistance = Util::boxDistance(getType(), getPosition(), otherUnit.getType(), otherUnit.getPosition());
-        auto range = otherUnit.getType().isFlyer() ? getAirRange() : getGroundRange();
+        auto range = max(16.0, otherUnit.getType().isFlyer() ? getAirRange() : getGroundRange());
         auto latencyDist = (Broodwar->getLatencyFrames() * getSpeed()) - (Broodwar->getLatencyFrames() * otherUnit.getSpeed());
         auto ff = (!isHovering() && !isFlying()) ? 0.0 : -8.0;
         return range + latencyDist + ff >= boxDistance;
@@ -916,10 +920,15 @@ namespace McRave
 
     bool UnitInfo::attemptingSurround()
     {
-        return false;
-        if (attemptingRunby() || Util::getTime() < Time(4, 00) || !hasTarget() || (hasTarget() && getTarget().lock()->getType().isWorker()))
+        if (!hasTarget())
             return false;
-        if (surroundPosition.isValid() && !Terrain::inTerritory(PlayerState::Enemy, surroundPosition) && position.getDistance(surroundPosition) > 16.0)
+        auto target = *getTarget().lock();
+        if (target.isThreatening())
+            return false;
+
+        if (attemptingRunby() || Util::getTime() < Time(4, 00) || target.getType().isWorker())
+            return false;
+        if (surroundPosition.isValid() && !Terrain::inTerritory(PlayerState::Enemy, surroundPosition) && position.getDistance(surroundPosition) > 24.0)
             return true;
         return false;
     }
@@ -952,7 +961,7 @@ namespace McRave
 
         // ZvP
         if (Players::ZvP()) {
-            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Util::getTime() < Time(8, 00))
+            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0)
                 return true;
 
             const auto closestMelee = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
@@ -968,7 +977,7 @@ namespace McRave
 
     bool UnitInfo::attemptingRegroup()
     {
-        if (!isLightAir() || getGlobalState() == GlobalState::ForcedRetreat || getLocalState() == LocalState::ForcedRetreat)
+        if (!isLightAir())
             return false;
         return hasCommander() && getPosition().getDistance(getCommander().lock()->getPosition()) > 128.0;
     }

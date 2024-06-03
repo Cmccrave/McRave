@@ -18,11 +18,13 @@ namespace McRave::Horizon {
                 || (u.stunned)
                 || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0)
                 || (u.getRole() != Role::None && u.getRole() != Role::Combat && u.getRole() != Role::Defender)
+                || (u.getRole() == Role::Combat && u.getGlobalState() == GlobalState::Retreat)
                 || !u.hasTarget())
                 return false;
             return true;
         }
 
+        // TODO: Figure out how to utilize simulating enemies "intercepting" my units
         double perpDist(Position p0, Position p1, Position p2) {
             return abs(double((p2.x - p1.x) * (p1.y - p0.y) - (p1.x - p0.x) * (p2.y - p1.y))) / p1.getDistance(p2);
         }
@@ -64,16 +66,16 @@ namespace McRave::Horizon {
 
             auto &enemyTarget =                 enemy.getTarget().lock();
             auto simRatio =                     0.0;
+            const auto distUnknown =            min(double(unit.getType().sightRange()), (Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) * enemy.getSpeed());
             const auto distTarget =             max(0.0, double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getPosition())));
             const auto distEngage =             max(0.0, double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getEngagePosition())));
-            //const auto distPerp =               perpDist(enemy.getPosition(), unit.getPosition(), unit.getEngagePosition());
             const auto range =                  enemyTarget->getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
             const auto enemyReach =             max(enemy.getAirReach(), enemy.getGroundReach());
 
             // If the unit doesn't affect this simulation
-            if ((enemy.getSpeed() <= 0.0 && distEngage > range + 32.0 && distTarget - targetDisplacement > range + 32.0 /*&& distPerp > range*/)
+            if ((enemy.getSpeed() <= 0.0 && distEngage > range + 32.0 && distTarget - targetDisplacement > range + 32.0)
                 || (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && distTarget < 64.0)
-                || (enemy.getSpeed() <= 0.0 && distTarget - targetDisplacement > range /*&& distPerp > range*/ && enemyTarget->getSpeed() <= 0.0)
+                || (enemy.getSpeed() <= 0.0 && distTarget - targetDisplacement > range && enemyTarget->getSpeed() <= 0.0)
                 || (enemy.targetsFriendly() && unit.hasTarget() && enemy.getPosition().getDistance(unitTarget->getPosition()) >= enemyReach))
                 continue;
 
@@ -87,7 +89,7 @@ namespace McRave::Horizon {
 
             // If enemy can move, calculate how quickly it can engage
             else {
-                const auto distance =               min(distTarget, distEngage); //min({ distPerp, distTarget, distEngage });
+                const auto distance =               min(distTarget - distUnknown, distEngage - distUnknown); // TODO: Max sight range of units in this sim
                 const auto speed =                  enemy.getSpeed() * 24.0;
                 const auto engageTime =             max(0.0, (distance - range) / speed);
                 simRatio =                          max(0.0, simulationTime - engageTime);

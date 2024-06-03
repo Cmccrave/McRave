@@ -53,12 +53,12 @@ namespace McRave::Walls {
                 tight = false;
                 defenses ={ Zerg_Sunken_Colony };
                 if (Players::ZvT()) {
-                    buildings ={ Zerg_Evolution_Chamber, Zerg_Hatchery, Zerg_Spire };
-                    backup ={ Zerg_Evolution_Chamber, Zerg_Spire };
+                    buildings ={ Zerg_Evolution_Chamber, Zerg_Spire };
+                    backup ={ Zerg_Evolution_Chamber };
                 }
                 else {
-                    buildings ={ Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber };
-                    backup ={ Zerg_Hatchery, Zerg_Evolution_Chamber };
+                    buildings ={ Zerg_Evolution_Chamber, Zerg_Hatchery, Zerg_Evolution_Chamber };
+                    backup ={ Zerg_Evolution_Chamber, Zerg_Hatchery, };
                 }
             }
         }
@@ -71,10 +71,10 @@ namespace McRave::Walls {
             const auto genWall = [&](auto area, auto choke) {                
                 BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
                 if (!BWEB::Walls::getWall(choke) && !backup.empty()) {
-                    Util::debug(string("Wall failed, falling to backup."));
+                    Util::debug(string("[Walls]: Wall failed, falling to backup."));
                     BWEB::Walls::createWall(backup, area, choke, tightType, defenses, openWall, tight);
                     if (!BWEB::Walls::getWall(choke))
-                        Util::debug(string("Backup wall failed, we're fucked."));
+                        Util::debug(string("[Walls]: Backup wall failed, we're fucked."));
                 }
             };
 
@@ -319,7 +319,7 @@ namespace McRave::Walls {
 
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto expected = max(ZvP_Opener(wall), ZvP_Transition(wall));
-            auto reduction = max(0, unitsKilled / 4);
+            auto reduction = max(0, unitsKilled / 8);
 
             // Kind of hacky solution to build less with 3h
             if (threeHatch && expected > 1)

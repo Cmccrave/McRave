@@ -453,7 +453,7 @@ namespace McRave::Learning {
             if (c == '.')
                 break;
         }
-        Util::debug("New game on " + mapName);
+        Util::debug("[Learning]: New game on " + mapName);
 
         // File extension including our race initial;
         mapLearning         = false;

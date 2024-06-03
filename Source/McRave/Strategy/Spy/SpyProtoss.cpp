@@ -161,7 +161,7 @@ namespace McRave::Spy::Protoss {
 
                 // Speedlot
                 if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 8 && theSpy.build.name == "1GateCore")
-                    || theSpy.upgradeLevel[UpgradeTypes::Leg_Enhancements] > 0)
+                    || completesBy(1, UpgradeTypes::Leg_Enhancements, Time(7, 00)))
                     theSpy.transition.name = "Speedlot";
 
                 // Corsair
@@ -218,13 +218,13 @@ namespace McRave::Spy::Protoss {
                     theSpy.transition.name = "NeoBisu";
                 else if (completesBy(1, Protoss_Stargate, Time(5, 45)) && completesBy(1, Protoss_Robotics_Facility, Time(6, 30)))
                     theSpy.transition.name = "CorsairReaver";
-                else if (theSpy.upgradeLevel[UpgradeTypes::Singularity_Charge] > 0 && completesBy(1, Protoss_Corsair, Time(7, 00)))
+                else if (completesBy(1, UpgradeTypes::Singularity_Charge, Time(7, 00)) && completesBy(1, Protoss_Corsair, Time(7, 00)))
                     theSpy.transition.name = "CorsairGoon";
                 else if (completesBy(1, Protoss_Templar_Archives, Time(7, 30)))
                     theSpy.transition.name = "ZealotArchon";
                 else if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) <= 0 && theSpy.typeUpgrading.find(Protoss_Forge) != theSpy.typeUpgrading.end() && theSpy.typeUpgrading.find(Protoss_Cybernetics_Core) == theSpy.typeUpgrading.end() && Util::getTime() < Time(5, 30))
                     || (completesBy(1, Protoss_Citadel_of_Adun, Time(5, 30)) && completesBy(2, Protoss_Gateway, Time(5, 45)))
-                    || (Util::getTime() < Time(7,30) && theSpy.upgradeLevel[UpgradeTypes::Leg_Enhancements] > 0 && theSpy.upgradeLevel[UpgradeTypes::Protoss_Ground_Weapons] > 0))
+                    || (Util::getTime() < Time(7,30) && completesBy(1, UpgradeTypes::Leg_Enhancements, Time(7, 30)) && completesBy(1, UpgradeTypes::Protoss_Ground_Weapons, Time(7, 30))))
                     theSpy.transition.name = "Speedlot";
                 else if (completesBy(2, Protoss_Stargate, Time(7, 00)))
                     theSpy.transition.name = "DoubleStargate";

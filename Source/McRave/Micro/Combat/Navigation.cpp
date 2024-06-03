@@ -23,19 +23,9 @@ namespace McRave::Combat::Navigation {
         const auto flyerRegroup = [&](const TilePosition &t) {
             return Grids::getAirThreat(Position(t) + Position(16, 16), PlayerState::Enemy) * 250.0;
         };
-
-        const auto closestFriend = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-            return u->getType() == unit.getType() && *u != unit && u->getPosition().getDistance(unit.getPosition()) < 64.0
-                && !u->getDestinationPath().getTiles().empty();
-        });
-        if (closestFriend) {
-            unit.setDestinationPath(closestFriend->getDestinationPath());
-        }
-        else {
-            BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
-            newPath.generateAS_h(flyerRegroup);
-            unit.setDestinationPath(newPath);
-        }
+        BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
+        newPath.generateAS_h(flyerRegroup);
+        unit.setDestinationPath(newPath);
     }
 
     void getGroundPath(UnitInfo& unit)
@@ -95,9 +85,7 @@ namespace McRave::Combat::Navigation {
         auto regrouping = unit.isLightAir() && !unit.getGoal().isValid()
             && Util::getTime() < Time(15, 00)
             && ((unit.attemptingRegroup() && unit.getDestination() == unit.getCommander().lock()->getPosition())
-                || unit.getLocalState() == LocalState::Retreat
-                || unit.getLocalState() == LocalState::ForcedRetreat
-                || unit.getGlobalState() == GlobalState::ForcedRetreat);
+                || unit.getLocalState() == LocalState::Retreat);
         auto harassing = unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Combat::getHarassPosition() && unit.attemptingHarass() && unit.getLocalState() == LocalState::None;
 
         // Generate a flying path for retreating or regrouping
@@ -183,7 +171,7 @@ namespace McRave::Combat::Navigation {
                     continue;
 
                 // Determine if this is a shared decision                
-                auto sharedDecision = cluster.commandShare == CommandShare::Exact && unit->getLocalState() != LocalState::ForcedRetreat && unit->getGlobalState() != GlobalState::ForcedRetreat && !unit->isNearSuicide()
+                auto sharedDecision = cluster.commandShare == CommandShare::Exact && !unit->isNearSuicide()
                     && !unit->attemptingRegroup() && (unit->getType() == commander->getType() || unit->getLocalState() != LocalState::Attack);
 
                 // If it's not a shared decision, indepdently update pathing and navigation waypoint

@@ -56,7 +56,7 @@ namespace McRave::Combat::Clusters {
                 auto matchedDistance = child.position.getDistance(root.position) < 320.0
                     || child.position.getDistance(parent.position) < 96.0
                     || (parent.unit->isLightAir() && child.unit->isLightAir());
-                return matchedType /*&& matchedStrat*/ && matchedDistance && matchedGoal;
+                return matchedType && matchedStrat && matchedDistance && matchedGoal;
             };
 
             auto getNeighbors = [&](auto &parent, auto &queue) {
@@ -119,6 +119,19 @@ namespace McRave::Combat::Clusters {
             if (closestPreviousCommander) {
                 cluster.commander = closestPreviousCommander->weak_from_this();
                 closestPreviousCommander->setCommander(nullptr);
+                return;
+            }
+
+            // Check if a commander is already engaged in combat
+            auto closestCommanderFighting = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
+                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker()
+                    && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end()
+                    && !u->isTargetedBySuicide()
+                    && u->getLocalState() != LocalState::None;
+            });
+            if (closestCommanderFighting) {
+                cluster.commander = closestCommanderFighting->weak_from_this();
+                closestCommanderFighting->setCommander(nullptr);
                 return;
             }
 
@@ -231,8 +244,7 @@ namespace McRave::Combat::Clusters {
                             type = unit->getType();
                         }
                     }
-                    cluster.spacing = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0)) + (cluster.mobileCluster ? 2.0 : 0.0);
-
+                    cluster.spacing = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0));
                     pathCluster(cluster, 160.0);
                 }
             }
@@ -255,7 +267,7 @@ namespace McRave::Combat::Clusters {
 
                 // If old commander no longer satisfactory
                 auto oldCommander = cluster.commander.lock();
-                if (!oldCommander || oldCommander->getGlobalState() == GlobalState::ForcedRetreat || oldCommander->getLocalState() == LocalState::ForcedRetreat)
+                if (!oldCommander)
                     getCommander(cluster);
             }
         }
@@ -271,10 +283,9 @@ namespace McRave::Combat::Clusters {
                     //        cluster.retreatCluster = true;
                     //}
 
-                    cluster.retreatCluster = commander->getLocalState() == LocalState::Retreat || commander->getLocalState() == LocalState::ForcedRetreat || commander->getGlobalState() == GlobalState::Retreat || commander->getGlobalState() == GlobalState::ForcedRetreat;
+                    cluster.retreatCluster = commander->getLocalState() == LocalState::Retreat || commander->getGlobalState() == GlobalState::Retreat;
                     cluster.marchPosition = commander->marchPos;
                     cluster.retreatPosition = commander->retreatPos;
-                    cluster.mobileCluster = true; //!atHome || !cluster.retreatCluster;
 
                     // Determine how commands are sent out
                     if (commander->isLightAir())

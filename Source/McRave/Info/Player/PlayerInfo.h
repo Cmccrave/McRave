@@ -101,7 +101,7 @@ namespace McRave
         void setOpener(std::string newOpener) { opener = newOpener; }
         void setTransition(std::string newTransition) { transition = newTransition; }
 
-        bool hasUpgrade(BWAPI::UpgradeType upgrade, int level = 0) {
+        bool hasUpgrade(BWAPI::UpgradeType upgrade, int level = 1) {
             auto ptr = playerUpgrades.find(upgrade);
             if (ptr != playerUpgrades.end())
                 return ptr->second >= level;

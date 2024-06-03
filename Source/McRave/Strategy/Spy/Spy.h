@@ -7,36 +7,43 @@ namespace McRave::Spy {
         bool possible = false;
         bool confirmed = false;
         bool changeable = false;
+        bool loggedPossible = false;
+        bool loggedConfirmed = false;
         int framesTrue = 0;
         int framesRequired = 0;
         int framesChangeable = 200;
         std::string name = "Unknown";
 
         void debugLog() {
-            Util::debug(name + " confirmed.");
+            if (possible && !loggedPossible)
+                Util::debug("[Spy]: " + name + " possible.");
+            if (confirmed && !loggedConfirmed)
+                Util::debug("[Spy]: " + name + " confirmed.");
         }
 
         void updateStrat() {
-            possible ? framesTrue++ : framesTrue = 0;
-            if (framesTrue > framesRequired) {
-                debugLog();
+            possible ? framesTrue++ : framesTrue = 0;            
+            if (framesTrue > framesRequired)
                 confirmed = true;
-            }
-            else {
+            else
                 possible = false;
-            }
             changeable = framesTrue < framesChangeable;
         }
 
         void updateBlueprint() {
-            name != "Unknown" ? framesTrue++ : framesTrue = 0;
-            if (framesTrue > framesRequired) {
-                debugLog();
-                confirmed = true;
+            if (name != "Unknown") {
+                framesTrue++;
+                possible = true;
             }
+            else
+                framesTrue = 0;
+
+            if (framesTrue > framesRequired)
+                confirmed = true;
             else {
                 name = "Unknown";
-            }
+                possible = false;
+            }            
             changeable = framesTrue < framesChangeable;
         }
     };
@@ -56,9 +63,9 @@ namespace McRave::Spy {
         Time buildTime, openerTime, transitionTime, rushArrivalTime;
         std::vector<Strat*> strats;
         std::vector<Strat*> blueprints;
-        std::map<BWAPI::UnitType, UnitTimings> enemyTimings;
-        std::map<BWAPI::UpgradeType, int> upgradeLevel;
-        std::map<BWAPI::TechType, bool> techResearched; // TODO: Impl
+        std::map<BWAPI::UnitType, UnitTimings> unitTimings;
+        std::map<BWAPI::UpgradeType, UnitTimings> upgradeTimings;
+        std::map<BWAPI::TechType, UnitTimings> researchTimings; // TODO: Impl
         int workersPulled = 0;
         int gasMined = 0;
         int productionCount = 0;
@@ -105,6 +112,8 @@ namespace McRave::Spy {
     bool finishedSooner(BWAPI::UnitType, BWAPI::UnitType);
     bool startedEarlier(BWAPI::UnitType, BWAPI::UnitType);
     bool completesBy(int, BWAPI::UnitType, Time);
+    bool completesBy(int, BWAPI::UpgradeType, Time);
+    bool completesBy(int, BWAPI::TechType, Time);
     bool arrivesBy(int, BWAPI::UnitType, Time);
     void onFrame();
 
@@ -114,7 +123,6 @@ namespace McRave::Spy {
     Time getEnemyBuildTime();
     Time getEnemyOpenerTime();
     Time getEnemyTransitionTime();
-    Time whenArrival(int, BWAPI::UnitType);
     bool enemyFastExpand();
     bool enemyRush();
     bool enemyInvis();

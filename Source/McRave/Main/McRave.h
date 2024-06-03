@@ -31,6 +31,10 @@ namespace McRave
             return std::to_string(minutes) + ":" + (seconds < 10 ? "0" + std::to_string(seconds) : std::to_string(seconds));
         }
 
+        bool isUnknown() {
+            return minutes >= 999;
+        }
+
         bool operator< (const Time t2) {
             return (minutes < t2.minutes)
                 || (minutes == t2.minutes && seconds < t2.seconds);
@@ -95,11 +99,11 @@ namespace McRave
     };
 
     enum class GlobalState {
-        None, ForcedAttack, Attack, Hold, Retreat, ForcedRetreat
+        None, Attack, Hold, Retreat
     };
 
     enum class LocalState {
-        None, ForcedAttack, Attack, Hold, Retreat, ForcedRetreat
+        None, Attack, Hold, Retreat
     };
 
     enum class SimState {

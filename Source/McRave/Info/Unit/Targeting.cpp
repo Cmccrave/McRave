@@ -46,7 +46,7 @@ namespace McRave::Targets {
                     || Spy::getEnemyTransition() == "WorkerRush"
                     || Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
             }
-            return true;
+            return int(target.getUnitsTargetingThis().size()) <= 4;
         }
 
         Priority getPriority(UnitInfo &unit, UnitInfo& target)

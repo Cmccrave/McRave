@@ -128,7 +128,7 @@ namespace McRave::Workers {
 
             // If around defenders
             auto aroundDefenders = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                if ((u->getRole() != Role::Combat && u->getRole() != Role::Defender) || u->getGlobalState() == GlobalState::ForcedRetreat)
+                if ((u->getRole() != Role::Combat && u->getRole() != Role::Defender))
                     return false;
 
                 return (unit.getPosition().getDistance(u->getPosition()) < u->getGroundReach() && u->getPosition().getDistance(buildCenter) < u->getGroundReach())
@@ -148,7 +148,7 @@ namespace McRave::Workers {
                 return Grids::getGroundThreat(p, PlayerState::Enemy) > 0.0 && Broodwar->isVisible(TilePosition(p));
             });
 
-            if (threatPosition && threatPosition.getDistance(unit.getPosition()) < 200.0 && Util::getTime() > Time(5, 00))
+            if (threatPosition && threatPosition.getDistance(unit.getPosition()) < 32.0 && Util::getTime() > Time(5, 00))
                 return false;
             return true;
         }
@@ -201,7 +201,7 @@ namespace McRave::Workers {
             unit.setNavigation(unit.getDestination());
             if (unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())) {
                 auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
-                    return p.getDistance(unit.getPosition()) >= 64.0;
+                    return p.getDistance(unit.getPosition()) >= 160.0;
                 });
 
                 if (newDestination.isValid())

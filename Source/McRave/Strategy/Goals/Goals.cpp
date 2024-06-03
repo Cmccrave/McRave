@@ -51,9 +51,7 @@ namespace McRave::Goals {
             for (int current = 0; current < count; current++) {
                 if (type.isFlyer()) {
                     const auto closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
-                        if (gType == GoalType::Attack && (u->getGlobalState() == GlobalState::ForcedRetreat || u->getLocalState() != LocalState::None))
-                            return false;
-                        if (gType == GoalType::Defend && (u->getLocalState() == LocalState::Retreat || u->getLocalState() == LocalState::ForcedRetreat))
+                        if (gType == GoalType::Attack && Combat::State::isStaticRetreat(type))
                             return false;
                         if (u->getRole() == Role::Scout)
                             return false;
@@ -68,9 +66,7 @@ namespace McRave::Goals {
 
                 else {
                     const auto closest = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
-                        if (gType == GoalType::Attack && (u->getGlobalState() == GlobalState::ForcedRetreat || u->getLocalState() != LocalState::None))
-                            return false;
-                        if (gType == GoalType::Defend && (u->getLocalState() == LocalState::Retreat || u->getLocalState() == LocalState::ForcedRetreat))
+                        if (gType == GoalType::Attack && Combat::State::isStaticRetreat(type))
                             return false;
                         return u->getType() == type && !u->getGoal().isValid();
                     });
@@ -87,7 +83,7 @@ namespace McRave::Goals {
         void assignPercentToGoal(T t, UnitType type, double percent, GoalType gType = GoalType::None)
         {
             const auto here = Position(t);
-            const auto count = int(percent * double(vis(type)));
+            const auto count = int(percent * double(com(type)));
             assignNumberToGoal(here, type, count, gType);
         }
 
@@ -184,16 +180,22 @@ namespace McRave::Goals {
                 }
 
                 // Escort expanders
-                if (nextExpand.isValid() && (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Stations::getStations(PlayerState::Self).size() <= 1 || Spy::getEnemyTransition() == "4Gate")) {
+                if (nextExpand.isValid() && (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Stations::getStations(PlayerState::Self).size() <= 1)) {
                     auto closestBuilder = Util::getClosestUnit(nextExpand, PlayerState::Self, [&](auto &u) {
                         return u->getBuildType().isResourceDepot();
                     });
                     auto type = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
 
                     if (closestBuilder && !closestBuilder->isWithinBuildRange()) {
-                        assignNumberToGoal(closestBuilder->getPosition(), type, 1, GoalType::Escort);
                         for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
                             if (unit->getPosition().getDistance(closestBuilder->getPosition()) < 640.0)
+                                assignNumberToGoal(unit->getPosition(), type, 1, GoalType::Escort);
+                        }
+                        assignPercentToGoal(closestBuilder->getPosition(), type, 1.0, GoalType::Escort);
+                    }
+                    else if (BuildOrder::shouldExpand()) {
+                        for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
+                            if (unit->getPosition().getDistance(nextExpand) < 640.0)
                                 assignNumberToGoal(unit->getPosition(), type, 1, GoalType::Escort);
                         }
                     }
@@ -311,7 +313,6 @@ namespace McRave::Goals {
                     return;
                 }
             }
-            return;
 
             // Assign an Overlord to each natural Station
             for (auto &station : Stations::getStations(PlayerState::Self)) {

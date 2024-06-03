@@ -296,7 +296,7 @@ namespace McRave::Stations
 
                     // 4 Pool
                     if (Spy::getEnemyOpener() == "4Pool")
-                        desiredDefenses = max(desiredDefenses, 1);
+                        desiredDefenses = max(desiredDefenses, 1 + (vis(Zerg_Spire) > 0));
 
                     // 12 Pool
                     if (Spy::getEnemyOpener() == "12Pool" && Spy::getEnemyTransition() != "1HatchMuta")
@@ -317,8 +317,11 @@ namespace McRave::Stations
                     // Unknown
                     if (vis(Zerg_Spire) > 0) {
                         if ((!Terrain::foundEnemy() && vis(Zerg_Spire) > 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 20)
-                            || (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling))
-                            || (Spy::getEnemyTransition().find("Muta") == string::npos && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 20))
+                            || Spy::enemyFastExpand()
+                            || Spy::getEnemyBuild() == "PoolHatch"
+                            || Spy::getEnemyBuild() == "HatchPool"
+                            || Spy::getEnemyTransition() == "2HatchMuta"
+                            || (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling)))
                             desiredDefenses = max(desiredDefenses, 1);
                     }
                 }
@@ -561,21 +564,17 @@ namespace McRave::Stations
                 // Need a spore with later mutas
                 if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() != "2HatchMuta")
                     return (Util::getTime() > Time(5, 00)) - airCount;
-
-                // Or we are playing blind
-                if (station->isNatural() && Spy::getEnemyTransition() == "Unknown" && BuildOrder::getCurrentTransition() == "3HatchMuta")
-                    return (total(Zerg_Spire) > 0) - airCount;
             }
 
             if (Players::ZvZ()) {
 
-                // Get a spore vs 1h muta if we aren't 1h muta
+                // Get a spore vs 1h muta if we aren't 1h muta or 2h muta on one base
                 if (Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
-                    return (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(6, 15)) - airCount;
+                    return (Util::getTime() > Time(4, 15)) - airCount;
 
                 // We have more bases
-                if (Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size())
-                    return (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(8, 15)) - airCount;
+                if (Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() && com(Zerg_Extractor) >= 2)
+                    return (Util::getTime() > Time(6, 15)) - airCount;
             }
 
             if (Players::ZvT()) {

@@ -42,7 +42,7 @@ namespace McRave::Spy::Zerg {
             theSpy.opener.framesRequired = 24;
 
             // Pool timing
-            if (theSpy.rushArrivalTime < Time(2, 45)
+            if (theSpy.rushArrivalTime < Time(2, 40)
                 || completesBy(1, Zerg_Zergling, Time(2, 05))
                 || completesBy(1, Zerg_Spawning_Pool, Time(1, 40))
                 || arrivesBy(8, Zerg_Zergling, Time(3, 00)))
@@ -51,8 +51,8 @@ namespace McRave::Spy::Zerg {
                 || completesBy(1, Zerg_Zergling, Time(2, 15))
                 || completesBy(1, Zerg_Spawning_Pool, Time(1, 50)))
                 theSpy.opener.name = "7Pool";
-            else if (arrivesBy(1, Zerg_Zergling, Time(3, 05))
-                || completesBy(1, Zerg_Zergling, Time(2, 40))
+            else if (arrivesBy(1, Zerg_Zergling, Time(2, 55))
+                || completesBy(1, Zerg_Zergling, Time(2, 25))
                 || completesBy(8, Zerg_Zergling, Time(3, 00))
                 || completesBy(10, Zerg_Zergling, Time(3, 20))
                 || completesBy(12, Zerg_Zergling, Time(3, 30))
@@ -60,17 +60,22 @@ namespace McRave::Spy::Zerg {
                 || completesBy(1, Zerg_Spawning_Pool, Time(2, 00))
                 || completesBy(1, Zerg_Lair, Time(3, 45)))
                 theSpy.opener.name = "9Pool";
+            else if (arrivesBy(1, Zerg_Zergling, Time(3, 05))
+                || completesBy(1, Zerg_Zergling, Time(2, 40)))
+                theSpy.opener.name = "OverPool";
             else if (arrivesBy(1, Zerg_Zergling, Time(3, 30))
                 || completesBy(1, Zerg_Zergling, Time(3, 00))
                 || completesBy(1, Zerg_Spawning_Pool, Time(2, 00)))
                 theSpy.opener.name = "12Pool";
 
             // Hatch timing
-            if (completesBy(2, Zerg_Hatchery, Time(2, 35)))
+            else if (completesBy(2, Zerg_Hatchery, Time(2, 35)))
                 theSpy.opener.name = "9Hatch";
             else if (completesBy(2, Zerg_Hatchery, Time(2, 45)))
                 theSpy.opener.name = "10Hatch";
-            else if (completesBy(2, Zerg_Hatchery, Time(3, 05)))
+            else if (completesBy(2, Zerg_Hatchery, Time(3, 05))
+                || completesBy(1, Zerg_Spawning_Pool, Time(3, 00))
+                || arrivesBy(1, Zerg_Zergling, Time(3, 50)))
                 theSpy.opener.name = "12Hatch";
         }
 
@@ -82,18 +87,19 @@ namespace McRave::Spy::Zerg {
                 theSpy.transition.name = "LingRush";
 
             // Zergling all-in transitions
-            if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0) {
-                if (theSpy.productionCount == 3 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 12 && Util::getTime() > Time(3, 45))
-                    theSpy.transition.name = "3HatchSpeedling";
-                else if (Players::ZvZ() && theSpy.productionCount == 2 && Scouts::gotFullScout() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 10) {
-                    if ((Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone) <= 7 && Util::getTime() > Time(3, 00) && (theSpy.build.name == "PoolHatch" || theSpy.build.name == "HatchPool"))
-                        || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && Util::getTime() > Time(3, 45)))
-                        theSpy.transition.name = "2HatchSpeedling";
-                }
-                else if (arrivesBy(20, Zerg_Zergling, Time(5, 10)))
+            if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 12) {
+
+                // General
+                if (completesBy(1, UpgradeTypes::Metabolic_Boost, Time(4, 05)) && Scouts::gotFullScout() && arrivesBy(20, Zerg_Zergling, Time(4, 30)))
                     theSpy.transition.name = "2HatchSpeedling";
-                else if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Evolution_Chamber) > 0 && !theSpy.expand.possible && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 12 && Util::getTime() < Time(4, 00))
-                    theSpy.transition.name = "+1Ling";
+                else if (!completesBy(1, UpgradeTypes::Metabolic_Boost, Time(4, 05)) && completesBy(1, UpgradeTypes::Metabolic_Boost, Time(5, 00)) && Scouts::gotFullScout() && arrivesBy(20, Zerg_Zergling, Time(5, 00)))
+                    theSpy.transition.name = "3HatchSpeedling";
+
+                // ZvZ
+                if (Players::ZvZ()) {
+                    if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Evolution_Chamber) > 0 && !theSpy.expand.possible && Util::getTime() < Time(4, 00))
+                        theSpy.transition.name = "+1Ling";
+                }
             }
 
             // Hydralisk/Lurker build detection
@@ -114,12 +120,22 @@ namespace McRave::Spy::Zerg {
 
             // Mutalisk transition detection
             if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) == 0) {
+
+                // General
                 if (completesBy(1, Zerg_Lair, Time(3, 45)) || completesBy(1, Zerg_Spire, Time(5, 15)) || arrivesBy(1, Zerg_Mutalisk, Time(6, 00)))
                     theSpy.transition.name = "1HatchMuta";
                 else if (completesBy(1, Zerg_Lair, Time(4, 30)) || completesBy(1, Zerg_Spire, Time(5, 45)) || arrivesBy(1, Zerg_Mutalisk, Time(6, 30)))
                     theSpy.transition.name = "2HatchMuta";
                 else if (completesBy(1, Zerg_Lair, Time(5, 00)) || completesBy(1, Zerg_Spire, Time(6, 15)) || arrivesBy(1, Zerg_Mutalisk, Time(7, 00)))
                     theSpy.transition.name = "3HatchMuta";
+
+                // ZvZ
+                if (Players::ZvZ()) {
+                    if (!theSpy.expand.confirmed && theSpy.productionCount == 1 && Util::getTime() > Time(5, 00))
+                        theSpy.transition.name = "1HatchMuta";
+                    else if (theSpy.expand.confirmed && theSpy.productionCount == 2 && Util::getTime() > Time(5, 30))
+                        theSpy.transition.name = "2HatchMuta";
+                }
             }
         }
     }

@@ -94,7 +94,7 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyBuild() == "RaxFact") {
             initialValue = 2;
             if (Util::getTime() > Time(4, 00))
-                initialValue = 6;
+                initialValue = 10;
         }
 
         // TODO: Fix T spy
@@ -127,8 +127,11 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
         reserveLarva =                                  6;
 
+        auto thirdHatch = (Spy::getEnemyBuild() == "RaxFact") ? total(Zerg_Mutalisk) >= 6 : (vis(Zerg_Spire) > 0);
+        wantThird = (Spy::getEnemyBuild() == "RaxFact");
+
         // Buildings
-        buildQueue[Zerg_Hatchery] =                     2 + (vis(Zerg_Spire) > 0);
+        buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 16);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (2 * atPercent(Zerg_Spire, 0.25));
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
@@ -160,12 +163,14 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit =                                     Zerg_Mutalisk;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : unitLimits[Zerg_Drone];
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
-        wantThird =                                     !Spy::enemyPressure() && !Spy::enemyRush() && Spy::getEnemyOpener() != "8Rax" && Spy::getEnemyBuild() != "RaxFact";
-        planEarly =                                     hatchCount() < 3 && s >= 26;
+        wantThird =                                     hatchCount() >= 3;
         reserveLarva =                                  9;
 
+        auto fourthHatch = (Spy::getEnemyBuild() == "RaxFact") ? total(Zerg_Mutalisk) >= 9 : (vis(Zerg_Spire) > 0 && s >= 66);
+        wantThird = (Spy::getEnemyBuild() == "RaxFact") || hatchCount() >= 3;
+
         // Buildings
-        buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + (vis(Zerg_Spire) > 0 && s >= 66);
+        buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + fourthHatch;
         buildQueue[Zerg_Extractor] =                    (s >= 32) + (s >= 44 && vis(Zerg_Drone) >= 20);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (vis(Zerg_Extractor) > 0 && s >= 32) + (s >= 48);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));

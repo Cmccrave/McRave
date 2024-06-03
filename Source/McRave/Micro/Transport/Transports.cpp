@@ -127,7 +127,7 @@ namespace McRave::Transports {
 
             // Check if this cargo is ready to engage
             const auto readyToEngage = [&](UnitInfo& cargo, UnitInfo& cargoTarget) {
-                const auto combatEngage = cargo.getLocalState() != LocalState::Retreat && cargo.getLocalState() != LocalState::ForcedRetreat && unit.isHealthy() && cargo.isHealthy();
+                const auto combatEngage = cargo.getLocalState() != LocalState::Retreat && unit.isHealthy() && cargo.isHealthy();
                 const auto range = cargoTarget.getType().isFlyer() ? cargo.getAirRange() : cargo.getGroundRange();
                 const auto dist = Util::boxDistance(cargo.getType(), cargo.getPosition(), cargoTarget.getType(), cargoTarget.getPosition());
 

@@ -12,22 +12,42 @@ namespace McRave::Spy {
 
     bool finishedSooner(UnitType t1, UnitType t2)
     {
-        if (theSpy.enemyTimings.find(t1) == theSpy.enemyTimings.end())
+        if (theSpy.unitTimings.find(t1) == theSpy.unitTimings.end())
             return false;
-        return (theSpy.enemyTimings.find(t2) == theSpy.enemyTimings.end()) || (theSpy.enemyTimings[t1].firstCompletedWhen < theSpy.enemyTimings[t2].firstCompletedWhen);
+        return (theSpy.unitTimings.find(t2) == theSpy.unitTimings.end()) || (theSpy.unitTimings[t1].firstCompletedWhen < theSpy.unitTimings[t2].firstCompletedWhen);
     }
 
     bool startedEarlier(UnitType t1, UnitType t2)
     {
-        if (theSpy.enemyTimings.find(t1) == theSpy.enemyTimings.end())
+        if (theSpy.unitTimings.find(t1) == theSpy.unitTimings.end())
             return false;
-        return (theSpy.enemyTimings.find(t2) == theSpy.enemyTimings.end()) || (theSpy.enemyTimings[t1].firstStartedWhen < theSpy.enemyTimings[t2].firstStartedWhen);
+        return (theSpy.unitTimings.find(t2) == theSpy.unitTimings.end()) || (theSpy.unitTimings[t1].firstStartedWhen < theSpy.unitTimings[t2].firstStartedWhen);
     }
 
     bool completesBy(int count, UnitType type, Time beforeThis)
     {
         int current = 0;
-        for (auto &time : theSpy.enemyTimings[type].countCompletedWhen) {
+        for (auto &time : theSpy.unitTimings[type].countCompletedWhen) {
+            if (time <= beforeThis)
+                current++;
+        }
+        return current >= count;
+    }
+
+    bool completesBy(int count, UpgradeType type, Time beforeThis)
+    {
+        int current = 0;
+        for (auto &time : theSpy.upgradeTimings[type].countCompletedWhen) {
+            if (time <= beforeThis)
+                current++;
+        }
+        return current >= count;
+    }
+
+    bool completesBy(int count, TechType type, Time beforeThis)
+    {
+        int current = 0;
+        for (auto &time : theSpy.researchTimings[type].countCompletedWhen) {
             if (time <= beforeThis)
                 current++;
         }
@@ -37,24 +57,11 @@ namespace McRave::Spy {
     bool arrivesBy(int count, UnitType type, Time beforeThis)
     {
         int current = 0;
-        for (auto &time : theSpy.enemyTimings[type].countArrivesWhen) {
+        for (auto &time : theSpy.unitTimings[type].countArrivesWhen) {
             if (time <= beforeThis)
                 current++;
         }
         return current >= count;
-    }
-
-    Time whenArrival(int count, UnitType type)
-    {
-        auto timeCount = Time(999, 00);
-        auto times = theSpy.enemyTimings[type].countArrivesWhen;
-        if (int(times.size()) >= count) {
-            for (auto &time : times) {
-                if (time > timeCount)
-                    timeCount = time;
-            }
-        }
-        return timeCount;
     }
     
     void onFrame()

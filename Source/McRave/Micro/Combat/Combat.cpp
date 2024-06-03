@@ -210,19 +210,20 @@ namespace McRave::Combat {
 
             // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                holdChoke = !defendNatural && Players::getSupply(PlayerState::Self, Races::None) < 60;
-
                 if (Players::ZvZ()) {
-                    if (!defendNatural && com(Zerg_Zergling) >= Players::getCompleteCount(PlayerState::Enemy, Zerg_Zergling))
-                        holdChoke = true;
+                    holdChoke = !defendNatural;
+                    if (!defendNatural && Stations::getGroundDefenseCount(Terrain::getMyMain()) > 0)
+                        holdChoke = false;
                 }
                 if (Players::ZvP()) {
+                    holdChoke = !defendNatural;
                     if (Spy::getEnemyBuild() == "CannonRush")
                         holdChoke = true;
                     if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
                         holdChoke = false;
                 }
                 if (Players::ZvT()) {
+                    holdChoke = !defendNatural;
                     if (!defendNatural)
                         holdChoke = true;
                 }
