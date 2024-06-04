@@ -68,13 +68,18 @@ namespace McRave::Walls {
             initializeWallParameters();
 
             // Create a wall and attempt a backup if needed
-            const auto genWall = [&](auto area, auto choke) {                
+            const auto genWall = [&](auto area, auto choke) {
                 BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
+
                 if (!BWEB::Walls::getWall(choke) && !backup.empty()) {
                     Util::debug(string("[Walls]: Wall failed, falling to backup."));
                     BWEB::Walls::createWall(backup, area, choke, tightType, defenses, openWall, tight);
-                    if (!BWEB::Walls::getWall(choke))
-                        Util::debug(string("[Walls]: Backup wall failed, we're fucked."));
+                }
+
+                if (!BWEB::Walls::getWall(choke)) {
+                    Util::debug(string("[Walls]: Backup wall failed, we're fucked."));
+                    vector<UnitType> empty;
+                    BWEB::Walls::createWall(empty, area, choke, tightType, defenses, openWall, tight);
                 }
             };
 

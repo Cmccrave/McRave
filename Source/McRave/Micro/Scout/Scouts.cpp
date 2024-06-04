@@ -188,8 +188,8 @@ namespace McRave::Scouts {
 
                 if (Players::ZvZ()) {
                     main.desiredTypeCounts[Zerg_Drone] = 0;
-                    main.desiredTypeCounts[Zerg_Zergling] = !Terrain::getEnemyStartingPosition().isValid()
-                        || (Util::getTime() > Time(3, 30) && Players::getTotalCount(PlayerState::Enemy, Zerg_Sunken_Colony) == 0 && !Terrain::foundEnemy() && Util::getTime() < Time(4, 30));
+                    /*main.desiredTypeCounts[Zerg_Zergling] = !Terrain::getEnemyStartingPosition().isValid()
+                        || (Util::getTime() > Time(3, 30) && Players::getTotalCount(PlayerState::Enemy, Zerg_Sunken_Colony) == 0 && !Terrain::foundEnemy() && Util::getTime() < Time(4, 30));*/
 
                     if (Spy::enemyRush() || Spy::enemyPressure())
                         main.desiredTypeCounts[Zerg_Zergling] = 0;

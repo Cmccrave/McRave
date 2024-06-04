@@ -260,6 +260,10 @@ namespace McRave::BuildOrder
             addBuildableRequisites(type);
         reverse(toCheck.begin(), toCheck.end());
 
+        // Some hardcoded requirements
+        if (isFocusUnit(Zerg_Zergling))
+            toCheck.push_back(Zerg_Hive);
+
         // For each building we need to check, add to our queue whatever is possible to build based on its required branch
         for (auto &check : toCheck) {
             if (!check.isBuilding())

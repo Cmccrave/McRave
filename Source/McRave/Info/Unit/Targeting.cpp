@@ -211,10 +211,11 @@ namespace McRave::Targets {
             auto enemyRange =     unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange();
             auto enemyReach =     unit.getType().isFlyer() ? target.getAirReach() : target.getGroundReach();
 
+            const auto boxDistance =    double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
             const auto useGrd =         !unit.getType().isWorker() && !unit.isFlying() && !target.isFlying()
                 && mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea(target.getTilePosition())
-                && mapBWEM.GetArea(unit.getTilePosition())->AccessibleFrom(mapBWEM.GetArea(target.getTilePosition()));
-            const auto boxDistance =    double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
+                && mapBWEM.GetArea(unit.getTilePosition())->AccessibleFrom(mapBWEM.GetArea(target.getTilePosition()))
+                && boxDistance < unit.getEngageRadius();
             const auto actualDist =     useGrd ? BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) : boxDistance;
             const auto dist =           exp(0.0125 * actualDist);
 

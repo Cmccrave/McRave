@@ -55,7 +55,8 @@ namespace McRave::Horizon {
 
         auto &unitTarget = unit.getTarget().lock();
         const auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
-        const auto simulationTime = unitToEngage + 5.0 + addPrepTime(unit);
+        const auto enemySimulationTime = 5.0 + addPrepTime(unit);
+        const auto selfSimulationTime = unitToEngage + 5.0 + addPrepTime(unit);
         const auto targetDisplacement = unitToEngage * unitTarget->getSpeed() * 24.0;
         map<Player, SimStrength> simStrengthPerPlayer;
 
@@ -73,7 +74,7 @@ namespace McRave::Horizon {
             const auto enemyReach =             max(enemy.getAirReach(), enemy.getGroundReach());
 
             // If the unit doesn't affect this simulation
-            if ((enemy.getSpeed() <= 0.0 && distEngage > range + 32.0 && distTarget - targetDisplacement > range + 32.0)
+            if ((enemy.getSpeed() <= 0.0 && distEngage - targetDisplacement > range + 32.0 && distTarget - targetDisplacement > range + 32.0)
                 || (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && distTarget < 64.0)
                 || (enemy.getSpeed() <= 0.0 && distTarget - targetDisplacement > range && enemyTarget->getSpeed() <= 0.0)
                 || (enemy.targetsFriendly() && unit.hasTarget() && enemy.getPosition().getDistance(unitTarget->getPosition()) >= enemyReach))
@@ -81,10 +82,10 @@ namespace McRave::Horizon {
 
             // If enemy doesn't move, calculate how long it will remain in range once in range
             if (enemy.getSpeed() <= 0.0) {
-                const auto distance =               distTarget;// min(distPerp, distTarget);
+                const auto distance =               min(distTarget, distEngage);// min(distPerp, distTarget);
                 const auto speed =                  enemyTarget->getSpeed() * 24.0;
                 const auto engageTime =             max(0.0, (distance - range) / speed);
-                simRatio =                          max(0.0, simulationTime - engageTime);
+                simRatio =                          max(0.0, enemySimulationTime - engageTime);
             }
 
             // If enemy can move, calculate how quickly it can engage
@@ -92,7 +93,7 @@ namespace McRave::Horizon {
                 const auto distance =               min(distTarget - distUnknown, distEngage - distUnknown); // TODO: Max sight range of units in this sim
                 const auto speed =                  enemy.getSpeed() * 24.0;
                 const auto engageTime =             max(0.0, (distance - range) / speed);
-                simRatio =                          max(0.0, simulationTime - engageTime);
+                simRatio =                          max(0.0, enemySimulationTime - engageTime);
             }
 
             // Add their values to the simulation
@@ -118,7 +119,7 @@ namespace McRave::Horizon {
             const auto distance = double(Util::boxDistance(self.getType(), self.getPosition(), unitTarget->getType(), unitTarget->getPosition()));
             const auto speed = self.getSpeed() > 0.0 ? self.getSpeed() * 24.0 : unit.getSpeed() * 24.0;
             const auto engageTime = max(0.0, (distance - range) / speed);
-            auto simRatio = max(0.0, simulationTime - engageTime + addPrepTime(self));
+            auto simRatio = max(0.0, selfSimulationTime - engageTime + addPrepTime(self));
 
             // If the unit doesn't affect this simulation
             if ((self.getSpeed() <= 0.0 && self.getEngDist() > -16.0)
@@ -143,7 +144,7 @@ namespace McRave::Horizon {
             const auto distance = double(Util::boxDistance(ally.getType(), ally.getPosition(), unit.getType(), unitTarget->getPosition()));
             const auto speed = ally.getSpeed() > 0.0 ? ally.getSpeed() * 24.0 : unit.getSpeed() * 24.0;
             const auto engageTime = max(0.0, (distance - range) / speed);
-            auto simRatio = max(0.0, simulationTime - engageTime + addPrepTime(ally));
+            auto simRatio = max(0.0, selfSimulationTime - engageTime + addPrepTime(ally));
 
             // If the unit doesn't affect this simulation
             if ((ally.getSpeed() <= 0.0 && ally.getEngDist() > -16.0)

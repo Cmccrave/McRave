@@ -15,10 +15,14 @@ namespace McRave::Spy {
         std::string name = "Unknown";
 
         void debugLog() {
-            if (possible && !loggedPossible)
+            if (possible && !loggedPossible) {
                 Util::debug("[Spy]: " + name + " possible.");
-            if (confirmed && !loggedConfirmed)
+                loggedPossible = true;
+            }
+            if (confirmed && !loggedConfirmed) {
                 Util::debug("[Spy]: " + name + " confirmed.");
+                loggedConfirmed = true;
+            }
         }
 
         void updateStrat() {

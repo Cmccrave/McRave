@@ -145,7 +145,7 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvZ_2HatchMuta()
     {
-        inOpening =                                     total(Zerg_Mutalisk) < 3 || total(Zerg_Scourge) < 12;
+        inOpening =                                     total(Zerg_Mutalisk) < 3 && total(Zerg_Scourge) < 12;
         inTransition =                                  vis(Zerg_Lair) > 0;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
 

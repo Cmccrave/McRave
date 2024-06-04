@@ -109,12 +109,15 @@ namespace BWEB {
         };
 
         // Iteration attempts move buildings closer
-        auto itr = 0;
+        auto iteration = 0;
         while ((getSmallTiles().size() + getMediumTiles().size() + getLargeTiles().size()) != getRawBuildings().size()) {
             cleanup();
             smallTiles.clear();
             mediumTiles.clear();
             largeTiles.clear();
+
+            if (iteration >= 3)
+                return;
 
             // 0/8 - Horizontal
             if (defenseArrangement == 0) {
@@ -126,9 +129,10 @@ namespace BWEB {
 
                 // Shift positions based on chokepoint offset and iteration
                 auto diffX = TilePosition(choke->Center()).x - base->Location().x - 2;
-                adjustOrder(lrgOrder, TilePosition(diffX, itr));
-                adjustOrder(medOrder, TilePosition(diffX, itr));
-                adjustOrder(smlOrder, TilePosition(diffX, itr));
+                auto diffY = -iteration;
+                adjustOrder(lrgOrder, TilePosition(diffX, diffY));
+                adjustOrder(medOrder, TilePosition(diffX, diffY));
+                adjustOrder(smlOrder, TilePosition(diffX, diffY));
             }
 
             // pi/4 - Angled
@@ -143,9 +147,11 @@ namespace BWEB {
                 flipHorizontal  = base->Center().x < Position(choke->Center()).x;
 
                 // Shift positions based on iteration
-                adjustOrder(lrgOrder, TilePosition(itr, itr));
-                adjustOrder(medOrder, TilePosition(itr, itr));
-                adjustOrder(smlOrder, TilePosition(itr, itr));
+                auto diffX = -iteration;
+                auto diffY = -iteration;
+                adjustOrder(lrgOrder, TilePosition(diffX, diffY));
+                adjustOrder(medOrder, TilePosition(diffX, diffY));
+                adjustOrder(smlOrder, TilePosition(diffX, diffY));
             }
 
             // pi/2 - Vertical
@@ -157,10 +163,11 @@ namespace BWEB {
                 flipHorizontal  = base->Center().x < Position(choke->Center()).x;
 
                 // Shift positions based on chokepoint offset and iteration
+                auto diffX = -iteration;
                 auto diffY = TilePosition(choke->Center()).y - base->Location().y - 1;
-                adjustOrder(lrgOrder, TilePosition(itr, diffY));
-                adjustOrder(medOrder, TilePosition(itr, diffY));
-                adjustOrder(smlOrder, TilePosition(itr, diffY));
+                adjustOrder(lrgOrder, TilePosition(diffX, diffY));
+                adjustOrder(medOrder, TilePosition(diffX, diffY));
+                adjustOrder(smlOrder, TilePosition(diffX, diffY));
             }
 
             // Flip them vertically / horizontally as needed
@@ -217,9 +224,7 @@ namespace BWEB {
                 tryLocations(lrgOrder, largeTiles, Terran_Barracks);
                 tryLocations(medOrder, mediumTiles, Terran_Bunker);
             }
-            itr++;
-            if (itr >= 3)
-                break;
+            iteration++;
         }
 
         // Find remaining openings
