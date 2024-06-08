@@ -277,7 +277,7 @@ namespace McRave::Command
             if (dmg >= unit.getHealth())
                 threatened = true;
 
-            auto burrowUnit = (!unit.getBuildPosition().isValid() || !unit.isWithinBuildRange()) && threatened;
+            auto burrowUnit = !unit.getBuildPosition().isValid() && threatened;
 
             // Burrow/unburrow as needed
             if (!unit.isBurrowed() && burrowUnit) {

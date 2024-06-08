@@ -115,7 +115,7 @@ namespace McRave::Roles {
                     (u->isThreatening() || (proxyBuilding && u->getPosition().getDistance(proxyBuilding->getPosition()) < 160.0) || (proxyDangerousBuilding && u->getPosition().getDistance(proxyDangerousBuilding->getPosition()) < 160.0));
             });
             auto proxyCombatUnit = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy, [&](auto &u) {
-                return !u->getType().isWorker() && !u->getType().isBuilding() && u->canAttackGround();
+                return u->isProxy() && !u->getType().isWorker() && !u->getType().isBuilding() && u->canAttackGround();
             });
 
 
@@ -151,13 +151,19 @@ namespace McRave::Roles {
                     forceCombatWorker(1, proxyWorker->getPosition());
 
                 // We know it's likely a proxy, watch the natural for now
-                else if (Spy::enemyPossibleProxy() && Util::getTime() < Time(2, 00))
-                    forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()));
+                else if (Spy::enemyPossibleProxy() && Util::getTime() < Time(2, 00)) {
+                    if (proxyWorker)
+                        forceCombatWorker(1, proxyWorker->getPosition());
+                    else
+                        forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
+                }
             }
 
             // ZvT
-            if (Players::ZvT() && Util::getTime() < Time(6, 00)) {
-                auto workersPerMarine = Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) * 3;
+            if (Players::ZvT() && Util::getTime() < Time(3, 30)) {
+                auto count = (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) * 3);
+                if (proxyDangerousBuilding)
+                    count += 3;
 
                 // Choose the location we expect to be fighting at to get closest worker, descending priority
                 auto location = Position(Terrain::getNaturalChoke()->Center());
@@ -170,15 +176,15 @@ namespace McRave::Roles {
 
                 // Bunker being built, 3 drones per marine and 3 extra for the bunker
                 if (proxyDangerousBuilding && !proxyDangerousBuilding->isCompleted() && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8)
-                    forceCombatWorker(3 + workersPerMarine, location);
+                    forceCombatWorker(count, location);
 
                 // Proxy, 3 drones per marine
-                else if (Spy::enemyProxy() && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0 && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8)
-                    forceCombatWorker(workersPerMarine, location);
+                else if (proxyCombatUnit && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8)
+                    forceCombatWorker(count, location);
 
                 // All-in with marines
                 else if (Spy::getEnemyTransition() == "WorkerRush" && total(Zerg_Zergling) < 12 && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
-                    forceCombatWorker(4, location);
+                    forceCombatWorker(count, location);
 
                 // Likely proxy, worker arrived way too early
                 else if (likelyProxy && Util::getTime() < Time(3, 00))
@@ -186,7 +192,11 @@ namespace McRave::Roles {
 
                 // We know it's likely a proxy, watch the natural for now
                 else if (Spy::enemyPossibleProxy() && Util::getTime() < Time(2, 00))
-                    forceCombatWorker(1, location);
+                    forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
+
+                // Some SCV poking
+                else if (proxyWorker && com(Zerg_Spawning_Pool) == 0)
+                    forceCombatWorker(1, proxyWorker->getPosition());
             }
 
             // Misc

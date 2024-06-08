@@ -123,37 +123,4 @@ namespace McRave::BuildOrder::Zerg {
         armyComposition[Zerg_Hydralisk] =               0.20;
         armyComposition[Zerg_Lurker] =                  1.00;
     }
-
-    void ZvP2HatchCrackling()
-    {
-        inTransition =                                  true;
-        inOpening =                                     total(Zerg_Zergling) < 100;
-        inBookSupply =                                  vis(Zerg_Overlord) < 3;
-
-        focusUnit =                                     Zerg_Mutalisk;
-        unitLimits[Zerg_Drone] =                        20;
-        unitLimits[Zerg_Zergling] =                     200;
-        
-        // Buildings
-        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32 && vis(Zerg_Extractor) > 0);
-        buildQueue[Zerg_Hatchery] =                     2 + (s >= 60) + (s >= 70) + (s >= 76) + (s >= 82) + (s >= 88);
-        buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
-        buildQueue[Zerg_Extractor] =                    (s >= 24 && hatchCount() >= 2 && vis(Zerg_Drone) >= 10);
-        buildQueue[Zerg_Evolution_Chamber] =            (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 18);
-        buildQueue[Zerg_Queens_Nest] =                  (com(Zerg_Lair) == 1 && vis(Zerg_Drone) >= 18);
-        buildQueue[Zerg_Hive] =                         (com(Zerg_Queens_Nest) == 1 && vis(Zerg_Drone) >= 18);
-
-        // Upgrades
-        upgradeQueue[Zerg_Carapace] = vis(Zerg_Lair) > 0;
-        upgradeQueue[Metabolic_Boost] = vis(Zerg_Lair) > 0;
-        upgradeQueue[Adrenal_Glands] = com(Zerg_Hive) > 0;
-
-        // Gas
-        gasLimit = 0;
-        if (vis(Zerg_Drone) >= 10 && Broodwar->self()->gatheredGas() < 800)
-            gasLimit = gasMax();
-
-        // Pumping
-        pumpLings = vis(Zerg_Drone) >= 20 || lingsNeeded_ZvP() > vis(Zerg_Zergling);
-    }
 }

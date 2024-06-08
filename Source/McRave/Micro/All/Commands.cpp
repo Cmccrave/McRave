@@ -156,6 +156,13 @@ namespace McRave::Command {
                 return true;
             }
         }
+
+        // Specal case: Holding a chokepoint, don't move
+        if (Players::ZvZ() && unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(unit.getFormation()) < 8 && unit.hasTarget() && !unit.isWithinRange(*unit.getTarget().lock())) {
+            unit.setCommand(Hold_Position);
+            unit.commandText = "HoldPosition";
+            return true;
+        }
         return false;
     }
 
@@ -436,7 +443,7 @@ namespace McRave::Command {
 
                 // Special Case: early "duels"
                 if (unit.getType() == Zerg_Zergling) {
-                    if (Util::getTime() < Time(4, 30) && target.isWithinReach(unit) && target.getType() == Protoss_Zealot && unit.getHealth() <= 16)
+                    if (Util::getTime() < Time(4, 30) && !unit.getUnitsInRangeOfThis().empty() && target.isWithinReach(unit) && target.getType() == Protoss_Zealot && unit.getHealth() <= 16)
                         return true;
                 }
                 if ((unit.getType() == Zerg_Hydralisk || unit.getType() == Protoss_Dragoon) && !target.isFlying()) {

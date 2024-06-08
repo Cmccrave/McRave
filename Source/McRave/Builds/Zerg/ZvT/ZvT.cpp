@@ -41,7 +41,7 @@ namespace McRave::BuildOrder::Zerg {
 
     int inboundUnits_ZvT()
     {
-        static map<UnitType, double> trackables ={ {Terran_Marine, 1.0}, {Terran_Medic, 2.0}, {Terran_Firebat, 1} };
+        static map<UnitType, double> trackables ={ {Terran_Marine, 1.0}, {Terran_Medic, 1.0}, {Terran_Firebat, 1.0} };
         auto inBoundUnit = [&](auto &u) {
             if (!Terrain::getEnemyMain())
                 return true;
@@ -60,8 +60,11 @@ namespace McRave::BuildOrder::Zerg {
             auto &unit = *u;
 
             auto idx = trackables.find(unit.getType());
-            if (idx != trackables.end())
-                arrivalValue += (inBoundUnit(u) ? idx->second : idx->second / 2.0);
+            if (idx != trackables.end()) {
+                arrivalValue += idx->second;
+                if (inBoundUnit(u))
+                    arrivalValue += idx->second / 2.0;
+            }
         }
         return int(arrivalValue);
     }
@@ -98,8 +101,8 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         // TODO: Fix T spy
-        if (Spy::getEnemyOpener() == "8Rax")
-            initialValue = 10;        
+        if (Spy::getEnemyOpener() == "8Rax" || Spy::enemyProxy())
+            initialValue = 10;
         if (Spy::getEnemyTransition() == "WorkerRush")
             initialValue = 24;
 
@@ -120,7 +123,7 @@ namespace McRave::BuildOrder::Zerg {
     {
         inTransition =                                  vis(Zerg_Lair) > 0;
         inOpening =                                     total(Zerg_Mutalisk) <= 9;
-        inBookSupply =                                  total(Zerg_Mutalisk) < 6;
+        inBookSupply =                                  total(Zerg_Mutalisk) < 3;
 
         focusUnit =                                     Zerg_Mutalisk;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 28 : unitLimits[Zerg_Drone];
@@ -133,7 +136,7 @@ namespace McRave::BuildOrder::Zerg {
         // Buildings
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
         buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 16);
-        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (2 * atPercent(Zerg_Spire, 0.25));
+        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.95);
 
@@ -163,16 +166,16 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit =                                     Zerg_Mutalisk;
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : unitLimits[Zerg_Drone];
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvT();
-        wantThird =                                     hatchCount() >= 3;
+        wantThird = (Spy::getEnemyBuild() == "RaxFact") || hatchCount() >= 3;
         reserveLarva =                                  9;
 
+        auto thirdHatch = Spy::enemyProxy() ? total(Zerg_Zergling) >= 6 : (s >= 26 && vis(Zerg_Drone) >= 11);
         auto fourthHatch = (Spy::getEnemyBuild() == "RaxFact") ? total(Zerg_Mutalisk) >= 9 : (vis(Zerg_Spire) > 0 && s >= 66);
-        wantThird = (Spy::getEnemyBuild() == "RaxFact") || hatchCount() >= 3;
 
         // Buildings
-        buildQueue[Zerg_Hatchery] =                     2 + (s >= 26) + fourthHatch;
+        buildQueue[Zerg_Hatchery] =                     2 + thirdHatch + fourthHatch;
         buildQueue[Zerg_Extractor] =                    (s >= 32) + (s >= 44 && vis(Zerg_Drone) >= 20);
-        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (vis(Zerg_Extractor) > 0 && s >= 32) + (s >= 48);
+        buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        (s >= 42 && atPercent(Zerg_Lair, 0.80));
 
@@ -260,6 +263,8 @@ namespace McRave::BuildOrder::Zerg {
                 currentOpener = "12Pool";
                 currentTransition = "2HatchMuta";
             }
+            if (currentBuild == "3HatchMuta" && (Spy::enemyRush() || Spy::enemyProxy()))
+                currentTransition = "2HatchMuta";
         }
 
         // Transitions

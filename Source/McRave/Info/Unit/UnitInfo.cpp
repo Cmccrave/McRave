@@ -183,16 +183,17 @@ namespace McRave
             lastStimFrame               = unit()->isStimmed() ? Broodwar->getFrameCount() : lastStimFrame;
             lastVisibleFrame            = Broodwar->getFrameCount();
 
-            if (player != Broodwar->self()) {
-                auto dist = isFlying() ? position.getDistance(Terrain::getMainPosition()) : BWEB::Map::getGroundDistance(position, Terrain::getMainPosition());
-                arriveFrame = Broodwar->getFrameCount() + int(dist / data.speed);
-            }
-
             checkHidden();
             checkStuck();
             checkProxy();
             checkCompletion();
             checkThreatening();
+        }
+
+        // Always update arrival frame even if we don't see it
+        if (player != Broodwar->self()) {
+            auto dist = isFlying() ? position.getDistance(Terrain::getMainPosition()) : BWEB::Map::getGroundDistance(position, Terrain::getMainPosition());
+            arriveFrame = Broodwar->getFrameCount() + int(dist / data.speed);
         }
 
         // Create a list of units that are in reach of this unit
@@ -398,7 +399,7 @@ namespace McRave
         // Check if enemy is generally in our territory
         auto nearTerritory = [&]() {
             if (Combat::holdAtChoke() && Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural()
-                || (Combat::holdAtChoke() && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
+                || (Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
                 return true;
 
             if (!Players::ZvZ()) {
@@ -605,6 +606,21 @@ namespace McRave
                 unit()->attack(target.unit());
             else if (cmd == UnitCommandTypes::Right_Click_Unit)
                 unit()->rightClick(target.unit());
+        }
+    }
+
+    void UnitInfo::setCommand(UnitCommandType cmd)
+    {
+        // Check if this is identical to last command
+        if (commandType == cmd)
+            return;
+
+        if (allowCommand(this)) {
+            commandPosition = position;
+            commandType = cmd;
+
+            if (cmd == UnitCommandTypes::Hold_Position)
+                unit()->holdPosition();
         }
     }
 
@@ -955,7 +971,7 @@ namespace McRave
             });
 
             // Don't harass if they have tanks close
-            if (closestTank && closestTank->getPosition().getDistance(Terrain::getNaturalPosition()) < closestTank->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center()))
+            if (closestTank && Terrain::getEnemyNatural() && closestTank->getPosition().getDistance(Terrain::getNaturalPosition()) < closestTank->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center()))
                 return false;
         }
 
@@ -968,7 +984,7 @@ namespace McRave
                 return u->getType() == Protoss_Zealot || u->getType() == Protoss_Dark_Templar;
             });
 
-            if (closestMelee && closestMelee->getPosition().getDistance(Terrain::getNaturalPosition()) < closestMelee->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center()))
+            if (closestMelee && Terrain::getEnemyNatural() && closestMelee->getPosition().getDistance(Terrain::getNaturalPosition()) < closestMelee->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center()))
                 return false;
         }
 

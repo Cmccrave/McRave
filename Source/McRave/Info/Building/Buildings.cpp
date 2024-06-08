@@ -153,9 +153,9 @@ namespace McRave::Buildings {
                             return true;
                         const auto visDiff = Broodwar->getFrameCount() - u->getLastVisibleFrame();
 
-                        // Check if we know they weren't at home and are missing on the map for 15 seconds
+                        // Check if we know they weren't at home and are missing on the map for 25 seconds
                         if (!Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), u->getPosition()) && !Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), u->getPosition()))
-                            return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 15);
+                            return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 25);
                         return false;
                     }
                     return false;

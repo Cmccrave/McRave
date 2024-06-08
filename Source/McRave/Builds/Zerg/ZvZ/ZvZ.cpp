@@ -13,15 +13,15 @@ namespace McRave::BuildOrder::Zerg {
 
     int inboundUnits_ZvZ()
     {
-        static map<UnitType, double> trackables ={ {Zerg_Zergling, 1.0} };
+        static map<UnitType, double> trackables ={ {Zerg_Zergling, 0.8} };
         auto inBoundUnit = [&](auto &u) {
             if (!Terrain::getEnemyMain())
                 return true;
             const auto visDiff = Broodwar->getFrameCount() - u->getLastVisibleFrame();
 
-            // Check if we know they weren't at home and are missing on the map for 45 seconds
+            // Check if we know they weren't at home and are missing on the map for 35 seconds
             if (!Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), u->getPosition()))
-                return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 45);
+                return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 35);
             return false;
         };
 
@@ -32,8 +32,11 @@ namespace McRave::BuildOrder::Zerg {
             auto &unit = *u;
 
             auto idx = trackables.find(unit.getType());
-            if (idx != trackables.end())
-                arrivalValue += (inBoundUnit(u) ? idx->second : idx->second / 2.0);
+            if (idx != trackables.end()) {
+                arrivalValue += idx->second;
+                if (inBoundUnit(u))
+                    arrivalValue += idx->second / 2.0;
+            }
         }
         return int(arrivalValue);
     }
@@ -60,7 +63,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // 2Hatch builds can make more lings
         if (currentTransition == "2HatchMuta" && total(Zerg_Mutalisk) == 0) {
-            initialValue = 30;
+            initialValue = 36;
             if (Spy::enemyTurtle())
                 initialValue = 18;
         }
@@ -104,9 +107,9 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvZ_1HatchMuta()
     {
-        inOpening =                                     total(Zerg_Mutalisk) < 7;
+        inOpening =                                     total(Zerg_Mutalisk) < 6 && total(Zerg_Scourge) < 12;
         inTransition =                                  vis(Zerg_Lair) > 0;
-        inBookSupply =                                  total(Zerg_Mutalisk) < 3;
+        inBookSupply =                                  false;
 
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 16 : unitLimits[Zerg_Drone];
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvZ();
@@ -114,38 +117,40 @@ namespace McRave::BuildOrder::Zerg {
         reserveLarva =                                  3;
 
         auto secondHatch = (Spy::getEnemyTransition() == "1HatchMuta" && atPercent(Zerg_Spire, 0.5))
-            || (Spy::enemyTurtle() && vis(Zerg_Drone) >= 15);
+            || (Spy::enemyTurtle() && atPercent(Zerg_Spire, 0.5));
         wantNatural = Spy::enemyTurtle() || (Spy::getEnemyTransition() == "2HatchMuta");
 
         // Build
         buildQueue[Zerg_Lair] =                         lingSpeed() && gas(100) && vis(Zerg_Spawning_Pool) > 0 && total(Zerg_Zergling) >= 6 && vis(Zerg_Drone) >= 8;
         buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 7;
         buildQueue[Zerg_Hatchery] =                     1 + secondHatch;
-        buildQueue[Zerg_Overlord] =                     (com(Zerg_Spire) == 0 && atPercent(Zerg_Spire, 0.35) && (s >= 34)) ? 4 : 1 + ((vis(Zerg_Extractor) + Spy::enemyGasSteal() >= 1) && s >= 15) + (s >= 32) + (s >= 46);
 
         // Upgrades
         upgradeQueue[Metabolic_Boost] =                 (vis(Zerg_Zergling) >= 6 && gas(100));
 
         // Pumping
-        pumpLings = lingsNeeded_ZvZ() > total(Zerg_Zergling) || (com(Zerg_Spire) == 1 && !gas(100)) || vis(Zerg_Drone) >= unitLimits[Zerg_Drone];
+        pumpLings = lingsNeeded_ZvZ() > vis(Zerg_Zergling) || (com(Zerg_Spire) == 1 && !gas(100)) || vis(Zerg_Drone) >= unitLimits[Zerg_Drone];
         pumpScourge = com(Zerg_Spire) == 1 && hatchCount() >= 2 && total(Zerg_Scourge) <= 6 && Spy::enemyTurtle();
-        pumpMutas = com(Zerg_Spire) == 1 && gas(100);
+        pumpMutas = !pumpScourge && com(Zerg_Spire) == 1 && gas(100);
 
         // Reactions
         if (Spy::enemyTurtle()) {
             wantNatural = true;
             pumpLings = false;
+            focusUnit = Zerg_Scourge;
         }
 
         // Gas
         gasLimit = gasMax();
-        if (!Spy::enemyTurtle() && (lingSpeed() || gas(80)) && total(Zerg_Lair) == 0)
+        if (!Spy::enemyTurtle() && lingSpeed() && total(Zerg_Lair) == 0)
             gasLimit = 2;
+        else if (!Spy::enemyTurtle() && lingSpeed() && !atPercent(Zerg_Lair, 0.7))
+            gasLimit = 1;
     }
 
     void ZvZ_2HatchMuta()
     {
-        inOpening =                                     total(Zerg_Mutalisk) < 3 && total(Zerg_Scourge) < 12;
+        inOpening =                                     total(Zerg_Mutalisk) < 6 && total(Zerg_Scourge) < 12;
         inTransition =                                  vis(Zerg_Lair) > 0;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
 
@@ -164,20 +169,20 @@ namespace McRave::BuildOrder::Zerg {
 
         // Pumping
         if (Spy::getEnemyTransition() == "1HatchMuta") {
-            pumpLings = lingsNeeded_ZvZ() > total(Zerg_Zergling) || (com(Zerg_Spire) == 1 && !gas(100) && !Spy::enemyTurtle()) || (vis(Zerg_Drone) >= unitLimits[Zerg_Drone] && !gas(100)) || (vis(Zerg_Drone) >= unitLimits[Zerg_Drone] && com(Zerg_Spire) == 0);
+            pumpLings = lingsNeeded_ZvZ() > vis(Zerg_Zergling) || (com(Zerg_Spire) == 1 && !gas(100) && !Spy::enemyTurtle()) || (vis(Zerg_Drone) >= unitLimits[Zerg_Drone] && !gas(100)) || (vis(Zerg_Drone) >= unitLimits[Zerg_Drone] && com(Zerg_Spire) == 0);
             pumpScourge = com(Zerg_Spire) == 1 && gas(75) && total(Zerg_Scourge) <= 24;
             pumpMutas = !pumpScourge && com(Zerg_Spire) == 1 && gas(100);
             reserveLarva = 0;
         }
         else {
-            pumpLings = lingsNeeded_ZvZ() > total(Zerg_Zergling) || (com(Zerg_Spire) == 1 && !gas(100) && !Spy::enemyTurtle()) || (vis(Zerg_Drone) >= unitLimits[Zerg_Drone] && !gas(100)) || (vis(Zerg_Drone) >= unitLimits[Zerg_Drone] && com(Zerg_Spire) == 0);
+            pumpLings = lingsNeeded_ZvZ() > vis(Zerg_Zergling) || (com(Zerg_Spire) == 1 && !gas(100) && !Spy::enemyTurtle()) || (vis(Zerg_Drone) >= unitLimits[Zerg_Drone] && !gas(100)) || (vis(Zerg_Drone) >= unitLimits[Zerg_Drone] && com(Zerg_Spire) == 0);
             pumpMutas = com(Zerg_Spire) == 1 && gas(100);
             reserveLarva = 3;
         }
 
         // Gas
         gasLimit = gasMax();
-        if (!Spy::enemyTurtle() && (lingSpeed() || gas(80)) && total(Zerg_Spire) == 0)
+        if (!Spy::enemyTurtle() && (lingSpeed() || gas(80)))
             gasLimit = 2;
     }
 

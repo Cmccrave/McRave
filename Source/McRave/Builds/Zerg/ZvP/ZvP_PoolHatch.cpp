@@ -16,9 +16,9 @@ namespace McRave::BuildOrder::Zerg {
             // 'https://liquipedia.net/starcraft/Overpool_(vs._Protoss)'
             transitionReady =                               hatchCount() >= 2;
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
-            unitLimits[Zerg_Drone] =                        Spy::enemyFastExpand() ? 16 : 12 - vis(Zerg_Hatchery);
+            unitLimits[Zerg_Drone] =                        12 - vis(Zerg_Hatchery);
             gasLimit =                                      0;
-            scout =                                         scout || (hatchCount() >= 2);
+            scout =                                         scout || (com(Zerg_Drone) >= 10);
 
             // Buildings
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 22 && vis(Zerg_Spawning_Pool) > 0);

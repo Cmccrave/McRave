@@ -124,6 +124,7 @@ namespace McRave::Horizon {
             // If the unit doesn't affect this simulation
             if ((self.getSpeed() <= 0.0 && self.getEngDist() > -16.0)
                 || (unit.hasTarget() && self.hasTarget() && self.getEngagePosition().getDistance(unitTarget->getPosition()) > reach * 2)
+                || (self.getGlobalState() == GlobalState::Retreat)
                 || (Combat::State::isStaticRetreat(self.getType()) && !Terrain::inTerritory(PlayerState::Self, self.getPosition())))
                 continue;
 

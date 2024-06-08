@@ -15,6 +15,25 @@ namespace McRave::Support {
             assignedOverlords.clear();
         }
 
+        void assignInBox(Point<int> h, UnitInfo& unit)
+        {
+            auto here = Position(h);
+
+            // Space out for splash
+            auto distBest = DBL_MAX;
+            for (auto x = -2; x < 2; x++) {
+                for (auto y = -2; y < 2; y++) {
+                    auto position = here + Position(64 * x, 64 * y);
+                    auto dist = position.getDistance(here);
+
+                    if (dist < distBest && assignedOverlords.find(position) == assignedOverlords.end()) {
+                        unit.setDestination(position);
+                        distBest = dist;
+                    }
+                }
+            }
+        }
+
         void getSafeHome(UnitInfo& unit)
         {
             auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
@@ -23,44 +42,21 @@ namespace McRave::Support {
             });
 
             if (closestSpore) {
-                for (int x = -1; x <= 1; x++) {
-                    for (int y = -1; y <= 1; y++) {
-                        auto center = Position(closestSpore->getTilePosition() + TilePosition(x, y)) + Position(16, 16);
-                        auto closest = Util::getClosestUnit(center, PlayerState::Self, [&](auto &u) {
-                            return u->getType() == Zerg_Overlord;
-                        });
-                        if (closest && unit == *closest) {
-                            unit.setDestination(center);
-                            return;
-                        }
-                    }
-                }
-
-                unit.setDestination(closestSpore->getPosition());
-                return;
+                assignInBox(closestSpore->getPosition(), unit);
             }
 
-            if (Stations::needAirDefenses(Terrain::getMyNatural()) > 0 || (Players::ZvP() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0)) {
-                unit.setDestination(Terrain::getMyNatural()->getBase()->Center());
-                return;
+            else if (Stations::needAirDefenses(Terrain::getMyNatural()) > 0 || (Players::ZvP() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0)) {
+                assignInBox(Terrain::getMyNatural()->getResourceCentroid(), unit);
             }
 
-            if (closestStation && closestStation->getChokepoint()) {
-                auto natDist = closestStation->getBase()->Center().getDistance(Position(closestStation->getChokepoint()->Center()));
-                auto chokeCenter = Position(closestStation->getChokepoint()->Center());
-                unit.setDestination(closestStation->getBase()->Center());
-                for (auto x = -2; x < 2; x++) {
-                    for (auto y = -2; y < 2; y++) {
-                        auto position = closestStation->getBase()->Center() + Position(96 * x, 96 * y);
-                        if (position.getDistance(chokeCenter) > natDist && !Actions::overlapsActions(unit.unit(), position, unit.getType(), PlayerState::Self, 32))
-                            unit.setDestination(position);
-                    }
-                }
+            else if (closestStation) {
+                assignInBox(closestStation->getResourceCentroid(), unit);
             }
 
-            if (closestStation) {
+            if (!unit.getDestination().isValid() && closestStation) {
                 unit.setDestination(closestStation->getBase()->Center());
             }
+            assignedOverlords.insert(unit.getDestination());
         }
 
         void getArmyPlacement(UnitInfo& unit)
@@ -127,18 +123,19 @@ namespace McRave::Support {
             // Set goal as destination
             if (unit.getGoal().isValid() && unit.getUnitsTargetingThis().empty() && unit.getUnitsInReachOfThis().empty()) {
                 unit.setDestination(unit.getGoal());
-                Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+                Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Red);
             }
 
             // Send support units to army
             else if (followArmyPossible) {
                 getArmyPlacement(unit);
-                Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+                Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Orange);
             }
 
             // Send Overlords to a safe home
             else if (!followArmyPossible) {
                 getSafeHome(unit);
+                Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Yellow);
             }
 
             if (!unit.getDestination().isValid())

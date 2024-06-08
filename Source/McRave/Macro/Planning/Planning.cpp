@@ -793,8 +793,11 @@ namespace McRave::Planning {
                 if (building == Zerg_Lair)
                     morphOffset = vis(Zerg_Hive);
 
+                auto haveMinerals = (Workers::getMineralWorkers() > 0 || building.mineralPrice() == 0 || Broodwar->self()->minerals() >= building.mineralPrice());
+                auto haveGas = (Workers::getGasWorkers() > 0 || building.gasPrice() == 0 || Broodwar->self()->gas() >= building.gasPrice());
+
                 // Queue the cost of any morphs or building
-                if (count > vis(building) + morphOffset && (Workers::getMineralWorkers() > 0 || building.mineralPrice() == 0 || Broodwar->self()->minerals() >= building.mineralPrice()) && (Workers::getGasWorkers() > 0 || building.gasPrice() == 0 || Broodwar->self()->gas() >= building.gasPrice())) {
+                if (count > vis(building) + morphOffset && haveMinerals && haveGas) {
                     plannedMineral += building.mineralPrice() * (count - vis(building) - morphOffset);
                     plannedGas += building.gasPrice() * (count - vis(building) - morphOffset);
                 }
@@ -1010,6 +1013,8 @@ namespace McRave::Planning {
             || building == Zerg_Hatchery;
     }
 
+
+    map<TilePosition, UnitType>& getPlannedBuildings() { return buildingsPlanned; }
     int getPlannedMineral() { return plannedMineral; }
     int getPlannedGas() { return plannedGas; }
     const BWEB::Station * getCurrentExpansion() { return currentExpansion; }

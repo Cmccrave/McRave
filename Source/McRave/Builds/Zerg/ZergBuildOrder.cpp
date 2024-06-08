@@ -14,6 +14,14 @@ using namespace McRave::BuildOrder::All;
 
 namespace McRave::BuildOrder::Zerg {
 
+    struct Blueprint {
+        string name;
+        UnitType type;
+        int droneCount = 0;
+        int hatchCount = 0;
+    };
+    vector<Blueprint> blueprintOrder;
+
     namespace {
         bool againstRandom = false;
         bool needSpores = false;
@@ -90,13 +98,18 @@ namespace McRave::BuildOrder::Zerg {
                 needSpores = true;
                 wallNat = true;
             }
+            if (Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00)) {
+                needSpores = true;
+                wallNat = true;
+            }
         }
 
         void queueSupply()
         {
-            // Adding Overlords outside opening book supply
+            // Adding Overlords outside opening book supply, offset by hatch count
             if (!inBookSupply) {
-                int count = 1 + min(26, s / 14);
+                int offset = hatchCount() * 2;
+                int count = 1 + min(26, (s - offset) / 14);
                 if (vis(Zerg_Overlord) >= 3)
                     buildQueue[Zerg_Overlord] = count;
             }
@@ -383,9 +396,34 @@ namespace McRave::BuildOrder::Zerg {
         const auto vsAnnoyingShit = Spy::getEnemyTransition() == "2FactVulture" || Spy::getEnemyTransition() == "2PortWraith";
         auto techOffset = 0;
 
+        Blueprint Z_6HatchHydra;
+        Z_6HatchHydra.droneCount = 44;
+        Z_6HatchHydra.hatchCount = 6;
+        Z_6HatchHydra.type = Zerg_Hydralisk;
+        Z_6HatchHydra.name = "Z_6HatchHydra";
+
+        Blueprint Z_6HatchCrackling;
+        Z_6HatchCrackling.droneCount = 36;
+        Z_6HatchCrackling.hatchCount = 6;
+        Z_6HatchCrackling.type = Zerg_Zergling;
+        Z_6HatchCrackling.name = "Z_6HatchCrackling";
+
+        Blueprint Z_4HatchMuta;
+        Z_4HatchMuta.droneCount = 36; // ?
+        Z_4HatchMuta.hatchCount = 4;
+        Z_4HatchMuta.type = Zerg_Mutalisk;
+        Z_4HatchMuta.name = "Z_4HatchMuta";
+
+        Blueprint Z_4HatchUltra;
+        Z_4HatchUltra.droneCount = 36; // ?
+        Z_4HatchUltra.hatchCount = 4;
+        Z_4HatchUltra.type = Zerg_Ultralisk;
+        Z_4HatchUltra.name = "Z_4HatchUltra";
+
         // ZvP
         if (Players::ZvP()) {
             techOffset = 2 - (BuildOrder::getCurrentTransition().find("Muta") != string::npos); // Muta builds should make hydras before a 4th
+
             if (Spy::getEnemyTransition() == "Carriers")
                 unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
             else if (focusUnit == Zerg_Hydralisk)
@@ -735,20 +773,21 @@ namespace McRave::BuildOrder::Zerg {
         // Saving larva to burst out tech units
         const auto reserveAt = Players::ZvZ() ? 10 : 16;
         unitReservations.clear();
-        if ((inOpening && reserveLarva > 0) || (!inOpening && focusUnits.size() <= 1)) {
-            if (atPercent(Zerg_Spire, 0.50) && vis(Zerg_Drone) >= reserveAt && focusUnit == Zerg_Mutalisk) {
+        if (vis(Zerg_Drone) >= reserveAt && ((inOpening && reserveLarva > 0) || (!inOpening && focusUnits.size() <= 1))) {
+            if (atPercent(Zerg_Spire, 0.50) && focusUnit == Zerg_Mutalisk)
                 unitReservations[Zerg_Mutalisk] = max(0, reserveLarva - total(Zerg_Mutalisk));
-                unitReservations[Zerg_Scourge] = max(0, 2 * int(armyComposition[Zerg_Scourge] > 0.0) - total(Zerg_Scourge));
-            }
-            if (vis(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Drone) >= reserveAt && focusUnit == Zerg_Hydralisk)
+            if (atPercent(Zerg_Spire, 0.50) && focusUnit == Zerg_Scourge)
+                unitReservations[Zerg_Scourge] = max(0, reserveLarva - total(Zerg_Scourge) * 2);
+            if (vis(Zerg_Hydralisk_Den) > 0 && focusUnit == Zerg_Hydralisk)
                 unitReservations[Zerg_Hydralisk] = max(0, reserveLarva - total(Zerg_Hydralisk));
         }
 
         // Queue enough overlords to fit the reservations
-        if (reserveLarva > 0 && atPercent(Zerg_Spire, 0.25) && com(Zerg_Spire) == 0) {
-            auto expectedSupply = s + (reserveLarva * 4);
+        if (reserveLarva > 0 && atPercent(Zerg_Spire, 0.25) && total(focusUnit) < reserveLarva) {
+            auto enemyAirThreat = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0;
+            auto expectedSupply = s + ((reserveLarva - total(focusUnit)) * 4);
             auto expectedOverlords = int(ceil(double(expectedSupply - 2 * hatchCount()) / 16.0));
-            buildQueue[Zerg_Overlord] = expectedOverlords;
+            buildQueue[Zerg_Overlord] = expectedOverlords + int(enemyAirThreat);
         }
 
         // Unlocking units
@@ -762,23 +801,21 @@ namespace McRave::BuildOrder::Zerg {
         // Unit limiting in opening book
         if (inOpening) {
             for (auto &[type, limit] : unitLimits) {
-                if (limit > vis(type) || armyComposition[type] == 1.0)
+                if (limit > vis(type))
                     unlockedType.insert(type);
                 else
                     unlockedType.erase(type);
             }
         }
 
-        // UMS Unlocking
-        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings) {
-            for (auto &type : BWAPI::UnitTypes::allUnitTypes()) {
-                if (!type.isBuilding() && type.getRace() == Races::Zerg && vis(type) >= 2) {
-                    unlockedType.insert(type);
-                    if (!type.isWorker())
-                        focusUnits.insert(type);
-                }
-            }
-        }
+        //// UMS Unlocking
+        //if (Broodwar->getGameType() == GameTypes::Use_Map_Settings) {
+        //    for (auto &type : BWAPI::UnitTypes::allUnitTypes()) {
+        //        if (!type.isBuilding() && type.getRace() == Races::Zerg && vis(type) >= 2) {
+        //            unlockedType.insert(type);
+        //        }
+        //    }
+        //}
     }
 
 

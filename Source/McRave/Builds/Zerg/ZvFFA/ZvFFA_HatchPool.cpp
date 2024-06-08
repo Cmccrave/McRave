@@ -32,22 +32,11 @@ namespace McRave::BuildOrder::Zerg {
             buildQueue[Zerg_Extractor] =                    (s >= 32 && vis(Zerg_Drone) >= 11 && hatchCount() >= 3) + (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 21);
             buildQueue[Zerg_Lair] =                         (s >= 32 && vis(Zerg_Drone) >= 15 && gas(100));
             buildQueue[Zerg_Spire] =                        (s >= 32 && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 16);
-            buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32 && vis(Zerg_Extractor) > 0) + (s >= 48) + spireOverlords;
+            buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + spireOverlords;
 
             // Pumping
-            auto pumpLings = lingsNeeded_ZvFFA() > vis(Zerg_Zergling);
-            auto pumpMutas = com(Zerg_Spire) > 0;
-
-            // Composition
-            armyComposition.clear();
-            if (pumpMutas) {
-                armyComposition[Zerg_Drone] =               0.60;
-                armyComposition[Zerg_Mutalisk] =            0.40;
-            }
-            else if (pumpLings)
-                armyComposition[Zerg_Zergling] =            1.00;
-            else
-                armyComposition[Zerg_Drone] =               1.00;
+            pumpLings = lingsNeeded_ZvFFA() > vis(Zerg_Zergling);
+            pumpMutas = com(Zerg_Spire) > 0;
         }
 
         void ZvFFA_HP_10Hatch()

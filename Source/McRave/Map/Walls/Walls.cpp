@@ -158,6 +158,10 @@ namespace McRave::Walls {
             // If we are opening 12 hatch, we sometimes need a faster sunken
             auto greedyStart = BuildOrder::getCurrentOpener() == "12Hatch";
 
+            // Make lings first you idiot
+            if (vis(Zerg_Zergling) < BuildOrder::All::unitLimits[Zerg_Zergling] && Util::getTime() < Time(3, 30))
+                return 0;
+
             // 1GateCore
             if (Spy::getEnemyBuild() == "1GateCore" || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
                 return (Util::getTime() > Time(4, 30))
@@ -374,11 +378,11 @@ namespace McRave::Walls {
 
             // Enemy not expanding, probably something scary coming
             if (!Spy::enemyFastExpand() && !Spy::enemyRush())
-                return (Util::getTime() > Time(3, 45))
+                return (Util::getTime() > Time(3, 25))
                 + (Util::getTime() > Time(4, 30))
                 + (Util::getTime() > Time(5, 00));
 
-            return (Util::getTime() > Time(3, 45));
+            return (Util::getTime() > Time(3, 25));
         }
 
         int ZvT_Transition(const BWEB::Wall& wall)

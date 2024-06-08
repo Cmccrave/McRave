@@ -46,7 +46,7 @@ namespace McRave::Combat::State {
 
             if (!crackling && !BuildOrder::isRush()) {
                 if (Players::ZvP()) {
-                    const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && !Spy::enemyProxy() && !speedLing;
+                    const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && !Spy::enemyProxy() && !speedLing && Players::getTotalCount(PlayerState::Self, Zerg_Sunken_Colony) > 0;
                     if (scaryOpeners)
                         staticRetreatTypes.push_back(Zerg_Zergling);
                 }
@@ -60,10 +60,15 @@ namespace McRave::Combat::State {
                 }
                 if (Players::ZvZ()) {
                     const auto slowerPool = (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "12Pool")
+                        || (Spy::getEnemyOpener() == "OverPool" && BuildOrder::getCurrentOpener() == "12Pool")
                         || (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != "HatchPool" && BuildOrder::getCurrentBuild() == "HatchPool");
                     const auto equalPool = (Spy::getEnemyOpener() == BuildOrder::getCurrentOpener())
                         || (Spy::getEnemyOpener() == "12Hatch" && BuildOrder::getCurrentOpener() == "12Pool")
-                        || (Spy::getEnemyOpener() == "12Pool" && BuildOrder::getCurrentOpener() == "9Pool");
+                        || (Spy::getEnemyOpener() == "12Pool" && BuildOrder::getCurrentOpener() == "12Hatch")
+                        || (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "12Pool")
+                        || (Spy::getEnemyOpener() == "12Pool" && BuildOrder::getCurrentOpener() == "9Pool")
+                        || (Spy::getEnemyOpener() == "OverPool" && BuildOrder::getCurrentOpener() == "9Pool")
+                        || (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "OverPool");
                     const auto enemyLingVomit = (Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling") && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0;
                     const auto avoidDiceRoll = Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 15) && !Terrain::getEnemyStartingPosition().isValid();
                     const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(3, 15);
@@ -74,12 +79,12 @@ namespace McRave::Combat::State {
                         if (slowerPool || equalPool || enemyLingVomit || avoidDiceRoll || enemyDroneScouted || enemyTurtle)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
-                    if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(4, 00)) {
+                    if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(4, 30)) {
                         if (slowerPool || equalPool || avoidDiceRoll || enemyDroneScouted)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
                     if (BuildOrder::getCurrentTransition() == "2HatchMuta"&& Util::getTime() < Time(8, 00)) {
-                        if (Spy::getEnemyTransition() == "3HatchSpeedling" || enemyFasterSpeed)
+                        if (Spy::getEnemyTransition() == "3HatchSpeedling" || Spy::getEnemyTransition() == "+1Ling" || enemyFasterSpeed)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
                 }
@@ -149,7 +154,7 @@ namespace McRave::Combat::State {
         auto target = *unit.getTarget().lock();
 
         auto countDefensesInRange = 0.0;
-        if (unit.getType() == Zerg_Mutalisk && unit.hasTarget() && unit.canOneShot(target)) {
+        if (unit.getType() == Zerg_Mutalisk && unit.canOneShot(target)) {
             for (auto &e : Units::getUnits(PlayerState::Enemy)) {
                 auto &enemy = *e;
                 if (enemy.canAttackAir() && enemy != target) {
@@ -161,7 +166,8 @@ namespace McRave::Combat::State {
             }
 
             if (unit.canOneShot(target) && !unit.isTargetedBySplash() && !unit.isNearSplash()) {
-                if ((countDefensesInRange < 2.0 && Util::getTime() < Time(8, 00))
+                if ((countDefensesInRange > 0.0 && Players::ZvZ() && !target.getType().isWorker())
+                    || (countDefensesInRange < 2.0 && Util::getTime() < Time(8, 00))
                     || (countDefensesInRange < 3.0 && Util::getTime() < Time(10, 00)))
                     return true;
             }

@@ -6,15 +6,15 @@ using namespace UnitTypes;
 
 namespace McRave::Targets {
 
-    set<UnitType> cancelPriority ={ Terran_Missile_Turret, Terran_Barracks, Terran_Bunker, Terran_Factory, Terran_Starport, Terran_Armory, Terran_Bunker };
-    set<UnitType> proxyTargeting ={ Protoss_Pylon, Terran_Barracks, Terran_Bunker, Zerg_Sunken_Colony };
-    map<UnitInfo*, int> meleeSpotsAvailable;
-
-    enum class Priority {
-        Ignore, Trivial, Minor, Normal, Major, Critical
-    };
-
     namespace {
+
+        set<UnitType> cancelPriority ={ Terran_Missile_Turret, Terran_Barracks, Terran_Bunker, Terran_Factory, Terran_Starport, Terran_Armory, Terran_Bunker };
+        set<UnitType> proxyTargeting ={ Protoss_Pylon, Terran_Barracks, Terran_Bunker, Zerg_Sunken_Colony };
+        map<UnitInfo*, int> meleeSpotsAvailable;
+
+        enum class Priority {
+            Ignore, Trivial, Minor, Normal, Major, Critical
+        };
 
         bool enemyHasGround;
         bool enemyHasAir;
@@ -114,7 +114,6 @@ namespace McRave::Targets {
                     || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getUnitsTargetingThis().size()) >= 4 && !target.isBurrowed())                          // Don't over target spider mines
                     || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                                         // Don't target interceptors as a flying unit
                     || (target.getType().isWorker() && !allowWorkerTarget(unit, target))
-                    //|| (target.getType().isWorker() && !target.hasRepairedRecently() && !target.hasAttackedRecently() && !unit.getUnitsInRangeOfThis().empty())           // Broken: Should have 1 unit eject scout worker, doesnt work
                     || (target.getType() == Protoss_Corsair && !unit.isFlying() && target.getUnitsTargetingThis().size() > 2 && !unit.isWithinRange(target))
                     || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())           // Don't target if invisible and can't attack this unit or we have no detectors in PvP
                     || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))           // Don't target flyers that we can't reach
@@ -137,14 +136,14 @@ namespace McRave::Targets {
                     auto anythingSupply = !Players::ZvZ() && Players::getSupply(PlayerState::Enemy, Races::None) < 20;
                     auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
 
-                    if (Players::ZvP() && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == "ZealotRush" && Util::getTime() < Time(9, 00))
+                    if (Players::ZvP() && Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == "ZealotRush")
                         return Priority::Major;
-                    if (Players::ZvZ() && target.getType() == Zerg_Zergling && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
+                    if (Players::ZvZ() && Util::getTime() < Time(8, 00) && target.getType() == Zerg_Zergling && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
                         return Priority::Major;
 
                     // Low priority targets, ignore when we haven't found the enemy
                     auto priorityAfterInfo = Terrain::foundEnemy() ? Priority::Minor : Priority::Trivial;
-                    if (!anythingTime && !defendExpander) {
+                    if (!anythingTime && !defendExpander && !target.isThreatening()) {
                         if (!Players::ZvZ() && !unit.canOneShot(target) && !unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding() && !target.getType().isWorker())
                             return priorityAfterInfo;
                         if ((enemyCanHitAir || enemyCanHitGround) && !target.canAttackAir() && !target.canAttackGround())
@@ -215,7 +214,8 @@ namespace McRave::Targets {
             const auto useGrd =         !unit.getType().isWorker() && !unit.isFlying() && !target.isFlying()
                 && mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea(target.getTilePosition())
                 && mapBWEM.GetArea(unit.getTilePosition())->AccessibleFrom(mapBWEM.GetArea(target.getTilePosition()))
-                && boxDistance < unit.getEngageRadius();
+                && boxDistance < unit.getEngageRadius()
+                && boxDistance > reach;
             const auto actualDist =     useGrd ? BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) : boxDistance;
             const auto dist =           exp(0.0125 * actualDist);
 

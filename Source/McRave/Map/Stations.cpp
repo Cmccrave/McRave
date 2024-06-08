@@ -273,7 +273,7 @@ namespace McRave::Stations
             // If enemy adds defenses, we can start to cut defenses too
             if (Util::getTime() > Time(4, 00))
                 groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Creep_Colony)
-                + Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Evolution_Chamber);
+                + Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
 
             if (station->isMain()) {
                 if (BuildOrder::takeNatural() || getStations(PlayerState::Self).size() > 1)
@@ -298,31 +298,41 @@ namespace McRave::Stations
                     if (Spy::getEnemyOpener() == "4Pool")
                         desiredDefenses = max(desiredDefenses, 1 + (vis(Zerg_Spire) > 0));
 
-                    // 12 Pool
-                    if (Spy::getEnemyOpener() == "12Pool" && Spy::getEnemyTransition() != "1HatchMuta")
-                        desiredDefenses = max(desiredDefenses, int(Util::getTime() > Time(4, 00)));
+                    if (total(Zerg_Mutalisk) >= 4) {
 
-                    // Speedling all-in
-                    if (Spy::getEnemyTransition() == "2HatchSpeedling" && vis(Zerg_Spire) > 0)
-                        desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 30)));
+                        // 12 Pool
+                        if (Spy::getEnemyOpener() == "12Pool" && Spy::getEnemyTransition() != "1HatchMuta")
+                            //desiredDefenses = max(desiredDefenses, int(Util::getTime() > Time(4, 00)));
+                            return 2 - groundCount;
 
-                    // +1Ling
-                    if (Spy::getEnemyTransition() == "+1Ling")
-                        desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 00)));
+                        // Speedling all-in
+                        if (Spy::getEnemyTransition() == "2HatchSpeedling" && vis(Zerg_Spire) > 0)
+                            //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 30)));
+                            return 2 - groundCount;
 
-                    // 3 Hatch
-                    if (Util::getTime() < Time(6, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
-                        desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(6, 00)));
+                        // +1Ling
+                        if (Spy::getEnemyTransition() == "+1Ling")
+                            //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(4, 45)));
+                            return 2 - groundCount;
 
-                    // Unknown
-                    if (vis(Zerg_Spire) > 0) {
-                        if ((!Terrain::foundEnemy() && vis(Zerg_Spire) > 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 20)
+                        // 2 Hatch
+                        if (Spy::getEnemyBuild() == "PoolHatch")
+                            //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(4, 45)));
+                            return 2 - groundCount;
+
+                        // 3 Hatch
+                        if (Util::getTime() < Time(6, 30) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
+                            //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 00)));
+                            return 2 - groundCount;
+
+                        // Unknown
+                        if ((!Terrain::foundEnemy() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 24)
                             || Spy::enemyFastExpand()
-                            || Spy::getEnemyBuild() == "PoolHatch"
                             || Spy::getEnemyBuild() == "HatchPool"
                             || Spy::getEnemyTransition() == "2HatchMuta"
                             || (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling)))
-                            desiredDefenses = max(desiredDefenses, 1);
+                            //desiredDefenses = max(desiredDefenses, 1);
+                            return 1 - groundCount;
                     }
                 }
             }
@@ -562,7 +572,7 @@ namespace McRave::Stations
                     return (Util::getTime() > Time(4, 35)) - airCount;
 
                 // Need a spore with later mutas
-                if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() != "2HatchMuta")
+                if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() != "2HatchMuta" && !hydraBuild)
                     return (Util::getTime() > Time(5, 00)) - airCount;
             }
 
@@ -678,8 +688,14 @@ namespace McRave::Stations
     const BWEB::Station * const getClosestRetreatStation(UnitInfo& unit)
     {
         const auto closerThanSim = [&](auto &defendPosition) {
+            if (!unit.hasSimTarget())
+                return true;
+            auto sim = unit.getSimTarget().lock();
+            auto eitherFlyer = (sim->isFlying() || unit.isFlying());
+
             return !unit.hasSimTarget()
-                || (!unit.isFlying() && BWEB::Map::getGroundDistance(unit.getPosition(), defendPosition) < BWEB::Map::getGroundDistance(unit.getSimTarget().lock()->getPosition(), defendPosition));
+                || eitherFlyer
+                || BWEB::Map::getGroundDistance(unit.getPosition(), defendPosition) < BWEB::Map::getGroundDistance(unit.getSimTarget().lock()->getPosition(), defendPosition);
         };
 
         const auto alreadyInArea = [&](auto station) {

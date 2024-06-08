@@ -91,7 +91,7 @@ namespace McRave::Combat::Formations {
             return;
 
         const auto type = cluster.commander.lock()->getType();
-        const auto biggestDimension = max(type.width(), type.height()) * 2;
+        const auto biggestDimension = max(type.width(), type.height()) + 6;
         auto radsPerUnit = (biggestDimension / concave.radius);
         auto first = concave.center - Position(-int(concave.radius * cos(concave.angle)), int(concave.radius * sin(concave.angle)));
 
@@ -166,7 +166,7 @@ namespace McRave::Combat::Formations {
                 bumpedNeg = 0;
             }
 
-            if (assignmentsRemaining <= 0 || wrap >= 50 || concave.radius <= 64)
+            if (assignmentsRemaining <= 0 || wrap >= 50 || concave.radius <= 32)
                 break;
         }
 
@@ -178,8 +178,7 @@ namespace McRave::Combat::Formations {
     void createConcave(Formation& formation, Cluster& cluster)
     {
         formationStuff(formation, cluster);
-        auto arcSize = 1.3;
-        generatePositions(formation, cluster, arcSize);
+        generatePositions(formation, cluster, 1.5);
     }
 
     void createLine(Formation& formation, Cluster& cluster)
@@ -241,7 +240,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
-        //drawFormations();
+        drawFormations();
     }
 
     vector<Formation>& getFormations() { return formations; }

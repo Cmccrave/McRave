@@ -199,10 +199,16 @@ namespace McRave::Visuals {
                     Broodwar->drawLineMap(resource.getPosition(), resource.getStation()->getBase()->Center(), Colors::Green);
                 }
 
-                Broodwar->drawTextScreen(Position(4, 64), "%cReserved: %d", Text::GreyBlue, Producing::getReservedMineral());
-                Broodwar->drawTextScreen(Position(4, 80), "%cReserved: %d", Text::Green, Producing::getReservedGas());
-                Broodwar->drawTextScreen(Position(4, 96), "%cPlanned: %d", Text::GreyBlue, Planning::getPlannedMineral());
-                Broodwar->drawTextScreen(Position(4, 112), "%cPlanned: %d", Text::Green, Planning::getPlannedGas());
+                Broodwar->drawTextScreen(Position(0, 80), "%cReserved: %d", Text::GreyBlue, Producing::getReservedMineral());
+                Broodwar->drawTextScreen(Position(0, 90), "%cReserved: %d", Text::Green, Producing::getReservedGas());
+                Broodwar->drawTextScreen(Position(0, 100), "%cPlanned: %d", Text::GreyBlue, Planning::getPlannedMineral());
+                Broodwar->drawTextScreen(Position(0, 110), "%cPlanned: %d", Text::Green, Planning::getPlannedGas());
+
+                int offset = 0;
+                for (auto &building : Planning::getPlannedBuildings()) {
+                    Broodwar->drawTextScreen(Position(0, 120 + offset), "%s", building.second.c_str());
+                    offset += 10;
+                }
             }
 
             if (bo_switch) {

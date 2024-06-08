@@ -413,58 +413,10 @@ namespace McRave::Math {
 
     int stopAnimationFrames(UnitType unitType) {
         // Attack animation frames below
-        if (unitType == Terran_SCV)
-            return 2;
-        if (unitType == Terran_Marine)
-            return 8;
-        if (unitType == Terran_Firebat)
-            return 8;
-        if (unitType == Terran_Ghost)
-            return 3;
-        if (unitType == Terran_Vulture)
-            return 2;
-        if (unitType == Terran_Goliath)
-            return 1;
-        if (unitType == Terran_Siege_Tank_Tank_Mode || unitType == Terran_Siege_Tank_Siege_Mode)
-            return 1;
-        if (unitType == Terran_Wraith)
-            return 2;
-        if (unitType == Terran_Battlecruiser)
-            return 2;
-        if (unitType == Terran_Valkyrie)
-            return 40;
-        if (unitType == Protoss_Probe)
-            return 2;
-        if (unitType == Protoss_Zealot)
-            return 7;
         if (unitType == Protoss_Dragoon)
-            return 9;
-        if (unitType == Protoss_Dark_Templar)
-            return 9;
-        if (unitType == Protoss_Archon)
-            return 15;
-        if (unitType == Protoss_Reaver)
-            return 1;
-        if (unitType == Protoss_Scout)
-            return 2;
-        if (unitType == Protoss_Corsair)
-            return 8;
-        if (unitType == Protoss_Arbiter)
-            return 4;
-        if (unitType == Zerg_Drone)
-            return 2;
-        if (unitType == Zerg_Zergling)
-            return 4;
-        if (unitType == Zerg_Hydralisk)
-            return 3;
-        if (unitType == Zerg_Lurker)
-            return 2;
-        if (unitType == Zerg_Ultralisk)
-            return 14;
-        if (unitType == Zerg_Mutalisk)
-            return 2;
+            return 5;
         if (unitType == Zerg_Devourer)
-            return 9;
+            return 7;
         return 0;
     }
 

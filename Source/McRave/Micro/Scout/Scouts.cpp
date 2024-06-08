@@ -184,6 +184,10 @@ namespace McRave::Scouts {
                         || Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0
                         || Util::getTime() > Time(4, 00))
                         main.desiredTypeCounts[Zerg_Drone] = 0;
+
+                    // Try to see what tech they have
+                    if (Players::ZvP() && Spy::getEnemyBuild() != "FFE" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00))
+                        main.desiredTypeCounts[Zerg_Zergling] = 1;
                 }
 
                 if (Players::ZvZ()) {
@@ -267,7 +271,7 @@ namespace McRave::Scouts {
 
                 // If we scouted the main, scout the nat to get a full scout
                 if (Broodwar->self()->getRace() == Races::Zerg) {
-                    if (mainScouted && !natScouted) {
+                    if (mainScouted && !natScouted && main.desiredTypeCounts[Zerg_Drone] > 0) {
                         main.desiredTypeCounts[Zerg_Drone] = 0;
                         natural.desiredTypeCounts[Zerg_Drone] = 1;
                     }
@@ -332,7 +336,7 @@ namespace McRave::Scouts {
             
             // No threat at home, we should use a ling to scout the enemy
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                if (Units::getImmThreat() <= 0.1 && Util::getTime() > Time(1, 00) && !Spy::enemyRush() && !Spy::enemyProxy()) {
+                if (Units::getImmThreat() <= 0.1 && Util::getTime() > Time(1, 00) && !Spy::enemyRush() && !Spy::enemyProxy() && Combat::State::isStaticRetreat(Zerg_Zergling)) {
                     if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
                         || (Players::ZvP() && Util::getTime() < Time(8, 00)))
                         army.desiredTypeCounts[Zerg_Zergling] = 1;

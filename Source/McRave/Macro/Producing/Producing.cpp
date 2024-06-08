@@ -438,7 +438,7 @@ namespace McRave::Producing {
             return 10000.0;
 
         // Check if we are saving larva but not for this type
-        if (BuildOrder::getUnitReservation(type) == 0 && (BuildOrder::getUnitReservation(Zerg_Mutalisk) > 0 || BuildOrder::getUnitReservation(Zerg_Hydralisk) > 0)) {
+        if (BuildOrder::getUnitReservation(type) == 0 && (BuildOrder::getUnitReservation(Zerg_Scourge) > 0 || BuildOrder::getUnitReservation(Zerg_Mutalisk) > 0 || BuildOrder::getUnitReservation(Zerg_Hydralisk) > 0)) {
             auto larvaMinCost = (Zerg_Mutalisk.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Mutalisk))
                 + (Zerg_Hydralisk.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Hydralisk))
                 + (Zerg_Scourge.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Scourge));
@@ -447,7 +447,7 @@ namespace McRave::Producing {
                 + (Zerg_Hydralisk.gasPrice() * BuildOrder::getUnitReservation(Zerg_Hydralisk))
                 + (Zerg_Scourge.gasPrice() * BuildOrder::getUnitReservation(Zerg_Scourge));
 
-            auto larvaRequirements = BuildOrder::getUnitReservation(Zerg_Mutalisk) + BuildOrder::getUnitReservation(Zerg_Hydralisk) + (BuildOrder::getUnitReservation(Zerg_Scourge) / 2);
+            auto larvaRequirements = BuildOrder::getUnitReservation(Zerg_Mutalisk) + BuildOrder::getUnitReservation(Zerg_Hydralisk) + BuildOrder::getUnitReservation(Zerg_Scourge);
 
             if ((type != Zerg_Overlord && vis(Zerg_Larva) <= larvaRequirements)
                 || (type.mineralPrice() > 0 && Broodwar->self()->minerals() - type.mineralPrice() < larvaMinCost)

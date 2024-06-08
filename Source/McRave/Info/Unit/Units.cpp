@@ -98,7 +98,7 @@ namespace McRave::Units {
                         || unit.getRole() == Role::Worker;
 
                     auto frames = unit.isLightAir() ? 3 : 9;
-                    auto newCommandFrame = Broodwar->getFrameCount() - unit.commandFrame > frames;
+                    auto newCommandFrame = (Broodwar->getFrameCount() - unit.commandFrame > frames) || Util::getTime() < Time(4, 00);
 
                     if (newCommandFrame && validRole)
                         commandQueue.push_back(&unit);

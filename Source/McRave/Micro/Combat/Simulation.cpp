@@ -84,8 +84,8 @@ namespace McRave::Combat::Simulation {
             }
         }
 
-        if (selfEngaged || !enemyEngaged)
-            maxThreshold = minThreshold;
+        //if (selfEngaged)
+        //    maxThreshold = minThreshold;
 
         // If above/below thresholds, it's a sim win/loss
         if (unit.getSimValue() >= maxThreshold)
@@ -93,21 +93,21 @@ namespace McRave::Combat::Simulation {
         else if (unit.getSimValue() < minThreshold || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
             unit.setSimState(SimState::Loss);
 
-        // Check for hardcoded directional losses
-        if (unit.getSimValue() < maxThreshold) {
-            if (unit.isFlying()) {
-                if (unitTarget->isFlying() && belowAirtoAirLimit)
-                    unit.setSimState(SimState::Loss);
-                else if (!unitTarget->isFlying() && belowAirtoGrdLimit)
-                    unit.setSimState(SimState::Loss);
-            }
-            else {
-                if (unitTarget->isFlying() && belowGrdtoAirLimit)
-                    unit.setSimState(SimState::Loss);
-                else if (!unitTarget->isFlying() && belowGrdtoGrdLimit)
-                    unit.setSimState(SimState::Loss);
-            }
-        }
+        //// Check for hardcoded directional losses
+        //if (unit.getSimValue() < maxThreshold) {
+        //    if (unit.isFlying()) {
+        //        if (unitTarget->isFlying() && belowAirtoAirLimit)
+        //            unit.setSimState(SimState::Loss);
+        //        else if (!unitTarget->isFlying() && belowAirtoGrdLimit)
+        //            unit.setSimState(SimState::Loss);
+        //    }
+        //    else {
+        //        if (unitTarget->isFlying() && belowGrdtoAirLimit)
+        //            unit.setSimState(SimState::Loss);
+        //        else if (!unitTarget->isFlying() && belowGrdtoGrdLimit)
+        //            unit.setSimState(SimState::Loss);
+        //    }
+        //}
     }
 
     void updateThresholds(UnitInfo& unit)

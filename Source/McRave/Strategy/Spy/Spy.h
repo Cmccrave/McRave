@@ -31,7 +31,6 @@ namespace McRave::Spy {
                 confirmed = true;
             else
                 possible = false;
-            changeable = framesTrue < framesChangeable;
         }
 
         void updateBlueprint() {
@@ -47,8 +46,7 @@ namespace McRave::Spy {
             else {
                 name = "Unknown";
                 possible = false;
-            }            
-            changeable = framesTrue < framesChangeable;
+            }
         }
     };
 

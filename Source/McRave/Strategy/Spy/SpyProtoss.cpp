@@ -152,10 +152,10 @@ namespace McRave::Spy::Protoss {
 
                 // DT
                 if (!theSpy.expand.possible) {
-                    if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) >= 1 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) > 0)
-                        || Players::getVisibleCount(PlayerState::Enemy, Protoss_Templar_Archives) >= 1
-                        || Players::getVisibleCount(PlayerState::Enemy, Protoss_Dark_Templar) >= 1
-                        || (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 2 && !theSpy.expand.possible && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) >= 1 && Util::getTime() > Time(6, 45)))
+                    if ((completesBy(1, Protoss_Citadel_of_Adun, Time(5, 00)) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) > 0)
+                        || completesBy(1, Protoss_Templar_Archives, Time(6, 00))
+                        || arrivesBy(1, Protoss_Dark_Templar, Time(7, 00))
+                        || (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 2 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) >= 1 && Util::getTime() > Time(6, 45)))
                         theSpy.transition.name = "DT";
                 }
 
@@ -165,12 +165,14 @@ namespace McRave::Spy::Protoss {
                     theSpy.transition.name = "Speedlot";
 
                 // Corsair
-                if ((theSpy.build.name == "2Gate" && completesBy(1, Protoss_Stargate, Time(5, 15)))
-                    || (theSpy.build.name == "1GateCore" && completesBy(1, Protoss_Stargate, Time(4, 00)))
+                if ((theSpy.build.name == "2Gate" && completesBy(1, Protoss_Stargate, Time(6, 15)))
+                    || (theSpy.build.name == "1GateCore" && completesBy(1, Protoss_Stargate, Time(5, 00)))
                     || (theSpy.build.name == "2Gate" && completesBy(1, Protoss_Scout, Time(6, 00)))
-                    || (theSpy.build.name == "2Gate" && completesBy(1, Protoss_Corsair, Time(6, 00)))
+                    || (theSpy.build.name == "2Gate" && completesBy(1, Protoss_Corsair, Time(6, 45)))
+                    || (theSpy.build.name == "2Gate" && arrivesBy(1, Protoss_Corsair, Time(7, 15)))
                     || (theSpy.build.name == "1GateCore" && completesBy(1, Protoss_Scout, Time(5, 15)))
-                    || (theSpy.build.name == "1GateCore" && completesBy(1, Protoss_Corsair, Time(5, 15))))
+                    || (theSpy.build.name == "1GateCore" && completesBy(1, Protoss_Corsair, Time(5, 15)))
+                    || (theSpy.build.name == "1GateCore" && arrivesBy(1, Protoss_Corsair, Time(5, 45))))
                     theSpy.transition.name = "Corsair";
 
                 // Robo

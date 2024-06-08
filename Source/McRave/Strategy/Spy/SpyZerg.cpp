@@ -47,23 +47,24 @@ namespace McRave::Spy::Zerg {
                 || completesBy(1, Zerg_Spawning_Pool, Time(1, 40))
                 || arrivesBy(8, Zerg_Zergling, Time(3, 00)))
                 theSpy.opener.name = "4Pool";
-            else if (arrivesBy(1, Zerg_Zergling, Time(2, 50))
+            else if (arrivesBy(4, Zerg_Zergling, Time(2, 50))
                 || completesBy(1, Zerg_Zergling, Time(2, 15))
                 || completesBy(1, Zerg_Spawning_Pool, Time(1, 50)))
                 theSpy.opener.name = "7Pool";
-            else if (arrivesBy(1, Zerg_Zergling, Time(2, 55))
+            else if (arrivesBy(4, Zerg_Zergling, Time(2, 55))
                 || completesBy(1, Zerg_Zergling, Time(2, 25))
                 || completesBy(8, Zerg_Zergling, Time(3, 00))
                 || completesBy(10, Zerg_Zergling, Time(3, 20))
                 || completesBy(12, Zerg_Zergling, Time(3, 30))
                 || completesBy(14, Zerg_Zergling, Time(3, 40))
+                || arrivesBy(16, Zerg_Zergling, Time(4, 20))
                 || completesBy(1, Zerg_Spawning_Pool, Time(2, 00))
                 || completesBy(1, Zerg_Lair, Time(3, 45)))
                 theSpy.opener.name = "9Pool";
-            else if (arrivesBy(1, Zerg_Zergling, Time(3, 05))
+            else if (arrivesBy(4, Zerg_Zergling, Time(3, 05))
                 || completesBy(1, Zerg_Zergling, Time(2, 40)))
                 theSpy.opener.name = "OverPool";
-            else if (arrivesBy(1, Zerg_Zergling, Time(3, 30))
+            else if (arrivesBy(4, Zerg_Zergling, Time(3, 30))
                 || completesBy(1, Zerg_Zergling, Time(3, 00))
                 || completesBy(1, Zerg_Spawning_Pool, Time(2, 00)))
                 theSpy.opener.name = "12Pool";
@@ -74,8 +75,7 @@ namespace McRave::Spy::Zerg {
             else if (completesBy(2, Zerg_Hatchery, Time(2, 45)))
                 theSpy.opener.name = "10Hatch";
             else if (completesBy(2, Zerg_Hatchery, Time(3, 05))
-                || completesBy(1, Zerg_Spawning_Pool, Time(3, 00))
-                || arrivesBy(1, Zerg_Zergling, Time(3, 50)))
+                || arrivesBy(4, Zerg_Zergling, Time(3, 50)))
                 theSpy.opener.name = "12Hatch";
         }
 
@@ -97,7 +97,7 @@ namespace McRave::Spy::Zerg {
 
                 // ZvZ
                 if (Players::ZvZ()) {
-                    if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Evolution_Chamber) > 0 && !theSpy.expand.possible && Util::getTime() < Time(4, 00))
+                    if (completesBy(1, UpgradeTypes::Zerg_Melee_Attacks, Time(5, 30)))
                         theSpy.transition.name = "+1Ling";
                 }
             }
@@ -131,9 +131,9 @@ namespace McRave::Spy::Zerg {
 
                 // ZvZ
                 if (Players::ZvZ()) {
-                    if (!theSpy.expand.confirmed && theSpy.productionCount == 1 && Util::getTime() > Time(5, 00))
+                    if (!theSpy.expand.confirmed && theSpy.productionCount == 1 && Util::getTime() > Time(5, 30))
                         theSpy.transition.name = "1HatchMuta";
-                    else if (theSpy.expand.confirmed && theSpy.productionCount == 2 && Util::getTime() > Time(5, 30))
+                    else if (theSpy.expand.confirmed && theSpy.productionCount == 2 && Util::getTime() > Time(6, 00))
                         theSpy.transition.name = "2HatchMuta";
                 }
             }

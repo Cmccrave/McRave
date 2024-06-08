@@ -52,16 +52,12 @@ namespace McRave::Spy::Terran {
 
             // RaxCC
             if ((completesBy(2, Terran_Command_Center, Time(4, 30)))
-                || (theSpy.expand.possible && Util::getTime() < Time(4, 00))
-                || (theSpy.proxy.possible && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) == 1))
+                || (theSpy.expand.possible && Util::getTime() < Time(4, 00)))
                 theSpy.build.name = "RaxCC";
 
             // RaxFact
             if (completesBy(1, Terran_Factory, Time(4, 00))
                 || (Util::getTime() < Time(5, 15) && hasMech)
-                || theSpy.rushArrivalTime < Time(2, 45)
-                || completesBy(1, Terran_Refinery, Time(2, 30))
-                || completesBy(1, Terran_Barracks, Time(1, 40))
                 || arrivesBy(1, Terran_Wraith, Time(6, 00)))
                 theSpy.build.name = "RaxFact";
 
@@ -117,6 +113,13 @@ namespace McRave::Spy::Terran {
                     || completesBy(1, Terran_Barracks, Time(2, 00))
                     || completesBy(1, Terran_Marine, Time(2, 15)))
                     theSpy.opener.name = "8Rax";
+
+                // Slightly sooner arrival is a proxy
+                if (arrivesBy(1, Terran_Marine, Time(2, 50))
+                    || arrivesBy(2, Terran_Marine, Time(3, 10))
+                    || arrivesBy(3, Terran_Marine, Time(3, 25))
+                    || arrivesBy(4, Terran_Marine, Time(3, 40)))
+                    theSpy.proxy.possible = true;
             }
         }
 

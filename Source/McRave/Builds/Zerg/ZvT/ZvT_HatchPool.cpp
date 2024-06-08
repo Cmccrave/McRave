@@ -23,10 +23,6 @@ namespace McRave::BuildOrder::Zerg {
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 24);
             buildQueue[Zerg_Spawning_Pool] =                (hatchCount() >= 2);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 16) + (s >= 32);
-
-            // Composition
-            armyComposition[Zerg_Drone] =                   0.60;
-            armyComposition[Zerg_Zergling] =                0.40;
         }
     }
 

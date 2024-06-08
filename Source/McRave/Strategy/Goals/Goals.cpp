@@ -188,7 +188,7 @@ namespace McRave::Goals {
 
                     if (closestBuilder && !closestBuilder->isWithinBuildRange()) {
                         for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
-                            if (unit->getPosition().getDistance(closestBuilder->getPosition()) < 640.0)
+                            if (!unit->isSuicidal() && unit->getPosition().getDistance(closestBuilder->getPosition()) < 640.0)
                                 assignNumberToGoal(unit->getPosition(), type, 1, GoalType::Escort);
                         }
                         assignPercentToGoal(closestBuilder->getPosition(), type, 1.0, GoalType::Escort);
