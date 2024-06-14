@@ -138,7 +138,7 @@ namespace McRave::Stations
 
                 // If there are multiple chokepoints with the same area pair
                 auto pathTowards = Terrain::getEnemyStartingPosition().isValid() ? Terrain::getEnemyStartingPosition() : mapBWEM.Center();
-                if (station.getBase()->GetArea()->ChokePoints().size() >= 3) {
+                if (!defendChoke && station.getBase()->GetArea()->ChokePoints().size() >= 3) {
                     defendPosition = Position(0, 0);
                     int count = 0;
 
@@ -149,7 +149,6 @@ namespace McRave::Stations
                         if (Position(choke->Center()).getDistance(pathTowards) < station.getBase()->Center().getDistance(pathTowards)) {
                             defendPosition += Position(choke->Center());
                             count++;
-                            Visuals::drawCircle(Position(choke->Center()), 4, Colors::Cyan, true);
                         }
                     }
                     if (count > 0)
@@ -254,7 +253,7 @@ namespace McRave::Stations
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
                 if (BuildOrder::isOpener() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None)
                     return (Util::getTime() > Time(3, 00)) - groundCount;
-                if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters))
+                if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(7, 00))
                     return 1 - groundCount;
             }
             else if (station->isNatural()) {
@@ -282,21 +281,33 @@ namespace McRave::Stations
 
             if (BuildOrder::getCurrentBuild() == "PoolHatch") {
                 if (station->isMain()) {
+
+                    // 4 Pool or 7 Pool
                     if (Spy::getEnemyOpener() == "4Pool" || Spy::getEnemyOpener() == "7Pool")
-                        desiredDefenses = max(desiredDefenses, 1);
-                    if (Spy::getEnemyTransition() == "3HatchSpeedling" && vis(Zerg_Spire) > 0)
-                        desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(5, 30)));
-                    if (Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling) && Util::getTime() > Time(3, 40) && vis(Zerg_Spire) > 0)
-                        desiredDefenses = max(desiredDefenses, 1);
+                        return 1 - groundCount;
+
+                    // 3 Hatch
+                    if (Util::getTime() < Time(6, 30) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && com(Zerg_Spire) > 0)
+                        return 4 - groundCount;
+                    if (Spy::getEnemyTransition() == "3HatchSpeedling" && com(Zerg_Spire) > 0)
+                        return 4 - groundCount;
+
+                    // Excess lings compared to me
+                    if (Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling) && Util::getTime() > Time(3, 40) && com(Zerg_Spire) > 0)
+                        return 1 - groundCount;
                 }
             }
 
             if (BuildOrder::getCurrentBuild() == "PoolLair") {
-                if (station->isMain()) {
+                if (station->isMain() && vis(Zerg_Drone) >= 8) {
 
                     // 4 Pool
                     if (Spy::getEnemyOpener() == "4Pool")
                         desiredDefenses = max(desiredDefenses, 1 + (vis(Zerg_Spire) > 0));
+
+                    // 3 Hatch
+                    if (Util::getTime() < Time(6, 30) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && vis(Zerg_Spire) > 0)
+                        return 4 - groundCount;
 
                     if (total(Zerg_Mutalisk) >= 4) {
 
@@ -318,11 +329,6 @@ namespace McRave::Stations
                         // 2 Hatch
                         if (Spy::getEnemyBuild() == "PoolHatch")
                             //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(4, 45)));
-                            return 2 - groundCount;
-
-                        // 3 Hatch
-                        if (Util::getTime() < Time(6, 30) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
-                            //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 00)));
                             return 2 - groundCount;
 
                         // Unknown

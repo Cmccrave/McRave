@@ -75,7 +75,8 @@ namespace McRave::Spy::Zerg {
             else if (completesBy(2, Zerg_Hatchery, Time(2, 45)))
                 theSpy.opener.name = "10Hatch";
             else if (completesBy(2, Zerg_Hatchery, Time(3, 05))
-                || arrivesBy(4, Zerg_Zergling, Time(3, 50)))
+                || completesBy(6, Zerg_Zergling, Time(3, 15))
+                || arrivesBy(6, Zerg_Zergling, Time(4, 00)))
                 theSpy.opener.name = "12Hatch";
         }
 
@@ -92,7 +93,7 @@ namespace McRave::Spy::Zerg {
                 // General
                 if (completesBy(1, UpgradeTypes::Metabolic_Boost, Time(4, 05)) && Scouts::gotFullScout() && arrivesBy(20, Zerg_Zergling, Time(4, 30)))
                     theSpy.transition.name = "2HatchSpeedling";
-                else if (!completesBy(1, UpgradeTypes::Metabolic_Boost, Time(4, 05)) && completesBy(1, UpgradeTypes::Metabolic_Boost, Time(5, 00)) && Scouts::gotFullScout() && arrivesBy(20, Zerg_Zergling, Time(5, 00)))
+                else if (!completesBy(1, UpgradeTypes::Metabolic_Boost, Time(4, 05)) && completesBy(1, UpgradeTypes::Metabolic_Boost, Time(5, 00)) && Scouts::gotFullScout() && arrivesBy(20, Zerg_Zergling, Time(5, 05)))
                     theSpy.transition.name = "3HatchSpeedling";
 
                 // ZvZ

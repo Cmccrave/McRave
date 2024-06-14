@@ -42,6 +42,9 @@ namespace McRave::Combat::Bearings {
     void updateMarch(UnitInfo& unit)
     {
         unit.marchPos = unit.getDestination();
+
+        if (Players::ZvZ() && Combat::State::isStaticRetreat(unit.getType()))
+            unit.marchPos = Combat::getDefendPosition();
     }
 
     void updateDestination(UnitInfo& unit)

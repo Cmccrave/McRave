@@ -70,23 +70,28 @@ namespace McRave::Combat::State {
                         || (Spy::getEnemyOpener() == "OverPool" && BuildOrder::getCurrentOpener() == "9Pool")
                         || (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "OverPool");
                     const auto enemyLingVomit = (Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling") && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0;
-                    const auto avoidDiceRoll = Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 15) && !Terrain::getEnemyStartingPosition().isValid();
+                    const auto avoidDiceRoll = (Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 15) && !Terrain::getEnemyStartingPosition().isValid())
+                        || (BuildOrder::getCurrentOpener() == "12Pool")
+                        || (BuildOrder::getCurrentOpener() == "12Hatch");
                     const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(3, 15);
                     const auto enemyTurtle = Spy::enemyTurtle();
                     const auto enemyFasterSpeed = (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost, 1) && !Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost, 1)) || (slowerPool && !Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost, 1));
+                    const auto selfFasterSpeed = (Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost, 1) && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost, 1));
 
                     if (BuildOrder::getCurrentTransition() == "1HatchMuta" && Util::getTime() < Time(7, 00)) {
-                        if (slowerPool || equalPool || enemyLingVomit || avoidDiceRoll || enemyDroneScouted || enemyTurtle)
+                        if (slowerPool || equalPool || enemyLingVomit || enemyDroneScouted || enemyTurtle)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
-                    if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(4, 30)) {
+                    if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(5, 30) && !selfFasterSpeed) {
                         if (slowerPool || equalPool || avoidDiceRoll || enemyDroneScouted)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
-                    if (BuildOrder::getCurrentTransition() == "2HatchMuta"&& Util::getTime() < Time(8, 00)) {
+                    if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(8, 00)) {
                         if (Spy::getEnemyTransition() == "3HatchSpeedling" || Spy::getEnemyTransition() == "+1Ling" || enemyFasterSpeed)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
+                    if (BuildOrder::getCurrentBuild() == "PoolLair" && Spy::getEnemyBuild() == "HatchPool" && Util::getTime() > Time(3, 15) && Util::getTime() < Time(8, 00))
+                        staticRetreatTypes.push_back(Zerg_Zergling);
                 }
             }
         }
@@ -246,7 +251,7 @@ namespace McRave::Combat::State {
         // ... Non-flying unit is targeted by suicide
         // ... Ghost with nuke made is loaded in a transport
         // ... Unit is fighting with a worker
-        return (atHome && unit.getSimState() == SimState::Win)
+        return (atHome && unit.getSimState() == SimState::Win && !Players::ZvZ())
             || (atHome && freeAttacks())
             || (atHome && !unit.getType().isWorker() && !Spy::enemyRush() && (unit.getGroundRange() > target.getGroundRange() || target.getType().isWorker()) && !target.isHidden())
             || (target.isThreatening() && !target.isHidden())
@@ -337,7 +342,7 @@ namespace McRave::Combat::State {
             unit.setLocalState(LocalState::Retreat);
 
         // Respect global states for overall direction
-        else if (unit.getGlobalState() == GlobalState::Retreat)
+        else if (!Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && unit.getGlobalState() == GlobalState::Retreat)
             unit.setLocalState(LocalState::Retreat);
     }
 

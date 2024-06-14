@@ -42,6 +42,12 @@ namespace McRave {
             const auto inRangeOfResource = enemy->getPosition().getDistance(position) < max(160.0, enemy->getGroundRange());
             threatened = inRangeOfResource;
         }
+
+        // Sometimes we need to just not mine minerals that would just lose workers
+        if (Players::ZvZ()) {
+            if (Spy::enemyPressure() && Util::getTime() < Time(6, 00) && station && station->isNatural())
+                threatened = true;
+        }
     }
 
     void ResourceInfo::updateWorkerCap()

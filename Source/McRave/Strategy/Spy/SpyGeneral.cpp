@@ -7,7 +7,7 @@ using namespace UnitTypes;
 namespace McRave::Spy::General {
 
     namespace {
-        set<Unit> unitsStored; // A bit hacky way to say if we've stored a unit
+        map<Unit, UnitType> unitsStored; // A bit hacky way to say if we've stored a unit
         string nodeName = "[Spy]: ";
 
         void enemyUnitTimings(PlayerInfo& player, StrategySpy& theSpy)
@@ -29,9 +29,14 @@ namespace McRave::Spy::General {
                     continue;
                 }
 
+                // Attempt to remove drones that morphed into a building
+                auto itr = unitsStored.find(unit.unit());
+                if (itr != unitsStored.end() && itr->second != unit.getType())
+                    unitsStored.erase(unit.unit());
+
                 // If not tracked, store timing metrics
                 if (unitsStored.find(unit.unit()) == unitsStored.end()) {
-                    unitsStored.insert(unit.unit());
+                    unitsStored[unit.unit()] = unit.getType();
                     auto &ut = theSpy.unitTimings[unit.getType()];
                     ut.countStartedWhen.push_back(unit.timeStartedWhen());
                     ut.countCompletedWhen.push_back(unit.timeCompletesWhen());
@@ -153,8 +158,8 @@ namespace McRave::Spy::General {
         void checkEnemyPressure(PlayerInfo& player, StrategySpy& theSpy)
         {
             // Pressure builds are delayed aggresive builds
-            auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self, Races::None) >= 100 : Players::getSupply(PlayerState::Self, Races::None) >= 120;
-            theSpy.pressure.possible = !supplySafe && (Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "Sparks" || Spy::getEnemyTransition() == "2Fact" || Spy::getEnemyTransition() == "Academy");
+            auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self, Races::None) >= 80 : Players::getSupply(PlayerState::Self, Races::None) >= 120;
+            theSpy.pressure.possible = !supplySafe && (Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling" || Spy::getEnemyTransition() == "Sparks" || Spy::getEnemyTransition() == "2Fact" || Spy::getEnemyTransition() == "Academy");
             if (supplySafe)
                 theSpy.pressure.possible = false;
         }

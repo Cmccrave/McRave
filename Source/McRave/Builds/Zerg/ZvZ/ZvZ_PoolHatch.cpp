@@ -30,6 +30,7 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Drone] =                        vis(Zerg_Extractor) > 0 ? 9 : 12;
             unitLimits[Zerg_Zergling] =                     12;
             gasLimit =                                      com(Zerg_Drone) >= 10 ? gasMax() : 0;
+            wantNatural =                                   true;
 
             auto secondHatch = Spy::enemyRush() ? total(Zerg_Zergling) >= 12 : (s >= 22 && vis(Zerg_Extractor) > 0);
             

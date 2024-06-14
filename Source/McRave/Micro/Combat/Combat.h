@@ -23,10 +23,10 @@ namespace McRave::Combat {
         std::vector<UnitInfo*> units;
         std::weak_ptr<UnitInfo> commander;
         CommandShare commandShare;
+        LocalState state;
         Shape shape;
         double spacing = 32.0;
         double radius = 320.0;
-        bool retreatCluster = false;
         BWAPI::Color color;
         BWEB::Path marchPath, retreatPath;
 
@@ -42,6 +42,7 @@ namespace McRave::Combat {
         Cluster* cluster;
         BWAPI::Position center;
         double radius, leash, angle, spacing;
+        bool loose = false;
         std::vector<BWAPI::Position> positions;
     };
 

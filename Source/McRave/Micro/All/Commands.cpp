@@ -158,7 +158,7 @@ namespace McRave::Command {
         }
 
         // Specal case: Holding a chokepoint, don't move
-        if (Players::ZvZ() && unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(unit.getFormation()) < 8 && unit.hasTarget() && !unit.isWithinRange(*unit.getTarget().lock())) {
+        if (Players::ZvZ() && Combat::holdAtChoke() && Combat::State::isStaticRetreat(unit.getType()) && unit.getPosition().getDistance(unit.getFormation()) <= 2) {
             unit.setCommand(Hold_Position);
             unit.commandText = "HoldPosition";
             return true;
@@ -443,7 +443,9 @@ namespace McRave::Command {
 
                 // Special Case: early "duels"
                 if (unit.getType() == Zerg_Zergling) {
-                    if (Util::getTime() < Time(4, 30) && !unit.getUnitsInRangeOfThis().empty() && target.isWithinReach(unit) && target.getType() == Protoss_Zealot && unit.getHealth() <= 16)
+                    if (Util::getTime() < Time(4, 30) && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Protoss_Zealot && unit.getHealth() <= 16)
+                        return true;
+                    if (Util::getTime() < Time(5, 30) && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10)
                         return true;
                 }
                 if ((unit.getType() == Zerg_Hydralisk || unit.getType() == Protoss_Dragoon) && !target.isFlying()) {
@@ -513,28 +515,14 @@ namespace McRave::Command {
 
     bool defend(UnitInfo& unit)
     {
-        const auto closeToDefend = unit.getPosition().getDistance(unit.getFormation()) < 160.0;
         const auto canDefend = unit.getRole() == Role::Combat;
         const auto shouldDefend = unit.getFormation().isValid() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && unit.getGlobalState() != GlobalState::Attack
             && unit.getLocalState() != LocalState::Attack && !unit.isLightAir() && !unit.attemptingRunby();
 
-
-        if (closeToDefend && canDefend && shouldDefend) {
-
-
-            // TODO Hold position units on ramp if melee vs melee
-            if (unit.getFormation().isValid() && unit.getDestination() == unit.getFormation() && unit.getPosition().getDistance(unit.getFormation()) < 4) {
-                if (unit.getCommandType() != UnitCommandTypes::Hold_Position) {
-                    unit.setCommand(UnitCommandTypes::Hold_Position, unit.getPosition());
-                    unit.commandText = "Hold";
-                }
-                return true;
-            }
-            else {
-                unit.setCommand(Move, unit.getFormation());
-                unit.commandText = "Defend";
-                return true;
-            }
+        if (canDefend && shouldDefend) {
+            unit.setCommand(Move, unit.getFormation());
+            unit.commandText = "Defend";
+            return true;
         }
         return false;
     }

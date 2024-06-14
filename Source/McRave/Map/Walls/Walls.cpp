@@ -436,6 +436,15 @@ namespace McRave::Walls {
 
         // ZvZ
         int ZvZ_Defenses(const BWEB::Wall& wall) {
+            // 3 Hatch
+            if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && vis(Zerg_Drone) >= 8)
+                //return (Util::getTime() > Time(3, 45))
+                //+ (Util::getTime() > Time(4, 00))
+                //+ (Util::getTime() > Time(4, 15))
+                //+ (Util::getTime() > Time(4, 30));
+                return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 00));
+            if (Spy::getEnemyTransition() == "3HatchSpeedling" && vis(Zerg_Spire) > 0)
+                return 4;
             return 0;
         }
 

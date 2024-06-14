@@ -2,6 +2,14 @@
 #include <BWAPI.h>
 
 namespace McRave::Terrain {
+
+    struct Ramp {
+        BWAPI::Position entrance, exit, center;
+        double angle;
+    };
+
+    Ramp& getMainRamp();
+
     BWAPI::Position getClosestMapCorner(BWAPI::Position);
     BWAPI::Position getClosestMapEdge(BWAPI::Position);
     BWAPI::Position getOldestPosition(const BWEM::Area *);
@@ -43,6 +51,10 @@ namespace McRave::Terrain {
     BWAPI::TilePosition getNaturalTile();
     const BWEM::Area * getNaturalArea();
     const BWEM::ChokePoint * getNaturalChoke();
+
+    // Chokepoint information
+    BWAPI::Position getChokepointCenter(const BWEM::ChokePoint * chokepoint);
+    double getChokepointAngle(const BWEM::ChokePoint * chokepoint);
 
     inline bool isExplored(BWAPI::Position here) { return BWAPI::Broodwar->isExplored(BWAPI::TilePosition(here)); }
 }

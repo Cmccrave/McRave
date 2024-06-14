@@ -146,7 +146,7 @@ namespace McRave::Buildings {
             }
 
             // Look for the closest possible non worker enemy
-            if (plannedType == Zerg_Sunken_Colony) {
+            if (plannedType == Zerg_Sunken_Colony && Spy::getEnemyBuild() != "CannonRush" && Spy::getEnemyBuild() != "WorkerRush") {
                 auto closestThreat = Util::getClosestUnit(building.getPosition(), PlayerState::Enemy, [&](auto &u) {
                     if (!u->getType().isWorker() && !u->getType().isBuilding()) {
                         if (!Terrain::getEnemyMain())

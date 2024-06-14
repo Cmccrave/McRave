@@ -192,8 +192,8 @@ namespace McRave::Scouts {
 
                 if (Players::ZvZ()) {
                     main.desiredTypeCounts[Zerg_Drone] = 0;
-                    /*main.desiredTypeCounts[Zerg_Zergling] = !Terrain::getEnemyStartingPosition().isValid()
-                        || (Util::getTime() > Time(3, 30) && Players::getTotalCount(PlayerState::Enemy, Zerg_Sunken_Colony) == 0 && !Terrain::foundEnemy() && Util::getTime() < Time(4, 30));*/
+                    main.desiredTypeCounts[Zerg_Zergling] = (!Terrain::foundEnemy() && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost))
+                        || (Terrain::getEnemyStartingPosition().isValid() && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Util::getTime() > Time(3, 30) && Spy::getEnemyTransition() == "Unknown");
 
                     if (Spy::enemyRush() || Spy::enemyPressure())
                         main.desiredTypeCounts[Zerg_Zergling] = 0;
@@ -554,7 +554,7 @@ namespace McRave::Scouts {
                 auto &list = (firstOverlord && unit.getType() == Zerg_Overlord) ? scoutOrderFirstOverlord : scoutOrder;
                 for (auto &station : list) {
                     auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
-                    if (closestNatural && !Stations::isBaseExplored(closestNatural) && unit.getType() == Zerg_Overlord) {
+                    if (closestNatural && !Stations::isBaseExplored(closestNatural) && unit.getType() == Zerg_Overlord && !Players::ZvZ()) {
                         unit.setDestination(closestNatural->getBase()->Center());
                         break;
                     }

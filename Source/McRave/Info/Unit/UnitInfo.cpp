@@ -172,6 +172,13 @@ namespace McRave
                 || unit()->isStartingAttack())
                 lastAttackFrame         = Broodwar->getFrameCount();
 
+            // Enemy attack frame (check weapon cooldown instead of animation
+            if (player->isEnemy(Broodwar->self())) {
+                if ((getType() != Protoss_Reaver && canAttackGround() && unit()->getGroundWeaponCooldown() >= type.groundWeapon().damageCooldown() - 1)
+                    || (getType() != Protoss_Reaver && canAttackAir() && unit()->getAirWeaponCooldown() >= type.airWeapon().damageCooldown() - 1))
+                    lastAttackFrame     = Broodwar->getFrameCount();
+            }
+
             // Clear last path
             if (lastTile != tilePosition)
                 destinationPath = BWEB::Path();
@@ -191,7 +198,7 @@ namespace McRave
         }
 
         // Always update arrival frame even if we don't see it
-        if (player != Broodwar->self()) {
+        if (player->isEnemy(Broodwar->self())) {
             auto dist = isFlying() ? position.getDistance(Terrain::getMainPosition()) : BWEB::Map::getGroundDistance(position, Terrain::getMainPosition());
             arriveFrame = Broodwar->getFrameCount() + int(dist / data.speed);
         }
@@ -399,7 +406,7 @@ namespace McRave
         // Check if enemy is generally in our territory
         auto nearTerritory = [&]() {
             if (Combat::holdAtChoke() && Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural()
-                || (Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
+                || (!Players::ZvZ() && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
                 return true;
 
             if (!Players::ZvZ()) {
@@ -481,14 +488,15 @@ namespace McRave
         else
             threateningFrames = 0;
 
-        if (threateningFrames > 8)
+        auto framesToCheck = Combat::isDefendNatural() ? 24 : 4;
+        if (threateningFrames > framesToCheck)
             lastThreateningFrame = Broodwar->getFrameCount();
 
         // Linger threatening for 0.5 seconds
-        threatening = Broodwar->getFrameCount() - lastThreateningFrame <= 12;
+        threatening = Broodwar->getFrameCount() - lastThreateningFrame <= framesToCheck;
 
         // Apply to others
-        if (threatening && threateningFrames > 8) {
+        if (threatening && threateningFrames > framesToCheck) {
             for (auto unit : Units::getUnits(PlayerState::Enemy)) {
                 if (*unit != *this) {
                     if (unit->getPosition().getDistance(position) < 320.0)
@@ -569,13 +577,14 @@ namespace McRave
     void UnitInfo::setCommand(UnitCommandType cmd, Position here)
     {
         // Check if this is very similar to the last command
-        auto frames = isFlying() ? 0 : 3;
-        auto newCommandPosition = commandPosition.getDistance(here) > 32;
-        auto newCommandType = commandType != cmd;
-
         if (allowCommand(this)) {
             commandPosition = here;
             commandType = cmd;
+
+            // Try adding randomness
+            auto dist = 1 + int(getPosition().getDistance(here) / 32.0);
+            here.x += dist - rand() % dist;
+            here.y += dist - rand() % dist;
 
             if (cmd == UnitCommandTypes::Move) {
                 here = getOvershootPosition(this, here);

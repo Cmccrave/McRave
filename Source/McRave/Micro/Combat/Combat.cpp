@@ -104,8 +104,6 @@ namespace McRave::Combat {
                 defendArea = Terrain::getMainArea();
                 defendPosition =  Stations::getDefendPosition(Terrain::getMyMain());
             }
-
-            Broodwar->drawTriangleMap(defendPosition + Position(0, -20), defendPosition + Position(-20, 10), defendPosition + Position(20, 10), Colors::Green);
         }
 
         void findHarassPosition()
@@ -212,7 +210,7 @@ namespace McRave::Combat {
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 if (Players::ZvZ()) {
                     holdChoke = !defendNatural;
-                    if (!defendNatural && Stations::getGroundDefenseCount(Terrain::getMyMain()) > 0)
+                    if (!defendNatural && Stations::getGroundDefenseCount(Terrain::getMyMain()) > 2)
                         holdChoke = false;
                 }
                 if (Players::ZvP()) {
@@ -227,10 +225,6 @@ namespace McRave::Combat {
                     if (!defendNatural)
                         holdChoke = true;
                 }
-
-                const auto defCount = Stations::getGroundDefenseCount(getDefendStation()) + Stations::getColonyCount(getDefendStation());
-                if (defCount > 0)
-                    holdChoke = false;
             }
         }
     }

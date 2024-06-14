@@ -23,6 +23,8 @@ namespace McRave::Workers {
                 desiredTransfer = (total(Zerg_Creep_Colony) == 0 && total(Zerg_Sunken_Colony) == 0) ? 1 : 0;
             if (Units::getImmThreat() > 0.0f)
                 desiredTransfer = 0;
+            if (Players::ZvZ())
+                desiredTransfer = 0;
 
             // Keep damaged workers in the main
             if (Util::getTime() < Time(4, 00) && (unit.getHealth() < unit.getType().maxHitPoints() || desiredTransfer == 0)) {
@@ -367,6 +369,9 @@ namespace McRave::Workers {
         void updateDecision(UnitInfo& unit)
         {
             if (!Units::commandAllowed(unit))
+                return;
+
+            if (unit.unit()->isSelected())
                 return;
 
             // Iterate commands, if one is executed then don't try to execute other commands

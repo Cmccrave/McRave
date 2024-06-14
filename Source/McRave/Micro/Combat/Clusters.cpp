@@ -233,6 +233,7 @@ namespace McRave::Combat::Clusters {
             for (auto &cluster : clusters) {
                 if (auto commander = cluster.commander.lock()) {
                     auto count = int(cluster.units.size());
+                    auto atHome = Terrain::inTerritory(PlayerState::Self, cluster.avgPosition);
 
                     // Calculate rough spacing of the clustered units for formation
                     auto fattestDimension = 0;
@@ -246,6 +247,15 @@ namespace McRave::Combat::Clusters {
                     }
                     cluster.spacing = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0));
                     pathCluster(cluster, 160.0);
+
+                    // Determine the state of the cluster
+                    // Move to formation
+                    if (cluster.marchNavigation.getDistance(cluster.marchPosition) <= cluster.radius)
+                        cluster.state = LocalState::Hold;
+                    else if (commander->getLocalState() == LocalState::Retreat || (!atHome && commander->getGlobalState() == GlobalState::Retreat))
+                        cluster.state = LocalState::Retreat;
+                    else
+                        cluster.state = LocalState::Attack;                    
                 }
             }
         }
@@ -277,13 +287,6 @@ namespace McRave::Combat::Clusters {
             for (auto &cluster : clusters) {
                 if (auto commander = cluster.commander.lock()) {
                     auto atHome = Terrain::inTerritory(PlayerState::Self, cluster.avgPosition);
-
-                    //for (auto &unit : cluster.units) {
-                    //    if (unit->getLocalState() == LocalState::Retreat || unit->getLocalState() == LocalState::ForcedRetreat || unit->getGlobalState() == GlobalState::Retreat || unit->getGlobalState() == GlobalState::ForcedRetreat)
-                    //        cluster.retreatCluster = true;
-                    //}
-
-                    cluster.retreatCluster = commander->getLocalState() == LocalState::Retreat || commander->getGlobalState() == GlobalState::Retreat;
                     cluster.marchPosition = commander->marchPos;
                     cluster.retreatPosition = commander->retreatPos;
 
@@ -294,8 +297,12 @@ namespace McRave::Combat::Clusters {
                         cluster.commandShare = CommandShare::Parallel;
 
                     // Determine the shape we want
-                    if (!commander->isLightAir() && !commander->isSuicidal() && !commander->getType().isWorker())
-                        cluster.shape = Shape::Concave;
+                    if (!commander->isLightAir() && !commander->isSuicidal() && !commander->getType().isWorker()) {
+                        if (Combat::State::isStaticRetreat(commander->getType()) && (Combat::holdAtChoke() || Players::ZvZ()) && atHome)
+                            cluster.shape = Shape::Line;
+                        else
+                            cluster.shape = Shape::Concave;
+                    }
 
                     // Assign commander to each unit
                     for (auto &unit : cluster.units) {

@@ -189,13 +189,6 @@ namespace McRave::Combat::Simulation {
             }
         }
 
-        // Adjust winrates based on how close to self station we are
-        const auto insideDefendingChoke = (Combat::holdAtChoke() || Combat::isDefendNatural()) && Terrain::inTerritory(PlayerState::Self, target.getPosition()) && Terrain::inArea(Combat::getDefendArea(), target.getPosition());
-        if (insideDefendingChoke || target.isThreatening()) {
-            minWinPercent -= 0.5;
-            maxWinPercent -= 0.5;
-        }
-
         minThreshold = minWinPercent;
         maxThreshold = maxWinPercent;
     }
