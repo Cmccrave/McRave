@@ -122,8 +122,8 @@ namespace McRave::Roles {
             static bool likelyProxy = likelyProxy || (proxyWorker && Util::getTime() < Time(2, 00));
 
             // ZvZ
-            if (Players::ZvZ() && Util::getTime() < Time(6, 00)) {
-                if (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "12Pool" && total(Zerg_Zergling) < 16 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
+            if (Players::ZvZ() && Util::getTime() < Time(6, 00) && !Spy::enemyTurtle()) {
+                if ((Spy::getEnemyOpener() == "9Pool" || Spy::getEnemyOpener() == "OverPool") && Combat::isDefendNatural() && Util::getTime() > Time(2, 45) && BuildOrder::getCurrentOpener() == "12Pool" && total(Zerg_Zergling) < 16 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
                     forceCombatWorker(3, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
             }
 

@@ -156,49 +156,6 @@ namespace McRave::Scouts {
             // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
 
-                // Main drone scouting counts
-                main.desiredTypeCounts[Zerg_Drone] = int(BuildOrder::shouldScout()) + int(BuildOrder::shouldScout() && BuildOrder::isProxy());
-                if (workerScoutDenied
-                    || Spy::enemyProxy()
-                    || Spy::enemyRush()
-                    || Spy::enemyWalled()
-                    || Spy::enemyFastExpand()
-                    || (total(Zerg_Zergling) >= 6 && Util::getTime() > Time(3, 30)))
-                    main.desiredTypeCounts[Zerg_Drone] = 0;
-
-                if (Players::ZvT()) {
-                    if (Spy::getEnemyOpener() == "8Rax"
-                        || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0
-                        || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0
-                        || Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0
-                        || Players::getTotalCount(PlayerState::Enemy, Terran_Factory) > 0
-                        || (Terrain::getEnemyStartingPosition().isValid() && vis(Zerg_Zergling) > 0)
-                        || Util::getTime() > Time(4, 00))
-                        main.desiredTypeCounts[Zerg_Drone] = 0;
-                }
-
-                if (Players::ZvP()) {
-                    if (Spy::getEnemyBuild() == "2Gate"
-                        || Spy::getEnemyBuild() == "1GateCore"
-                        || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
-                        || Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0
-                        || Util::getTime() > Time(4, 00))
-                        main.desiredTypeCounts[Zerg_Drone] = 0;
-
-                    // Try to see what tech they have
-                    if (Players::ZvP() && Spy::getEnemyBuild() != "FFE" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00))
-                        main.desiredTypeCounts[Zerg_Zergling] = 1;
-                }
-
-                if (Players::ZvZ()) {
-                    main.desiredTypeCounts[Zerg_Drone] = 0;
-                    main.desiredTypeCounts[Zerg_Zergling] = (!Terrain::foundEnemy() && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost))
-                        || (Terrain::getEnemyStartingPosition().isValid() && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Util::getTime() > Time(3, 30) && Spy::getEnemyTransition() == "Unknown");
-
-                    if (Spy::enemyRush() || Spy::enemyPressure())
-                        main.desiredTypeCounts[Zerg_Zergling] = 0;
-                }
-
                 auto enemyAir = Players::getStrength(PlayerState::Enemy).groundToAir > 0.0
                     || Players::getStrength(PlayerState::Enemy).airToAir > 0.0
                     || Players::getStrength(PlayerState::Enemy).airDefense > 0.0
@@ -210,12 +167,68 @@ namespace McRave::Scouts {
                     || Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) > 0
                     || (Players::ZvT() && Terrain::getEnemyStartingPosition().isValid());
 
-                // Main overlord scouting counts
-                main.desiredTypeCounts[Zerg_Overlord] = 1;
-                if (Players::ZvZ() && !Terrain::getEnemyStartingPosition().isValid())
-                    main.desiredTypeCounts[Zerg_Overlord] = 2;
-                if (enemyAir || Spy::enemyFastExpand())
-                    main.desiredTypeCounts[Zerg_Overlord] = 0;
+                // Main drone scouting counts
+                main.desiredTypeCounts[Zerg_Drone] = int(BuildOrder::shouldScout()) + int(BuildOrder::shouldScout() && BuildOrder::isProxy());
+                if (workerScoutDenied
+                    || Spy::enemyProxy()
+                    || Spy::enemyRush()
+                    || Spy::enemyWalled()
+                    || Spy::enemyFastExpand()
+                    || (total(Zerg_Zergling) >= 6 && Util::getTime() > Time(3, 30)))
+                    main.desiredTypeCounts[Zerg_Drone] = 0;
+
+                // ZvT
+                if (Players::ZvT()) {
+
+                    // Drone
+                    if (Spy::getEnemyOpener() == "8Rax"
+                        || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0
+                        || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0
+                        || Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0
+                        || Players::getTotalCount(PlayerState::Enemy, Terran_Factory) > 0
+                        || (Terrain::getEnemyStartingPosition().isValid() && vis(Zerg_Zergling) > 0)
+                        || Util::getTime() > Time(4, 00))
+                        main.desiredTypeCounts[Zerg_Drone] = 0;
+
+                    // Overlord
+                    main.desiredTypeCounts[Zerg_Overlord] = 1;
+                    if (enemyAir || Spy::enemyFastExpand())
+                        main.desiredTypeCounts[Zerg_Overlord] = 0;
+                }
+
+                // ZvP
+                if (Players::ZvP()) {
+
+                    // Drone
+                    if (Spy::getEnemyBuild() == "2Gate"
+                        || Spy::getEnemyBuild() == "1GateCore"
+                        || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
+                        || Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0
+                        || Util::getTime() > Time(4, 00))
+                        main.desiredTypeCounts[Zerg_Drone] = 0;
+
+                    // Zergling
+                    if (Players::ZvP() && Spy::getEnemyBuild() != "FFE" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00))
+                        main.desiredTypeCounts[Zerg_Zergling] = 1;
+                }
+
+                // ZvZ
+                if (Players::ZvZ()) {
+
+                    // Drone
+                    main.desiredTypeCounts[Zerg_Drone] = 0;
+
+                    // Zergling
+                    main.desiredTypeCounts[Zerg_Zergling] = (!Terrain::foundEnemy() && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost))
+                        || (Terrain::getEnemyStartingPosition().isValid() && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Spy::getEnemyTransition() == "Unknown" && Spy::getEnemyOpener() == "Unknown");
+                    if (Spy::enemyRush() || Spy::enemyPressure())
+                        main.desiredTypeCounts[Zerg_Zergling] = 0;
+
+                    // Overlord
+                    main.desiredTypeCounts[Zerg_Overlord] = 1;
+                    if (enemyAir)
+                        main.desiredTypeCounts[Zerg_Overlord] = 0;
+                }
             }
 
             // Check for fully scouted

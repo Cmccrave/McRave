@@ -22,6 +22,7 @@ namespace McRave::Terrain {
 
         // Map
         map<WalkPosition, pair<const BWEM::Area *, const BWEM::Area *>> areaChokeGeometry;
+        map<const BWEM::Area *, vector<const BWEM::Area *>> sharedArea;
         set<const Base *> allBases;
         vector<Position> mapEdges, mapCorners;
         bool islandMap = false;
@@ -251,6 +252,11 @@ namespace McRave::Terrain {
             }
         }
 
+        void updateRamps()
+        {
+
+        }
+
         void updateChokepoints()
         {
             // Notes:
@@ -265,20 +271,28 @@ namespace McRave::Terrain {
             //    }
             //}
 
-            auto const chokeStats = [&](auto choke) {
-                auto chokeAngle =  BWEB::Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))));
-                auto chokeCenter = Position(choke->Center()) + Position(4, 4);
-                chokeAngles[choke] = chokeAngle;
-                chokeCenters[choke] = chokeCenter;
+            auto const findCorrectAngle = [&](auto station) {
+                auto chokeAngle = BWEB::Map::getAngle(make_pair(Position(station.getChokepoint()->Pos(station.getChokepoint()->end1)), Position(station.getChokepoint()->Pos(station.getChokepoint()->end2))));
+                auto chokeCenter = Position(station.getChokepoint()->Center()) + Position(4, 4);
+                auto p1 = chokeCenter + Position(cos(chokeAngle + 1.57) * 96.0, sin(chokeAngle + 1.57) * 96.0);
+                auto p2 = chokeCenter - Position(cos(chokeAngle + 1.57) * 96.0, sin(chokeAngle + 1.57) * 96.0);
+
+                if (Terrain::inArea(station.getBase()->GetArea(), p1)) {
+                    chokeCenters[station.getChokepoint()] = chokeCenter;
+                    chokeAngles[station.getChokepoint()] = BWEB::Map::getAngle(p2, p1);
+                }
+                else {
+                    chokeCenters[Terrain::getMainChoke()] = chokeCenter;
+                    chokeAngles[station.getChokepoint()] = BWEB::Map::getAngle(p1, p2);
+                }
             };
 
-            for (auto& area : mapBWEM.Areas()) {
-                for (auto &choke : area.ChokePoints())
-                    chokeStats(choke);
+            for (auto &station : BWEB::Stations::getStations()) {
+                if (station.getChokepoint())
+                    findCorrectAngle(station);
             }
 
             if (flatRamp) {
-                chokeStats(getMainChoke());
                 return;
             }
 
@@ -332,12 +346,7 @@ namespace McRave::Terrain {
             auto angle = BWEB::Map::getAngle(dirBest, getMainChoke()->Center());
             chokeAngles[getMainChoke()] = angle;
 
-            // 4. Walk the direction towards main area to get the center (use not natural for now, cuz of Andromeda
-            //Broodwar->drawTextMap(Position(getMainChoke()->Center()), "%d", mapBWEM.GetMiniTile(getMainChoke()->Center()).Altitude());
-            //auto mousepos = Broodwar->getMousePosition() + Broodwar->getScreenPosition();
-            //if (mousepos.isValid())
-            //    Broodwar << mapBWEM.GetMiniTile(WalkPosition(mousepos)).Altitude() << endl;
-
+            // 4. Walk the direction towards main area to get the center
             auto tester1 = getMainChoke()->Center() + dirBest;
             auto tester2 = getMainChoke()->Center() - dirBest;
             auto chokeAltitude = mapBWEM.GetMiniTile(getMainChoke()->Center()).Altitude();
@@ -358,15 +367,8 @@ namespace McRave::Terrain {
                 tester1 += dirBest;
                 for (auto &w : geometry1) {
                     w += dirBest;
-                    //Visuals::drawBox(w, w + WalkPosition(1, 1), Colors::Cyan);
                     if (mapBWEM.GetMiniTile(w).Altitude() >= chokeAltitude + limit) {
                         breakout1 = true;
-                        //for (int x = -2; x <= 2; x++) {
-                        //    for (int y = -2; y <= 2; y++) {
-                        //        auto offset = WalkPosition(x, y);
-                        //        geometry1.push_back(w + offset);
-                        //    }
-                        //}
                     }
                 }
             }
@@ -376,15 +378,8 @@ namespace McRave::Terrain {
                 tester2 -= dirBest;
                 for (auto &w : geometry2) {
                     w -= dirBest;
-                    //Visuals::drawBox(w, w + WalkPosition(1, 1), Colors::Orange);
                     if (mapBWEM.GetMiniTile(w).Altitude() >= chokeAltitude + limit) {
                         breakout2 = true;
-                        //for (int x = -2; x <= 2; x++) {
-                        //    for (int y = -2; y <= 2; y++) {
-                        //        auto offset = WalkPosition(x, y);
-                        //        geometry2.push_back(w + offset);
-                        //    }
-                        //}
                     }
                 }
             }
@@ -413,7 +408,7 @@ namespace McRave::Terrain {
             // 6. Store true center and angle
             auto c1 = Position(tester1) + Position(4, 4);
             auto c2 = Position(tester2) + Position(4, 4);
-            if (Terrain::inArea(Terrain::getMainArea(), c1) || Terrain::inTerritory(PlayerState::Self, c1)) {
+            if (Terrain::inArea(Terrain::getMainArea(), c1)) {
                 chokeCenters[Terrain::getMainChoke()] = c1;
                 chokeAngles[getMainChoke()] = BWEB::Map::getAngle(c2, c1);
                 mainRamp.entrance = c1;
@@ -430,11 +425,23 @@ namespace McRave::Terrain {
             mainRamp.center = (mainRamp.entrance + mainRamp.exit) / 2;
             Broodwar->drawTextMap(mainRamp.entrance, "%.2f", mainRamp.angle);
 
-            // 7. Fix angle based on tileset (all angles from horizontal)
+            // 7. Fix angle based on tileset (all angles from horizontal) - ROUGH estimates:
             // Space (benzene) tileset have 40deg ramps normally, 30deg if they are flipped with SCMDraft
             // Jungle (destination) tileset have 50deg ramps normally, 40deg flipped
             // Twilight (neo moon) tileset, 45 normal, 45 deg flipped
             // Desert (la mancha) tilset, 35 normal, 35 flipped
+
+            // HACK: This is nasty, we're setting the ramp angle to 60deg so formations are 30deg
+            // We can't get the tileset info from BWAPI, just set them to 60deg so perpendicular is 30deg
+            if (mainRamp.angle > 0.0 && mainRamp.angle <= M_PI / 2.0)
+                mainRamp.angle = M_PI / 3.0;
+            else if (mainRamp.angle > M_PI / 2.0 && mainRamp.angle <= M_PI)
+                mainRamp.angle = 2.0 * M_PI / 3.0;
+            else if (mainRamp.angle > M_PI && mainRamp.angle <= 3.0 * M_PI / 2.0)
+                mainRamp.angle = 4.0 * M_PI / 3.0;
+            else
+                mainRamp.angle = 5.0 * M_PI / 3.0;
+            Broodwar->drawTextMap(mainRamp.entrance + Position(0, 16), "%.2f", mainRamp.angle);
         }
 
         void updateAreas()
@@ -485,7 +492,7 @@ namespace McRave::Terrain {
                     color = Colors::Green;
                 if (player == PlayerState::Enemy)
                     color = Colors::Red;
-                Visuals::drawBox(walk, walk + WalkPosition(1,1), color);
+                Visuals::drawBox(walk, walk + WalkPosition(1, 1), color);
             }
         }
     }
@@ -561,12 +568,18 @@ namespace McRave::Terrain {
     {
         if (!here.isValid())
             return false;
-        if (mapBWEM.GetArea(TilePosition(here)) == area)
+        auto areaToCheck = mapBWEM.GetArea(TilePosition(here));
+        if (areaToCheck == area)
             return true;
         auto geo = areaChokeGeometry.find(WalkPosition(here));
         if (geo != areaChokeGeometry.end()) {
             const auto &areas = geo->second;
             return areas.first == area || areas.second == area;
+        }
+
+        auto shared = sharedArea.find(area);
+        if (shared != sharedArea.end()) {
+            return find(shared->second.begin(), shared->second.end(), areaToCheck) != shared->second.end();
         }
         return false;
     }
@@ -609,7 +622,7 @@ namespace McRave::Terrain {
             // Add individual choke tiles to territory
             if (station->getChokepoint()) {
                 for (auto &geo : station->getChokepoint()->Geometry())
-                    addChokeGeo(station->getBase()->GetArea());                
+                    addChokeGeo(station->getBase()->GetArea());
             }
 
             // Add empty areas between main/natural partners to territory
@@ -635,6 +648,7 @@ namespace McRave::Terrain {
                         for (auto &choke : area->ChokePoints()) {
                             if (choke == closestPartner->getChokepoint() || choke == station->getChokepoint()) {
                                 territoryArea[area] = playerState;
+                                sharedArea[station->getBase()->GetArea()].push_back(area);
                                 addChokeGeo(area);
                             }
                         }
@@ -642,6 +656,7 @@ namespace McRave::Terrain {
                         // Found a dead end area
                         if (openChokes <= 1) {
                             territoryArea[area] = playerState;
+                            sharedArea[station->getBase()->GetArea()].push_back(area);
                             addChokeGeo(area);
                         }
                     }
@@ -720,7 +735,7 @@ namespace McRave::Terrain {
                     areaChokeGeometry[walk] = choke->GetAreas();
             }
         }
-        
+
         mapEdges ={ {-1, 0}, {-1, Broodwar->mapHeight() * 32}, {0, -1}, {Broodwar->mapWidth() * 32, -1} };
         mapCorners ={ {0, 0}, {0, Broodwar->mapHeight() * 32 }, {Broodwar->mapWidth() * 32, 0}, {Broodwar->mapWidth() * 32, Broodwar->mapHeight() * 32} };
 

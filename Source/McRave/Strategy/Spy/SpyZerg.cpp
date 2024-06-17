@@ -76,7 +76,8 @@ namespace McRave::Spy::Zerg {
                 theSpy.opener.name = "10Hatch";
             else if (completesBy(2, Zerg_Hatchery, Time(3, 05))
                 || completesBy(6, Zerg_Zergling, Time(3, 15))
-                || arrivesBy(6, Zerg_Zergling, Time(4, 00)))
+                || arrivesBy(6, Zerg_Zergling, Time(4, 00))
+                || arrivesBy(10, Zerg_Zergling, Time(4, 20)))
                 theSpy.opener.name = "12Hatch";
         }
 
@@ -91,9 +92,9 @@ namespace McRave::Spy::Zerg {
             if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 12) {
 
                 // General
-                if (completesBy(1, UpgradeTypes::Metabolic_Boost, Time(4, 05)) && Scouts::gotFullScout() && arrivesBy(20, Zerg_Zergling, Time(4, 30)))
+                if (completesBy(1, UpgradeTypes::Metabolic_Boost, Time(4, 05)) && arrivesBy(20, Zerg_Zergling, Time(4, 30)))
                     theSpy.transition.name = "2HatchSpeedling";
-                else if (!completesBy(1, UpgradeTypes::Metabolic_Boost, Time(4, 05)) && completesBy(1, UpgradeTypes::Metabolic_Boost, Time(5, 00)) && Scouts::gotFullScout() && arrivesBy(20, Zerg_Zergling, Time(5, 05)))
+                else if (!completesBy(1, UpgradeTypes::Metabolic_Boost, Time(4, 05)) && completesBy(1, UpgradeTypes::Metabolic_Boost, Time(5, 00)) && arrivesBy(28, Zerg_Zergling, Time(5, 10)))
                     theSpy.transition.name = "3HatchSpeedling";
 
                 // ZvZ
@@ -162,5 +163,28 @@ namespace McRave::Spy::Zerg {
                 enemyZergMisc(player, theSpy);
             }
         }
+    }
+
+    // TODO: Use known timings instead of hardcoding strings
+    bool enemyFasterPool() {
+        return (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "12Pool")
+            || (Spy::getEnemyOpener() == "OverPool" && BuildOrder::getCurrentOpener() == "12Pool")
+            || (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != "HatchPool" && BuildOrder::getCurrentBuild() == "HatchPool");
+    }
+
+    // TODO: Use known timings instead of hardcoding strings
+    bool enemyEqualPool() {
+        return (Spy::getEnemyOpener() == BuildOrder::getCurrentOpener())
+            || (Spy::getEnemyOpener() == "12Hatch" && BuildOrder::getCurrentOpener() == "12Pool")
+            || (Spy::getEnemyOpener() == "12Pool" && BuildOrder::getCurrentOpener() == "12Hatch")
+            || (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "12Pool")
+            || (Spy::getEnemyOpener() == "12Pool" && BuildOrder::getCurrentOpener() == "9Pool")
+            || (Spy::getEnemyOpener() == "OverPool" && BuildOrder::getCurrentOpener() == "9Pool")
+            || (Spy::getEnemyOpener() == "9Pool" && BuildOrder::getCurrentOpener() == "OverPool");
+    }
+
+    bool enemyFasterSpeed() {
+        return (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost, 1) && !Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost, 1))
+            || (enemyFasterPool() && !Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost, 1));
     }
 }

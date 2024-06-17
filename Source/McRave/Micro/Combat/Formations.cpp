@@ -12,6 +12,39 @@ namespace McRave::Combat::Formations {
 
     vector<Formation> formations;
 
+    void formationWithChoke(Formation& formation, Cluster& cluster)
+    {
+        auto choke = Util::getClosestChokepoint(cluster.marchPosition);
+
+        // Concave formations
+        if (cluster.shape == Shape::Concave) {
+            if (choke == Terrain::getMainChoke()) {
+                formation.angle = Terrain::getMainRamp().angle;
+                formation.radius = Terrain::getMainRamp().center.getDistance(Terrain::getMainRamp().entrance) + 48.0;
+                formation.center = Terrain::getMainRamp().center;
+            }
+            else {
+                formation.angle = Terrain::getChokepointAngle(choke);
+                formation.radius = clamp(cluster.spacing * double(cluster.units.size()) / 2.0, 64.0, double(choke->Width()));
+                formation.center = Terrain::getChokepointCenter(choke);
+            }
+        }
+        
+        // Line formations
+        if (cluster.shape == Shape::Line) {
+            if (choke == Terrain::getMainChoke()) {
+                formation.angle = Terrain::getMainRamp().angle;
+                formation.radius = Terrain::getMainRamp().center.getDistance(Terrain::getMainRamp().entrance) + 48.0;
+                formation.center = Terrain::getMainRamp().entrance;
+            }
+            else {
+                formation.angle = Terrain::getChokepointAngle(choke);
+                formation.radius = clamp(cluster.spacing * double(cluster.units.size()) / 2.0, 64.0, double(choke->Width()));
+                formation.center = Util::shiftTowards(Terrain::getChokepointCenter(choke), cluster.retreatPosition, formation.radius);
+            }
+        }
+    }
+
     void formationWithBuilding(Formation& formation, Cluster& cluster)
     {
         formation.radius = clamp((cluster.units.size() * cluster.spacing / 1.3), 16.0, 640.0);
@@ -37,22 +70,6 @@ namespace McRave::Combat::Formations {
         }
     }
 
-    void formationWithChoke(Formation& formation, Cluster& cluster)
-    {
-        auto choke = Util::getClosestChokepoint(cluster.marchPosition);
-
-        if (choke == Terrain::getMainChoke()) {
-            formation.angle = Terrain::getMainRamp().angle;
-            formation.center = Terrain::getMainRamp().center;
-            formation.radius = Terrain::getMainRamp().center.getDistance(Terrain::getMainRamp().entrance) + 48.0;
-        }
-        else {
-            formation.angle = Terrain::getChokepointAngle(choke);
-            formation.center = Terrain::getChokepointCenter(choke);
-            formation.radius = clamp(cluster.spacing * double(cluster.units.size()) / 2.0, 64.0, double(choke->Width()));
-        }
-    }
-
     void formationWithNothing(Formation& formation, Cluster& cluster)
     {
         // Offset the center by a distance of the radius towards the navigation point if needed
@@ -70,7 +87,7 @@ namespace McRave::Combat::Formations {
         }
     }
 
-    void formationStuff(Formation& formation, Cluster& cluster)
+    void formationSetup(Formation& formation, Cluster& cluster)
     {
         auto staticCluster = (cluster.marchNavigation.getDistance(cluster.marchPosition) <= formation.radius * 2);
 
@@ -83,6 +100,10 @@ namespace McRave::Combat::Formations {
         else {
             formationWithNothing(formation, cluster);
         }
+
+        // Lines are perpendicular arrangements
+        if (cluster.shape == Shape::Line)
+            formation.angle += 1.57;
     }
 
     void assignPosition(Cluster& cluster, Formation& concave, Position p)
@@ -107,20 +128,17 @@ namespace McRave::Combat::Formations {
     void generateLinePositions(Formation& line, Cluster& cluster)
     {
         // Prevent blocking our own buildings
-        auto closestBuilder = Util::getClosestUnit(cluster.retreatPosition, PlayerState::Self, [&](auto &u) {
+        auto closestBuilder = Util::getClosestUnit(line.center, PlayerState::Self, [&](auto &u) {
             return u->getBuildPosition().isValid();
         });
 
         const auto type = cluster.commander.lock()->getType();
-        auto pixelsPerUnit = max(type.width(), type.height());
+        auto pixelsPerUnit = max(type.width(), type.height()) + (Combat::holdAtChoke() ? 0 : 8);;
         pair<Position, Position> lastPositions ={ Positions::Invalid, Positions::Invalid };
 
         auto first = line.center;
         auto wrap = 0;
         auto assignmentsRemaining = max(3, int(cluster.units.size()));
-
-        line.angle += 1.57;
-        line.center = Util::shiftTowards(line.center, cluster.retreatPosition, line.radius);
 
         // Checks if a position is okay, stores if it is
         vector<Position> row;
@@ -194,7 +212,7 @@ namespace McRave::Combat::Formations {
     void generateConcavePositions(Formation& concave, Cluster& cluster, double size)
     {
         // Prevent blocking our own buildings
-        auto closestBuilder = Util::getClosestUnit(cluster.retreatPosition, PlayerState::Self, [&](auto &u) {
+        auto closestBuilder = Util::getClosestUnit(concave.center, PlayerState::Self, [&](auto &u) {
             return u->getBuildPosition().isValid();
         });
 
@@ -202,7 +220,7 @@ namespace McRave::Combat::Formations {
             return;
 
         const auto type = cluster.commander.lock()->getType();
-        const auto biggestDimension = max(type.width(), type.height()) + 2;
+        const auto biggestDimension = max(type.width(), type.height()) + 2 + (Combat::holdAtChoke() ? 0 : 8);
         const auto radiusIncrement = cluster.state == LocalState::Retreat ? biggestDimension : -biggestDimension;
         auto radsPerUnit = (biggestDimension / concave.radius);
         auto first = concave.center - Position(-int(concave.radius * cos(concave.angle)), int(concave.radius * sin(concave.angle)));
@@ -246,17 +264,6 @@ namespace McRave::Combat::Formations {
                 skip = (bump >= 2);
                 return;
             }
-
-            //// Slowly check if it's in a different area
-            //if (bump && mobility > 4) {
-            //    bump = false;
-            //    auto dist = BWEB::Map::getGroundDistance(p, last);
-            //    if (dist > biggestDimension * 2) {
-            //        skip = true;
-            //        return;
-            //    }
-            //}
-            //bump = 0;
             assignmentsRemaining--;
             concave.positions.push_back(p);
             last = p;
@@ -301,14 +308,13 @@ namespace McRave::Combat::Formations {
 
     void createConcave(Formation& formation, Cluster& cluster)
     {
-        formationStuff(formation, cluster);
+        formationSetup(formation, cluster);
         generateConcavePositions(formation, cluster, 1.3);
     }
 
     void createLine(Formation& formation, Cluster& cluster)
     {
-        formationStuff(formation, cluster);
-        //generateConcavePositions(formation, cluster, 1.3);
+        formationSetup(formation, cluster);
         generateLinePositions(formation, cluster);
     }
 

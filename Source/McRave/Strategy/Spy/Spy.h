@@ -98,19 +98,6 @@ namespace McRave::Spy {
         }
     };
 
-    namespace Protoss {
-        void updateProtoss(StrategySpy&);
-    }
-    namespace Terran {
-        void updateTerran(StrategySpy&);
-    }
-    namespace Zerg {
-        void updateZerg(StrategySpy&);        
-    }
-    namespace General {
-        void updateGeneral(StrategySpy&);
-    }
-
     bool finishedSooner(BWAPI::UnitType, BWAPI::UnitType);
     bool startedEarlier(BWAPI::UnitType, BWAPI::UnitType);
     bool completesBy(int, BWAPI::UnitType, Time);
@@ -137,4 +124,21 @@ namespace McRave::Spy {
     bool enemyTurtle();
     int getWorkersPulled();
     int getEnemyGasMined();
+
+    namespace Protoss {
+        void updateProtoss(StrategySpy&);
+    }
+    namespace Terran {
+        void updateTerran(StrategySpy&);
+    }
+    namespace Zerg {
+        void updateZerg(StrategySpy&);
+
+        bool enemyFasterPool();
+        bool enemyEqualPool();
+        bool enemyFasterSpeed();
+    }
+    namespace General {
+        void updateGeneral(StrategySpy&);
+    }
 }

@@ -93,7 +93,7 @@ namespace McRave::Combat::Simulation {
         else if (unit.getSimValue() < minThreshold || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
             unit.setSimState(SimState::Loss);
 
-        //// Check for hardcoded directional losses
+        // Check for similar units with different results
         //if (unit.getSimValue() < maxThreshold) {
         //    if (unit.isFlying()) {
         //        if (unitTarget->isFlying() && belowAirtoAirLimit)
@@ -174,7 +174,7 @@ namespace McRave::Combat::Simulation {
         // Adjust winrates if we have static defense that would make the fight easier and we're at home
         if (Util::getTime() < Time(8, 00) && !unit.isFlying() && com(Zerg_Sunken_Colony) > 0 && Combat::State::isStaticRetreat(unit.getType())) {
             const auto defendStation = Stations::getClosestStationAir(unit.retreatPos, PlayerState::Self);
-            const auto furthestSunk = Util::getFurthestUnit(unit.retreatPos, PlayerState::Self, [&](auto &u) {
+            const auto furthestSunk = Util::getFurthestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
                 return u->getType() == Zerg_Sunken_Colony && u->isCompleted() && Terrain::inArea(defendStation->getBase()->GetArea(), u->getPosition());
             });
             if (furthestSunk) {

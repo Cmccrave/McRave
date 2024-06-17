@@ -67,7 +67,7 @@ namespace McRave::BuildOrder::Zerg {
             if (Spy::enemyTurtle())
                 initialValue = 18;
             if (Spy::getEnemyBuild() == "12Hatch" || Spy::getEnemyTransition() == "3HatchLing" || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
-                initialValue = 36;
+                initialValue = 8;
         }
 
         if (total(Zerg_Zergling) < initialValue)
@@ -77,8 +77,8 @@ namespace McRave::BuildOrder::Zerg {
         if (currentTransition.find("1Hatch") != string::npos)
             return 0;
 
-        // They're intending to make more lings than they should
-        if (Spy::getEnemyTransition() == "3HatchLing" || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3) {
+        // We need to catchup on drones before we make lings
+        if (Spy::getEnemyBuild() == "12Hatch" || Spy::getEnemyTransition() == "3HatchLing" || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3) {
             if (vis(Zerg_Drone) < unitLimits[Zerg_Drone])
                 return 0;
         }
@@ -128,13 +128,15 @@ namespace McRave::BuildOrder::Zerg {
             || (Spy::enemyTurtle() && atPercent(Zerg_Spire, 0.5));
         wantNatural = Spy::enemyTurtle() || (Spy::getEnemyTransition() == "2HatchMuta");
 
+        auto speedFirst = false;
+
         // Build
-        buildQueue[Zerg_Lair] =                         lingSpeed() && gas(100) && vis(Zerg_Spawning_Pool) > 0 && total(Zerg_Zergling) >= 6 && vis(Zerg_Drone) >= 8;
+        buildQueue[Zerg_Lair] =                         (!speedFirst || lingSpeed()) && gas(100) && vis(Zerg_Zergling) >= 6 && vis(Zerg_Drone) >= 8;
         buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 7;
         buildQueue[Zerg_Hatchery] =                     1 + secondHatch;
 
         // Upgrades
-        upgradeQueue[Metabolic_Boost] =                 (vis(Zerg_Zergling) >= 6 && gas(100));
+        upgradeQueue[Metabolic_Boost] =                 (speedFirst || vis(Zerg_Lair) > 0) && (total(Zerg_Zergling) >= 6 && gas(100));
 
         // Pumping
         pumpLings = lingsNeeded_ZvZ() > vis(Zerg_Zergling) || (com(Zerg_Spire) == 1 && !gas(100)) || vis(Zerg_Drone) >= unitLimits[Zerg_Drone];
@@ -165,15 +167,18 @@ namespace McRave::BuildOrder::Zerg {
         unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 12 : unitLimits[Zerg_Drone];
         unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvZ();
         focusUnit =                                     Zerg_Mutalisk;
+        wallNat =                                       Spy::enemyPressure();
+
+        auto speedFirst = false;
 
         // Build
         buildQueue[Zerg_Extractor] =                    (s >= 24);
-        buildQueue[Zerg_Lair] =                         (vis(Zerg_Zergling) >= 6 && gas(100));
+        buildQueue[Zerg_Lair] =                         (!speedFirst || lingSpeed()) && gas(100) && total(Zerg_Zergling) >= 10 && vis(Zerg_Drone) >= 8;
         buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && com(Zerg_Drone) >= 9;
         buildQueue[Zerg_Overlord] =                     1 + (vis(Zerg_Extractor) + Spy::enemyGasSteal() >= 1) + (s >= 32) + (s >= 46);
 
         // Upgrades
-        upgradeQueue[Metabolic_Boost] =                 gas(100) && vis(Zerg_Spawning_Pool) > 0 && total(Zerg_Zergling) >= 10 && vis(Zerg_Drone) >= 8;
+        upgradeQueue[Metabolic_Boost] =                 (speedFirst || vis(Zerg_Lair) > 0) && (total(Zerg_Zergling) >= 10 && gas(100));
 
         // Pumping
         if (Spy::getEnemyTransition() == "1HatchMuta") {
@@ -190,10 +195,16 @@ namespace McRave::BuildOrder::Zerg {
 
         // Gas
         gasLimit = gasMax();
-        if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && lingSpeed() && Util::getTime() < Time(6, 00))
-            gasLimit = 0;
-        else if (!Spy::enemyTurtle() && (lingSpeed() || gas(80)) && Util::getTime() < Time(6, 00))
-            gasLimit = 2 - vis(Zerg_Lair);
+        if (!Spy::enemyTurtle()) {
+            if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && lingSpeed() && Util::getTime() < Time(5, 00))
+                gasLimit = 0;
+            else if (Spy::getEnemyOpener() == "9Pool" && Util::getTime() < Time(3, 30))
+                gasLimit = 0;
+            else if (lingSpeed() && vis(Zerg_Lair) > 0 && Util::getTime() < Time(5, 00))
+                gasLimit = 1;
+            else if ((lingSpeed() || vis(Zerg_Lair) > 0) && Util::getTime() < Time(5, 00))
+                gasLimit = 2;
+        }
     }
 
     void ZvZ_2HatchHydra()

@@ -35,7 +35,7 @@ namespace McRave::Stations
                 remainingGas[station] = 0;
                 remainingMinerals[station] = 0;
                 for (auto &mineral : Resources::getMyMinerals()) {
-                    if (mineral->getStation() == station) {
+                    if (mineral->getStation() == station && !mineral->isThreatened()) {
                         resourceCount++;
                         remainingMinerals[station]+=mineral->getRemainingResources();
                         mineralsLeftTotal+=mineral->getRemainingResources();
@@ -43,7 +43,7 @@ namespace McRave::Stations
                     }
                 }
                 for (auto &gas : Resources::getMyGas()) {
-                    if (gas->getStation() == station) {
+                    if (gas->getStation() == station && !gas->isThreatened()) {
                         resourceCount++;
                         remainingGas[station]+=gas->getRemainingResources();
                         gasLeftTotal+=gas->getRemainingResources();
@@ -275,7 +275,7 @@ namespace McRave::Stations
                 + Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
 
             if (station->isMain()) {
-                if (BuildOrder::takeNatural() || getStations(PlayerState::Self).size() > 1)
+                if (!Spy::enemyRush() && (BuildOrder::takeNatural() || getStations(PlayerState::Self).size() > 1))
                     return 0;
             }
 

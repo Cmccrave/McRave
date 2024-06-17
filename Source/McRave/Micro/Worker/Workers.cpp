@@ -24,7 +24,7 @@ namespace McRave::Workers {
             if (Units::getImmThreat() > 0.0f)
                 desiredTransfer = 0;
             if (Players::ZvZ())
-                desiredTransfer = 0;
+                desiredTransfer = 1;
 
             // Keep damaged workers in the main
             if (Util::getTime() < Time(4, 00) && (unit.getHealth() < unit.getType().maxHitPoints() || desiredTransfer == 0)) {
@@ -252,7 +252,7 @@ namespace McRave::Workers {
             // Get some information of the workers current assignment
             const auto isGasunit =          unit.hasResource() && unit.getResource().lock()->getType().isRefinery();
             const auto isMineralunit =      unit.hasResource() && unit.getResource().lock()->getType().isMineralField();
-            const auto threatened =         unit.hasResource() && unit.getResource().lock()->isThreatened() && unit.getHealth() < unit.getType().maxHitPoints();
+            const auto threatened =         unit.hasResource() && unit.getResource().lock()->isThreatened() && (unit.getHealth() < unit.getType().maxHitPoints() || Spy::enemyPressure() || Spy::enemyRush());
             const auto excessAssigned =     isResourceFlooded(unit);
             const auto transferStation =    getTransferStation(unit);
 

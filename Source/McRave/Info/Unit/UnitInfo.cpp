@@ -393,11 +393,11 @@ namespace McRave
             if (!atHome || !closestStation)
                 return false;
             for (auto &g : Resources::getMyGas()) {
-                if (g->getStation() == closestStation && getPosition().getDistance(g->getPosition()) < proximityCheck)
+                if (g->getStation() == closestStation && g->getResourceState() == ResourceState::Mineable && getPosition().getDistance(g->getPosition()) < proximityCheck)
                     return true;
             }
             for (auto &m : Resources::getMyMinerals()) {
-                if (m->getStation() == closestStation && getPosition().getDistance(m->getPosition()) < proximityCheck)
+                if (m->getStation() == closestStation && m->getResourceState() == ResourceState::Mineable && getPosition().getDistance(m->getPosition()) < proximityCheck)
                     return true;
             }
             return false;
@@ -420,7 +420,7 @@ namespace McRave
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
             auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getRole() == Role::Defender && u->canAttackGround() && u->isCompleted();
+                return u->getRole() == Role::Defender && u->canAttackGround() && (u->isCompleted() || this->hasAttackedRecently());
             });
             return (closestDefender && closestDefender->isWithinRange(*this) && Terrain::inTerritory(PlayerState::Self, position))
                 || (closestDefender && isWithinRange(*closestDefender));
