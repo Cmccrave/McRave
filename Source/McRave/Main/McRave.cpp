@@ -27,7 +27,7 @@ void McRaveModule::onStart()
     Scouts::onStart();
     Combat::onStart();
     Goals::onStart();
-
+    
     Broodwar->enableFlag(Flag::UserInput);
     Broodwar->setCommandOptimizationLevel(0);
     Broodwar->setLatCom(true);
@@ -64,6 +64,7 @@ void McRaveModule::onFrame()
     // Update game state
     Util::onFrame();
 
+
     // Update ingame information
     Players::onFrame();
     Units::onFrame();
@@ -73,6 +74,7 @@ void McRaveModule::onFrame()
     Grids::onFrame();
     Pylons::onFrame();
 
+
     // Update relevant map information and strategy
     Terrain::onFrame();
     Walls::onFrame();
@@ -80,6 +82,7 @@ void McRaveModule::onFrame()
     Spy::onFrame();
     BuildOrder::onFrame();
     Stations::onFrame();
+
 
     // Update gameplay of the bot
     Actions::onFrame();
@@ -98,8 +101,11 @@ void McRaveModule::onFrame()
     Producing::onFrame();
     Zones::onFrame();
 
+
     // Display information from this frame
     Visuals::onFrame();
+
+
 }
 
 void McRaveModule::onSendText(string text)

@@ -13,10 +13,6 @@ namespace McRave::Combat::State {
     {
         staticRetreatTypes.clear();
 
-        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings)
-            return;
-        staticRetreatTypes.push_back(Zerg_Zergling);
-
         const auto unlockedOrVis = [&](auto &t) {
             return vis(t) > 0 || BuildOrder::isUnitUnlocked(t);
         };
@@ -60,26 +56,36 @@ namespace McRave::Combat::State {
                         staticRetreatTypes.push_back(Zerg_Zergling);
                 }
                 if (Players::ZvZ()) {
-                    const auto enemyLingVomit = (Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling") && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0;
+                    const auto enemyLingVomit = (Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling") && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) < 9;
                     const auto avoidDiceRoll = (Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 15) && !Terrain::getEnemyStartingPosition().isValid())
                         || (BuildOrder::getCurrentOpener() == "12Pool")
                         || (BuildOrder::getCurrentOpener() == "12Hatch");
                     const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(3, 15);
+                    const auto confidentLingLead = Players::getVisibleCount(PlayerState::Self, Zerg_Zergling) * 3 > Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) * 2;
 
-                    if (BuildOrder::getCurrentTransition() == "1HatchMuta" && Util::getTime() < Time(7, 00)) {
-                        if (Spy::Zerg::enemyFasterPool() || Spy::Zerg::enemyEqualPool() || enemyLingVomit || enemyDroneScouted || Spy::enemyTurtle())
+                    // 1hm early
+                    if (!confidentLingLead) {
+                        if (BuildOrder::getCurrentTransition() == "1HatchMuta" && Util::getTime() < Time(7, 00)) {
+                            if (Spy::Zerg::enemyFasterPool() || Spy::Zerg::enemyEqualPool() || enemyLingVomit || enemyDroneScouted || Spy::enemyTurtle())
+                                staticRetreatTypes.push_back(Zerg_Zergling);
+                        }
+
+                        // 1hm mid
+                        if (BuildOrder::getCurrentTransition() == "1HatchMuta" && Spy::getEnemyBuild() == "HatchPool" && Util::getTime() > Time(3, 15) && Util::getTime() < Time(10, 00))
                             staticRetreatTypes.push_back(Zerg_Zergling);
+
+                        // 2hm early
+                        if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(5, 30) && !Spy::enemyFastExpand() && !Spy::Zerg::enemySlowerSpeed()) {
+                            if (Spy::Zerg::enemyFasterPool() || Spy::Zerg::enemyEqualPool() || avoidDiceRoll || enemyDroneScouted)
+                                staticRetreatTypes.push_back(Zerg_Zergling);
+                        }
+
+                        // 2hm mid
+                        if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(10, 00) && !Spy::enemyFastExpand() && !Spy::Zerg::enemySlowerSpeed()) {
+                            if (enemyLingVomit || Spy::Zerg::enemyFasterSpeed())
+                                staticRetreatTypes.push_back(Zerg_Zergling);
+                        }
                     }
-                    if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(5, 30)) {
-                        if (Spy::Zerg::enemyFasterPool() || Spy::Zerg::enemyEqualPool() || avoidDiceRoll || enemyDroneScouted)
-                            staticRetreatTypes.push_back(Zerg_Zergling);
-                    }
-                    if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(8, 00)) {
-                        if (Spy::getEnemyTransition() == "3HatchSpeedling" || Spy::getEnemyTransition() == "+1Ling" || Spy::Zerg::enemyFasterSpeed())
-                            staticRetreatTypes.push_back(Zerg_Zergling);
-                    }
-                    if (BuildOrder::getCurrentBuild() == "PoolLair" && Spy::getEnemyBuild() == "HatchPool" && Util::getTime() > Time(3, 15) && Util::getTime() < Time(8, 00))
-                        staticRetreatTypes.push_back(Zerg_Zergling);
                 }
             }
         }
@@ -216,9 +222,9 @@ namespace McRave::Combat::State {
 
         const auto engagingWithWorkers = [&]() {
             const auto closestCombatWorker = Util::getClosestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getType().isWorker() && u->getRole() == Role::Combat;
+                return unit != *u && u->getType().isWorker() && u->getRole() == Role::Combat;
             });
-            return closestCombatWorker && closestCombatWorker->getPosition().getDistance(target.getPosition()) < unit.getPosition().getDistance(target.getPosition()) + 64.0;
+            return closestCombatWorker && closestCombatWorker->getPosition().getDistance(target.getPosition()) < 96.0;
         };
 
         const auto freeAttacks = [&]() {
@@ -252,7 +258,7 @@ namespace McRave::Combat::State {
             || (!unit.isFlying() && Actions::overlapsActions(unit.unit(), unit.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
             || (unit.isTargetedBySuicide() && !unit.isFlying())
             || (unit.getType() == Terran_Ghost && com(Terran_Nuclear_Missile) > 0 && unit.unit()->isLoaded())
-            || (engagingWithWorkers() && unit.isWithinReach(target))
+            //|| (atHome && engagingWithWorkers())
             ;
     }
 
@@ -274,8 +280,8 @@ namespace McRave::Combat::State {
             // Try to save zerglings in ZvZ
             const auto zerglingSaving = Players::ZvZ() && unit.getType() == Zerg_Zergling && !unit.isWithinRange(target) && unit.getHealth() < 10;
 
-            // TODO: turned this off for now as it was causing clusters to shift and suicide
-            if (mutaSavingRequired || scoutSavingRequired || zerglingSaving)
+            // Save the units
+            if (mutaSavingRequired || scoutSavingRequired /*|| zerglingSaving*/)
                 unit.saveUnit = true;
             if (unit.saveUnit) {
                 if (unit.getType() == Zerg_Mutalisk && unit.getHealth() >= 100)

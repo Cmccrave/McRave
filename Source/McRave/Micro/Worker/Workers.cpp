@@ -24,7 +24,7 @@ namespace McRave::Workers {
             if (Units::getImmThreat() > 0.0f)
                 desiredTransfer = 0;
             if (Players::ZvZ())
-                desiredTransfer = 1;
+                desiredTransfer = 0;
 
             // Keep damaged workers in the main
             if (Util::getTime() < Time(4, 00) && (unit.getHealth() < unit.getType().maxHitPoints() || desiredTransfer == 0)) {
@@ -97,8 +97,8 @@ namespace McRave::Workers {
                 if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(unit.getTilePosition()) == station->getBase()->GetArea())
                     safeStations.push_back(station);
 
-                // If station has defenses, it's probably safe
-                else if (Stations::getGroundDefenseCount(station) > 0 || Stations::getAirDefenseCount(station) > 0)
+                // If station has defenses or it's early, it's probably safe
+                else if (Stations::getGroundDefenseCount(station) > 0 || Stations::getAirDefenseCount(station) > 0 || Util::getTime() < Time(6, 00))
                     safeStations.push_back(station);
 
                 else {
@@ -369,9 +369,6 @@ namespace McRave::Workers {
         void updateDecision(UnitInfo& unit)
         {
             if (!Units::commandAllowed(unit))
-                return;
-
-            if (unit.unit()->isSelected())
                 return;
 
             // Iterate commands, if one is executed then don't try to execute other commands

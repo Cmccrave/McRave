@@ -243,12 +243,8 @@ namespace BWEB {
 
     void Wall::addDefenses()
     {
-        if (rawDefenses.empty() || !valid)
-            return;
-
         auto left = Position(choke->Center()).x < base->Center().x;
         auto up = Position(choke->Center()).y < base->Center().y;
-        auto type = (rawDefenses.front());
         auto baseDist = base->Center().getDistance(Position(choke->Center()));
 
         map<int, vector<TilePosition>> wallPlacements;
@@ -299,13 +295,10 @@ namespace BWEB {
                 auto tile = base->Location() + placement;
                 auto stationDefense = station->getDefenses().find(tile) != station->getDefenses().end();
 
-                // TODO: Add defenses other than station defenses, right now adding extra will block paths
-                if (/*(!Map::isReserved(tile, 2, 2) && Map::isPlaceable(defenseType, tile)) || */stationDefense) {
-                    defenses[i].insert(tile);
-                    Map::addReserve(tile, 2, 2);
-                    Map::addUsed(tile, defenseType);
-                    defenses[0].insert(tile);
-                }
+                defenses[i].insert(tile);
+                Map::addReserve(tile, 2, 2);
+                Map::addUsed(tile, defenseType);
+                defenses[0].insert(tile);
             }
         }
 
@@ -318,16 +311,16 @@ namespace BWEB {
     {
         // Remove used from tiles
         for (auto &tile : smallTiles)
-            Map::removeUsed(tile, 2, 2);        
+            Map::removeUsed(tile, 2, 2);
         for (auto &tile : mediumTiles)
-            Map::removeUsed(tile, 3, 2);        
+            Map::removeUsed(tile, 3, 2);
         for (auto &tile : largeTiles)
-            Map::removeUsed(tile, 4, 3);        
+            Map::removeUsed(tile, 4, 3);
         for (auto &tile : openings)
             Map::removeUsed(tile, 1, 1);
         for (auto &[_, tiles] : defenses) {
             for (auto &tile : tiles)
-                Map::removeUsed(tile, 2, 2);            
+                Map::removeUsed(tile, 2, 2);
         }
     }
 

@@ -316,7 +316,7 @@ namespace McRave::Command {
                 }
 
                 return ((hasBuildingAssignment && Workers::shouldMoveToBuild(unit, unit.getBuildPosition(), unit.getBuildType()))
-                    || (hasMineableResource && !unit.isWithinGatherRange() && Grids::getGroundDensity(unit.getPosition(), PlayerState::Self) <= 0.0f))
+                    || (hasMineableResource && !unit.isWithinGatherRange()))
                     || unit.getGoal().isValid();
             }
 
@@ -397,9 +397,6 @@ namespace McRave::Command {
 
         const auto canKite = [&]() {
 
-            if (unit.getRole() == Role::Worker)
-                return true;
-
             // Special Case: Carriers
             if (unit.getType() == UnitTypes::Protoss_Carrier) {
                 auto leashRange = 320;
@@ -436,9 +433,6 @@ namespace McRave::Command {
             auto targetKitable = allyRange > enemyRange && enemyRange != 0 && allyRange != 0;
             auto boxDist = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition());
 
-            if (unit.getRole() == Role::Worker)
-                return Util::getTime() < Time(3, 30) && !unit.getUnitsInReachOfThis().empty();
-
             if (unit.getRole() == Role::Combat || unit.getRole() == Role::Scout) {
 
                 // Special Case: early "duels"
@@ -447,6 +441,8 @@ namespace McRave::Command {
                     const auto defenders = com(Zerg_Sunken_Colony) > 0 && Combat::State::isStaticRetreat(unit.getType());
 
                     if (Util::getTime() < Time(4, 30) && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Protoss_Zealot && unit.getHealth() <= 16)
+                        return true;
+                    if (Util::getTime() < Time(4, 30) && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10)
                         return true;
                 }
                 if ((unit.getType() == Zerg_Hydralisk || unit.getType() == Protoss_Dragoon) && !target.isFlying()) {
@@ -488,20 +484,20 @@ namespace McRave::Command {
 
         if (shouldKite() && canKite()) {
 
-            // HACK: Drilling with workers. Should add some sort of getClosestResource or fix how PlayerState::Neutral units are stored (we don't store resources in them)
-            if (unit.getType().isWorker() && unit.getRole() == Role::Combat) {
-                auto closestMineral = Broodwar->getClosestUnit(target.getPosition(), Filter::IsMineralField, 32);
+            //// HACK: Drilling with workers. Should add some sort of getClosestResource or fix how PlayerState::Neutral units are stored (we don't store resources in them)
+            //if (unit.getType().isWorker() && unit.getRole() == Role::Combat) {
+            //    auto closestMineral = Broodwar->getClosestUnit(target.getPosition(), Filter::IsMineralField, 32);
 
-                if (closestMineral && closestMineral->exists()) {
-                    unit.unit()->gather(closestMineral);
-                    return true;
-                }
-                if (unit.hasResource()) {
-                    unit.unit()->gather(unit.getResource().lock()->unit());
-                    return true;
-                }
-                return false;
-            }
+            //    if (closestMineral && closestMineral->exists()) {
+            //        unit.unit()->gather(closestMineral);
+            //        return true;
+            //    }
+            //    if (unit.hasResource()) {
+            //        unit.unit()->gather(unit.getResource().lock()->unit());
+            //        return true;
+            //    }
+            //    return false;
+            //}
 
             // If we found a valid position, move to it
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);

@@ -51,6 +51,9 @@ namespace McRave::Combat::Formations {
         formation.center = cluster.marchPosition;
         formation.angle = BWEB::Map::getAngle(make_pair(cluster.marchPosition, cluster.retreatPosition));
 
+        if (cluster.shape == Shape::Line)
+            formation.center = cluster.retreatPosition;
+
         auto enemyRange = 32.0; // TODO: Check what units they have, make radius at least this max range
         if (Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
             enemyRange = 96.0;
@@ -74,7 +77,7 @@ namespace McRave::Combat::Formations {
     {
         // Offset the center by a distance of the radius towards the navigation point if needed
         formation.radius = clamp((cluster.units.size() * cluster.spacing / 1.3), 16.0, 640.0);
-        auto shift = max(160.0, formation.radius);
+        auto shift = max(160.0, formation.radius) + 32.0;
         if (cluster.state == LocalState::Retreat) {
             formation.radius += 64.0;
             formation.center = Util::shiftTowards(cluster.retreatNavigation, cluster.avgPosition, shift);
@@ -94,7 +97,7 @@ namespace McRave::Combat::Formations {
         if (cluster.state == LocalState::Hold && Combat::holdAtChoke()) {
             formationWithChoke(formation, cluster);
         }
-        else if (cluster.state == LocalState::Hold && staticCluster) {
+        else if (cluster.state == LocalState::Hold) {
             formationWithBuilding(formation, cluster);
         }
         else {
@@ -121,7 +124,6 @@ namespace McRave::Combat::Formations {
         if (closestUnit) {
             //Util::findWalkable(*closestUnit, p);
             closestUnit->setFormation(p);
-            Visuals::drawLine(closestUnit->getPosition(), p, Colors::Yellow);
         }
     }
 
@@ -372,8 +374,23 @@ namespace McRave::Combat::Formations {
                 Visuals::drawCircle(p, 4, color);
                 Visuals::drawLine(p, formation.center, color);
             }
-            Visuals::drawLine(formation.center, formation.cluster->marchPosition, Colors::Green);
-            Visuals::drawLine(formation.center, formation.cluster->retreatPosition, Colors::Red);
+
+            // Draw march navigation
+            Visuals::drawLine(formation.center, formation.cluster->marchNavigation, Colors::Green);
+            Visuals::drawCircle(formation.cluster->marchNavigation, 4, Colors::Green);
+
+            // Draw march position
+            Visuals::drawLine(formation.cluster->marchPosition, formation.cluster->marchNavigation, Colors::Green);
+            Visuals::drawCircle(formation.cluster->marchPosition, 4, Colors::Green, true);
+
+            // Draw retreat navigation
+            Visuals::drawLine(formation.center, formation.cluster->retreatNavigation, Colors::Red);
+            Visuals::drawCircle(formation.cluster->retreatNavigation, 4, Colors::Red);
+
+            // Draw retreat position
+            Visuals::drawLine(formation.cluster->retreatPosition, formation.cluster->retreatNavigation, Colors::Red);
+            Visuals::drawCircle(formation.cluster->retreatPosition, 4, Colors::Red, true);
+
 
             Visuals::drawCircle(formation.center, 3, Colors::White, true);
         }

@@ -45,7 +45,7 @@ namespace McRave
                 || (minutes == t2.minutes && seconds <= t2.seconds);
         }
 
-        bool operator> (const Time t2) {
+        const bool operator> (const Time t2) const {
             return (minutes > t2.minutes)
                 || (minutes == t2.minutes && seconds > t2.seconds);
         }

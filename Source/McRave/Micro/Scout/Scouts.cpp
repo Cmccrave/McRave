@@ -210,6 +210,11 @@ namespace McRave::Scouts {
                     // Zergling
                     if (Players::ZvP() && Spy::getEnemyBuild() != "FFE" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00))
                         main.desiredTypeCounts[Zerg_Zergling] = 1;
+
+                    // Overlord
+                    main.desiredTypeCounts[Zerg_Overlord] = 1;
+                    if (enemyAir || Spy::enemyFastExpand())
+                        main.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
 
                 // ZvZ
@@ -220,12 +225,14 @@ namespace McRave::Scouts {
 
                     // Zergling
                     main.desiredTypeCounts[Zerg_Zergling] = (!Terrain::foundEnemy() && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost))
-                        || (Terrain::getEnemyStartingPosition().isValid() && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Spy::getEnemyTransition() == "Unknown" && Spy::getEnemyOpener() == "Unknown");
+                        || (!Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0);
                     if (Spy::enemyRush() || Spy::enemyPressure())
                         main.desiredTypeCounts[Zerg_Zergling] = 0;
 
                     // Overlord
-                    main.desiredTypeCounts[Zerg_Overlord] = 1;
+                    main.desiredTypeCounts[Zerg_Overlord] = 2;
+                    if (Terrain::getEnemyStartingPosition().isValid())
+                        main.desiredTypeCounts[Zerg_Overlord] = 1;
                     if (enemyAir)
                         main.desiredTypeCounts[Zerg_Overlord] = 0;
                 }

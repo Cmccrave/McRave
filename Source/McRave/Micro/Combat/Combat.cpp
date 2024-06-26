@@ -90,7 +90,7 @@ namespace McRave::Combat {
                 defendNatural = false;
             if (Players::ZvP() && Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate" && total(Zerg_Sunken_Colony) == 0)
                 defendNatural = false;
-            if (Players::ZvZ() && BuildOrder::getCurrentOpener() == "12Pool" && Util::getTime() < Time(3, 45))
+            if (Players::ZvZ() && BuildOrder::getCurrentOpener() == "12Pool" && (Spy::getEnemyOpener() == "Unknown" || Spy::enemyRush()))
                 defendNatural = false;
 
             // Natural defending position
@@ -213,6 +213,8 @@ namespace McRave::Combat {
                 if (Players::ZvZ()) {
                     holdChoke = !defendNatural;
                     if (!defendNatural && Stations::getGroundDefenseCount(Terrain::getMyMain()) > 2)
+                        holdChoke = false;
+                    if (Spy::enemyRush())
                         holdChoke = false;
                 }
                 if (Players::ZvP()) {

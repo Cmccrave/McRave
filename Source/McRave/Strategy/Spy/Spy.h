@@ -18,15 +18,21 @@ namespace McRave::Spy {
             if (possible && !loggedPossible) {
                 Util::debug("[Spy]: " + name + " possible.");
                 loggedPossible = true;
+                Util::debug("[Spy]: " + std::to_string(framesTrue));
             }
             if (confirmed && !loggedConfirmed) {
                 Util::debug("[Spy]: " + name + " confirmed.");
                 loggedConfirmed = true;
+                Util::debug("[Spy]: " + std::to_string(framesRequired));
             }
         }
 
-        void updateStrat() {
-            possible ? framesTrue++ : framesTrue = 0;            
+        void updateStrat() { 
+            if (possible)
+                framesTrue++;
+            else
+                framesTrue = 0;
+
             if (framesTrue > framesRequired)
                 confirmed = true;
             else
@@ -61,7 +67,7 @@ namespace McRave::Spy {
 
     struct StrategySpy { // TODO: Impl multiple players
 
-        Strat build, opener, transition, expand, rush, wall, proxy, early, steal, pressure, greedy, invis, allin, turtle;
+        Strat build, opener, transition, expand, rush, wall, proxy, early, steal, pressure, greedy, invis, allin, turtle, fortress;
         Time buildTime, openerTime, transitionTime, rushArrivalTime;
         std::vector<Strat*> strats;
         std::vector<Strat*> blueprints;
@@ -74,13 +80,13 @@ namespace McRave::Spy {
         std::set<BWAPI::UnitType> typeUpgrading; // TODO: Better impl (doesn't look at current state)
 
         StrategySpy() {
-            strats ={ &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &allin, &turtle };
+            strats ={ &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &allin, &turtle, &fortress };
             blueprints ={ &build, &opener, &transition };
             build.framesRequired = 24;
             build.framesChangeable = 500;
             opener.framesRequired = 24;
             opener.framesChangeable = 500;
-            transition.framesRequired = 240;
+            transition.framesRequired = 24;
             transition.framesChangeable = 500;
 
             // Attaching names to strats for logging purposes
@@ -95,6 +101,7 @@ namespace McRave::Spy {
             invis.name = "Invis";
             allin.name = "Allin";
             turtle.name = "Turtle";
+            fortress.name = "Fortress";
         }
     };
 
@@ -122,6 +129,7 @@ namespace McRave::Spy {
     bool enemyWalled();
     bool enemyGreedy();
     bool enemyTurtle();
+    bool enemyFortress();
     int getWorkersPulled();
     int getEnemyGasMined();
 
@@ -136,7 +144,10 @@ namespace McRave::Spy {
 
         bool enemyFasterPool();
         bool enemyEqualPool();
+        bool enemySlowerPool();
+
         bool enemyFasterSpeed();
+        bool enemySlowerSpeed();
     }
     namespace General {
         void updateGeneral(StrategySpy&);

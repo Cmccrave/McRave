@@ -482,6 +482,11 @@ namespace McRave::Producing {
             || (Workers::getMineralWorkers() == 0 && typeMineralCost > 0 && Broodwar->self()->minerals() < typeMineralCost))
             return 0.0;
 
+        // If we can't even afford 50% of the gas cost, then we shouldn't bother
+        if ((typeGasCost > 0 && double(Broodwar->self()->gas()) / double(typeGasCost) < 0.5)
+            || (typeGasCost > 0 && Broodwar->self()->gas() - reservedGas < 0))
+            return 0.0;
+
         const auto resourceScore = gasCost * mineralCost;
         const auto strategyScore = 100.0 * percentage / double(max(1, trainedCount));
         return resourceScore + strategyScore;

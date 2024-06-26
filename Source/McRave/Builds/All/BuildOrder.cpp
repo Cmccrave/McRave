@@ -305,8 +305,7 @@ namespace McRave::BuildOrder
     map<TechType, int>& getTechQueue() { return techQueue; }
     map<UnitType, double> getArmyComposition() { return armyComposition; }
 
-
-    set <UnitType>& getUnlockedList() { return  unlockedType; }
+    set<UnitType>& getUnlockedList() { return  unlockedType; }
     int gasWorkerLimit() { return gasLimit; }
     int getUnitReservation(UnitType type) { return unitReservations[type]; }
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }

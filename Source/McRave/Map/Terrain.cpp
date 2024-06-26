@@ -741,11 +741,12 @@ namespace McRave::Terrain {
 
         reverseRamp = Broodwar->getGroundHeight(getMainTile()) < Broodwar->getGroundHeight(getNaturalTile());
         flatRamp = Broodwar->getGroundHeight(getMainTile()) == Broodwar->getGroundHeight(getNaturalTile());
+
+        updateChokepoints();
     }
 
     void onFrame()
     {
-        updateChokepoints();
         Visuals::startPerfTest();
         findEnemy();
         findEnemyNextExpand();

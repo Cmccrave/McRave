@@ -672,10 +672,6 @@ namespace McRave::Command
             if ((unit.hasResource() && boxDist > 0 && unit.unit()->getOrder() == Orders::MoveToMinerals && unit.getResource().lock()->getGatherOrderPositions().find(unit.getPosition()) != unit.getResource().lock()->getGatherOrderPositions().end()))
                 return true;
 
-            // Dont spam
-            if (unit.unit()->getLastCommand().getType() == UnitCommandTypes::Gather && Broodwar->getFrameCount() - unit.unit()->getLastCommandFrame() < 12)
-                return false;
-
             auto closestChokepoint = Util::getClosestChokepoint(unit.getPosition());
             auto nearNonBlockingChoke = closestChokepoint && !closestChokepoint->Blocked() && unit.getPosition().getDistance(Position(closestChokepoint->Center())) < 160.0;
 

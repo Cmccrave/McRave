@@ -19,8 +19,12 @@ namespace McRave::Roles {
                 return;
 
             const auto invalid = [&](auto &unit) {
+                auto health = 26;
+                if (Players::ZvZ())
+                    health = 31;
+
                 return (unit->getType() == Protoss_Probe && unit->getShields() <= 4)
-                    || (unit->getType() == Zerg_Drone && unit->getHealth() < (Spy::getEnemyTransition() == "WorkerRush" ? 6 : 20));
+                    || (unit->getType() == Zerg_Drone && unit->getHealth() < (Spy::getEnemyTransition() == "WorkerRush" ? 6 : health));
             };
 
             // Only pull the closest worker
@@ -122,9 +126,11 @@ namespace McRave::Roles {
             static bool likelyProxy = likelyProxy || (proxyWorker && Util::getTime() < Time(2, 00));
 
             // ZvZ
-            if (Players::ZvZ() && Util::getTime() < Time(6, 00) && !Spy::enemyTurtle()) {
-                if ((Spy::getEnemyOpener() == "9Pool" || Spy::getEnemyOpener() == "OverPool") && Combat::isDefendNatural() && Util::getTime() > Time(2, 45) && BuildOrder::getCurrentOpener() == "12Pool" && total(Zerg_Zergling) < 16 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
-                    forceCombatWorker(3, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
+            if (Players::ZvZ() && Util::getTime() < Time(6, 00) && !Spy::enemyTurtle() && !Spy::enemyFastExpand()) {
+                if ((Spy::getEnemyOpener() == "9Pool" || Spy::getEnemyOpener() == "Overpool" || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling))
+                    && Util::getTime() > Time(2, 45) && Util::getTime() < Time(3, 30)
+                    && BuildOrder::getCurrentOpener() == "12Pool" && total(Zerg_Zergling) < 20 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
+                    forceCombatWorker(2, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
             }
 
             // ZvP

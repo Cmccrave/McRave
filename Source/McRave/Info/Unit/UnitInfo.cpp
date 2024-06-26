@@ -105,6 +105,8 @@ namespace McRave
         auto t = unit()->getType();
         auto p = unit()->getPlayer();
 
+        threatening                 = false;
+
         if (unit()->exists()) {
 
             lastPos                     = position;
@@ -406,7 +408,11 @@ namespace McRave
         // Check if enemy is generally in our territory
         auto nearTerritory = [&]() {
             if (Combat::holdAtChoke() && Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural()
+                || (Roles::getMyRoleCount(Role::Defender) == 0 && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural())
                 || (!Players::ZvZ() && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
+                return true;
+
+            if (closestStation && closestStation->getBase()->Center().getDistance(getPosition()) < getGroundReach())
                 return true;
 
             if (!Players::ZvZ()) {
@@ -429,7 +435,7 @@ namespace McRave
         // Checks if it can damage an already damaged building
         auto nearFragileBuilding = [&]() {
             auto fragileBuilding = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return !u->isHealthy() && u->getType().isBuilding() && (u->isCompleted() || isWithinRange(*u)) && Terrain::inTerritory(PlayerState::Self, u->getPosition());
+                return !u->isHealthy() && u->getType().isBuilding() && u->isCompleted() && Terrain::inTerritory(PlayerState::Self, u->getPosition());
             });
             return fragileBuilding && getType().groundWeapon().damageType() != DamageTypes::Concussive && canAttackGround() && Util::boxDistance(fragileBuilding->getType(), fragileBuilding->getPosition(), getType(), getPosition()) < proximityCheck;
         };
@@ -493,7 +499,7 @@ namespace McRave
             lastThreateningFrame = Broodwar->getFrameCount();
 
         // Linger threatening for 0.5 seconds
-        threatening = Broodwar->getFrameCount() - lastThreateningFrame <= framesToCheck;
+        threatening = Broodwar->getFrameCount() - lastThreateningFrame <= 4;
 
         // Apply to others
         if (threatening && threateningFrames > framesToCheck) {
@@ -837,7 +843,7 @@ namespace McRave
     bool UnitInfo::isWithinRange(UnitInfo& otherUnit)
     {
         auto boxDistance = Util::boxDistance(getType(), getPosition(), otherUnit.getType(), otherUnit.getPosition());
-        auto range = max(16.0, otherUnit.getType().isFlyer() ? getAirRange() : getGroundRange());
+        auto range = max(32.0, otherUnit.getType().isFlyer() ? getAirRange() : getGroundRange());
         auto latencyDist = (Broodwar->getLatencyFrames() * getSpeed()) - (Broodwar->getLatencyFrames() * otherUnit.getSpeed());
         auto ff = (!isHovering() && !isFlying()) ? 0.0 : -8.0;
         return range + latencyDist + ff >= boxDistance;

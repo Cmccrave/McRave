@@ -246,17 +246,5 @@ namespace McRave::Spy::General {
                 checkEnemyGreedy(player, theSpy);
             }
         }
-
-        // Verify strategy checking for confirmations
-        for (auto &strat : theSpy.strats) {
-            strat->debugLog();
-            if (!strat->confirmed)
-                strat->updateStrat();
-        }
-        for (auto &blueprint : theSpy.blueprints) {
-            blueprint->debugLog();
-            if (!blueprint->confirmed)
-                blueprint->updateBlueprint();
-        }
     }
 }

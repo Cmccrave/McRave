@@ -94,20 +94,20 @@ namespace McRave::Combat::Simulation {
             unit.setSimState(SimState::Loss);
 
         // Check for similar units with different results
-        //if (unit.getSimValue() < maxThreshold) {
-        //    if (unit.isFlying()) {
-        //        if (unitTarget->isFlying() && belowAirtoAirLimit)
-        //            unit.setSimState(SimState::Loss);
-        //        else if (!unitTarget->isFlying() && belowAirtoGrdLimit)
-        //            unit.setSimState(SimState::Loss);
-        //    }
-        //    else {
-        //        if (unitTarget->isFlying() && belowGrdtoAirLimit)
-        //            unit.setSimState(SimState::Loss);
-        //        else if (!unitTarget->isFlying() && belowGrdtoGrdLimit)
-        //            unit.setSimState(SimState::Loss);
-        //    }
-        //}
+        if (unit.getSimValue() < maxThreshold) {
+            if (unit.isFlying()) {
+                if (unitTarget->isFlying() && belowAirtoAirLimit)
+                    unit.setSimState(SimState::Loss);
+                else if (!unitTarget->isFlying() && belowAirtoGrdLimit)
+                    unit.setSimState(SimState::Loss);
+            }
+            else {
+                if (unitTarget->isFlying() && belowGrdtoAirLimit)
+                    unit.setSimState(SimState::Loss);
+                else if (!unitTarget->isFlying() && belowGrdtoGrdLimit)
+                    unit.setSimState(SimState::Loss);
+            }
+        }
     }
 
     void updateThresholds(UnitInfo& unit)

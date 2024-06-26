@@ -449,8 +449,8 @@ namespace McRave::Planning {
             for (auto &station : Stations::getStations(PlayerState::Self)) {
 
                 // Place sunkens closest to the chokepoint by default
-                Position desiredCenter = Players::ZvT() ? station->getResourceCentroid() : Stations::getDefendPosition(station);
                 auto colonies = Stations::getColonyCount(station);
+                Position desiredCenter = (Players::ZvT() || Stations::needAirDefenses(station) > colonies) ? station->getResourceCentroid() : Stations::getDefendPosition(station);
 
                 // If pocket defense is buildable
                 if (Stations::needGroundDefenses(station) > colonies) {
@@ -481,6 +481,9 @@ namespace McRave::Planning {
 
                 // How to dictate row order
                 vector<int> desiredRowOrder ={ 1, 2 };
+                if (Players::ZvZ())
+                    desiredRowOrder ={ 2, 1 };
+
                 auto closestDefense = Util::getClosestUnit(Position(closestMain->getChokepoint()->Center()), PlayerState::Self, [&](auto &u) {
                     return isDefensiveType(u->getType());
                 });
@@ -577,9 +580,6 @@ namespace McRave::Planning {
                 else
                     placements.insert(wall.getSmallTiles().begin(), wall.getSmallTiles().end());
             }
-
-            if (building == Zerg_Spire)
-                Broodwar << placements.size() << endl;
 
             // Get closest placement
             auto desired = !Stations::getStationsBySaturation().empty() ? Stations::getStationsBySaturation().begin()->second->getBase()->Center() : Terrain::getMainPosition();

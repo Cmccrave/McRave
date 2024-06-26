@@ -439,7 +439,9 @@ namespace McRave::Walls {
             // 3 Hatch
             if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 || Spy::getEnemyTransition() == "3HatchSpeedling")
                 return 1 + (Util::getTime() > Time(4, 15));
-            if (Spy::getEnemyOpener() == "12Hatch")
+            if (Spy::getEnemyTransition() == "2HatchSpeedling")
+                return 1;
+            if (Spy::getEnemyOpener() == "12Hatch" || Spy::getEnemyOpener() == "10Hatch")
                 return 1;
             return 0;
         }
@@ -476,6 +478,11 @@ namespace McRave::Walls {
                 break;
             }
         }
+
+        // If enemy adds defenses, we can start to cut defenses too
+        if (Util::getTime() > Time(4, 00))
+            groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Creep_Colony)
+            + Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
 
         // Protoss
         if (Broodwar->self()->getRace() == Races::Protoss) {
@@ -524,10 +531,7 @@ namespace McRave::Walls {
 
         // Zerg
         if (Broodwar->self()->getRace() == Races::Zerg) {
-            if (Players::ZvZ() && Util::getTime() > Time(4, 30) && total(Zerg_Zergling) > Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) && com(Zerg_Spire) == 0 && Spy::getEnemyTransition() == "Unknown" && BuildOrder::getCurrentTransition() == "2HatchMuta")
-                return 1 - airCount;
-            if (Players::ZvZ() && Util::getTime() > Time(4, 15) && Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() == "2HatchMuta")
-                return 1 - airCount;
+
         }
         return 0;
     }

@@ -74,6 +74,18 @@ namespace McRave::Spy {
         Terran::updateTerran(theSpy);
         Zerg::updateZerg(theSpy);
 
+        // Verify strategy checking for confirmations
+        for (auto &strat : theSpy.strats) {
+            strat->debugLog();
+            if (!strat->confirmed)
+                strat->updateStrat();
+        }
+        for (auto &blueprint : theSpy.blueprints) {
+            blueprint->debugLog();
+            if (!blueprint->confirmed)
+                blueprint->updateBlueprint();
+        }
+
         // Set a timestamp for when we detected a piece of the enemy build order
         if (theSpy.build.confirmed && theSpy.buildTime == Time(999, 00))
             theSpy.buildTime = Util::getTime();
@@ -99,6 +111,7 @@ namespace McRave::Spy {
     bool enemyWalled() { return theSpy.wall.confirmed; }
     bool enemyGreedy() { return theSpy.greedy.confirmed; }
     bool enemyTurtle() { return theSpy.turtle.confirmed; }
+    bool enemyFortress() { return theSpy.fortress.confirmed; }
     int getWorkersPulled() { return theSpy.workersPulled; }
     int getEnemyGasMined() { return theSpy.gasMined; }
 }

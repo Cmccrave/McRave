@@ -396,6 +396,10 @@ namespace McRave::Goals {
                 }
             }
 
+            // Always leave 2 lings at home in ZvZ
+            if (!Combat::State::isStaticRetreat(Zerg_Zergling) && Players::ZvZ() && int(stations.size()) >= 2 && !Spy::enemyRush())
+                assignNumberToGoal(Terrain::getMyNatural()->getResourceCentroid(), Zerg_Zergling, 2, GoalType::Defend);
+
             // Attack enemy expansions with a small force
             if (Util::getTime() > Time(6, 00) || Spy::enemyProxy()) {
                 auto distBest = 0.0;

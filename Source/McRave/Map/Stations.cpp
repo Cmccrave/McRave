@@ -52,7 +52,7 @@ namespace McRave::Stations
                 }
 
                 // Order by lowest saturation first
-                auto saturatedLevel = workerCount > 0 ? double(workerCount) / double(resourceCount) : 0.0;
+                auto saturatedLevel = (workerCount > 0 && resourceCount > 0) ? double(workerCount) / double(resourceCount) : 0.0;
                 stationsBySaturation.emplace(saturatedLevel, station);
             }
 
@@ -365,7 +365,6 @@ namespace McRave::Stations
             return 0;
         }
 
-
         void updateOwners()
         {
             selfStations.clear();
@@ -586,10 +585,10 @@ namespace McRave::Stations
 
                 // Get a spore vs 1h muta if we aren't 1h muta or 2h muta on one base
                 if (Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
-                    return (Util::getTime() > Time(4, 15)) - airCount;
+                    return (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(6, 15)) - airCount;
 
                 // We have more bases
-                if (Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() && com(Zerg_Extractor) >= 2)
+                if (Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 && Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() && com(Zerg_Extractor) >= 2)
                     return (Util::getTime() > Time(6, 15)) - airCount;
             }
 

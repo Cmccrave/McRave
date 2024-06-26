@@ -15,7 +15,6 @@ namespace McRave::BuildOrder::Zerg {
         {
             transitionReady =                               com(Zerg_Extractor) > 0 || Spy::enemyGasSteal();
             unitLimits[Zerg_Drone] =                        9 - (vis(Zerg_Extractor) > 0) + (vis(Zerg_Overlord) > 1);
-            unitLimits[Zerg_Zergling] =                     Spy::enemyRush() ? INT_MAX : 10;
             gasLimit =                                      (Spy::enemyRush() && com(Zerg_Sunken_Colony) == 0) ? 0 : gasMax();
 
             buildQueue[Zerg_Spawning_Pool] =                s >= 18;
