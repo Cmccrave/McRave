@@ -125,7 +125,7 @@ namespace McRave::Learning {
 
             const auto calculateUCB = [&](int w, int l) {
                 auto UCB = (w + l) > 0 ? (double(w) / double(w + l)) + pow(2.0 * log((double)totalGames) / double(w + l), 0.1) : 1.0;
-                return (UCB * 100.0) + double(rand() % randomness) + 1.0;
+                return (UCB * 25.0) + double(rand() % randomness) + 1.0;
             };
 
             // Attempt to read a file from the read directory first, then write directory
@@ -157,8 +157,10 @@ namespace McRave::Learning {
                 build.ucb1 = calculateUCB(build.w, build.l);
                 for (auto &opener : build.openers)
                     opener.ucb1 = calculateUCB(opener.w, opener.l);
-                for (auto &transition : build.transitions)
+                for (auto &transition : build.transitions) {
                     transition.ucb1 = calculateUCB(transition.w, transition.l);
+                    Util::debug("[Learning]: " + transition.name + " UCB1 value is " + to_string(transition.ucb1) + "(" + to_string(transition.w) + ", " + to_string(transition.l) + ")");
+                }                
 
                 sort(build.openers.begin(), build.openers.end(), [&](const auto &left, const auto &right) { return left.ucb1 < right.ucb1; });
                 sort(build.transitions.begin(), build.transitions.end(), [&](const auto &left, const auto &right) { return left.ucb1 < right.ucb1; });

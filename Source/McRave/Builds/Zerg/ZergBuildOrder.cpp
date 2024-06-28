@@ -14,18 +14,6 @@ using namespace McRave::BuildOrder::All;
 
 namespace McRave::BuildOrder::Zerg {
 
-    struct AllIn {
-        string name;
-        UnitType type;
-        int droneCount = 0;
-        int hatchCount = 0;
-        int typeCount = 0;
-        bool isValid() {
-            return name != "";
-        }
-    };
-    AllIn activeAllIn;
-
     namespace {
         bool againstRandom = false;
         bool needSpores = false;
@@ -361,45 +349,91 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueAllin()
         {
-            AllIn Z_6HatchCrackling;
-            Z_6HatchCrackling.droneCount = 30;
-            Z_6HatchCrackling.hatchCount = 6;
-            Z_6HatchCrackling.typeCount = 200;
+            Allin Z_6HatchCrackling;
+            Z_6HatchCrackling.workerCount = 30;
+            Z_6HatchCrackling.productionCount = 6;
+            Z_6HatchCrackling.typeCount = 64;
             Z_6HatchCrackling.type = Zerg_Zergling;
-            Z_6HatchCrackling.name = "Z_6HatchCrackling";
+            Z_6HatchCrackling.name = "6HatchCrackling";
+
+            Allin Z_5HatchSpeedling;
+            Z_5HatchSpeedling.workerCount = 20;
+            Z_5HatchSpeedling.productionCount = 5;
+            Z_5HatchSpeedling.typeCount = 48;
+            Z_5HatchSpeedling.type = Zerg_Zergling;
+            Z_5HatchSpeedling.name = "5HatchSpeedling";
+
+            // Get allin struct
+            if (activeAllinType == AllinType::Z_6HatchCrackling)
+                activeAllin = Z_6HatchCrackling;
+            if (activeAllinType == AllinType::Z_5HatchSpeedling)
+                activeAllin = Z_5HatchSpeedling;
 
             // Ling all-in
             if (Players::ZvZ() && (Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0 || Spy::enemyFortress()))
-                activeAllIn = Z_6HatchCrackling;            
-            if (Players::ZvP() && ((Spy::getEnemyTransition() == "CorsairGoon" || Spy::getEnemyTransition() == "5GateGoon") && (vis(Zerg_Drone) >= 30 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) == 0 && total(Zerg_Hydralisk) >= 2)))
-                activeAllIn = Z_6HatchCrackling;
+                activeAllin = Z_6HatchCrackling;
 
-            // Add drones and hatcheries to all-in
-            if (activeAllIn.name == "Z_6HatchCrackling" && total(Zerg_Zergling) < 300) {
+            // Log active all-in
+            static string loggedAllin = "";
+            if (loggedAllin == "" && activeAllin.name != "") {
+                McRave::Util::debug("[BuildOrder] Started " + activeAllin.name + " all-in");
+                loggedAllin = activeAllin.name;
+            }
+
+            // 6HatchCrackling
+            if (activeAllin.name == "6HatchCrackling" && total(Zerg_Zergling) < 300) {
                 armyComposition.clear();
                 reserveLarva = 0;
                 gasLimit = 2;
                 inOpening = false;
-                wantThird = true;
+                wantThird = false;
 
-                if (vis(Zerg_Drone) < activeAllIn.droneCount)
-                    armyComposition[Zerg_Drone] = 1.00;
-                else
-                    armyComposition[activeAllIn.type] = 1.00;
-
+                // Buildings
                 buildQueue[Zerg_Evolution_Chamber] = 2;
-                if (hatchCount() < activeAllIn.hatchCount)
+                buildQueue[Zerg_Lair] = 1;
+                if (hatchCount() < activeAllin.productionCount)
                     buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
-
-                // Hive
-                if (vis(Zerg_Drone) >= activeAllIn.droneCount) {
+                
+                if (vis(Zerg_Drone) >= activeAllin.workerCount) {
                     buildQueue[Zerg_Queens_Nest] = 1;
                     buildQueue[Zerg_Hive] = atPercent(Zerg_Queens_Nest, 0.95);
                 }
 
+                // Upgrades
+                upgradeQueue[UpgradeTypes::Metabolic_Boost] = 1;
                 upgradeQueue[UpgradeTypes::Zerg_Carapace] = 3;
                 upgradeQueue[UpgradeTypes::Zerg_Melee_Attacks] = 3;
                 upgradeQueue[UpgradeTypes::Adrenal_Glands] = com(Zerg_Hive) > 0;
+
+                // Pumping
+                if (vis(Zerg_Drone) < activeAllin.workerCount)
+                    armyComposition[Zerg_Drone] = 1.00;
+                else
+                    armyComposition[activeAllin.type] = 1.00;
+            }
+
+            // 5HatchSpeedling
+            if (activeAllin.name == "5HatchSpeedling" && total(Zerg_Zergling) < 200) {
+                armyComposition.clear();
+                reserveLarva = 0;
+                gasLimit = 1;
+                inOpening = false;
+                wantThird = false;
+
+                // Buildings
+                buildQueue[Zerg_Evolution_Chamber] = 1;
+                if (hatchCount() < activeAllin.productionCount)
+                    buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
+
+                // Upgrades
+                upgradeQueue[UpgradeTypes::Metabolic_Boost] = 1;
+                upgradeQueue[UpgradeTypes::Zerg_Carapace] = 1;
+
+                // Pumping
+                if (vis(Zerg_Drone) < activeAllin.workerCount)
+                    armyComposition[Zerg_Drone] = 1.00;
+                else
+                    armyComposition[activeAllin.type] = 1.00;
             }
         }
     }
@@ -437,8 +471,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvP
         if (Players::ZvP()) {
-            techOffset = 2 - (BuildOrder::getCurrentTransition().find("Muta") != string::npos); // Muta builds should make hydras before a 4th
-
+            techOffset = 2;
             if (Spy::getEnemyTransition() == "Carriers")
                 unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
             else if (focusUnit == Zerg_Hydralisk)
@@ -820,6 +853,10 @@ namespace McRave::BuildOrder::Zerg {
 
     bool gas(int amount) {
         return Broodwar->self()->gas() >= amount;
+    }
+
+    bool minerals(int amount) {
+        return Broodwar->self()->minerals() >= amount;
     }
 
     int gasMax() {

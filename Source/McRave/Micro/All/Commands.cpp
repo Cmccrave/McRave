@@ -440,7 +440,7 @@ namespace McRave::Command {
                     const auto selfFasterSpeed = (Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost, 1) && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost, 1));
                     const auto defenders = com(Zerg_Sunken_Colony) > 0 && Combat::State::isStaticRetreat(unit.getType());
 
-                    if (Util::getTime() < Time(4, 30) && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Protoss_Zealot && unit.getHealth() <= 16)
+                    if (Util::getTime() < Time(4, 30) && !unit.getUnitsTargetingThis().empty() && target.getType() == Protoss_Zealot && unit.getHealth() <= 16)
                         return true;
                     if (Util::getTime() < Time(4, 30) && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10)
                         return true;

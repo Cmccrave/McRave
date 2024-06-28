@@ -88,7 +88,7 @@ namespace McRave::Combat {
             // When we don't want to defend our natural
             if (Players::ZvT() && (Spy::enemyRush() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0))
                 defendNatural = false;
-            if (Players::ZvP() && Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate" && total(Zerg_Sunken_Colony) == 0)
+            if (Players::ZvP() && Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate" && total(Zerg_Zergling) < 12)
                 defendNatural = false;
             if (Players::ZvZ() && BuildOrder::getCurrentOpener() == "12Pool" && (Spy::getEnemyOpener() == "Unknown" || Spy::enemyRush()))
                 defendNatural = false;

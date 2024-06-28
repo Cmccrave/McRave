@@ -308,6 +308,11 @@ namespace McRave::BuildOrder
     set<UnitType>& getUnlockedList() { return  unlockedType; }
     int gasWorkerLimit() { return gasLimit; }
     int getUnitReservation(UnitType type) { return unitReservations[type]; }
+
+    bool isAllIn() {
+        return activeAllin.isActive();
+    }
+
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
     
     bool isOpener() { return inOpening; }

@@ -28,6 +28,8 @@ namespace McRave::BuildOrder::Zerg {
         gasTrick =                                  false;
         reserveLarva =                              0;
 
+        baseToHatchRatio ={ { 1, 1 }, {2, 2}, {3, 4}, {4, 7} };
+
         gasLimit =                                  gasMax();
         unitLimits[Zerg_Zergling] =                 lingsNeeded_ZvT();
         unitLimits[Zerg_Drone] =                    INT_MAX;

@@ -63,6 +63,7 @@ namespace McRave::Scouts {
         vector<const BWEB::Station *> scoutOrder, scoutOrderFirstOverlord;
         map<const BWEB::Station * const, Position> safePositions;
         bool resourceWalkPossible[256][256];
+        UnitType workerType;
 
         void drawScouting()
         {
@@ -192,7 +193,7 @@ namespace McRave::Scouts {
 
                     // Overlord
                     main.desiredTypeCounts[Zerg_Overlord] = 1;
-                    if (enemyAir || Spy::enemyFastExpand())
+                    if (enemyAir || Spy::enemyFastExpand() || (Terrain::getEnemyStartingPosition().isValid() && vis(Zerg_Zergling) > 0))
                         main.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
 
@@ -213,7 +214,7 @@ namespace McRave::Scouts {
 
                     // Overlord
                     main.desiredTypeCounts[Zerg_Overlord] = 1;
-                    if (enemyAir || Spy::enemyFastExpand())
+                    if (enemyAir || Spy::enemyFastExpand() || (Terrain::getEnemyStartingPosition().isValid() && vis(Zerg_Zergling) > 0))
                         main.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
 
@@ -301,6 +302,7 @@ namespace McRave::Scouts {
 
         void updateProxyScouting()
         {
+            auto &main = scoutTargets[ScoutType::Main];
             auto &proxy = scoutTargets[ScoutType::Proxy];
 
             // Against known proxies without visible proxy style buildings
@@ -315,8 +317,12 @@ namespace McRave::Scouts {
             }
 
             // Scout the popular middle proxy location if it's walkable
-            if (!Players::vZ() && !Terrain::foundEnemy() && !scoutOrder.empty() && scoutOrder.front() && (Stations::isBaseExplored(scoutOrder.front()) || Broodwar->getStartLocations().size() >= 4) && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(Terrain::getMainPosition(), mapBWEM.Center()) != DBL_MAX)
+            if (!Players::vZ() && !Terrain::foundEnemy() && !scoutOrder.empty() && scoutOrder.front() && Stations::isBaseExplored(scoutOrder.front()) && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(Terrain::getMainPosition(), mapBWEM.Center()) != DBL_MAX){
                 proxy.addTargets(mapBWEM.Center());
+                proxy.center = mapBWEM.Center();
+                proxy.desiredTypeCounts[Zerg_Drone] = int(BuildOrder::shouldScout());
+                main.desiredTypeCounts[Zerg_Drone] = 0;
+            }
         }
 
         void updateSafeScouting()

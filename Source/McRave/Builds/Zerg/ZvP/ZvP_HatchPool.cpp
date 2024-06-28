@@ -23,7 +23,7 @@ namespace McRave::BuildOrder::Zerg {
 
             // Buildings
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 22);
-            buildQueue[Zerg_Spawning_Pool] =                hatchCount() >= 2;
+            buildQueue[Zerg_Spawning_Pool] =                (s >= 22 && hatchCount() >= 2);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 16) + (s >= 30);
         }
 

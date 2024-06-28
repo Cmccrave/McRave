@@ -18,12 +18,10 @@ namespace McRave::Spy {
             if (possible && !loggedPossible) {
                 Util::debug("[Spy]: " + name + " possible.");
                 loggedPossible = true;
-                Util::debug("[Spy]: " + std::to_string(framesTrue));
             }
             if (confirmed && !loggedConfirmed) {
                 Util::debug("[Spy]: " + name + " confirmed.");
                 loggedConfirmed = true;
-                Util::debug("[Spy]: " + std::to_string(framesRequired));
             }
         }
 

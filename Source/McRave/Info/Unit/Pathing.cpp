@@ -76,7 +76,7 @@ namespace McRave::Pathing {
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo& unit = *u;
 
-                if (unit.isFlying())
+                if (unit.isFlying() || unit.getType().isBuilding())
                     continue;
 
                 // Figure out how to trap the unit

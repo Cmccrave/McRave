@@ -159,7 +159,7 @@ namespace McRave::Walls {
             auto greedyStart = BuildOrder::getCurrentOpener() == "12Hatch";
 
             // Make lings first you idiot
-            if (vis(Zerg_Zergling) < BuildOrder::All::unitLimits[Zerg_Zergling] && Util::getTime() < Time(3, 30))
+            if (vis(Zerg_Zergling) < BuildOrder::All::unitLimits[Zerg_Zergling] && Util::getTime() < Time(3, 30) && vis(Zerg_Larva) > 0)
                 return 0;
 
             // 1GateCore
@@ -468,7 +468,7 @@ namespace McRave::Walls {
     int needGroundDefenses(const BWEB::Wall& wall)
     {
         auto groundCount = wall.getGroundDefenseCount();
-        if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
+        if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) || BuildOrder::isAllIn())
             return 0;
 
         // If any defense in the wall is severely damaged, we should build 1 extra

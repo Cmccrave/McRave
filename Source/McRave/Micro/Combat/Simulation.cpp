@@ -93,21 +93,21 @@ namespace McRave::Combat::Simulation {
         else if (unit.getSimValue() < minThreshold || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
             unit.setSimState(SimState::Loss);
 
-        // Check for similar units with different results
-        if (unit.getSimValue() < maxThreshold) {
-            if (unit.isFlying()) {
-                if (unitTarget->isFlying() && belowAirtoAirLimit)
-                    unit.setSimState(SimState::Loss);
-                else if (!unitTarget->isFlying() && belowAirtoGrdLimit)
-                    unit.setSimState(SimState::Loss);
-            }
-            else {
-                if (unitTarget->isFlying() && belowGrdtoAirLimit)
-                    unit.setSimState(SimState::Loss);
-                else if (!unitTarget->isFlying() && belowGrdtoGrdLimit)
-                    unit.setSimState(SimState::Loss);
-            }
-        }
+        //// Check for similar units with different results
+        //if (unit.getSimValue() < maxThreshold) {
+        //    if (unit.isFlying()) {
+        //        if (unitTarget->isFlying() && belowAirtoAirLimit)
+        //            unit.setSimState(SimState::Loss);
+        //        else if (!unitTarget->isFlying() && belowAirtoGrdLimit)
+        //            unit.setSimState(SimState::Loss);
+        //    }
+        //    else {
+        //        if (unitTarget->isFlying() && belowGrdtoAirLimit)
+        //            unit.setSimState(SimState::Loss);
+        //        else if (!unitTarget->isFlying() && belowGrdtoGrdLimit)
+        //            unit.setSimState(SimState::Loss);
+        //    }
+        //}
     }
 
     void updateThresholds(UnitInfo& unit)
@@ -187,6 +187,12 @@ namespace McRave::Combat::Simulation {
                     maxWinPercent *=4;
                 }
             }
+        }
+
+        // Adjust winrates if we are all-in
+        if (BuildOrder::isAllIn() && !Combat::State::isStaticRetreat(unit.getType())) {
+            minWinPercent -= 0.4;
+            maxWinPercent -= 0.4;
         }
 
         minThreshold = minWinPercent;

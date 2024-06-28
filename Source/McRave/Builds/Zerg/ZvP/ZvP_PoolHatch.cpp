@@ -18,7 +18,7 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
             unitLimits[Zerg_Drone] =                        12 - vis(Zerg_Hatchery);
             gasLimit =                                      0;
-            scout =                                         scout || (com(Zerg_Drone) >= 10);
+            scout =                                         scout || (com(Zerg_Drone) >= 11 && minerals(200));
 
             // Buildings
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 22 && vis(Zerg_Spawning_Pool) > 0);

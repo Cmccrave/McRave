@@ -74,7 +74,7 @@ namespace McRave::Terrain {
                     const auto closestMain = BWEB::Stations::getClosestMainStation(unit.getTilePosition());
 
                     // Set start if valid
-                    if (closestMain && closestMain != getMyMain()) {
+                    if (closestMain && closestMain != getMyMain() && unit.getPosition().getDistance(closestMain->getBase()->Center()) < 960.0) {
                         enemyStartingTilePosition = closestMain->getBase()->Location();
                         enemyStartingPosition = Position(enemyStartingTilePosition) + Position(64, 48);
                     }

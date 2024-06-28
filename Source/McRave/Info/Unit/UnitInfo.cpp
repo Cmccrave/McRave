@@ -390,29 +390,12 @@ namespace McRave
         const auto attackedWorkers = hasAttackedRecently() && Terrain::inTerritory(PlayerState::Self, target.getPosition()) && (target.getRole() == Role::Worker || target.getRole() == Role::Support);
         const auto attackedBuildings = hasAttackedRecently() && target.getType().isBuilding();
 
-        // Check if our resources are in danger
-        auto nearResources = [&]() {
-            if (!atHome || !closestStation)
-                return false;
-            for (auto &g : Resources::getMyGas()) {
-                if (g->getStation() == closestStation && g->getResourceState() == ResourceState::Mineable && getPosition().getDistance(g->getPosition()) < proximityCheck)
-                    return true;
-            }
-            for (auto &m : Resources::getMyMinerals()) {
-                if (m->getStation() == closestStation && m->getResourceState() == ResourceState::Mineable && getPosition().getDistance(m->getPosition()) < proximityCheck)
-                    return true;
-            }
-            return false;
-        };
-
         // Check if enemy is generally in our territory
         auto nearTerritory = [&]() {
-            if (Combat::holdAtChoke() && Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural()
-                || (Roles::getMyRoleCount(Role::Defender) == 0 && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural())
+            if ((Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural() && Combat::holdAtChoke())
+                || (Terrain::inArea(Terrain::getMainArea(), position) && Combat::isDefendNatural())
+                || (Players::ZvZ() && Roles::getMyRoleCount(Role::Defender) == 0 && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural())
                 || (!Players::ZvZ() && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
-                return true;
-
-            if (closestStation && closestStation->getBase()->Center().getDistance(getPosition()) < getGroundReach())
                 return true;
 
             if (!Players::ZvZ()) {
@@ -462,8 +445,7 @@ namespace McRave
         if (getType().isBuilding()) {
             auto canDamage = (getType() != Terran_Bunker || unit()->isCompleted()) && (data.airDamage > 0.0 || data.groundDamage > 0.0);
             threateningThisFrame = Planning::overlapsPlan(*this, getPosition())
-                || (nearMe && (canDamage || getType() == Protoss_Shield_Battery || getType().isRefinery()))
-                || nearResources();
+                || (nearMe && (canDamage || getType() == Protoss_Shield_Battery || getType().isRefinery()));
         }
 
         // Worker
@@ -474,7 +456,6 @@ namespace McRave
         else
             threateningThisFrame = attackedWorkers
             || nearTerritory()
-            || nearResources()
             || nearFragileBuilding()
             || nearBuildPosition()
             || nearDefenders();
@@ -487,6 +468,9 @@ namespace McRave
             if (closestThreateningBunker && closestThreateningBunker->getPosition().getDistance(getPosition()) < 160.0)
                 threateningThisFrame = true;
         }
+
+        if (nearTerritory())
+            circle(Colors::Blue);
 
         // Determine if this unit is threatening
         if (threateningThisFrame)

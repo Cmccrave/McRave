@@ -226,8 +226,6 @@ namespace McRave::Stations
             auto groundCount = getGroundDefenseCount(station);
 
             if (station->isMain()) {
-                if (!BuildOrder::takeNatural() && Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate" && total(Zerg_Zergling) >= 6)
-                    return (2 * (Util::getTime() > Time(2, 20))) - groundCount;
                 if (BuildOrder::isProxy() && BuildOrder::getCurrentTransition() == "2HatchLurker")
                     return (Util::getTime() > Time(2, 45)) + (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 15)) - groundCount;
                 if (BuildOrder::isOpener() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None)
@@ -572,11 +570,15 @@ namespace McRave::Stations
                     return (Util::getTime() > Time(6, 30)) - airCount;
                 }
 
-                // Must get a spore vs early corsair
+                // Early spore vs 1gc corsair timing
                 if (station->isNatural() && Spy::getEnemyBuild() == "1GateCore" && Spy::getEnemyTransition() == "Corsair")
                     return (Util::getTime() > Time(4, 35)) - airCount;
 
-                // Need a spore with later mutas
+                // Slightly later spore vs delayed 2gates
+                if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyOpener() == "10/15" && !hydraBuild)
+                    return (Util::getTime() > Time(4, 45)) - airCount;
+
+                // Much later spore vs more aggresive 2gates
                 if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() != "2HatchMuta" && !hydraBuild)
                     return (Util::getTime() > Time(5, 00)) - airCount;
             }

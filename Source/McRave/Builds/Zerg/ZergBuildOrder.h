@@ -1,6 +1,7 @@
 #pragma once
 
 namespace McRave::BuildOrder::Zerg {
+
     void opener();
     void tech();
     void situational();
@@ -22,6 +23,7 @@ namespace McRave::BuildOrder::Zerg {
     bool hydraSpeed();
     bool hydraRange();
     bool gas(int);
+    bool minerals(int);
     int gasMax();
     int capGas(int);
     int hatchCount();

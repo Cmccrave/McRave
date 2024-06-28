@@ -271,12 +271,16 @@ namespace McRave::Targets {
                 if (unit.isLightAir() || Players::ZvZ())
                     return 1.0;
 
+                const auto targetSize = max(target.getType().width(), target.getType().height());
+                const auto targetingCount = int(target.getUnitsTargetingThis().size());
                 const auto withinReachHigherRange = range > 32.0 && range >= enemyRange && boxDistance <= reach;
                 const auto withinRangeLessRange = range > 32.0 && range < enemyRange && boxDistance <= range;
-                const auto withinRangeMelee = range <= 32.0 && boxDistance <= range;
+                const auto withinRangeMelee = range <= 32.0 && boxDistance <= 64.0;
 
+                if (withinRangeMelee && !target.getType().isBuilding() && targetingCount >= targetSize / 4)
+                    return 0.25;
                 if (withinReachHigherRange || withinRangeLessRange || withinRangeMelee)
-                    return (1.0 + double(target.getUnitsTargetingThis().size()));
+                    return (1.0 + double());
                 return 1.0;
             };
 

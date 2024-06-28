@@ -43,7 +43,7 @@ namespace McRave::Combat::State {
 
             if (!crackling && !BuildOrder::isRush()) {
                 if (Players::ZvP()) {
-                    const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && !Spy::enemyProxy() && !speedLing && Players::getTotalCount(PlayerState::Self, Zerg_Sunken_Colony) > 0;
+                    const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && !Spy::enemyGreedy() && !Spy::enemyProxy() && !speedLing;
                     if (scaryOpeners)
                         staticRetreatTypes.push_back(Zerg_Zergling);
                 }

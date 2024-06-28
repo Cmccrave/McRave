@@ -5,6 +5,24 @@
 
 namespace McRave::BuildOrder {
 
+    enum class AllinType {
+        None, Z_5HatchSpeedling, Z_6HatchCrackling
+    };
+
+    struct Allin {
+        std::string name;
+        BWAPI::UnitType type;
+        int workerCount = 0;
+        int productionCount = 0;
+        int typeCount = 0;
+        bool isValid() {
+            return name != "";
+        }
+        bool isActive() {
+            return type != BWAPI::UnitTypes::None && typeCount > 0 && total(type) >= typeCount;
+        }
+    };
+
     // Need a namespace to share variables among the various files used
     namespace All {
         inline std::map <BWAPI::UnitType, int> buildQueue;
@@ -24,7 +42,7 @@ namespace McRave::BuildOrder {
         inline bool proxy = false;
         inline bool hideTech = false;
         inline bool rush = false;
-        inline bool pressure = false;
+        inline bool pressure = false;        
 
         inline bool inBookSupply = false;
         inline bool transitionReady = false;
@@ -55,6 +73,9 @@ namespace McRave::BuildOrder {
         inline BWAPI::UnitType desiredDetection = BWAPI::UnitTypes::None;        
         inline std::set <BWAPI::UnitType> unlockedType;
         inline std::map <BWAPI::UnitType, double> armyComposition;
+
+        inline Allin activeAllin;
+        inline AllinType activeAllinType;
     }
 
     namespace Zerg {
@@ -63,6 +84,8 @@ namespace McRave::BuildOrder {
         inline bool pumpHydras = false;
         inline bool pumpMutas = false;
         inline bool pumpScourge = false;
+
+        inline std::map<int, int> baseToHatchRatio;
     }
 
     namespace Terran {
@@ -93,6 +116,7 @@ namespace McRave::BuildOrder {
     std::set <BWAPI::UnitType>& getUnlockedList();
     int gasWorkerLimit();
     int getUnitReservation(BWAPI::UnitType);
+    bool isAllIn();
     bool isUnitUnlocked(BWAPI::UnitType);
     bool isFocusUnit(BWAPI::UnitType);
     bool isOpener();

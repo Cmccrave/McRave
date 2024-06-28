@@ -99,6 +99,8 @@ namespace McRave::BuildOrder::Zerg {
         gasTrick =                                      false;
         reserveLarva =                                  0;
 
+        baseToHatchRatio ={ { 1, 1 }, {2, 3}, {3, 4}, {4, 5} };
+
         gasLimit =                                      gasMax();
 
         desiredDetection =                              Zerg_Overlord;

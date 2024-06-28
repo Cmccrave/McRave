@@ -88,6 +88,13 @@ namespace McRave::Combat::Formations {
             formation.center = Util::shiftTowards(cluster.avgPosition, cluster.marchNavigation, shift);
             formation.angle = BWEB::Map::getAngle(cluster.marchNavigation, cluster.avgPosition);
         }
+
+        // As the formation gets on top of the march position, shrink the radius
+        // TODO: this should be better
+        if (cluster.state == LocalState::Attack && cluster.marchNavigation == cluster.marchPosition) {
+            formation.radius = 32.0;
+            formation.center = cluster.marchPosition;
+        }
     }
 
     void formationSetup(Formation& formation, Cluster& cluster)
@@ -206,7 +213,8 @@ namespace McRave::Combat::Formations {
                 break;
         }
 
-        //reverse(line.positions.begin(), line.positions.end());
+        if (cluster.state == LocalState::Attack)
+            reverse(line.positions.begin(), line.positions.end());
         for (auto &position : line.positions)
             assignPosition(cluster, line, position);
     }
@@ -303,7 +311,8 @@ namespace McRave::Combat::Formations {
                 break;
         }
 
-        //reverse(concave.positions.begin(), concave.positions.end());
+        if (cluster.state == LocalState::Attack)
+            reverse(concave.positions.begin(), concave.positions.end());
         for (auto &position : concave.positions)
             assignPosition(cluster, concave, position);
     }
@@ -400,7 +409,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
-        drawFormations();
+        //drawFormations();
     }
 
     vector<Formation>& getFormations() { return formations; }
