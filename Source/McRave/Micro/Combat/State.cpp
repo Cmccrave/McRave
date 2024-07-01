@@ -12,6 +12,8 @@ namespace McRave::Combat::State {
     void updateStaticStates()
     {
         staticRetreatTypes.clear();
+        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings)
+            return;
 
         const auto unlockedOrVis = [&](auto &t) {
             return vis(t) > 0 || BuildOrder::isUnitUnlocked(t);
@@ -21,7 +23,7 @@ namespace McRave::Combat::State {
         if (unlockedOrVis(Zerg_Hydralisk) || BuildOrder::getCurrentTransition() == "4HatchHydra" || BuildOrder::getCurrentTransition() == "6HatchHydra") {
             const auto hydraSpeed = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments);
             const auto hydraRange = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines);
-            if (!hydraRange || !hydraSpeed)
+            if (!hydraRange || !hydraSpeed || BuildOrder::isAllIn())
                 staticRetreatTypes.push_back(Zerg_Hydralisk);
         }
 
@@ -338,6 +340,10 @@ namespace McRave::Combat::State {
         // Respect global states for overall direction
         else if (!Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && unit.getGlobalState() == GlobalState::Retreat)
             unit.setLocalState(LocalState::Retreat);
+
+        // Within engage and not retreat, but not winning
+        else if (insideEngageRadius && !insideRetreatRadius && unit.getSimState() != SimState::Win)
+            unit.setLocalState(LocalState::Hold);
     }
 
     void updateGlobalState(UnitInfo& unit)

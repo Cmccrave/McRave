@@ -66,7 +66,6 @@ namespace McRave::Pathing {
 
         void updateSurroundPositions()
         {
-            return;
             if (Players::ZvZ())
                 return;
 

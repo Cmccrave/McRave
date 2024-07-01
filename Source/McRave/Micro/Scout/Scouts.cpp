@@ -390,12 +390,13 @@ namespace McRave::Scouts {
 
             army.center = safeTarget;
             army.addTargets(safeTarget, 32);
+            army.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
         }
 
         void updateExpansionScouting()
         {
             auto &army = scoutTargets[ScoutType::Army];
-            if (army.desiredTypeCounts[Zerg_Zergling] == 1 || Players::ZvZ() || Util::getTime() < Time(8, 00))
+            if (army.desiredTypeCounts[Zerg_Zergling] == 1 || Players::ZvZ() || Util::getTime() < Time(8, 00) || Units::getEnemyArmyCenter().getDistance(Position(Terrain::getMyNatural()->getChokepoint()->Center())) < 320.0)
                 return;
 
             auto &expansion = scoutTargets[ScoutType::Expansion];

@@ -251,12 +251,19 @@ namespace McRave::Combat::Clusters {
 
                     // Determine the state of the cluster
                     // Move to formation
-                    if (commander->getLocalState() != LocalState::Attack && commander->getLocalState() != LocalState::None && atHome)
+                    if (commander->getLocalState() == LocalState::Hold || (commander->getLocalState() != LocalState::Attack && cluster.marchNavigation.getDistance(cluster.marchPosition) < 96.0))
                         cluster.state = LocalState::Hold;
                     else if (commander->getLocalState() == LocalState::Retreat || (!atHome && commander->getGlobalState() == GlobalState::Retreat))
                         cluster.state = LocalState::Retreat;
                     else
                         cluster.state = LocalState::Attack;
+
+                    // Reflect commander decision to units
+                    for (auto &unit : cluster.units) {
+                        unit->setLocalState(commander->getLocalState());
+                        unit->setGlobalState(commander->getGlobalState());
+                        unit->setSimState(commander->getSimState());
+                    }
                 }
             }
         }
@@ -347,7 +354,7 @@ namespace McRave::Combat::Clusters {
         shapeClusters();
         finishClusters();
         fixNavigations();
-        //drawClusters();
+        drawClusters();
     }
 
     vector<Cluster>& getClusters() { return clusters; }

@@ -564,23 +564,19 @@ namespace McRave::Stations
             if (Players::ZvP()) {
 
                 // Get a spore after a delay, hydras deflect temporarily
-                if (station->isNatural() && hydraBuild && enemyAir) {
+                if (station->isNatural() && hydraBuild && enemyAir && !Combat::State::isStaticRetreat(Zerg_Hydralisk)) {
                     if (Spy::getEnemyBuild() == "FFE")
                         return (Util::getTime() > Time(7, 30)) - airCount;
                     return (Util::getTime() > Time(6, 30)) - airCount;
                 }
 
                 // Early spore vs 1gc corsair timing
-                if (station->isNatural() && Spy::getEnemyBuild() == "1GateCore" && Spy::getEnemyTransition() == "Corsair")
+                if (station->isNatural() && Spy::getEnemyBuild() == "1GateCore" && Spy::getEnemyTransition() == "Corsair" && !hydraBuild)
                     return (Util::getTime() > Time(4, 35)) - airCount;
 
-                // Slightly later spore vs delayed 2gates
-                if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyOpener() == "10/15" && !hydraBuild)
+                // Slightly later spore vs 2g corsair
+                if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && !hydraBuild)
                     return (Util::getTime() > Time(4, 45)) - airCount;
-
-                // Much later spore vs more aggresive 2gates
-                if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && BuildOrder::getCurrentTransition() != "2HatchMuta" && !hydraBuild)
-                    return (Util::getTime() > Time(5, 00)) - airCount;
             }
 
             if (Players::ZvZ()) {

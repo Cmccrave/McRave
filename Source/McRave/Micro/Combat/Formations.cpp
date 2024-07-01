@@ -4,10 +4,6 @@ using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 
-// Check for formation is loose (static and there are units closer to the center than the radius by 16 pixels (type width/height)
-// Formation loose = assign in order based on distance to center first
-// Formation tight = assign in order based on distance to formation spot
-
 namespace McRave::Combat::Formations {
 
     vector<Formation> formations;
@@ -89,11 +85,10 @@ namespace McRave::Combat::Formations {
             formation.angle = BWEB::Map::getAngle(cluster.marchNavigation, cluster.avgPosition);
         }
 
-        // As the formation gets on top of the march position, shrink the radius
-        // TODO: this should be better
-        if (cluster.state == LocalState::Attack && cluster.marchNavigation == cluster.marchPosition) {
-            formation.radius = 32.0;
-            formation.center = cluster.marchPosition;
+        // HACK: If we're engaging, actively shrink the radius
+        auto commander = cluster.commander.lock();
+        if (cluster.state == LocalState::Attack && commander->getLocalState() == LocalState::Attack) {
+            formation.radius = min(formation.radius, commander->getPosition().getDistance(cluster.marchPosition));
         }
     }
 

@@ -122,7 +122,6 @@ namespace McRave::Roles {
                 return u->isProxy() && !u->getType().isWorker() && !u->getType().isBuilding() && u->canAttackGround();
             });
 
-
             static bool likelyProxy = likelyProxy || (proxyWorker && Util::getTime() < Time(2, 00));
 
             // ZvZ
@@ -163,6 +162,10 @@ namespace McRave::Roles {
                     else
                         forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
                 }
+
+                // We haven't got out hatchery down yet
+                else if (vis(Zerg_Hatchery) < 2 && proxyWorker)
+                    forceCombatWorker(1, proxyWorker->getPosition());
             }
 
             // ZvT
@@ -200,8 +203,8 @@ namespace McRave::Roles {
                 else if (Spy::enemyPossibleProxy() && Util::getTime() < Time(2, 00))
                     forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
 
-                // Some SCV poking
-                else if (proxyWorker && com(Zerg_Spawning_Pool) == 0)
+                // We haven't got out hatchery down yet
+                else if (vis(Zerg_Hatchery) < 2 && proxyWorker)
                     forceCombatWorker(1, proxyWorker->getPosition());
             }
 

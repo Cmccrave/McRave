@@ -110,6 +110,8 @@ namespace McRave {
         bool stunned = false;
         int commandFrame = -999;
         int lastThreateningFrame = -999;
+        int framesVisible = -999;
+        int framesCommitted = 0;
         bool sharedCommand = false;
 
         bool isValid() { return unit() && unit()->exists(); }

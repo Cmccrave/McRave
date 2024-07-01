@@ -89,7 +89,7 @@ namespace McRave::BuildOrder::Zerg {
                 needSpores = true;
                 wallNat = true;
             }
-            if (Players::ZvP() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00)) {
+            if (Players::ZvP() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 15)) {
                 needSpores = true;
                 wallNat = true;
             }
@@ -263,7 +263,7 @@ namespace McRave::BuildOrder::Zerg {
                 auto dropGasBroke       = (Util::getTime() < Time(4, 30) || Players::ZvZ());
                 auto dropGasDefenses    = needSunks && (Players::ZvZ() || Spy::enemyProxy() || Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "8Rax");
 
-                auto mineralToGasRatio  = minRemaining < max(100, 5 * vis(Zerg_Drone)) && gasRemaining > max(200, 10 * vis(Zerg_Drone));
+                auto mineralToGasRatio  = minRemaining < max(75, 5 * vis(Zerg_Drone)) && gasRemaining > max(125, 10 * vis(Zerg_Drone));
 
                 if (mineralToGasRatio && !rush && !pressure) {
                     if (dropGasRush
@@ -350,7 +350,7 @@ namespace McRave::BuildOrder::Zerg {
         void queueAllin()
         {
             Allin Z_6HatchCrackling;
-            Z_6HatchCrackling.workerCount = 30;
+            Z_6HatchCrackling.workerCount = 28;
             Z_6HatchCrackling.productionCount = 6;
             Z_6HatchCrackling.typeCount = 64;
             Z_6HatchCrackling.type = Zerg_Zergling;
@@ -363,15 +363,27 @@ namespace McRave::BuildOrder::Zerg {
             Z_5HatchSpeedling.type = Zerg_Zergling;
             Z_5HatchSpeedling.name = "5HatchSpeedling";
 
+            Allin Z_4HatchSpeedling;
+            Z_4HatchSpeedling.workerCount = 18;
+            Z_4HatchSpeedling.productionCount = 4;
+            Z_4HatchSpeedling.typeCount = 32;
+            Z_4HatchSpeedling.type = Zerg_Zergling;
+            Z_4HatchSpeedling.name = "4HatchSpeedling";
+
             // Get allin struct
             if (activeAllinType == AllinType::Z_6HatchCrackling)
                 activeAllin = Z_6HatchCrackling;
             if (activeAllinType == AllinType::Z_5HatchSpeedling)
                 activeAllin = Z_5HatchSpeedling;
+            if (activeAllinType == AllinType::Z_4HatchSpeedling)
+                activeAllin = Z_4HatchSpeedling;
 
             // Ling all-in
             if (Players::ZvZ() && (Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0 || Spy::enemyFortress()))
                 activeAllin = Z_6HatchCrackling;
+
+            // Turn off all-ins against splash
+            auto antiZergling = (Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) > 0) && total(Zerg_Zergling) < 400;
 
             // Log active all-in
             static string loggedAllin = "";
@@ -381,7 +393,7 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // 6HatchCrackling
-            if (activeAllin.name == "6HatchCrackling" && total(Zerg_Zergling) < 300) {
+            if (activeAllin.name == "6HatchCrackling" && !antiZergling) {
                 armyComposition.clear();
                 reserveLarva = 0;
                 gasLimit = 2;
@@ -391,7 +403,7 @@ namespace McRave::BuildOrder::Zerg {
                 // Buildings
                 buildQueue[Zerg_Evolution_Chamber] = 2;
                 buildQueue[Zerg_Lair] = 1;
-                if (hatchCount() < activeAllin.productionCount)
+                if (hatchCount() < activeAllin.productionCount && vis(Zerg_Larva) <= 2)
                     buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
                 
                 if (vis(Zerg_Drone) >= activeAllin.workerCount) {
@@ -413,21 +425,43 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // 5HatchSpeedling
-            if (activeAllin.name == "5HatchSpeedling" && total(Zerg_Zergling) < 200) {
+            if (activeAllin.name == "5HatchSpeedling" && !antiZergling) {
                 armyComposition.clear();
                 reserveLarva = 0;
-                gasLimit = 1;
+                gasLimit = (vis(Zerg_Evolution_Chamber) || !lingSpeed()) ? 1 : 0;
                 inOpening = false;
                 wantThird = false;
 
                 // Buildings
-                buildQueue[Zerg_Evolution_Chamber] = 1;
-                if (hatchCount() < activeAllin.productionCount)
+                buildQueue[Zerg_Evolution_Chamber] = hatchCount() >= 5 && vis(Zerg_Larva) <= 2;
+                if (hatchCount() < activeAllin.productionCount && vis(Zerg_Larva) <= 2)
                     buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
 
                 // Upgrades
                 upgradeQueue[UpgradeTypes::Metabolic_Boost] = 1;
-                upgradeQueue[UpgradeTypes::Zerg_Carapace] = 1;
+                upgradeQueue[UpgradeTypes::Zerg_Carapace] = 2;
+
+                // Pumping
+                if (vis(Zerg_Drone) < activeAllin.workerCount)
+                    armyComposition[Zerg_Drone] = 1.00;
+                else
+                    armyComposition[activeAllin.type] = 1.00;
+            }
+
+            // 4HatchSpeedling
+            if (activeAllin.name == "4HatchSpeedling" && !antiZergling) {
+                armyComposition.clear();
+                reserveLarva = 0;
+                gasLimit = lingSpeed() ? 0 : 1;
+                inOpening = false;
+                wantThird = false;
+
+                // Buildings
+                if (hatchCount() < activeAllin.productionCount && vis(Zerg_Larva) <= 2)
+                    buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
+
+                // Upgrades
+                upgradeQueue[UpgradeTypes::Metabolic_Boost] = 1;
 
                 // Pumping
                 if (vis(Zerg_Drone) < activeAllin.workerCount)

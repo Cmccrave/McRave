@@ -109,7 +109,7 @@ namespace McRave::Combat::Navigation {
     {
         unit.setNavigation(unit.getFormation().isValid() ? unit.getFormation() : unit.getDestination());
 
-        if (unit.getFormation().isValid()) {
+        if (unit.getFormation().isValid() && unit.getLocalState() != LocalState::Attack) {
             unit.setNavigation(unit.getFormation());
             return;
         }

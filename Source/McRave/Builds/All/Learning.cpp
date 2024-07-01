@@ -198,7 +198,7 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (Players::ZvZ()) {
+            if (Players::ZvP()) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                     return;
@@ -220,7 +220,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "3HatchMuta");
+                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchMuta");
                     return;
                 }
             }
@@ -289,10 +289,10 @@ namespace McRave::Learning {
 
             if (Players::ZvP()) {
                 PoolHatch.setOpeners({ "Overpool" });
-                PoolHatch.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra" });
+                PoolHatch.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra", "6HatchCrackling" });
 
-                HatchPool.setOpeners({ "10Hatch", "12Hatch" });
-                HatchPool.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra" });
+                HatchPool.setOpeners({ /*"10Hatch",*/ "12Hatch" });
+                HatchPool.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra", "6HatchCrackling" });
 
                 myBuilds ={ PoolHatch, HatchPool };
             }

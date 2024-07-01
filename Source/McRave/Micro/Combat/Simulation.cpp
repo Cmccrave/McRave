@@ -18,6 +18,8 @@ namespace McRave::Combat::Simulation {
     {
         Horizon::simulate(unit);
 
+        auto lastState = unit.getSimState();
+
         if (unit.getEngDist() == DBL_MAX || !unit.hasTarget()) {
             unit.setSimState(SimState::Loss);
             unit.setSimValue(0.0);
@@ -53,7 +55,7 @@ namespace McRave::Combat::Simulation {
                 auto selfTarget = self.getTarget().lock();
                 if (self.isWithinRange(*selfTarget) && self.getSimState() == SimState::Win)
                     selfEngaged = true;
-                if (selfTarget == unitTarget && self.getSimValue() <= minThreshold && self.getSimValue() != 0.0) {
+                if (selfTarget == unitTarget && self.getSimValue() < minThreshold && self.getSimValue() != 0.0) {
                     self.isFlying() ?
                         (selfTarget->isFlying() ? belowAirtoAirLimit = true : belowAirtoGrdLimit = true) :
                         (selfTarget->isFlying() ? belowGrdtoAirLimit = true : belowGrdtoGrdLimit = true);
@@ -76,13 +78,20 @@ namespace McRave::Combat::Simulation {
                 auto allyTarget = ally.getTarget().lock();
                 if (ally.isWithinRange(*allyTarget) && ally.hasAttackedRecently())
                     allyEngaged = true;
-                if (ally.getTarget() == unit.getTarget() && ally.getSimValue() <= minThreshold && ally.getSimValue() != 0.0) {
+                if (ally.getTarget() == unit.getTarget() && ally.getSimValue() < minThreshold && ally.getSimValue() != 0.0) {
                     ally.isFlying() ?
                         (allyTarget->isFlying() ? belowAirtoAirLimit = true : belowAirtoGrdLimit = true) :
                         (allyTarget->isFlying() ? belowGrdtoAirLimit = true : belowGrdtoGrdLimit = true);
                 }
             }
         }
+
+        //// If we're committed, commit for 500 frames
+        //if (unit.framesCommitted > 0) {
+        //    unit.framesCommitted++;
+        //    if (unit.framesCommitted < 500)
+        //        return;
+        //}
 
         //if (selfEngaged)
         //    maxThreshold = minThreshold;
@@ -93,21 +102,27 @@ namespace McRave::Combat::Simulation {
         else if (unit.getSimValue() < minThreshold || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
             unit.setSimState(SimState::Loss);
 
-        //// Check for similar units with different results
-        //if (unit.getSimValue() < maxThreshold) {
-        //    if (unit.isFlying()) {
-        //        if (unitTarget->isFlying() && belowAirtoAirLimit)
-        //            unit.setSimState(SimState::Loss);
-        //        else if (!unitTarget->isFlying() && belowAirtoGrdLimit)
-        //            unit.setSimState(SimState::Loss);
-        //    }
-        //    else {
-        //        if (unitTarget->isFlying() && belowGrdtoAirLimit)
-        //            unit.setSimState(SimState::Loss);
-        //        else if (!unitTarget->isFlying() && belowGrdtoGrdLimit)
-        //            unit.setSimState(SimState::Loss);
-        //    }
-        //}
+        // Check for similar units with different results
+        if (unit.getSimValue() < maxThreshold) {
+            if (unit.isFlying()) {
+                if (unitTarget->isFlying() && belowAirtoAirLimit)
+                    unit.setSimState(SimState::Loss);
+                else if (!unitTarget->isFlying() && belowAirtoGrdLimit)
+                    unit.setSimState(SimState::Loss);
+            }
+            else {
+                if (unitTarget->isFlying() && belowGrdtoAirLimit)
+                    unit.setSimState(SimState::Loss);
+                else if (!unitTarget->isFlying() && belowGrdtoGrdLimit)
+                    unit.setSimState(SimState::Loss);
+            }
+        }
+
+        //// Update commitment check
+        //if (unit.getSimState() != lastState && unit.getSimState() == SimState::Win)
+        //    unit.framesCommitted++;
+        //if (unit.getSimState() != SimState::Win)
+        //    unit.framesCommitted = 0;
     }
 
     void updateThresholds(UnitInfo& unit)
@@ -128,7 +143,7 @@ namespace McRave::Combat::Simulation {
 
         // Z
         if (Players::ZvP()) {
-            minWinPercent = 1.0;
+            minWinPercent = 0.8;
             maxWinPercent = 1.4;
         }
         if (Players::ZvZ()) {
@@ -189,10 +204,16 @@ namespace McRave::Combat::Simulation {
             }
         }
 
+        // We've detected the enemy isn't fighting back, reduce thresholds
+        if (target.framesVisible >= 120 && !target.hasAttackedRecently() && !target.getType().isBuilding() && !target.getType().isWorker()) {
+            minWinPercent -= 0.2;
+            maxWinPercent -= 0.1;
+        }
+
         // Adjust winrates if we are all-in
         if (BuildOrder::isAllIn() && !Combat::State::isStaticRetreat(unit.getType())) {
-            minWinPercent -= 0.4;
-            maxWinPercent -= 0.4;
+            minWinPercent -= 0.2;
+            maxWinPercent -= 0.1;
         }
 
         minThreshold = minWinPercent;

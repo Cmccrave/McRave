@@ -126,6 +126,10 @@ namespace McRave::Targets {
                         if (Players::ZvZ() && !target.canAttackGround() && !Spy::enemyFastExpand())                                                                 // Avoid non ground hitters to try and kill drones
                             return Priority::Ignore;
                     }
+                    const auto targetSize = max(target.getType().width(), target.getType().height());
+                    const auto targetingCount = int(target.getUnitsTargetingThis().size());
+                    if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
+                        return Priority::Minor;
                     //if (unit.attemptingRunby() && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
                     //    return Priority::Ignore;
                 }
@@ -139,6 +143,10 @@ namespace McRave::Targets {
                     if (Players::ZvP() && Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == "ZealotRush")
                         return Priority::Major;
                     if (Players::ZvZ() && Util::getTime() < Time(8, 00) && target.getType() == Zerg_Zergling && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
+                        return Priority::Major;
+
+                    // Always kill cannons
+                    if (target.getType() == Protoss_Photon_Cannon && unit.isWithinRange(target))
                         return Priority::Major;
 
                     // Low priority targets, ignore when we haven't found the enemy
@@ -271,14 +279,10 @@ namespace McRave::Targets {
                 if (unit.isLightAir() || Players::ZvZ())
                     return 1.0;
 
-                const auto targetSize = max(target.getType().width(), target.getType().height());
-                const auto targetingCount = int(target.getUnitsTargetingThis().size());
                 const auto withinReachHigherRange = range > 32.0 && range >= enemyRange && boxDistance <= reach;
                 const auto withinRangeLessRange = range > 32.0 && range < enemyRange && boxDistance <= range;
                 const auto withinRangeMelee = range <= 32.0 && boxDistance <= 64.0;
 
-                if (withinRangeMelee && !target.getType().isBuilding() && targetingCount >= targetSize / 4)
-                    return 0.25;
                 if (withinReachHigherRange || withinRangeLessRange || withinRangeMelee)
                     return (1.0 + double());
                 return 1.0;

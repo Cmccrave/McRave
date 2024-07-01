@@ -105,7 +105,10 @@ namespace McRave
         auto t = unit()->getType();
         auto p = unit()->getPlayer();
 
-        threatening                 = false;
+        if (!unit()->exists()) {
+            threatening                 = false;
+            framesVisible               = 0;
+        }
 
         if (unit()->exists()) {
 
@@ -161,8 +164,8 @@ namespace McRave
             data.visibleAirStrength     = Math::visibleAirStrength(*this);
             data.maxAirStrength         = Math::maxAirStrength(*this);
             data.priority               = Math::priority(*this);
-            engageRadius                = Math::simRadius(*this) + 96.0;
-            retreatRadius               = Math::simRadius(*this);
+            engageRadius                = Math::simRadius(*this) + 160.0;
+            retreatRadius               = Math::simRadius(*this) + 64.0;
 
             // States
             lState                      = LocalState::None;
@@ -191,6 +194,7 @@ namespace McRave
             data.minStopFrame           = Math::stopAnimationFrames(t);
             lastStimFrame               = unit()->isStimmed() ? Broodwar->getFrameCount() : lastStimFrame;
             lastVisibleFrame            = Broodwar->getFrameCount();
+            framesVisible++;
 
             checkHidden();
             checkStuck();
@@ -489,7 +493,7 @@ namespace McRave
         if (threatening && threateningFrames > framesToCheck) {
             for (auto unit : Units::getUnits(PlayerState::Enemy)) {
                 if (*unit != *this) {
-                    if (unit->getPosition().getDistance(position) < 320.0)
+                    if (unit->isFlying() == this->isFlying() && unit->getPosition().getDistance(position) < 320.0)
                         unit->lastThreateningFrame = Broodwar->getFrameCount();
                 }
             }
@@ -941,9 +945,9 @@ namespace McRave
         if (target.isThreatening())
             return false;
 
-        if (attemptingRunby() || Util::getTime() < Time(4, 00) || target.getType().isWorker())
+        if (attemptingRunby() || target.hasAttackedRecently() || (Util::getTime() < Time(4, 00) && Broodwar->getGameType() != GameTypes::Use_Map_Settings) || target.getType().isWorker())
             return false;
-        if (surroundPosition.isValid() && !Terrain::inTerritory(PlayerState::Enemy, surroundPosition) && position.getDistance(surroundPosition) > 24.0)
+        if (surroundPosition.isValid() && !Terrain::inTerritory(PlayerState::Enemy, surroundPosition) && position.getDistance(surroundPosition) > 16.0)
             return true;
         return false;
     }

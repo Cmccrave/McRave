@@ -18,12 +18,12 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvP();
             gasLimit =                                      0;
             scout =                                         scout || (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
-            unitLimits[Zerg_Drone] =                        11;
+            unitLimits[Zerg_Drone] =                        12;
             planEarly =                                     !Spy::enemyProxy() && (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
 
             // Buildings
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 22);
-            buildQueue[Zerg_Spawning_Pool] =                (s >= 22 && hatchCount() >= 2);
+            buildQueue[Zerg_Spawning_Pool] =                (s >= 20 && hatchCount() >= 2);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 16) + (s >= 30);
         }
 
