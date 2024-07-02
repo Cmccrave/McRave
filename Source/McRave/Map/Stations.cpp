@@ -557,53 +557,55 @@ namespace McRave::Stations
             || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0
             || (Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 && Util::getTime() > Time(4, 45));
 
-        if (Broodwar->self()->getRace() == Races::Zerg) {
-            auto mutaBuild = BuildOrder::getCurrentTransition().find("Muta") != string::npos;
-            auto hydraBuild = BuildOrder::getCurrentTransition().find("Hydra") != string::npos;
+        auto mutaBuild = BuildOrder::getCurrentTransition().find("Muta") != string::npos;
+        auto hydraBuild = BuildOrder::getCurrentTransition().find("Hydra") != string::npos;
 
-            if (Players::ZvP()) {
+        if (Players::ZvP()) {
 
-                // Get a spore after a delay, hydras deflect temporarily
-                if (station->isNatural() && hydraBuild && enemyAir && !Combat::State::isStaticRetreat(Zerg_Hydralisk)) {
-                    if (Spy::getEnemyBuild() == "FFE")
-                        return (Util::getTime() > Time(7, 30)) - airCount;
-                    return (Util::getTime() > Time(6, 30)) - airCount;
-                }
-
-                // Early spore vs 1gc corsair timing
-                if (station->isNatural() && Spy::getEnemyBuild() == "1GateCore" && Spy::getEnemyTransition() == "Corsair" && !hydraBuild)
-                    return (Util::getTime() > Time(4, 35)) - airCount;
-
-                // Slightly later spore vs 2g corsair
-                if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && !hydraBuild)
-                    return (Util::getTime() > Time(4, 45)) - airCount;
+            // Get a spore after a delay, hydras deflect temporarily
+            if (station->isNatural() && hydraBuild && enemyAir && !Combat::State::isStaticRetreat(Zerg_Hydralisk)) {
+                if (Spy::getEnemyBuild() == "FFE")
+                    return (Util::getTime() > Time(7, 30)) - airCount;
+                return (Util::getTime() > Time(6, 30)) - airCount;
             }
 
-            if (Players::ZvZ()) {
+            // Early spore vs 1gc corsair timing
+            if (station->isNatural() && Spy::getEnemyBuild() == "1GateCore" && Spy::getEnemyTransition() == "Corsair" && !hydraBuild)
+                return (Util::getTime() > Time(4, 35)) - airCount;
 
-                // Get a spore vs 1h muta if we aren't 1h muta or 2h muta on one base
-                if (Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
-                    return (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(6, 15)) - airCount;
+            // Slightly later spore vs 2g corsair
+            if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && !hydraBuild)
+                return (Util::getTime() > Time(4, 45)) - airCount;
 
-                // We have more bases
-                if (Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 && Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() && com(Zerg_Extractor) >= 2)
-                    return (Util::getTime() > Time(6, 15)) - airCount;
-            }
+            // Late spores if we're allin
+            if (station->isNatural() && enemyAir && BuildOrder::isAllIn() && !hydraBuild)
+                return (Util::getTime() > Time(5, 00)) - airCount;
+        }
 
-            if (Players::ZvT()) {
+        if (Players::ZvZ()) {
 
-                // Must get a spore if they have cloak
-                if (Spy::getEnemyTransition() == "2PortWraith" && Spy::enemyInvis())
-                    return 1 - airCount;
+            // Get a spore vs 1h muta if we aren't 1h muta or 2h muta on one base
+            if (Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
+                return (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(6, 15)) - airCount;
 
-                // Need a spore with later mutas
-                if (Spy::getEnemyTransition() == "2PortWraith" && BuildOrder::getCurrentTransition() != "2HatchMuta")
-                    return (Util::getTime() > Time(5, 30)) - airCount;
+            // We have more bases
+            if (Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 && Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() && com(Zerg_Extractor) >= 2)
+                return (Util::getTime() > Time(6, 15)) - airCount;
+        }
 
-                // Late game we want a spore protecting ovies from stray valks/wraiths
-                if (Stations::getStations(PlayerState::Self).size() >= 3 && (Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) >= 4 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) >= 8))
-                    return 1 - airCount;
-            }
+        if (Players::ZvT()) {
+
+            // Must get a spore if they have cloak
+            if (Spy::getEnemyTransition() == "2PortWraith" && Spy::enemyInvis())
+                return 1 - airCount;
+
+            // Need a spore with later mutas
+            if (Spy::getEnemyTransition() == "2PortWraith" && BuildOrder::getCurrentTransition() != "2HatchMuta")
+                return (Util::getTime() > Time(5, 30)) - airCount;
+
+            // Late game we want a spore protecting ovies from stray valks/wraiths
+            if (Stations::getStations(PlayerState::Self).size() >= 3 && (Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) >= 4 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) >= 8))
+                return 1 - airCount;
         }
 
         if (Broodwar->self()->getRace() == Races::Terran) {

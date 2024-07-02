@@ -185,10 +185,18 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Drone] = 26;
 
         // All-in
-        if (Spy::enemyGreedy() && total(Zerg_Mutalisk) >= 6)
-            activeAllinType = AllinType::Z_4HatchSpeedling;
-        else if (Spy::enemyFastExpand() && Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) >= 5)
-            activeAllinType = AllinType::Z_5HatchSpeedling;
+        if (Spy::getEnemyBuild() != "FFE" && Spy::enemyFastExpand()) {
+            static Time expandTiming = Util::getTime();
+            if (expandTiming < Time(4, 00) && vis(Zerg_Zergling) >= initialLings)
+                activeAllinType = AllinType::Z_4HatchSpeedling;
+            else if (total(Zerg_Mutalisk) >= 6)
+                activeAllinType = AllinType::Z_6HatchCrackling;
+
+        }
+        if (Spy::getEnemyBuild() == "FFE") {
+            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) >= 5)
+                activeAllinType = AllinType::Z_6HatchCrackling;
+        }
 
         // Gas
         gasLimit = gasMax();

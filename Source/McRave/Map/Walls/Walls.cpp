@@ -155,36 +155,33 @@ namespace McRave::Walls {
         // ZvP
         int ZvP_Opener(const BWEB::Wall& wall)
         {
-            // If we are opening 12 hatch, we sometimes need a faster sunken
-            auto greedyStart = BuildOrder::getCurrentOpener() == "12Hatch";
-
-            // Make lings first you idiot
-            if (vis(Zerg_Zergling) < BuildOrder::All::unitLimits[Zerg_Zergling] && Util::getTime() < Time(3, 30) && vis(Zerg_Larva) > 0)
-                return 0;
+            // If we are opening 12 hatch or a 2h build, we sometimes need a faster sunken
+            auto earlySunk = BuildOrder::getCurrentOpener() == "12Hatch" || BuildOrder::getCurrentTransition().find("2Hatch") != string::npos;
 
             // 1GateCore
             if (Spy::getEnemyBuild() == "1GateCore" || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
-                return (Util::getTime() > Time(4, 30))
+                return (earlySunk && Util::getTime() > Time(3, 45))
+                    + (Util::getTime() > Time(4, 30))
                     + (Util::getTime() > Time(5, 00));
             }
 
             // 2Gate
             if (Spy::getEnemyBuild() == "2Gate" && Util::getTime() < Time(5, 30) && !Spy::enemyProxy()) {
                 if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
-                    return (greedyStart && Util::getTime() > Time(3, 15))
+                    return (earlySunk && Util::getTime() > Time(3, 15))
                     + (Util::getTime() > Time(4, 10))
                     + (Util::getTime() > Time(4, 40));
                 if (Spy::getEnemyOpener() == "10/15")
-                    return (greedyStart && Util::getTime() > Time(3, 15))
+                    return (earlySunk && Util::getTime() > Time(3, 15))
                     + (Util::getTime() > Time(4, 30))
                     + (Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown")
-                    return (greedyStart && Util::getTime() > Time(3, 00))
+                    return (earlySunk && Util::getTime() > Time(3, 00))
                     + (Util::getTime() > Time(4, 00))
                     + (Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
                     return (Util::getTime() > Time(2, 50))
-                    + (greedyStart && Util::getTime() > Time(2, 50))
+                    + (earlySunk && Util::getTime() > Time(2, 50))
                     + (Util::getTime() > Time(4, 30));
             }
 
@@ -334,10 +331,6 @@ namespace McRave::Walls {
                 expected /= 2;
             if (expected > 0)
                 minimum = 1;
-
-            // If we're all in, make a single sunk at most
-            if (BuildOrder::isAllIn())
-                return minimum;
 
             return max(minimum, expected - reduction);
         }

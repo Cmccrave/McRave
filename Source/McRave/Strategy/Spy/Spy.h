@@ -13,6 +13,7 @@ namespace McRave::Spy {
         int framesRequired = 0;
         int framesChangeable = 200;
         std::string name = "Unknown";
+        Time timeConfirmed = Time(999, 00);
 
         void debugLog() {
             if (possible && !loggedPossible) {
@@ -22,6 +23,7 @@ namespace McRave::Spy {
             if (confirmed && !loggedConfirmed) {
                 Util::debug("[Spy]: " + name + " confirmed.");
                 loggedConfirmed = true;
+                timeConfirmed = Util::getTime();
             }
         }
 
@@ -128,6 +130,17 @@ namespace McRave::Spy {
     bool enemyGreedy();
     bool enemyTurtle();
     bool enemyFortress();
+    Time enemyFastExpandTime();
+    Time enemyRushTime();
+    Time enemyInvisTime();
+    Time enemyPossibleProxyTime();
+    Time enemyProxyTime();
+    Time enemyGasStealTime();
+    Time enemyPressureTime();
+    Time enemyWalledTime();
+    Time enemyGreedyTime();
+    Time enemyTurtleTime();
+    Time enemyFortressTime();
     int getWorkersPulled();
     int getEnemyGasMined();
 

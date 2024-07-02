@@ -11,6 +11,7 @@ namespace McRave::Producing {
         map <UnitType, int> trainedThisFrame;
         int reservedMineral, reservedGas;
         int lastProduceFrame = -999;
+        UnitType bestType;
 
         void reset()
         {
@@ -242,35 +243,6 @@ namespace McRave::Producing {
 
         bool produce(UnitInfo& building)
         {
-            auto offset = 16;
-            auto best = 0.0;
-            auto bestType = None;
-
-            // Choose an Overlord if we need one
-            if (building.getType() == Zerg_Larva && BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord]) {
-                if (isAffordable(Zerg_Overlord)) {
-                    building.unit()->morph(Zerg_Overlord);
-                    building.setRemainingTrainFrame(bestType.buildTime());
-                    trainedThisFrame[Zerg_Overlord]++;
-                    lastProduceFrame = Broodwar->getFrameCount();
-                }
-                return true;
-            }
-
-            // Look through each UnitType this can train
-            for (auto &type : building.getType().buildsWhat()) {
-
-                if (!isCreateable(building.unit(), type)
-                    || !isSuitable(type))
-                    continue;
-
-                const auto value = scoreUnit(type);
-                if (value > best) {
-                    best = value;
-                    bestType = type;
-                }
-            }
-
             if (bestType != None) {
 
                 // If we can afford it, train it
@@ -313,7 +285,6 @@ namespace McRave::Producing {
         {
             // Find the best UnitType
             auto best = 0.0;
-            auto bestType = None;
 
             // Rules for choosing a valid larva
             auto validLarva = [&](UnitInfo &larva, double saturation, const BWEB::Station * station) {
@@ -337,16 +308,22 @@ namespace McRave::Producing {
                 return station == closestStation;
             };
 
+            // Choose an Overlord if we need one
+            if (BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord]) {
+                bestType = Zerg_Overlord;
+            }
             // Find the best type to train right now
-            for (auto &type : Zerg_Larva.buildsWhat()) {
-                if (!isCreateable(nullptr, type)
-                    || !isSuitable(type))
-                    continue;
+            else {
+                for (auto &type : Zerg_Larva.buildsWhat()) {
+                    if (!isCreateable(nullptr, type)
+                        || !isSuitable(type))
+                        continue;
 
-                const auto value = scoreUnit(type);
-                if (value >= best) {
-                    best = value;
-                    bestType = type;
+                    const auto value = scoreUnit(type);
+                    if (value >= best) {
+                        best = value;
+                        bestType = type;
+                    }
                 }
             }
 
@@ -369,9 +346,6 @@ namespace McRave::Producing {
                     continue;
 
                 stations.emplace(saturation * larvaCount, station);
-
-                if (bestType.isWorker())
-                    Broodwar->drawTextMap(station->getBase()->Center(), "%.2f", saturation);
             }
 
             for (auto &[val, station] : stations) {
@@ -407,6 +381,21 @@ namespace McRave::Producing {
                     || Producing::producedThisFrame()
                     || building.getType() == Zerg_Larva)
                     continue;
+
+                // Look through each UnitType this can train
+                auto best = 0.0;
+                for (auto &type : building.getType().buildsWhat()) {
+
+                    if (!isCreateable(building.unit(), type)
+                        || !isSuitable(type))
+                        continue;
+
+                    const auto value = scoreUnit(type);
+                    if (value > best) {
+                        best = value;
+                        bestType = type;
+                    }
+                }
 
                 // Iterate commmands and break if we execute one
                 for (auto &command : commands) {
