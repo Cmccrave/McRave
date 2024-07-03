@@ -180,7 +180,7 @@ namespace McRave::Goals {
                 }
 
                 // Escort expanders
-                if (nextExpand.isValid()) {
+                if (nextExpand.isValid() && BuildOrder::shouldExpand()) {
                     auto closestBuilder = Util::getClosestUnit(nextExpand, PlayerState::Self, [&](auto &u) {
                         return u->getBuildType().isResourceDepot();
                     });
@@ -193,7 +193,7 @@ namespace McRave::Goals {
                         }
                         assignPercentToGoal(closestBuilder->getPosition(), type, 1.0, GoalType::Escort);
                     }
-                    else if (BuildOrder::shouldExpand()) {
+                    else {
                         for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
                             if (unit->getPosition().getDistance(nextExpand) < 640.0)
                                 assignNumberToGoal(unit->getPosition(), type, 1, GoalType::Escort);

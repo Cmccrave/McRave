@@ -139,8 +139,8 @@ namespace McRave::Pathing {
 
                         if (Util::findWalkable(*closestTargeter, correctedPos)) {
                             closestTargeter->setSurroundPosition(correctedPos);
-                            Visuals::drawLine(closestTargeter->getPosition(), correctedPos, Colors::Green);
-                            Broodwar->drawCircleMap(correctedPos, 4, Colors::Green);
+                            //Visuals::drawLine(closestTargeter->getPosition(), correctedPos, Colors::Green);
+                            //Broodwar->drawCircleMap(correctedPos, 4, Colors::Green);
                         }
                     }
                 }
@@ -158,6 +158,21 @@ namespace McRave::Pathing {
                 }
             }
         }
+    }
+
+    void getHarassPath(UnitInfo& unit, BWEB::Path& path)
+    {
+
+    }
+
+    void getExplorePath(UnitInfo& unit, BWEB::Path& path)
+    {
+
+    }
+
+    void getDefaultPath(UnitInfo& unit, BWEB::Path& path)
+    {
+
     }
 
     void onFrame()

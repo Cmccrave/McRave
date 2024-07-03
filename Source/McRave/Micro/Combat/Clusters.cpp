@@ -354,7 +354,7 @@ namespace McRave::Combat::Clusters {
         shapeClusters();
         finishClusters();
         fixNavigations();
-        drawClusters();
+        //drawClusters();
     }
 
     vector<Cluster>& getClusters() { return clusters; }

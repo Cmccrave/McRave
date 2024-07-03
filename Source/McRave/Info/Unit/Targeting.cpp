@@ -127,7 +127,7 @@ namespace McRave::Targets {
                             return Priority::Ignore;
                     }
                     const auto targetSize = max(target.getType().width(), target.getType().height());
-                    const auto targetingCount = int(target.getUnitsTargetingThis().size());
+                    const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->getType() == Zerg_Zergling; });
                     if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
                         return Priority::Minor;
                     //if (unit.attemptingRunby() && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
@@ -146,7 +146,7 @@ namespace McRave::Targets {
                         return Priority::Major;
 
                     // Always kill cannons
-                    if (target.getType() == Protoss_Photon_Cannon && unit.isWithinRange(target))
+                    if (target.getType() == Protoss_Photon_Cannon && target.isWithinRange(unit))
                         return Priority::Major;
 
                     // Low priority targets, ignore when we haven't found the enemy
@@ -254,10 +254,6 @@ namespace McRave::Targets {
                 if (unit.getType() == Protoss_Dark_Templar && unit.isWithinReach(target) && !Actions::overlapsDetection(target.unit(), target.getPosition(), PlayerState::Enemy)
                     && (target.getType().isWorker() || target.isSiegeTank() || target.getType().isDetector() || target.getType() == Protoss_Observatory || target.getType() == Protoss_Robotics_Facility))
                     return 20.0;
-
-                // Fuck cannons
-                if (target.getType() == UnitTypes::Protoss_Photon_Cannon && Util::getTime() > Time(10, 00))
-                    return 5.0;
 
                 // Add bonus for being able to one shot a unit
                 if (!Players::ZvZ() && unit.isLightAir() && unit.canOneShot(target) && Util::getTime() < Time(10, 00))

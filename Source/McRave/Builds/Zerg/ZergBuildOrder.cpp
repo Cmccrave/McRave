@@ -277,7 +277,7 @@ namespace McRave::BuildOrder::Zerg {
                 auto dropGasBroke       = (Util::getTime() < Time(4, 30) || Players::ZvZ());
                 auto dropGasDefenses    = needSunks && (Players::ZvZ() || Spy::enemyProxy() || Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "8Rax");
 
-                auto mineralToGasRatio  = minRemaining < max(75, 5 * vis(Zerg_Drone)) && gasRemaining > max(125, 10 * vis(Zerg_Drone));
+                auto mineralToGasRatio  = minRemaining < max(125, 10 * vis(Zerg_Drone)) && gasRemaining > max(75, 5 * vis(Zerg_Drone));
 
                 if (mineralToGasRatio && !rush && !pressure) {
                     if (dropGasRush
@@ -364,7 +364,7 @@ namespace McRave::BuildOrder::Zerg {
         void queueAllin()
         {
             Allin Z_6HatchCrackling;
-            Z_6HatchCrackling.workerCount = 28;
+            Z_6HatchCrackling.workerCount = 25;
             Z_6HatchCrackling.productionCount = 6;
             Z_6HatchCrackling.typeCount = 64;
             Z_6HatchCrackling.type = Zerg_Zergling;
@@ -402,13 +402,6 @@ namespace McRave::BuildOrder::Zerg {
             if (antiZergling)
                 return;
 
-            // Log active all-in
-            static string loggedAllin = "";
-            if (loggedAllin == "" && activeAllin.name != "") {
-                McRave::Util::debug("[BuildOrder] Started " + activeAllin.name + " all-in");
-                loggedAllin = activeAllin.name;
-            }
-
             // Common attributes
             if (activeAllin.name != "") {
                 armyComposition.clear();
@@ -421,21 +414,30 @@ namespace McRave::BuildOrder::Zerg {
                 buildQueue[Zerg_Lair] = 0;
                 buildQueue[Zerg_Hydralisk_Den] = 0;
                 buildQueue[Zerg_Spire] = 0;
+                buildQueue[Zerg_Extractor] = 0;
 
                 // Pumping
                 if (vis(Zerg_Drone) < activeAllin.workerCount)
                     armyComposition[Zerg_Drone] = 1.00;
                 else
                     armyComposition[activeAllin.type] = 1.00;
+
+                // Log active all-in
+                if (!logFlags[2] && activeAllin.name != "") {
+                    McRave::Util::debug("[BuildOrder] Started " + activeAllin.name + " all-in");
+                    logFlags[2] = true;
+                }
             }
 
             // 6HatchCrackling
             if (activeAllin.name == "6HatchCrackling") {
-                gasLimit = 2;
+                gasLimit = 3;
+                wantThird = hatchCount() >= 4;
 
-                // Buildings                
+                // Buildings
+                buildQueue[Zerg_Extractor] = 1;
                 buildQueue[Zerg_Lair] = 1;
-                if (hatchCount() < activeAllin.productionCount && vis(Zerg_Lair) > 0 && vis(Zerg_Larva) <= 2)
+                if (hatchCount() < activeAllin.productionCount && (vis(Zerg_Lair) > 0 || vis(Zerg_Hive) > 0) && vis(Zerg_Larva) <= 2)
                     buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
                 if (hatchCount() >= 5)
                     buildQueue[Zerg_Evolution_Chamber] = 2;
@@ -454,10 +456,11 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // 5HatchSpeedling
-            if (activeAllin.name == "5HatchSpeedling") {                
+            if (activeAllin.name == "5HatchSpeedling") {
                 gasLimit = (vis(Zerg_Evolution_Chamber) || !lingSpeed()) ? 1 : 0;
 
                 // Buildings
+                buildQueue[Zerg_Extractor] = 1;
                 buildQueue[Zerg_Evolution_Chamber] = hatchCount() >= 5 && vis(Zerg_Larva) <= 2;
                 if (hatchCount() < activeAllin.productionCount && vis(Zerg_Larva) <= 2)
                     buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
@@ -472,6 +475,7 @@ namespace McRave::BuildOrder::Zerg {
                 gasLimit = lingSpeed() ? 0 : 1;
 
                 // Buildings
+                buildQueue[Zerg_Extractor] = 1;
                 if (hatchCount() < activeAllin.productionCount && vis(Zerg_Larva) <= 2)
                     buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
 

@@ -208,11 +208,7 @@ namespace McRave::Walls {
                 if (Spy::getEnemyTransition() == "5GateGoon" && Util::getTime() < Time(10, 00))
                     return (Util::getTime() > Time(5, 40))
                     + (Util::getTime() > Time(6, 00))
-                    + (Util::getTime() > Time(6, 20))
-                    + (Util::getTime() > Time(6, 40))
-                    + (Util::getTime() > Time(7, 00))
-                    + (Util::getTime() > Time(8, 00))
-                    + (Util::getTime() > Time(9, 00));
+                    + (Util::getTime() > Time(6, 20));
                 if (Spy::getEnemyTransition() == "CorsairGoon" && Util::getTime() < Time(10, 00))
                     return (Util::getTime() > Time(5, 30))
                     + (Util::getTime() > Time(6, 15))

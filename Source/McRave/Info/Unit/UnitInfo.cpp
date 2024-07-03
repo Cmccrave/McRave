@@ -954,7 +954,7 @@ namespace McRave
 
     bool UnitInfo::attemptingHarass()
     {
-        if (!isLightAir() || !Combat::getHarassPosition().isValid())
+        if (!isLightAir() || !Combat::getHarassPosition().isValid() || BuildOrder::isAllIn())
             return false;
 
         // ZvZ

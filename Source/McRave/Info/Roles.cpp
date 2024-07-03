@@ -19,6 +19,9 @@ namespace McRave::Roles {
                 return;
 
             const auto invalid = [&](auto &unit) {
+                if (unit->getBuildPosition().isValid())
+                    return true;
+
                 auto health = 26;
                 if (Players::ZvZ())
                     health = 31;
@@ -124,6 +127,10 @@ namespace McRave::Roles {
 
             static bool likelyProxy = likelyProxy || (proxyWorker && Util::getTime() < Time(2, 00));
 
+            auto selfBuildingWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
+                return u->getType().isWorker() && u->getBuildType() == Zerg_Hatchery && Broodwar->self()->minerals() >= 200;
+            });
+
             // ZvZ
             if (Players::ZvZ() && Util::getTime() < Time(6, 00) && !Spy::enemyTurtle() && !Spy::enemyFastExpand()) {
                 if ((Spy::getEnemyOpener() == "9Pool" || Spy::getEnemyOpener() == "Overpool" || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling))
@@ -164,7 +171,7 @@ namespace McRave::Roles {
                 }
 
                 // We haven't got out hatchery down yet
-                else if (vis(Zerg_Hatchery) < 2 && proxyWorker)
+                else if (vis(Zerg_Hatchery) < 2 && proxyWorker && selfBuildingWorker)
                     forceCombatWorker(1, proxyWorker->getPosition());
             }
 
@@ -204,7 +211,7 @@ namespace McRave::Roles {
                     forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
 
                 // We haven't got out hatchery down yet
-                else if (vis(Zerg_Hatchery) < 2 && proxyWorker)
+                else if (vis(Zerg_Hatchery) < 2 && proxyWorker && selfBuildingWorker)
                     forceCombatWorker(1, proxyWorker->getPosition());
             }
 

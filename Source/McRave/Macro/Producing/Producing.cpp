@@ -11,7 +11,6 @@ namespace McRave::Producing {
         map <UnitType, int> trainedThisFrame;
         int reservedMineral, reservedGas;
         int lastProduceFrame = -999;
-        UnitType bestType;
 
         void reset()
         {
@@ -230,7 +229,7 @@ namespace McRave::Producing {
             return false;
         }
 
-        bool addon(UnitInfo& building)
+        bool addon(UnitInfo& building, UnitType type)
         {
             for (auto &unit : building.getType().buildsWhat()) {
                 if (unit.isAddon() && BuildOrder::buildCount(unit) > vis(unit)) {
@@ -241,32 +240,33 @@ namespace McRave::Producing {
             return false;
         }
 
-        bool produce(UnitInfo& building)
+        bool produce(UnitInfo& building, UnitType type)
         {
-            if (bestType != None) {
+            if (type == None)
+                return false;
 
-                // If we can afford it, train it
-                if (isAffordable(bestType)) {
-                    trainedThisFrame[bestType]++;
-                    building.unit()->train(bestType);
-                    building.setRemainingTrainFrame(bestType.buildTime());
-                    idleProduction.erase(building.unit());
-                    lastProduceFrame = Broodwar->getFrameCount();
-                    return true;
-                }
-
-                // Else if this is a tech unit, add it to idle production
-                else if (BuildOrder::isFocusUnit(bestType) && (Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= bestType.mineralPrice()) && (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= bestType.gasPrice())) {
-                    trainedThisFrame[bestType]++;
-                    idleProduction[building.unit()] = bestType;
-                    reservedMineral += bestType.mineralPrice();
-                    reservedGas += bestType.gasPrice();
-                }
-
-                // Else store a zero value idle
-                else
-                    idleProduction[building.unit()] = None;
+            // If we can afford it, train it
+            if (isAffordable(type)) {
+                trainedThisFrame[type]++;
+                building.unit()->train(type);
+                building.setRemainingTrainFrame(type.buildTime());
+                idleProduction.erase(building.unit());
+                lastProduceFrame = Broodwar->getFrameCount();
+                return true;
             }
+
+            // Else if this is a tech unit, add it to idle production
+            else if (BuildOrder::isFocusUnit(type) && (Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= type.mineralPrice()) && (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= type.gasPrice())) {
+                trainedThisFrame[type]++;
+                idleProduction[building.unit()] = type;
+                reservedMineral += type.mineralPrice();
+                reservedGas += type.gasPrice();
+            }
+
+            // Else store a zero value idle
+            else
+                idleProduction[building.unit()] = None;
+            
             return false;
         }
 
@@ -285,6 +285,7 @@ namespace McRave::Producing {
         {
             // Find the best UnitType
             auto best = 0.0;
+            UnitType bestType = None;
 
             // Rules for choosing a valid larva
             auto validLarva = [&](UnitInfo &larva, double saturation, const BWEB::Station * station) {
@@ -353,7 +354,7 @@ namespace McRave::Producing {
                     UnitInfo &larva = *u;
                     if (!larvaTrickRequired(larva)) {
                         if (validLarva(larva, val, station)) {
-                            produce(larva);
+                            produce(larva, bestType);
                             produced = true;
                         }
                         else if (larvaTrickOptional(larva))
@@ -367,6 +368,9 @@ namespace McRave::Producing {
 
         void updateProduction()
         {
+            UnitType bestType = None;
+
+            // TODO: Pass the addon type we want instead of it implicitly looking
             const auto commands ={ addon, produce };
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &building = *u;
@@ -399,7 +403,7 @@ namespace McRave::Producing {
 
                 // Iterate commmands and break if we execute one
                 for (auto &command : commands) {
-                    if (command(building))
+                    if (command(building, bestType))
                         break;
                 }
             }

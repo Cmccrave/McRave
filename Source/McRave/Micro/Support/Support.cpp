@@ -41,14 +41,25 @@ namespace McRave::Support {
                 return u->getType() == Zerg_Spore_Colony;
             });
 
+            // Overlords safe at a spore
             if (closestSpore) {
                 assignInBox(closestSpore->getPosition(), unit);
             }
 
-            else if (Stations::needAirDefenses(Terrain::getMyNatural()) > 0 || (Players::ZvP() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0)) {
+            // No spore, look for hydras, go to natural where we expect them to be
+            else if (total(Zerg_Hydralisk) > 0 && Players::ZvP() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0) {
                 assignInBox(Terrain::getMyNatural()->getResourceCentroid(), unit);
             }
 
+            // Attempting to build a spore
+            else if (Stations::needAirDefenses(Terrain::getMyMain()) > 0) {
+                assignInBox(Terrain::getMyMain()->getResourceCentroid(), unit);
+            }
+            else if (Stations::needAirDefenses(Terrain::getMyNatural()) > 0) {
+                assignInBox(Terrain::getMyNatural()->getResourceCentroid(), unit);
+            }
+
+            // Just go to closest station
             else if (closestStation) {
                 assignInBox(closestStation->getResourceCentroid(), unit);
             }
@@ -123,19 +134,16 @@ namespace McRave::Support {
             // Set goal as destination
             if (unit.getGoal().isValid() && unit.getUnitsTargetingThis().empty() && unit.getUnitsInReachOfThis().empty()) {
                 unit.setDestination(unit.getGoal());
-                Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Red);
             }
 
             // Send support units to army
             else if (followArmyPossible) {
                 getArmyPlacement(unit);
-                Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Orange);
             }
 
             // Send Overlords to a safe home
             else if (!followArmyPossible) {
                 getSafeHome(unit);
-                Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Yellow);
             }
 
             if (!unit.getDestination().isValid())

@@ -226,18 +226,22 @@ namespace McRave::Stations
             auto groundCount = getGroundDefenseCount(station);
 
             if (station->isMain()) {
-                if (BuildOrder::isProxy() && BuildOrder::getCurrentTransition() == "2HatchLurker")
-                    return (Util::getTime() > Time(2, 45)) + (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 15)) - groundCount;
+                // Add a sunk in main if we lost the natural, maybe it holds to get a win
                 if (BuildOrder::isOpener() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None)
                     return (Util::getTime() > Time(3, 00)) - groundCount;
             }
-            else if (station->isNatural()) {
-            }
-            else {
+            else if (!station->isMain() && !station->isNatural()) {
+                // Early sunk vs all-in Zealot rush
                 if (Spy::getEnemyTransition() == "ZealotRush")
                     return (Util::getTime() > Time(6, 00)) - groundCount;
+
+                // Add one later against likely tech builds
                 if (Spy::getEnemyBuild() == "1GateCore" || Spy::getEnemyBuild() == "2Gate")
                     return (Util::getTime() > Time(7, 00)) - groundCount;
+
+                // Corsair DT exists
+                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0)
+                    return (Util::getTime() > Time(9, 00)) - groundCount;
             }
             return 0;
         }
@@ -580,6 +584,10 @@ namespace McRave::Stations
             // Late spores if we're allin
             if (station->isNatural() && enemyAir && BuildOrder::isAllIn() && !hydraBuild)
                 return (Util::getTime() > Time(5, 00)) - airCount;
+
+            // Corsair DT exist
+            if (!station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 )
+                return (Util::getTime() > Time(9, 00)) - airCount;
         }
 
         if (Players::ZvZ()) {

@@ -165,7 +165,7 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyBuild() == "FFE") {
             thirdHatch = (s >= 26 && vis(Zerg_Drone) >= 11 && vis(Zerg_Lair) > 0);
             planEarly = false;
-            wantThird = true;
+            wantThird = false;
         }
 
         // Buildings
@@ -177,7 +177,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Pumping
         pumpLings = lingsNeeded_ZvP() > vis(Zerg_Zergling);
-        pumpScourge = com(Zerg_Spire) == 1 && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && total(Zerg_Scourge) <= 6;
+        pumpScourge = com(Zerg_Spire) == 1 && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && total(Zerg_Scourge) < 2 && total(Zerg_Spore_Colony) == 0;
         pumpMutas = !pumpScourge && com(Zerg_Spire) > 0 && gas(80);
 
         // Limits
@@ -185,17 +185,16 @@ namespace McRave::BuildOrder::Zerg {
             unitLimits[Zerg_Drone] = 26;
 
         // All-in
-        if (Spy::getEnemyBuild() != "FFE" && Spy::enemyFastExpand()) {
+        if ((Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") && Spy::enemyFastExpand()) {
             static Time expandTiming = Util::getTime();
             if (expandTiming < Time(4, 00) && vis(Zerg_Zergling) >= initialLings)
                 activeAllinType = AllinType::Z_4HatchSpeedling;
             else if (total(Zerg_Mutalisk) >= 6)
-                activeAllinType = AllinType::Z_6HatchCrackling;
-
+                activeAllinType = AllinType::Z_5HatchSpeedling;
         }
         if (Spy::getEnemyBuild() == "FFE") {
-            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) >= 5)
-                activeAllinType = AllinType::Z_6HatchCrackling;
+            if (total(Zerg_Mutalisk) >= 12)
+                activeAllinType = AllinType::Z_4HatchSpeedling;
         }
 
         // Gas
@@ -436,9 +435,10 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                                  vis(Zerg_Overlord) < 4;
         unitLimits[Zerg_Zergling] =                     INT_MAX;
 
-        wantThird =                                     Util::getTime() < Time(2, 45) || Spy::getEnemyBuild() == "FFE";
+        wantThird =                                     false;
         gasLimit =                                      (vis(Zerg_Drone) >= 11) ? gasMax() : 0;
         planEarly =                                     wantThird && hatchCount() < 3 && Util::getTime() > Time(2, 30);
+        reserveLarva =                                  6;
 
         // Gas first, but wait for lings
         auto firstGas = (s >= 28 && vis(Zerg_Drone) >= 12 && total(Zerg_Zergling) >= initialLings);
@@ -449,7 +449,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Extractor] =                    firstGas + (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 21);
         buildQueue[Zerg_Lair] =                         (s >= 32 && gas(100) && hatchCount() >= 3 && vis(Zerg_Overlord) >= 3);
         buildQueue[Zerg_Spire] =                        (s >= 32 && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 16);
-        buildQueue[Zerg_Queens_Nest] =                  total(Zerg_Mutalisk) >= 9;
+        buildQueue[Zerg_Queens_Nest] =                  total(Zerg_Mutalisk) >= 6;
         buildQueue[Zerg_Hive] =                         atPercent(Zerg_Queens_Nest, 0.95);
         buildQueue[Zerg_Evolution_Chamber] =            (s >= 70) + (s >= 150);
 
