@@ -159,7 +159,7 @@ namespace McRave::Roles {
                     forceCombatWorker(1, proxyBuilding->getPosition());
 
                 // Likely proxy, worker arrived way too early
-                else if (likelyProxy && Util::getTime() < Time(3, 00))
+                else if (likelyProxy && proxyWorker && Util::getTime() < Time(3, 00))
                     forceCombatWorker(1, proxyWorker->getPosition());
 
                 // We know it's likely a proxy, watch the natural for now

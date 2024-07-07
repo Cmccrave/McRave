@@ -87,18 +87,20 @@ namespace McRave::BuildOrder::Zerg {
                 }
             }
 
-            // Prepare evo chamber just in case
-            if (Players::ZvT() && Spy::getEnemyBuild() == "RaxFact" && Util::getTime() > Time(4, 30)) {
-                needSpores = true;
-                wallNat = true;
-            }
-            if (Players::ZvP() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 15)) {
-                needSpores = true;
-                wallNat = true;
-            }
-            if (Players::ZvZ() && Spy::getEnemyOpener() != "4Pool" && !Spy::enemyTurtle() && Spy::getEnemyOpener() != "7Pool" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00)) {
-                needSpores = true;
-                wallNat = true;
+            // Prepare evo chamber just in case and not a hydra build
+            if (focusUnit != Zerg_Hydralisk) {
+                if (Players::ZvT() && Spy::getEnemyBuild() == "RaxFact" && Util::getTime() > Time(4, 30)) {
+                    needSpores = true;
+                    wallNat = true;
+                }
+                if (Players::ZvP() && Spy::getEnemyTransition() == "Unknown" && ((Spy::getEnemyBuild() == "2Gate" && Util::getTime() > Time(4, 45)) || (Spy::getEnemyBuild() == "1GateCore" && Util::getTime() > Time(4, 15)))) {
+                    needSpores = true;
+                    wallNat = false;
+                }
+                if (Players::ZvZ() && Spy::getEnemyOpener() != "4Pool" && !Spy::enemyTurtle() && Spy::getEnemyOpener() != "7Pool" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00)) {
+                    needSpores = true;
+                    wallNat = true;
+                }
             }
 
             // Log needing sunks
@@ -272,20 +274,18 @@ namespace McRave::BuildOrder::Zerg {
                 auto gasRemaining       = Broodwar->self()->gas() - BuildOrder::getGasQueued();
                 auto minRemaining       = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 auto dropGasRush        = !Players::ZvZ() && Spy::enemyRush();
-                auto dropGasDrones      = !Players::ZvZ() && vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 18;
-                auto dropGasLarva       = !Players::ZvZ() && vis(Zerg_Larva) >= 3 && Util::getTime() < Time(5, 00) && unitReservations.empty();
-                auto dropGasBroke       = (Util::getTime() < Time(4, 30) || Players::ZvZ());
+                auto dropGasLarva       = !Players::ZvZ() && vis(Zerg_Larva) >= hatchCount() && unitReservations.empty();
                 auto dropGasDefenses    = needSunks && (Players::ZvZ() || Spy::enemyProxy() || Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "8Rax");
 
-                auto mineralToGasRatio  = minRemaining < max(125, 10 * vis(Zerg_Drone)) && gasRemaining > max(75, 5 * vis(Zerg_Drone));
+                auto mineralToGasRatio  = minRemaining < max(100, 8 * vis(Zerg_Drone)) && gasRemaining > max(150, 13 * vis(Zerg_Drone));
+
 
                 if (mineralToGasRatio && !rush && !pressure) {
                     if (dropGasRush
-                        || dropGasBroke
-                        || dropGasDrones
                         || dropGasLarva
                         || dropGasDefenses
-                        || Roles::getMyRoleCount(Role::Worker) < 5)
+                        || Roles::getMyRoleCount(Role::Worker) < 5
+                        || Players::ZvZ())
                         gasLimit = 0;
                 }
             }
@@ -297,7 +297,7 @@ namespace McRave::BuildOrder::Zerg {
 
             // Overlord speed can be done inside openings
             const auto queueOvieSpeed = (Players::ZvT() && Spy::getEnemyTransition() == "2PortWraith" && Util::getTime() > Time(6, 00))
-                || (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 160)
+                || (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 160 && total(Zerg_Hydralisk) > 0)
                 || (Spy::enemyInvis() && (BuildOrder::isFocusUnit(Zerg_Hydralisk) || BuildOrder::isFocusUnit(Zerg_Ultralisk)))
                 || (!Players::ZvZ() && Players::getSupply(PlayerState::Self, Races::Zerg) >= 200);
 
@@ -339,10 +339,8 @@ namespace McRave::BuildOrder::Zerg {
             auto ZvTAirArmor = Players::ZvT();
             auto ZvPAirArmor = (Players::ZvP() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0);
 
-            if (BuildOrder::getCompositionPercentage(Zerg_Mutalisk) > 0.0 && total(Zerg_Mutalisk) >= 12) {
-                upgradeQueue[Zerg_Flyer_Attacks] = upgradingAirArmor;
-                upgradeQueue[Zerg_Flyer_Carapace] = ZvZAirArmor || ZvTAirArmor || ZvPAirArmor;
-            }
+            upgradeQueue[Zerg_Flyer_Attacks] = BuildOrder::getCompositionPercentage(Zerg_Mutalisk) > 0.0 && total(Zerg_Mutalisk) >= 12 && upgradingAirArmor;
+            upgradeQueue[Zerg_Flyer_Carapace] = BuildOrder::getCompositionPercentage(Zerg_Mutalisk) > 0.0 && total(Zerg_Mutalisk) >= 12 && (ZvZAirArmor || ZvTAirArmor || ZvPAirArmor);
 
             // Want 3x upgrades by default
             upgradeQueue[Zerg_Flyer_Attacks] *= 3;
@@ -364,7 +362,7 @@ namespace McRave::BuildOrder::Zerg {
         void queueAllin()
         {
             Allin Z_6HatchCrackling;
-            Z_6HatchCrackling.workerCount = 25;
+            Z_6HatchCrackling.workerCount = 30;
             Z_6HatchCrackling.productionCount = 6;
             Z_6HatchCrackling.typeCount = 64;
             Z_6HatchCrackling.type = Zerg_Zergling;
@@ -378,7 +376,7 @@ namespace McRave::BuildOrder::Zerg {
             Z_5HatchSpeedling.name = "5HatchSpeedling";
 
             Allin Z_4HatchSpeedling;
-            Z_4HatchSpeedling.workerCount = 16;
+            Z_4HatchSpeedling.workerCount = 18;
             Z_4HatchSpeedling.productionCount = 4;
             Z_4HatchSpeedling.typeCount = 32;
             Z_4HatchSpeedling.type = Zerg_Zergling;
@@ -397,7 +395,7 @@ namespace McRave::BuildOrder::Zerg {
                 activeAllin = Z_6HatchCrackling;
 
             // Turn off all-ins against splash
-            auto antiZergling = (Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) > 0)
+            auto antiZergling = (Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0)
                 && total(Zerg_Zergling) > activeAllin.typeCount * 5;
             if (antiZergling)
                 return;
@@ -432,7 +430,6 @@ namespace McRave::BuildOrder::Zerg {
             // 6HatchCrackling
             if (activeAllin.name == "6HatchCrackling") {
                 gasLimit = 3;
-                wantThird = hatchCount() >= 4;
 
                 // Buildings
                 buildQueue[Zerg_Extractor] = 1;
@@ -441,7 +438,7 @@ namespace McRave::BuildOrder::Zerg {
                     buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
                 if (hatchCount() >= 5)
                     buildQueue[Zerg_Evolution_Chamber] = 2;
-                
+
                 // Hive tech
                 if (vis(Zerg_Drone) >= activeAllin.workerCount) {
                     buildQueue[Zerg_Queens_Nest] = 1;
@@ -461,7 +458,8 @@ namespace McRave::BuildOrder::Zerg {
 
                 // Buildings
                 buildQueue[Zerg_Extractor] = 1;
-                buildQueue[Zerg_Evolution_Chamber] = hatchCount() >= 5 && vis(Zerg_Larva) <= 2;
+                if (hatchCount() >= 5)
+                    buildQueue[Zerg_Evolution_Chamber] = vis(Zerg_Larva) <= 2;
                 if (hatchCount() < activeAllin.productionCount && vis(Zerg_Larva) <= 2)
                     buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
 
@@ -828,26 +826,28 @@ namespace McRave::BuildOrder::Zerg {
         // Saving larva to burst out tech units
         const auto reserveAt = Players::ZvZ() ? 10 : 16;
         unitReservations.clear();
-        if (vis(Zerg_Drone) >= reserveAt && ((inOpening && reserveLarva > 0) || (!inOpening && focusUnits.size() <= 1))) {
+        if (vis(Zerg_Drone) >= reserveAt && inOpening && reserveLarva > 0) {
             if (atPercent(Zerg_Spire, 0.50) && focusUnit == Zerg_Mutalisk)
                 unitReservations[Zerg_Mutalisk] = max(0, reserveLarva - total(Zerg_Mutalisk));
             if (atPercent(Zerg_Spire, 0.50) && focusUnit == Zerg_Scourge)
                 unitReservations[Zerg_Scourge] = max(0, reserveLarva - total(Zerg_Scourge) * 2);
             if (vis(Zerg_Hydralisk_Den) > 0 && focusUnit == Zerg_Hydralisk)
                 unitReservations[Zerg_Hydralisk] = max(0, reserveLarva - total(Zerg_Hydralisk));
+
+            if (pumpScourge && reserveLarva > 0)
+                unitReservations[Zerg_Scourge] = 1;
         }
 
         // Queue enough overlords to fit the reservations
-        if (reserveLarva > 0 && atPercent(Zerg_Spire, 0.25) && total(focusUnit) < reserveLarva) {
+        if (reserveLarva > 0 && atPercent(Zerg_Spire, 0.25) && total(focusUnit) < reserveLarva && com(Zerg_Spire) == 0) {
             auto enemyAirThreat = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0;
             auto expectedSupply = s + ((reserveLarva - total(focusUnit)) * 4);
             auto expectedOverlords = int(ceil(double(expectedSupply - 2 * hatchCount()) / 16.0));
-            buildQueue[Zerg_Overlord] = expectedOverlords + int(enemyAirThreat);
+            buildQueue[Zerg_Overlord] = expectedOverlords + int(enemyAirThreat) + 1;
         }
 
         // Unlocking units
         unlockedType.clear();
-        unlockedType.insert(Zerg_Overlord);
         for (auto &[type, per] : armyComposition) {
             if (per > 0.0)
                 unlockedType.insert(type);
@@ -863,14 +863,8 @@ namespace McRave::BuildOrder::Zerg {
             }
         }
 
-        //// UMS Unlocking
-        //if (Broodwar->getGameType() == GameTypes::Use_Map_Settings) {
-        //    for (auto &type : BWAPI::UnitTypes::allUnitTypes()) {
-        //        if (!type.isBuilding() && type.getRace() == Races::Zerg && vis(type) >= 2) {
-        //            unlockedType.insert(type);
-        //        }
-        //    }
-        //}
+        // Always allowed to make Overlords
+        unlockedType.insert(Zerg_Overlord);
     }
 
 

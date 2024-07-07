@@ -46,7 +46,8 @@ namespace McRave::Combat::State {
             if (!crackling && !BuildOrder::isRush()) {
                 if (Players::ZvP()) {
                     const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && !Spy::enemyGreedy() && !Spy::enemyProxy() && !speedLing;
-                    if (scaryOpeners)
+                    const auto hideCheese = BuildOrder::isHideTech() && BuildOrder::isOpener() && vis(Zerg_Spire) == 0;
+                    if (scaryOpeners || hideCheese)
                         staticRetreatTypes.push_back(Zerg_Zergling);
                 }
                 if (Players::ZvT()) {
@@ -155,28 +156,33 @@ namespace McRave::Combat::State {
         auto target = *unit.getTarget().lock();
 
         auto countDefensesInRange = 0.0;
-        if (unit.getType() == Zerg_Mutalisk && unit.canOneShot(target)) {
-            for (auto &e : Units::getUnits(PlayerState::Enemy)) {
-                auto &enemy = *e;
-                if (enemy.canAttackAir() && enemy != target) {
-                    if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 64.0
-                        || enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 64.0
-                        || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 64.0)
-                        countDefensesInRange += (enemy.getType().isBuilding() ? 1.0 : 0.25);
-                }
-            }
+        if (unit.getType() == Zerg_Mutalisk) {
+            //for (auto &e : Units::getUnits(PlayerState::Enemy)) {
+            //    auto &enemy = *e;
+            //    if (enemy.canAttackAir() && enemy != target) {
+            //        if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 64.0
+            //            || enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 64.0
+            //            || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 64.0)
+            //            countDefensesInRange += (enemy.getType().isBuilding() ? 1.0 : 0.1);
+            //    }
+            //}
 
             if (unit.canOneShot(target) && !unit.isTargetedBySplash() && !unit.isNearSplash()) {
                 if ((countDefensesInRange > 0.0 && Players::ZvZ() && !target.getType().isWorker())
-                    || (countDefensesInRange < 2.0 && Util::getTime() < Time(8, 00))
-                    || (countDefensesInRange < 3.0 && Util::getTime() < Time(10, 00)))
+                    || (countDefensesInRange <= 3.0 && Util::getTime() < Time(8, 00))
+                    || (countDefensesInRange <= 4.0 && Util::getTime() < Time(10, 00)))
                     return true;
             }
+
+            // Two shotting cannons is good
+            if (unit.canTwoShot(target) && target.getType() == Protoss_Photon_Cannon)
+                return true;
         }
 
         // Forced local attacks:
         return ((!unit.isFlying() && target.isSiegeTank() && unit.getType() != Zerg_Lurker && unit.isWithinRange(target) && unit.getGroundRange() > 32.0)
             || (unit.getType() == Protoss_Reaver && !unit.unit()->isLoaded() && unit.isWithinRange(target))
+            //|| (Util::getTime() < Time(8, 00) && unit.getType() == Zerg_Mutalisk && target.getType() == Protoss_Photon_Cannon && !target.isCompleted())
             || (target.getType() == Terran_Vulture_Spider_Mine && !target.isBurrowed())
             || (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_High_Templar && unit.canStartCast(TechTypes::Psionic_Storm, target.getPosition()) && unit.isWithinRange(target))
             || (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_Reaver && unit.canStartAttack()) && unit.isWithinRange(target));
@@ -336,7 +342,7 @@ namespace McRave::Combat::State {
             unit.setLocalState(LocalState::Retreat);
 
         // Within engage and not retreat, but not winning
-        else if (insideEngageRadius && !insideRetreatRadius && unit.getSimState() != SimState::Win)
+        else if (insideEngageRadius && !insideRetreatRadius && unit.getSimState() != SimState::Win && !unit.isLightAir())
             unit.setLocalState(LocalState::Hold);
     }
 

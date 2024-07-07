@@ -573,11 +573,11 @@ namespace McRave::Stations
                 return (Util::getTime() > Time(6, 30)) - airCount;
             }
 
-            // Early spore vs 1gc corsair timing
+            // Spore blocking corsair timings
             if (station->isNatural() && Spy::getEnemyBuild() == "1GateCore" && Spy::getEnemyTransition() == "Corsair" && !hydraBuild)
-                return (Util::getTime() > Time(4, 35)) - airCount;
-
-            // Slightly later spore vs 2g corsair
+                return (Util::getTime() > Time(4, 20)) - airCount;
+            if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyOpener() == "10/15" && Spy::getEnemyTransition() == "Corsair" && !hydraBuild)
+                return (Util::getTime() > Time(4, 25)) - airCount;
             if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && !hydraBuild)
                 return (Util::getTime() > Time(4, 45)) - airCount;
 
@@ -587,6 +587,10 @@ namespace McRave::Stations
 
             // Corsair DT exist
             if (!station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 )
+                return (Util::getTime() > Time(9, 00)) - airCount;
+
+            // Later spore for protection against high corsair counts
+            if (station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) >= 6)
                 return (Util::getTime() > Time(9, 00)) - airCount;
         }
 

@@ -204,16 +204,18 @@ namespace McRave::Combat::Simulation {
             }
         }
 
-        // We've detected the enemy isn't fighting back, reduce thresholds
-        if (target.framesVisible >= 120 && !target.hasAttackedRecently() && !target.getType().isBuilding() && !target.getType().isWorker()) {
-            minWinPercent -= 0.2;
-            //maxWinPercent -= 0.1;
-        }
+
 
         // Adjust winrates if we are all-in
         if (BuildOrder::isAllIn() && !Combat::State::isStaticRetreat(unit.getType())) {
             minWinPercent -= 0.2;
-            //maxWinPercent -= 0.1;
+            maxWinPercent -= 0.2;
+        }
+
+        // We've detected the enemy isn't fighting back, reduce thresholds
+        else if (target.framesVisible >= 120 && !target.hasAttackedRecently() && !target.getType().isBuilding() && !target.getType().isWorker()) {
+            minWinPercent -= 0.2;
+            maxWinPercent -= 0.2;
         }
 
         //const auto nearEnemyStation = [&]() {

@@ -46,8 +46,7 @@ namespace McRave::Producing {
 
         bool isCreateable(Unit building, UnitType unit)
         {
-            if (!BuildOrder::isUnitUnlocked(unit)
-                || BuildOrder::getCompositionPercentage(unit) <= 0.0)
+            if (!BuildOrder::isUnitUnlocked(unit))
                 return false;
 
             switch (unit)
@@ -119,6 +118,8 @@ namespace McRave::Producing {
                 return building->getAddon() != nullptr ? true : false;
 
                 // Zerg Units
+            case Enum::Zerg_Overlord:
+                return true;
             case Enum::Zerg_Drone:
                 return true;
             case Enum::Zerg_Zergling:
@@ -266,7 +267,7 @@ namespace McRave::Producing {
             // Else store a zero value idle
             else
                 idleProduction[building.unit()] = None;
-            
+
             return false;
         }
 
@@ -309,22 +310,16 @@ namespace McRave::Producing {
                 return station == closestStation;
             };
 
-            // Choose an Overlord if we need one
-            if (BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord]) {
-                bestType = Zerg_Overlord;
-            }
             // Find the best type to train right now
-            else {
-                for (auto &type : Zerg_Larva.buildsWhat()) {
-                    if (!isCreateable(nullptr, type)
-                        || !isSuitable(type))
-                        continue;
+            for (auto &type : Zerg_Larva.buildsWhat()) {
+                if (!isCreateable(nullptr, type)
+                    || !isSuitable(type))
+                    continue;
 
-                    const auto value = scoreUnit(type);
-                    if (value >= best) {
-                        best = value;
-                        bestType = type;
-                    }
+                const auto value = scoreUnit(type);
+                if (value >= best) {
+                    best = value;
+                    bestType = type;
                 }
             }
 
@@ -427,8 +422,11 @@ namespace McRave::Producing {
     double scoreUnit(UnitType type)
     {
         // If we need an Overlord, it's highest priority
-        if (BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord])
-            return 10000.0;
+        if (type == Zerg_Overlord) {
+            if (BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord])
+                return 500.0;
+            return -1.0;
+        }
 
         // Check if we are saving larva but not for this type
         if (BuildOrder::getUnitReservation(type) == 0 && (BuildOrder::getUnitReservation(Zerg_Scourge) > 0 || BuildOrder::getUnitReservation(Zerg_Mutalisk) > 0 || BuildOrder::getUnitReservation(Zerg_Hydralisk) > 0)) {
@@ -445,7 +443,7 @@ namespace McRave::Producing {
             if ((type != Zerg_Overlord && vis(Zerg_Larva) <= larvaRequirements)
                 || (type.mineralPrice() > 0 && Broodwar->self()->minerals() - type.mineralPrice() < larvaMinCost)
                 || (type.gasPrice() > 0 && Broodwar->self()->gas() - type.gasPrice() < larvaGasCost))
-                return 0.0;
+                return -1.0;
         }
 
         auto percentage = BuildOrder::getCompositionPercentage(type);
@@ -473,12 +471,12 @@ namespace McRave::Producing {
         // Can't make them if we aren't mining and can't afford
         if ((Workers::getGasWorkers() == 0 && typeGasCost > 0 && Broodwar->self()->gas() < typeGasCost)
             || (Workers::getMineralWorkers() == 0 && typeMineralCost > 0 && Broodwar->self()->minerals() < typeMineralCost))
-            return 0.0;
+            return -1.0;
 
         // If we can't even afford 50% of the gas cost, then we shouldn't bother
         if ((typeGasCost > 0 && double(Broodwar->self()->gas()) / double(typeGasCost) < 0.5)
             || (typeGasCost > 0 && Broodwar->self()->gas() - reservedGas < 0))
-            return 0.0;
+            return -1.0;
 
         const auto resourceScore = gasCost * mineralCost;
         const auto strategyScore = 100.0 * percentage / double(max(1, trainedCount));

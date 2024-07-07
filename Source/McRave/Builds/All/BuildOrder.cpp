@@ -85,7 +85,7 @@ namespace McRave::BuildOrder
                 morphOffset = vis(Zerg_Hive);
 
             if (count > vis(building) + morphOffset)
-                minQueued += building.mineralPrice() * (count - vis(building) - morphOffset);
+                minQueued += building.mineralPrice() * (count - vis(building) - morphOffset);            
         }
         return minQueued;
     }
@@ -307,7 +307,11 @@ namespace McRave::BuildOrder
 
     set<UnitType>& getUnlockedList() { return  unlockedType; }
     int gasWorkerLimit() { return gasLimit; }
-    int getUnitReservation(UnitType type) { return unitReservations[type]; }
+    int getUnitReservation(UnitType type) { 
+        if (unitReservations.find(type) == unitReservations.end())
+            return 0;
+        return unitReservations[type]; 
+    }
 
     bool isAllIn() {
         return activeAllin.isActive();

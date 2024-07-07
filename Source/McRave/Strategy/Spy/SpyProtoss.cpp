@@ -32,7 +32,7 @@ namespace McRave::Spy::Protoss {
                     theSpy.early.possible = true;
 
                 // FFE
-                if (Util::getTime() < Time(4, 00) && Terrain::getEnemyNatural() && (unit.getType() == Protoss_Photon_Cannon || unit.getType() == Protoss_Forge)) {
+                if (Players::ZvP() && Util::getTime() < Time(4, 00) && Terrain::getEnemyNatural() && (unit.getType() == Protoss_Photon_Cannon || unit.getType() == Protoss_Forge || unit.getType() == Protoss_Nexus)) {
                     if (unit.getPosition().getDistance(Position(Terrain::getEnemyNatural()->getChokepoint()->Center())) < 320.0 || unit.getPosition().getDistance(Position(Terrain::getEnemyNatural()->getBase()->Center())) < 320.0) {
                         theSpy.build.name = "FFE";
                         theSpy.expand.possible = true;
@@ -136,8 +136,7 @@ namespace McRave::Spy::Protoss {
         {
             // Rush detection
             if (theSpy.build.name == "2Gate") {
-                if (theSpy.opener.name == "Proxy9/9"
-                    || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 8 && Util::getTime() < Time(4, 00))
+                if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 8 && Util::getTime() < Time(4, 00))
                     || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && Util::getTime() > Time(6, 00))
                     || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && completesBy(3, Protoss_Gateway, Time(4, 30)))
                     || completesBy(3, Protoss_Gateway, Time(3, 30)))

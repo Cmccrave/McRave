@@ -925,7 +925,7 @@ namespace McRave
             return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 8.0f;
         if (target.getType() == Protoss_Zealot || target.isSiegeTank())
             return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 10.0f;
-        if (target.getType() == Protoss_Dragoon || target.getType() == Protoss_Corsair || target.getType() == Terran_Missile_Turret)
+        if (target.getType() == Protoss_Dragoon || target.getType() == Protoss_Photon_Cannon || target.getType() == Protoss_Corsair || target.getType() == Terran_Missile_Turret)
             return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 12.0f;
         return false;
     }
@@ -942,19 +942,20 @@ namespace McRave
         if (!hasTarget())
             return false;
         auto target = *getTarget().lock();
-        if (target.isThreatening())
+        if (target.isThreatening() || (surroundPosition.isValid() && position.getDistance(surroundPosition) < 24.0))
             return false;
 
-        if (attemptingRunby() || target.hasAttackedRecently() || (Util::getTime() < Time(4, 00) && Broodwar->getGameType() != GameTypes::Use_Map_Settings) || target.getType().isWorker())
-            return false;
-        if (surroundPosition.isValid() && !Terrain::inTerritory(PlayerState::Enemy, surroundPosition) && position.getDistance(surroundPosition) > 16.0)
+        if (target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target.getPosition()))
             return true;
+
+        if (attemptingRunby() || (Util::getTime() < Time(4, 00) && Broodwar->getGameType() != GameTypes::Use_Map_Settings))
+            return false;
         return false;
     }
 
     bool UnitInfo::attemptingHarass()
     {
-        if (!isLightAir() || !Combat::getHarassPosition().isValid() || BuildOrder::isAllIn())
+        if (!isLightAir() || !Combat::getHarassPosition().isValid())
             return false;
 
         // ZvZ

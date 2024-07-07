@@ -24,7 +24,6 @@ namespace McRave::Combat::Formations {
                 formation.center = cluster.retreatPosition;
 
             // Common
-            formation.center = cluster.marchPosition;
             formation.angle = BWEB::Map::getAngle(make_pair(cluster.marchPosition, cluster.retreatPosition));
             auto closestBuilding = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
                 return (u->getType().isBuilding() && u->getFormation().getDistance(cluster.marchPosition) < 64.0);
@@ -406,7 +405,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
-        drawFormations();
+        //drawFormations();
     }
 
     vector<Formation>& getFormations() { return formations; }

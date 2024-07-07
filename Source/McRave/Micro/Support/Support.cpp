@@ -41,6 +41,10 @@ namespace McRave::Support {
                 return u->getType() == Zerg_Spore_Colony;
             });
 
+            // Natural is likely safer early on
+            if (Util::getTime() < Time(7, 00) && Stations::getStations(PlayerState::Self).size() >= 2 && !Players::ZvZ())
+                closestStation = Terrain::getMyNatural();
+
             // Overlords safe at a spore
             if (closestSpore) {
                 assignInBox(closestSpore->getPosition(), unit);
@@ -52,11 +56,11 @@ namespace McRave::Support {
             }
 
             // Attempting to build a spore
-            else if (Stations::needAirDefenses(Terrain::getMyMain()) > 0) {
-                assignInBox(Terrain::getMyMain()->getResourceCentroid(), unit);
-            }
             else if (Stations::needAirDefenses(Terrain::getMyNatural()) > 0) {
                 assignInBox(Terrain::getMyNatural()->getResourceCentroid(), unit);
+            }
+            else if (Stations::needAirDefenses(Terrain::getMyMain()) > 0) {
+                assignInBox(Terrain::getMyMain()->getResourceCentroid(), unit);
             }
 
             // Just go to closest station
@@ -120,16 +124,11 @@ namespace McRave::Support {
 
         void updateDestination(UnitInfo& unit)
         {
-            auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
-
             auto enemyAir = Spy::getEnemyTransition() == "Corsair"
                 || Spy::getEnemyTransition() == "2PortWraith"
                 || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
 
             auto followArmyPossible = unit.isHealthy() && (unit.getType() != Zerg_Overlord || any_of(types.begin(), types.end(), [&](auto &t) { return com(t) >= 6; }) && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace));
-
-            if (Util::getTime() < Time(7, 00) && Stations::getStations(PlayerState::Self).size() >= 2 && !Players::ZvZ())
-                closestStation = Terrain::getMyNatural();
 
             // Set goal as destination
             if (unit.getGoal().isValid() && unit.getUnitsTargetingThis().empty() && unit.getUnitsInReachOfThis().empty()) {

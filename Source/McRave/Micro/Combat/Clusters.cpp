@@ -258,11 +258,12 @@ namespace McRave::Combat::Clusters {
                     else
                         cluster.state = LocalState::Attack;
 
-                    // Reflect commander decision to units
-                    for (auto &unit : cluster.units) {
-                        unit->setLocalState(commander->getLocalState());
-                        unit->setGlobalState(commander->getGlobalState());
-                        unit->setSimState(commander->getSimState());
+                    // Determine the shape we want
+                    if (!commander->isLightAir() && !commander->isSuicidal() && !commander->getType().isWorker()) {
+                        if (cluster.state == LocalState::Hold && atHome)
+                            cluster.shape = Shape::Line;
+                        else
+                            cluster.shape = Shape::Concave;
                     }
                 }
             }
@@ -303,14 +304,6 @@ namespace McRave::Combat::Clusters {
                         cluster.commandShare = CommandShare::Exact;
                     else
                         cluster.commandShare = CommandShare::Parallel;
-
-                    // Determine the shape we want
-                    if (!commander->isLightAir() && !commander->isSuicidal() && !commander->getType().isWorker()) {
-                        if (Combat::State::isStaticRetreat(commander->getType()) && (Combat::holdAtChoke() || Players::ZvZ()) && atHome)
-                            cluster.shape = Shape::Line;
-                        else
-                            cluster.shape = Shape::Concave;
-                    }
 
                     // Assign commander to each unit
                     for (auto &unit : cluster.units) {

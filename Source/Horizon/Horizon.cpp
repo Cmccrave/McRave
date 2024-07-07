@@ -81,7 +81,7 @@ namespace McRave::Horizon {
 
             // If enemy doesn't move, calculate how long it will remain in range once in range
             if (enemy.getSpeed() <= 0.0) {
-                const auto distance =               min(distTarget, distEngage);// min(distPerp, distTarget);
+                const auto distance =               min(distTarget, distEngage);
                 const auto speed =                  enemyTarget->getSpeed() * 24.0;
                 const auto engageTime =             max(0.0, (distance - range) / speed);
                 simRatio =                          max(0.0, simulationTime - engageTime);
@@ -100,14 +100,8 @@ namespace McRave::Horizon {
 
             // Add their values to the simulation
             addBonus(enemy, *enemyTarget, simRatio);
-            if (enemy.canAttackAir() && enemy.canAttackGround()) {
-                simStrengthPerPlayer[enemy.getPlayer()].ground += max(enemy.getVisibleGroundStrength(), enemy.getVisibleAirStrength()) * simRatio;
-                simStrengthPerPlayer[enemy.getPlayer()].air += max(enemy.getVisibleGroundStrength(), enemy.getVisibleAirStrength()) * simRatio;
-            }
-            else {
-                simStrengthPerPlayer[enemy.getPlayer()].ground += enemy.getVisibleGroundStrength() * simRatio;
-                simStrengthPerPlayer[enemy.getPlayer()].air += enemy.getVisibleAirStrength() * simRatio;
-            }
+            simStrengthPerPlayer[enemy.getPlayer()].ground += enemy.getVisibleGroundStrength() * simRatio;
+            simStrengthPerPlayer[enemy.getPlayer()].air += enemy.getVisibleAirStrength() * simRatio;
         }
 
         for (auto &a : Units::getUnits(PlayerState::Self)) {
@@ -118,7 +112,7 @@ namespace McRave::Horizon {
             auto &selfTarget = self.getTarget().lock();
             const auto range = max(self.getAirRange(), self.getGroundRange());
             const auto reach = max(self.getAirReach(), self.getGroundReach());
-            const auto distance = double(Util::boxDistance(self.getType(), self.getPosition(), unitTarget->getType(), unitTarget->getPosition()));
+            const auto distance = double(Util::boxDistance(self.getType(), self.getPosition(), unitTarget->getType(), unitTarget->getPosition())) + targetDisplacement;
             const auto speed = self.getSpeed() > 0.0 ? self.getSpeed() * 24.0 : unit.getSpeed() * 24.0;
             const auto engageTime = max(0.0, ((distance - range) / speed) - unitToEngage);
             auto simRatio = max(0.0, simulationTime - engageTime + addPrepTime(self));

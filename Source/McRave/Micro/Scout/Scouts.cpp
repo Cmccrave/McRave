@@ -47,6 +47,14 @@ namespace McRave::Scouts {
                     positions.push_back(Util::clipPosition(p));
                 });
             }
+
+            bool isExplored() {
+                for (auto &p : positions) {
+                    if (!Broodwar->isExplored(TilePosition(p)))
+                        return false;
+                }
+                return true;
+            }
         };
 
         set<Position> unexploredMains, unexploredNaturals;
@@ -209,8 +217,10 @@ namespace McRave::Scouts {
                         main.desiredTypeCounts[Zerg_Drone] = 0;
 
                     // Zergling
-                    if (Players::ZvP() && Spy::getEnemyBuild() != "FFE" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00))
-                        main.desiredTypeCounts[Zerg_Zergling] = 1;
+                    main.desiredTypeCounts[Zerg_Zergling] = Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00);
+                    if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0)
+                        main.desiredTypeCounts[Zerg_Zergling] = 0;
+                        
 
                     // Overlord
                     main.desiredTypeCounts[Zerg_Overlord] = 1;
@@ -304,24 +314,42 @@ namespace McRave::Scouts {
         {
             auto &main = scoutTargets[ScoutType::Main];
             auto &proxy = scoutTargets[ScoutType::Proxy];
-
-            // Against known proxies without visible proxy style buildings
+            
             const auto closestProxyBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto& u) {
                 return u->getType().isBuilding() && u->isProxy();
             });
+
+            // Against known proxies without visible proxy style buildings
             if (Spy::enemyProxy() && !closestProxyBuilding) {
-                if (Spy::getEnemyBuild() == "CannonRush")
+                if (Spy::getEnemyBuild() == "CannonRush") {
+                    proxy.center = mapBWEM.Center();
                     proxy.addTargets(Terrain::getMainPosition(), 200);
-                else
+                }
+                else {
+                    proxy.center = mapBWEM.Center();
                     proxy.addTargets(mapBWEM.Center(), 200);
+                }
             }
 
+            // Check a small area around a proxy building
+            if (closestProxyBuilding) {
+                proxy.center = closestProxyBuilding->getPosition();
+                proxy.addTargets(closestProxyBuilding->getPosition());
+            }
+
+            auto scoutMiddle = Stations::isBaseExplored(scoutOrder.front()) || Broodwar->getStartLocations().size() >= 4;
+
             // Scout the popular middle proxy location if it's walkable
-            if (!Players::vZ() && !Terrain::foundEnemy() && !scoutOrder.empty() && scoutOrder.front() && Stations::isBaseExplored(scoutOrder.front()) && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(Terrain::getMainPosition(), mapBWEM.Center()) != DBL_MAX){
+            if (scoutMiddle && !Players::vZ() && !Terrain::foundEnemy() && !scoutOrder.empty() && scoutOrder.front() && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(Terrain::getMainPosition(), mapBWEM.Center()) != DBL_MAX){
                 proxy.addTargets(mapBWEM.Center());
-                proxy.center = mapBWEM.Center();
-                proxy.desiredTypeCounts[Zerg_Drone] = int(BuildOrder::shouldScout());
+                proxy.center = mapBWEM.Center();              
+            }
+
+            // Only scout if unexplored
+            proxy.desiredTypeCounts[Zerg_Drone] = 0;
+            if (proxy.center.isValid() && !proxy.isExplored() && BuildOrder::shouldScout()) {
                 main.desiredTypeCounts[Zerg_Drone] = 0;
+                proxy.desiredTypeCounts[Zerg_Drone] = 1;
             }
         }
 
@@ -362,7 +390,11 @@ namespace McRave::Scouts {
             
             // No threat at home, we should use a ling to scout the enemy
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                if (Units::getImmThreat() <= 0.1 && Util::getTime() > Time(1, 00) && !Spy::enemyRush() && !Spy::enemyProxy() && Combat::State::isStaticRetreat(Zerg_Zergling)) {
+                auto time = Time(1, 00);
+                if (Spy::enemyRush() || Spy::enemyProxy())
+                    time = Time(4, 00);
+
+                if (Units::getImmThreat() <= 0.1 && Util::getTime() > time && Combat::State::isStaticRetreat(Zerg_Zergling)) {
                     if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
                         || (Players::ZvP() && Util::getTime() < Time(8, 00)))
                         army.desiredTypeCounts[Zerg_Zergling] = 1;
@@ -381,8 +413,18 @@ namespace McRave::Scouts {
                     army.desiredTypeCounts[Protoss_Probe] = 1;
             }
 
+            // Path backwards to stop on last threatening tile (Ralph scouting)
+            auto start = Position(Terrain::getEnemyNatural()->getChokepoint()->Center());
+            auto end = Position(Terrain::getNaturalChoke()->Center());
+
+            // Try to scout the main if they're 1 base, flip how to detect threat (stop on first threatening tile)
+            if ((Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") && Util::getTime() > Time(4, 00) && Spy::getEnemyTransition() == "Unknown") {
+                start = Position(Terrain::getEnemyNatural()->getChokepoint()->Center());
+                end = Terrain::getEnemyStartingPosition();
+            }
+
             // Army scouting between my natural and enemy natural
-            BWEB::Path newPath(Terrain::getEnemyNatural()->getChokepoint()->Center(), Terrain::getNaturalChoke()->Center(), Zerg_Zergling);
+            BWEB::Path newPath(start, end, Zerg_Zergling);
             newPath.generateJPS([&](auto t) {return newPath.terrainWalkable(t); });
             auto safeTarget = Util::findPointOnPath(newPath, [&](auto &t) {
                 return Grids::getGroundThreat(t, PlayerState::Enemy) <= 0.1;
@@ -390,7 +432,10 @@ namespace McRave::Scouts {
 
             army.center = safeTarget;
             army.addTargets(safeTarget, 32);
-            army.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
+
+            // If they haven't expanded, check it occasionally
+            if (!Spy::enemyFastExpand())
+                army.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
         }
 
         void updateExpansionScouting()

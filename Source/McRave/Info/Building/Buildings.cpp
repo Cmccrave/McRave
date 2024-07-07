@@ -92,25 +92,31 @@ namespace McRave::Buildings {
 
             // Lair morphing
             if (building.getType() == Zerg_Hatchery && !willDieToAttacks(building) && BuildOrder::buildCount(Zerg_Lair) > vis(Zerg_Lair) + vis(Zerg_Hive) + morphedThisFrame[Zerg_Lair] + morphedThisFrame[Zerg_Hive]) {
-                auto morphTile = Terrain::getMainTile();
-                const auto closestScout = Util::getClosestUnitGround(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u->getType().isWorker();
-                });
-                if (closestScout && Stations::getStations(PlayerState::Self).size() >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == Terrain::getMainArea())
-                    morphTile = Terrain::getNaturalTile();
+                //auto morphTile = Terrain::getMainTile();
+                //const auto closestScout = Util::getClosestUnitGround(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                //    return u->getType().isWorker();
+                //});
+                //if (closestScout && Stations::getStations(PlayerState::Self).size() >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == Terrain::getMainArea())
+                //    morphTile = Terrain::getNaturalTile();
 
                 // Extra larva timings (main): 2:31, 3:02, 3:31
-                if (building.getTilePosition() == morphTile) {
-                    if (morphTile == Terrain::getMainTile()) {
-                        if ((Util::getTime() >= Time(2, 31) && BuildOrder::getCurrentTransition().find("1Hatch") != string::npos)
-                            || (Util::getTime() >= Time(3, 02) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
-                            || Util::getTime() >= Time(3, 31)
-                            || Players::ZvZ())
-                            morphType = Zerg_Lair;
-                    }
-                    else
-                        morphType = Zerg_Lair;
-                }
+                //if (building.getTilePosition() == morphTile) {
+                //    if (morphTile == Terrain::getMainTile()) {
+                //        if ((Util::getTime() >= Time(2, 31) && BuildOrder::getCurrentTransition().find("1Hatch") != string::npos)
+                //            || (Util::getTime() >= Time(3, 02) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
+                //            || Util::getTime() >= Time(3, 31)
+                //            || Players::ZvZ())
+                //            morphType = Zerg_Lair;
+                //    }
+                //    else
+                //        morphType = Zerg_Lair;
+                //}
+
+                if ((Util::getTime() >= Time(2, 31) && BuildOrder::getCurrentTransition().find("1Hatch") != string::npos)
+                    || (Util::getTime() >= Time(3, 02) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
+                    || Util::getTime() >= Time(3, 31)
+                    || Players::ZvZ())
+                    morphType = Zerg_Lair;
             }
 
             // Hive morphing

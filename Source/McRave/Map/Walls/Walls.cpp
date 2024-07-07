@@ -166,7 +166,7 @@ namespace McRave::Walls {
             }
 
             // 2Gate
-            if (Spy::getEnemyBuild() == "2Gate" && Util::getTime() < Time(5, 30) && !Spy::enemyProxy()) {
+            if (Spy::getEnemyBuild() == "2Gate" && Util::getTime() < Time(5, 30)) {
                 if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
                     return (earlySunk && Util::getTime() > Time(3, 15))
                     + (Util::getTime() > Time(4, 10))
@@ -180,8 +180,10 @@ namespace McRave::Walls {
                     + (Util::getTime() > Time(4, 00))
                     + (Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
+                    return (earlySunk && Util::getTime() > Time(2, 50))
+                    + (Util::getTime() > Time(4, 30));
+                if (Spy::getEnemyOpener() == "Proxy9/9")
                     return (Util::getTime() > Time(2, 50))
-                    + (earlySunk && Util::getTime() > Time(2, 50))
                     + (Util::getTime() > Time(4, 30));
             }
 
@@ -208,7 +210,8 @@ namespace McRave::Walls {
                 if (Spy::getEnemyTransition() == "5GateGoon" && Util::getTime() < Time(10, 00))
                     return (Util::getTime() > Time(5, 40))
                     + (Util::getTime() > Time(6, 00))
-                    + (Util::getTime() > Time(6, 20));
+                    + (Util::getTime() > Time(6, 20))
+                    + 2 * (Util::getTime() > Time(7, 15));
                 if (Spy::getEnemyTransition() == "CorsairGoon" && Util::getTime() < Time(10, 00))
                     return (Util::getTime() > Time(5, 30))
                     + (Util::getTime() > Time(6, 15))
@@ -239,14 +242,14 @@ namespace McRave::Walls {
                 // 4Gate
                 if (Spy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(9, 00)) {
                     return (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(4, 10))
-                        + (Util::getTime() > Time(4, 40))
-                        + (Util::getTime() > Time(5, 10))
-                        + (Util::getTime() > Time(5, 40))
-                        + (Util::getTime() > Time(6, 10))
-                        + (Util::getTime() > Time(6, 40))
-                        + (Util::getTime() > Time(7, 10))
-                        + (Util::getTime() > Time(7, 40));
+                        + (Util::getTime() > Time(4, 00))
+                        + (Util::getTime() > Time(4, 30))
+                        + (Util::getTime() > Time(5, 00))
+                        + (Util::getTime() > Time(5, 30))
+                        + (Util::getTime() > Time(6, 00))
+                        + (Util::getTime() > Time(6, 30))
+                        + (Util::getTime() > Time(7, 00))
+                        + (Util::getTime() > Time(7, 70));
                 }
 
                 // DT
@@ -261,37 +264,38 @@ namespace McRave::Walls {
                 // Corsair
                 if (Spy::getEnemyTransition() == "Corsair") {
                     return (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(4, 30))
+                        + (Util::getTime() > Time(4, 15))
                         + (Util::getTime() > Time(7, 00));
                 }
 
                 // Speedlot
-                if (Spy::getEnemyTransition() == "Speedlot") {
+                if (Spy::getEnemyTransition() == "Speedlot" || noExpandOrTech) {
                     return (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(4, 30))
-                        + (Util::getTime() > Time(5, 00))
-                        + (Util::getTime() > Time(5, 30));
+                        + (Util::getTime() > Time(4, 15))
+                        + (Util::getTime() > Time(4, 45))
+                        + (Util::getTime() > Time(5, 15));
                 }
 
                 // Zealot flood
-                if (Spy::getEnemyTransition() == "ZealotRush" || noExpandOrTech) {
+                if (Spy::getEnemyTransition() == "ZealotRush") {
                     return (Util::getTime() > Time(4, 00))
                         + (Util::getTime() > Time(4, 00))
                         + (Util::getTime() > Time(4, 20))
                         + (Util::getTime() > Time(4, 40))
                         + (Util::getTime() > Time(5, 00))
                         + (Util::getTime() > Time(6, 00))
-                        + (Util::getTime() > Time(6, 30));
+                        + (Util::getTime() > Time(6, 30))
+                        - Spy::enemyProxy();
                 }
 
                 // Unknown + Expand + No Tech
-                if (noTech && Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown") {
+                if (noTech && Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown"){
                     return (Util::getTime() > Time(4, 00))
                         + (Util::getTime() > Time(4, 30))
                         + (Util::getTime() > Time(5, 00))
                         + (Util::getTime() > Time(8, 00))
-                        + (Util::getTime() > Time(8, 30));
+                        + (Util::getTime() > Time(8, 30))
+                        - Spy::enemyProxy();
                 }
             }
             return 0;
@@ -300,7 +304,7 @@ namespace McRave::Walls {
         int ZvP_Defenses(const BWEB::Wall& wall) {
 
             // If they're only at home and not proxy, don't make any
-            if (!Spy::enemyProxy() && Util::getTime() < Time(3, 50)) {
+            if (!Spy::enemyProxy() && Util::getTime() < Time(3, 45)) {
                 auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) {
                     return !u->getType().isBuilding() && !u->getType().isWorker() && !Terrain::inTerritory(PlayerState::Enemy, u->getPosition());
                 });
@@ -479,7 +483,7 @@ namespace McRave::Walls {
         // If they expanded, we can skip a sunk after a delay
         if (Players::ZvP() && Spy::enemyFastExpand() && Spy::getEnemyBuild() != "FFE" && Util::getTime() > Time(4, 30)) {
             static Time now = Util::getTime();
-            if (Util::getTime() > now + Time(0, 30))
+            if (Util::getTime() > now + Time(0, 45))
                 groundCount+=2;
         }
 

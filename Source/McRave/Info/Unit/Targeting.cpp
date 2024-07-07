@@ -42,6 +42,7 @@ namespace McRave::Targets {
                     || target.hasAttackedRecently()
                     || target.hasRepairedRecently()
                     || target.isThreatening()
+                    || BuildOrder::isHideTech()
                     || (target.getUnitsTargetingThis().empty() && !Players::ZvZ())
                     || Spy::getEnemyTransition() == "WorkerRush"
                     || Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
@@ -140,13 +141,21 @@ namespace McRave::Targets {
                     auto anythingSupply = !Players::ZvZ() && Players::getSupply(PlayerState::Enemy, Races::None) < 20;
                     auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
 
-                    if (Players::ZvP() && Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == "ZealotRush")
-                        return Priority::Major;
-                    if (Players::ZvZ() && Util::getTime() < Time(8, 00) && target.getType() == Zerg_Zergling && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
-                        return Priority::Major;
+                    if (Players::ZvP()) {
 
-                    // Always kill cannons
-                    if (target.getType() == Protoss_Photon_Cannon && target.isWithinRange(unit))
+                        // Always kill cannons
+                        if (target.getType() == Protoss_Photon_Cannon && unit.attemptingHarass() && unit.getPosition().getDistance(Combat::getHarassPosition()) < 160.0)
+                            return Priority::Critical;
+
+                        // Clean Zealots up vs rushes
+                        if (Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == "ZealotRush")
+                            return Priority::Major;
+
+                        // Try to push for only worker kills to try and end the game
+                        if (Spy::getEnemyBuild() == "FFE" && Util::getTime() < Time(8, 00) && !target.getType().isWorker() && target.isCompleted() && !target.isThreatening())
+                            return Priority::Ignore;
+                    }
+                    if (Players::ZvZ() && Util::getTime() < Time(8, 00) && target.getType() == Zerg_Zergling && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
                         return Priority::Major;
 
                     // Low priority targets, ignore when we haven't found the enemy

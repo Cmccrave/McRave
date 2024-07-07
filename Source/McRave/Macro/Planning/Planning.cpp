@@ -426,7 +426,7 @@ namespace McRave::Planning {
                 return false;
 
             // Place spire as close to the Lair in case we're hiding it
-            if (building == Zerg_Spire) {
+            if (false && building == Zerg_Spire && BuildOrder::isHideTech()) {
                 auto closestLair = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
                     return u->getType() == Zerg_Lair;
                 });
