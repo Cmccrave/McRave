@@ -23,6 +23,7 @@ namespace BWEB {
         double chokeAngle;
         bool valid, pylonWall, openWall, requireTight, flatRamp, angledChoke;
         int defenseArrangement;
+        TilePosition wallOffset = TilePosition(0,0);
 
         void initialize();
         void addPieces();

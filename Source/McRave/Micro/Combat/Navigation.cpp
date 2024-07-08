@@ -140,7 +140,7 @@ namespace McRave::Combat::Navigation {
         }
 
         // Add any new sim units
-        if (unit.hasSimTarget()) {
+        if (unit.hasSimTarget() && unit.getLocalState() != LocalState::Attack && unit.getSimState() != SimState::Win) {
             auto newSimUnit = simUnits.find(unit.getSimTarget()) == simUnits.end();
             if (newSimUnit)
                 simUnits[unit.getSimTarget()] = Broodwar->getFrameCount() + (unit.getSimTarget().lock()->getType().isBuilding() ? 480 : 240);

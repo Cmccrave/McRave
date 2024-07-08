@@ -8,6 +8,8 @@ namespace McRave::Scouts {
 
     namespace {
 
+        bool contained = false;
+
         enum class ScoutType {
             None, Main, Natural, Proxy, Safe, Army, Expansion
         };
@@ -107,9 +109,16 @@ namespace McRave::Scouts {
                     list.insert(station.getBase()->Center());
             }
 
+            // Determine a full scout is done or not
             fullScout = mainScouted && natScouted;
             if (Players::ZvZ())
                 fullScout = mainScouted;
+
+            // Determine if we are lightly contained such that a scout cant get out
+            auto closestRanged = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                return u->getGroundRange() >= 64.0 && u->getPosition().getDistance(Position(Terrain::getMainChoke()->Center())) < 320.0;
+            });
+            contained = closestRanged != nullptr;
         }
 
         void checkScoutDenied()
@@ -384,7 +393,7 @@ namespace McRave::Scouts {
 
         void updateArmyScouting()
         {
-            if (!Terrain::getEnemyNatural() || !Terrain::getMyNatural())
+            if (!Terrain::getEnemyNatural() || !Terrain::getMyNatural() || contained)
                 return;
             auto &army = scoutTargets[ScoutType::Army];
             
@@ -441,7 +450,7 @@ namespace McRave::Scouts {
         void updateExpansionScouting()
         {
             auto &army = scoutTargets[ScoutType::Army];
-            if (army.desiredTypeCounts[Zerg_Zergling] == 1 || Players::ZvZ() || Util::getTime() < Time(8, 00) || Units::getEnemyArmyCenter().getDistance(Position(Terrain::getMyNatural()->getChokepoint()->Center())) < 320.0)
+            if (army.desiredTypeCounts[Zerg_Zergling] == 1 || Players::ZvZ() || Util::getTime() < Time(8, 00) || contained)
                 return;
 
             auto &expansion = scoutTargets[ScoutType::Expansion];

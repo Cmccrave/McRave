@@ -141,10 +141,17 @@ namespace McRave::Targets {
                     auto anythingSupply = !Players::ZvZ() && Players::getSupply(PlayerState::Enemy, Races::None) < 20;
                     auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
 
+                    if (unit.canOneShot(target))
+                        return Priority::Major;
+
                     if (Players::ZvP()) {
 
                         // Always kill cannons
-                        if (target.getType() == Protoss_Photon_Cannon && unit.attemptingHarass() && unit.getPosition().getDistance(Combat::getHarassPosition()) < 160.0)
+                        //if (target.getType() == Protoss_Photon_Cannon && unit.attemptingHarass() && target.getPosition().getDistance(Combat::getHarassPosition()) < 160.0)
+                        //    return Priority::Critical;
+                        if (target.getType() == Protoss_Photon_Cannon && unit.isWithinReach(target) && target.unit()->exists() && !target.isCompleted())
+                            return Priority::Critical;
+                        if (target.getType() == Protoss_Photon_Cannon && unit.isWithinReach(target) && (unit.canOneShot(target) || unit.canTwoShot(target)))
                             return Priority::Critical;
 
                         // Clean Zealots up vs rushes

@@ -157,20 +157,20 @@ namespace McRave::Combat::State {
 
         auto countDefensesInRange = 0.0;
         if (unit.getType() == Zerg_Mutalisk) {
-            //for (auto &e : Units::getUnits(PlayerState::Enemy)) {
-            //    auto &enemy = *e;
-            //    if (enemy.canAttackAir() && enemy != target) {
-            //        if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 64.0
-            //            || enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 64.0
-            //            || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 64.0)
-            //            countDefensesInRange += (enemy.getType().isBuilding() ? 1.0 : 0.1);
-            //    }
-            //}
+            for (auto &e : Units::getUnits(PlayerState::Enemy)) {
+                auto &enemy = *e;
+                if (enemy.canAttackAir() && enemy != target) {
+                    if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 64.0
+                        || enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 64.0
+                        || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 64.0)
+                        countDefensesInRange += (enemy.getType().isBuilding() ? 1.0 : 0.1);
+                }
+            }
 
             if (unit.canOneShot(target) && !unit.isTargetedBySplash() && !unit.isNearSplash()) {
                 if ((countDefensesInRange > 0.0 && Players::ZvZ() && !target.getType().isWorker())
-                    || (countDefensesInRange <= 3.0 && Util::getTime() < Time(8, 00))
-                    || (countDefensesInRange <= 4.0 && Util::getTime() < Time(10, 00)))
+                    || (countDefensesInRange < 2.0 && Util::getTime() < Time(8, 00))
+                    || (countDefensesInRange < 3.0 && Util::getTime() < Time(10, 00)))
                     return true;
             }
 

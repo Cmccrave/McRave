@@ -30,6 +30,8 @@ namespace McRave::Combat::Formations {
             });
 
             if (closestBuilding) {
+                closestBuilding->circle(Colors::Yellow);
+                formation.center = closestBuilding->getPosition();
                 formation.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition);
                 return;
             }
@@ -405,7 +407,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
-        //drawFormations();
+        drawFormations();
     }
 
     vector<Formation>& getFormations() { return formations; }

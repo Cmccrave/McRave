@@ -872,7 +872,7 @@ namespace McRave
     bool UnitInfo::canOneShot(UnitInfo& target) {
 
         // Create an offset that increases over time to prevent low muta counts engaging large numbers
-        auto minutesPastPressure = min(Util::getTime().minutes - 7, 5);
+        auto minutesPastPressure = clamp(Util::getTime().minutes - 7, 0, 2);
         auto offset = Grids::getAirThreat(target.getPosition(), PlayerState::Enemy) > 0.0f ? minutesPastPressure : 0.0f;
 
         // Check if this unit could load into a bunker
@@ -893,7 +893,6 @@ namespace McRave
                 return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 5.0f + offset;
             if (target.getType() == Terran_SCV)
                 return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 7.0f + offset;
-            return false;
         }
 
         // One shot threshold for individual units

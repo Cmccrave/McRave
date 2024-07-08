@@ -484,21 +484,6 @@ namespace McRave::Planning {
                 if (Players::ZvZ())
                     desiredRowOrder ={ 2, 1 };
 
-                auto closestDefense = Util::getClosestUnit(Position(closestMain->getChokepoint()->Center()), PlayerState::Self, [&](auto &u) {
-                    return isDefensiveType(u->getType());
-                });
-                if (closestDefense) {
-                    desiredCenter = closestDefense->getPosition();
-                    for (int i = 2; i >= 1; i--) {
-                        if (wall.getDefenses(i).find(closestDefense->getTilePosition()) != wall.getDefenses(i).end()) {
-                            if (i == 1)
-                                desiredRowOrder.insert(desiredRowOrder.begin(), { i, i + 1 });
-                            else
-                                desiredRowOrder.insert(desiredRowOrder.begin(), { i, i + 1, i - 1 });
-                        }
-                    }
-                }
-
                 int colonies = 0;
                 for (auto& tile : wall.getDefenses()) {
                     if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony || buildingsPlanned.find(tile) != buildingsPlanned.end())

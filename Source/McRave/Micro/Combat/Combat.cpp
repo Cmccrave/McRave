@@ -158,6 +158,12 @@ namespace McRave::Combat {
                 return;
             }
 
+            // ZvP
+            if (Players::ZvP() && Spy::enemyFastExpand() && Spy::getEnemyBuild() != "FFE" && Terrain::getEnemyNatural()) {
+                harassPosition = Terrain::getEnemyNatural()->getResourceCentroid();
+                return;
+            }
+
             // Create a list of valid positions to harass/check
             if (Util::getTime() < Time(10, 00)) {
                 stations.push_back(Terrain::getEnemyMain());
