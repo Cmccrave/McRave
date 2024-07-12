@@ -84,6 +84,7 @@ namespace McRave::BuildOrder {
         inline bool pumpHydras = false;
         inline bool pumpMutas = false;
         inline bool pumpScourge = false;
+        inline bool pumpDefiler = false;
 
         inline std::map<int, int> baseToHatchRatio;
     }

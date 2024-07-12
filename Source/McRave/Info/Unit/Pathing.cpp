@@ -78,8 +78,6 @@ namespace McRave::Pathing {
                 if (unit.isFlying() || unit.getType().isBuilding())
                     continue;
 
-
-
                 // Get the furthest unit targeting this to offset how many frames to estimate
                 auto furthestTargeter = Util::getFurthestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                     return u->hasTarget()
@@ -88,35 +86,34 @@ namespace McRave::Pathing {
                         && *u->getTarget().lock() == unit;
                 });
                 if (furthestTargeter) {
-                    auto framesToArrive = (clamp(furthestTargeter->getPosition().getDistance(unit.getPosition()) / unit.getSpeed(), 0.0, 48.0)) * 1.25;
+                    auto framesToArrive = (clamp(furthestTargeter->getPosition().getDistance(unit.getPosition()) / unit.getSpeed(), 0.0, 48.0));
+
 
                     // Figure out how to trap the unit
-                    auto trapTowards = unit.getPosition() + Position(int(unit.unit()->getVelocityX() * framesToArrive), int(unit.unit()->getVelocityY() * framesToArrive));;
+                    auto trapTowards = unit.getPosition() + Position(int(unit.unit()->getVelocityX() * framesToArrive), int(unit.unit()->getVelocityY() * framesToArrive));
                     /*auto dist = unit.getPosition().getDistance(trapTowards);
                     trapTowards = Util::shiftTowards(unit.getPosition(), trapTowards, dist*2.0);*/
                     if (unit.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, unit.getPosition())) {
                         trapTowards += Terrain::getMainPosition();
                         trapTowards /= 2.0;
-                        Visuals::drawLine(unit.getPosition(), trapTowards, Colors::Purple);
+                        framesToArrive *= 1.25;
                     }
+                    else if (unit.getCurrentSpeed() <= 0.0) {
+                        trapTowards = unit.getPosition() + (unit.getPosition() - furthestTargeter->getPosition());
+                    }
+                    Visuals::drawLine(unit.getPosition(), trapTowards, Colors::Purple);
 
                     // Create surround positions in a primitive fashion
                     vector<pair<Position, double>> surroundPositions;
-                    auto width = unit.getType().width() - 8;
-                    auto height = unit.getType().height() - 8;
-                    for (double x = -1.0; x <= 1.0; x += 1.0 / double(unit.getType().tileWidth())) {
-                        auto p = (unit.getPosition()) + Position(int(x * width), int(-1.0 * height));
-                        auto q = (unit.getPosition()) + Position(int(x * width), int(1.0 * height));
-                        surroundPositions.push_back(make_pair(p, p.getDistance(trapTowards)));
-                        surroundPositions.push_back(make_pair(q, q.getDistance(trapTowards)));
-                    }
-                    for (double y = -1.0; y <= 1.0; y += 1.0 / double(unit.getType().tileHeight())) {
-                        if (y <= -0.99 || y >= 0.99)
-                            continue;
-                        auto p = (unit.getPosition()) + Position(int(-1.0 * width), int(y * height));
-                        auto q = (unit.getPosition()) + Position(int(1.0 * width), int(y * height));
-                        surroundPositions.push_back(make_pair(p, p.getDistance(trapTowards)));
-                        surroundPositions.push_back(make_pair(q, q.getDistance(trapTowards)));
+                    auto width = (unit.getType().width() - 8) / 2;
+                    auto height = (unit.getType().height() - 8) / 2;
+                    for (int x = -1; x <= 1; x++) {
+                        for (int y = -1; y <= 1; y++) {
+                            if (x == 0 && y == 0)
+                                continue;
+                            auto pos = unit.getPosition() + Position(x * width, y * height);
+                            surroundPositions.push_back(make_pair(pos, pos.getDistance(trapTowards)));
+                        }
                     }
 
                     // Sort positions by summed distances
@@ -139,8 +136,8 @@ namespace McRave::Pathing {
 
                         // Get time to arrive to the surround position
                         if (closestTargeter) {
-                            auto dirx = (trapTowards.x - unit.getPosition().x) / unit.getPosition().getDistance(trapTowards);
-                            auto diry = (trapTowards.y - unit.getPosition().y) / unit.getPosition().getDistance(trapTowards);
+                            auto dirx = (trapTowards.x - unit.getPosition().x) / (1.0 + unit.getPosition().getDistance(trapTowards));
+                            auto diry = (trapTowards.y - unit.getPosition().y) / (1.0 + unit.getPosition().getDistance(trapTowards));
 
                             auto expandx = (pos.x - unit.getPosition().x) / unit.getPosition().getDistance(pos);
                             auto expandy = (pos.y - unit.getPosition().y) / unit.getPosition().getDistance(pos);
@@ -149,7 +146,7 @@ namespace McRave::Pathing {
 
                             if (Util::findWalkable(*closestTargeter, correctedPos)) {
                                 closestTargeter->setSurroundPosition(correctedPos);
-                                Visuals::drawLine(closestTargeter->getPosition(), correctedPos, Colors::Green);
+                                //Visuals::drawLine(closestTargeter->getPosition(), correctedPos, Colors::Green);
                                 Visuals::drawCircle(correctedPos, 4, Colors::Green);
                             }
                         }

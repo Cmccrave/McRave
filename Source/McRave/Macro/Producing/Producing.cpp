@@ -297,7 +297,6 @@ namespace McRave::Producing {
                     || (!larva.isProxy() && BuildOrder::isProxy() && bestType == Zerg_Hydralisk)
                     || !larva.unit()->getHatchery()
                     || !larva.unit()->isCompleted()
-                    || larva.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
                     || lastProduceFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4
                     || (Planning::overlapsPlan(larva, larva.getPosition()) && Util::getTime() > Time(4, 00)))
                     return false;
@@ -373,7 +372,7 @@ namespace McRave::Producing {
                 if (!building.unit()
                     || building.getRole() != Role::Production
                     || !building.unit()->isCompleted()
-                    || building.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
+                    || building.getRemainingTrainFrames() >= Broodwar->getLatencyFrames() + 1
                     || lastProduceFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4
                     || Upgrading::upgradedThisFrame()
                     || Researching::researchedThisFrame()

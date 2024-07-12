@@ -584,6 +584,8 @@ namespace McRave::Stations
             // Late spores if we're allin
             if (station->isNatural() && enemyAir && BuildOrder::isAllIn() && !hydraBuild)
                 return (Util::getTime() > Time(5, 00)) - airCount;
+            if (station->isNatural() && enemyAir && !hydraBuild && !mutaBuild)
+                return (Util::getTime() > Time(5, 00)) - airCount;
 
             // Corsair DT exist
             if (!station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 )
@@ -745,6 +747,8 @@ namespace McRave::Stations
         }
         else {
             const auto lowGroundCount = Broodwar->self()->getRace() == Races::Zerg && vis(Zerg_Zergling) < 12 && vis(Zerg_Hydralisk) < 6;
+            if (unit.isLightAir() && Util::getTime() < Time(8, 00))
+                return Terrain::getMyMain();
             if (Util::getTime() < Time(5, 00) || Spy::enemyRush() || lowGroundCount)
                 return Combat::isDefendNatural() ? Terrain::getMyNatural() : Terrain::getMyMain();
         }

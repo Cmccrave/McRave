@@ -131,6 +131,20 @@ namespace McRave::Targets {
                     const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->getType() == Zerg_Zergling; });
                     if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
                         return Priority::Minor;
+                    //if (unit.isWithinReach(target) && Util::getTime() > Time(5, 00) && !target.getType().isBuilding() && !target.getType().isWorker() && targetingCount < 2)
+                    //    return Priority::Major;
+
+                    if (unit.isWithinReach(target) && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) && Terrain::inArea(mapBWEM.GetArea(target.getWalkPosition()),unit.getPosition())) {
+                        if (target.getType().isWorker())
+                            return Priority::Major;
+                        if (target.getType() == Protoss_Photon_Cannon)
+                            return Priority::Critical;
+                    }
+
+                    // Already in range, continue to target it if possible
+                    if (unit.isWithinRange(target) && !target.getType().isBuilding() && !target.getType().isWorker())
+                        return Priority::Major;
+
                     //if (unit.attemptingRunby() && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
                     //    return Priority::Ignore;
                 }
@@ -140,9 +154,6 @@ namespace McRave::Targets {
                     auto anythingTime = Util::getTime() > (Players::ZvZ() ? Time(7, 00) : Time(12, 00));
                     auto anythingSupply = !Players::ZvZ() && Players::getSupply(PlayerState::Enemy, Races::None) < 20;
                     auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
-
-                    if (unit.canOneShot(target))
-                        return Priority::Major;
 
                     if (Players::ZvP()) {
 
@@ -158,12 +169,23 @@ namespace McRave::Targets {
                         if (Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == "ZealotRush")
                             return Priority::Major;
 
+                        // Stragglers are free to kill
+                        if (!target.getType().isBuilding() && unit.isWithinReach(target) && target.getUnitsInRangeOfThis().size() <= 1)
+                            return Priority::Major;
+
                         // Try to push for only worker kills to try and end the game
                         if (Spy::getEnemyBuild() == "FFE" && Util::getTime() < Time(8, 00) && !target.getType().isWorker() && target.isCompleted() && !target.isThreatening())
                             return Priority::Ignore;
                     }
                     if (Players::ZvZ() && Util::getTime() < Time(8, 00) && target.getType() == Zerg_Zergling && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
                         return Priority::Major;
+
+                    if (unit.canOneShot(target) && unit.isWithinReach(target))
+                        return Priority::Major;
+
+                    //// If a building is unprotected
+                    //if (unit.getType().isBuilding() && int(target.getUnitsInRangeOfThis().size()) <= 3 && unit.isWithinReach(target))
+                    //    return Priority::Major;
 
                     // Low priority targets, ignore when we haven't found the enemy
                     auto priorityAfterInfo = Terrain::foundEnemy() ? Priority::Minor : Priority::Trivial;
@@ -292,11 +314,13 @@ namespace McRave::Targets {
                     return 1.0;
 
                 const auto withinReachHigherRange = range > 32.0 && range >= enemyRange && boxDistance <= reach;
+                const auto withinReachMelee = range <= 32.0 && boxDistance <= reach;
+
                 const auto withinRangeLessRange = range > 32.0 && range < enemyRange && boxDistance <= range;
                 const auto withinRangeMelee = range <= 32.0 && boxDistance <= 64.0;
 
                 if (withinReachHigherRange || withinRangeLessRange || withinRangeMelee)
-                    return (1.0 + double());
+                    return (1.0 + double(target.getUnitsTargetingThis().size()));
                 return 1.0;
             };
 

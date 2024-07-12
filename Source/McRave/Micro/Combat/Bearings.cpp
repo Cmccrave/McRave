@@ -95,7 +95,7 @@ namespace McRave::Combat::Bearings {
             }
             else if (unit.attemptingRegroup()) {
                 unit.setDestination(unit.getCommander().lock()->getPosition());
-                Broodwar->drawTextMap(unit.getPosition(), "z_regrp");
+                //Broodwar->drawTextMap(unit.getPosition(), "z_regrp");
             }
             else if (unit.attemptingHarass() || unit.attemptingRunby()) {
                 unit.setDestination(Combat::getHarassPosition());

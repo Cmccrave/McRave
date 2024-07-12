@@ -156,24 +156,23 @@ namespace McRave::Walls {
         int ZvP_Opener(const BWEB::Wall& wall)
         {
             // If we are opening 12 hatch or a 2h build, we sometimes need a faster sunken
-            auto earlySunk = BuildOrder::getCurrentOpener() == "12Hatch" || BuildOrder::getCurrentTransition().find("2Hatch") != string::npos;
+            auto earlySunk = BuildOrder::getCurrentOpener() == "12Hatch" || BuildOrder::getCurrentTransition().find("2Hatch") != string::npos || Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 1;
 
             // 1GateCore
             if (Spy::getEnemyBuild() == "1GateCore" || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
-                return (earlySunk && Util::getTime() > Time(3, 45))
-                    + (Util::getTime() > Time(4, 30))
-                    + (Util::getTime() > Time(5, 00));
+                return (Util::getTime() > Time(3, 45))
+                    + (Util::getTime() > Time(4, 30));
             }
 
             // 2Gate
-            if (Spy::getEnemyBuild() == "2Gate" && Util::getTime() < Time(5, 30)) {
+            if (Spy::getEnemyBuild() == "2Gate") {
                 if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
                     return (earlySunk && Util::getTime() > Time(3, 15))
                     + (Util::getTime() > Time(4, 10))
-                    + (Util::getTime() > Time(4, 40));
+                    + (Util::getTime() > Time(4, 30));
                 if (Spy::getEnemyOpener() == "10/15")
                     return (earlySunk && Util::getTime() > Time(3, 15))
-                    + (Util::getTime() > Time(4, 30))
+                    + (Util::getTime() > Time(4, 10))
                     + (Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown")
                     return (earlySunk && Util::getTime() > Time(3, 00))
@@ -189,35 +188,7 @@ namespace McRave::Walls {
 
             // FFE
             if (Spy::getEnemyBuild() == "FFE") {
-                if (BuildOrder::getCurrentTransition() == "6HatchHydra")
-                    return (Util::getTime() > Time(5, 00));
-
-                // Need to check all these, probably wrong now
-                if (Spy::getEnemyTransition() == "Carriers")
-                    return 0;
-                if (Spy::getEnemyTransition() == "NeoBisu" && Util::getTime() < Time(6, 30))
-                    return ((2 * (Util::getTime() > Time(6, 00))));
-                if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() < Time(7, 00))
-                    return (2 * (Util::getTime() > Time(6, 00)))
-                    + (2 * (Util::getTime() > Time(6, 30)))
-                    + (2 * (Util::getTime() > Time(7, 00)));
-                if (Spy::getEnemyTransition() == "Unknown" && Util::getTime() < Time(5, 15))
-                    return (Util::getTime() > Time(6, 00));
-                if (Util::getTime() < Time(8, 00))
-                    return (Util::getTime() > Time(5, 30))
-                    + (Util::getTime() > Time(6, 15))
-                    + (Util::getTime() > Time(6, 45));
-                if (Spy::getEnemyTransition() == "5GateGoon" && Util::getTime() < Time(10, 00))
-                    return (Util::getTime() > Time(5, 40))
-                    + (Util::getTime() > Time(6, 00))
-                    + (Util::getTime() > Time(6, 20))
-                    + 2 * (Util::getTime() > Time(7, 15));
-                if (Spy::getEnemyTransition() == "CorsairGoon" && Util::getTime() < Time(10, 00))
-                    return (Util::getTime() > Time(5, 30))
-                    + (Util::getTime() > Time(6, 15))
-                    + (Util::getTime() > Time(6, 45))
-                    + 2 * (Util::getTime() > Time(7, 15));
-                return (Util::getTime() > Time(5, 00));
+                return (Util::getTime() > Time(6, 00));
             }
 
             // Always make one that is a safety measure vs unknown builds
@@ -240,16 +211,16 @@ namespace McRave::Walls {
             if (Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") {
 
                 // 4Gate
-                if (Spy::getEnemyTransition() == "4Gate" && Util::getTime() < Time(9, 00)) {
+                if (Spy::getEnemyTransition() == "4Gate") {
                     return (Util::getTime() > Time(4, 00))
                         + (Util::getTime() > Time(4, 00))
                         + (Util::getTime() > Time(4, 30))
                         + (Util::getTime() > Time(5, 00))
+                        + (Util::getTime() > Time(5, 15))
                         + (Util::getTime() > Time(5, 30))
                         + (Util::getTime() > Time(6, 00))
-                        + (Util::getTime() > Time(6, 30))
                         + (Util::getTime() > Time(7, 00))
-                        + (Util::getTime() > Time(7, 70));
+                        + (Util::getTime() > Time(8, 00));
                 }
 
                 // DT
@@ -298,13 +269,25 @@ namespace McRave::Walls {
                         - Spy::enemyProxy();
                 }
             }
+
+            // FFE transitions
+            if (Spy::getEnemyBuild() == "FFE") {
+                if (Spy::getEnemyTransition() == "5GateGoon")
+                    return (Util::getTime() > Time(5, 40))
+                    + (Util::getTime() > Time(6, 00))
+                    + (Util::getTime() > Time(6, 30))
+                    + (Util::getTime() > Time(6, 45))
+                    + (Util::getTime() > Time(7, 00));
+            }
+
             return 0;
         }
 
         int ZvP_Defenses(const BWEB::Wall& wall) {
 
             // If they're only at home and not proxy, don't make any
-            if (!Spy::enemyProxy() && Util::getTime() < Time(3, 45)) {
+            auto delayTime = Spy::getEnemyBuild() == "FFE" ? Time(6, 00) : Time(3, 45);
+            if (!Spy::enemyProxy() && Util::getTime() < delayTime) {
                 auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) {
                     return !u->getType().isBuilding() && !u->getType().isWorker() && !Terrain::inTerritory(PlayerState::Enemy, u->getPosition());
                 });
@@ -314,23 +297,28 @@ namespace McRave::Walls {
 
             // Determine how much we have traded
             auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot)
-                + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);
+                + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);            
 
-            // Make at least one sunken once if below criteria fulfilled
-            auto minimum = 0;
-            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2)
-                minimum = 1;
-
+            auto mutaBuild = BuildOrder::getCurrentTransition().find("Muta") != string::npos;
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto expected = max(ZvP_Opener(wall), ZvP_Transition(wall));
             auto reduction = max(0, unitsKilled / 8);
 
             // Kind of hacky solution to build less with 3h
-            if (threeHatch && expected > 1)
+            if (threeHatch && expected > 1) {
                 expected /= 2;
+                expected++;
+            }
+
+            // Make minimum sunkens if criteria fulfilled
+            auto minimum = 0;
             if (expected > 0)
                 minimum = 1;
+            if (Spy::getEnemyBuild() != "FFE") {
+                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
+                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
+                    minimum = 2;
+            }
 
             return max(minimum, expected - reduction);
         }
@@ -483,8 +471,8 @@ namespace McRave::Walls {
         // If they expanded, we can skip a sunk after a delay
         if (Players::ZvP() && Spy::enemyFastExpand() && Spy::getEnemyBuild() != "FFE" && Util::getTime() > Time(4, 30)) {
             static Time now = Util::getTime();
-            if (Util::getTime() > now + Time(0, 45))
-                groundCount+=2;
+            if (Util::getTime() > now + Time(0, 45) && Util::getTime() < now + Time(1, 45))
+                groundCount+=1;
         }
 
         // Protoss

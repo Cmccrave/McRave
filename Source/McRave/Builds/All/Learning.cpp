@@ -220,7 +220,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchMuta");
+                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "3HatchMuta");
                     return;
                 }
             }

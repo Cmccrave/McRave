@@ -34,8 +34,16 @@ namespace McRave::Combat::State {
                 if (lessMutas)
                     staticRetreatTypes.push_back(Zerg_Mutalisk);
             }
-            else if (com(Zerg_Mutalisk) < (Stations::getStations(PlayerState::Self).size() >= 2 ? 5 : 3) && total(Zerg_Mutalisk) < 9)
-                staticRetreatTypes.push_back(Zerg_Mutalisk);
+            if (Players::ZvP()) {
+                if (com(Zerg_Mutalisk) < 5 && total(Zerg_Mutalisk) < 9)
+                    staticRetreatTypes.push_back(Zerg_Mutalisk);
+                if (Spy::getEnemyTransition() == "5GateGoon" && Util::getTime() < Time(8, 00))
+                    staticRetreatTypes.push_back(Zerg_Mutalisk);
+            }
+            if (Players::ZvT()) {
+                if (com(Zerg_Mutalisk) < 6 && total(Zerg_Mutalisk) < 9)
+                    staticRetreatTypes.push_back(Zerg_Mutalisk);
+            }
         }
 
         // Zerglings
@@ -45,9 +53,11 @@ namespace McRave::Combat::State {
 
             if (!crackling && !BuildOrder::isRush()) {
                 if (Players::ZvP()) {
-                    const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && !Spy::enemyGreedy() && !Spy::enemyProxy() && !speedLing;
+                    const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && !Spy::enemyGreedy() && !Spy::enemyProxy() && Util::getTime() > Time(4, 00);
                     const auto hideCheese = BuildOrder::isHideTech() && BuildOrder::isOpener() && vis(Zerg_Spire) == 0;
-                    if (scaryOpeners || hideCheese)
+                    const auto defendProxy = Spy::enemyProxy() && !speedLing;
+                    const auto defendTiming = (Spy::getEnemyBuild() == "FFE" && Util::getTime() > Time(6, 00) && Util::getTime() < Time(8, 00));
+                    if (scaryOpeners || hideCheese || defendProxy || defendTiming)
                         staticRetreatTypes.push_back(Zerg_Zergling);
                 }
                 if (Players::ZvT()) {
@@ -160,17 +170,20 @@ namespace McRave::Combat::State {
             for (auto &e : Units::getUnits(PlayerState::Enemy)) {
                 auto &enemy = *e;
                 if (enemy.canAttackAir() && enemy != target) {
-                    if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 64.0
-                        || enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 64.0
-                        || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 64.0)
-                        countDefensesInRange += (enemy.getType().isBuilding() ? 1.0 : 0.1);
+                    if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 96.0) {
+                        if (enemy.getType().isBuilding())
+                            countDefensesInRange += 1.0;
+                        else if (enemy.hasAttackedRecently())
+                            countDefensesInRange += 0.2;
+                    }
                 }
             }
 
             if (unit.canOneShot(target) && !unit.isTargetedBySplash() && !unit.isNearSplash()) {
                 if ((countDefensesInRange > 0.0 && Players::ZvZ() && !target.getType().isWorker())
                     || (countDefensesInRange < 2.0 && Util::getTime() < Time(8, 00))
-                    || (countDefensesInRange < 3.0 && Util::getTime() < Time(10, 00)))
+                    || (countDefensesInRange < 3.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(10, 00))
+                    || Util::getTime() > Time(10, 00))
                     return true;
             }
 
@@ -182,6 +195,7 @@ namespace McRave::Combat::State {
         // Forced local attacks:
         return ((!unit.isFlying() && target.isSiegeTank() && unit.getType() != Zerg_Lurker && unit.isWithinRange(target) && unit.getGroundRange() > 32.0)
             || (unit.getType() == Protoss_Reaver && !unit.unit()->isLoaded() && unit.isWithinRange(target))
+            || (target.getType() == Protoss_Dragoon && Util::getTime() > Time(5, 00) && unit.getType() == Zerg_Zergling && unit.isWithinRange(target))
             //|| (Util::getTime() < Time(8, 00) && unit.getType() == Zerg_Mutalisk && target.getType() == Protoss_Photon_Cannon && !target.isCompleted())
             || (target.getType() == Terran_Vulture_Spider_Mine && !target.isBurrowed())
             || (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_High_Templar && unit.canStartCast(TechTypes::Psionic_Storm, target.getPosition()) && unit.isWithinRange(target))
@@ -272,9 +286,8 @@ namespace McRave::Combat::State {
             // Try to save Mutas that are low hp when the firepower isn't needed
             const auto mutaSavingRequired = unit.getType() == Zerg_Mutalisk &&
                 (Players::ZvZ() ? (Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) == 0) : (Util::getTime() > Time(8, 00)))
-                && !unit.isWithinRange(target) && !target.isWithinRange(unit) && unit.getHealth() <= 60
-                && !Terrain::inTerritory(PlayerState::Enemy, unit.getPosition())
-                && (Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0);
+                && !unit.isWithinRange(target) && !target.isWithinRange(unit) && unit.getHealth() <= 30
+                && !Terrain::inTerritory(PlayerState::Enemy, unit.getPosition());
 
             // Try to save scouts as they have high shield counts
             const auto scoutSavingRequired = unit.getType() == Protoss_Scout && !unit.isWithinRange(target) && unit.getHealth() + unit.getShields() <= 80;

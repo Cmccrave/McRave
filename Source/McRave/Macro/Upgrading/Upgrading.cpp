@@ -81,7 +81,7 @@ namespace McRave::Upgrading {
             for (auto &upgrade : building.getType().upgradesWhat()) {
                 if (isCreateable(building.unit(), upgrade) && isSuitable(upgrade)) {
                     if (isAffordable(upgrade)) {
-                        building.setRemainingTrainFrame(upgrade.upgradeTime(Broodwar->self()->getUpgradeLevel(upgrade) + 1) + Broodwar->getLatencyFrames());
+                        building.setRemainingTrainFrame(upgrade.upgradeTime(Broodwar->self()->getUpgradeLevel(upgrade) + 1));
                         building.unit()->upgrade(upgrade);
                         lastUpgradeFrame = Broodwar->getFrameCount();
                         return true;
@@ -116,7 +116,7 @@ namespace McRave::Upgrading {
                 if (!building.unit()
                     || building.getRole() != Role::Production
                     || !building.isCompleted()
-                    || building.getRemainingTrainFrames() > 0
+                    || building.getRemainingTrainFrames() >= Broodwar->getLatencyFrames() + 1
                     || Upgrading::upgradedThisFrame()
                     || Researching::researchedThisFrame()
                     || Producing::producedThisFrame()

@@ -446,7 +446,7 @@ namespace McRave::Command
         else if (unit.getType() == Zerg_Defiler && !unit.isBurrowed()) {
 
             // If close to target and can cast Plague
-            if (unit.getLocalState() != LocalState::None && unit.canStartCast(Plague, target.getPosition())) {
+            if (!unit.targetsFriendly() && unit.getLocalState() != LocalState::None && unit.canStartCast(Plague, target.getPosition())) {
                 unit.setCommand(Plague, target.getPosition());
                 unit.commandText = "Plague";
                 Actions::addAction(unit.unit(), target.getPosition(), Plague, PlayerState::Neutral, Util::getCastRadius(Plague));
@@ -454,7 +454,7 @@ namespace McRave::Command
             }
 
             // If close to target and can cast Dark Swarm
-            if (Players::ZvT() && unit.getPosition().getDistance(target.getPosition()) <= 400 && unit.canStartCast(Dark_Swarm, target.getPosition())) {
+            if (!unit.targetsFriendly() && vis(Zerg_Zergling) + vis(Zerg_Ultralisk) > vis(Zerg_Hydralisk) && unit.getPosition().getDistance(target.getPosition()) <= 400 && unit.canStartCast(Dark_Swarm, target.getPosition())) {
                 unit.setCommand(Dark_Swarm, target.getPosition());
                 unit.commandText = "DarkSwarm";
                 Actions::addAction(unit.unit(), target.getPosition(), Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
@@ -462,7 +462,7 @@ namespace McRave::Command
             }
 
             // If within range of an intermediate point within engaging distance
-            if (Players::ZvT()) {
+            if (!unit.targetsFriendly() && vis(Zerg_Zergling) + vis(Zerg_Ultralisk) > vis(Zerg_Hydralisk) && target.isSiegeTank()) {
                 for (auto &tile : unit.getDestinationPath().getTiles()) {
                     auto center = Position(tile) + Position(16, 16);
 
@@ -480,7 +480,7 @@ namespace McRave::Command
             }
 
             // If close to target and need to Consume
-            if (unit.getEnergy() < 150 && unit.getPosition().getDistance(target.getPosition()) <= 160.0 && unit.canStartCast(Consume, target.getPosition())) {
+            if (unit.targetsFriendly() && unit.getEnergy() < 150 && unit.getPosition().getDistance(target.getPosition()) <= 160.0 && unit.canStartCast(Consume, target.getPosition())) {
                 unit.setCommand(Consume, target);
                 unit.commandText = "Consume";
                 return true;

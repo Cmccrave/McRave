@@ -80,7 +80,7 @@ namespace McRave::Support {
             auto distBest = DBL_MAX;
             for (auto &cluster : Combat::Clusters::getClusters()) {
                 auto commander = cluster.commander.lock();
-                if (commander && types.find(commander->getType()) != types.end() && assignedOverlords.find(commander->getPosition()) == assignedOverlords.end()) {
+                if (commander && commander->isNearHidden() && types.find(commander->getType()) != types.end() && assignedOverlords.find(commander->getPosition()) == assignedOverlords.end()) {
                     auto dist = commander->getPosition().getDistance(unit.getPosition());
                     if (dist < distBest) {
                         unit.setDestination(commander->getPosition());
@@ -94,6 +94,8 @@ namespace McRave::Support {
                 distBest = DBL_MAX;
                 for (auto &u : Units::getUnits(PlayerState::Self)) {
                     auto assignedDist = 320.0;
+                    if (!u->isNearHidden())
+                        continue;
                     if (types.find(u->getType()) != types.end()) {
                         for (auto &position : assignedOverlords)
                             assignedDist = min(assignedDist, position.getDistance(u->getPosition()));
@@ -129,6 +131,7 @@ namespace McRave::Support {
                 || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
 
             auto followArmyPossible = unit.isHealthy() && (unit.getType() != Zerg_Overlord || any_of(types.begin(), types.end(), [&](auto &t) { return com(t) >= 6; }) && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace));
+            const auto followArmyRequired = Spy::enemyInvis();
 
             // Set goal as destination
             if (unit.getGoal().isValid() && unit.getUnitsTargetingThis().empty() && unit.getUnitsInReachOfThis().empty()) {
@@ -136,7 +139,7 @@ namespace McRave::Support {
             }
 
             // Send support units to army
-            else if (followArmyPossible) {
+            else if (followArmyPossible && followArmyRequired) {
                 getArmyPlacement(unit);
             }
 

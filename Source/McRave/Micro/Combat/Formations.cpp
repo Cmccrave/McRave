@@ -84,10 +84,15 @@ namespace McRave::Combat::Formations {
         formation.center = Util::shiftTowards(cluster.avgPosition, cluster.marchNavigation, shift);
         formation.angle = BWEB::Map::getAngle(cluster.marchNavigation, cluster.avgPosition);
 
-        // HACK: If we're engaging, actively shrink the radius
-        auto commander = cluster.commander.lock();
-        if (cluster.state == LocalState::Attack && commander->getLocalState() == LocalState::Attack) {
-            formation.radius = min(formation.radius, commander->getPosition().getDistance(cluster.marchPosition));
+        // If any unit is engaging, shrink radius and point at march position
+        auto engaging = std::any_of(cluster.units.begin(), cluster.units.end(), [&](auto &u) {
+            return u->getLocalState() == LocalState::Attack;
+        });
+        if (engaging) {
+            auto commander = cluster.commander.lock();
+            formation.center = Util::shiftTowards(cluster.avgPosition, cluster.marchPosition, shift);
+            //formation.radius = commander->getPosition().getDistance(cluster.marchPosition) - 64.0;
+            formation.angle = BWEB::Map::getAngle(cluster.marchPosition, cluster.avgPosition);
         }
     }
 
@@ -407,7 +412,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
-        drawFormations();
+        //drawFormations();
     }
 
     vector<Formation>& getFormations() { return formations; }

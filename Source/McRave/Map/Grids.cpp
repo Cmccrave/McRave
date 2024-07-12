@@ -344,12 +344,20 @@ namespace McRave::Grids
         return (player == PlayerState::Self ? selfGrid[gridWalkScale * here.y + here.x].groundThreat : enemyGrid[gridWalkScale * here.y + here.x].groundThreat);
     }
 
+    float getGroundThreat(TilePosition here, PlayerState player) {
+        return player == PlayerState::Self ? selfGrid[gridTileScale * here.y + here.x].groundThreat : enemyGrid[gridTileScale * here.y + here.x].groundThreat;
+    }
+
     float getAirThreat(Position here, PlayerState player) {
         return getAirThreat(WalkPosition(here), player);
     }
 
     float getAirThreat(WalkPosition here, PlayerState player) {
         return player == PlayerState::Self ? selfGrid[gridWalkScale * here.y + here.x].airThreat : enemyGrid[gridWalkScale * here.y + here.x].airThreat;
+    }
+
+    float getAirThreat(TilePosition here, PlayerState player) {
+        return player == PlayerState::Self ? selfGrid[gridTileScale * here.y + here.x].airThreat : enemyGrid[gridTileScale * here.y + here.x].airThreat;
     }
 
     float getGroundDensity(Position here, PlayerState player) {

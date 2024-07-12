@@ -115,8 +115,8 @@ namespace McRave::Scouts {
                 fullScout = mainScouted;
 
             // Determine if we are lightly contained such that a scout cant get out
-            auto closestRanged = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                return u->getGroundRange() >= 64.0 && u->getPosition().getDistance(Position(Terrain::getMainChoke()->Center())) < 320.0;
+            auto closestRanged = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy, [&](auto &u) {
+                return u->getGroundRange() >= 64.0 && u->getPosition().getDistance(Position(Terrain::getNaturalChoke()->Center())) < 320.0;
             });
             contained = closestRanged != nullptr;
         }
@@ -393,7 +393,7 @@ namespace McRave::Scouts {
 
         void updateArmyScouting()
         {
-            if (!Terrain::getEnemyNatural() || !Terrain::getMyNatural() || contained)
+            if (!Terrain::getEnemyNatural() || !Terrain::getMyNatural())
                 return;
             auto &army = scoutTargets[ScoutType::Army];
             
@@ -403,10 +403,10 @@ namespace McRave::Scouts {
                 if (Spy::enemyRush() || Spy::enemyProxy())
                     time = Time(4, 00);
 
-                if (Units::getImmThreat() <= 0.1 && Util::getTime() > time && Combat::State::isStaticRetreat(Zerg_Zergling)) {
+                if (Util::getTime() > time) {
                     if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
-                        || (Players::ZvP() && Util::getTime() < Time(8, 00)))
-                        army.desiredTypeCounts[Zerg_Zergling] = 1;
+                        || (Players::ZvP() && Util::getTime() < Time(7, 00)))
+                        army.desiredTypeCounts[Zerg_Zergling] = 2;
                 }
             }
 
@@ -427,10 +427,10 @@ namespace McRave::Scouts {
             auto end = Position(Terrain::getNaturalChoke()->Center());
 
             // Try to scout the main if they're 1 base, flip how to detect threat (stop on first threatening tile)
-            if ((Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") && Util::getTime() > Time(4, 00) && Spy::getEnemyTransition() == "Unknown") {
-                start = Position(Terrain::getEnemyNatural()->getChokepoint()->Center());
-                end = Terrain::getEnemyStartingPosition();
-            }
+            //if ((Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") && Util::getTime() > Time(4, 00) && Spy::getEnemyTransition() == "Unknown") {
+            //    start = Position(Terrain::getEnemyNatural()->getChokepoint()->Center());
+            //    end = Terrain::getEnemyStartingPosition();
+            //}
 
             // Army scouting between my natural and enemy natural
             BWEB::Path newPath(start, end, Zerg_Zergling);
@@ -442,24 +442,33 @@ namespace McRave::Scouts {
             army.center = safeTarget;
             army.addTargets(safeTarget, 32);
 
-            // If they haven't expanded, check it occasionally
-            if (!Spy::enemyFastExpand())
+            // If they haven't expanded, check it occasionally, unless we really need army info
+            if (!Spy::enemyFastExpand() && !contained)
                 army.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
         }
 
         void updateExpansionScouting()
         {
             auto &army = scoutTargets[ScoutType::Army];
-            if (army.desiredTypeCounts[Zerg_Zergling] == 1 || Players::ZvZ() || Util::getTime() < Time(8, 00) || contained)
+            if (Players::ZvZ() || Util::getTime() < Time(7, 00))
                 return;
 
             auto &expansion = scoutTargets[ScoutType::Expansion];
             expansion.desiredTypeCounts[Zerg_Zergling] = 2;
+            if (army.desiredTypeCounts[Zerg_Zergling] > 0)
+                expansion.desiredTypeCounts[Zerg_Zergling] = 0;
 
             for (auto &station : Stations::getStations(PlayerState::None)) {
-                if (station != Terrain::getEnemyMain() && station != Terrain::getEnemyNatural()) {
-                    expansion.center = station->getResourceCentroid();
-                    expansion.addTargets(station->getResourceCentroid());
+
+                // Only scout stations that are closer to the enemy
+                auto closestSelf = Stations::getClosestStationGround(station->getBase()->Center(), PlayerState::Self);
+                auto closestEnemy = Stations::getClosestStationGround(station->getBase()->Center(), PlayerState::Enemy);
+
+                if (!closestEnemy || !closestSelf || station->getBase()->Center().getDistance(closestEnemy->getBase()->Center()) < station->getBase()->Center().getDistance(closestSelf->getBase()->Center())) {
+                    if (station != Terrain::getEnemyMain() && station != Terrain::getEnemyNatural()) {
+                        expansion.center = station->getResourceCentroid();
+                        expansion.addTargets(station->getResourceCentroid());
+                    }
                 }
             }
         }
@@ -540,7 +549,7 @@ namespace McRave::Scouts {
             for (auto &[type, count] : totalDesiredScoutTypeCounts) {
                 if (scoutTypeDeaths[type] > 0 && type != Zerg_Zergling)
                     continue;
-                if (totalCurrentScoutTypeCounts[type] < totalDesiredScoutTypeCounts[type])
+                if (totalCurrentScoutTypeCounts[type] < totalDesiredScoutTypeCounts[type] && !contained)
                     assign(type);
                 else if (totalCurrentScoutTypeCounts[type] > totalDesiredScoutTypeCounts[type])
                     remove(type);
@@ -628,6 +637,11 @@ namespace McRave::Scouts {
                         unit.setDestination(pos);
                     }
                 }
+                
+                // Remove the scouted position so we don't duplicate effort
+                auto itr = find(target.positions.begin(), target.positions.end(), unit.getDestination());
+                if (itr != target.positions.end())
+                    target.positions.erase(itr);
             }
 
             // Use scouting order if we don't know where the enemy is
@@ -715,10 +729,13 @@ namespace McRave::Scouts {
                     sortedScouts.push_back(unit.weak_from_this());
             }
 
-            sort(sortedScouts.begin(), sortedScouts.end(), [&](auto &lhs, auto &rhs) {
-                return Terrain::getEnemyMain() ? lhs.lock()->getPosition().getDistance(Terrain::getEnemyStartingPosition()) < rhs.lock()->getPosition().getDistance(Terrain::getEnemyStartingPosition())
-                    : lhs.lock()->getPosition().getDistance(Terrain::getMainPosition()) > rhs.lock()->getPosition().getDistance(Terrain::getMainPosition());
-            });
+            // Sort them by distance early on
+            if (Util::getTime() < Time(5, 00)) {
+                sort(sortedScouts.begin(), sortedScouts.end(), [&](auto &lhs, auto &rhs) {
+                    return Terrain::getEnemyMain() ? lhs.lock()->getPosition().getDistance(Terrain::getEnemyStartingPosition()) < rhs.lock()->getPosition().getDistance(Terrain::getEnemyStartingPosition())
+                        : lhs.lock()->getPosition().getDistance(Terrain::getMainPosition()) > rhs.lock()->getPosition().getDistance(Terrain::getMainPosition());
+                });
+            }
 
             info = false;
             for (auto &u : sortedScouts) {

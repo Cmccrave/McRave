@@ -126,10 +126,20 @@ namespace McRave::Combat {
                 return Broodwar->getFrameCount() - Grids::getLastVisibleFrame(station->getResourceCentroid()) > 2880 && !commanderInRange(station->getResourceCentroid());
             };
 
+            // If a station is overdefended, it's not valid for harassing
+            const auto validStation = [&](auto station) {
+                const auto defCount = Stations::getAirDefenseCount(station);
+                if (defCount >= 2 && Util::getTime() < Time(8, 00))
+                    return false;
+                if (defCount >= 3 && Util::getTime() < Time(10, 00))
+                    return false;
+                return true;
+            };
+
             // Adds the next closest ground station
             const auto nextStation = [&]() {
                 auto station = Stations::getClosestStationGround(Terrain::getEnemyNatural()->getBase()->Center(), PlayerState::None, [&](auto &s) {
-                    return find(stations.begin(), stations.end(), s) == stations.end();
+                    return validStation(s) && find(stations.begin(), stations.end(), s) == stations.end();
                 });
                 if (station)
                     stations.push_back(station);
@@ -152,22 +162,24 @@ namespace McRave::Combat {
                 return;
             }
 
-            // Some hardcoded ZvT stuff
+            // ZvT main is easier to harass in the immediate
             if (Players::ZvT() && Util::getTime() < Time(8, 00) && Terrain::getEnemyMain()) {
                 harassPosition = Terrain::getEnemyMain()->getResourceCentroid();
                 return;
             }
 
-            // ZvP
-            if (Players::ZvP() && Spy::enemyFastExpand() && Spy::getEnemyBuild() != "FFE" && Terrain::getEnemyNatural()) {
+            // ZvP is less likely to have cannons setup at the natural if not FFE
+            if (Players::ZvP() && Spy::enemyFastExpand() && Spy::getEnemyBuild() != "FFE" && Terrain::getEnemyNatural() && Util::getTime() < Time(8, 00)) {
                 harassPosition = Terrain::getEnemyNatural()->getResourceCentroid();
                 return;
             }
 
             // Create a list of valid positions to harass/check
             if (Util::getTime() < Time(10, 00)) {
-                stations.push_back(Terrain::getEnemyMain());
-                stations.push_back(Terrain::getEnemyNatural());
+                if (validStation(Terrain::getEnemyMain()))
+                    stations.push_back(Terrain::getEnemyMain());
+                if (validStation(Terrain::getEnemyNatural()))
+                    stations.push_back(Terrain::getEnemyNatural());
             }
 
             // At a certain point we need to ensure they aren't mass expanding - check closest 2 if not visible in last 2 minutes

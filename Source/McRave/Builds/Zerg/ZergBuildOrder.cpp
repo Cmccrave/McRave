@@ -209,42 +209,49 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueProduction()
         {
-            // Calculate hatcheries per base with current composition
-            static double hatchPerBase = 0.0;
-            hatchPerBase = armyComposition[Zerg_Zergling] * 3.0
-                + armyComposition[Zerg_Mutalisk] * 1.0
-                + armyComposition[Zerg_Hydralisk] * 2.0
-                + armyComposition[Zerg_Ultralisk] * 1.0
-                + armyComposition[Zerg_Defiler] * 1.0;
-
-            // Calculate hatcheries per base with next composition
-            // TODO: Create these
-            if (Players::ZvZ() && int(Stations::getStations(PlayerState::Self).size()) >= 2)
-                hatchPerBase = 1.5;
-
-            // Log if we have a change in production expectations
-            static double oldHatchPerBase = 0.0;
-            if (hatchPerBase != oldHatchPerBase) {
-                Util::debug("[BuildOrder]: Changed production to " + to_string(hatchPerBase) + " from " + to_string(oldHatchPerBase));
-            }
-            oldHatchPerBase = hatchPerBase;
-
-            // Check if we are maxed on production
-            auto desiredProduction = int(round(hatchPerBase * double(Stations::getStations(PlayerState::Self).size())));
-            productionSat = hatchCount() >= min(7, desiredProduction);
-            auto maxSat = productionSat * 2;
-
-            // Queue production if we need it
             if (!inOpening) {
+
+                // Calculate hatcheries per base with current composition
+                static double hatchPerBase = 0.0;
+                hatchPerBase = armyComposition[Zerg_Zergling] * 2.5
+                    + armyComposition[Zerg_Mutalisk] * 1.0
+                    + armyComposition[Zerg_Hydralisk] * 2.0
+                    + armyComposition[Zerg_Ultralisk] * 1.0
+                    + armyComposition[Zerg_Defiler] * 1.0;
+
+                // Calculate hatcheries per base with next composition
+                // TODO: Create these
+                if (Players::ZvZ() && int(Stations::getStations(PlayerState::Self).size()) >= 2)
+                    hatchPerBase = 1.5;
+
+                // Log if we have a change in production expectations
+                static double oldHatchPerBase = 0.0;
+                if (hatchPerBase != oldHatchPerBase) {
+                    Util::debug("[BuildOrder]: Changed production to " + to_string(hatchPerBase) + " from " + to_string(oldHatchPerBase));
+                }
+                oldHatchPerBase = hatchPerBase;
+
+                // Check if we are maxed on production
+                auto desiredProduction = int(round(hatchPerBase * double(Stations::getStations(PlayerState::Self).size())));
+                productionSat = hatchCount() >= min(6, desiredProduction);
+                auto maxSat = productionSat * 2;
+
+                // Queue production if we need it
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 const auto incompleteHatch = vis(Zerg_Hatchery) - com(Zerg_Hatchery);
                 const auto waitForMinerals = 300 + (150 * incompleteHatch);
 
-                const auto resourceSat = (availableMinerals >= waitForMinerals && Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && !productionSat);
+                const auto resourceSat = (availableMinerals >= waitForMinerals && Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && !productionSat && vis(Zerg_Larva) <= 3);
                 const auto larvaBankrupt = (availableMinerals >= waitForMinerals && (vis(Zerg_Larva) + (3 * incompleteHatch)) < min(3, hatchCount()) && !productionSat);
 
                 rampDesired = resourceSat || larvaBankrupt;
                 buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + rampDesired);
+            }
+
+            // Above 3 hatcheries we need to carefully add, don't add hatcheries if we have larva to spend
+            if (inOpening && hatchCount() >= 3 && inTransition) {
+                if (vis(Zerg_Larva) >= min(3, hatchCount()))
+                    buildQueue[Zerg_Hatchery] = hatchCount();
             }
         }
 
@@ -440,10 +447,8 @@ namespace McRave::BuildOrder::Zerg {
                     buildQueue[Zerg_Evolution_Chamber] = 2;
 
                 // Hive tech
-                if (vis(Zerg_Drone) >= activeAllin.workerCount) {
-                    buildQueue[Zerg_Queens_Nest] = 1;
-                    buildQueue[Zerg_Hive] = atPercent(Zerg_Queens_Nest, 0.95);
-                }
+                buildQueue[Zerg_Queens_Nest] = 1;
+                buildQueue[Zerg_Hive] = atPercent(Zerg_Queens_Nest, 0.95);
 
                 // Upgrades
                 upgradeQueue[UpgradeTypes::Metabolic_Boost] = 1;
@@ -459,13 +464,16 @@ namespace McRave::BuildOrder::Zerg {
                 // Buildings
                 buildQueue[Zerg_Extractor] = 1;
                 if (hatchCount() >= 5)
-                    buildQueue[Zerg_Evolution_Chamber] = vis(Zerg_Larva) <= 2;
+                    buildQueue[Zerg_Evolution_Chamber] = 2;
                 if (hatchCount() < activeAllin.productionCount && vis(Zerg_Larva) <= 2)
                     buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
+                if (Upgrading::haveOrUpgrading(UpgradeTypes::Zerg_Melee_Attacks, 1) && Upgrading::haveOrUpgrading(UpgradeTypes::Zerg_Carapace, 1))
+                    buildQueue[Zerg_Lair] = 1;
 
                 // Upgrades
                 upgradeQueue[UpgradeTypes::Metabolic_Boost] = 1;
                 upgradeQueue[UpgradeTypes::Zerg_Carapace] = 2;
+                upgradeQueue[UpgradeTypes::Zerg_Melee_Attacks] = 2;
             }
 
             // 4HatchSpeedling
@@ -517,12 +525,6 @@ namespace McRave::BuildOrder::Zerg {
         // ZvP
         if (Players::ZvP()) {
             techOffset = 2;
-            if (Spy::getEnemyTransition() == "Carriers")
-                unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
-            else if (focusUnit == Zerg_Hydralisk)
-                unitOrder ={ Zerg_Hydralisk, Zerg_Defiler };
-            else
-                unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Defiler };
         }
 
         // ZvT
@@ -600,7 +602,9 @@ namespace McRave::BuildOrder::Zerg {
         // Composition
         armyComposition.clear();
         if (inOpening) {
-            if (pumpScourge)
+            if (pumpDefiler)
+                armyComposition[Zerg_Defiler] =             1.00;
+            else if (pumpScourge)
                 armyComposition[Zerg_Scourge] =             1.00;
             else if (pumpMutas)
                 armyComposition[Zerg_Mutalisk] =            1.00;
@@ -681,9 +685,9 @@ namespace McRave::BuildOrder::Zerg {
                 armyComposition[Zerg_Mutalisk] =                0.10;
             }
             else if (isFocusUnit(Zerg_Mutalisk)) {
-                armyComposition[Zerg_Drone] =                   0.60;
-                armyComposition[Zerg_Zergling] =                0.00;
-                armyComposition[Zerg_Mutalisk] =                0.40;
+                armyComposition[Zerg_Drone] =                   0.50;
+                armyComposition[Zerg_Zergling] =                0.30;
+                armyComposition[Zerg_Mutalisk] =                0.20;
             }
             else if (isFocusUnit(Zerg_Lurker)) {
                 armyComposition[Zerg_Drone] =                   0.60;
@@ -751,74 +755,6 @@ namespace McRave::BuildOrder::Zerg {
             armyComposition[Zerg_Drone] =                   0.40;
             armyComposition[Zerg_Mutalisk] =                0.60;
         }
-
-        // Make lings if we're fully saturated, need to pump lings or we are behind on sunkens
-        if (!inOpening) {
-            int minimumLings = 2;
-            if (Players::ZvP() && Util::getTime() > Time(7, 30) && focusUnits.find(Zerg_Hydralisk) == focusUnits.end() && hatchCount() >= 6 && int(Stations::getStations(PlayerState::Self).size()) >= 3)
-                minimumLings = 12;
-            if (Spy::getEnemyTransition() == "Robo")
-                minimumLings = 12;
-            if (Spy::getEnemyBuild() == "FFE") {
-                if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() > Time(6, 45) && Util::getTime() < Time(7, 45))
-                    minimumLings = 24;
-            }
-            if (Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && vis(Zerg_Drone) > Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone))
-                minimumLings = Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling);
-
-            // A few lings per defiler
-            minimumLings = max(minimumLings, vis(Zerg_Defiler) * 2);
-
-            // Remove Lings if we're against Vults, adding at Hive
-            if (Players::ZvT()) {
-                if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && total(Zerg_Hive) == 0 && unitLimits[Zerg_Zergling] <= vis(Zerg_Zergling)) {
-                    armyComposition[Zerg_Drone] += armyComposition[Zerg_Zergling];
-                    armyComposition[Zerg_Zergling] = 0.00;
-                    minimumLings = 0;
-                }
-            }
-
-            if (vis(Zerg_Zergling) < minimumLings) {
-                armyComposition.clear();
-                armyComposition[Zerg_Zergling] = 1.00;
-            }
-
-            pumpLings = vis(Zerg_Drone) >= 60 && productionSat;
-            if (pumpLings) {
-                armyComposition[Zerg_Zergling] += armyComposition[Zerg_Drone];
-                armyComposition[Zerg_Drone] = 0.0;
-            }
-
-        }
-
-        // Removing mutas temporarily if they overdefended
-        if (!inOpening && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) >= 6 && Util::getTime() < Time(9, 00) && total(Zerg_Mutalisk) >= 9 && !vsGoonsGols) {
-            armyComposition[Zerg_Drone] += armyComposition[Zerg_Mutalisk];
-            armyComposition[Zerg_Mutalisk] = 0.00;
-        }
-
-        // Specific compositions
-        if (isFocusUnit(Zerg_Hydralisk) && !Terrain::isIslandMap() && (Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) >= 3 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Carrier) >= 4 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Fleet_Beacon) >= 1 || Spy::getEnemyTransition() == "DoubleStargate" || Spy::getEnemyTransition() == "Carriers")) {
-            armyComposition.clear();
-            armyComposition[Zerg_Drone] = 0.50;
-            armyComposition[Zerg_Hydralisk] = 0.50;
-        }
-
-        // Add Scourge if we have Mutas and enemy has air to air
-        // ZvP ... earlier corsair than mutas
-        // ZvT ... earlier wraith than mutas
-        // ZvZ ... we have 2 gas and they have 1 gas
-        if (com(Zerg_Spire) > 0) {
-            auto airCount = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) + Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith);
-            auto needScourgeZvP = Players::ZvP() && airCount > 0 && vis(Zerg_Mutalisk) < 3 && vis(Zerg_Scourge) < min(6, airCount * 2);
-            auto needScourgeZvZ = false;
-            auto needScourgeZvT = Players::ZvT() && airCount > 0 && vis(Zerg_Mutalisk) < 3 && vis(Zerg_Scourge) < min(6, airCount * 2);
-
-            if (needScourgeZvP || needScourgeZvZ || needScourgeZvT) {
-                armyComposition.clear();
-                armyComposition[Zerg_Scourge] = 1.00;
-            }
-        }
     }
 
     void unlocks()
@@ -842,7 +778,7 @@ namespace McRave::BuildOrder::Zerg {
         if (reserveLarva > 0 && atPercent(Zerg_Spire, 0.25) && total(focusUnit) < reserveLarva && com(Zerg_Spire) == 0) {
             auto enemyAirThreat = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0;
             auto expectedSupply = s + ((reserveLarva - total(focusUnit)) * 4);
-            auto expectedOverlords = int(ceil(double(expectedSupply - 2 * hatchCount()) / 16.0));
+            auto expectedOverlords = int(ceil(double(expectedSupply) / 16.0));
             buildQueue[Zerg_Overlord] = expectedOverlords + int(enemyAirThreat) + 1;
         }
 

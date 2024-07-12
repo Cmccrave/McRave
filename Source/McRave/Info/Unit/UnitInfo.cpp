@@ -211,23 +211,19 @@ namespace McRave
 
         // Create a list of units that are in reach of this unit
         unitsInReachOfThis.clear();
-        if (getPlayer() == Broodwar->self()) {
-            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
-                auto &unit = *u;
-                if (((this->isFlying() && unit.canAttackAir()) || (!this->isFlying() && unit.canAttackGround())) && unit.isWithinReach(*this)) {
-                    unitsInReachOfThis.push_back(unit.weak_from_this());
-                }
+        for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+            auto &unit = *u;
+            if (((this->isFlying() && unit.canAttackAir()) || (!this->isFlying() && unit.canAttackGround())) && unit.isWithinReach(*this)) {
+                unitsInReachOfThis.push_back(unit.weak_from_this());
             }
         }
 
         // Create a list of units that are in range of this unit
         unitsInRangeOfThis.clear();
-        if (getPlayer() == Broodwar->self()) {
-            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
-                auto &unit = *u;
-                if (((this->isFlying() && unit.canAttackAir()) || (!this->isFlying() && unit.canAttackGround())) && unit.isWithinRange(*this)) {
-                    unitsInRangeOfThis.push_back(unit.weak_from_this());
-                }
+        for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+            auto &unit = *u;
+            if (((this->isFlying() && unit.canAttackAir()) || (!this->isFlying() && unit.canAttackGround())) && unit.isWithinRange(*this)) {
+                unitsInRangeOfThis.push_back(unit.weak_from_this());
             }
         }
 
@@ -380,6 +376,7 @@ namespace McRave
         const auto area = Combat::isDefendNatural() ? Terrain::getNaturalArea() : Terrain::getMainArea();
         const auto closestGeo = BWEB::Map::getClosestChokeTile(choke, getPosition());
         const auto closestStation = Stations::getClosestStationAir(getPosition(), PlayerState::Self);
+        const auto closestWall = BWEB::Walls::getClosestWall(getPosition());
         const auto rangeCheck = max({ getAirRange() + 32.0, getGroundRange() + 32.0, 64.0 });
         const auto proximityCheck = max(rangeCheck, 200.0);
         auto threateningThisFrame = false;
@@ -402,18 +399,28 @@ namespace McRave
                 || (!Players::ZvZ() && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
                 return true;
 
-            if (!Players::ZvZ()) {
-                return (Util::getTime() > Time(5, 00) && Terrain::inArea(Terrain::getMainArea(), position))
-                    || (Util::getTime() > Time(7, 00) && Terrain::inArea(Terrain::getNaturalArea(), position))
-                    || (Util::getTime() > Time(9, 00) && atHome);
+            if (Players::ZvZ())
+                return false;
+
+            // If in a territory with defenders, don't attack outside defender range
+            if (closestWall && Terrain::inArea(closestWall->getArea(), getPosition())) {
+                if ((closestWall->getGroundDefenseCount() > 0 && !isFlying()) || closestWall->getAirDefenseCount() > 0 && isFlying())
+                    return false;
             }
-            return false;
+            if (closestStation && Terrain::inArea(closestStation->getBase()->GetArea(), getPosition())) {
+                if ((Stations::getGroundDefenseCount(closestStation) > 0 && !isFlying()) || (Stations::getAirDefenseCount(closestStation) > 0 && isFlying()))
+                    return false;
+            }
+
+            return (Util::getTime() > Time(5, 00) && Terrain::inArea(Terrain::getMainArea(), position) && Stations::getGroundDefenseCount(Terrain::getMyMain()) == 0 && Walls::getMainWall()->getGroundDefenseCount() == 0)
+                || (Util::getTime() > Time(7, 00) && Terrain::inArea(Terrain::getNaturalArea(), position) && Stations::getGroundDefenseCount(Terrain::getMyNatural()) == 0 && Walls::getNaturalWall()->getGroundDefenseCount() == 0)
+                || (Util::getTime() > Time(9, 00) && atHome && !Terrain::inArea(Terrain::getMainArea(), position) && !Terrain::inArea(Terrain::getNaturalArea(), position));
         };
 
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
             auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getRole() == Role::Defender && u->canAttackGround() && (u->isCompleted() || this->hasAttackedRecently());
+                return u->getRole() == Role::Defender && u->canAttackGround() && u->isCompleted();
             });
             return (closestDefender && closestDefender->isWithinRange(*this) && Terrain::inTerritory(PlayerState::Self, position))
                 || (closestDefender && isWithinRange(*closestDefender));
@@ -473,24 +480,20 @@ namespace McRave
                 threateningThisFrame = true;
         }
 
-        if (nearTerritory())
-            circle(Colors::Blue);
-
         // Determine if this unit is threatening
         if (threateningThisFrame)
             threateningFrames++;
         else
             threateningFrames = 0;
-
-        auto framesToCheck = Combat::isDefendNatural() ? 24 : 4;
-        if (threateningFrames > framesToCheck)
+        
+        if (threateningFrames > 4)
             lastThreateningFrame = Broodwar->getFrameCount();
 
         // Linger threatening for 0.5 seconds
         threatening = Broodwar->getFrameCount() - lastThreateningFrame <= 4;
 
         // Apply to others
-        if (threatening && threateningFrames > framesToCheck) {
+        if (threatening && threateningFrames > 4) {
             for (auto unit : Units::getUnits(PlayerState::Enemy)) {
                 if (*unit != *this) {
                     if (unit->isFlying() == this->isFlying() && unit->getPosition().getDistance(position) < 320.0)
@@ -941,15 +944,19 @@ namespace McRave
         if (!hasTarget())
             return false;
         auto target = *getTarget().lock();
-        if (target.isThreatening() || (surroundPosition.isValid() && position.getDistance(surroundPosition) < 24.0))
+        if (target.isThreatening() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 16.0)
             return false;
 
         if (target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target.getPosition()))
             return true;
+        return position.getDistance(surroundPosition) > 16.0;
 
-        if (attemptingRunby() || (Util::getTime() < Time(4, 00) && Broodwar->getGameType() != GameTypes::Use_Map_Settings))
-            return false;
-        return false;
+        //if (target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target.getPosition()))
+        //    return true;
+
+        //if (attemptingRunby() || (Util::getTime() < Time(4, 00) && Broodwar->getGameType() != GameTypes::Use_Map_Settings))
+        //    return false;
+        //return false;
     }
 
     bool UnitInfo::attemptingHarass()

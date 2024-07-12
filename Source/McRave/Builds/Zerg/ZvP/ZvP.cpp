@@ -18,7 +18,7 @@ namespace McRave::BuildOrder::Zerg {
     void defaultZvP() {
         inOpening =                                 true;
         inBookSupply =                              true;
-        wallNat =                                   int(Stations::getStations(PlayerState::Self).size()) >= 4 && Spy::getEnemyBuild() == "FFE";
+        wallNat =                                   false;
         wallMain =                                  false;
         wantNatural =                               true;
         wantThird =                                 Util::getTime() < Time(2, 45) || Spy::getEnemyBuild() == "FFE";
@@ -48,6 +48,11 @@ namespace McRave::BuildOrder::Zerg {
     int inboundUnits_ZvP()
     {
         static map<UnitType, double> trackables ={ {Protoss_Zealot, 2.0}, {Protoss_Dragoon, 2.0}, {Protoss_Dark_Templar, 5.0} };
+        if (Players::hasUpgraded(PlayerState::Enemy, Singularity_Charge, 1))
+            trackables[Protoss_Dragoon] = 2.2;
+        if (Players::hasUpgraded(PlayerState::Enemy, Leg_Enhancements, 1))
+            trackables[Protoss_Zealot] = 2.2;
+
         auto inBoundUnit = [&](auto &u) {
             if (!Terrain::getEnemyMain())
                 return true;
@@ -68,20 +73,26 @@ namespace McRave::BuildOrder::Zerg {
             auto idx = trackables.find(unit.getType());
             if (idx != trackables.end()) {
                 arrivalValue += idx->second;
-                if (inBoundUnit(u) || vis(Zerg_Zergling) < 12)
-                    arrivalValue += idx->second / 2.0;
+                if (inBoundUnit(u) || vis(Zerg_Zergling) < 6)
+                    arrivalValue += idx->second / 1.5;
             }
         }
+
+        // Make less if we have some Hydras
+        arrivalValue -= vis(Zerg_Hydralisk) * 1.5;
+        arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 3.0;
+        arrivalValue -= vis(Zerg_Mutalisk);
+
         return int(arrivalValue);
     }
 
     int timingUnits_ZvP() {
-        if (Spy::getEnemyBuild() == "2Gate" && Util::getTime() > Time(3, 30)) {
+        if (Spy::getEnemyTransition() == "4Gate")
             return Util::getTime().minutes * 3;
-        }
-        if (Spy::getEnemyBuild() == "1GateCore" && Util::getTime() > Time(3, 30)) {
+        if (Spy::getEnemyBuild() == "2Gate" && Util::getTime() > Time(3, 30))
+            return Util::getTime().minutes * 3;
+        if (Spy::getEnemyBuild() == "1GateCore" && Util::getTime() > Time(3, 30))
             return Util::getTime().minutes * 2;
-        }
         return 0;
     }
 
@@ -131,18 +142,18 @@ namespace McRave::BuildOrder::Zerg {
         if (vis(Zerg_Drone) >= 18 && Spy::getEnemyOpener() == "Proxy9/9" && Spy::getEnemyBuild() == "2Gate")
             return 24;
 
-        // If this is a 2Hatch build, we prefer sunkens over lings, don't make any after initial
+        // If this is a 2h build, we prefer sunkens over lings, don't make any after initial
         if (currentTransition.find("2Hatch") != string::npos)
             return 0;
 
         // Timing units based on best case scenario for minimum needed lings
         auto timing = timingUnits_ZvP();
-        if (total(Zerg_Zergling) < timing && vis(Zerg_Zergling) < 36)
+        if (total(Zerg_Zergling) < timing && vis(Zerg_Zergling) < 64)
             return timing;
 
         // Timing units based on arrival, typical case scenario
         auto inbound = inboundUnits_ZvP();
-        if (vis(Zerg_Zergling) < inbound && vis(Zerg_Zergling) < 36)
+        if (vis(Zerg_Zergling) < inbound && vis(Zerg_Zergling) < 64)
             return inbound;
         return 0;
     }
@@ -158,27 +169,30 @@ namespace McRave::BuildOrder::Zerg {
         reserveLarva =                                  (Spy::getEnemyBuild() == "FFE" || Spy::enemyFastExpand()) ? 6 : 0;
         hideTech =                                      true;
 
+        // Tech
+        unitOrder ={ Zerg_Mutalisk, Zerg_Zergling };
+
         // Buildings
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32);
-        buildQueue[Zerg_Hatchery] =                     2 + (vis(Zerg_Drone) >= 21) + 2 * (vis(Zerg_Drone) >= 26);
+        buildQueue[Zerg_Hatchery] =                     2 + (vis(Zerg_Drone) >= 22) + (vis(Zerg_Drone) >= 24) + (vis(Zerg_Drone) >= 27);
         buildQueue[Zerg_Extractor] =                    (s >= 20 && hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (hatchCount() >= 3 && vis(Zerg_Drone) >= 22);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        (s >= 32 && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 16);
 
         // Upgrades
-        upgradeQueue[Metabolic_Boost] =                 vis(Zerg_Zergling) >= 18;
+        upgradeQueue[Metabolic_Boost] =                 vis(Zerg_Spire) > 0;
+        upgradeQueue[Zerg_Flyer_Carapace] =             total(Zerg_Mutalisk) >= 12;
 
         // Pumping
-        pumpLings = lingsNeeded_ZvP() > vis(Zerg_Zergling) || (hatchCount() >= 5 && !gas(100));
+        pumpLings = lingsNeeded_ZvP() > vis(Zerg_Zergling) || (hatchCount() >= 4 && !gas(100));
         pumpScourge = false;// com(Zerg_Spire) == 1 && total(Zerg_Scourge) < 4 && Spy::getEnemyBuild() != "FFE" && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0;
         pumpMutas = !pumpScourge && com(Zerg_Spire) > 0 && gas(80);
 
         // Limits
-        unitLimits[Zerg_Zergling] = lingsNeeded_ZvP();
-        if (com(Zerg_Spawning_Pool) > 0)
-            unitLimits[Zerg_Drone] = 26;
-        if (hatchCount() >= 3 && total(Zerg_Mutalisk) >= 18)
-            unitLimits[Zerg_Zergling] = 100;
+        if (com(Zerg_Spawning_Pool) > 0) {
+            unitLimits[Zerg_Zergling] = 200;
+            unitLimits[Zerg_Drone] = 45;
+        }
 
         // All-in
         if ((Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") && Spy::enemyFastExpand()) {
@@ -212,55 +226,62 @@ namespace McRave::BuildOrder::Zerg {
     void ZvP3HatchMuta()
     {
         inTransition =                                  hatchCount() >= 3 || total(Zerg_Mutalisk) > 0;
-        inOpening =                                     total(Zerg_Hydralisk) < 48;
+        inOpening =                                     total(Zerg_Hydralisk) < 48 && total(Zerg_Mutalisk) < 18;
         inBookSupply =                                  vis(Zerg_Overlord) < 4;
 
         focusUnit =                                     Zerg_Mutalisk;
-        wantThird =                                     Util::getTime() < Time(2, 45) || Spy::getEnemyBuild() == "FFE" || hatchCount() >= 3;
+        wantThird =                                     Util::getTime() < Time(2, 45) || Spy::getEnemyBuild() == "FFE";
         planEarly =                                     wantThird && hatchCount() < 3 && Util::getTime() > Time(2, 30);
-        reserveLarva =                                  (Spy::getEnemyBuild() != "FFE") ? 2 : 9;
+        reserveLarva =                                  2;
 
         // Gas first, but wait for lings
         auto firstGas = (s >= 28 && vis(Zerg_Drone) >= 12 && total(Zerg_Zergling) >= initialLings);
+        auto secondGas = (Spy::getEnemyBuild() == "FFE") ? (atPercent(Zerg_Spire, 0.75)) : (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 20);
         auto thirdHatch = (s >= 28 && vis(Zerg_Drone) >= 11 && vis(Zerg_Extractor) > 0);
-        auto fourthHatch = (vis(Zerg_Hydralisk_Den) > 0);
+        auto fourthHatch = (vis(Zerg_Drone) >= 28 && vis(Zerg_Spire) > 0);
+        auto hydraSwitch = Spy::getEnemyTransition() != "4Gate" && Spy::getEnemyTransition() != "5GateGoon";
+
+        // Tech
+        unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker };
+        if (!hydraSwitch)
+            unitOrder ={ Zerg_Mutalisk, Zerg_Zergling };
 
         // Build
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48);
-        buildQueue[Zerg_Hatchery] =                     2 + thirdHatch + fourthHatch + (hatchCount() >= 4 && vis(Zerg_Drone) >= 30) * 2;
-        buildQueue[Zerg_Extractor] =                    firstGas + (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 20) + (hatchCount() >= 6);
+        buildQueue[Zerg_Hatchery] =                     2 + thirdHatch + fourthHatch + (vis(Zerg_Drone) >= 30) + (!hydraSwitch && vis(Zerg_Drone) >= 32) + (!hydraSwitch && vis(Zerg_Drone) >= 40) + (!hydraSwitch && vis(Zerg_Drone) >= 40);
+        buildQueue[Zerg_Extractor] =                    firstGas + secondGas + (hatchCount() >= 6);
         buildQueue[Zerg_Lair] =                         (s >= 32 && gas(100) && hatchCount() >= 3 && vis(Zerg_Drone) >= 12);
         buildQueue[Zerg_Spire] =                        (s >= 32 && com(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 16);
-        buildQueue[Zerg_Hydralisk_Den] =                (total(Zerg_Mutalisk) >= 9 && vis(Zerg_Drone) >= 26);
+        buildQueue[Zerg_Hydralisk_Den] =                (hydraSwitch && total(Zerg_Mutalisk) >= 9 && vis(Zerg_Drone) >= 26);
 
         // Upgrades
-        upgradeQueue[Metabolic_Boost] =                 vis(Zerg_Spire) > 0;
-        upgradeQueue[Muscular_Augments] =               com(Zerg_Hydralisk_Den) > 0;
-        upgradeQueue[Grooved_Spines] =                  hydraSpeed();
+        upgradeQueue[Metabolic_Boost] =                 vis(Zerg_Lair) > 0;
+        upgradeQueue[Muscular_Augments] =               hydraSwitch && com(Zerg_Hydralisk_Den) > 0 && total(Zerg_Hydralisk) >= 6;
+        upgradeQueue[Grooved_Spines] =                  hydraSwitch && hydraSpeed();
+        upgradeQueue[Zerg_Flyer_Carapace] =             2 * (total(Zerg_Mutalisk) >= 9 && !hydraSwitch);
 
         // Pumping
-        pumpLings = lingsNeeded_ZvP() > vis(Zerg_Zergling) && total(Zerg_Mutalisk) < 16;
-        pumpScourge = com(Zerg_Spire) == 1 && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && total(Zerg_Scourge) <= 6;
-        pumpMutas = !pumpScourge && Spy::getEnemyBuild() == "FFE" && com(Zerg_Spire) == 1 && gas(100) && total(Zerg_Mutalisk) < 16;
-        pumpHydras = !pumpMutas && (vis(Zerg_Drone) >= 38 && (hydraRange() || hydraSpeed()));
+        pumpLings = lingsNeeded_ZvP() > vis(Zerg_Zergling) || (!hydraSwitch && hatchCount() >= 6 && !gas(100) && vis(Zerg_Drone) >= 38);
+        pumpScourge = com(Zerg_Spire) == 1 && total(Zerg_Mutalisk) < 9 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > vis(Zerg_Scourge) * 2;
+        pumpMutas = !pumpScourge && com(Zerg_Spire) == 1 && gas(100) && (total(Zerg_Mutalisk) < 9 || !hydraSwitch);
+        pumpHydras = !pumpMutas && hydraSwitch && vis(Zerg_Drone) >= 38;
 
         // Limits
-        unitLimits[Zerg_Zergling] = lingsNeeded_ZvP();
-        if (total(Zerg_Mutalisk) >= 9)
-            unitLimits[Zerg_Drone] = 38;
-        else if (com(Zerg_Spawning_Pool) > 0)
-            unitLimits[Zerg_Drone] = 33;
+        if (com(Zerg_Spawning_Pool) > 0) {
+            unitLimits[Zerg_Zergling] = 200;
+            unitLimits[Zerg_Drone] = 45;
+        }
 
         // Gas
         gasLimit = gasMax();
         if (Spy::getEnemyBuild() != "FFE") {
-            if (Spy::getEnemyBuild() == "2Gate" && Util::getTime() < Time(3, 30))
+            if (Util::getTime() < Time(4, 00))
                 gasLimit = 0;
             else if (vis(Zerg_Drone) < 12)
                 gasLimit = 0;
-            else if (vis(Zerg_Drone) < 14)
-                gasLimit = 1;
             else if (vis(Zerg_Drone) < 16)
+                gasLimit = 1;
+            else if (vis(Zerg_Drone) < 20)
                 gasLimit = 2;
         }
     }
@@ -276,6 +297,9 @@ namespace McRave::BuildOrder::Zerg {
         planEarly =                                     wantThird && hatchCount() < 3 && s >= 26;
         mineralThird =                                  true;
         reserveLarva =                                  9;
+
+        // Tech
+        unitOrder ={ Zerg_Hydralisk, Zerg_Mutalisk };
 
         // Third hatch first, but wait for lings
         auto thirdHatch = (s >= 28 && total(Zerg_Zergling) >= initialLings);
@@ -295,9 +319,10 @@ namespace McRave::BuildOrder::Zerg {
         pumpLings = lingsNeeded_ZvP() > vis(Zerg_Zergling);
 
         // Limits
-        unitLimits[Zerg_Zergling] = lingsNeeded_ZvP();
-        if (com(Zerg_Spawning_Pool) > 0)
+        if (com(Zerg_Spawning_Pool) > 0) {
+            unitLimits[Zerg_Zergling] = 200;
             unitLimits[Zerg_Drone] = 19;
+        }
 
         // Gas
         gasLimit = 0;
@@ -315,6 +340,9 @@ namespace McRave::BuildOrder::Zerg {
         planEarly =                                     false;
         wantThird =                                     hatchCount() >= 4 && Spy::enemyFastExpand();
 
+        // Tech
+        unitOrder ={ Zerg_Hydralisk, Zerg_Mutalisk };
+
         // Third hatch first, but wait for lings
         auto thirdHatch = (s >= 28 && total(Zerg_Zergling) >= initialLings);
 
@@ -330,7 +358,7 @@ namespace McRave::BuildOrder::Zerg {
         if (total(Zerg_Hydralisk) >= 6) {
             upgradeQueue[Grooved_Spines] =              rangeFirst ? com(Zerg_Hydralisk_Den) > 0 : hydraSpeed();
             upgradeQueue[Muscular_Augments] =           rangeFirst ? hydraRange() : com(Zerg_Hydralisk_Den) > 0;
-            upgradeQueue[Zerg_Carapace] =               com(Zerg_Evolution_Chamber) > 0;            
+            upgradeQueue[Zerg_Carapace] =               com(Zerg_Evolution_Chamber) > 0;
         }
 
         // Pumping
@@ -349,15 +377,18 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         // Limits
-        unitLimits[Zerg_Zergling] = lingsNeeded_ZvP();
-        if (com(Zerg_Spawning_Pool) > 0)
+        if (com(Zerg_Spawning_Pool) > 0) {
+            unitLimits[Zerg_Zergling] = 200;
             unitLimits[Zerg_Drone] = 28;
+        }
 
         // Gas
         gasLimit = gasMax();
         if (Spy::getEnemyBuild() != "FFE") {
             if (pumpHydras && !needMinimumHydras)
                 gasLimit = min(5, gasMax());
+            else if (vis(Zerg_Hydralisk_Den) > 0 && Util::getTime() < Time(4, 30))
+                gasLimit = 1;
             else if (vis(Zerg_Drone) < 12)
                 gasLimit = 0;
             else if (vis(Zerg_Drone) < 14)
@@ -384,6 +415,9 @@ namespace McRave::BuildOrder::Zerg {
         wantThird =                                     true;
         mineralThird =                                  false;
         planEarly =                                     wantThird && hatchCount() < 3 && s >= 24;
+
+        // Tech
+        unitOrder ={ Zerg_Hydralisk, Zerg_Mutalisk };
 
         // Third hatch first, but wait for lings
         auto thirdHatch = (s >= 28 && total(Zerg_Zergling) >= initialLings);
@@ -421,8 +455,10 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         // Limits
-        if (com(Zerg_Spawning_Pool) > 0)
+        if (com(Zerg_Spawning_Pool) > 0) {
+            unitLimits[Zerg_Zergling] = 200;
             unitLimits[Zerg_Drone] = 45;
+        }
 
         // Gas
         gasLimit = 0;
@@ -440,44 +476,61 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                                  vis(Zerg_Overlord) < 4;
         unitLimits[Zerg_Zergling] =                     INT_MAX;
 
-        wantThird =                                     false;
+        wantThird =                                     Spy::getEnemyBuild() == "FFE";
+        mineralThird =                                  true;
         gasLimit =                                      (vis(Zerg_Drone) >= 11) ? gasMax() : 0;
         planEarly =                                     wantThird && hatchCount() < 3 && Util::getTime() > Time(2, 30);
         reserveLarva =                                  6;
 
+        // Tech
+        unitOrder ={ Zerg_Zergling, Zerg_Defiler };
+
         // Gas first, but wait for lings
         auto firstGas = (s >= 28 && vis(Zerg_Drone) >= 12 && total(Zerg_Zergling) >= initialLings);
+        auto thirdHatch = (s >= 28 && vis(Zerg_Drone) >= 11 && vis(Zerg_Extractor) > 0);
+        auto fourthHatch = (vis(Zerg_Drone) >= 26);
 
         // Buildings
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48);
-        buildQueue[Zerg_Hatchery] =                     2 + (s >= 28 && vis(Zerg_Drone) >= 11 && vis(Zerg_Extractor) > 0) + (com(Zerg_Hive) > 0) + 2 * (s >= 100);
-        buildQueue[Zerg_Extractor] =                    firstGas + (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 21);
-        buildQueue[Zerg_Lair] =                         (s >= 32 && gas(100) && hatchCount() >= 3 && vis(Zerg_Overlord) >= 3);
-        buildQueue[Zerg_Spire] =                        (s >= 32 && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 16);
-        buildQueue[Zerg_Queens_Nest] =                  total(Zerg_Mutalisk) >= 6;
+        buildQueue[Zerg_Hatchery] =                     2 + thirdHatch + fourthHatch + 2 * (atPercent(Zerg_Hive, 0.5));
+        buildQueue[Zerg_Extractor] =                    firstGas + (com(Zerg_Defiler_Mound) > 0);
+        buildQueue[Zerg_Lair] =                         (s >= 32 && gas(100) && hatchCount() >= 3 && vis(Zerg_Drone) >= 12);
+        buildQueue[Zerg_Queens_Nest] =                  atPercent(Zerg_Lair, 0.95);
         buildQueue[Zerg_Hive] =                         atPercent(Zerg_Queens_Nest, 0.95);
-        buildQueue[Zerg_Evolution_Chamber] =            (s >= 70) + (s >= 150);
+        buildQueue[Zerg_Spire] =                        com(Zerg_Defiler_Mound) > 0;
+        buildQueue[Zerg_Evolution_Chamber] =            2 * vis(Zerg_Hive);
+        buildQueue[Zerg_Defiler_Mound] =                hatchCount() >= 6;
 
         // Upgrades
         upgradeQueue[Metabolic_Boost] =                 vis(Zerg_Lair) > 0;
         upgradeQueue[Adrenal_Glands] =                  com(Zerg_Hive) > 0;
         upgradeQueue[Zerg_Carapace] =                   (com(Zerg_Evolution_Chamber) > 0) + 2 * (com(Zerg_Evolution_Chamber) > 1);
         upgradeQueue[Zerg_Melee_Attacks] =              3 * (com(Zerg_Evolution_Chamber) > 1);
-
-        // Gas
-        gasLimit = 0;
-        if (vis(Zerg_Hive) > 0)
-            gasLimit = 3;
-        else if (vis(Zerg_Drone) >= 11)
-            gasLimit = gasMax();
+        techQueue[Consume] =                            com(Zerg_Defiler_Mound) == 1;
 
         // Limits
-        if (com(Zerg_Spawning_Pool) > 0)
+        if (com(Zerg_Spawning_Pool) > 0) {
+            unitLimits[Zerg_Zergling] = 400;
             unitLimits[Zerg_Drone] = 36;
+        }
 
         // Pumping
-        pumpLings = (vis(Zerg_Drone) >= 30 && total(Zerg_Mutalisk) >= 12) || lingsNeeded_ZvP() > vis(Zerg_Zergling);
-        pumpMutas = com(Zerg_Spire) > 0 && total(Zerg_Mutalisk) < 12 && gas(80);
+        pumpLings = (vis(Zerg_Drone) >= 32) || lingsNeeded_ZvP() > vis(Zerg_Zergling);
+        pumpScourge = com(Zerg_Spire) == 1 && total(Zerg_Scourge) < Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) * 2;
+        pumpDefiler = com(Zerg_Defiler_Mound) == 1 && vis(Zerg_Defiler) < 2;
+
+        // Gas
+        gasLimit = vis(Zerg_Hive) > 0 ? gasMax() : 2;
+        if (Spy::getEnemyBuild() != "FFE") {
+            if (Util::getTime() < Time(4, 00))
+                gasLimit = 0;
+            else if (vis(Zerg_Drone) < 12)
+                gasLimit = 0;
+            else if (vis(Zerg_Drone) < 16)
+                gasLimit = 1;
+            else if (vis(Zerg_Drone) < 20)
+                gasLimit = 2;
+        }
     }
 
     void ZvP()

@@ -305,8 +305,10 @@ namespace BWEB {
             auto idx = 3;
             if (center.getDistance(Position(choke->Center())) < baseDist)
                 idx = 2;
-            defenses[idx].insert(tile);
+            if (find(wallPlacements[1].begin(), wallPlacements[1].end(), tile - base->Location() - wallOffset) != wallPlacements[1].end())
+                idx = 1;
 
+            defenses[idx].insert(tile);
             Map::addReserve(tile, 2, 2);
             Map::addUsed(tile, defenseType);
             defenses[0].insert(tile);

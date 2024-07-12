@@ -105,7 +105,7 @@ namespace McRave::Researching {
                 if (!building.unit()
                     || building.getRole() != Role::Production
                     || !building.isCompleted()
-                    || building.getRemainingTrainFrames() >= Broodwar->getLatencyFrames()
+                    || building.getRemainingTrainFrames() >= Broodwar->getLatencyFrames() + 1
                     || Upgrading::upgradedThisFrame()
                     || Researching::researchedThisFrame()
                     || Producing::producedThisFrame()

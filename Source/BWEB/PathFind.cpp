@@ -7,6 +7,9 @@ using namespace BWAPI;
 
 namespace BWEB
 {
+    vector<TilePosition> fourDir{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
+    vector<TilePosition> eightDir{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 }, { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } };
+
     namespace {
 
         struct Node {
@@ -64,11 +67,7 @@ namespace BWEB
             currentId = 0;
 
         queue<Node> openSet;
-        vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
         openSet.push(Node(target, target, 1.0, 1.0, 1.0, currentId));
-
-        if (diagonal)
-            direction.insert(direction.end(), { { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } });
 
         // Create the path
         const auto createPath = [&](Node& current) {
@@ -94,7 +93,7 @@ namespace BWEB
                 return;
             }
 
-            for (const auto &d : direction) {
+            for (const auto &d : eightDir) {
                 const auto t = parent.tile + d;
 
                 if (!t.isValid() || !isWalkable(t))
@@ -214,11 +213,7 @@ namespace BWEB
             currentId = 0;
 
         priority_queue <Node> openSet;
-        vector<TilePosition> direction{ { 0, 1 },{ 1, 0 },{ -1, 0 },{ 0, -1 } };
         openSet.push(Node(target, target, 1.0, 1.0, 1.0, currentId));
-
-        if (diagonal)
-            direction.insert(direction.end(), { { -1, -1 }, { -1, 1 }, { 1, -1 }, { 1, 1 } });
 
         const auto createPath = [&](Node& current) {
             while (current.tile != target) {
@@ -241,28 +236,28 @@ namespace BWEB
                 return;
             }
 
-            for (const auto &d : direction) {
+            for (const auto &d : eightDir) {
                 const auto t = parent.tile + d;
 
                 if (!t.isValid() || !passedWalkable(t))
                     continue;
 
+                // Closed Node has been queued or closed
+                Node &cs = closedSet[oneDim(t)];
+                if (cs.tile.x != -1 && cs.tile.y != -1 && cs.id == currentId)
+                    continue;
+
                 // Check walkable neighbor tiles on diagnoal
                 if (diagonal && d.x != 0 && d.y != 0) {
-                    auto t1 = parent.tile + TilePosition(d.x, 0);
-                    auto t2 = parent.tile + TilePosition(0, d.y);
+                    const auto t1 = TilePosition(parent.tile.x + d.x, parent.tile.y);
+                    const auto t2 = TilePosition(parent.tile.x, parent.tile.y + d.y);
                     if (!passedWalkable(t1) || !passedWalkable(t2))
                         continue;
                 }
 
-                auto g = parent.g + passedHeuristic(t);
-                auto h = source.getDistance(t) + ((d.x != 0 && d.y != 0) ? 1.414 : 1.0);
-                auto f = g + h;
-                Node &cs = closedSet[oneDim(t)];
-
-                // Closed Node has been queued or closed
-                if (cs.tile != TilePosition(-1, -1) && cs.id == currentId)
-                    continue;
+                const auto g = parent.g + passedHeuristic(t);
+                const auto h = source.getDistance(t) + ((d.x != 0 && d.y != 0) ? 1.414 : 1.0);
+                const auto f = g + h;
 
                 openSet.push(Node(t, parent.tile, f, g, h, currentId));
                 cs.tile = t;

@@ -72,9 +72,16 @@ namespace McRave::Terrain {
                         continue;
 
                     const auto closestMain = BWEB::Stations::getClosestMainStation(unit.getTilePosition());
+                    const auto closestNatural = BWEB::Stations::getClosestNaturalStation(unit.getTilePosition());
 
                     // Set start if valid
                     if (closestMain && closestMain != getMyMain() && unit.getPosition().getDistance(closestMain->getBase()->Center()) < 960.0) {
+                        enemyStartingTilePosition = closestMain->getBase()->Location();
+                        enemyStartingPosition = Position(enemyStartingTilePosition) + Position(64, 48);
+                    }
+
+                    // Natural we only track inside the area itself
+                    if (closestNatural && closestNatural != getMyNatural() && Terrain::inArea(closestNatural->getBase()->GetArea(), unit.getPosition())) {
                         enemyStartingTilePosition = closestMain->getBase()->Location();
                         enemyStartingPosition = Position(enemyStartingTilePosition) + Position(64, 48);
                     }

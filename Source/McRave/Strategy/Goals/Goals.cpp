@@ -155,7 +155,6 @@ namespace McRave::Goals {
                     }
                 }
 
-                // Zerg maybe deny with a single ling?
                 // Terran a vulture/marine?
             }
         }
@@ -314,46 +313,6 @@ namespace McRave::Goals {
                 }
             }
 
-            //// Assign an Overlord to each natural Station
-            //for (auto &station : Stations::getStations(PlayerState::Self)) {
-            //    if (!station->isNatural())
-            //        continue;
-
-            //    auto closestSunk = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
-            //        return u->getType() == Zerg_Sunken_Colony && Terrain::inArea(station->getBase()->GetArea(), u->getPosition());
-            //    });
-            //    auto closestSpore = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
-            //        return u->getType() == Zerg_Spore_Colony && Terrain::inArea(station->getBase()->GetArea(), u->getPosition());
-            //    });
-
-            //    if (closestSpore)
-            //        assignNumberToGoal(closestSpore->getPosition(), Zerg_Overlord, 1, GoalType::Escort);
-            //    else if (closestSunk)
-            //        assignNumberToGoal(closestSunk->getPosition(), Zerg_Overlord, 1, GoalType::Escort);
-            //    else
-            //        assignNumberToGoal(station->getBase()->Center(), Zerg_Overlord, 1, GoalType::Escort);
-            //}
-
-            //// Assign an Overlord to each Station
-            //for (auto &station : Stations::getStations(PlayerState::Self)) {
-            //    if (station->isNatural())
-            //        continue;
-
-            //    auto closestSunk = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
-            //        return u->getType() == Zerg_Sunken_Colony && Terrain::inArea(station->getBase()->GetArea(), u->getPosition());
-            //    });
-            //    auto closestSpore = Util::getClosestUnit(mapBWEM.Center(), PlayerState::Self, [&](auto &u) {
-            //        return u->getType() == Zerg_Spore_Colony && Terrain::inArea(station->getBase()->GetArea(), u->getPosition());
-            //    });
-
-            //    if (closestSpore)
-            //        assignNumberToGoal(closestSpore->getPosition(), Zerg_Overlord, 1, GoalType::Escort);
-            //    else if (closestSunk)
-            //        assignNumberToGoal(closestSunk->getPosition(), Zerg_Overlord, 1, GoalType::Escort);
-            //    else if (!enemyAir)
-            //        assignNumberToGoal(station->getBase()->Center(), Zerg_Overlord, 1, GoalType::Escort);
-            //}
-
             // Assign an Overlord to each main choke
             if (!enemyAir) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
@@ -420,9 +379,9 @@ namespace McRave::Goals {
                     }
                 }
                 if (posBest.isValid()) {
-                    assignPercentToGoal(posBest, Zerg_Zergling, 1.00, GoalType::Attack);
+                    assignPercentToGoal(posBest, Zerg_Zergling, 1.00, GoalType::Explore);
                     if (Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) && Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments))
-                        assignPercentToGoal(posBest, Zerg_Hydralisk, 0.50, GoalType::Attack);
+                        assignPercentToGoal(posBest, Zerg_Hydralisk, 0.50, GoalType::Explore);
                 }
             }
 

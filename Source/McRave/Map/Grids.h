@@ -8,8 +8,10 @@ namespace McRave::Grids
 
     float getGroundThreat(BWAPI::Position, PlayerState);
     float getGroundThreat(BWAPI::WalkPosition, PlayerState);
+    float getGroundThreat(BWAPI::TilePosition, PlayerState);
     float getAirThreat(BWAPI::Position, PlayerState);
     float getAirThreat(BWAPI::WalkPosition, PlayerState);
+    float getAirThreat(BWAPI::TilePosition, PlayerState);
     float getGroundDensity(BWAPI::Position, PlayerState);
     float getGroundDensity(BWAPI::WalkPosition, PlayerState);
     float getAirDensity(BWAPI::Position, PlayerState);

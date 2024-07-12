@@ -265,11 +265,13 @@ namespace McRave::Command {
         auto harassing = unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Combat::getHarassPosition() && unit.attemptingHarass() && unit.getLocalState() == LocalState::None;
         auto regrouping = unit.attemptingRegroup();
 
+        const auto safeMovement = regrouping || (unit.getRole() == Role::Worker && !atHome);
+
         const auto scoreFunction = [&](WalkPosition w) {
             const auto p =          Position(w) + Position(4, 4);
             auto score = 0.0;
 
-            if (unit.getRole() == Role::Worker && !atHome)
+            if (safeMovement)
                 score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w) * threat(unit, w));
             else
                 score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w));
