@@ -111,9 +111,7 @@ namespace BWEB {
         /// <summary> Returns a map containing every Wall keyed by Chokepoint. </summary>
         map<const BWEM::ChokePoint * const, Wall>& getWalls();
 
-        /// <summary> <para> Returns a pointer to a Wall if it has been created in the given Area and ChokePoint. </para>
-        /// <para> Note: If you only pass a Area or a ChokePoint (not both), it will imply and pick a Wall that exists within that Area or blocks that ChokePoint. </para></summary>
-        /// <param name="area"> The Area that the Wall resides in. </param>
+        /// <summary> Returns a pointer to a Wall if it has been created at the given ChokePoint. </summary>
         /// <param name="choke"> The Chokepoint that the Wall blocks. </param>
         const Wall * const getWall(const BWEM::ChokePoint *);
 

@@ -37,8 +37,6 @@ namespace McRave::Combat::State {
             if (Players::ZvP()) {
                 if (com(Zerg_Mutalisk) < 5 && total(Zerg_Mutalisk) < 9)
                     staticRetreatTypes.push_back(Zerg_Mutalisk);
-                if (Spy::getEnemyTransition() == "5GateGoon" && Util::getTime() < Time(8, 00))
-                    staticRetreatTypes.push_back(Zerg_Mutalisk);
             }
             if (Players::ZvT()) {
                 if (com(Zerg_Mutalisk) < 6 && total(Zerg_Mutalisk) < 9)
@@ -230,6 +228,11 @@ namespace McRave::Combat::State {
         auto &target = *unit.getTarget().lock();
         const auto atHome = Terrain::inTerritory(PlayerState::Self, target.getPosition());
 
+        const auto nearEnemyStation = [&]() {
+            const auto closestEnemyStation = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Enemy);
+            return (closestEnemyStation && unit.getPosition().getDistance(closestEnemyStation->getBase()->Center()) < 400.0);
+        };
+
         const auto nearEnemyDefenseStructure = [&]() {
             const auto closestDefense = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
                 return u->getType().isBuilding() && ((u->canAttackGround() && u->isFlying()) || (u->canAttackAir() && !u->isFlying()));
@@ -270,6 +273,7 @@ namespace McRave::Combat::State {
             || (unit.isSuicidal() && Players::getStrength(PlayerState::Enemy).groundToAir <= 0.0 && !nearEnemyDefenseStructure())
             || (unit.isHidden() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
             || (unit.getType() == Zerg_Lurker && unit.isBurrowed() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
+            || (!unit.isFlying() && unit.getGroundRange() < 32.0 && unit.getGoalType() == GoalType::Explore && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) && Util::getTime() > Time(8, 00) && !Players::ZvZ() && nearEnemyStation())
             || (!unit.isFlying() && Actions::overlapsActions(unit.unit(), unit.getEngagePosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
             || (!unit.isFlying() && Actions::overlapsActions(unit.unit(), unit.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96))
             || (unit.isTargetedBySuicide() && !unit.isFlying())

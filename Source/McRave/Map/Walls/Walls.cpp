@@ -10,12 +10,29 @@ namespace McRave::Walls {
     namespace {
         const BWEB::Wall * mainWall = nullptr;
         const BWEB::Wall * naturalWall = nullptr;
-        vector<UnitType> buildings, backup;
+        vector<vector<UnitType>> testingOrder;
         vector<UnitType> defenses;
         bool tight;
         bool openWall;
         UnitType tightType = None;
         bool wantTerranWalls = false;
+
+        void generateWall(const BWEM::Area* area, const BWEM::ChokePoint* choke)
+        {
+            for (auto &buildings : testingOrder) {
+                string types = "";
+                for (auto &building : buildings)
+                    types += building.c_str() + string(", ");
+
+                if (!BWEB::Walls::getWall(choke)) {
+                    Util::debug(string("[Walls]: Generating wall: ") + types);
+                    BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
+                    if (!BWEB::Walls::getWall(choke)) {
+                        Util::debug(string("[Walls]: Wall failed"));
+                    }
+                }
+            }
+        }
 
         void initializeWallParameters()
         {
@@ -29,15 +46,14 @@ namespace McRave::Walls {
 
             // Protoss wall parameters
             if (Broodwar->self()->getRace() == Races::Protoss) {
+                defenses ={ Protoss_Photon_Cannon };
                 if (Players::vZ()) {
                     tight = false;
-                    buildings ={ Protoss_Gateway, Protoss_Forge, Protoss_Pylon };
-                    defenses.insert(defenses.end(), 10, Protoss_Photon_Cannon);
+                    testingOrder ={ { Protoss_Gateway, Protoss_Forge, Protoss_Pylon } };
                 }
                 else {
                     tight = false;
-                    buildings ={ Protoss_Forge, Protoss_Pylon, Protoss_Pylon, Protoss_Pylon };
-                    defenses.insert(defenses.end(), 10, Protoss_Photon_Cannon);
+                    testingOrder ={ { Protoss_Forge, Protoss_Pylon, Protoss_Pylon, Protoss_Pylon } };
                 }
             }
 
@@ -45,20 +61,27 @@ namespace McRave::Walls {
             if (Broodwar->self()->getRace() == Races::Terran) {
                 tight = false;
                 defenses ={ Terran_Missile_Turret };
-                buildings ={ Terran_Barracks, Terran_Bunker };
+                testingOrder ={ { Terran_Barracks, Terran_Bunker } };
             }
 
             // Zerg wall parameters
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 tight = false;
                 defenses ={ Zerg_Sunken_Colony };
+
                 if (Players::ZvT()) {
-                    buildings ={ Zerg_Evolution_Chamber, Zerg_Spire };
-                    backup ={ Zerg_Evolution_Chamber };
+                    testingOrder ={ { Zerg_Evolution_Chamber, Zerg_Spire },
+                                    { Zerg_Evolution_Chamber },
+                                    { Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
+                                    { Zerg_Evolution_Chamber, Zerg_Evolution_Chamber}
+                    };
                 }
                 else {
-                    buildings ={ Zerg_Evolution_Chamber, Zerg_Hatchery, Zerg_Evolution_Chamber };
-                    backup ={ Zerg_Evolution_Chamber, Zerg_Hatchery, };
+                    testingOrder ={ { Zerg_Evolution_Chamber, Zerg_Hatchery, Zerg_Evolution_Chamber },
+                                    { Zerg_Evolution_Chamber, Zerg_Hatchery },
+                                    { Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
+                                    { Zerg_Evolution_Chamber, Zerg_Evolution_Chamber}
+                    };
                 }
             }
         }
@@ -67,35 +90,19 @@ namespace McRave::Walls {
         {
             initializeWallParameters();
 
-            // Create a wall and attempt a backup if needed
-            const auto genWall = [&](auto area, auto choke) {
-                BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
-
-                if (!BWEB::Walls::getWall(choke) && !backup.empty()) {
-                    Util::debug(string("[Walls]: Wall failed, falling to backup."));
-                    BWEB::Walls::createWall(backup, area, choke, tightType, defenses, openWall, tight);
-                }
-
-                if (!BWEB::Walls::getWall(choke)) {
-                    Util::debug(string("[Walls]: Backup wall failed, we're fucked."));
-                    vector<UnitType> empty;
-                    BWEB::Walls::createWall(empty, area, choke, tightType, defenses, openWall, tight);
-                }
-            };
-
             // Create an open wall at every natural
             openWall = true;
 
             // In FFA just make a wall at our natural (if we have one)
             if (Players::vFFA() && Terrain::getMyNatural() && Terrain::getNaturalChoke()) {
-                genWall(Terrain::getMyNatural()->getBase()->GetArea(), Terrain::getNaturalChoke());
+                generateWall(Terrain::getMyNatural()->getBase()->GetArea(), Terrain::getNaturalChoke());
             }
             else {
                 for (auto &station : BWEB::Stations::getStations()) {
                     initializeWallParameters();
-                    if (!station.isNatural())
+                    if (station.isMain())
                         continue;
-                    genWall(station.getBase()->GetArea(), station.getChokepoint());
+                    generateWall(station.getBase()->GetArea(), station.getChokepoint());
                 }
             }
 
@@ -260,7 +267,7 @@ namespace McRave::Walls {
                 }
 
                 // Unknown + Expand + No Tech
-                if (noTech && Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown"){
+                if (noTech && Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown") {
                     return (Util::getTime() > Time(4, 00))
                         + (Util::getTime() > Time(4, 30))
                         + (Util::getTime() > Time(5, 00))
@@ -273,10 +280,9 @@ namespace McRave::Walls {
             // FFE transitions
             if (Spy::getEnemyBuild() == "FFE") {
                 if (Spy::getEnemyTransition() == "5GateGoon")
-                    return (Util::getTime() > Time(5, 40))
+                    return (Util::getTime() > Time(5, 30))
                     + (Util::getTime() > Time(6, 00))
                     + (Util::getTime() > Time(6, 30))
-                    + (Util::getTime() > Time(6, 45))
                     + (Util::getTime() > Time(7, 00));
             }
 
@@ -297,21 +303,27 @@ namespace McRave::Walls {
 
             // Determine how much we have traded
             auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot)
-                + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);            
+                + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);
 
             auto mutaBuild = BuildOrder::getCurrentTransition().find("Muta") != string::npos;
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto expected = max(ZvP_Opener(wall), ZvP_Transition(wall));
             auto reduction = max(0, unitsKilled / 8);
+            auto minimum = 0;
 
-            // Kind of hacky solution to build less with 3h
+            // 3h builds make roughly half as many
             if (threeHatch && expected > 1) {
                 expected /= 2;
                 expected++;
             }
 
+            // Non natural walls are limited to 1 total
+            if (!wall.getStation()->isNatural() && expected > 0) {
+                expected = 1;
+                minimum = 1;
+            }
+
             // Make minimum sunkens if criteria fulfilled
-            auto minimum = 0;
             if (expected > 0)
                 minimum = 1;
             if (Spy::getEnemyBuild() != "FFE") {
@@ -446,7 +458,18 @@ namespace McRave::Walls {
 
     void onFrame()
     {
+        for (auto &station : BWEB::Stations::getStations()) {
+            if (station.isMain() || station.isNatural())
+                continue;
 
+            auto defendPos = Stations::getDefendPosition(&station);
+            if (defendPos.isValid()) {
+                auto defendChoke = Util::getClosestChokepoint(defendPos);
+                if (defendChoke && !BWEB::Walls::getWall(defendChoke)) {
+                    generateWall(station.getBase()->GetArea(), defendChoke);
+                }
+            }
+        }
     }
 
     int needGroundDefenses(const BWEB::Wall& wall)

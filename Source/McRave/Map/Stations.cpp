@@ -123,18 +123,29 @@ namespace McRave::Stations
             for (auto &station : BWEB::Stations::getStations()) {
                 auto defendPosition = station.getBase()->Center();
                 const BWEM::ChokePoint * defendChoke = nullptr;
+                if (defendPositions.find(&station) != defendPositions.end())
+                    continue;
 
+                // One choke, one defend position
                 if (station.getChokepoint()) {
                     defendPosition = Position(station.getChokepoint()->Center());
                     defendChoke = station.getChokepoint();
                 }
+
+                // Find chokepoint that is furthest from my natural chokepoint
                 else if (Terrain::getEnemyStartingPosition().isValid()) {
-                    auto path = mapBWEM.GetPath(station.getBase()->Center(), Terrain::getEnemyStartingPosition());
-                    if (!path.empty()) {
-                        defendPosition = Position(path.front()->Center());
-                        defendChoke = path.front();
+                    auto distBest = 0.0;
+                    for (auto &choke : station.getBase()->GetArea()->ChokePoints()) {
+                        auto dist = BWEB::Map::getGroundDistance(Position(choke->Center()), Position(Terrain::getMyNatural()->getChokepoint()->Center()));
+                        if (dist > distBest) {
+                            distBest = dist;
+                            defendPosition = Position(choke->Center());
+                            defendChoke = choke;
+                        }
                     }
                 }
+                else
+                    continue;
 
                 // If there are multiple chokepoints with the same area pair
                 auto pathTowards = Terrain::getEnemyStartingPosition().isValid() ? Terrain::getEnemyStartingPosition() : mapBWEM.Center();
@@ -815,7 +826,11 @@ namespace McRave::Stations
         return stationptr->second;
     }
 
-    Position getDefendPosition(const BWEB::Station * const station) { return defendPositions[station]; }
+    Position getDefendPosition(const BWEB::Station * const station) {
+        if (defendPositions.find(station) != defendPositions.end())
+            return defendPositions[station];
+        return Positions::Invalid;
+    }
     multimap<double, const BWEB::Station * const>& getStationsBySaturation() { return stationsBySaturation; }
     multimap<double, const BWEB::Station * const>& getStationsByProduction() { return stationsByProduction; }
     int getGasingStationsCount() { return gasingStations; }

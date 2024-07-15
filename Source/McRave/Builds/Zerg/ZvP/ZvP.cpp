@@ -20,6 +20,7 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                              true;
         wallNat =                                   false;
         wallMain =                                  false;
+        wallThird =                                 true;
         wantNatural =                               true;
         wantThird =                                 Util::getTime() < Time(2, 45) || Spy::getEnemyBuild() == "FFE";
         proxy =                                     false;
@@ -100,7 +101,7 @@ namespace McRave::BuildOrder::Zerg {
         if (com(Zerg_Spawning_Pool) == 0)
             return 0;
 
-        auto initialValue = 6;
+        auto initialValue = 4;
         if (currentBuild == "HatchPool")
             initialValue = 2;
 
@@ -230,7 +231,7 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                                  vis(Zerg_Overlord) < 4;
 
         focusUnit =                                     Zerg_Mutalisk;
-        wantThird =                                     Util::getTime() < Time(2, 45) || Spy::getEnemyBuild() == "FFE";
+        wantThird =                                     Spy::getEnemyBuild() != "2Gate" && Spy::getEnemyBuild() != "1GateCore";
         planEarly =                                     wantThird && hatchCount() < 3 && Util::getTime() > Time(2, 30);
         reserveLarva =                                  2;
 

@@ -542,10 +542,6 @@ namespace McRave::Planning {
             if (!isWallType(building))
                 return false;
 
-            // Don't wall if not needed
-            if (!BuildOrder::isWallNat() && !BuildOrder::isWallMain())
-                return false;
-
             // As Zerg, we have to place natural hatch before wall
             if (building == Zerg_Hatchery && isPlannable(building, Terrain::getNaturalTile()) && BWEB::Map::isUsed(Terrain::getNaturalTile()) == UnitTypes::None)
                 return false;
@@ -555,6 +551,13 @@ namespace McRave::Planning {
             for (auto &[_, wall] : BWEB::Walls::getWalls()) {
 
                 if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
+                    continue;
+
+                if (wall.getStation()->isMain() && !BuildOrder::isWallMain())
+                    continue;
+                if (wall.getStation()->isNatural() && !BuildOrder::isWallNat())
+                    continue;
+                if (!wall.getStation()->isMain() && !wall.getStation()->isNatural() && !BuildOrder::isWallThird())
                     continue;
 
                 // Setup placements

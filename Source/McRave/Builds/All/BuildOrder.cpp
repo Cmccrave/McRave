@@ -324,6 +324,7 @@ namespace McRave::BuildOrder
     bool takeThird() { return wantThird; }
     bool isWallNat() { return wallNat; }
     bool isWallMain() { return wallMain; }
+    bool isWallThird() { return wallThird; }
     bool isProxy() { return proxy; }
     bool isHideTech() { return hideTech; }
     bool isRush() { return rush; }

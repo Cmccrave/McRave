@@ -501,7 +501,7 @@ namespace BWEB::Blocks
         {            
             const auto validTile = [&](auto &t, auto station) {
                 const auto &area = Map::mapBWEM.GetArea(t);
-                if (!area)
+                if (!area || (!station.isMain() && !station.isNatural()))
                     return false;
 
                 // Shared area

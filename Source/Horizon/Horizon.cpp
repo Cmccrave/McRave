@@ -55,7 +55,7 @@ namespace McRave::Horizon {
 
         auto &unitTarget = unit.getTarget().lock();
         const auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
-        const auto simulationTime = unitToEngage + 5.0 + addPrepTime(unit);
+        const auto simulationTime = unitToEngage + 2.5 + addPrepTime(unit);
         const auto targetDisplacement = unitToEngage * unitTarget->getSpeed() * 24.0;
         map<Player, SimStrength> simStrengthPerPlayer;
 

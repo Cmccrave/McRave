@@ -121,8 +121,9 @@ namespace McRave::BuildOrder::Zerg {
             // Adding Overlords outside opening book supply, offset by hatch count
             if (!inBookSupply) {
                 int offset = hatchCount() * 2;
-                int count = 1 + min(26, (s - offset) / 14);
-                buildQueue[Zerg_Overlord] = count;
+                int supplyPerOvie = 16 - (hatchCount() / 2);
+                int count = 1 + min(26, (s - offset) / supplyPerOvie);
+                buildQueue[Zerg_Overlord] = min(25, count);
             }
 
             // Adding Overlords if we are sacrificing a scout or know we will lose one

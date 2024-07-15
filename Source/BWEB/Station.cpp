@@ -20,7 +20,7 @@ namespace BWEB {
 
     void Station::addResourceReserves()
     {
-        const auto addReserve = [&](Unit resource, TilePosition start, TilePosition end) {
+        const auto biggerReserve = [&](Unit resource, TilePosition start, TilePosition end) {
             vector<TilePosition> directions{ {1,0}, {-1,0}, {0, 1}, {0,-1} };
             TilePosition next = start;
             Position pEnd = Position(end);
@@ -44,17 +44,17 @@ namespace BWEB {
                 Map::addReserve(next, 1, 1);
             }
         };
-
+        
         // Add reserved tiles
         for (auto &m : base->Minerals()) {
             Map::addReserve(m->TopLeft(), 2, 1);
-            addReserve(m->Unit(), m->Unit()->getTilePosition(), base->Location());
-            addReserve(m->Unit(), m->Unit()->getTilePosition() + TilePosition(1, 0), base->Location() + TilePosition(3, 2));
+            //biggerReserve(m->Unit(), m->Unit()->getTilePosition(), base->Location());
+            //biggerReserve(m->Unit(), m->Unit()->getTilePosition() + TilePosition(1, 0), base->Location() + TilePosition(3, 2));
         }
         for (auto &g : base->Geysers()) {
             Map::addReserve(g->TopLeft(), 4, 2);
-            addReserve(g->Unit(), g->Unit()->getTilePosition(), base->Location());
-            addReserve(g->Unit(), g->Unit()->getTilePosition() + TilePosition(3, 1), base->Location() + TilePosition(3, 2));
+            //biggerReserve(g->Unit(), g->Unit()->getTilePosition(), base->Location());
+            //biggerReserve(g->Unit(), g->Unit()->getTilePosition() + TilePosition(3, 1), base->Location() + TilePosition(3, 2));
         }
     }
 
@@ -187,6 +187,10 @@ namespace BWEB {
             chokeAngle = (round(chokeAngle / 0.785)) * 0.785;
 
             defenseAngle = baseAngle + 1.57;
+
+            // Narrow chokes don't dictate our angles
+            if (choke->Width() < 96.0)
+                return;
 
             if (base->GetArea()->ChokePoints().size() >= 3) {
                 const BWEM::ChokePoint * validSecondChoke = nullptr;
@@ -353,29 +357,29 @@ namespace BWEB {
             return 0.0;
         };
 
-        for (int i = 0; i < cnt; i++) {
-            auto distBest = DBL_MAX;
-            auto tileBest = TilePositions::Invalid;
-            for (auto x = base->Location().x - 4; x <= base->Location().x + 4; x++) {
-                for (auto y = base->Location().y - 3; y <= base->Location().y + 3; y++) {
-                    auto tile = TilePosition(x, y);
-                    auto center = Position(tile) + Position(64, 48);
-                    auto dist = distCalc(center);
-                    if (natural && partnerBase && dist < 160.0)
-                        continue;
+        //for (int i = 0; i < cnt; i++) {
+        //    auto distBest = DBL_MAX;
+        //    auto tileBest = TilePositions::Invalid;
+        //    for (auto x = base->Location().x - 4; x <= base->Location().x + 4; x++) {
+        //        for (auto y = base->Location().y - 3; y <= base->Location().y + 3; y++) {
+        //            auto tile = TilePosition(x, y);
+        //            auto center = Position(tile) + Position(64, 48);
+        //            auto dist = distCalc(center);
+        //            if (natural && partnerBase && dist < 160.0)
+        //                continue;
 
-                    if (dist < distBest && Map::isPlaceable(Broodwar->self()->getRace().getResourceDepot(), tile)) {
-                        distBest = dist;
-                        tileBest = tile;
-                    }
-                }
-            }
+        //            if (dist < distBest && Map::isPlaceable(Broodwar->self()->getRace().getResourceDepot(), tile)) {
+        //                distBest = dist;
+        //                tileBest = tile;
+        //            }
+        //        }
+        //    }
 
-            if (tileBest.isValid()) {
-                secondaryLocations.insert(tileBest);
-                Map::addUsed(tileBest, Broodwar->self()->getRace().getResourceDepot());
-            }
-        }
+        //    if (tileBest.isValid()) {
+        //        secondaryLocations.insert(tileBest);
+        //        Map::addUsed(tileBest, Broodwar->self()->getRace().getResourceDepot());
+        //    }
+        //}
     }
 
     void Station::findNestedDefenses()
@@ -472,14 +476,14 @@ namespace BWEB {
 
         // Generate defenses
         defenseArrangement = int(round(defenseAngle / 0.785)) % 4;
-        if (main)
-            basePlacements ={ {-2, -2}, {-2, 1}, {1, -2} };
-        else if (defenseArrangement == 0)
-            basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0}, {4, 2} };   // 0/8
-        else if (defenseArrangement == 1 || defenseArrangement == 3)
-            basePlacements ={ {-2, 2}, {-2, 0}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0} };                     // pi/4
-        else if (defenseArrangement == 2)
-            basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, 3}, {2, -2}, {4, 3}, {4, -2} };   // pi/2        
+        if (!natural) // Wall defense placements on thirds are more valuable, at least as Zerg
+            basePlacements ={ {-2, -2}, {-2, 1}, {2, -2} };
+        //else if (defenseArrangement == 0)
+        //    basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0}, {4, 2} };   // 0/8
+        //else if (defenseArrangement == 1 || defenseArrangement == 3)
+        //    basePlacements ={ {-2, 2}, {-2, 0}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0} };                     // pi/4
+        //else if (defenseArrangement == 2)
+        //    basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, 3}, {2, -2}, {4, 3}, {4, -2} };   // pi/2        
 
         // Flip them vertically / horizontally as needed
         if (base->Center().y < defenseCentroid.y) {

@@ -8,16 +8,19 @@ namespace McRave::Producing {
 
     namespace {
         map <Unit, UnitType> idleProduction;
-        map <UnitType, int> trainedThisFrame;
         int reservedMineral, reservedGas;
         int lastProduceFrame = -999;
+        int availMin, availGas;
+
+        string scoreThisFrame;
+        string nodeName = "[Production]: ";
 
         void reset()
         {
-            trainedThisFrame.clear();
             idleProduction.clear();
             reservedMineral = 0;
             reservedGas = 0;
+            scoreThisFrame = "";
         }
 
         bool isAffordable(UnitType unit)
@@ -25,21 +28,11 @@ namespace McRave::Producing {
             if (unit == Zerg_Overlord)
                 return Broodwar->self()->minerals() >= unit.mineralPrice() + Planning::getPlannedMineral();
 
-            auto selfMineral            = Broodwar->self()->minerals();
-            auto selfGas                = Broodwar->self()->gas();
-            auto selfSupply             = Players::getSupply(PlayerState::Self, unit.getRace());
+            auto availSupply            = Players::getSupply(PlayerState::Self, unit.getRace());
 
-            for (auto &[type, cnt] : trainedThisFrame) {
-                selfMineral            -= type.mineralPrice() * cnt;
-                selfGas                -= type.gasPrice() * cnt;
-                selfSupply             += type.supplyRequired() * cnt;
-            }
-
-            auto mineralReserve         = (!BuildOrder::isFocusUnit(unit) || Researching::hasIdleResearch() || Upgrading::hasIdleUpgrades()) ? reservedMineral + Researching::getReservedMineral() + Upgrading::getReservedMineral() : 0;
-            auto gasReserve             = (!BuildOrder::isFocusUnit(unit) || Researching::hasIdleResearch() || Upgrading::hasIdleUpgrades()) ? reservedGas + Researching::getReservedGas() + Upgrading::getReservedGas() : 0;
-            auto mineralAffordable      = unit.mineralPrice() == 0 || (selfMineral >= unit.mineralPrice() + Planning::getPlannedMineral() + mineralReserve);
-            auto gasAffordable          = unit.gasPrice() == 0 || (selfGas >= unit.gasPrice() + Planning::getPlannedGas() + gasReserve);
-            auto supplyAffordable       = unit.supplyRequired() == 0 || (selfSupply + unit.supplyRequired() <= Broodwar->self()->supplyTotal());
+            auto mineralAffordable      = unit.mineralPrice() == 0 || (availMin >= unit.mineralPrice());
+            auto gasAffordable          = unit.gasPrice() == 0 || (availGas >= unit.gasPrice());
+            auto supplyAffordable       = unit.supplyRequired() == 0 || (availSupply + unit.supplyRequired() <= Broodwar->self()->supplyTotal());
 
             return mineralAffordable && gasAffordable && supplyAffordable;
         }
@@ -140,14 +133,16 @@ namespace McRave::Producing {
 
         bool isSuitable(UnitType unit)
         {
-            if (unit.isWorker())
-                return vis(unit) < 70 && (!Resources::isMineralSaturated() || !Resources::isGasSaturated());
-
             if (unit.getRace() == Races::Zerg) {
                 if (unit == Zerg_Defiler)
                     return vis(unit) < 4;
+                if (unit == Zerg_Drone)
+                    return vis(unit) < 60;
                 return true;
             }
+
+            if (unit.isWorker())
+                return vis(unit) < 70 && (!Resources::isMineralSaturated() || !Resources::isGasSaturated());
 
             // Determine whether we want reavers or shuttles
             bool needReavers = false;
@@ -248,20 +243,19 @@ namespace McRave::Producing {
 
             // If we can afford it, train it
             if (isAffordable(type)) {
-                trainedThisFrame[type]++;
                 building.unit()->train(type);
                 building.setRemainingTrainFrame(type.buildTime());
                 idleProduction.erase(building.unit());
                 lastProduceFrame = Broodwar->getFrameCount();
+                Util::debug(nodeName + scoreThisFrame);
                 return true;
             }
 
             // Else if this is a tech unit, add it to idle production
             else if (BuildOrder::isFocusUnit(type) && (Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= type.mineralPrice()) && (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= type.gasPrice())) {
-                trainedThisFrame[type]++;
                 idleProduction[building.unit()] = type;
-                reservedMineral += type.mineralPrice();
-                reservedGas += type.gasPrice();
+                availMin -= type.mineralPrice();
+                availGas -= type.gasPrice();
             }
 
             // Else store a zero value idle
@@ -273,13 +267,9 @@ namespace McRave::Producing {
 
         void updateReservedResources()
         {
-            // Reserved resources for idle production
-            for (auto &[unit, type] : idleProduction) {
-                if (BuildOrder::isFocusUnit(type) && unit->exists()) {
-                    reservedMineral += type.mineralPrice();
-                    reservedGas += type.gasPrice();
-                }
-            }
+            // We're allowed to spend up to our limits before buildings, upgrades and research
+            availMin = Broodwar->self()->minerals() - Researching::getReservedMineral() - Upgrading::getReservedMineral();
+            availGas = Broodwar->self()->gas() - Researching::getReservedGas() - Upgrading::getReservedGas();
         }
 
         void updateLarva()
@@ -302,8 +292,10 @@ namespace McRave::Producing {
                     return false;
 
                 // Strategic checks
-                if (bestType == Zerg_Overlord && vis(Zerg_Larva) > 1 && !station->isNatural() && Players::ZvP() && Util::getTime() > Time(4, 00))
-                    return false;
+                if (Players::ZvP()) {
+                    if (bestType == Zerg_Overlord && vis(Zerg_Larva) > 1 && !station->isNatural() && Util::getTime() > Time(4, 00) && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Players::getTotalCount(PlayerState::Self, Zerg_Mutalisk) == 0 && Players::getTotalCount(PlayerState::Self, Zerg_Scourge) == 0 && Players::getTotalCount(PlayerState::Self, Zerg_Hydralisk) == 0)
+                        return false;
+                }
 
                 auto closestStation = Stations::getClosestStationAir(larva.getPosition(), PlayerState::Self);
                 return station == closestStation;
@@ -316,6 +308,7 @@ namespace McRave::Producing {
                     continue;
 
                 const auto value = scoreUnit(type);
+                scoreThisFrame += "{" + string(type.c_str()) + ", " + to_string(value) + "}, ";
                 if (value >= best) {
                     best = value;
                     bestType = type;
@@ -347,9 +340,8 @@ namespace McRave::Producing {
                 for (auto &u : Units::getUnits(PlayerState::Self)) {
                     UnitInfo &larva = *u;
                     if (!larvaTrickRequired(larva)) {
-                        if (validLarva(larva, val, station)) {
-                            produce(larva, bestType);
-                            produced = true;
+                        if (validLarva(larva, val, station)) {                            
+                            produced = produce(larva, bestType);
                         }
                         else if (larvaTrickOptional(larva))
                             continue;
@@ -422,7 +414,7 @@ namespace McRave::Producing {
     {
         // If we need an Overlord, it's highest priority
         if (type == Zerg_Overlord) {
-            if (BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord) + trainedThisFrame[Zerg_Overlord])
+            if (BuildOrder::buildCount(Zerg_Overlord) > vis(Zerg_Overlord))
                 return 500.0;
             return -1.0;
         }
@@ -446,26 +438,27 @@ namespace McRave::Producing {
         }
 
         auto percentage = BuildOrder::getCompositionPercentage(type);
-        auto trainedCount = vis(type) + trainedThisFrame[type];
 
-        auto typeMineralCost = Math::realisticMineralCost(type);
-        auto typeGasCost = Math::realisticGasCost(type);
-
-        for (auto &idleType : idleProduction) {
-            if (type == idleType.second)
+        // Figure out how many we're trying to make
+        auto trainedCount = vis(type);
+        for (auto &[_, idleType] : idleProduction) {
+            if (idleType == type)
                 trainedCount++;
         }
 
+        // Get the cost of making this type
+        auto typeMineralCost = Math::realisticMineralCost(type);
+        auto typeGasCost = Math::realisticGasCost(type);
         for (auto &secondType : type.buildsWhat()) {
             if (!secondType.isBuilding()) {
-                trainedCount += vis(secondType) + trainedThisFrame[secondType];
+                trainedCount += vis(secondType);
                 typeMineralCost += (int)round(BuildOrder::getCompositionPercentage(secondType) * BuildOrder::getCompositionPercentage(type) * Math::realisticMineralCost(secondType));
                 typeGasCost += (int)round(BuildOrder::getCompositionPercentage(secondType) * BuildOrder::getCompositionPercentage(type) * Math::realisticGasCost(secondType));
             }
         }
 
-        auto mineralCost = (Broodwar->self()->minerals() == 0 || typeMineralCost == 0) ? 1.0 : max(1.0, double((Broodwar->self()->minerals() * 2) - typeMineralCost - reservedMineral)) / double(Broodwar->self()->minerals());
-        auto gasCost = (Broodwar->self()->gas() == 0 || typeGasCost == 0) ? 1.0 : max(1.0, double((Broodwar->self()->gas() * 2) - typeGasCost - reservedGas)) / double(Broodwar->self()->gas());
+        auto minCostScore = (Broodwar->self()->minerals() == 0 || typeMineralCost == 0) ? 1.0 : max(1.0, double(availMin * 2 - typeMineralCost - reservedMineral)) / double(Broodwar->self()->minerals());
+        auto gasCostScore = (Broodwar->self()->gas() == 0 || typeGasCost == 0) ? 1.0 : max(1.0, double(availGas * 2 - typeGasCost - reservedGas)) / double(Broodwar->self()->gas());
 
         // Can't make them if we aren't mining and can't afford
         if ((Workers::getGasWorkers() == 0 && typeGasCost > 0 && Broodwar->self()->gas() < typeGasCost)
@@ -474,10 +467,10 @@ namespace McRave::Producing {
 
         // If we can't even afford 50% of the gas cost, then we shouldn't bother
         if ((typeGasCost > 0 && double(Broodwar->self()->gas()) / double(typeGasCost) < 0.5)
-            || (typeGasCost > 0 && Broodwar->self()->gas() - reservedGas < 0))
+            || (typeGasCost > 0 && availGas < 0))
             return -1.0;
 
-        const auto resourceScore = gasCost * mineralCost;
+        const auto resourceScore = gasCostScore * minCostScore;
         const auto strategyScore = 100.0 * percentage / double(max(1, trainedCount));
         return resourceScore + strategyScore;
     }

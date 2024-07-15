@@ -34,6 +34,7 @@ namespace McRave::BuildOrder {
         inline bool getTech = false;
         inline bool wallNat = false;
         inline bool wallMain = false;
+        inline bool wallThird = false;
         inline bool scout = false;
         inline bool productionSat = false;
         inline bool techSat = false;
@@ -126,6 +127,7 @@ namespace McRave::BuildOrder {
     bool shouldScout();
     bool isWallNat();
     bool isWallMain();
+    bool isWallThird();
     bool isProxy();
     bool isHideTech();
     bool isRush();
