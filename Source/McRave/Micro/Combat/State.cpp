@@ -349,7 +349,7 @@ namespace McRave::Combat::State {
             unit.setLocalState(LocalState::Retreat);
 
         // If within local decision range, determine if Unit needs to attack or retreat
-        else if (insideEngageRadius && (unit.getSimState() == SimState::Win || exploringGoal))
+        else if (insideEngageRadius && (unit.getSimState() == SimState::Win /*|| exploringGoal*/))
             unit.setLocalState(LocalState::Attack);
         else if (insideRetreatRadius && (!unit.attemptingRunby() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition())) && unit.getSimState() == SimState::Loss)
             unit.setLocalState(LocalState::Retreat);

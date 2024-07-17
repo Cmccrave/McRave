@@ -8,11 +8,17 @@ namespace McRave::Support {
 
     namespace {
         set<Position> assignedOverlords;
-        set<UnitType> types ={ Zerg_Hydralisk, Zerg_Mutalisk, Protoss_Dragoon, Terran_Marine, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode };
+        set<UnitType> types;
 
-        void updateCounters()
+        void reset()
         {
             assignedOverlords.clear();
+
+            types ={ Zerg_Hydralisk, Protoss_Dragoon, Terran_Marine, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode };
+            if (Players::ZvT() && Spy::enemyInvis)
+                types.insert(Zerg_Mutalisk);
+            if (Players::ZvP() && Spy::enemyInvis())
+                types.insert(Zerg_Zergling);
         }
 
         void assignInBox(Point<int> h, UnitInfo& unit)
@@ -80,7 +86,7 @@ namespace McRave::Support {
             auto distBest = DBL_MAX;
             for (auto &cluster : Combat::Clusters::getClusters()) {
                 auto commander = cluster.commander.lock();
-                if (commander && commander->isNearHidden() && types.find(commander->getType()) != types.end() && assignedOverlords.find(commander->getPosition()) == assignedOverlords.end()) {
+                if (commander && types.find(commander->getType()) != types.end() && assignedOverlords.find(commander->getPosition()) == assignedOverlords.end()) {
                     auto dist = commander->getPosition().getDistance(unit.getPosition());
                     if (dist < distBest) {
                         unit.setDestination(commander->getPosition());
@@ -213,7 +219,7 @@ namespace McRave::Support {
 
     void onFrame()
     {
-        updateCounters();
+        reset();
         updateUnits();
     }
 }

@@ -356,7 +356,7 @@ namespace McRave::Util {
         auto position = target;
         auto value = 0.0;
         auto startAngle = BWEB::Map::getAngle(make_pair(target, source));
-        pair<double, double> radrange ={ 0.00, 3.14 };
+        pair<double, double> radrange ={ 0.00, M_PI };
         for (int i = 1; i <= 20; i++) {
             const auto diff = double(M_PI) / double(1 + i); // Allows for correction in the event that the first few points are unwalkable
             const auto p1 = Util::clipPosition(target + Position(int((radius*cos(radrange.first))), -int((radius*sin(radrange.first)))));

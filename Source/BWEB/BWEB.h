@@ -6,6 +6,7 @@
 #include "Station.h"
 #include "Wall.h"
 
+# define M_PI_D4 0.78539816339744830961
 # define M_PI_D2 1.57079632679489661923
 # define M_PI 3.14159265358979323846
 # define M_PI_T2 6.28318530717958647692

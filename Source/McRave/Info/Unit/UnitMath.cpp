@@ -90,7 +90,7 @@ namespace McRave::Math {
         if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Terran_Science_Vessel || unit.getType() == Protoss_Arbiter || unit.getType() == Protoss_Carrier)
             return 15.0;
         if (Spy::enemyProxy() && unit.getType() == Protoss_Pylon)
-            return Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) == 0.0f ? 5.0 : 1.0;
+            return Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) <= 0.1f ? 5.0 : 1.0;
 
         // Mark neutrals blocking geysers next to our bases
         if (unit.getTilePosition().isValid()) {
@@ -103,7 +103,7 @@ namespace McRave::Math {
             }
         }
 
-        auto ff = (unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding()) ? 1.00 : 0;
+        auto ff = (unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding()) ? 0.0 : 1.00;
         auto dps = ff + max(groundDPS(unit) / maxGrdDps, airDPS(unit) / maxAirDps);
         auto cost = relativeCost(unit) / maxCost;
         auto surv = survivability(unit) / maxSurv;
@@ -376,16 +376,16 @@ namespace McRave::Math {
         if (unit.isLightAir()) {
             if (Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0
                 || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0)
-                return 256.0;
+                return 288.0;
             if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0
                 || Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0
                 || Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0
                 || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) > 0
                 || Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0)
-                return 224.0;
+                return 256.0;
             if (Players::getTotalCount(PlayerState::Enemy, Terran_Ghost) > 0
                 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
-                return 192.0;
+                return 224.0;
             return 160.0;
         }
 

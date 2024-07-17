@@ -9,12 +9,15 @@ namespace McRave::Combat::Navigation {
     namespace {
         map<UnitInfo*, vector<Position>> lastSimPositions;
         map<UnitInfo*, map<weak_ptr<UnitInfo>, int>> lastSimUnits;
+
+        BWEB::Path flyerRegroupPath;
+        BWEB::Path flyerRetreatPath;
     }
 
     void getRegroupPath(UnitInfo& unit)
     {
         const auto flyerRegroup = [&](const TilePosition &t) {
-            return Grids::getAirThreat(t, PlayerState::Enemy) * 250.0;
+            return Grids::getAirThreat(t, PlayerState::Enemy) * 2500.0;
         };
         BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
         newPath.generateAS_h(flyerRegroup);
@@ -75,9 +78,9 @@ namespace McRave::Combat::Navigation {
         if (!unit.getDestination().isValid() || (!unit.getDestinationPath().getTiles().empty() && unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())))
             return;
 
-        auto regrouping = unit.isLightAir() && !unit.getGoal().isValid() && unit.getLocalState() == LocalState::Retreat
+        auto regrouping = unit.isLightAir() && !unit.getGoal().isValid()
             && ((unit.attemptingRegroup() && unit.getDestination() == unit.getCommander().lock()->getPosition())
-                || (!unit.getUnitsInReachOfThis().empty()));
+                || unit.getLocalState() == LocalState::Retreat);
         auto harassing = (unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Combat::getHarassPosition() && unit.attemptingHarass() && unit.getLocalState() == LocalState::None);
 
         // Generate a flying path for retreating or regrouping

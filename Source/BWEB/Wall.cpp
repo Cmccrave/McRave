@@ -105,18 +105,17 @@ namespace BWEB {
 
         // Stations without chokepoints (or multiple) don't get determined on start
         if (!station->isMain() && !station->isNatural()) {
-            maintainShape = true;
-            auto chokeCenter = Position(choke->Center()) + Position(4, 4);
-            chokeAngle = Map::getAngle(make_pair(station->getBase()->Center(), chokeCenter)) + 1.57;
-
-            // If it's far away, use the resource layout to determine shape of the wall
-            //if (station->getBase()->Center().getDistance(chokeCenter) > 390)
-            //    chokeAngle = Map::getAngle(make_pair(station->getResourceCentroid(), station->getBase()->Center())) + 1.57;
-
-            // If there's multiple chokes really close, treat it as one choke instead
+            auto bestGeo = Position(choke->Center()) + Position(4, 4);
+            auto geoDist = DBL_MAX;
+            for (auto &geo : choke->Geometry()) {
+                auto p = Position(geo) + Position(4, 4);
+                if (p.getDistance(station->getBase()->Center()) < geoDist)
+                    bestGeo = Position(geo) + Position(4, 4);
+            }
+            chokeAngle = Map::getAngle(make_pair(station->getBase()->Center(), bestGeo));
         }
 
-        defenseArrangement = int(round(chokeAngle / 0.785)) % 4;
+        defenseArrangement = int(round(chokeAngle / M_PI_D4)) % 4;
 
         const auto adjustOrder = [&](auto& order, auto diff) {
             for (auto &tile : order)
@@ -156,7 +155,7 @@ namespace BWEB {
                 flipVertical    = base->Center().y < Position(choke->Center()).y;
 
                 // Shift positions based on chokepoint offset and iteration
-                auto diffX = !maintainShape ? TilePosition(choke->Center()).x - base->Location().x - 2 : 0;
+                auto diffX = !maintainShape ? TilePosition(choke->Center()).x - base->Location().x : 0;
                 auto diffY = -iteration;
                 wallOffset = TilePosition(0, -iteration);
                 adjustOrder(lrgOrder, TilePosition(diffX, diffY));
@@ -207,7 +206,7 @@ namespace BWEB {
 
                 // Shift positions based on chokepoint offset and iteration
                 auto diffX = -iteration;
-                auto diffY = !maintainShape ? TilePosition(choke->Center()).y - base->Location().y - 1 : 0;
+                auto diffY = !maintainShape ? TilePosition(choke->Center()).y - base->Location().y : 0;
                 wallOffset = TilePosition(-iteration, 0);
                 adjustOrder(lrgOrder, TilePosition(diffX, diffY));
                 adjustOrder(medOrder, TilePosition(diffX, diffY));
@@ -424,19 +423,14 @@ namespace BWEB {
             for (auto &tile : smallTiles) {
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), color);
                 Broodwar->drawTextMap(Position(tile) + Position(4, 4), "%cW", textColor);
-                anglePositions.insert(Position(tile) + Position(32, 32));
             }
             for (auto &tile : mediumTiles) {
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(97, 65), color);
                 Broodwar->drawTextMap(Position(tile) + Position(4, 4), "%cW", textColor);
-                anglePositions.insert(Position(tile) + Position(48, 32));
-                //tightCheck(UnitTypes::Terran_Supply_Depot, tile, true);
             }
             for (auto &tile : largeTiles) {
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(129, 97), color);
                 Broodwar->drawTextMap(Position(tile) + Position(4, 4), "%cW", textColor);
-                anglePositions.insert(Position(tile) + Position(64, 48));
-                //tightCheck(UnitTypes::Terran_Barracks, tile, true);
             }
             for (auto &tile : openings) {
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(33, 33), color, true);
@@ -449,28 +443,11 @@ namespace BWEB {
             }
         }
 
-        // Draw angles of each piece
-        auto drawAngles = false;
-        if (drawAngles) {
-            for (auto &pos1 : anglePositions) {
-                for (auto &pos2 : anglePositions) {
-                    if (pos1 == pos2)
-                        continue;
-                    const auto angle = Map::getAngle(make_pair(pos1, pos2));
-
-                    Broodwar->drawLineMap(pos1, pos2, color);
-                    Broodwar->drawTextMap((pos1 + pos2) / 2, "%c%.2f", textColor, angle);
-                }
-            }
-        }
-
         // Draw the line and angle of the ChokePoint
         auto p1 = choke->Pos(choke->end1);
         auto p2 = choke->Pos(choke->end2);
-        auto angle = Map::getAngle(make_pair(p1, p2));
-        Broodwar->drawTextMap(Position(choke->Center()), "%c%.2f", Text::Grey, angle);
+        Broodwar->drawTextMap(Position(choke->Center()), "%c%.2f", Text::Grey, chokeAngle);
         Broodwar->drawLineMap(Position(p1), Position(p2), Colors::Grey);
-        Broodwar->drawTextMap(Position(choke->Center()), "%d", defenseArrangement);
     }
 }
 
@@ -484,7 +461,7 @@ namespace BWEB::Walls {
         auto timeNow = chrono::system_clock::to_time_t(timePointNow);
 
         // Print the clock position of this Wall
-        auto clock = (round((Map::getAngle(make_pair(Position(area->Top()), Map::mapBWEM.Center())) - 1.57) / 0.52));
+        auto clock = (round((Map::getAngle(make_pair(Position(area->Top()), Map::mapBWEM.Center())) - M_PI_D2) / 0.52));
         if (clock < 0)
             clock+=12;
 

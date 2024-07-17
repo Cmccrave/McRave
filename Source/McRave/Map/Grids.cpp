@@ -345,7 +345,7 @@ namespace McRave::Grids
     }
 
     float getGroundThreat(TilePosition here, PlayerState player) {
-        return player == PlayerState::Self ? selfGrid[gridTileScale * here.y + here.x].groundThreat : enemyGrid[gridTileScale * here.y + here.x].groundThreat;
+        return getGroundThreat(WalkPosition(here), player);
     }
 
     float getAirThreat(Position here, PlayerState player) {
@@ -357,7 +357,7 @@ namespace McRave::Grids
     }
 
     float getAirThreat(TilePosition here, PlayerState player) {
-        return player == PlayerState::Self ? selfGrid[gridTileScale * here.y + here.x].airThreat : enemyGrid[gridTileScale * here.y + here.x].airThreat;
+        return getAirThreat(WalkPosition(here), player);
     }
 
     float getGroundDensity(Position here, PlayerState player) {

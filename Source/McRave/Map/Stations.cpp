@@ -132,12 +132,13 @@ namespace McRave::Stations
                     defendChoke = station.getChokepoint();
                 }
 
-                // Find chokepoint that is furthest from my natural chokepoint
+                // Find chokepoint that is closest to enemy reinforcements
                 else if (Terrain::getEnemyStartingPosition().isValid()) {
-                    auto distBest = 0.0;
+                    auto distBest = DBL_MAX;
+                    auto defendTowards = Terrain::getEnemyNatural() ? Terrain::getEnemyNatural()->getBase()->Center() : Terrain::getEnemyMain()->getBase()->Center();
                     for (auto &choke : station.getBase()->GetArea()->ChokePoints()) {
-                        auto dist = BWEB::Map::getGroundDistance(Position(choke->Center()), Position(Terrain::getMyNatural()->getChokepoint()->Center()));
-                        if (dist > distBest) {
+                        auto dist = BWEB::Map::getGroundDistance(Position(choke->Center()), defendTowards);
+                        if (dist < distBest) {
                             distBest = dist;
                             defendPosition = Position(choke->Center());
                             defendChoke = choke;

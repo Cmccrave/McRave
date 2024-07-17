@@ -142,6 +142,7 @@ namespace McRave {
         bool isSpellcaster() { return type == BWAPI::UnitTypes::Protoss_High_Templar || type == BWAPI::UnitTypes::Protoss_Dark_Archon || type == BWAPI::UnitTypes::Terran_Medic || type == BWAPI::UnitTypes::Terran_Science_Vessel || type == BWAPI::UnitTypes::Zerg_Defiler; }
         bool isSiegeTank() { return type == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode || type == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode; }
         bool isCompleted() { return completed; }
+        bool isMelee() { return data.groundDamage > 0.0 && data.groundRange < 64.0; }
         bool isStimmed() { return BWAPI::Broodwar->getFrameCount() - lastStimFrame < 300; }
         bool isStuck() { return BWAPI::Broodwar->getFrameCount() - lastMoveFrame > 48; }
         bool isInvincible() { return invincible; }

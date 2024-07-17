@@ -73,14 +73,16 @@ namespace McRave::Walls {
                     testingOrder ={ { Zerg_Evolution_Chamber, Zerg_Spire },
                                     { Zerg_Evolution_Chamber },
                                     { Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
-                                    { Zerg_Evolution_Chamber, Zerg_Evolution_Chamber}
+                                    { Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
+                                    {}
                     };
                 }
                 else {
                     testingOrder ={ { Zerg_Evolution_Chamber, Zerg_Hatchery, Zerg_Evolution_Chamber },
                                     { Zerg_Evolution_Chamber, Zerg_Hatchery },
                                     { Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
-                                    { Zerg_Evolution_Chamber, Zerg_Evolution_Chamber}
+                                    { Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
+                                    {}
                     };
                 }
             }
@@ -195,7 +197,7 @@ namespace McRave::Walls {
 
             // FFE
             if (Spy::getEnemyBuild() == "FFE") {
-                return (Util::getTime() > Time(6, 00));
+                return (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 00));
             }
 
             // Always make one that is a safety measure vs unknown builds
@@ -280,10 +282,11 @@ namespace McRave::Walls {
             // FFE transitions
             if (Spy::getEnemyBuild() == "FFE") {
                 if (Spy::getEnemyTransition() == "5GateGoon")
-                    return (Util::getTime() > Time(5, 30))
-                    + (Util::getTime() > Time(6, 00))
+                    return (Util::getTime() > Time(6, 00))
                     + (Util::getTime() > Time(6, 30))
-                    + (Util::getTime() > Time(7, 00));
+                    + (Util::getTime() > Time(7, 00))
+                    + (Util::getTime() > Time(7, 30))
+                    + (Util::getTime() > Time(8, 00));
             }
 
             return 0;

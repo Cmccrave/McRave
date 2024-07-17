@@ -27,7 +27,7 @@ void McRaveModule::onStart()
     Scouts::onStart();
     Combat::onStart();
     Goals::onStart();
-    
+
     Broodwar->enableFlag(Flag::UserInput);
     Broodwar->setCommandOptimizationLevel(0);
     Broodwar->setLatCom(true);
@@ -104,8 +104,6 @@ void McRaveModule::onFrame()
 
     // Display information from this frame
     Visuals::onFrame();
-
-
 }
 
 void McRaveModule::onSendText(string text)

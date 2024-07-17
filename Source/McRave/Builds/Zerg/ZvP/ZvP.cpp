@@ -72,17 +72,17 @@ namespace McRave::BuildOrder::Zerg {
             auto &unit = *u;
 
             auto idx = trackables.find(unit.getType());
-            if (idx != trackables.end()) {
+            if (idx != trackables.end() && (inOpening || unit.isThreatening())) {
                 arrivalValue += idx->second;
                 if (inBoundUnit(u) || vis(Zerg_Zergling) < 6)
                     arrivalValue += idx->second / 1.5;
             }
         }
 
-        // Make less if we have some Hydras
-        arrivalValue -= vis(Zerg_Hydralisk) * 1.5;
+        // Make less if we have some other units outside our opening
+        //arrivalValue -= vis(Zerg_Hydralisk) * 1.5;
         arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 3.0;
-        arrivalValue -= vis(Zerg_Mutalisk);
+        //arrivalValue -= vis(Zerg_Mutalisk);
 
         return int(arrivalValue);
     }
@@ -121,6 +121,8 @@ namespace McRave::BuildOrder::Zerg {
             initialValue = 2;
             if (Spy::getEnemyOpener() == "Gateway" || hideTech)
                 initialValue = 6;
+            if (Util::getTime() > Time(5, 30))
+                initialValue = 12;
         }
 
         // 1GC
@@ -249,7 +251,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Build
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48);
-        buildQueue[Zerg_Hatchery] =                     2 + thirdHatch + fourthHatch + (vis(Zerg_Drone) >= 30) + (!hydraSwitch && vis(Zerg_Drone) >= 32) + (!hydraSwitch && vis(Zerg_Drone) >= 40) + (!hydraSwitch && vis(Zerg_Drone) >= 40);
+        buildQueue[Zerg_Hatchery] =                     2 + thirdHatch + fourthHatch + (vis(Zerg_Drone) >= 30) + (!hydraSwitch && vis(Zerg_Drone) >= 32);
         buildQueue[Zerg_Extractor] =                    firstGas + secondGas + (hatchCount() >= 6);
         buildQueue[Zerg_Lair] =                         (s >= 32 && gas(100) && hatchCount() >= 3 && vis(Zerg_Drone) >= 12);
         buildQueue[Zerg_Spire] =                        (s >= 32 && com(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 16);
@@ -262,7 +264,7 @@ namespace McRave::BuildOrder::Zerg {
         upgradeQueue[Zerg_Flyer_Carapace] =             2 * (total(Zerg_Mutalisk) >= 9 && !hydraSwitch);
 
         // Pumping
-        pumpLings = lingsNeeded_ZvP() > vis(Zerg_Zergling) || (!hydraSwitch && hatchCount() >= 6 && !gas(100) && vis(Zerg_Drone) >= 38);
+        pumpLings = lingsNeeded_ZvP() > vis(Zerg_Zergling);
         pumpScourge = com(Zerg_Spire) == 1 && total(Zerg_Mutalisk) < 9 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > vis(Zerg_Scourge) * 2;
         pumpMutas = !pumpScourge && com(Zerg_Spire) == 1 && gas(100) && (total(Zerg_Mutalisk) < 9 || !hydraSwitch);
         pumpHydras = !pumpMutas && hydraSwitch && vis(Zerg_Drone) >= 38;

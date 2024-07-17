@@ -233,17 +233,18 @@ namespace McRave::Command
 
         // Lurker burrowing
         else if (unit.getType() == Zerg_Lurker) {
-            if (!unit.isBurrowed() && unit.getFormation().isValid() && unit.getPosition().getDistance(unit.getFormation()) < 64.0) {
+            auto targetDist = unit.hasTarget() ? unit.getPosition().getDistance(unit.getTarget().lock()->getPosition()) : 0.0;
+            auto burrow = (unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(Combat::getDefendPosition()) < 280.0)
+                || (unit.hasTarget() && unit.isWithinRange(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack)
+                || (unit.hasTarget() && targetDist <= 275.0 && unit.getLocalState() == LocalState::Hold);
+            auto unburrow = (unit.hasTarget() && targetDist > 320.0);
+
+            if (!unit.isBurrowed() && burrow) {
                 unit.setCommand(Burrow, unit.getPosition());
                 unit.commandText = "Burrowing";
                 return true;
             }
-            else if (!unit.isBurrowed() && unit.getLocalState() == LocalState::Attack && unit.getPosition().getDistance(unit.getEngagePosition()) < 16.0) {
-                unit.setCommand(Burrow, unit.getPosition());
-                unit.commandText = "Burrowing";
-                return true;
-            }
-            else if (unit.isBurrowed() && unit.getPosition().getDistance(unit.getEngagePosition()) > 32.0) {
+            else if (unit.isBurrowed() && unburrow) {
                 unit.setCommand(Unburrow, unit.getPosition());
                 unit.commandText = "Unburrowing";
                 return true;

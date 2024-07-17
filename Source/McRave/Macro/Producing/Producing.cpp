@@ -324,13 +324,14 @@ namespace McRave::Producing {
                     auto &unit = *u;
                     return unit.getType() == Zerg_Larva && unit.unit()->getHatchery() && unit.unit()->getHatchery()->getTilePosition() == station->getBase()->Location();
                 });
+                auto totalLarva = Players::getTotalCount(PlayerState::Self, Zerg_Larva);
 
                 // Try to just use the larvas immediately, queue first
                 if (larvaCount >= 3)
                     saturation = 0.01;
 
                 // Try not to queue drones at high saturation
-                if (larvaCount < 2 && !BuildOrder::isOpener() && bestType.isWorker() && saturation >= 1.6)
+                if (larvaCount > 1 && totalLarva <= 4 && !BuildOrder::isOpener() && bestType.isWorker() && saturation >= 1.6)
                     continue;
 
                 stations.emplace(saturation * larvaCount, station);

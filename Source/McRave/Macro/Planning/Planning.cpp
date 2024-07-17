@@ -470,14 +470,8 @@ namespace McRave::Planning {
 
             // Defense placements near walls
             for (auto &[_, wall] : BWEB::Walls::getWalls()) {
-                auto desiredCenter = Position(wall.getChokePoint()->Center());
+                auto desiredCenter = Position(wall.getStation()->getBase()->Center());
                 auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(wall.getChokePoint()->Center()));
-
-                // How to dictate first placement position
-                if (wall.getGroundDefenseCount() < 2) {
-                    if (closestMain)
-                        desiredCenter = Position(closestMain->getChokepoint()->Center());
-                }
 
                 // How to dictate row order
                 vector<int> desiredRowOrder ={ 1, 2 };
@@ -998,6 +992,7 @@ namespace McRave::Planning {
             || building == Zerg_Spire
             || building == Zerg_Hydralisk_Den
             || building == Zerg_Evolution_Chamber
+            || building == Zerg_Queens_Nest
             || building == Zerg_Hatchery;
     }
 

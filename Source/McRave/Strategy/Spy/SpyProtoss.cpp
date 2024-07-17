@@ -213,7 +213,8 @@ namespace McRave::Spy::Protoss {
             // FFE transitions
             if (Players::ZvP() && theSpy.build.name == "FFE") {
                 if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) >= 4 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 1 && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) == 0)
-                    || (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) == 0))
+                    || (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) == 0)
+                    || (completesBy(1, UpgradeTypes::Singularity_Charge, Time(6, 30)) && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) == 0))
                     theSpy.transition.name = "5GateGoon";
                 else if (completesBy(1, Protoss_Stargate, Time(5, 45)) && completesBy(1, Protoss_Citadel_of_Adun, Time(5, 45)) && theSpy.typeUpgrading.find(Protoss_Forge) != theSpy.typeUpgrading.end())
                     theSpy.transition.name = "NeoBisu";

@@ -281,8 +281,8 @@ namespace McRave::Terrain {
             auto const findCorrectAngle = [&](auto station) {
                 auto chokeAngle = BWEB::Map::getAngle(make_pair(Position(station.getChokepoint()->Pos(station.getChokepoint()->end1)), Position(station.getChokepoint()->Pos(station.getChokepoint()->end2))));
                 auto chokeCenter = Position(station.getChokepoint()->Center()) + Position(4, 4);
-                auto p1 = chokeCenter + Position(cos(chokeAngle + 1.57) * 96.0, sin(chokeAngle + 1.57) * 96.0);
-                auto p2 = chokeCenter - Position(cos(chokeAngle + 1.57) * 96.0, sin(chokeAngle + 1.57) * 96.0);
+                auto p1 = chokeCenter + Position(cos(chokeAngle + M_PI_D2) * 96.0, sin(chokeAngle + M_PI_D2) * 96.0);
+                auto p2 = chokeCenter - Position(cos(chokeAngle + M_PI_D2) * 96.0, sin(chokeAngle + M_PI_D2) * 96.0);
 
                 if (Terrain::inArea(station.getBase()->GetArea(), p1)) {
                     chokeCenters[station.getChokepoint()] = chokeCenter;
@@ -470,8 +470,6 @@ namespace McRave::Terrain {
 
         void drawTerritory()
         {
-            return;
-
             if (false) {
                 for (int x = 0; x < Broodwar->mapWidth() * 4; x++) {
                     for (int y = 0; y < Broodwar->mapHeight() * 4; y++) {
@@ -632,8 +630,8 @@ namespace McRave::Terrain {
                     addChokeGeo(station->getBase()->GetArea());
             }
 
-            // Add empty areas between main/natural partners to territory
-            if (station->isMain() || station->isNatural()) {
+            // Add empty areas between main partner to territory
+            if (station->isMain()) {
                 auto closestPartner = station->isMain() ? BWEB::Stations::getClosestNaturalStation(station->getBase()->Location())
                     : BWEB::Stations::getClosestMainStation(station->getBase()->Location());
 
@@ -686,8 +684,8 @@ namespace McRave::Terrain {
                 }
             }
 
-            // Remove empty areas between main/natural partners from territory
-            if (station->isMain() || station->isNatural()) {
+            // Remove empty areas between main partner from territory
+            if (station->isMain()) {
                 auto closestPartner = station->isMain() ? BWEB::Stations::getClosestNaturalStation(station->getBase()->Location())
                     : BWEB::Stations::getClosestMainStation(station->getBase()->Location());
 

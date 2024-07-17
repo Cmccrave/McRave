@@ -332,23 +332,17 @@ namespace McRave::Command {
         // If unit can move and should move
         if (shouldMove()) {
 
-            // Necessary for mutas to not overshoot
-            if (unit.getRole() == Role::Combat && unit.hasTarget() && !unit.isSuicidal() && !unit.attemptingRegroup() && !unit.attemptingRunby() && !unit.attemptingSurround() && unit.hasTarget() && unit.canStartAttack() && unit.isWithinReach(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack) {
-                unit.setCommand(Right_Click_Position, unit.getTarget().lock()->getPosition());
+            // Necessary for mutas to not overshoot when already in range and melee struggling to ever hit anything
+            auto clickToTarget = (unit.getRole() == Role::Combat && unit.hasTarget() && unit.canStartAttack() && (unit.isLightAir() || unit.isMelee()) && unit.isWithinReach(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack)
+                || unit.getPosition().getDistance(unit.getDestination()) < 160.0
+                || !unit.getDestinationPath().isReachable();
+
+            // Just move to the destination
+            if (clickToTarget) {
+                auto fixedDest = unit.getDestination();
+                Util::findWalkable(unit, fixedDest);
+                unit.setCommand(Right_Click_Position, fixedDest);
                 unit.commandText = "Move_A";
-                return true;
-            }
-
-            //if (unit.attemptingSurround()) {
-            //    unit.command(Move, unit.getSurroundPosition());
-            //    Visuals::drawLine(unit.getPosition(), unit.getSurroundPosition(), Colors::Red);
-            //    return true;
-            //}
-
-            if (!unit.getDestinationPath().isReachable() || unit.getPosition().getDistance(unit.getDestination()) < 96.0) {
-                unit.setCommand(Move, unit.getDestination());
-                unit.commandText = "Move_B";
-                Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Green);
                 return true;
             }
 
@@ -356,13 +350,13 @@ namespace McRave::Command {
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
-                unit.commandText = "Move_C";
+                unit.commandText = "Move_B";
                 return true;
             }
             else {
                 bestPosition = unit.getDestination();
                 unit.setCommand(Move, bestPosition);
-                unit.commandText = "Move_D";
+                unit.commandText = "Move_C";
                 return true;
             }
         }

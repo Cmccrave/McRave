@@ -13,6 +13,7 @@ namespace BWEB {
         vector<const BWEM::Base *> natBases;
         vector<const BWEM::ChokePoint*> mainChokes;
         vector<const BWEM::ChokePoint*> natChokes;
+        set<const BWEM::ChokePoint*> nonsenseChokes;
         map<const BWEM::Mineral * const, vector<TilePosition>> testTiles;
         vector<BWEB::Path> testPaths;
         UnitType defenseType;
@@ -44,7 +45,7 @@ namespace BWEB {
                 Map::addReserve(next, 1, 1);
             }
         };
-        
+
         // Add reserved tiles
         for (auto &m : base->Minerals()) {
             Map::addReserve(m->TopLeft(), 2, 1);
@@ -140,14 +141,15 @@ namespace BWEB {
             // Label areas that connect with partner
             bool wrongArea = false;
             for (auto &choke : area->ChokePoints()) {
-                if ((!choke->Blocked() && choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2)) <= 2) || nonChokes.find(choke) != nonChokes.end()) {
-                    wrongArea = true;
+                if (find(nonsenseChokes.begin(), nonsenseChokes.end(), choke) == nonsenseChokes.end()) {
+                    if ((!choke->Blocked() && choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2)) <= 2) || nonChokes.find(choke) != nonChokes.end())
+                        wrongArea = true;
                 }
             }
             if (wrongArea)
                 continue;
 
-            if (center.isValid() && dist < distBest) {
+            if (/*center.isValid() &&*/ dist < distBest) {
                 second = area;
                 distBest = dist;
             }
@@ -158,7 +160,8 @@ namespace BWEB {
             if (c->Blocked()
                 || find(mainChokes.begin(), mainChokes.end(), c) != mainChokes.end()
                 || c->Geometry().size() <= 3
-                || (c->GetAreas().first != second && c->GetAreas().second != second))
+                || (c->GetAreas().first != second && c->GetAreas().second != second)
+                )
                 continue;
 
             const auto dist = Position(c->Center()).getDistance(Position(partnerBase->Center()));
@@ -186,7 +189,7 @@ namespace BWEB {
             baseAngle = (round(baseAngle / 0.785)) * 0.785;
             chokeAngle = (round(chokeAngle / 0.785)) * 0.785;
 
-            defenseAngle = baseAngle + 1.57;
+            defenseAngle = baseAngle + M_PI_D2;
 
             // Narrow chokes don't dictate our angles
             if (choke->Width() < 96.0)
@@ -207,10 +210,10 @@ namespace BWEB {
                     defenseAngle = (Map::getAngle(make_pair(Position(choke->Center()), Position(validSecondChoke->Center()))) + Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))))) / 2.0;
             }
 
-            else if (dist >= 320.0 && !main && !natural) {
-                auto baseMod = fmod(baseAngle + 1.57, 3.14);
-                auto chokeMod = fmod(chokeAngle, 3.14);
-                defenseAngle = fmod((baseMod + chokeMod) / 2.0, 3.14);
+            else if ((dist >= 320.0 && !main && !natural) || (dist >= 368 && natural)) {
+                auto baseMod = fmod(baseAngle + M_PI_D2, M_PI);
+                auto chokeMod = fmod(chokeAngle, M_PI);
+                defenseAngle = fmod((baseMod + chokeMod) / 2.0, M_PI);
             }
         }
     }
@@ -607,6 +610,24 @@ namespace BWEB::Stations {
 
     void findStations()
     {
+        // Some chokepoints are purely nonsense (Vermeer has an area with ~3 chokepoints on the same tile), let's ignore those
+        for (auto &area : Map::mapBWEM.Areas()) {
+            for (auto &choke : area.ChokePoints()) {
+                if (choke->Width() <= 32) {
+                    for (auto &areaTwo : Map::mapBWEM.Areas()) {
+                        for (auto &chokeTwo : area.ChokePoints()) {
+                            if (chokeTwo != choke) {
+                                for (auto &geo : chokeTwo->Geometry()) {
+                                    if (geo.getDistance(choke->Center()) <= 4)
+                                        nonsenseChokes.insert(choke);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Find all main bases
         for (auto &area : Map::mapBWEM.Areas()) {
             for (auto &base : area.Bases()) {

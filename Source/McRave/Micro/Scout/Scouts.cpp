@@ -10,6 +10,13 @@ namespace McRave::Scouts {
 
         bool contained = false;
 
+        bool reachable(Position p)
+        {
+            auto area = mapBWEM.GetArea(TilePosition(p));
+            auto main = Terrain::getMainArea();
+            return area && main && area->AccessibleFrom(main);
+        }
+
         enum class ScoutType {
             None, Main, Natural, Proxy, Safe, Army, Expansion
         };
@@ -31,7 +38,7 @@ namespace McRave::Scouts {
             void addTargets(Position here, int radius = 0)
             {
                 auto sRadius = int(round(1.5*radius));
-                if (radius == 0) {
+                if (reachable(here) && radius == 0) {
                     positions.push_back(here);
                     return;
                 }
@@ -46,7 +53,8 @@ namespace McRave::Scouts {
                     here + Position(radius, -radius),
                     here + Position(-radius, -radius) };
                 for_each(offsets.begin(), offsets.end(), [&](auto p) {
-                    positions.push_back(Util::clipPosition(p));
+                    if (reachable(p))
+                        positions.push_back(Util::clipPosition(p));
                 });
             }
 
@@ -229,7 +237,7 @@ namespace McRave::Scouts {
                     main.desiredTypeCounts[Zerg_Zergling] = Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00);
                     if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0)
                         main.desiredTypeCounts[Zerg_Zergling] = 0;
-                        
+
 
                     // Overlord
                     main.desiredTypeCounts[Zerg_Overlord] = 1;
@@ -323,7 +331,7 @@ namespace McRave::Scouts {
         {
             auto &main = scoutTargets[ScoutType::Main];
             auto &proxy = scoutTargets[ScoutType::Proxy];
-            
+
             const auto closestProxyBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto& u) {
                 return u->getType().isBuilding() && u->isProxy();
             });
@@ -349,9 +357,9 @@ namespace McRave::Scouts {
             auto scoutMiddle = Stations::isBaseExplored(scoutOrder.front()) || Broodwar->getStartLocations().size() >= 4;
 
             // Scout the popular middle proxy location if it's walkable
-            if (scoutMiddle && !Players::vZ() && !Terrain::foundEnemy() && !scoutOrder.empty() && scoutOrder.front() && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(Terrain::getMainPosition(), mapBWEM.Center()) != DBL_MAX){
-                proxy.addTargets(mapBWEM.Center());
-                proxy.center = mapBWEM.Center();              
+            if (scoutMiddle && !Players::vZ() && !Terrain::foundEnemy() && !scoutOrder.empty() && scoutOrder.front() && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(Terrain::getMainPosition(), mapBWEM.Center()) != DBL_MAX) {
+                proxy.addTargets(mapBWEM.Center(), 64);
+                proxy.center = mapBWEM.Center();
             }
 
             // Only scout if unexplored
@@ -396,7 +404,7 @@ namespace McRave::Scouts {
             if (!Terrain::getEnemyNatural() || !Terrain::getMyNatural())
                 return;
             auto &army = scoutTargets[ScoutType::Army];
-            
+
             // No threat at home, we should use a ling to scout the enemy
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 auto time = Time(1, 00);
@@ -623,7 +631,8 @@ namespace McRave::Scouts {
                     continue;
 
                 // Set to the center by default, increment current counts here
-                unit.setDestination(target.center);
+                if (reachable(target.center))
+                    unit.setDestination(target.center);
                 target.currentTypeCounts[unit.getType()]++;
 
                 // Find the best position to scout
@@ -637,7 +646,7 @@ namespace McRave::Scouts {
                         unit.setDestination(pos);
                     }
                 }
-                
+
                 // Remove the scouted position so we don't duplicate effort
                 auto itr = find(target.positions.begin(), target.positions.end(), unit.getDestination());
                 if (itr != target.positions.end())

@@ -121,7 +121,7 @@ namespace McRave::BuildOrder::Zerg {
             // Adding Overlords outside opening book supply, offset by hatch count
             if (!inBookSupply) {
                 int offset = hatchCount() * 2;
-                int supplyPerOvie = 16 - (hatchCount() / 2);
+                int supplyPerOvie = 15 - (hatchCount() / 2);
                 int count = 1 + min(26, (s - offset) / supplyPerOvie);
                 buildQueue[Zerg_Overlord] = min(25, count);
             }
@@ -668,13 +668,13 @@ namespace McRave::BuildOrder::Zerg {
         if (Players::vP() && !inOpening) {
             if (isFocusUnit(Zerg_Defiler) && Researching::haveOrResearching(TechTypes::Consume)) {
                 armyComposition[Zerg_Drone] =                   0.50;
-                armyComposition[Zerg_Zergling] =                0.05;
+                armyComposition[Zerg_Zergling] =                0.01;
                 armyComposition[Zerg_Hydralisk] =               0.40;
                 armyComposition[Zerg_Defiler] =                 0.05;
             }
             else if (isFocusUnit(Zerg_Hydralisk) && isFocusUnit(Zerg_Mutalisk) && isFocusUnit(Zerg_Lurker)) {
                 armyComposition[Zerg_Drone] =                   0.50;
-                armyComposition[Zerg_Zergling] =                0.00;
+                armyComposition[Zerg_Zergling] =                0.01;
                 armyComposition[Zerg_Hydralisk] =               0.35;
                 armyComposition[Zerg_Lurker] =                  0.05;
                 armyComposition[Zerg_Mutalisk] =                0.10;
@@ -686,9 +686,9 @@ namespace McRave::BuildOrder::Zerg {
                 armyComposition[Zerg_Mutalisk] =                0.10;
             }
             else if (isFocusUnit(Zerg_Mutalisk)) {
-                armyComposition[Zerg_Drone] =                   0.50;
-                armyComposition[Zerg_Zergling] =                0.30;
-                armyComposition[Zerg_Mutalisk] =                0.20;
+                armyComposition[Zerg_Drone] =                   0.60;
+                armyComposition[Zerg_Zergling] =                0.10;
+                armyComposition[Zerg_Mutalisk] =                0.30;
             }
             else if (isFocusUnit(Zerg_Lurker)) {
                 armyComposition[Zerg_Drone] =                   0.60;
@@ -748,6 +748,18 @@ namespace McRave::BuildOrder::Zerg {
             else {
                 armyComposition[Zerg_Drone] =                   0.80;
                 armyComposition[Zerg_Zergling] =                0.20;
+            }
+        }
+
+        // Turn off drones if we hit a cap
+        if (armyComposition[Zerg_Zergling] > 0.0) {
+            if (pumpLings || vis(Zerg_Drone) >= 60 || Resources::isMineralSaturated()) {
+                armyComposition[Zerg_Zergling] += armyComposition[Zerg_Drone];
+                armyComposition[Zerg_Drone] = 0.0;
+            }
+            else {
+                armyComposition[Zerg_Drone] += armyComposition[Zerg_Zergling];
+                armyComposition[Zerg_Zergling] = 0.0;
             }
         }
 

@@ -12,6 +12,8 @@ namespace McRave::Targets {
         set<UnitType> proxyTargeting ={ Protoss_Pylon, Terran_Barracks, Terran_Bunker, Zerg_Sunken_Colony };
         map<UnitInfo*, int> meleeSpotsAvailable;
 
+        double maxPriority;
+
         enum class Priority {
             Ignore, Trivial, Minor, Normal, Major, Critical
         };
@@ -131,9 +133,8 @@ namespace McRave::Targets {
                     const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->getType() == Zerg_Zergling; });
                     if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
                         return Priority::Minor;
-                    //if (unit.isWithinReach(target) && Util::getTime() > Time(5, 00) && !target.getType().isBuilding() && !target.getType().isWorker() && targetingCount < 2)
-                    //    return Priority::Major;
 
+                    // Kill workers and cannons if we're in the same area
                     if (unit.isWithinReach(target) && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) && Terrain::inArea(mapBWEM.GetArea(target.getWalkPosition()),unit.getPosition())) {
                         if (target.getType().isWorker())
                             return Priority::Major;
@@ -144,9 +145,6 @@ namespace McRave::Targets {
                     // Already in range, continue to target it if possible
                     if (unit.isWithinRange(target) && !target.getType().isBuilding() && !target.getType().isWorker())
                         return Priority::Major;
-
-                    //if (unit.attemptingRunby() && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
-                    //    return Priority::Ignore;
                 }
 
                 // Mutalisk
@@ -172,6 +170,8 @@ namespace McRave::Targets {
                         // Stragglers are free to kill
                         if (!target.getType().isBuilding() && unit.isWithinReach(target) && target.getUnitsInRangeOfThis().size() <= 1)
                             return Priority::Major;
+                        if (target.getType().isBuilding() && unit.isWithinRange(target) && target.getUnitsInRangeOfThis().empty() <= 0 && unit.getUnitsInRangeOfThis().empty())
+                            return Priority::Major;
 
                         // Try to push for only worker kills to try and end the game
                         if (Spy::getEnemyBuild() == "FFE" && Util::getTime() < Time(8, 00) && !target.getType().isWorker() && target.isCompleted() && !target.isThreatening())
@@ -190,8 +190,8 @@ namespace McRave::Targets {
                     // Low priority targets, ignore when we haven't found the enemy
                     auto priorityAfterInfo = Terrain::foundEnemy() ? Priority::Minor : Priority::Trivial;
                     if (!anythingTime && !defendExpander && !target.isThreatening()) {
-                        if (!Players::ZvZ() && !unit.canOneShot(target) && !unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding() && !target.getType().isWorker())
-                            return priorityAfterInfo;
+                        //if (!Players::ZvZ() && !unit.canOneShot(target) && !unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding() && !target.getType().isWorker())
+                        //    return priorityAfterInfo;
                         if ((enemyCanHitAir || enemyCanHitGround) && !target.canAttackAir() && !target.canAttackGround())
                             return priorityAfterInfo;
                     }
@@ -329,7 +329,7 @@ namespace McRave::Targets {
                 //    return target.getPriority() / 4.0;
                 //if (target.getType().isWorker() && !Spy::enemyProxy() && !Spy::enemyPossibleProxy() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
                 //    return target.getPriority() / 10.0;
-                return target.getPriority();
+                return target.getPriority() / maxPriority;
             };
 
             const auto effectiveness = [&]() {
@@ -574,36 +574,6 @@ namespace McRave::Targets {
                 }
             }
 
-            // TODO: This results in lings seeing 0 empty spots when in range of the target
-            // Huge winrate decrease in ZvZ, maybe need to scrap this concept entirely
-
-            //// Check how many available melee spots exist on each enemy
-            //meleeSpotsAvailable.clear();
-            //for (auto &u : Units::getUnits(PlayerState::Enemy)) {
-            //    UnitInfo& unit = *u;
-            //    auto width = unit.getType().isBuilding() ? unit.getType().tileWidth() * 16 : unit.getType().width();
-            //    auto height = unit.getType().isBuilding() ? unit.getType().tileHeight() * 16 : unit.getType().height();
-            //    for (double x = -1.0; x <= 1.0; x += 1.0 / double(unit.getType().tileWidth())) {
-            //        auto p = (unit.getPosition()) + Position(int(x * width), int(-1.0 * height));
-            //        auto q = (unit.getPosition()) + Position(int(x * width), int(1.0 * height));
-            //        if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, p))
-            //            meleeSpotsAvailable[&unit]+=2;
-            //        if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, q))
-            //            meleeSpotsAvailable[&unit]+=2;
-            //    }
-            //    for (double y = -1.0; y <= 1.0; y += 1.0 / double(unit.getType().tileHeight())) {
-            //        if (y <= -0.99 || y >= 0.99)
-            //            continue;
-            //        auto p = (unit.getPosition()) + Position(int(-1.0 * width), int(y * height));
-            //        auto q = (unit.getPosition()) + Position(int(1.0 * width), int(y * height));
-            //        if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, p))
-            //            meleeSpotsAvailable[&unit]+=2;
-            //        if (Util::findWalkable(Position(-16, -16), Zerg_Zergling, q))
-            //            meleeSpotsAvailable[&unit]+=2;
-            //    }
-            //    Broodwar->drawTextMap(unit.getPosition(), "%d", meleeSpotsAvailable[&unit]);
-            //}
-
             for (auto &u : sortedUnits) {
                 UnitInfo& unit = u.second;
                 getTarget(unit);
@@ -618,6 +588,14 @@ namespace McRave::Targets {
         {
             auto &enemyStrength = Players::getStrength(PlayerState::Enemy);
             auto &myStrength = Players::getStrength(PlayerState::Self);
+
+            maxPriority = 1.0;
+            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                UnitInfo& unit = *u;
+                if (unit.getPriority() > maxPriority)
+                    maxPriority = unit.getPriority();
+                Broodwar->drawTextMap(unit.getPosition(), "%.2f", unit.getPriority());
+            }
 
             enemyHasGround = true;
             enemyHasAir = enemyStrength.airToGround > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Overlord) > 0;
