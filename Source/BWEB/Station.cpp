@@ -114,10 +114,21 @@ namespace BWEB {
             partnerChoke = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).front();
 
             // Partner only has one chokepoint means we have a shared choke with this path
-            if (partnerBase->GetArea()->ChokePoints().size() == 1)
+            if (partnerBase->GetArea()->ChokePoints().size() == 1) {
                 partnerChoke = Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()).back();
-            choke = partnerChoke;
-            return;
+                if (base->GetArea()->ChokePoints().size() <= 2) {
+                    for (auto &c : base->GetArea()->ChokePoints()) {
+                        if (c != partnerChoke) {
+                            choke = c;
+                            return;
+                        }
+                    }
+                }
+            }
+            else {
+                choke = partnerChoke;
+                return;
+            }
         }
 
         // Only one chokepoint in this area, otherwise find an ideal one
@@ -128,8 +139,8 @@ namespace BWEB {
 
         // Find chokes between partner base and this base
         set<BWEM::ChokePoint const *> nonChokes;
-        for (auto &choke : Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()))
-            nonChokes.insert(choke);
+        for (auto &c : Map::mapBWEM.GetPath(partnerBase->Center(), base->Center()))
+            nonChokes.insert(c);
         distBest = DBL_MAX;
         const BWEM::Area* second = nullptr;
 
@@ -140,9 +151,9 @@ namespace BWEB {
 
             // Label areas that connect with partner
             bool wrongArea = false;
-            for (auto &choke : area->ChokePoints()) {
-                if (find(nonsenseChokes.begin(), nonsenseChokes.end(), choke) == nonsenseChokes.end()) {
-                    if ((!choke->Blocked() && choke->Pos(choke->end1).getDistance(choke->Pos(choke->end2)) <= 2) || nonChokes.find(choke) != nonChokes.end())
+            for (auto &c : area->ChokePoints()) {
+                if (find(nonsenseChokes.begin(), nonsenseChokes.end(), c) == nonsenseChokes.end()) {
+                    if ((!c->Blocked() && c->Pos(c->end1).getDistance(c->Pos(c->end2)) <= 2) || nonChokes.find(c) != nonChokes.end())
                         wrongArea = true;
                 }
             }
@@ -174,8 +185,6 @@ namespace BWEB {
 
     void Station::findAngles()
     {
-        if (choke && !main)
-            defenseCentroid = Position(choke->Center());
         if (choke)
             main ? mainChokes.push_back(choke) : natChokes.push_back(choke);
 
@@ -186,14 +195,23 @@ namespace BWEB {
             baseAngle = Map::getAngle(make_pair(getBase()->Center(), anglePosition));
             chokeAngle = Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))));
 
-            baseAngle = (round(baseAngle / 0.785)) * 0.785;
-            chokeAngle = (round(chokeAngle / 0.785)) * 0.785;
+            baseAngle = (round(baseAngle / M_PI_D4)) * M_PI_D4;
+            chokeAngle = (round(chokeAngle / M_PI_D4)) * M_PI_D4;
 
             defenseAngle = baseAngle + M_PI_D2;
 
             // Narrow chokes don't dictate our angles
             if (choke->Width() < 96.0)
                 return;
+
+            // If the chokepoint is against the map edge, we shouldn't treat it as an angular chokepoint
+            // Matchpoint fix
+            if (TilePosition(choke->Center()).x < 10 || TilePosition(choke->Center()).x > Broodwar->mapWidth() - 10) {
+                chokeAngle = Map::getAngle(make_pair(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2))));
+                chokeAngle = round(chokeAngle / M_PI_D2) * M_PI_D2;
+                defenseAngle = chokeAngle;
+                return;
+            }
 
             if (base->GetArea()->ChokePoints().size() >= 3) {
                 const BWEM::ChokePoint * validSecondChoke = nullptr;
@@ -335,12 +353,6 @@ namespace BWEB {
             }
         }
 
-        auto cnt = 0;
-        if (main)
-            cnt = 1;
-        if (!main && !natural)
-            cnt = 2;
-
         const auto distCalc = [&](const auto& position) {
             if (natural && partnerBase) {
                 const auto closestMain = Stations::getClosestMainStation(base->Location());
@@ -360,29 +372,31 @@ namespace BWEB {
             return 0.0;
         };
 
-        //for (int i = 0; i < cnt; i++) {
-        //    auto distBest = DBL_MAX;
-        //    auto tileBest = TilePositions::Invalid;
-        //    for (auto x = base->Location().x - 4; x <= base->Location().x + 4; x++) {
-        //        for (auto y = base->Location().y - 3; y <= base->Location().y + 3; y++) {
-        //            auto tile = TilePosition(x, y);
-        //            auto center = Position(tile) + Position(64, 48);
-        //            auto dist = distCalc(center);
-        //            if (natural && partnerBase && dist < 160.0)
-        //                continue;
+        // Non natural positions want an extra position for a hatchery
+        auto cnt = !natural;
+        for (int i = 0; i < cnt; i++) {
+            auto distBest = DBL_MAX;
+            auto tileBest = TilePositions::Invalid;
+            for (auto x = base->Location().x - 4; x <= base->Location().x + 4; x++) {
+                for (auto y = base->Location().y - 3; y <= base->Location().y + 3; y++) {
+                    auto tile = TilePosition(x, y);
+                    auto center = Position(tile) + Position(64, 48);
+                    auto dist = distCalc(center);
+                    if (natural && partnerBase && dist < 160.0)
+                        continue;
 
-        //            if (dist < distBest && Map::isPlaceable(Broodwar->self()->getRace().getResourceDepot(), tile)) {
-        //                distBest = dist;
-        //                tileBest = tile;
-        //            }
-        //        }
-        //    }
+                    if (dist < distBest && Map::isPlaceable(Broodwar->self()->getRace().getResourceDepot(), tile)) {
+                        distBest = dist;
+                        tileBest = tile;
+                    }
+                }
+            }
 
-        //    if (tileBest.isValid()) {
-        //        secondaryLocations.insert(tileBest);
-        //        Map::addUsed(tileBest, Broodwar->self()->getRace().getResourceDepot());
-        //    }
-        //}
+            if (tileBest.isValid()) {
+                secondaryLocations.insert(tileBest);
+                Map::addUsed(tileBest, Broodwar->self()->getRace().getResourceDepot());
+            }
+        }
     }
 
     void Station::findNestedDefenses()
@@ -479,14 +493,7 @@ namespace BWEB {
 
         // Generate defenses
         defenseArrangement = int(round(defenseAngle / 0.785)) % 4;
-        if (!natural) // Wall defense placements on thirds are more valuable, at least as Zerg
-            basePlacements ={ {-2, -2}, {-2, 1}, {2, -2} };
-        //else if (defenseArrangement == 0)
-        //    basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0}, {4, 2} };   // 0/8
-        //else if (defenseArrangement == 1 || defenseArrangement == 3)
-        //    basePlacements ={ {-2, 2}, {-2, 0}, {0, 3}, {0, -2}, {2, -2}, {4, -2}, {4, 0} };                     // pi/4
-        //else if (defenseArrangement == 2)
-        //    basePlacements ={ {-2, 2}, {-2, 0}, {-2, -2}, {0, 3}, {0, -2}, {2, 3}, {2, -2}, {4, 3}, {4, -2} };   // pi/2        
+        basePlacements ={ {-2, -2}, {-2, 1}, {2, -2} };    
 
         // Flip them vertically / horizontally as needed
         if (base->Center().y < defenseCentroid.y) {
@@ -504,19 +511,6 @@ namespace BWEB {
             if (Map::isPlaceable(defenseType, tile)) {
                 defenses.insert(tile);
                 Map::addUsed(tile, defenseType);
-            }
-        }
-
-        // Try to fit more defenses with secondary positions
-        if (!natural) {
-            for (auto secondary : secondaryLocations) {
-                for (auto placement : basePlacements) {
-                    auto tile = secondary + placement;
-                    if (Map::isPlaceable(defenseType, tile)) {
-                        defenses.insert(tile);
-                        Map::addUsed(tile, defenseType);
-                    }
-                }
             }
         }
     }

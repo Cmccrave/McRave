@@ -536,10 +536,6 @@ namespace McRave::Planning {
             if (!isWallType(building))
                 return false;
 
-            // As Zerg, we have to place natural hatch before wall
-            if (building == Zerg_Hatchery && isPlannable(building, Terrain::getNaturalTile()) && BWEB::Map::isUsed(Terrain::getNaturalTile()) == UnitTypes::None)
-                return false;
-
             // Find a wall location
             set<TilePosition> placements;
             for (auto &[_, wall] : BWEB::Walls::getWalls()) {

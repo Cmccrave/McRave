@@ -218,6 +218,7 @@ namespace McRave::BuildOrder::Zerg {
                     + armyComposition[Zerg_Mutalisk] * 1.0
                     + armyComposition[Zerg_Hydralisk] * 2.0
                     + armyComposition[Zerg_Ultralisk] * 1.0
+                    + armyComposition[Zerg_Drone] * 1.5;
                     + armyComposition[Zerg_Defiler] * 1.0;
 
                 // Calculate hatcheries per base with next composition

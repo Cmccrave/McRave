@@ -77,7 +77,7 @@ namespace McRave::Combat {
 
             // When we want to defend our natural
             defendNatural = false;
-            if (Terrain::getMyNatural() && Terrain::getNaturalChoke() && !Stations::isBlocked(Terrain::getMyNatural())) {
+            if (Terrain::getMyNatural() && Terrain::getNaturalChoke() && !Terrain::isPocketNatural() && !Stations::isBlocked(Terrain::getMyNatural())) {
                 defendNatural = (BuildOrder::takeNatural() && !Players::ZvZ())
                     || (Broodwar->self()->getRace() != Races::Zerg && BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural()))
                     || Stations::getStations(PlayerState::Self).size() >= 2
@@ -237,15 +237,15 @@ namespace McRave::Combat {
                 }
                 if (Players::ZvP()) {
                     holdChoke = !defendNatural;
-                    if (Spy::getEnemyBuild() == "CannonRush")
-                        holdChoke = true;
                     if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
+                        holdChoke = false;
+                    if (Terrain::isPocketNatural())
                         holdChoke = false;
                 }
                 if (Players::ZvT()) {
                     holdChoke = !defendNatural;
-                    if (!defendNatural)
-                        holdChoke = true;
+                    if (Terrain::isPocketNatural())
+                        holdChoke = false;
                 }
             }
         }

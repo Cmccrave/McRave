@@ -394,9 +394,8 @@ namespace McRave
         // Check if enemy is generally in our territory
         auto nearTerritory = [&]() {
             if ((Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural() && Combat::holdAtChoke())
-                || (Terrain::inArea(Terrain::getMainArea(), position) && Combat::isDefendNatural())
-                || (Players::ZvZ() && Roles::getMyRoleCount(Role::Defender) == 0 && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural())
-                || (!Players::ZvZ() && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
+                || (Terrain::inArea(Terrain::getMainArea(), position) && Combat::isDefendNatural() && !Terrain::isPocketNatural())
+                || (Roles::getMyRoleCount(Role::Defender) == 0 && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
                 return true;
 
             if (Players::ZvZ())
@@ -412,8 +411,8 @@ namespace McRave
                     return false;
             }
 
-            return (Util::getTime() > Time(5, 00) && Terrain::inArea(Terrain::getMainArea(), position) && Stations::getGroundDefenseCount(Terrain::getMyMain()) == 0 && Walls::getMainWall()->getGroundDefenseCount() == 0)
-                || (Util::getTime() > Time(7, 00) && Terrain::inArea(Terrain::getNaturalArea(), position) && Stations::getGroundDefenseCount(Terrain::getMyNatural()) == 0 && Walls::getNaturalWall()->getGroundDefenseCount() == 0)
+            return (Util::getTime() > Time(5, 00) && Terrain::inArea(Terrain::getMainArea(), position) && Stations::getGroundDefenseCount(Terrain::getMyMain()) == 0 && (!Walls::getMainWall() || Walls::getMainWall()->getGroundDefenseCount() == 0))
+                || (Util::getTime() > Time(7, 00) && Terrain::inArea(Terrain::getNaturalArea(), position) && Stations::getGroundDefenseCount(Terrain::getMyNatural()) == 0 && (!Walls::getNaturalWall() || Walls::getNaturalWall()->getGroundDefenseCount() == 0))
                 || (Util::getTime() > Time(9, 00) && atHome && !Terrain::inArea(Terrain::getMainArea(), position) && !Terrain::inArea(Terrain::getNaturalArea(), position));
         };
 

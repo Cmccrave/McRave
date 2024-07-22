@@ -35,7 +35,9 @@ namespace McRave::Combat::State {
                     staticRetreatTypes.push_back(Zerg_Mutalisk);
             }
             if (Players::ZvP()) {
-                if (com(Zerg_Mutalisk) < 5 && total(Zerg_Mutalisk) < 9)
+                const auto lowCount = com(Zerg_Mutalisk) < 5 && total(Zerg_Mutalisk) < 9;
+                const auto corsairPump = Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Protoss_Air_Weapons, 1) && vis(Protoss_Corsair) >= 5 && Util::getTime() < Time(12, 00);
+                if (lowCount || corsairPump)
                     staticRetreatTypes.push_back(Zerg_Mutalisk);
             }
             if (Players::ZvT()) {
@@ -51,7 +53,7 @@ namespace McRave::Combat::State {
 
             if (!crackling && !BuildOrder::isRush()) {
                 if (Players::ZvP()) {
-                    const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && !Spy::enemyGreedy() && !Spy::enemyProxy() && Util::getTime() > Time(4, 00);
+                    const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && !Spy::enemyGreedy() && !Spy::enemyProxy() && Util::getTime() > Time(4, 00) && Util::getTime() < Time(8, 00);
                     const auto hideCheese = BuildOrder::isHideTech() && BuildOrder::isOpener() && vis(Zerg_Spire) == 0;
                     const auto defendProxy = Spy::enemyProxy() && !speedLing;
                     const auto defendTiming = (Spy::getEnemyBuild() == "FFE" && Util::getTime() > Time(6, 00) && Util::getTime() < Time(8, 00));
@@ -331,7 +333,7 @@ namespace McRave::Combat::State {
         const auto distSim = double(Util::boxDistance(unit.getType(), unit.getPosition(), simTarget.getType(), simTarget.getPosition()));
         const auto distTarget = double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
 
-        const auto insideRetreatRadius = distSim < unit.getRetreatRadius();
+        const auto insideRetreatRadius = distSim < unit.getRetreatRadius() && !atHome;
         const auto insideEngageRadius = distTarget < unit.getEngageRadius() && (unit.getGlobalState() == GlobalState::Attack || atHome);
         const auto exploringGoal = unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore && unit.getUnitsInReachOfThis().empty() && Util::getTime() > Time(4, 00);
 
@@ -351,6 +353,10 @@ namespace McRave::Combat::State {
         // If within local decision range, determine if Unit needs to attack or retreat
         else if (insideEngageRadius && (unit.getSimState() == SimState::Win /*|| exploringGoal*/))
             unit.setLocalState(LocalState::Attack);
+        else if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && (unit.getGlobalState() == GlobalState::Retreat || unit.getGoalType() == GoalType::Defend) && !unit.isLightAir())
+            unit.setLocalState(LocalState::Hold);
+        else if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && insideEngageRadius && unit.getSimState() != SimState::Win && !unit.isLightAir())
+            unit.setLocalState(LocalState::Hold);
         else if (insideRetreatRadius && (!unit.attemptingRunby() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition())) && unit.getSimState() == SimState::Loss)
             unit.setLocalState(LocalState::Retreat);
 

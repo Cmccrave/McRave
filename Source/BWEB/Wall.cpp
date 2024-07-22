@@ -48,12 +48,14 @@ namespace BWEB {
 
         // Blocking space for movement
         else if (!type.isBuilding()) {
-            for (auto placement : tryOrder) {
-                auto tile = station->getBase()->Location() + placement;
-                if (BWEB::Map::isPlaceable(type, tile)) {
-                    openings.insert(tile);
-                    Map::addUsed(tile, type);
-                    return true;
+            if (!requireTight) {
+                for (auto placement : tryOrder) {
+                    auto tile = station->getBase()->Location() + placement;
+                    if (BWEB::Map::isPlaceable(type, tile)) {
+                        openings.insert(tile);
+                        Map::addUsed(tile, type);
+                        return true;
+                    }
                 }
             }
         }
@@ -112,7 +114,7 @@ namespace BWEB {
                 if (p.getDistance(station->getBase()->Center()) < geoDist)
                     bestGeo = Position(geo) + Position(4, 4);
             }
-            chokeAngle = Map::getAngle(make_pair(station->getBase()->Center(), bestGeo));
+            chokeAngle = Map::getAngle(make_pair(station->getBase()->Center(), bestGeo)) + M_PI_D2;
         }
 
         defenseArrangement = int(round(chokeAngle / M_PI_D4)) % 4;
@@ -136,15 +138,19 @@ namespace BWEB {
             iteration -= 1;
             maxIteration = 0;
         }
+        
+        // This is ugly
+        auto hatchOffset = requireTight ? 6 : 0;
+        if (station->isMain()) {
+            iteration = 5;
+            maxIteration = 8;
+        }
 
-        while ((getSmallTiles().size() + getMediumTiles().size() + getLargeTiles().size()) != getRawBuildings().size()) {
+        for (; iteration < maxIteration; iteration++) {
             cleanup();
             smallTiles.clear();
             mediumTiles.clear();
             largeTiles.clear();
-
-            if (iteration >= maxIteration)
-                return;
 
             // 0/8 - Horizontal
             if (defenseArrangement == 0) {
@@ -157,7 +163,7 @@ namespace BWEB {
                 // Shift positions based on chokepoint offset and iteration
                 auto diffX = !maintainShape ? TilePosition(choke->Center()).x - base->Location().x : 0;
                 auto diffY = -iteration;
-                wallOffset = TilePosition(0, -iteration);
+                wallOffset = TilePosition(0, -iteration - hatchOffset);
                 adjustOrder(lrgOrder, TilePosition(diffX, diffY));
                 adjustOrder(medOrder, TilePosition(diffX, diffY));
                 adjustOrder(smlOrder, TilePosition(diffX, diffY));
@@ -179,7 +185,7 @@ namespace BWEB {
                 // Shift positions based on iteration
                 auto diffX = -iteration;
                 auto diffY = -iteration;
-                wallOffset = TilePosition(-iteration, -iteration);
+                wallOffset = TilePosition(-iteration - hatchOffset, -iteration - hatchOffset);
                 adjustOrder(lrgOrder, TilePosition(diffX, diffY));
                 adjustOrder(medOrder, TilePosition(diffX, diffY));
                 adjustOrder(smlOrder, TilePosition(diffX, diffY));
@@ -207,7 +213,7 @@ namespace BWEB {
                 // Shift positions based on chokepoint offset and iteration
                 auto diffX = -iteration;
                 auto diffY = !maintainShape ? TilePosition(choke->Center()).y - base->Location().y : 0;
-                wallOffset = TilePosition(-iteration, 0);
+                wallOffset = TilePosition(-iteration - hatchOffset, 0);
                 adjustOrder(lrgOrder, TilePosition(diffX, diffY));
                 adjustOrder(medOrder, TilePosition(diffX, diffY));
                 adjustOrder(smlOrder, TilePosition(diffX, diffY));
@@ -216,14 +222,14 @@ namespace BWEB {
             // Flip them vertically / horizontally as needed
             const auto flipPositions = [&](auto& tryOrder, auto type) {
                 if (flipVertical) {
-                    wallOffset = TilePosition(wallOffset.x, iteration);
+                    wallOffset = TilePosition(wallOffset.x, iteration + hatchOffset);
                     for (auto &placement : tryOrder) {
                         auto diff = 3 - type.tileHeight();
                         placement.y = -(placement.y - diff);
                     }
                 }
                 if (flipHorizontal) {
-                    wallOffset = TilePosition(iteration, wallOffset.y);
+                    wallOffset = TilePosition(iteration + hatchOffset, wallOffset.y);
                     for (auto &placement : tryOrder) {
                         auto diff = 4 - type.tileWidth();
                         placement.x = -(placement.x - diff);
@@ -274,7 +280,8 @@ namespace BWEB {
             if (iteration < 0)
                 wallOffset = TilePosition(0, 0);
 
-            iteration++;
+            if ((getSmallTiles().size() + getMediumTiles().size() + getLargeTiles().size()) == getRawBuildings().size())
+                break;
         }
 
         // Find remaining openings
@@ -292,7 +299,7 @@ namespace BWEB {
         auto flipVertical = false;
         if (defenseArrangement == 0) { // 0/8 - Horizontal
             wallPlacements[1] ={ {-4, -2}, {-2, -2}, {0, -2}, {2, -2}, {4, -2}, {6, -2} };
-            wallPlacements[2] ={ {-4, 0}, {-2, 0}, {4, 0}, {6, 0} };
+            wallPlacements[2] ={ {-4, 0}, {-3, 0} , {-2, 0}, {-1, 0}, {0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}, {5, 0}, {6, 0} };
             flipVertical = base->Center().y < Position(choke->Center()).y;
         }
         else if (defenseArrangement == 1 || defenseArrangement == 3) { // pi/4 - Angled
@@ -347,7 +354,7 @@ namespace BWEB {
             for (auto &placement : placements) {
                 auto tile = base->Location() + placement + wallOffset;
 
-                if (Map::isPlaceable(defenseType, tile)) {
+                if (Map::isPlaceable(defenseType, tile) && !Map::isReserved(tile, 2, 2)) {
                     defenses[i].insert(tile);
                     Map::addUsed(tile, defenseType);
                     defenses[0].insert(tile);

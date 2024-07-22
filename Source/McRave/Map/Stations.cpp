@@ -150,7 +150,7 @@ namespace McRave::Stations
 
                 // If there are multiple chokepoints with the same area pair
                 auto pathTowards = Terrain::getEnemyStartingPosition().isValid() ? Terrain::getEnemyStartingPosition() : mapBWEM.Center();
-                if (!defendChoke && station.getBase()->GetArea()->ChokePoints().size() >= 3) {
+                if (station.getBase()->GetArea()->ChokePoints().size() >= 3) {
                     defendPosition = Position(0, 0);
                     int count = 0;
 
@@ -170,20 +170,20 @@ namespace McRave::Stations
                 }
 
                 // If defend position isn't walkable, move it towards the closest base
-                vector<WalkPosition> directions ={ {-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1} };
-                while (Grids::getMobility(defendPosition) <= 2) {
-                    auto best = DBL_MAX;
-                    auto start = WalkPosition(defendPosition);
+                //vector<WalkPosition> directions ={ {-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1} };
+                //while (Grids::getMobility(defendPosition) <= 2) {
+                //    auto best = DBL_MAX;
+                //    auto start = WalkPosition(defendPosition);
 
-                    for (auto &dir : directions) {
-                        auto center = Position(start + dir);
-                        auto dist = center.getDistance(Terrain::getNaturalPosition());
-                        if (dist < best) {
-                            defendPosition = center;
-                            best = dist;
-                        }
-                    }
-                }
+                //    for (auto &dir : directions) {
+                //        auto center = Position(start + dir);
+                //        auto dist = center.getDistance(Terrain::getNaturalPosition());
+                //        if (dist < best) {
+                //            defendPosition = center;
+                //            best = dist;
+                //        }
+                //    }
+                //}
                 defendPositions[&station] = defendPosition;
             }
         }
@@ -239,7 +239,7 @@ namespace McRave::Stations
 
             if (station->isMain()) {
                 // Add a sunk in main if we lost the natural, maybe it holds to get a win
-                if (BuildOrder::isOpener() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None)
+                if (BuildOrder::isOpener() && !BuildOrder::isWallMain() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None)
                     return (Util::getTime() > Time(3, 00)) - groundCount;
             }
             else if (!station->isMain() && !station->isNatural()) {
@@ -768,7 +768,7 @@ namespace McRave::Stations
         auto distBest = DBL_MAX;
         auto bestStation = Terrain::getMyMain();
         for (auto &station : getStations(PlayerState::Self)) {
-            auto defendPosition = Stations::getDefendPosition(station);
+            auto defendPosition = station->getBase()->Center();
             auto distDefend = defendPosition.getDistance(here);
             auto distCenter = station->getBase()->Center().getDistance(here);
 

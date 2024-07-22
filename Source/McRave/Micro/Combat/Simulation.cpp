@@ -108,6 +108,18 @@ namespace McRave::Combat::Simulation {
             minWinPercent = 0.8;
             maxWinPercent = 1.2;
         }
+
+        // Incentive for pushing for engagements as the game goes later
+        if (!Players::ZvZ()) {
+            if (Util::getTime() > Time(10, 00)) {
+                minWinPercent -= 0.0;
+                maxWinPercent -= 0.2;
+            }
+            if (Util::getTime() > Time(12, 00)) {
+                minWinPercent -= 0.0;
+                maxWinPercent -= 0.2;
+            }
+        }
     }
 
     void updateIncentives(UnitInfo& unit)

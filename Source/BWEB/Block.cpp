@@ -275,7 +275,7 @@ namespace BWEB::Blocks
             }
 
             // Check if a Block of specified size would overlap any bases, resources or other blocks
-            auto ff = (Broodwar->self()->getRace() != Races::Zerg && type != BlockType::Supply) ? 1 : 0;
+            auto ff = (type != BlockType::Supply) ? 1 : 0;
             for (auto x = here.x - ff; x < here.x + width + ff; x++) {
                 for (auto y = here.y - ff; y < here.y + height + ff; y++) {
                     const TilePosition t(x, y);

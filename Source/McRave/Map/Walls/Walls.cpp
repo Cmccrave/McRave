@@ -19,6 +19,13 @@ namespace McRave::Walls {
 
         void generateWall(const BWEM::Area* area, const BWEM::ChokePoint* choke)
         {
+            // HACK: Zerg walls in the main are just necessary on pocket natural maps, we don't want extra buildings
+            if (Broodwar->self()->getRace() == Races::Zerg && area == Terrain::getMainArea()) {
+                vector<UnitType> hatch ={ Zerg_Hatchery };
+                BWEB::Walls::createWall(hatch, area, choke, tightType, defenses, openWall, true);
+                return;
+            }
+
             for (auto &buildings : testingOrder) {
                 string types = "";
                 for (auto &building : buildings)
@@ -102,7 +109,7 @@ namespace McRave::Walls {
             else {
                 for (auto &station : BWEB::Stations::getStations()) {
                     initializeWallParameters();
-                    if (station.isMain())
+                    if ((station.isMain() && !Terrain::isPocketNatural()) || (station.isNatural() && Terrain::isPocketNatural()))
                         continue;
                     generateWall(station.getBase()->GetArea(), station.getChokepoint());
                 }

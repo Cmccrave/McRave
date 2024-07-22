@@ -38,7 +38,7 @@ namespace McRave::Scouts {
             void addTargets(Position here, int radius = 0)
             {
                 auto sRadius = int(round(1.5*radius));
-                if (reachable(here) && radius == 0) {
+                if (here.isValid() && reachable(here) && radius == 0) {
                     positions.push_back(here);
                     return;
                 }
@@ -53,7 +53,7 @@ namespace McRave::Scouts {
                     here + Position(radius, -radius),
                     here + Position(-radius, -radius) };
                 for_each(offsets.begin(), offsets.end(), [&](auto p) {
-                    if (reachable(p))
+                    if (p.isValid() && reachable(p))
                         positions.push_back(Util::clipPosition(p));
                 });
             }
@@ -123,7 +123,8 @@ namespace McRave::Scouts {
                 fullScout = mainScouted;
 
             // Determine if we are lightly contained such that a scout cant get out
-            auto closestRanged = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy, [&](auto &u) {
+            auto choke = Terrain::isPocketNatural() ? Terrain::getMainChoke() : Terrain::getNaturalChoke();
+            auto closestRanged = Util::getClosestUnit(Position(choke->Center()), PlayerState::Enemy, [&](auto &u) {
                 return u->getGroundRange() >= 64.0 && u->getPosition().getDistance(Position(Terrain::getNaturalChoke()->Center())) < 320.0;
             });
             contained = closestRanged != nullptr;
@@ -431,7 +432,8 @@ namespace McRave::Scouts {
             }
 
             // Path backwards to stop on last threatening tile (Ralph scouting)
-            auto start = Position(Terrain::getEnemyNatural()->getChokepoint()->Center());
+            auto station = Terrain::isPocketNatural() ? Terrain::getEnemyMain() : Terrain::getEnemyNatural();
+            auto start = Position(station->getChokepoint()->Center());
             auto end = Position(Terrain::getNaturalChoke()->Center());
 
             // Try to scout the main if they're 1 base, flip how to detect threat (stop on first threatening tile)
@@ -452,7 +454,7 @@ namespace McRave::Scouts {
 
             // If they haven't expanded, check it occasionally, unless we really need army info
             if (!Spy::enemyFastExpand() && !contained)
-                army.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
+                army.addTargets(station->getBase()->Center());
         }
 
         void updateExpansionScouting()

@@ -28,6 +28,7 @@ namespace McRave::Defender {
             if (closestStation && closestStation->getChokepoint()) {
                 auto defendPosition = Stations::getDefendPosition(closestStation);
                 unit.setFormation(defendPosition);
+                Broodwar->drawLineMap(unit.getPosition(), unit.getFormation(), Colors::Blue);
             }
 
             // Add a zone to help with engagements
@@ -41,7 +42,7 @@ namespace McRave::Defender {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
 
-                if (unit.getRole() == Role::Defender && unit.isAvailable()) {
+                if (unit.getRole() == Role::Defender) {
                     updateFormation(unit);
                     updateDecision(unit);
                 }

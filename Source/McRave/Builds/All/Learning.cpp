@@ -20,24 +20,25 @@ namespace McRave::Learning {
         string version;
         string learningExtension, gameInfoExtension;
 
-        bool isBuildPossible(string build, string opener)
+        bool isComponentPossible(string component)
         {
-            vector<UnitType> buildings, defenses;
-            auto wallOptional = false;
-            auto tight = false;
-
             // Protoss wall requirements
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                if (Terrain::getNaturalArea()->ChokePoints().size() == 1)
-                    return Walls::getMainWall();
-                if (build == "FFE")
+                if (Players::PvZ() && component == "FFE") {
+                    if (Terrain::isPocketNatural())
+                        return Walls::getMainWall();
                     return Walls::getNaturalWall();
+                }
                 return true;
             }
 
             // Zerg wall requirements
-            if (Broodwar->self()->getRace() == Races::Zerg)
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+                if (Players::ZvP() && component == "2HatchMuta") {
+                    return !Terrain::isPocketNatural();
+                }
                 return true;
+            }
 
             // Terran wall requirements
             if (Broodwar->self()->getRace() == Races::Terran)
@@ -174,6 +175,8 @@ namespace McRave::Learning {
             for (auto &build : myBuilds) {
                 if (build.ucb1 < bestBuildUCB1)
                     continue;
+                if (!isComponentPossible(build.name))
+                    continue;
 
                 bestBuildUCB1 = build.ucb1;
                 bestOpenerUCB1 = 0.0;
@@ -182,11 +185,15 @@ namespace McRave::Learning {
                 for (auto &opener : build.openers) {
                     if (opener.ucb1 < bestOpenerUCB1)
                         continue;
+                    if (!isComponentPossible(opener.name))
+                        continue;
                     bestOpenerUCB1 = opener.ucb1;
                     bestTransitionUCB1 = 0.0;
 
                     for (auto &transition : build.transitions) {
                         if (transition.ucb1 < bestTransitionUCB1)
+                            continue;
+                        if (!isComponentPossible(transition.name))
                             continue;
                         bestTransitionUCB1 = transition.ucb1;
                         BuildOrder::setLearnedBuild(build.name, opener.name, transition.name);

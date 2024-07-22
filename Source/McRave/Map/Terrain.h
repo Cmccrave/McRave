@@ -31,8 +31,10 @@ namespace McRave::Terrain {
     bool isReverseRamp();
     bool isFlatRamp();
     bool isNarrowNatural();
+    bool isPocketNatural();
     bool foundEnemy();
     bool inArea(const BWEM::Area *, BWAPI::Position);
+    bool inArea(BWAPI::Position, BWAPI::Position);
     bool inTerritory(PlayerState, BWAPI::Position);
     bool inTerritory(PlayerState, const BWEM::Area*);
     void addTerritory(PlayerState, const BWEB::Station*);

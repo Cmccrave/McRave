@@ -268,8 +268,8 @@ namespace McRave::Producing {
         void updateReservedResources()
         {
             // We're allowed to spend up to our limits before buildings, upgrades and research
-            availMin = Broodwar->self()->minerals() - Researching::getReservedMineral() - Upgrading::getReservedMineral();
-            availGas = Broodwar->self()->gas() - Researching::getReservedGas() - Upgrading::getReservedGas();
+            availMin = Broodwar->self()->minerals() - Researching::getReservedMineral() - Upgrading::getReservedMineral() - Planning::getPlannedMineral();
+            availGas = Broodwar->self()->gas() - Researching::getReservedGas() - Upgrading::getReservedGas() - Planning::getPlannedGas();
         }
 
         void updateLarva()

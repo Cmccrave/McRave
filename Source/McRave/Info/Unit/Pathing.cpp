@@ -26,31 +26,10 @@ namespace McRave::Pathing {
                 return;
             }
 
-            // Create an air distance calculation for engage position for flyers
-            if (unit.isFlying() || unit.hasTransport() || true) {
-                auto direction = ((distance - range) / distance);
-                //auto widths = (unit.getType().width() + target.getType().width()) / 2;
-                //auto heights = (unit.getType().height() + target.getType().height()) / 2;
-                //auto engageX = int((unit.getPosition().x - target.getPosition().x + widths) * direction);
-                //auto engageY = int((unit.getPosition().y - target.getPosition().y + heights) * direction);
-                //auto engagePosition = unit.getPosition() - Position(engageX, engageY);
-
-                auto engagePosition = Util::shiftTowards(target.getPosition(), unit.getPosition(), range);
-                unit.setEngagePosition(engagePosition);
-                unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
-                Visuals::drawLine(unit.getEngagePosition(), unit.getPosition(), Colors::Purple);
-            }
-
-            // Create a binary search tree in a circle around the target
-            else {
-                const auto calc = [&](auto p) {
-                    //return p.getDistance(unit.getPosition());
-                    return BWEB::Map::getGroundDistance(p, unit.getPosition()) + BWEB::Map::getGroundDistance(p, target.getPosition());
-                };
-                auto engage = Util::findPointOnCircle(unit.getPosition(), target.getPosition(), range, calc);
-                unit.setEngagePosition(engage.second);
-                unit.setEngDist(engage.first);
-            }
+            // Create an air distance calculation for engage position
+            auto engagePosition = Util::shiftTowards(target.getPosition(), unit.getPosition(), range);
+            unit.setEngagePosition(engagePosition);
+            unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
         }
 
         void getInterceptPosition(UnitInfo& unit, UnitInfo& target)
@@ -80,7 +59,9 @@ namespace McRave::Pathing {
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo& unit = *u;
 
-                if (unit.isFlying() || unit.getType().isBuilding())
+                if (unit.isFlying()
+                    || unit.getType().isBuilding()
+                    || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()))
                     continue;
 
                 // Get the furthest unit targeting this to offset how many frames to estimate

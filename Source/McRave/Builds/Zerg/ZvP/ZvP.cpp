@@ -19,7 +19,7 @@ namespace McRave::BuildOrder::Zerg {
         inOpening =                                 true;
         inBookSupply =                              true;
         wallNat =                                   false;
-        wallMain =                                  false;
+        wallMain =                                  Terrain::isPocketNatural();
         wallThird =                                 true;
         wantNatural =                               true;
         wantThird =                                 Util::getTime() < Time(2, 45) || Spy::getEnemyBuild() == "FFE";
@@ -81,7 +81,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Make less if we have some other units outside our opening
         //arrivalValue -= vis(Zerg_Hydralisk) * 1.5;
-        arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 3.0;
+        arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 4.0;
         //arrivalValue -= vis(Zerg_Mutalisk);
 
         return int(arrivalValue);
@@ -259,13 +259,13 @@ namespace McRave::BuildOrder::Zerg {
 
         // Upgrades
         upgradeQueue[Metabolic_Boost] =                 vis(Zerg_Lair) > 0;
-        upgradeQueue[Muscular_Augments] =               hydraSwitch && com(Zerg_Hydralisk_Den) > 0 && total(Zerg_Hydralisk) >= 6;
+        upgradeQueue[Muscular_Augments] =               hydraSwitch && com(Zerg_Hydralisk_Den) > 0;
         upgradeQueue[Grooved_Spines] =                  hydraSwitch && hydraSpeed();
         upgradeQueue[Zerg_Flyer_Carapace] =             2 * (total(Zerg_Mutalisk) >= 9 && !hydraSwitch);
 
         // Pumping
         pumpLings = lingsNeeded_ZvP() > vis(Zerg_Zergling);
-        pumpScourge = com(Zerg_Spire) == 1 && total(Zerg_Mutalisk) < 9 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > vis(Zerg_Scourge) * 2;
+        pumpScourge = com(Zerg_Spire) == 1 && total(Zerg_Hydralisk) < 9 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > vis(Zerg_Scourge) * 2;
         pumpMutas = !pumpScourge && com(Zerg_Spire) == 1 && gas(100) && (total(Zerg_Mutalisk) < 9 || !hydraSwitch);
         pumpHydras = !pumpMutas && hydraSwitch && vis(Zerg_Drone) >= 38;
 

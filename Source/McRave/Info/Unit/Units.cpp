@@ -294,7 +294,7 @@ namespace McRave::Units {
         auto idx = find_if(commandQueue.begin(), commandQueue.end(), [&](auto &u) {
             return u == &unit;
         });
-        auto allowed = idx != commandQueue.end() && idx - commandQueue.begin() < 50;
+        auto allowed = idx != commandQueue.end() && idx - commandQueue.begin() < 60;
         if (allowed)
             unit.commandFrame = Broodwar->getFrameCount();
         return allowed;

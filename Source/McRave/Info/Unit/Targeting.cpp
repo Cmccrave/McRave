@@ -149,7 +149,7 @@ namespace McRave::Targets {
 
                 // Mutalisk
                 if (unit.getType() == Zerg_Mutalisk) {
-                    auto anythingTime = Util::getTime() > (Players::ZvZ() ? Time(7, 00) : Time(12, 00));
+                    auto anythingTime = Util::getTime() > (Players::ZvZ() ? Time(7, 00) : Time(10, 00));
                     auto anythingSupply = !Players::ZvZ() && Players::getSupply(PlayerState::Enemy, Races::None) < 20;
                     auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
 
@@ -170,7 +170,7 @@ namespace McRave::Targets {
                         // Stragglers are free to kill
                         if (!target.getType().isBuilding() && unit.isWithinReach(target) && target.getUnitsInRangeOfThis().size() <= 1)
                             return Priority::Major;
-                        if (target.getType().isBuilding() && unit.isWithinRange(target) && target.getUnitsInRangeOfThis().empty() <= 0 && unit.getUnitsInRangeOfThis().empty())
+                        if (target.getType().isBuilding() && unit.isWithinRange(target) && target.getUnitsInRangeOfThis().empty() && unit.getUnitsInRangeOfThis().empty())
                             return Priority::Major;
 
                         // Try to push for only worker kills to try and end the game
@@ -188,12 +188,11 @@ namespace McRave::Targets {
                     //    return Priority::Major;
 
                     // Low priority targets, ignore when we haven't found the enemy
-                    auto priorityAfterInfo = Terrain::foundEnemy() ? Priority::Minor : Priority::Trivial;
                     if (!anythingTime && !defendExpander && !target.isThreatening()) {
-                        //if (!Players::ZvZ() && !unit.canOneShot(target) && !unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding() && !target.getType().isWorker())
-                        //    return priorityAfterInfo;
+                        if (!Players::ZvZ() && !unit.canOneShot(target) && !unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding() && !target.getType().isWorker())
+                            return Priority::Ignore;
                         if ((enemyCanHitAir || enemyCanHitGround) && !target.canAttackAir() && !target.canAttackGround())
-                            return priorityAfterInfo;
+                            return Priority::Ignore;
                     }
                 }
 

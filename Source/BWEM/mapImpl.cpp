@@ -585,10 +585,11 @@ namespace BWEM {
                     if (TempAreaList[smaller].Size() > TempAreaList[bigger].Size()) swap(smaller, bigger);
 
                     // Condition for the neighboring areas to merge:
+                    // Slightly adjusted so that Matchpoint natural generates properly
                     if ((TempAreaList[smaller].Size() < 80) ||
                         (TempAreaList[smaller].HighestAltitude() < 80) ||
-                        (cur->Altitude() / (double)TempAreaList[bigger].HighestAltitude() >= 0.90) ||
-                        (cur->Altitude() / (double)TempAreaList[smaller].HighestAltitude() >= 0.90) ||
+                        (cur->Altitude() / (double)TempAreaList[bigger].HighestAltitude() >= 0.92) ||
+                        (cur->Altitude() / (double)TempAreaList[smaller].HighestAltitude() >= 0.92) ||
                         any_of(StartingLocations().begin(), StartingLocations().end(), [&pos](const TilePosition & startingLoc)
                     { return dist(TilePosition(pos), startingLoc + TilePosition(2, 1)) <= 3; })
                         )

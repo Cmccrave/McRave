@@ -344,13 +344,16 @@ namespace McRave::Goals {
             auto &stations = Stations::getStations(PlayerState::Self);
             auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto& s) { return s->isMain(); }));
 
-            // Before Hydras have upgrades, defend vulnerable bases
+            // Before Hydras have upgrades, defend vulnerable bases, put lings on defense too
             if (Combat::State::isStaticRetreat(Zerg_Hydralisk)) {
                 auto percentPer = 1.0 / double(stations.size() - mainStations);
                 if (!stations.empty()) {
                     for (auto &station : stations) {
-                        if (!station->isMain())
-                            assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, percentPer, GoalType::Defend);
+                        if ((station->isNatural() && Terrain::isPocketNatural()) || (station->isMain() && !Terrain::isPocketNatural()))
+                            continue;
+                        assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, percentPer, GoalType::Defend);
+                        if (!station->isNatural() && !station->isMain())
+                            assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Zergling, 1.0, GoalType::Defend);
                     }
                 }
             }

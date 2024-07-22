@@ -251,7 +251,7 @@ namespace McRave::Combat::Clusters {
 
                     // Determine the state of the cluster
                     // Move to formation
-                    if (commander->getLocalState() == LocalState::Hold || (commander->getLocalState() != LocalState::Attack && cluster.marchNavigation.getDistance(cluster.marchPosition) < 160.0))
+                    if (commander->getLocalState() == LocalState::Hold)
                         cluster.state = LocalState::Hold;
                     else if (commander->getLocalState() == LocalState::Retreat || (!atHome && commander->getGlobalState() == GlobalState::Retreat))
                         cluster.state = LocalState::Retreat;

@@ -29,6 +29,7 @@ namespace McRave::Terrain {
         bool reverseRamp = false;
         bool flatRamp = false;
         bool narrowNatural = false;
+        bool pocketNatural = false;
 
         // Ramps
         Ramp mainRamp;
@@ -45,6 +46,8 @@ namespace McRave::Terrain {
         // Chokepoints
         map<const BWEM::ChokePoint * const, double> chokeAngles;
         map<const BWEM::ChokePoint * const, Position> chokeCenters;
+
+        string nodeName = "[Terrain]: ";
 
         void findEnemy()
         {
@@ -589,6 +592,14 @@ namespace McRave::Terrain {
         return false;
     }
 
+    bool inArea(Position there, Position here)
+    {
+        if (!here.isValid() || !there.isValid())
+            return false;
+        auto area = mapBWEM.GetArea(TilePosition(there));
+        return inArea(area, here);
+    }
+
     bool inTerritory(PlayerState playerState, Position here)
     {
         if (!here.isValid())
@@ -741,6 +752,14 @@ namespace McRave::Terrain {
             }
         }
 
+        // Check if we have a pocket natural
+        if (Terrain::getMyNatural()) {
+            if (Terrain::getMyNatural()->getBase()->GetArea()->ChokePoints().size() <= 1)
+                pocketNatural = true;
+            if (pocketNatural)
+                Util::debug(nodeName + "Pocket natural detected.");
+        }
+
         mapEdges ={ {-1, 0}, {-1, Broodwar->mapHeight() * 32}, {0, -1}, {Broodwar->mapWidth() * 32, -1} };
         mapCorners ={ {0, 0}, {0, Broodwar->mapHeight() * 32 }, {Broodwar->mapWidth() * 32, 0}, {Broodwar->mapWidth() * 32, Broodwar->mapHeight() * 32} };
 
@@ -757,7 +776,7 @@ namespace McRave::Terrain {
         findEnemyNextExpand();
         findCleanupPositions();
         updateAreas();
-        drawTerritory();
+        //drawTerritory();
         Visuals::endPerfTest("Terrain");
     }
 
@@ -773,6 +792,7 @@ namespace McRave::Terrain {
     bool isReverseRamp() { return reverseRamp; }
     bool isFlatRamp() { return flatRamp; }
     bool isNarrowNatural() { return narrowNatural; }
+    bool isPocketNatural() { return pocketNatural; }
     bool foundEnemy() { return enemyStartingPosition.isValid() && Broodwar->isExplored(TilePosition(enemyStartingPosition)); }
     vector<Position>& getGroundCleanupPositions() { return groundCleanupPositions; }
     vector<Position>& getAirCleanupPositions() { return airCleanupPositions; }
