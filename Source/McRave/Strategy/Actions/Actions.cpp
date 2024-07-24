@@ -275,7 +275,7 @@ namespace McRave::Actions {
 
         // Check outgoing TechType Actions for this PlayerState
         for (auto &action : *actions) {
-            if (action.unit == unit)
+            if (action.unit == unit || action.type != type)
                 continue;
 
             if (action.tech == TechTypes::Stasis_Field || action.tech == TechTypes::EMP_Shockwave || action.tech == TechTypes::Dark_Swarm) {
@@ -288,7 +288,7 @@ namespace McRave::Actions {
 
         // Check outgoing TechType Actions for neutral PlayerState
         for (auto &action : neutralActions) {
-            if (action.unit == unit)
+            if (action.unit == unit || action.type != type)
                 continue;
 
             if (action.tech == TechTypes::Stasis_Field || action.tech == TechTypes::EMP_Shockwave || action.tech == TechTypes::Dark_Swarm) {

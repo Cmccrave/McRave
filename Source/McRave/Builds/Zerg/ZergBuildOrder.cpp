@@ -197,7 +197,8 @@ namespace McRave::BuildOrder::Zerg {
                 expandDesired = (resourceSat && techSat && productionSat)
                     || (Players::ZvZ() && Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0 && Stations::getStations(PlayerState::Self).size() < Stations::getStations(PlayerState::Enemy).size() && availableMinerals > waitForMinerals && availableGas < 150)
                     || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2)
-                    || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1);
+                    || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1)
+                    || (!Players::ZvZ() && Stations::getMiningStationsCount() < 2 && Util::getTime() > Time(12, 00));
 
                 buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + expandDesired);
 
@@ -252,7 +253,7 @@ namespace McRave::BuildOrder::Zerg {
 
             // Above 3 hatcheries we need to carefully add, don't add hatcheries if we have larva to spend
             if (inOpening && hatchCount() >= 3 && inTransition) {
-                if (vis(Zerg_Larva) >= min(3, hatchCount()))
+                if (vis(Zerg_Larva) >= (2 + hatchCount()))
                     buildQueue[Zerg_Hatchery] = hatchCount();
             }
         }
@@ -391,6 +392,8 @@ namespace McRave::BuildOrder::Zerg {
             Z_4HatchSpeedling.type = Zerg_Zergling;
             Z_4HatchSpeedling.name = "4HatchSpeedling";
 
+            Allin Z_None;
+
             // Get allin struct
             if (activeAllinType == AllinType::Z_6HatchCrackling)
                 activeAllin = Z_6HatchCrackling;
@@ -403,11 +406,18 @@ namespace McRave::BuildOrder::Zerg {
             if (Players::ZvZ() && (Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0 || Spy::enemyFortress()))
                 activeAllin = Z_6HatchCrackling;
 
-            // Turn off all-ins against splash
-            auto antiZergling = (Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0)
-                && total(Zerg_Zergling) > activeAllin.typeCount * 5;
-            if (antiZergling)
+            // Turn off all-ins against splash or weird tech
+            auto turnOffAllin = Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_High_Templar) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0
+                || (vis(activeAllin.type) > activeAllin.typeCount * 4);
+            if (turnOffAllin) {
+                activeAllin = Z_None;
                 return;
+            }
 
             // Common attributes
             if (activeAllin.name != "") {
@@ -686,6 +696,12 @@ namespace McRave::BuildOrder::Zerg {
                 armyComposition[Zerg_Hydralisk] =               0.30;
                 armyComposition[Zerg_Mutalisk] =                0.10;
             }
+            else if (isFocusUnit(Zerg_Hydralisk) && isFocusUnit(Zerg_Lurker)) {
+                armyComposition[Zerg_Drone] =                   0.60;
+                armyComposition[Zerg_Zergling] =                0.00;
+                armyComposition[Zerg_Hydralisk] =               0.40;
+                armyComposition[Zerg_Lurker] =                  0.25;
+            }
             else if (isFocusUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.60;
                 armyComposition[Zerg_Zergling] =                0.10;
@@ -813,8 +829,10 @@ namespace McRave::BuildOrder::Zerg {
             }
         }
 
-        // Always allowed to make Overlords
+        // Always allowed to make basic units
         unlockedType.insert(Zerg_Overlord);
+        unlockedType.insert(Zerg_Drone);
+        unlockedType.insert(Zerg_Zergling);
     }
 
 

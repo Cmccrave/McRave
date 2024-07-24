@@ -16,20 +16,23 @@ namespace McRave::Pathing {
                 return;
             }
 
-            auto distance = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition());
-            auto range = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
+            auto distance = double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
+            auto range = (target.isFlying() ? unit.getAirRange() : unit.getGroundRange());
 
             // No need to calculate for units that don't move or are in range
-            if (unit.getRole() == Role::Defender || unit.getSpeed() <= 0.0 || distance <= range) {
+            if (unit.getRole() == Role::Defender || unit.getSpeed() <= 0.0) {
                 unit.setEngagePosition(unit.getPosition());
                 unit.setEngDist(0.0);
                 return;
             }
 
             // Create an air distance calculation for engage position
-            auto engagePosition = Util::shiftTowards(target.getPosition(), unit.getPosition(), range);
-            unit.setEngagePosition(engagePosition);
+            auto engagePosition = Util::shiftTowards(target.getPosition(), unit.getPosition(), min(distance, range));
             unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
+
+            // Move engage position closer than distance, so we always move forward in some way
+            engagePosition = Util::shiftTowards(engagePosition, target.getPosition(), 32.0);
+            unit.setEngagePosition(engagePosition);
         }
 
         void getInterceptPosition(UnitInfo& unit, UnitInfo& target)
@@ -61,6 +64,7 @@ namespace McRave::Pathing {
 
                 if (unit.isFlying()
                     || unit.getType().isBuilding()
+                    || unit.hasAttackedRecently()
                     || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()))
                     continue;
 

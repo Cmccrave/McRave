@@ -51,7 +51,7 @@ namespace McRave::Combat::State {
             const auto speedLing = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Metabolic_Boost);
             const auto crackling = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Adrenal_Glands);
 
-            if (!crackling && !BuildOrder::isRush()) {
+            if (!crackling && !BuildOrder::isRush() && !BuildOrder::isAllIn()) {
                 if (Players::ZvP()) {
                     const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && !Spy::enemyGreedy() && !Spy::enemyProxy() && Util::getTime() > Time(4, 00) && Util::getTime() < Time(8, 00);
                     const auto hideCheese = BuildOrder::isHideTech() && BuildOrder::isOpener() && vis(Zerg_Spire) == 0;

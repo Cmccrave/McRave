@@ -70,7 +70,7 @@ namespace McRave::Researching {
             for (auto &research : building.getType().researchesWhat()) {
                 if (isCreateable(building.unit(), research) && isSuitable(research)) {
                     if (isAffordable(research)) {
-                        building.setRemainingTrainFrame(research.researchTime());
+                        building.setRemainingTrainFrame(research.researchTime() + Broodwar->getLatencyFrames() + 1);
                         building.unit()->research(research);
                         lastResearchFrame = Broodwar->getFrameCount();
                         return true;
@@ -105,7 +105,7 @@ namespace McRave::Researching {
                 if (!building.unit()
                     || building.getRole() != Role::Production
                     || !building.isCompleted()
-                    || building.getRemainingTrainFrames() >= Broodwar->getLatencyFrames() + 1
+                    || building.getRemainingTrainFrames() > 0
                     || Upgrading::upgradedThisFrame()
                     || Researching::researchedThisFrame()
                     || Producing::producedThisFrame()

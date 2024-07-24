@@ -218,9 +218,11 @@ namespace McRave::Spy::General {
         void checkEnemyGreedy(PlayerInfo& player, StrategySpy& theSpy)
         {
             // Greedy detection
-            theSpy.greedy.possible = (Players::ZvP() && Spy::getEnemyBuild() != "FFE" && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(10, 00))
-                || (Players::ZvP() && Spy::getEnemyBuild() != "FFE" && theSpy.expand.confirmed && Util::getTime() < Time(6, 45))
-                || (Players::ZvT() && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(10, 00));
+            if (!Terrain::isPocketNatural()) {
+                theSpy.greedy.possible = (Players::ZvP() && Spy::getEnemyBuild() == "FFE" && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(7, 00))
+                    || (Players::ZvP() && Spy::getEnemyBuild() != "FFE" && theSpy.expand.confirmed && Util::getTime() < Time(5, 15))
+                    || (Players::ZvT() && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(10, 00));
+            }
             if (Util::getTime() > Time(10, 00))
                 theSpy.greedy.possible = false;
         }

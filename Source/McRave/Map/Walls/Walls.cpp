@@ -204,7 +204,7 @@ namespace McRave::Walls {
 
             // FFE
             if (Spy::getEnemyBuild() == "FFE") {
-                return (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 00));
+                return 0;
             }
 
             // Always make one that is a safety measure vs unknown builds
@@ -242,7 +242,6 @@ namespace McRave::Walls {
                 // DT
                 if (Spy::getEnemyTransition() == "DT") {
                     return (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(4, 15))
                         + (Util::getTime() > Time(5, 00))
                         + (Util::getTime() > Time(5, 20))
                         + (Util::getTime() > Time(5, 40));
@@ -294,6 +293,11 @@ namespace McRave::Walls {
                     + (Util::getTime() > Time(7, 00))
                     + (Util::getTime() > Time(7, 30))
                     + (Util::getTime() > Time(8, 00));
+
+                if (BuildOrder::getCurrentTransition() != "6HatchHydra")
+                    return (Util::getTime() > Time(5, 40)) + (Util::getTime() > Time(6, 00));
+                if (BuildOrder::getCurrentTransition() == "6HatchHydra")
+                    return (Util::getTime() > Time(5, 40));
             }
 
             return 0;
@@ -338,7 +342,7 @@ namespace McRave::Walls {
                 minimum = 1;
             if (Spy::getEnemyBuild() != "FFE") {
                 if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
-                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
+                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2)
                     minimum = 2;
             }
 

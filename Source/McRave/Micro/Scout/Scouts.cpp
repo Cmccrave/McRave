@@ -38,7 +38,7 @@ namespace McRave::Scouts {
             void addTargets(Position here, int radius = 0)
             {
                 auto sRadius = int(round(1.5*radius));
-                if (here.isValid() && reachable(here) && radius == 0) {
+                if (here.isValid() && radius == 0) {
                     positions.push_back(here);
                     return;
                 }
@@ -53,7 +53,7 @@ namespace McRave::Scouts {
                     here + Position(radius, -radius),
                     here + Position(-radius, -radius) };
                 for_each(offsets.begin(), offsets.end(), [&](auto p) {
-                    if (p.isValid() && reachable(p))
+                    if (p.isValid())
                         positions.push_back(Util::clipPosition(p));
                 });
             }
@@ -392,7 +392,8 @@ namespace McRave::Scouts {
                         safe.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
 
-                if (vis(Zerg_Overlord) > 0) {
+                // Removing this as Ralph scouting is more effective
+                if (false && vis(Zerg_Overlord) > 0) {
                     safe.addTargets(safePositions[Terrain::getEnemyNatural()]);
                     if (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())) >= 200)
                         safe.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
@@ -627,13 +628,12 @@ namespace McRave::Scouts {
             for (auto &[type, target] : scoutTargets) {
 
                 if (unit.getDestination().isValid()
-                    || !target.center.isValid()
-                    || (type == ScoutType::Safe && unit.getHealth() != unit.getType().maxHitPoints() && target.center != safePositions[Terrain::getEnemyNatural()])
+                    || !target.center.isValid()                    
                     || target.currentTypeCounts[unit.getType()] >= target.desiredTypeCounts[unit.getType()])
                     continue;
 
                 // Set to the center by default, increment current counts here
-                if (reachable(target.center))
+                if (unit.isFlying() || reachable(target.center))
                     unit.setDestination(target.center);
                 target.currentTypeCounts[unit.getType()]++;
 
@@ -642,6 +642,9 @@ namespace McRave::Scouts {
                     auto time = Grids::getLastVisibleFrame(TilePosition(pos));
                     auto timeDiff = Broodwar->getFrameCount() - time;
                     auto score = double(timeDiff) / (1.0 + target.dist);
+
+                    if (!unit.isFlying() && !reachable(pos))
+                        continue;
 
                     if (score > best) {
                         best = score;

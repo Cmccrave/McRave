@@ -333,8 +333,7 @@ namespace McRave::Command {
         if (shouldMove()) {
 
             // Necessary for mutas to not overshoot when already in range and melee struggling to ever hit anything
-            auto clickToTarget = (unit.getRole() == Role::Combat && unit.hasTarget() && unit.canStartAttack() && (unit.isLightAir() || unit.isMelee()) && unit.isWithinReach(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack)
-                || unit.getPosition().getDistance(unit.getDestination()) < 160.0
+            auto clickToTarget = (unit.getRole() == Role::Combat && unit.hasTarget() && unit.canStartAttack() && (unit.isLightAir() || unit.isMelee()) && unit.isWithinReach(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack)                
                 || !unit.getDestinationPath().isReachable();
 
             // Just move to the destination

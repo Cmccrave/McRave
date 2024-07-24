@@ -150,6 +150,7 @@ namespace McRave
             flying                      = unit()->isFlying() || getType().isFlyer() || unit()->getOrder() == Orders::LiftingOff || unit()->getOrder() == Orders::BuildingLiftOff;
             movedFlag                   = false;
             stunned                     = !unit()->isPowered() || unit()->isMaelstrommed() || unit()->isStasised() || unit()->isLockedDown() || unit()->isMorphing() || !unit()->isCompleted();
+            cloaked                     = unit()->isCloaked();
 
             // McRave Stats
             data.groundRange            = Math::groundRange(*this);
@@ -297,10 +298,10 @@ namespace McRave
             resourceHeldFrames = 0;
 
         // Check if clipped between terrain or buildings
+        bool trapped = false;
         if (getType().isWorker()) {
-
+            trapped = true;
             vector<TilePosition> directions{ {1,0}, {-1,0}, {0, 1}, {0,-1} };
-            bool trapped = true;
 
             // Check if the unit is stuck by terrain and buildings
             for (auto &tile : directions) {
@@ -336,7 +337,7 @@ namespace McRave
             lastMoveFrame = Broodwar->getFrameCount();
 
         // Check if a unit hasn't moved in a while but is trying to
-        if (!bwUnit->isAttackFrame() && (getPlayer() != Broodwar->self() || lastPos != getPosition() || !unit()->isMoving() || unit()->getLastCommand().getType() == UnitCommandTypes::Stop))
+        if (!bwUnit->isAttackFrame() && !trapped && (getPlayer() != Broodwar->self() || lastPos != getPosition() || !unit()->isMoving() || unit()->getLastCommand().getType() == UnitCommandTypes::Stop))
             lastMoveFrame = Broodwar->getFrameCount();
         else if (isStuck())
             lastStuckFrame = Broodwar->getFrameCount();
@@ -393,6 +394,9 @@ namespace McRave
 
         // Check if enemy is generally in our territory
         auto nearTerritory = [&]() {
+            if (isFlying())
+                return false;
+
             if ((Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural() && Combat::holdAtChoke())
                 || (Terrain::inArea(Terrain::getMainArea(), position) && Combat::isDefendNatural() && !Terrain::isPocketNatural())
                 || (Roles::getMyRoleCount(Role::Defender) == 0 && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
@@ -419,22 +423,26 @@ namespace McRave
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
             auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getRole() == Role::Defender && u->canAttackGround() && u->isCompleted();
+                return u->getRole() == Role::Defender && ((u->canAttackGround() && !this->isFlying()) || (u->canAttackAir() && this->isFlying())) && u->isCompleted();
             });
             return (closestDefender && closestDefender->isWithinRange(*this) && Terrain::inTerritory(PlayerState::Self, position))
-                || (closestDefender && isWithinRange(*closestDefender));
+                || (closestDefender && this->canAttackGround() && this->isWithinRange(*closestDefender));
         };
 
         // Checks if it can damage an already damaged building
         auto nearFragileBuilding = [&]() {
+            if (!this->canAttackGround() || getType().groundWeapon().damageType() == DamageTypes::Concussive)
+                return false;
             auto fragileBuilding = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
                 return !u->isHealthy() && u->getType().isBuilding() && u->isCompleted() && Terrain::inTerritory(PlayerState::Self, u->getPosition());
             });
-            return fragileBuilding && getType().groundWeapon().damageType() != DamageTypes::Concussive && canAttackGround() && Util::boxDistance(fragileBuilding->getType(), fragileBuilding->getPosition(), getType(), getPosition()) < proximityCheck;
+            return fragileBuilding && Util::boxDistance(fragileBuilding->getType(), fragileBuilding->getPosition(), getType(), getPosition()) < proximityCheck;
         };
 
         // Check if any builders can be hit or blocked
         auto nearBuildPosition = [&]() {
+            if (!this->canAttackGround())
+                return false;
             if (atHome && !isFlying() && Util::getTime() < Time(5, 00)) {
                 auto closestBuilder = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
                     return u->getRole() == Role::Worker && u->getBuildPosition().isValid() && u->getBuildType().isValid();
@@ -986,6 +994,11 @@ namespace McRave
 
         // ZvP
         if (Players::ZvP()) {
+
+            // If we don't plan on making mutalisks past what we have, use them to harass the enemy army
+            if (!BuildOrder::isUnitUnlocked(Zerg_Mutalisk))
+                return false;
+
             if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0)
                 return true;
 

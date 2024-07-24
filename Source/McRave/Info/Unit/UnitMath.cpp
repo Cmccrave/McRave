@@ -103,7 +103,7 @@ namespace McRave::Math {
             }
         }
 
-        auto ff = (unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding()) ? 0.0 : 1.00;
+        auto ff = (unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding()) ? 0.0 : 0.5;
         auto dps = ff + max(groundDPS(unit) / maxGrdDps, airDPS(unit) / maxAirDps);
         auto cost = relativeCost(unit) / maxCost;
         auto surv = survivability(unit) / maxSurv;

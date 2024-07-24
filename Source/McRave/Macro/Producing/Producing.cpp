@@ -39,7 +39,7 @@ namespace McRave::Producing {
 
         bool isCreateable(Unit building, UnitType unit)
         {
-            if (!BuildOrder::isUnitUnlocked(unit))
+            if (unit != Zerg_Overlord && BuildOrder::getCompositionPercentage(unit) <= 0.01)
                 return false;
 
             switch (unit)

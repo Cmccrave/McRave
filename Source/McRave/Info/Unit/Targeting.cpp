@@ -97,7 +97,6 @@ namespace McRave::Targets {
 
                 // Proxy priority
                 if (target.isProxy() && target.getType().isBuilding() && Spy::enemyProxy() && unit.getType() != Zerg_Mutalisk) {
-                    Visuals::drawCircle(target.getPosition(), 10, Colors::Yellow, true);
                     if (target.unit()->getBuildUnit() || (target.getType().getRace() == Races::Terran && !target.isCompleted()))
                         return Priority::Minor;
                     else if (proxyTargeting.find(target.getType()) != proxyTargeting.end() && ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Marine) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) == 0) || !unit.getType().isWorker()))
@@ -109,7 +108,7 @@ namespace McRave::Targets {
                 }
 
                 // Generic major priority
-                if (!unit.getType().isWorker() && target.isThreatening() && !target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()))
+                if (!unit.getType().isWorker() && target.isThreatening() && !target.getType().isWorker() && unit.isFlying() == target.isFlying())
                     return Priority::Critical;
 
                 // Generic ignore
@@ -593,7 +592,6 @@ namespace McRave::Targets {
                 UnitInfo& unit = *u;
                 if (unit.getPriority() > maxPriority)
                     maxPriority = unit.getPriority();
-                Broodwar->drawTextMap(unit.getPosition(), "%.2f", unit.getPriority());
             }
 
             enemyHasGround = true;

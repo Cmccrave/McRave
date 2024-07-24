@@ -108,6 +108,7 @@ namespace McRave {
         bool movedFlag = false;
         bool saveUnit = false;
         bool stunned = false;
+        bool cloaked = false;
         int commandFrame = -999;
         int lastThreateningFrame = -999;
         int framesVisible = -999;

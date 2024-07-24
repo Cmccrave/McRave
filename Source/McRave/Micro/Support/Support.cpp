@@ -13,11 +13,17 @@ namespace McRave::Support {
         void reset()
         {
             assignedOverlords.clear();
+            types.clear();
 
-            types ={ Zerg_Hydralisk, Protoss_Dragoon, Terran_Marine, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode };
-            if (Players::ZvT() && Spy::enemyInvis)
+            auto validTypes ={ Zerg_Hydralisk, Protoss_Dragoon, Terran_Marine, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode };
+            for (auto &t : validTypes) {
+                if (!Combat::State::isStaticRetreat(t))
+                    types.insert(t);
+            }
+
+            if (Players::ZvT() && Spy::enemyInvis())
                 types.insert(Zerg_Mutalisk);
-            if (Players::ZvP() && Spy::enemyInvis())
+            if (Players::ZvP() && Spy::enemyInvis() && com(Zerg_Hydralisk) == 0)
                 types.insert(Zerg_Zergling);
         }
 
@@ -58,20 +64,20 @@ namespace McRave::Support {
 
             // No spore, look for hydras, go to natural where we expect them to be
             else if (total(Zerg_Hydralisk) > 0 && Players::ZvP() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0) {
-                assignInBox(Terrain::getMyNatural()->getResourceCentroid(), unit);
+                assignInBox(Terrain::getMyNatural()->getBase()->Center(), unit);
             }
 
             // Attempting to build a spore
             else if (Stations::needAirDefenses(Terrain::getMyNatural()) > 0) {
-                assignInBox(Terrain::getMyNatural()->getResourceCentroid(), unit);
+                assignInBox(Terrain::getMyNatural()->getBase()->Center(), unit);
             }
             else if (Stations::needAirDefenses(Terrain::getMyMain()) > 0) {
-                assignInBox(Terrain::getMyMain()->getResourceCentroid(), unit);
+                assignInBox(Terrain::getMyMain()->getBase()->Center(), unit);
             }
 
             // Just go to closest station
             else if (closestStation) {
-                assignInBox(closestStation->getResourceCentroid(), unit);
+                assignInBox(closestStation->getBase()->Center(), unit);
             }
 
             if (!unit.getDestination().isValid() && closestStation) {
@@ -89,7 +95,13 @@ namespace McRave::Support {
                 if (commander && types.find(commander->getType()) != types.end() && assignedOverlords.find(commander->getPosition()) == assignedOverlords.end()) {
                     auto dist = commander->getPosition().getDistance(unit.getPosition());
                     if (dist < distBest) {
-                        unit.setDestination(commander->getPosition());
+                        auto position = commander->getPosition();
+                        if (commander->getSimState() == SimState::Win && commander->hasTarget()) {
+                            auto commanderTarget = commander->getTarget().lock();
+                            if ((commanderTarget->cloaked || commanderTarget->isBurrowed()) && commander->isWithinReach(*commanderTarget))
+                                position = commanderTarget->getPosition();
+                        }
+                        unit.setDestination(position);
                         distBest = dist;
                     }
                 }
@@ -100,8 +112,6 @@ namespace McRave::Support {
                 distBest = DBL_MAX;
                 for (auto &u : Units::getUnits(PlayerState::Self)) {
                     auto assignedDist = 320.0;
-                    if (!u->isNearHidden())
-                        continue;
                     if (types.find(u->getType()) != types.end()) {
                         for (auto &position : assignedOverlords)
                             assignedDist = min(assignedDist, position.getDistance(u->getPosition()));
@@ -118,11 +128,6 @@ namespace McRave::Support {
             // Assign placement
             assignedOverlords.insert(unit.getDestination());
 
-            // Adjust detectors between target and current destination
-            if (unit.getType().isDetector() && unit.hasTarget()) {
-                unit.setDestination((unit.getTarget().lock()->getPosition() + unit.getDestination()) / 2);
-            }
-
             // Adjust detectors not in use between closest self station
             auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
             if (unit.getType() == Zerg_Overlord && closestStation) {
@@ -136,8 +141,9 @@ namespace McRave::Support {
                 || Spy::getEnemyTransition() == "2PortWraith"
                 || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
 
-            auto followArmyPossible = unit.isHealthy() && (unit.getType() != Zerg_Overlord || any_of(types.begin(), types.end(), [&](auto &t) { return com(t) >= 6; }) && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace));
-            const auto followArmyRequired = Spy::enemyInvis();
+            auto followArmyPossible = unit.isHealthy()
+                && (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace))
+                && any_of(types.begin(), types.end(), [&](auto &t) { return com(t) >= 6; });
 
             // Set goal as destination
             if (unit.getGoal().isValid() && unit.getUnitsTargetingThis().empty() && unit.getUnitsInReachOfThis().empty()) {
@@ -145,7 +151,7 @@ namespace McRave::Support {
             }
 
             // Send support units to army
-            else if (followArmyPossible && followArmyRequired) {
+            else if (followArmyPossible) {
                 getArmyPlacement(unit);
             }
 

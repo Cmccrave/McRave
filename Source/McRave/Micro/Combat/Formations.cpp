@@ -24,7 +24,7 @@ namespace McRave::Combat::Formations {
             // Common
             formation.angle = BWEB::Map::getAngle(make_pair(cluster.marchPosition, cluster.retreatPosition));
             auto closestBuilding = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
-                return u->getType().isBuilding() && u->getFormation().isValid() && (u->getFormation().getDistance(cluster.marchPosition) < 160.0 || Terrain::inArea(u->getPosition(), cluster.avgPosition));
+                return u->getType().isBuilding() && u->getFormation().isValid() && (u->getFormation().getDistance(cluster.marchPosition) < 160.0 || (Terrain::inArea(u->getPosition(), cluster.avgPosition) && Terrain::inArea(u->getPosition(), cluster.retreatPosition)));
             });
 
             // Need to not do this if our formation is far away ... somehow

@@ -598,6 +598,8 @@ namespace McRave::Stations
                 return (Util::getTime() > Time(5, 00)) - airCount;
             if (station->isNatural() && enemyAir && !hydraBuild && !mutaBuild)
                 return (Util::getTime() > Time(5, 00)) - airCount;
+            if (enemyAir && !mutaBuild && !hydraBuild)
+                return (Util::getTime() > Time(9, 00)) - airCount;
 
             // Corsair DT exist
             if (!station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 )

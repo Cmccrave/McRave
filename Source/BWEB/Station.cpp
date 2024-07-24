@@ -342,10 +342,8 @@ namespace BWEB {
                     if (Map::isPlaceable(UnitTypes::Zerg_Spawning_Pool, base->Location() + medium) && Map::isPlaceable(UnitTypes::Zerg_Spire, base->Location() + small) && Map::isPlaceable(UnitTypes::Zerg_Sunken_Colony, base->Location() + defense)) {
                         mediumPosition = base->Location() + medium;
                         smallPosition = base->Location() + small;
-                        pocketDefense = base->Location() + defense;
                         Map::addUsed(smallPosition, UnitTypes::Zerg_Spire);
                         Map::addUsed(mediumPosition, UnitTypes::Zerg_Spawning_Pool);
-                        Map::addUsed(pocketDefense, UnitTypes::Zerg_Sunken_Colony);
                         break;
                     }
                 }
@@ -373,7 +371,7 @@ namespace BWEB {
         };
 
         // Non natural positions want an extra position for a hatchery
-        auto cnt = !natural;
+        auto cnt = int(!natural);
         for (int i = 0; i < cnt; i++) {
             auto distBest = DBL_MAX;
             auto tileBest = TilePositions::Invalid;
@@ -401,6 +399,7 @@ namespace BWEB {
 
     void Station::findNestedDefenses()
     {
+        // Unused atm
         vector<TilePosition> placements;
         for (auto &mineral : base->Minerals()) {
             vector<TilePosition>& tiles = testTiles[mineral];
@@ -487,13 +486,11 @@ namespace BWEB {
 
     void Station::findDefenses()
     {
-        vector<TilePosition> basePlacements;
-        vector<TilePosition> geyserPlacements ={ {-2, -2}, {-2, 0}, {-2, 2}, {0, -2}, {0, 2}, {2, -2}, {2, 2}, {4, -2}, {4, 0}, {4, 2} };
+        vector<TilePosition> basePlacements ={ {-2, -2}, {-2, 1}, {2, -2} };
         auto here = base->Location();
 
         // Generate defenses
         defenseArrangement = int(round(defenseAngle / 0.785)) % 4;
-        basePlacements ={ {-2, -2}, {-2, 1}, {2, -2} };    
 
         // Flip them vertically / horizontally as needed
         if (base->Center().y < defenseCentroid.y) {
@@ -503,6 +500,23 @@ namespace BWEB {
         if (base->Center().x < defenseCentroid.x) {
             for (auto &placement : basePlacements)
                 placement.x = -(placement.x - 2);
+        }
+
+        // If geyser is above, as it should be, add in a defense to left/right
+        if (base->Geysers().size() == 1) {
+            auto geyser = base->Geysers().front();
+            auto tile = geyser->TopLeft();
+            if ((tile.y < base->Location().y - 3) || tile.y > base->Location().y + 5) {
+                auto placement = tile - base->Location();
+                basePlacements.push_back(placement + TilePosition(-2, 0));
+                basePlacements.push_back(placement + TilePosition(4, 0));
+
+                // If a placement is where miners would path, shift it over
+                for (auto &spot : basePlacements) {
+                    if (spot == TilePosition(2, -2))
+                        spot = TilePosition(0, -2);
+                }
+            }
         }
 
         // Add a defense near each base placement if possible

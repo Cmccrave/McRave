@@ -30,10 +30,10 @@ namespace McRave::Horizon {
         }
 
         void addBonus(UnitInfo& u, UnitInfo& t, double &simRatio) {
-            if (u.isHidden())
+            if (u.isHidden() && u.isWithinRange(t))
                 simRatio *= 2.0;
             if (!u.isFlying() && !t.isFlying() && u.getGroundRange() > 32.0 && Broodwar->getGroundHeight(u.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(t.getEngagePosition())))
-                simRatio *= 1.5;
+                simRatio *= 1.15;
             if (u.getType().isWorker() && Util::getTime() < Time(6, 00))
                 simRatio /= 1.5;
             return;
