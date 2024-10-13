@@ -181,12 +181,20 @@ namespace McRave::BuildOrder
             ready = com(Protoss_Arbiter_Tribunal) > 0;
 
         // Z
+        if (type == Zerg_Drone)
+            return true;
+        if (type == Zerg_Zergling)
+            ready = com(Zerg_Spawning_Pool) > 0;
         if (type == Zerg_Mutalisk)
-            ready = vis(Zerg_Spire) > 0;
+            ready = com(Zerg_Spire) > 0;
         if (type == Zerg_Hydralisk)
-            ready = vis(Zerg_Hydralisk_Den) > 0;
+            ready = com(Zerg_Hydralisk_Den) > 0;
         if (type == Zerg_Lurker)
-            ready = vis(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Lair) > 0;
+            ready = com(Zerg_Hydralisk_Den) > 0 && com(Zerg_Lair) > 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
+        if (type == Zerg_Ultralisk)
+            ready = com(Zerg_Ultralisk_Cavern) > 0;
+        if (type == Zerg_Defiler)
+            ready = com(Zerg_Defiler_Mound) > 0;
 
         return ready;
     }
@@ -315,6 +323,10 @@ namespace McRave::BuildOrder
 
     bool isAllIn() {
         return activeAllin.isActive();
+    }
+
+    bool isPreparingAllIn() {
+        return activeAllin.isPreparing();
     }
 
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }

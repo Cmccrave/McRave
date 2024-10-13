@@ -154,9 +154,9 @@ namespace McRave::Spy::Zerg {
                 // General
                 if (completesBy(1, Zerg_Lair, Time(3, 45)) || completesBy(1, Zerg_Spire, Time(5, 15)) || arrivesBy(1, Zerg_Mutalisk, Time(6, 00)))
                     theSpy.transition.name = "1HatchMuta";
-                else if (completesBy(1, Zerg_Lair, Time(4, 30)) || completesBy(1, Zerg_Spire, Time(5, 45)) || arrivesBy(1, Zerg_Mutalisk, Time(6, 30)))
+                else if (completesBy(1, Zerg_Spire, Time(5, 45)) || arrivesBy(1, Zerg_Mutalisk, Time(6, 30)))
                     theSpy.transition.name = "2HatchMuta";
-                else if (completesBy(1, Zerg_Lair, Time(5, 00)) || completesBy(1, Zerg_Spire, Time(6, 15)) || arrivesBy(1, Zerg_Mutalisk, Time(7, 00)))
+                else if (completesBy(1, Zerg_Spire, Time(6, 15)) || arrivesBy(1, Zerg_Mutalisk, Time(7, 00)))
                     theSpy.transition.name = "3HatchMuta";
 
                 // ZvZ

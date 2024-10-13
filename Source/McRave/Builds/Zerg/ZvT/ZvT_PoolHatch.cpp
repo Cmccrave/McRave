@@ -22,6 +22,8 @@ namespace McRave::BuildOrder::Zerg {
             // Buildings
             buildQueue[Zerg_Spawning_Pool] =                s >= 8;
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 30);
+
+            pumpLings = com(Zerg_Spawning_Pool) > 0;
         }
 
         void ZvT_PH_Overpool()

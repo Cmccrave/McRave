@@ -89,7 +89,7 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                                  true;
         wallNat =                                       false;
         wallMain =                                      false;
-        wantNatural =                                   false;
+        wantNatural =                                   (Spy::getEnemyOpener() != "4Pool" && Spy::getEnemyOpener() != "7Pool") || hatchCount() >= 3 || Spy::getEnemyTransition() == "2HatchMuta";
         wantThird =                                     false;
         proxy =                                         false;
         hideTech =                                      false;
@@ -98,8 +98,6 @@ namespace McRave::BuildOrder::Zerg {
         transitionReady =                               false;
         gasTrick =                                      false;
         reserveLarva =                                  0;
-
-        baseToHatchRatio ={ { 1, 1 }, {2, 3}, {3, 4}, {4, 5} };
 
         gasLimit =                                      gasMax();
 
@@ -121,7 +119,6 @@ namespace McRave::BuildOrder::Zerg {
 
         auto secondHatch = (Spy::getEnemyTransition() == "1HatchMuta" && atPercent(Zerg_Spire, 0.5))
             || (Spy::enemyTurtle() && atPercent(Zerg_Spire, 0.5));
-        wantNatural = Spy::enemyTurtle() || (Spy::getEnemyTransition() == "2HatchMuta");
 
         auto speedFirst = !Spy::enemyTurtle();
 

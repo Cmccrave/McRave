@@ -182,6 +182,8 @@ namespace McRave::Command {
             if (unit.getRole() == Role::Combat) {
                 if (unit.attemptingSurround())
                     return false;
+                if (unit.isMelee() && unit.isWithinReach(target) && unit.getLocalState() == LocalState::Attack)
+                    return true;
                 return unit.isWithinRange(target) && unit.getLocalState() == LocalState::Attack;
             }
 
@@ -193,7 +195,7 @@ namespace McRave::Command {
                     return Util::rectangleIntersect(topLeft, botRight, target.getPosition());
                 }
 
-                if (target.isThreatening() && (unit.getUnitsTargetingThis().empty() || unit.isHealthy()) && unit.isWithinRange(target) && unit.isWithinGatherRange() && (Players::ZvZ() || target.getType().isWorker()))
+                if (target.isThreatening() && (unit.getUnitsTargetingThis().empty() || unit.isHealthy()) && unit.isWithinRange(target) && unit.isWithinGatherRange() && (Players::ZvZ() || target.getType().isWorker() || Spy::enemyRush()))
                     return true;
             }
 
@@ -229,12 +231,14 @@ namespace McRave::Command {
                 || (unit.getType() == Zerg_Lurker && !unit.isBurrowed())
                 || (!unit.isTargetedBySplash() && !unit.isTargetedBySuicide() && (target.isSplasher() || target.isSuicidal()))
                 || (unit.getGroundRange() <= 32.0 && unit.getAirRange() <= 32.0 && !unit.isHovering())
+                || (unit.getType() == Zerg_Hydralisk)
                 || (unit.isFlying() && unit.getPosition().getDistance(target.getPosition()) < 32.0))
                 return false;
 
             auto unitRange = (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
             auto enemyRange = (unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange());
             auto interceptDistance = unit.getInterceptPosition().getDistance(unit.getPosition());
+
             return (unit.isTargetedBySuicide())
                 || (unit.getInterceptPosition().isValid() && interceptDistance > unit.getPosition().getDistance(target.getPosition()))  // Approach units that are moving away from us
                 || (!unit.isLightAir() && unit.getSimValue() >= 5.0 && target.getGroundRange() > 32.0)                                  // If crushing victory, push forward
@@ -331,6 +335,13 @@ namespace McRave::Command {
 
         // If unit can move and should move
         if (shouldMove()) {
+
+            auto clickToSurround = unit.attemptingSurround() && unit.getPosition().getDistance(unit.getSurroundPosition()) < 160.0;
+            if (clickToSurround) {
+                unit.setCommand(Move, unit.getSurroundPosition());
+                unit.commandText = "Move_S";
+                return true;
+            }
 
             // Necessary for mutas to not overshoot when already in range and melee struggling to ever hit anything
             auto clickToTarget = (unit.getRole() == Role::Combat && unit.hasTarget() && unit.canStartAttack() && (unit.isLightAir() || unit.isMelee()) && unit.isWithinReach(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack)                
@@ -435,9 +446,9 @@ namespace McRave::Command {
                     const auto selfFasterSpeed = (Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost, 1) && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost, 1));
                     const auto defenders = com(Zerg_Sunken_Colony) > 0 && Combat::State::isStaticRetreat(unit.getType());
 
-                    if (Util::getTime() < Time(4, 30) && !unit.getUnitsTargetingThis().empty() && target.getType() == Protoss_Zealot && unit.getHealth() <= 16)
+                    if (Util::getTime() < Time(4, 30) && !target.isThreatening() && !unit.getUnitsTargetingThis().empty() && target.getType() == Protoss_Zealot && unit.getHealth() <= 16)
                         return true;
-                    if (Util::getTime() < Time(4, 30) && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10)
+                    if (Util::getTime() < Time(4, 30) && !target.isThreatening() && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10)
                         return true;
                 }
                 if ((unit.getType() == Zerg_Hydralisk || unit.getType() == Protoss_Dragoon) && !target.isFlying()) {
@@ -445,8 +456,22 @@ namespace McRave::Command {
                         return true;
                 }
 
+                // Situation: Unit is targeted by a stationary unit, so we could kite out of range of it
+                if (!unit.isMelee()) {
+                    auto targetedByStationary = std::any_of(unit.getUnitsTargetingThis().begin(), unit.getUnitsTargetingThis().end(), [&](auto &t) {
+                        auto targeter = t.lock();
+                        return targeter->getType().isBuilding() || targeter->getSpeed() <= 0.0;
+                    });
+                    if (targetedByStationary)
+                        return true;
+                }
+                
+
                 if (unit.isTargetedBySuicide() && !unit.isFlying())
                     return false;
+
+                if (unit.inDanger)
+                    return true;
 
                 if (unit.canStartAttack())
                     return false;
@@ -458,9 +483,6 @@ namespace McRave::Command {
                     return false;
 
                 if (unit.getGroundRange() <= 32.0 && unit.getAirRange() <= 32.0)
-                    return false;
-
-                if (unit.getType() == Protoss_Zealot && Util::getTime() < Time(4, 00) && Players::PvZ())
                     return false;
 
                 // If we're already outside the range of the unit, no point in kiting, do full damage

@@ -113,8 +113,6 @@ namespace McRave::Upgrading {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &building = *u;
 
-                Broodwar->drawTextMap(building.getPosition(), "%d", building.getRemainingTrainFrames());
-
                 if (!building.unit()
                     || building.getRole() != Role::Production
                     || !building.isCompleted()

@@ -16,7 +16,7 @@ namespace McRave::Workers {
         const BWEB::Station * const getTransferStation(UnitInfo& unit)
         {
             // Transfer counts depending on if we think it's safe or not
-            auto desiredTransfer = 3;
+            auto desiredTransfer = 1;
             if (Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyOpener() == "BBS")
                 desiredTransfer = (total(Zerg_Creep_Colony) == 0 && total(Zerg_Sunken_Colony) == 0) ? 1 : 0;
             if (Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "Proxy9/9")
@@ -27,7 +27,7 @@ namespace McRave::Workers {
                 desiredTransfer = 0;
 
             // Keep damaged workers in the main
-            if (Util::getTime() < Time(4, 00) && (unit.getHealth() < unit.getType().maxHitPoints() || desiredTransfer == 0)) {
+            if (Util::getTime() < Time(4, 00) && unit.getHealth() < unit.getType().maxHitPoints()) {
                 if (unit.hasResource() && unit.getResource().lock()->getStation()->isNatural()) {
                     auto closestMain = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self, [&](auto &s) {
                         return s->isMain();
@@ -130,7 +130,7 @@ namespace McRave::Workers {
 
             // If around defenders
             auto aroundDefenders = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                if ((u->getRole() != Role::Combat && u->getRole() != Role::Defender))
+                if (u->getRole() != Role::Combat && u->getRole() != Role::Defender)
                     return false;
 
                 return (unit.getPosition().getDistance(u->getPosition()) < u->getGroundReach() && u->getPosition().getDistance(buildCenter) < u->getGroundReach())

@@ -101,8 +101,10 @@ namespace McRave::Goals {
             oldGoals.clear();
             for (auto &unit : Units::getUnits(PlayerState::Self)) {
                 oldGoals[&*unit] = make_pair(unit->getGoal(), unit->getGoalType());
-                unit->setGoal(Positions::Invalid);
-                unit->setGoalType(GoalType::None);
+                if (unit->getGoalType() != GoalType::Harass) {
+                    unit->setGoal(Positions::Invalid);
+                    unit->setGoalType(GoalType::None);
+                }
             }
         }
 
@@ -345,16 +347,26 @@ namespace McRave::Goals {
             auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto& s) { return s->isMain(); }));
 
             // Before Hydras have upgrades, defend vulnerable bases, put lings on defense too
-            if (Combat::State::isStaticRetreat(Zerg_Hydralisk) && !BuildOrder::isAllIn()) {
-                auto percentPer = 1.0 / double(stations.size() - mainStations);
+            if (Combat::State::isStaticRetreat(Zerg_Hydralisk) && !BuildOrder::isAllIn() && com(Zerg_Hydralisk_Den)) {
+                auto evenSplit = (1.0 / double(stations.size() - mainStations));
+                auto hydraPercent = evenSplit;
+
                 if (!stations.empty()) {
                     for (auto &station : stations) {
                         if ((station->isNatural() && Terrain::isPocketNatural()) || (station->isMain() && !Terrain::isPocketNatural()))
                             continue;
-                        assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, percentPer, GoalType::Defend);
-                        assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Zergling, percentPer, GoalType::Defend);
+                        //assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, hydraPercent, GoalType::Defend);
+                        assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Zergling, evenSplit, GoalType::Defend);
                     }
                 }
+
+                // Remaining hydras defend natural (expected bust position)
+                //assignPercentToGoal(Stations::getDefendPosition(Terrain::getMyNatural()), Zerg_Hydralisk, 1.0, GoalType::Defend);
+            }
+
+            // Always keep 2 hydras at home to protect from sairs if we dont have a spore
+            if (!Combat::State::isStaticRetreat(Zerg_Hydralisk) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) >= 2 && Players::getCompleteCount(PlayerState::Self, Zerg_Spore_Colony) == 0) {
+                assignNumberToGoal(Terrain::getNaturalPosition(), Zerg_Hydralisk, 2, GoalType::Defend);
             }
 
             // Always leave 2 lings at home in ZvZ

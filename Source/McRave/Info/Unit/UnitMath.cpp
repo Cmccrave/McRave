@@ -103,7 +103,7 @@ namespace McRave::Math {
             }
         }
 
-        auto ff = (unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding()) ? 0.0 : 0.5;
+        auto ff = (unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding()) ? 0.0 : 0.125;
         auto dps = ff + max(groundDPS(unit) / maxGrdDps, airDPS(unit) / maxAirDps);
         auto cost = relativeCost(unit) / maxCost;
         auto surv = survivability(unit) / maxSurv;
@@ -186,7 +186,7 @@ namespace McRave::Math {
 
     double splashModifier(UnitInfo& unit)
     {
-        if (unit.getType() == Protoss_Archon || unit.getType() == Terran_Firebat || unit.getType() == Protoss_Reaver)
+        if (unit.getType() == Terran_Firebat)
             return 1.25;
         if (unit.isSiegeTank() || unit.getType() == Protoss_High_Templar || unit.getType() == Zerg_Lurker || unit.getType() == Terran_Valkyrie)
             return 2.00;
@@ -374,8 +374,12 @@ namespace McRave::Math {
             return 0.0;
 
         if (unit.isLightAir()) {
-            if (Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0)
+            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Zerg_Scourge) > 0)
                 return 288.0;
             if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0
                 || Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0

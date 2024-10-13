@@ -51,12 +51,12 @@ namespace McRave::Combat::Clusters {
         {
             auto matching = [&](auto &parent, auto &child) {
                 auto matchedGoal = (parent.unit->getGoal() == child.unit->getGoal());
-                auto matchedType = (parent.unit->isFlying() == child.unit->isFlying());
+                auto matchedType = (parent.unit->isFlying() == child.unit->isFlying() && parent.unit->isMelee() == child.unit->isMelee());
                 auto matchedStrat = (parent.unit->getGlobalState() == child.unit->getGlobalState());
-                auto matchedDistance = child.position.getDistance(root.position) < 320.0
+                auto matchedDistance = child.position.getDistance(root.position) < 160.0
                     || child.position.getDistance(parent.position) < 96.0
                     || (parent.unit->isLightAir() && child.unit->isLightAir());
-                auto matchedTarget = (!parent.unit->hasTarget() || !child.unit->hasTarget() || parent.unit->getTarget().lock()->isFlying() == child.unit->getTarget().lock()->isFlying());
+                auto matchedTarget = (parent.unit->hasTarget() && child.unit->hasTarget() && parent.unit->getTarget().lock()->isFlying() == child.unit->getTarget().lock()->isFlying()) || (!parent.unit->hasTarget() && !child.unit->hasTarget());
                 return matchedType && matchedStrat && matchedDistance && matchedGoal && matchedTarget;
             };
 
@@ -318,10 +318,10 @@ namespace McRave::Combat::Clusters {
         void drawClusters()
         {
             for (auto &cluster : clusters) {
-                //for (auto &unit : cluster.units) {
-                //    Visuals::drawLine(unit->getPosition(), cluster.commander.lock()->getPosition(), cluster.color);
-                //    unit->circle(cluster.color);
-                //}
+                for (auto &unit : cluster.units) {
+                    Visuals::drawLine(unit->getPosition(), cluster.commander.lock()->getPosition(), cluster.color);
+                    unit->circle(cluster.color);
+                }
 
                 Visuals::drawPath(cluster.marchPath);
                 Visuals::drawPath(cluster.retreatPath);

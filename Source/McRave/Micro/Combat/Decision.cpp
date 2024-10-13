@@ -10,7 +10,8 @@ namespace McRave::Combat::Decision {
     {
         //Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
         //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
-        //return;
+        //if (unit.unit()->isSelected())
+        //    return;
         
         // Iterate commands, if one is executed then don't try to execute other commands
         static const auto commands ={ Command::misc, Command::special, Command::approach, Command::kite, Command::attack, Command::defend, Command::explore, Command::escort, Command::retreat, Command::move };
@@ -49,7 +50,7 @@ namespace McRave::Combat::Decision {
                 if (!Units::commandAllowed(*unit))
                     continue;
 
-                auto sharedDecision = cluster.commandShare == CommandShare::Exact && unit->getGlobalState() != GlobalState::Retreat && !unit->isNearSuicide()
+                auto sharedDecision = cluster.commandShare == CommandShare::Exact && unit->getGlobalState() != GlobalState::Retreat && !unit->isNearSuicide() && !unit->isTargetedBySplash()
                     && !unit->attemptingRegroup() && (unit->getType() == commander->getType() || unit->getLocalState() != LocalState::Attack);
 
                 // If it's a shared decision, replicate the commanders command

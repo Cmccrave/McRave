@@ -42,10 +42,9 @@ namespace McRave::Spy::Terran {
                 || (Util::getTime() < Time(4, 00) && Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) >= 2 && Players::getTotalCount(PlayerState::Enemy, Terran_Refinery) == 0)
                 || completesBy(3, Terran_Barracks, Time(5, 15))
                 || completesBy(12, Terran_Marine, Time(5, 00))
-                || arrivesBy(6, Terran_Marine, Time(4, 10))
-                || arrivesBy(8, Terran_Marine, Time(4, 30))
-                || arrivesBy(10, Terran_Marine, Time(4, 50))
-                || arrivesBy(12, Terran_Marine, Time(5, 10))
+                || arrivesBy(3, Terran_Marine, Time(4, 00))
+                || arrivesBy(5, Terran_Marine, Time(4, 30))
+                || arrivesBy(7, Terran_Marine, Time(5, 00))
                 || arrivesBy(2, Terran_Medic, Time(5, 45))
                 || arrivesBy(3, Terran_Medic, Time(6, 15)))
                 theSpy.build.name = "2Rax";
@@ -165,7 +164,7 @@ namespace McRave::Spy::Terran {
                     if (theSpy.expand.possible && (hasTanks || Players::getVisibleCount(PlayerState::Enemy, Terran_Machine_Shop) > 0) && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) <= 1 && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) >= 3 && Util::getTime() < Time(10, 30))
                         theSpy.transition.name = "1FactTanks";
                     else if (theSpy.proxy.confirmed
-                        || arrivesBy(3, Terran_Marine, Time(3, 10))
+                        || arrivesBy(10, Terran_Marine, Time(5, 15))
                         || completesBy(2, Terran_Barracks, Time(2, 35))
                         || completesBy(3, Terran_Barracks, Time(4, 00)))
                         theSpy.transition.name = "MarineRush";

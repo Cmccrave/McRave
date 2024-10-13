@@ -67,14 +67,23 @@ namespace McRave::Buildings {
                 building.unit()->cancelConstruction();
             }
 
-            // Cancelling hatcheries if we're being proxy 2gated
-            if (building.getType() == Zerg_Hatchery && !BuildOrder::takeNatural() && isStation && Terrain::getMyNatural() && building.getTilePosition() == Terrain::getMyNatural()->getBase()->Location() && Util::getTime() < Time(4, 00) && Spy::getEnemyBuild() == "2Gate" && Spy::enemyProxy()) {
+
+            auto naturalHatch = building.getType() == Zerg_Hatchery && isStation && Terrain::getMyNatural() && building.getTilePosition() == Terrain::getMyNatural()->getBase()->Location();
+            auto cancelTiming = !BuildOrder::takeNatural() && Util::getTime() < Time(4, 00);
+            auto cancelLow = (building.frameCompletesWhen() - Broodwar->getFrameCount() < 24 || building.getHealth() < 50);
+
+            // Cancelling hatcheries if we're being proxy 2gated and took a 3rd
+            if (naturalHatch && cancelTiming && cancelLow && vis(Zerg_Hatchery) >= 3 && Spy::getEnemyOpener() == "Proxy9/9") {
                 Events::onUnitCancelBecauseBWAPISucks(building);
                 building.unit()->cancelConstruction();
             }
 
-            // Cancelling hatchery if against 4pool early
-
+            // Cancelling hatchery if against early pool
+            auto earlyPool = Spy::getEnemyOpener() == "4Pool" || Spy::getEnemyOpener() == "7Pool";
+            if (naturalHatch && cancelTiming && earlyPool) {
+                Events::onUnitCancelBecauseBWAPISucks(building);
+                building.unit()->cancelConstruction();
+            }
 
             // Cancelling colonies we don't need now
             if (building.getType() == Zerg_Creep_Colony) {
@@ -91,27 +100,7 @@ namespace McRave::Buildings {
             auto plannedType = Planning::whatPlannedHere(building.getTilePosition());
 
             // Lair morphing
-            if (building.getType() == Zerg_Hatchery && !willDieToAttacks(building) && BuildOrder::buildCount(Zerg_Lair) > vis(Zerg_Lair) + vis(Zerg_Hive) + morphedThisFrame[Zerg_Lair] + morphedThisFrame[Zerg_Hive]) {
-                //auto morphTile = Terrain::getMainTile();
-                //const auto closestScout = Util::getClosestUnitGround(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                //    return u->getType().isWorker();
-                //});
-                //if (closestScout && Stations::getStations(PlayerState::Self).size() >= 2 && mapBWEM.GetArea(closestScout->getTilePosition()) == Terrain::getMainArea())
-                //    morphTile = Terrain::getNaturalTile();
-
-                // Extra larva timings (main): 2:31, 3:02, 3:31
-                //if (building.getTilePosition() == morphTile) {
-                //    if (morphTile == Terrain::getMainTile()) {
-                //        if ((Util::getTime() >= Time(2, 31) && BuildOrder::getCurrentTransition().find("1Hatch") != string::npos)
-                //            || (Util::getTime() >= Time(3, 02) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
-                //            || Util::getTime() >= Time(3, 31)
-                //            || Players::ZvZ())
-                //            morphType = Zerg_Lair;
-                //    }
-                //    else
-                //        morphType = Zerg_Lair;
-                //}
-
+            if (building.getType() == Zerg_Hatchery && station && station->isMain() && !willDieToAttacks(building) && BuildOrder::buildCount(Zerg_Lair) > vis(Zerg_Lair) + vis(Zerg_Hive) + morphedThisFrame[Zerg_Lair] + morphedThisFrame[Zerg_Hive]) {
                 if ((Util::getTime() >= Time(2, 31) && BuildOrder::getCurrentTransition().find("1Hatch") != string::npos)
                     || (Util::getTime() >= Time(3, 02) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
                     || Util::getTime() >= Time(3, 31)
@@ -154,7 +143,7 @@ namespace McRave::Buildings {
             // Look for the closest possible non worker enemy
             if (plannedType == Zerg_Sunken_Colony && Spy::getEnemyBuild() != "CannonRush" && Spy::getEnemyBuild() != "WorkerRush") {
                 auto closestThreat = Util::getClosestUnit(building.getPosition(), PlayerState::Enemy, [&](auto &u) {
-                    if (!u->getType().isWorker() && !u->getType().isBuilding()) {
+                    if (!u->getType().isWorker() && !u->getType().isBuilding() && !u->isFlying()) {
                         if (!Terrain::getEnemyMain())
                             return true;
                         const auto visDiff = Broodwar->getFrameCount() - u->getLastVisibleFrame();

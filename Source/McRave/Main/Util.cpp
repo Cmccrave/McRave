@@ -297,6 +297,8 @@ namespace McRave::Util {
 
     Position shiftTowards(Position here, Position target, double dist)
     {
+        if (here == target)
+            return here;
         const auto directionVector = target - here;
         const auto currentDist = target.getDistance(here);
         return here + (directionVector * dist / currentDist);

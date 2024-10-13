@@ -108,12 +108,6 @@ namespace McRave::Combat::Simulation {
             minWinPercent = 0.8;
             maxWinPercent = 1.2;
         }
-
-        // Incentive for pushing for engagements as the game goes later
-        if (!Players::ZvZ()) {
-            minWinPercent -= 0.0;
-            maxWinPercent -= double(vis(Zerg_Hatchery)) * 0.04;
-        }
     }
 
     void updateIncentives(UnitInfo& unit)
@@ -122,15 +116,6 @@ namespace McRave::Combat::Simulation {
         if (!unit.hasTarget())
             return;
         auto &target = *unit.getTarget().lock();
-
-        // Air units are way more powerful when clustered properly
-        if (unit.isLightAir() && !target.isThreatening()) {
-            auto density = Grids::getAirDensity(unit.getPosition(), PlayerState::Self);
-            if (density < 5) {
-                minWinPercent += 0.2;
-                maxWinPercent += 0.2;
-            }
-        }
 
         // Adjust winrates if we have static defense that would make the fight easier and we're at home
         if (Util::getTime() < Time(8, 00) && !unit.isFlying() && com(Zerg_Sunken_Colony) > 0 && Combat::State::isStaticRetreat(unit.getType())) {
@@ -150,28 +135,11 @@ namespace McRave::Combat::Simulation {
             }
         }
 
-
-
         // Adjust winrates if we are all-in
-        if (BuildOrder::isAllIn() && !Combat::State::isStaticRetreat(unit.getType())) {
-            minWinPercent -= 0.4;
-            maxWinPercent -= 0.4;
+        if (BuildOrder::isAllIn() && !Combat::State::isStaticRetreat(unit.getType()) && Util::getTime() < Time(8, 00)) {
+            minWinPercent -= 0.20;
+            maxWinPercent -= 0.10;
         }
-
-        //// We've detected the enemy isn't fighting back, reduce thresholds
-        //else if (target.framesVisible >= 120 && unit.hasAttackedRecently() && !target.hasAttackedRecently() && !target.getType().isBuilding() && !target.getType().isWorker()) {
-        //    minWinPercent -= 0.2;
-        //    maxWinPercent -= 0.2;
-        //}
-
-        //const auto nearEnemyStation = [&]() {
-        //    const auto closestEnemyStation = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Enemy);
-        //    return (closestEnemyStation && unit.getPosition().getDistance(closestEnemyStation->getBase()->Center()) < 400.0);
-        //};
-
-        //if (!unit.isFlying() && unit.getGroundRange() < 32.0 && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) && Util::getTime() > Time(8, 00) && !Players::ZvZ() && nearEnemyStation()) {
-        //    minWinPercent -= 0.2;
-        //}
 
         minThreshold = minWinPercent;
         maxThreshold = maxWinPercent;

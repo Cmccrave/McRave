@@ -9,6 +9,7 @@ namespace McRave::Scouts {
     namespace {
 
         bool contained = false;
+        string nodeName = "[Scout]: ";
 
         bool reachable(Position p)
         {
@@ -78,7 +79,8 @@ namespace McRave::Scouts {
         bool sacrifice = false;
         bool workerScoutDenied = false;
         bool firstOverlord = false;
-        vector<const BWEB::Station *> scoutOrder, scoutOrderFirstOverlord;
+        bool secondOverlord = false;
+        vector<const BWEB::Station *> scoutOrder, scoutOrderFirstOverlord, scoutOrderSecondOverlord;
         map<const BWEB::Station * const, Position> safePositions;
         bool resourceWalkPossible[256][256];
         UnitType workerType;
@@ -88,6 +90,9 @@ namespace McRave::Scouts {
             int i = 0;
             for (auto &[scoutType, target] : scoutTargets) {
                 Broodwar->drawBoxMap(target.center - Position(64, 64), target.center + Position(64, 64), Colors::White);
+
+                for (auto &p: target.positions)
+                    Broodwar->drawLineMap(p, target.center, Colors::White);
 
                 auto y = 62;
                 for (auto &[type, count] : target.currentTypeCounts) {
@@ -118,9 +123,16 @@ namespace McRave::Scouts {
             }
 
             // Determine a full scout is done or not
+            static auto loggedFullScout = false;
             fullScout = mainScouted && natScouted;
             if (Players::ZvZ())
                 fullScout = mainScouted;
+
+            // Log
+            if (mainScouted && !loggedFullScout) {
+                Util::debug(nodeName + "Full scout complete");
+                loggedFullScout = true;
+            }
 
             // Determine if we are lightly contained such that a scout cant get out
             auto choke = Terrain::isPocketNatural() ? Terrain::getMainChoke() : Terrain::getNaturalChoke();
@@ -186,9 +198,12 @@ namespace McRave::Scouts {
                 auto enemyAir = Players::getStrength(PlayerState::Enemy).groundToAir > 0.0
                     || Players::getStrength(PlayerState::Enemy).airToAir > 0.0
                     || Players::getStrength(PlayerState::Enemy).airDefense > 0.0
-                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0
+                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
+                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0
+                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0
                     || Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) > 0
                     || Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0
+                    || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0
                     || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0
                     || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0
                     || Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) > 0
@@ -218,7 +233,9 @@ namespace McRave::Scouts {
                         main.desiredTypeCounts[Zerg_Drone] = 0;
 
                     // Overlord
-                    main.desiredTypeCounts[Zerg_Overlord] = 1;
+                    main.desiredTypeCounts[Zerg_Overlord] = 2;
+                    if (Terrain::getEnemyStartingPosition().isValid())
+                        main.desiredTypeCounts[Zerg_Overlord] = 1;
                     if (enemyAir || Spy::enemyFastExpand() || (Terrain::getEnemyStartingPosition().isValid() && vis(Zerg_Zergling) > 0))
                         main.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
@@ -229,9 +246,12 @@ namespace McRave::Scouts {
                     // Drone
                     if (Spy::getEnemyBuild() == "2Gate"
                         || Spy::getEnemyBuild() == "1GateCore"
+                        || Spy::getEnemyBuild() == "FFE"
+                        || Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 3
                         || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
                         || Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0
-                        || Util::getTime() > Time(4, 00))
+                        || fullScout
+                        || Util::getTime() > Time(3, 30))
                         main.desiredTypeCounts[Zerg_Drone] = 0;
 
                     // Zergling
@@ -241,8 +261,10 @@ namespace McRave::Scouts {
 
 
                     // Overlord
-                    main.desiredTypeCounts[Zerg_Overlord] = 1;
-                    if (enemyAir || Spy::enemyFastExpand() || (Terrain::getEnemyStartingPosition().isValid() && vis(Zerg_Zergling) > 0))
+                    main.desiredTypeCounts[Zerg_Overlord] = 2;
+                    if (Terrain::getEnemyStartingPosition().isValid())
+                        main.desiredTypeCounts[Zerg_Overlord] = 1;
+                    if (enemyAir || Spy::enemyFastExpand())
                         main.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
 
@@ -265,6 +287,11 @@ namespace McRave::Scouts {
                     if (enemyAir)
                         main.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
+
+                // ZvR
+                if (Players::ZvR()) {
+                    main.desiredTypeCounts[Zerg_Overlord] = 2;
+                }
             }
 
             // Check for fully scouted
@@ -277,7 +304,7 @@ namespace McRave::Scouts {
                     for (auto &[type, target] : scoutTargets) {
                         if (type == ScoutType::Main) {
                             auto exploredCount = count_if(target.positions.begin(), target.positions.end(), [&](auto &p) { return Broodwar->isExplored(TilePosition(p)); });
-                            if (exploredCount > (Players::ZvZ() ? 2 : 7))
+                            if (exploredCount > (Players::ZvZ() ? 2 : 5) && Broodwar->isExplored(TilePosition(target.center)))
                                 mainScouted = true;
                         }
                     }
@@ -358,7 +385,7 @@ namespace McRave::Scouts {
             auto scoutMiddle = Stations::isBaseExplored(scoutOrder.front()) || Broodwar->getStartLocations().size() >= 4;
 
             // Scout the popular middle proxy location if it's walkable
-            if (scoutMiddle && !Players::vZ() && !Terrain::foundEnemy() && !scoutOrder.empty() && scoutOrder.front() && !Terrain::isExplored(mapBWEM.Center()) && BWEB::Map::getGroundDistance(Terrain::getMainPosition(), mapBWEM.Center()) != DBL_MAX) {
+            if (scoutMiddle && !Players::vZ() && !Terrain::foundEnemy() && !scoutOrder.empty() && scoutOrder.front() && mapBWEM.GetArea(TilePosition(mapBWEM.Center())) && !Terrain::isExplored(mapBWEM.Center()) && mapBWEM.GetArea(TilePosition(mapBWEM.Center()))->AccessibleFrom(Terrain::getMainArea())) {
                 proxy.addTargets(mapBWEM.Center(), 64);
                 proxy.center = mapBWEM.Center();
             }
@@ -385,8 +412,8 @@ namespace McRave::Scouts {
                     safe.desiredTypeCounts[Zerg_Overlord] = 1;
                     if (total(Zerg_Mutalisk) >= 6
                         || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0)
-                        || Spy::getEnemyBuild() == "FFE"
-                        || (Players::ZvT() && Spy::getEnemyOpener() == "8Rax")
+                        || Players::ZvP()
+                        || Players::ZvT()
                         || (!Players::ZvZ() && Stations::getStations(PlayerState::Enemy).size() >= 2)
                         || (Players::ZvZ() && Util::getTime() > Time(5, 00)))
                         safe.desiredTypeCounts[Zerg_Overlord] = 0;
@@ -410,13 +437,16 @@ namespace McRave::Scouts {
             // No threat at home, we should use a ling to scout the enemy
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 auto time = Time(1, 00);
-                if (Spy::enemyRush() || Spy::enemyProxy())
+                if (Spy::getEnemyBuild() == "2Gate")
                     time = Time(4, 00);
+                if (Spy::enemyRush() || Spy::enemyProxy())
+                    time = Time(5, 00);
 
                 if (Util::getTime() > time) {
                     if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
-                        || (Players::ZvP() && Util::getTime() < Time(7, 00)))
-                        army.desiredTypeCounts[Zerg_Zergling] = 2;
+                        || (Players::ZvP() && Spy::enemyFastExpand() && Util::getTime() < Time(9, 00))
+                        || (Players::ZvP() && !Spy::enemyFastExpand() && Util::getTime() < Time(8, 00)))
+                        army.desiredTypeCounts[Zerg_Zergling] = 1;
                 }
             }
 
@@ -465,9 +495,7 @@ namespace McRave::Scouts {
                 return;
 
             auto &expansion = scoutTargets[ScoutType::Expansion];
-            expansion.desiredTypeCounts[Zerg_Zergling] = 2;
-            if (army.desiredTypeCounts[Zerg_Zergling] > 0)
-                expansion.desiredTypeCounts[Zerg_Zergling] = 0;
+            expansion.desiredTypeCounts[Zerg_Zergling] = 1;
 
             for (auto &station : Stations::getStations(PlayerState::None)) {
 
@@ -571,11 +599,14 @@ namespace McRave::Scouts {
         {
             scoutOrder.clear();
             scoutOrderFirstOverlord.clear();
+            scoutOrderSecondOverlord.clear();
             vector<const BWEB::Station *> mainStations;
 
             // Get first natural by air for overlord order
             const BWEB::Station * closestNatural = nullptr;
-            auto distBest = DBL_MAX;
+            const BWEB::Station * furthestNatural = nullptr;
+            auto closest = DBL_MAX;
+            auto furthest = 0.0;
             for (auto &station : BWEB::Stations::getStations()) {
 
                 // Add to main stations
@@ -586,9 +617,14 @@ namespace McRave::Scouts {
                     continue;
 
                 auto dist = station.getBase()->Center().getDistance(Terrain::getMyMain()->getBase()->Center());
-                if (dist < distBest) {
+                if (dist < closest) {
                     closestNatural = &station;
-                    distBest = dist;
+                    closest = dist;
+                }
+
+                if (dist > furthest) {
+                    furthestNatural = &station;
+                    furthest = dist;
                 }
             }
 
@@ -602,6 +638,9 @@ namespace McRave::Scouts {
                 for (auto &station : mainStations)
                     scoutOrderFirstOverlord.push_back(station);
 
+                // Second overlord only goes cross spawn
+                scoutOrderSecondOverlord.push_back(furthestNatural);
+
                 // Create worker scouting order
                 scoutOrder = scoutOrderFirstOverlord;
 
@@ -614,8 +653,9 @@ namespace McRave::Scouts {
                         scoutOrder.push_back(thirdStation);
                 }
 
-                if (!Players::vFFA())
+                if (!Players::vFFA()) {
                     reverse(scoutOrder.begin(), scoutOrder.end());
+                }
             }
         }
 
@@ -645,6 +685,10 @@ namespace McRave::Scouts {
 
                     if (!unit.isFlying() && !reachable(pos))
                         continue;
+                    if (!Broodwar->isExplored(TilePosition(pos))) {
+                        unit.setDestination(pos);
+                        break;
+                    }
 
                     if (score > best) {
                         best = score;
@@ -660,7 +704,19 @@ namespace McRave::Scouts {
 
             // Use scouting order if we don't know where the enemy is
             if (!Terrain::getEnemyMain() && !unit.getDestination().isValid()) {
-                auto &list = (firstOverlord && unit.getType() == Zerg_Overlord) ? scoutOrderFirstOverlord : scoutOrder;
+
+                auto list = scoutOrder;
+                if (unit.getType() == Zerg_Overlord) {
+                    if (firstOverlord) {
+                        list = scoutOrderFirstOverlord;
+                        firstOverlord = false;
+                    }
+                    else if (secondOverlord) {
+                        list = scoutOrderSecondOverlord;
+                        secondOverlord = false;
+                    }
+                }
+
                 for (auto &station : list) {
                     auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
                     if (closestNatural && !Stations::isBaseExplored(closestNatural) && unit.getType() == Zerg_Overlord && !Players::ZvZ()) {
@@ -684,10 +740,25 @@ namespace McRave::Scouts {
 
         void updatePath(UnitInfo& unit)
         {
+            static auto sacrificeCount = 0;
             // Overlord paths
 
             // Ground unit paths
             if (!unit.isFlying()) {
+
+                // Sometimes we need to just sacrifice a scout to get some info based on timings
+                if (Players::ZvP()) {
+                    if (Spy::getEnemyBuild() == "FFE" && Util::getTime() > Time(7, 00) && sacrificeCount == 0) {
+                        unit.setMarkForDeath(true);
+                        sacrificeCount++;
+                    }
+                }
+
+                // Reset its path and set it to run to the main
+                if (unit.isMarkedForDeath()) {
+                    unit.setDestinationPath(BWEB::Path());
+                    unit.setDestination(Terrain::getEnemyStartingPosition());
+                }
 
                 if (unit.getDestination().isValid() && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination()) && (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.getDestination())) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.getDestination()))))) {
 
@@ -702,7 +773,11 @@ namespace McRave::Scouts {
                         return newPath.unitWalkable(t);
                     };
 
-                    newPath.generateAS(threat, walkable);
+                    // Suicidal scouts don't care about threat
+                    if (unit.isMarkedForDeath())
+                        newPath.generateJPS(walkable);
+                    else
+                        newPath.generateAS(threat, walkable);
                     unit.setDestinationPath(newPath);
                 }
 
@@ -736,6 +811,7 @@ namespace McRave::Scouts {
         {
             vector<std::weak_ptr<UnitInfo>> sortedScouts;
             firstOverlord = true;
+            secondOverlord = true;
 
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
@@ -757,8 +833,6 @@ namespace McRave::Scouts {
                     updateDestination(*unit);
                     updatePath(*unit);
                     updateDecision(*unit);
-                    if (unit->getType() == Zerg_Overlord)
-                        firstOverlord = false;
                     if (Terrain::inTerritory(PlayerState::Enemy, unit->getPosition()))
                         info = true;
                 }

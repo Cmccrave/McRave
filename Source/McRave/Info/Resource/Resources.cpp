@@ -39,9 +39,17 @@ namespace McRave::Resources {
             // If resource is blocked from usage
             if (!resource.getType().isMineralField() && resource.getTilePosition().isValid()) {
                 for (auto block = mapBWEM.GetTile(resource.getTilePosition()).GetNeutral(); block; block = block->NextStacked()) {
-                    if (block && block->Unit() && block->Unit()->exists() && block->Unit()->isInvincible() && !block->IsGeyser())
+                    if (block && block->Unit() && block->Unit()->exists() && block->Unit()->isInvincible() && !block->IsGeyser()) {
                         resource.setResourceState(ResourceState::None);
+                        return;
+                    }
                 }
+            }
+
+            // Base placement failed and assigned a weird mineral
+            if (resource.hasStation() && resource.getPosition().getDistance(resource.getStation()->getBase()->Center()) > 320.0) {
+                resource.setResourceState(ResourceState::None);
+                return;
             }
 
             // Update resource state

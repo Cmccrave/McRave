@@ -10,11 +10,11 @@ namespace McRave::Stations
     void onStart();
 
     void storeStation(BWAPI::Position, PlayerState);
-    void removeStation(BWAPI::Position, PlayerState);
+    void removeStation(BWAPI::Point<int>, PlayerState);
+    void removeStation(BWAPI::Unit);
 
     void storeStation(BWAPI::Unit);
-    void storeStation(BWAPI::Point<int> , PlayerState);
-    void removeStation(BWAPI::Unit);
+    void storeStation(BWAPI::Point<int>, PlayerState);
 
     int getColonyCount(const BWEB::Station * const);
     int needGroundDefenses(const BWEB::Station * const);

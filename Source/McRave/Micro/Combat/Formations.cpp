@@ -28,15 +28,14 @@ namespace McRave::Combat::Formations {
             });
 
             // Need to not do this if our formation is far away ... somehow
-
             if (closestBuilding) {
+                auto commander = cluster.commander.lock();
                 auto buildingDist = closestBuilding->getPosition().getDistance(cluster.marchPosition);
-                auto buildingAngle = BWEB::Map::getAngle(closestBuilding->getPosition(), closestBuilding->getFormation());
+                auto offset = (Util::getTime() > Time(6, 30)) ? max(commander->getGroundRange(), 96.0) : commander->getGroundRange();
                 closestBuilding->circle(Colors::Yellow);
-                formation.angle = (round(buildingAngle / M_PI_D4)) * M_PI_D4;
-                formation.center = closestBuilding->getPosition();
+                formation.center = Util::shiftTowards(closestBuilding->getPosition(), cluster.retreatPosition, commander->getGroundRange() + offset);
                 formation.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition);
-                Broodwar->drawTextMap(closestBuilding->getPosition(), "%.2f", formation.angle);
+                formation.angle = BWEB::Map::getAngle(closestBuilding->getFormation(), cluster.retreatPosition);
                 return;
             }
         }
@@ -151,7 +150,7 @@ namespace McRave::Combat::Formations {
 
         auto commander = cluster.commander.lock();
         const auto type = cluster.commander.lock()->getType();
-        auto pixelsPerUnit = max(type.width(), type.height()) + (Combat::holdAtChoke() ? 0 : 8);;
+        auto pixelsPerUnit = max(type.width(), type.height()) + (Combat::holdAtChoke() ? 0 : 8);
         pair<Position, Position> lastPositions ={ Positions::Invalid, Positions::Invalid };
 
         auto first = line.center;
@@ -419,7 +418,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
-        drawFormations();
+        //drawFormations();
     }
 
     vector<Formation>& getFormations() { return formations; }

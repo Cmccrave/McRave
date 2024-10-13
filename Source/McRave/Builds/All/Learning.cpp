@@ -124,9 +124,14 @@ namespace McRave::Learning {
             };
             auto randomness = max(1, 10 - totalGames);
 
-            const auto calculateUCB = [&](int w, int l) {
-                auto UCB = (w + l) > 0 ? (double(w) / double(w + l)) + pow(2.0 * log((double)totalGames) / double(w + l), 0.1) : 1.0;
-                return (UCB * 25.0) + double(rand() % randomness) + 1.0;
+            const auto calculateUCB = [&](int w, int l, bool debug = false) {
+                auto UCB = (w + l) > 0 ? (double(w) / double(w + l)) + pow(2.0 * log((double)totalGames) / double(w + l), 0.1) : 2.0;
+                auto randomVal = double(rand() % randomness);
+                if (debug) {
+                    Util::debug("UCB1: " + to_string(UCB));
+                    Util::debug("RND: " + to_string(randomVal));
+                }
+                return (UCB * 25.0) + randomVal + 0.5;
             };
 
             // Attempt to read a file from the read directory first, then write directory
@@ -159,7 +164,7 @@ namespace McRave::Learning {
                 for (auto &opener : build.openers)
                     opener.ucb1 = calculateUCB(opener.w, opener.l);
                 for (auto &transition : build.transitions) {
-                    transition.ucb1 = calculateUCB(transition.w, transition.l);
+                    transition.ucb1 = calculateUCB(transition.w, transition.l, true);
                     Util::debug("[Learning]: " + transition.name + " UCB1 value is " + to_string(transition.ucb1) + "(" + to_string(transition.w) + ", " + to_string(transition.l) + ")");
                 }                
 
@@ -205,7 +210,7 @@ namespace McRave::Learning {
         void getPermanentBuild()
         {
             // Testing builds if needed
-            if (true) {
+            if (false) {
                 if (Players::PvZ()) {
                     BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
                     return;
@@ -219,7 +224,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvZ()) {
-                    BuildOrder::setLearnedBuild("PoolHatch", "12Pool", "2HatchMuta");
+                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchMuta");
                     return;
                 }
                 if (Players::ZvT()) {
@@ -227,7 +232,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "6HatchHydra");
+                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "3HatchHydra");
                     return;
                 }
             }
@@ -296,10 +301,10 @@ namespace McRave::Learning {
 
             if (Players::ZvP()) {
                 PoolHatch.setOpeners({ "Overpool" });
-                PoolHatch.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra", "6HatchCrackling" });
+                PoolHatch.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra" });
 
                 HatchPool.setOpeners({ /*"10Hatch",*/ "12Hatch" });
-                HatchPool.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra", "6HatchCrackling" });
+                HatchPool.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra" });
 
                 myBuilds ={ PoolHatch, HatchPool };
             }

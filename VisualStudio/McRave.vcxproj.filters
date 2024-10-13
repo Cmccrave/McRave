@@ -146,10 +146,10 @@
       <Filter>McRave\Builds\Protoss\PvFFA</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Builds\Terran\TerranBuildOrder.cpp">
-      <Filter>McRave\Builds\Terran</Filter>
+      <Filter>McRave\Builds\Zerg\Terran</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvFFA\TvA.cpp">
-      <Filter>McRave\Builds\Terran\TvFFA</Filter>
+      <Filter>McRave\Builds\Zerg\Terran\TvFFA</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Strategy\Zones\Zones.cpp">
       <Filter>McRave\Strategy\Zones</Filter>
@@ -308,19 +308,19 @@
       <Filter>McRave\Strategy\Spy</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ.cpp">
-      <Filter>McRave\Builds\Terran\TvZ</Filter>
+      <Filter>McRave\Builds\Zerg\Terran\TvZ</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ_2Rax.cpp">
-      <Filter>McRave\Builds\Terran\TvZ</Filter>
+      <Filter>McRave\Builds\Zerg\Terran\TvZ</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Micro\All\Spells.cpp">
       <Filter>McRave\Micro\All</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvP\TvP.cpp">
-      <Filter>McRave\Builds\Terran\TvP</Filter>
+      <Filter>McRave\Builds\Zerg\Terran\TvP</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvP\TvP_RaxFact.cpp">
-      <Filter>McRave\Builds\Terran\TvP</Filter>
+      <Filter>McRave\Builds\Zerg\Terran\TvP</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\McRave\Info\Unit\UnitMath.cpp">
       <Filter>McRave\Info\Unit</Filter>
@@ -409,7 +409,7 @@
       <Filter>McRave\Builds\Protoss</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Builds\Terran\TerranBuildOrder.h">
-      <Filter>McRave\Builds\Terran</Filter>
+      <Filter>McRave\Builds\Zerg\Terran</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Strategy\Zones\Zones.h">
       <Filter>McRave\Strategy\Zones</Filter>
@@ -563,9 +563,6 @@
     <Filter Include="McRave\Builds\Protoss">
       <UniqueIdentifier>{87bfccbc-9225-47a5-8c9e-5c45c905120d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="McRave\Builds\Terran">
-      <UniqueIdentifier>{67955f2f-85e9-45b5-9b7e-4f96d897c248}</UniqueIdentifier>
-    </Filter>
     <Filter Include="McRave\Builds\Zerg">
       <UniqueIdentifier>{e3095dc1-3f51-4c80-8a5a-fe10cb2bd7b1}</UniqueIdentifier>
     </Filter>
@@ -629,9 +626,6 @@
     <Filter Include="McRave\Builds\Zerg\ZvZ">
       <UniqueIdentifier>{44b3f59c-cd40-4450-b91e-c992687375f5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="McRave\Builds\Terran\TvFFA">
-      <UniqueIdentifier>{e0538aa9-127f-431d-bfa6-25c11ac5815f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="McRave\Strategy\Goals">
       <UniqueIdentifier>{7d32044f-5090-4418-ba76-a450cd54e4dc}</UniqueIdentifier>
     </Filter>
@@ -668,10 +662,16 @@
     <Filter Include="McRave\Map\Walls">
       <UniqueIdentifier>{8fea8213-ca8d-42e3-9d82-ed68a47eab0c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="McRave\Builds\Terran\TvZ">
+    <Filter Include="McRave\Builds\Zerg\Terran">
+      <UniqueIdentifier>{67955f2f-85e9-45b5-9b7e-4f96d897c248}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Zerg\Terran\TvFFA">
+      <UniqueIdentifier>{e0538aa9-127f-431d-bfa6-25c11ac5815f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Zerg\Terran\TvZ">
       <UniqueIdentifier>{2affacfe-3f62-4e6a-a073-26efc79fc7cf}</UniqueIdentifier>
     </Filter>
-    <Filter Include="McRave\Builds\Terran\TvP">
+    <Filter Include="McRave\Builds\Zerg\Terran\TvP">
       <UniqueIdentifier>{166561e7-c028-4604-9361-2273838157f6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>

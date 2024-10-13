@@ -14,12 +14,15 @@ namespace McRave::BuildOrder::Zerg {
         void ZvZ_PH_Overpool()
         {
             transitionReady =                               com(Zerg_Spawning_Pool) > 0;
-            unitLimits[Zerg_Drone] =                        10;
+            unitLimits[Zerg_Drone] =                        11 - vis(Zerg_Extractor);
             gasLimit =                                      capGas(100);
+
+            auto secondHatch = Spy::enemyRush() ? com(Zerg_Sunken_Colony) >= 1 : (s >= 22 && vis(Zerg_Extractor) > 0 && total(Zerg_Zergling) >= 6);
             
             // Buildings
-            buildQueue[Zerg_Hatchery] =                     1 + (s >= 22);
+            buildQueue[Zerg_Hatchery] =                     1 + secondHatch;
             buildQueue[Zerg_Spawning_Pool] =                (vis(Zerg_Overlord) >= 2);
+            buildQueue[Zerg_Extractor] =                    (s >= 22 && vis(Zerg_Spawning_Pool) > 0);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32);
         }
 
@@ -32,7 +35,7 @@ namespace McRave::BuildOrder::Zerg {
 
             auto secondHatch = Spy::enemyRush() ? com(Zerg_Sunken_Colony) >= 1 : (s >= 22 && vis(Zerg_Extractor) > 0);
             
-            buildQueue[Zerg_Hatchery] =                     1 + (secondHatch);
+            buildQueue[Zerg_Hatchery] =                     1 + secondHatch;
             buildQueue[Zerg_Spawning_Pool] =                s >= 24;
             buildQueue[Zerg_Extractor] =                    (s >= 22 && vis(Zerg_Spawning_Pool) > 0);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32);

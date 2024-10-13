@@ -13,12 +13,21 @@ namespace McRave::Combat::Navigation {
         BWEB::Path flyerRegroupPath;
         BWEB::Path flyerHarassPath;
         BWEB::Path flyerRetreatPath;
+
+        BWEB::Path groundHarassPath;
     }
 
     void getGroundPath(UnitInfo& unit)
     {
         auto pathPoint = unit.getFormation().isValid() ? Util::getPathPoint(unit, unit.getFormation()) : Util::getPathPoint(unit, unit.getDestination());
         auto newPathNeeded = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)));
+
+        Visuals::drawPath(groundHarassPath);
+
+        if (unit.attemptingRunby()) {
+            unit.setDestinationPath(groundHarassPath);
+            return;
+        }
 
         if (unit.hasCommander()) {
             unit.setDestinationPath(unit.getCommander().lock()->getDestinationPath());
@@ -40,24 +49,31 @@ namespace McRave::Combat::Navigation {
 
     void updatePath(UnitInfo& unit)
     {
-        // Check if we need a new path
-        if (!unit.getDestination().isValid() || (!unit.getDestinationPath().getTiles().empty() && unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())))
-            return;
-
         if (unit.isLightAir() /*&& !unit.getGoal().isValid()*/) {
             auto regrouping = unit.attemptingRegroup();
             auto retreating = unit.getLocalState() == LocalState::Retreat;
-            auto harassing = unit.getDestination() == Combat::getHarassPosition() && unit.attemptingHarass() && unit.getLocalState() == LocalState::None;
+            auto attacking = unit.getLocalState() == LocalState::Attack;
+            auto harassing = unit.attemptingHarass();
 
-            if (regrouping)
+            if (regrouping) {
+                unit.circle(Colors::Yellow);
                 unit.setDestinationPath(flyerRegroupPath);
-            else if (retreating)
+            }
+            else if (retreating) {
+                unit.circle(Colors::Red);
                 unit.setDestinationPath(flyerRetreatPath);
-            else if (harassing)
+            }
+            else if (harassing && !attacking) {
+                unit.circle(Colors::Green);
                 unit.setDestinationPath(flyerHarassPath);
+            }
             Visuals::drawPath(unit.getDestinationPath());
             return;
         }
+
+        // Check if we need a new path
+        if (!unit.getDestination().isValid() || (!unit.getDestinationPath().getTiles().empty() && unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())))
+            return;
 
         // Generate a generic flying JPS path
         if (unit.isFlying())
@@ -72,7 +88,7 @@ namespace McRave::Combat::Navigation {
     {
         unit.setNavigation(unit.getFormation().isValid() ? unit.getFormation() : unit.getDestination());
 
-        if (unit.getFormation().isValid() && unit.getLocalState() != LocalState::Attack) {
+        if (unit.getFormation().isValid() && unit.getLocalState() != LocalState::Attack && !unit.attemptingRunby()) {
             unit.setNavigation(unit.getFormation());
             return;
         }
@@ -95,6 +111,8 @@ namespace McRave::Combat::Navigation {
             if (newDestination.isValid())
                 unit.setNavigation(newDestination);
         }
+
+        Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Cyan);
     }
 
     void updateSimPositions(UnitInfo& unit)
@@ -124,11 +142,40 @@ namespace McRave::Combat::Navigation {
             simPositions.push_back(sim.lock()->getPosition());
     }
 
-    void updateGlobalRoughPaths()
+    void updateGlobalGroundPaths()
     {
         // Create one path from commander to retreat
         auto harassingCommander = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
-            return u->isLightAir() && !u->hasCommander() && u->attemptingHarass();
+            return !u->hasCommander() && u->attemptingRunby() && u->getGlobalState() == GlobalState::Attack;
+        });
+
+        if (harassingCommander) {
+            auto &unit = *harassingCommander;
+
+            auto start = Util::getPathPoint(unit, Terrain::getEnemyStartingPosition());
+            auto end = Util::getPathPoint(unit, harassingCommander->getPosition());
+
+            if (int(Stations::getStations(PlayerState::Enemy).size()) >= 2 && Units::getEnemyArmyCenter().isValid() && Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), Units::getEnemyArmyCenter()))
+                start = Terrain::getEnemyNatural()->getBase()->Center();
+
+            const auto threat = [&](const TilePosition &t) {
+                return 1.0 + (Grids::getGroundThreat(Position(t) + Position(16, 16), PlayerState::Enemy) * 1000.0);
+            };
+
+            const auto walkable = [&](const TilePosition &t) {
+                return groundHarassPath.unitWalkable(t);
+            };
+
+            groundHarassPath ={ start, end, unit.getType() };
+            groundHarassPath.generateAS(threat, walkable);
+        }
+    }
+
+    void updateGlobalFlyingPaths()
+    {
+        // Create one path from commander to retreat
+        auto harassingCommander = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
+            return u->isLightAir() && !u->hasCommander() && u->getGlobalState() == GlobalState::Attack;
         });
 
         if (harassingCommander) {
@@ -147,7 +194,7 @@ namespace McRave::Combat::Navigation {
 
             // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
             auto &simPositions = lastSimPositions[&unit];
-            auto cachedDist = min(simDistCurrent, int(unit.getRetreatRadius() + 64.0));
+            auto cachedDist = min(simDistCurrent, int(unit.getRetreatRadius() + 32.0));
             const auto flyerAttack = [&](const TilePosition &t) {
                 const auto center = Position(t) + Position(16, 16);
 
@@ -156,18 +203,19 @@ namespace McRave::Combat::Navigation {
                     d = min(d, center.getApproxDistance(pos));
 
                 auto dist = max(0.01, double(d) - cachedDist);
-                auto vis = clamp(double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(t)) / 960.0, 0.1, 3.0);
+                auto vis = clamp(double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(t)) / 960.0, 0.05, 3.0);
                 return 1.0 / (vis * dist);
             };
 
-            flyerHarassPath ={ unit.getDestination(), unit.getPosition(),unit.getType() };
+            flyerHarassPath ={ unit.getDestination(), unit.getPosition(), unit.getType() };
             flyerHarassPath.generateAS_h(flyerAttack);
         }
     }
 
     void onFrame()
     {
-        updateGlobalRoughPaths();
+        updateGlobalFlyingPaths();
+        updateGlobalGroundPaths();
 
         for (auto &cluster : Clusters::getClusters()) {
 

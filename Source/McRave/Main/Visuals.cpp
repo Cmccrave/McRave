@@ -203,6 +203,8 @@ namespace McRave::Visuals {
                 Broodwar->drawTextScreen(Position(0, 90), "%cReserved: %d", Text::Green, Producing::getReservedGas());
                 Broodwar->drawTextScreen(Position(0, 100), "%cPlanned: %d", Text::GreyBlue, Planning::getPlannedMineral());
                 Broodwar->drawTextScreen(Position(0, 110), "%cPlanned: %d", Text::Green, Planning::getPlannedGas());
+                Broodwar->drawTextScreen(Position(0, 120), "%cUpgrading: %d", Text::GreyBlue, Upgrading::getReservedMineral());
+                Broodwar->drawTextScreen(Position(0, 130), "%cUpgrading: %d", Text::Green, Upgrading::getReservedGas());
 
                 int offset = 0;
                 for (auto &building : Planning::getPlannedBuildings()) {

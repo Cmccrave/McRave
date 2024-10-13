@@ -8,7 +8,7 @@ namespace McRave::Actions {
 
     namespace {
 
-        bool draw = false;
+        bool draw = true;
 
         void drawActions()
         {
@@ -192,10 +192,11 @@ namespace McRave::Actions {
                         return true;
                 }
 
+                // Made these bigger to help kiting
                 if (command.tech == TechTypes::Psionic_Storm
                     || command.tech == TechTypes::Disruption_Web) {
 
-                    if (boxOverlap(command, checkPositions, 48))
+                    if (boxOverlap(command, checkPositions, 60))
                         return true;
                 }
 

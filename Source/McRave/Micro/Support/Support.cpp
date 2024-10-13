@@ -23,7 +23,7 @@ namespace McRave::Support {
 
             if (Players::ZvT() && Spy::enemyInvis())
                 types.insert(Zerg_Mutalisk);
-            if (Players::ZvP() && Spy::enemyInvis() && com(Zerg_Hydralisk) == 0)
+            if (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) == 0 && com(Zerg_Hydralisk) == 0)
                 types.insert(Zerg_Zergling);
         }
 
@@ -53,17 +53,17 @@ namespace McRave::Support {
                 return u->getType() == Zerg_Spore_Colony;
             });
 
-            // Natural is likely safer early on
-            if (Util::getTime() < Time(7, 00) && Stations::getStations(PlayerState::Self).size() >= 2 && !Players::ZvZ())
-                closestStation = Terrain::getMyNatural();
+            if (closestStation && !closestStation->isMain()) {
+                assignInBox(closestStation->getBase()->Center(), unit);
+            }
 
             // Overlords safe at a spore
-            if (closestSpore) {
+            else if (closestSpore) {
                 assignInBox(closestSpore->getPosition(), unit);
             }
 
             // No spore, look for hydras, go to natural where we expect them to be
-            else if (total(Zerg_Hydralisk) > 0 && Players::ZvP() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0) {
+            else if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0) {
                 assignInBox(Terrain::getMyNatural()->getBase()->Center(), unit);
             }
 
@@ -90,8 +90,14 @@ namespace McRave::Support {
         {
             // For each cluster, assign an overlord to the commander
             auto distBest = DBL_MAX;
+            auto cnt = 2;
+
             for (auto &cluster : Combat::Clusters::getClusters()) {
                 auto commander = cluster.commander.lock();
+
+                if (commander && !commander->isTargetedByHidden() && !commander->isNearHidden())
+                    continue;
+
                 if (commander && types.find(commander->getType()) != types.end() && assignedOverlords.find(commander->getPosition()) == assignedOverlords.end()) {
                     auto dist = commander->getPosition().getDistance(unit.getPosition());
                     if (dist < distBest) {
@@ -107,23 +113,23 @@ namespace McRave::Support {
                 }
             }
 
-            // Find the closest unit without a detector assigned - this doesn't work great so far
-            if (!unit.getDestination().isValid()) {
-                distBest = DBL_MAX;
-                for (auto &u : Units::getUnits(PlayerState::Self)) {
-                    auto assignedDist = 320.0;
-                    if (types.find(u->getType()) != types.end()) {
-                        for (auto &position : assignedOverlords)
-                            assignedDist = min(assignedDist, position.getDistance(u->getPosition()));
+            //// Find the closest unit without a detector assigned - this doesn't work great so far
+            //if (!unit.getDestination().isValid()) {
+            //    distBest = DBL_MAX;
+            //    for (auto &u : Units::getUnits(PlayerState::Self)) {
+            //        auto assignedDist = 320.0;
+            //        if (types.find(u->getType()) != types.end()) {
+            //            for (auto &position : assignedOverlords)
+            //                assignedDist = min(assignedDist, position.getDistance(u->getPosition()));
 
-                        auto dist = u->getPosition().getDistance(unit.getPosition()) / assignedDist;
-                        if (dist < distBest) {
-                            unit.setDestination(u->getPosition());
-                            distBest = dist;
-                        }
-                    }
-                }
-            }
+            //            auto dist = u->getPosition().getDistance(unit.getPosition()) / assignedDist;
+            //            if (dist < distBest) {
+            //                unit.setDestination(u->getPosition());
+            //                distBest = dist;
+            //            }
+            //        }
+            //    }
+            //}
 
             // Assign placement
             assignedOverlords.insert(unit.getDestination());
@@ -173,7 +179,7 @@ namespace McRave::Support {
             if (unit.getType() == Zerg_Overlord && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || unit.getGoal().isValid())) {
                 const auto xMax = Broodwar->mapWidth() - 4;
                 const auto yMax = Broodwar->mapHeight() - 4;
-                const auto centerDist = min(unit.getDestination().getDistance(mapBWEM.Center()), unit.getPosition().getDistance(mapBWEM.Center()));
+                const auto centerDist = min(Terrain::getMainPosition().getDistance(mapBWEM.Center()), unit.getPosition().getDistance(mapBWEM.Center()));
                 BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
                 newPath.generateJPS([&](const TilePosition &t) { return !Terrain::inTerritory(PlayerState::Enemy, Position(t)) && t.isValid() && (t.x < 4 || t.y < 4 || t.x > xMax || t.y > yMax || Position(t).getDistance(mapBWEM.Center()) >= centerDist); });
                 unit.setDestinationPath(newPath);

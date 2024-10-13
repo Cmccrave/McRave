@@ -19,6 +19,7 @@ namespace McRave::Terrain {
         Position enemyStartingPosition = Positions::Invalid;
         TilePosition enemyStartingTilePosition = TilePositions::Invalid;
         TilePosition enemyExpand = TilePositions::Invalid;
+        set<TilePosition> bannedStart;
 
         // Map
         map<WalkPosition, pair<const BWEM::Area *, const BWEM::Area *>> areaChokeGeometry;
@@ -54,11 +55,12 @@ namespace McRave::Terrain {
             // If we think we found the enemy but we were wrong
             if (enemyStartingPosition.isValid()) {
                 if (Broodwar->isExplored(enemyStartingTilePosition) && Util::getTime() < Time(5, 00) && BWEB::Map::isUsed(enemyStartingTilePosition) == UnitTypes::None) {
+                    bannedStart.insert(enemyStartingTilePosition);
                     enemyStartingPosition = Positions::Invalid;
                     enemyStartingTilePosition = TilePositions::Invalid;
                     enemyNatural = nullptr;
                     enemyMain = nullptr;
-                    Stations::getStations(PlayerState::Enemy).clear();
+                    Stations::removeStation(enemyStartingPosition, PlayerState::Enemy);
                 }
                 else
                     return;
@@ -76,6 +78,9 @@ namespace McRave::Terrain {
 
                     const auto closestMain = BWEB::Stations::getClosestMainStation(unit.getTilePosition());
                     const auto closestNatural = BWEB::Stations::getClosestNaturalStation(unit.getTilePosition());
+
+                    if (find(bannedStart.begin(), bannedStart.end(), unit.getTilePosition()) != bannedStart.end())
+                        continue;
 
                     // Set start if valid
                     if (closestMain && closestMain != getMyMain() && unit.getPosition().getDistance(closestMain->getBase()->Center()) < 960.0) {
@@ -115,6 +120,9 @@ namespace McRave::Terrain {
 
                         auto maxTravelDist = Broodwar->getFrameCount() * unit.getSpeed();
                         auto curTravelDist = unit.getPosition().getDistance(overlordStart);
+
+                        if (find(bannedStart.begin(), bannedStart.end(), station.getBase()->Location()) != bannedStart.end())
+                            continue;
 
                         if (maxTravelDist > curTravelDist) {
                             inferedStart = station.getBase()->Location();
@@ -328,7 +336,7 @@ namespace McRave::Terrain {
                 for (int x = 0; x < 20; x++) {
                     for (auto &dir : directions) {
                         auto pos = walk + dir * x;
-                        if (mapBWEM.GetMiniTile(pos).Walkable()) {
+                        if (pos.isValid() && mapBWEM.GetMiniTile(pos).Walkable()) {
                             //Visuals::drawBox(pos, pos + WalkPosition(1, 1), Colors::Green);
                             scores[dir]++;
                             scores[dir*-1]++;

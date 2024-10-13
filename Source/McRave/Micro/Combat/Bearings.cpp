@@ -88,7 +88,11 @@ namespace McRave::Combat::Bearings {
             }
         }
         else {
-            if (unit.getGoal().isValid()) {
+            if (Terrain::getEnemyStartingPosition().isValid() && unit.attemptingRunby()) {
+                unit.setDestination(Terrain::getEnemyStartingPosition());
+                unit.circle(Colors::Green);
+            }
+            else if (unit.getGoal().isValid()) {
                 unit.setDestination(unit.getGoal());
                 //Visuals::drawLine(unit.getPosition(), unit.getGoal(), Colors::Cyan);
                 //Broodwar->drawTextMap(unit.getPosition(), "z_goal");
@@ -97,7 +101,7 @@ namespace McRave::Combat::Bearings {
                 unit.setDestination(unit.getCommander().lock()->getPosition());
                 //Broodwar->drawTextMap(unit.getPosition(), "z_regrp");
             }
-            else if (unit.attemptingHarass() || unit.attemptingRunby()) {
+            else if (Combat::getHarassPosition().isValid() && unit.attemptingHarass()) {
                 unit.setDestination(Combat::getHarassPosition());
                 //Broodwar->drawTextMap(unit.getPosition(), "z_harass");
             }
@@ -114,8 +118,6 @@ namespace McRave::Combat::Bearings {
                 //Broodwar->drawTextMap(unit.getPosition(), "z_clean");
             }
         }
-        if (unit.isLightAir())
-            Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
     }
 
     void onFrame()

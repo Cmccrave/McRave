@@ -126,16 +126,16 @@ namespace BWEB {
 
         // Iteration attempts move buildings closer
         auto iteration = 0;
-        if (station->isNatural()) {
-            auto dist = Position(choke->Center()).getDistance(station->getBase()->Center());
-            if (dist >= 288.0)
-                iteration+=2;
-        }
+        //if (station->isNatural()) {
+        //    auto dist = Position(choke->Center()).getDistance(station->getBase()->Center());
+        //    if (dist >= 288.0)
+        //        iteration+=2;
+        //}
 
         // If this isn't a natural or main, allow it to start further back
-        auto maxIteration = 3;
+        auto maxIteration = 2;
         if (station && !station->isMain() && !station->isNatural()) {
-            iteration -= 1;
+            iteration -= 2;
             maxIteration = 0;
         }
         
@@ -146,7 +146,7 @@ namespace BWEB {
             maxIteration = 8;
         }
 
-        for (; iteration < maxIteration; iteration++) {
+        for (; iteration < maxIteration; iteration+=2) {
             cleanup();
             smallTiles.clear();
             mediumTiles.clear();
@@ -154,9 +154,9 @@ namespace BWEB {
 
             // 0/8 - Horizontal
             if (defenseArrangement == 0) {
-                lrgOrder        ={ {-4, -6}, {-3, -6}, {-2, -6}, {-1, -6}, {0, -6}, {1, -6}, {2, -6}, {3, -6}, {4, -6} };
-                medOrder        ={ {-4, -5}, {-3, -5}, {-2, -5}, {-1, -5}, {0, -5}, {1, -5}, {2, -5}, {3, -5}, {4, -5} };
-                smlOrder        ={ {-2, -5}, {-1, -5}, { 0, -5}, { 1, -5}, {2, -5}, {3, -5}, {4, -5}, {5, -5} };
+                lrgOrder        ={ {-4, -5}, {-3, -5}, {-2, -5}, {-1, -5}, {0, -5}, {1, -5}, {2, -5}, {3, -5}, {4, -5} };
+                medOrder        ={ {-4, -4}, {-3, -4}, {-2, -4}, {-1, -4}, {0, -4}, {1, -4}, {2, -4}, {3, -4}, {4, -4} };
+                smlOrder        ={ {-2, -4}, {-1, -4}, { 0, -4}, { 1, -4}, {2, -4}, {3, -4}, {4, -4}, {5, -4} };
                 flipOrder       = station->isNatural() && mainChokeCenter.x > base->Center().x;
                 flipVertical    = base->Center().y < Position(choke->Center()).y;
 
@@ -171,9 +171,9 @@ namespace BWEB {
 
             // pi/4 - Angled
             else if (defenseArrangement == 1 || defenseArrangement == 3) {
-                lrgOrder        ={ {-1, -8}, {-3, -6}, {-5, -4}, {-7, -2}, {-9,  0} };
-                medOrder        ={ { 0, -7}, {-2, -5}, {-4, -3}, {-6, -1} };
-                smlOrder        ={ {-1, -5}, {-3, -3}, {-5, -1} };
+                lrgOrder        ={ {0, -7}, {-2, -5}, {-4, -3}, {-6, -1}, {-8,  0} };
+                medOrder        ={ {1, -6}, {-1, -4}, {-3, -2}, {-5, 0} };
+                smlOrder        ={ {0, -4}, {-2, -2}, {-4,  0} };
 
                 // TODO: these flips don't really work as intended
                 flipOrder       = (station->isNatural() && mainChokeCenter.x < base->Center().x && mainChokeCenter.y > base->Center().y)
@@ -204,9 +204,9 @@ namespace BWEB {
 
             // pi/2 - Vertical
             else if (defenseArrangement == 2) {
-                lrgOrder        ={ {-7, -4}, {-7, -3}, {-7, -2}, {-7, -1}, {-7,  0}, {-7,  1}, {-7,  2}, {-7,  3}, {-7,  4} };
-                medOrder        ={ {-6, -3}, {-6, -2}, {-6, -1}, {-6,  0}, {-6,  1}, {-6,  2}, {-6,  3}, {-6,  4} };
-                smlOrder        ={ {-5, -1}, {-5,  0}, {-5,  1}, {-5,  2} };
+                lrgOrder        ={ {-6, -4}, {-6, -3}, {-6, -2}, {-6, -1}, {-6,  0}, {-6,  1}, {-6,  2}, {-6,  3}, {-6,  4} };
+                medOrder        ={ {-5, -3}, {-5, -2}, {-5, -1}, {-5,  0}, {-5,  1}, {-5,  2}, {-5,  3}, {-5,  4} };
+                smlOrder        ={ {-4, -1}, {-4,  0}, {-4,  1}, {-4,  2} };
                 flipOrder       = station->isNatural() && mainChokeCenter.y > base->Center().y;
                 flipHorizontal  = base->Center().x < Position(choke->Center()).x;
 
@@ -235,7 +235,7 @@ namespace BWEB {
                         placement.x = -(placement.x - diff);
                     }
                 }
-                if (flipOrder)
+                if (!flipOrder)
                     std::reverse(tryOrder.begin(), tryOrder.end());
             };
 

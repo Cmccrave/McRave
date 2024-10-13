@@ -64,7 +64,7 @@ namespace McRave::Pathing {
 
                 if (unit.isFlying()
                     || unit.getType().isBuilding()
-                    || unit.hasAttackedRecently()
+                    || (unit.hasAttackedRecently() && unit.getType() != Protoss_Dragoon)
                     || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()))
                     continue;
 
@@ -76,27 +76,26 @@ namespace McRave::Pathing {
                         && *u->getTarget().lock() == unit;
                 });
                 if (furthestTargeter) {
-                    auto framesToArrive = (clamp(furthestTargeter->getPosition().getDistance(unit.getPosition()) / unit.getSpeed(), 0.0, 48.0));
+                    auto furthestFramesToArrive = (clamp(furthestTargeter->getPosition().getDistance(unit.getPosition()) / furthestTargeter->getSpeed(), 0.0, 48.0));
 
 
                     // Figure out how to trap the unit
-                    auto trapTowards = unit.getPosition() + Position(int(unit.unit()->getVelocityX() * framesToArrive), int(unit.unit()->getVelocityY() * framesToArrive));
-                    /*auto dist = unit.getPosition().getDistance(trapTowards);
-                    trapTowards = Util::shiftTowards(unit.getPosition(), trapTowards, dist*2.0);*/
+                    auto trapTowards = unit.getPosition();
                     if (unit.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, unit.getPosition())) {
+                        trapTowards = unit.getPosition() + Position(int(unit.unit()->getVelocityX() * furthestFramesToArrive), int(unit.unit()->getVelocityY() * furthestFramesToArrive));
                         trapTowards += Terrain::getMainPosition();
                         trapTowards /= 2.0;
-                        framesToArrive *= 1.25;
+                        furthestFramesToArrive *= 1.5;
                     }
-                    else if (unit.getCurrentSpeed() <= 0.0) {
-                        trapTowards = unit.getPosition() + (unit.getPosition() - furthestTargeter->getPosition());
+                    else {
+                        trapTowards = unit.unit()->getOrderTargetPosition();
                     }
-                    Visuals::drawLine(unit.getPosition(), trapTowards, Colors::Purple);
+                    //Visuals::drawLine(unit.getPosition(), trapTowards, Colors::Purple);
 
                     // Create surround positions in a primitive fashion
                     vector<pair<Position, double>> surroundPositions;
-                    auto width = (unit.getType().width() - 8) / 2;
-                    auto height = (unit.getType().height() - 8) / 2;
+                    auto width = (unit.getType().width()) / 2;
+                    auto height = (unit.getType().height()) / 2;
                     for (int x = -1; x <= 1; x++) {
                         for (int y = -1; y <= 1; y++) {
                             if (x == 0 && y == 0)
@@ -115,6 +114,7 @@ namespace McRave::Pathing {
                     int nx = 0;
                     for (auto &[pos, dist] : surroundPositions) {
                         nx++;
+                        //Visuals::drawCircle(pos, 4, Colors::Blue);
 
                         auto closestTargeter = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
                             return u->hasTarget()
@@ -131,7 +131,16 @@ namespace McRave::Pathing {
                             auto expandx = (pos.x - unit.getPosition().x) / unit.getPosition().getDistance(pos);
                             auto expandy = (pos.y - unit.getPosition().y) / unit.getPosition().getDistance(pos);
 
-                            auto correctedPos = pos + Position(int(dirx * framesToArrive), int(diry * framesToArrive)) + Position(int(expandx * framesToArrive), int(expandy * framesToArrive));
+                            auto closestFramesToArrive = (clamp(pow(closestTargeter->getPosition().getDistance(pos) / closestTargeter->getSpeed(), 1.5), 2.0, 64.0));
+
+                            auto ct_angle = BWEB::Map::getAngle(closestTargeter->getPosition(), pos);
+                            auto pos_angle = BWEB::Map::getAngle(pos, unit.getPosition());
+
+                            auto angleDiff = abs(ct_angle - pos_angle);
+                            if (angleDiff > 0.25)
+                                closestFramesToArrive *= min(2.5, angleDiff);
+
+                            auto correctedPos = pos + Position(int(dirx * closestFramesToArrive), int(diry * closestFramesToArrive)) + Position(int(expandx * closestFramesToArrive), int(expandy * closestFramesToArrive));
 
                             if (Util::findWalkable(*closestTargeter, correctedPos)) {
                                 closestTargeter->setSurroundPosition(correctedPos);

@@ -39,7 +39,7 @@ namespace McRave::Producing {
 
         bool isCreateable(Unit building, UnitType unit)
         {
-            if (unit != Zerg_Overlord && BuildOrder::getCompositionPercentage(unit) <= 0.01)
+            if (unit != Zerg_Overlord && (BuildOrder::getCompositionPercentage(unit) < 0.01 || !BuildOrder::isUnitUnlocked(unit)))
                 return false;
 
             switch (unit)
@@ -293,7 +293,7 @@ namespace McRave::Producing {
 
                 // Strategic checks
                 if (Players::ZvP()) {
-                    if (bestType == Zerg_Overlord && vis(Zerg_Larva) > 1 && !station->isNatural() && Util::getTime() > Time(4, 00) && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Players::getTotalCount(PlayerState::Self, Zerg_Mutalisk) == 0 && Players::getTotalCount(PlayerState::Self, Zerg_Scourge) == 0 && Players::getTotalCount(PlayerState::Self, Zerg_Hydralisk) == 0)
+                    if (bestType == Zerg_Overlord && !station->isNatural() && Util::getTime() > Time(4, 00) && Players::getTotalCount(PlayerState::Self, Zerg_Mutalisk) == 0 && Players::getTotalCount(PlayerState::Self, Zerg_Scourge) == 0)
                         return false;
                 }
 
@@ -438,8 +438,6 @@ namespace McRave::Producing {
                 return -1.0;
         }
 
-        auto percentage = BuildOrder::getCompositionPercentage(type);
-
         // Figure out how many we're trying to make
         auto trainedCount = vis(type);
         for (auto &[_, idleType] : idleProduction) {
@@ -471,6 +469,7 @@ namespace McRave::Producing {
             || (typeGasCost > 0 && availGas < 0))
             return -1.0;
 
+        const auto percentage = BuildOrder::getCompositionPercentage(type);
         const auto resourceScore = gasCostScore * minCostScore;
         const auto strategyScore = 100.0 * percentage / double(max(1, trainedCount));
         return resourceScore + strategyScore;

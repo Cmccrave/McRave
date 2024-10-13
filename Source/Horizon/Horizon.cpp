@@ -34,8 +34,8 @@ namespace McRave::Horizon {
                 simRatio *= 2.0;
             if (!u.isFlying() && !t.isFlying() && u.getGroundRange() > 32.0 && Broodwar->getGroundHeight(u.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(t.getEngagePosition())))
                 simRatio *= 1.15;
-            if (u.getType().isWorker() && Util::getTime() < Time(6, 00))
-                simRatio /= 1.5;
+            if (u.getType().isWorker() && !u.hasAttackedRecently())
+                simRatio /= 10.0;
             return;
         }
 
@@ -54,10 +54,22 @@ namespace McRave::Horizon {
             return;
 
         auto &unitTarget = unit.getTarget().lock();
+
+        // Determine when to start tracking engagement times, if nothing is in range, it cannot count towards simulation time
+        const auto maxRange = max({ unit.getGroundRange(), unit.getAirRange(), unitTarget->getGroundRange(), unitTarget->getAirRange() });
+        const auto maxSpeed = max(unit.getSpeed(), unitTarget->getSpeed()) * 24.0;
+        const auto rangeDisplacement = (unit.getPosition().getDistance(unitTarget->getPosition()) - maxRange) / maxSpeed;
+
+
+
+        const auto timePad = Util::getTime().minutes / 6;
         const auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
-        const auto simulationTime = unitToEngage + 2.5 + addPrepTime(unit);
-        const auto targetDisplacement = unitToEngage * unitTarget->getSpeed() * 24.0;
+        const auto simulationTime = unitToEngage + 5.0 + addPrepTime(unit) - rangeDisplacement;
+        const auto targetDisplacement = 0.0;// unitToEngage * unitTarget->getSpeed() * 24.0;
         map<Player, SimStrength> simStrengthPerPlayer;
+
+        if (unit.unit()->isSelected())
+            Broodwar << simulationTime << endl;
 
         for (auto &e : Units::getUnits(PlayerState::Enemy)) {
             UnitInfo &enemy = *e;
@@ -89,7 +101,7 @@ namespace McRave::Horizon {
 
             // If enemy can move, calculate how quickly it can engage
             else {
-                const auto distance =               min(distTarget - distUnknown, distEngage - distUnknown); // TODO: Max sight range of units in this sim
+                const auto distance =               distEngage - distUnknown;
                 const auto speed =                  enemy.getSpeed() * 24.0;
                 const auto engageTime =             max(0.0, (distance - range) / speed);
                 simRatio =                          max(0.0, simulationTime - engageTime);
@@ -112,16 +124,19 @@ namespace McRave::Horizon {
             auto &selfTarget = self.getTarget().lock();
             const auto range = max(self.getAirRange(), self.getGroundRange());
             const auto reach = max(self.getAirReach(), self.getGroundReach());
-            const auto distance = double(Util::boxDistance(self.getType(), self.getPosition(), unitTarget->getType(), unitTarget->getPosition())) + targetDisplacement;
+            const auto distance = self.getEngDist() + targetDisplacement;
             const auto speed = self.getSpeed() > 0.0 ? self.getSpeed() * 24.0 : unit.getSpeed() * 24.0;
             const auto engageTime = max(0.0, ((distance - range) / speed) - unitToEngage);
-            auto simRatio = max(0.0, simulationTime - engageTime + addPrepTime(self));
+            auto simRatio = max(0.0, simulationTime - engageTime - addPrepTime(self));
+
+            //if (unit == self)
+            //    simRatio = simulationTime - unitToEngage;
 
             // If the unit doesn't affect this simulation
             if ((self.getSpeed() <= 0.0 && self.getEngDist() > -16.0)
                 || (unit.hasTarget() && self.hasTarget() && self.getEngagePosition().getDistance(unitTarget->getPosition()) > reach * 2)
                 || (self.getGlobalState() == GlobalState::Retreat)
-                || (Combat::State::isStaticRetreat(self.getType()) && !Terrain::inTerritory(PlayerState::Self, self.getPosition())))
+                || (Combat::State::isStaticRetreat(self.getType()) && !self.attemptingRunby() && !Terrain::inTerritory(PlayerState::Self, self.getPosition())))
                 continue;
 
             if (unit.unit()->isSelected())
@@ -144,7 +159,7 @@ namespace McRave::Horizon {
             const auto distance = double(Util::boxDistance(ally.getType(), ally.getPosition(), unit.getType(), unitTarget->getPosition()));
             const auto speed = ally.getSpeed() > 0.0 ? ally.getSpeed() * 24.0 : unit.getSpeed() * 24.0;
             const auto engageTime = max(0.0, ((distance - range) / speed) - unitToEngage);
-            auto simRatio = max(0.0, simulationTime - engageTime + addPrepTime(ally));
+            auto simRatio = max(0.0, simulationTime - engageTime - addPrepTime(ally));
 
             // If the unit doesn't affect this simulation
             if ((ally.getSpeed() <= 0.0 && ally.getEngDist() > -16.0)

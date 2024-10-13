@@ -128,6 +128,12 @@ namespace McRave::Spy::General {
                     }
                 }
 
+                // Assume a fast expand eventually
+                if (Terrain::isPocketNatural()) {
+                    if (Util::getTime() > Time(5, 00))
+                        theSpy.expand.possible = true;
+                }
+
                 // Monitor for a proxy
                 if (Util::getTime() < Time(5, 00)) {
                     if (unit.getType().isBuilding() && unit.isProxy())
@@ -218,7 +224,7 @@ namespace McRave::Spy::General {
         void checkEnemyGreedy(PlayerInfo& player, StrategySpy& theSpy)
         {
             // Greedy detection
-            if (!Terrain::isPocketNatural()) {
+            if (!Terrain::isPocketNatural() && Util::getTime() > Time(3, 30)) {
                 theSpy.greedy.possible = (Players::ZvP() && Spy::getEnemyBuild() == "FFE" && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(7, 00))
                     || (Players::ZvP() && Spy::getEnemyBuild() != "FFE" && theSpy.expand.confirmed && Util::getTime() < Time(5, 15))
                     || (Players::ZvT() && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(10, 00));

@@ -85,9 +85,8 @@ namespace McRave::Walls {
                     };
                 }
                 else {
-                    testingOrder ={ { Zerg_Evolution_Chamber, Zerg_Hatchery, Zerg_Evolution_Chamber },
-                                    { Zerg_Evolution_Chamber, Zerg_Hatchery },
-                                    { Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
+                    testingOrder ={ { Zerg_Evolution_Chamber, Zerg_Hatchery },
+                                    { Zerg_Hatchery, Zerg_Evolution_Chamber},
                                     { Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
                                     {}
                     };
@@ -176,7 +175,7 @@ namespace McRave::Walls {
 
             // 1GateCore
             if (Spy::getEnemyBuild() == "1GateCore" || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
-                return (Util::getTime() > Time(3, 45))
+                return (earlySunk && Util::getTime() > Time(3, 45))
                     + (Util::getTime() > Time(4, 30));
             }
 
@@ -195,11 +194,10 @@ namespace McRave::Walls {
                     + (Util::getTime() > Time(4, 00))
                     + (Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
-                    return (earlySunk && Util::getTime() > Time(2, 50))
+                    return (earlySunk && Util::getTime() > Time(3, 00))
                     + (Util::getTime() > Time(4, 30));
                 if (Spy::getEnemyOpener() == "Proxy9/9")
-                    return (Util::getTime() > Time(2, 50))
-                    + (Util::getTime() > Time(4, 30));
+                    return 0;
             }
 
             // FFE
@@ -251,11 +249,12 @@ namespace McRave::Walls {
                 if (Spy::getEnemyTransition() == "Corsair") {
                     return (Util::getTime() > Time(4, 00))
                         + (Util::getTime() > Time(4, 15))
+                        + (Util::getTime() > Time(5, 15))
                         + (Util::getTime() > Time(7, 00));
                 }
 
                 // Speedlot
-                if (Spy::getEnemyTransition() == "Speedlot" || noExpandOrTech) {
+                if (Spy::getEnemyTransition() == "Speedlot") {
                     return (Util::getTime() > Time(4, 00))
                         + (Util::getTime() > Time(4, 15))
                         + (Util::getTime() > Time(4, 45))
@@ -264,21 +263,29 @@ namespace McRave::Walls {
 
                 // Zealot flood
                 if (Spy::getEnemyTransition() == "ZealotRush") {
-                    return (Util::getTime() > Time(4, 00))
+                    return (Util::getTime() > Time(3, 40))
                         + (Util::getTime() > Time(4, 00))
                         + (Util::getTime() > Time(4, 20))
                         + (Util::getTime() > Time(4, 40))
                         + (Util::getTime() > Time(5, 00))
+                        + (Util::getTime() > Time(5, 20))
+                        + (Util::getTime() > Time(5, 40))
                         + (Util::getTime() > Time(6, 00))
-                        + (Util::getTime() > Time(6, 30))
                         - Spy::enemyProxy();
                 }
 
-                // Unknown + Expand + No Tech
+                // Unknown + NoExpand + NoTech
+                if (noExpandOrTech) {
+                    return (Util::getTime() > Time(4, 00))
+                        + (Util::getTime() > Time(4, 15))
+                        + (Util::getTime() > Time(4, 45))
+                        + (Util::getTime() > Time(5, 15));
+                }
+
+                // Unknown + Expand + NoTech
                 if (noTech && Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown") {
                     return (Util::getTime() > Time(4, 00))
                         + (Util::getTime() > Time(4, 30))
-                        + (Util::getTime() > Time(5, 00))
                         + (Util::getTime() > Time(8, 00))
                         + (Util::getTime() > Time(8, 30))
                         - Spy::enemyProxy();
@@ -288,16 +295,15 @@ namespace McRave::Walls {
             // FFE transitions
             if (Spy::getEnemyBuild() == "FFE") {
                 if (Spy::getEnemyTransition() == "5GateGoon")
-                    return (Util::getTime() > Time(6, 00))
-                    + (Util::getTime() > Time(6, 30))
-                    + (Util::getTime() > Time(7, 00))
+                    return
+                    (Util::getTime() > Time(7, 00))
                     + (Util::getTime() > Time(7, 30))
                     + (Util::getTime() > Time(8, 00));
 
-                if (BuildOrder::getCurrentTransition() != "6HatchHydra")
-                    return (Util::getTime() > Time(5, 40)) + (Util::getTime() > Time(6, 00));
-                if (BuildOrder::getCurrentTransition() == "6HatchHydra")
-                    return (Util::getTime() > Time(5, 40));
+                if (Spy::getEnemyTransition() == "CorsairGoon")
+                    return (Util::getTime() > Time(7, 00));
+
+                return (Util::getTime() > Time(7, 15));
             }
 
             return 0;
@@ -325,14 +331,17 @@ namespace McRave::Walls {
             auto reduction = max(0, unitsKilled / 8);
             auto minimum = 0;
 
+            // Greedy builds skip almost 2 production cycles, so we can skip sunks if we have more than 1
+            if (Spy::enemyGreedy() && expected >= 2)
+                expected--;
+
             // 3h builds make roughly half as many
-            if (threeHatch && expected > 1) {
-                expected /= 2;
-                expected++;
+            if (threeHatch && expected > 1 && Spy::getEnemyBuild() != "FFE") {
+                expected = int(floor(double(expected) / 2.0));
             }
 
             // Non natural walls are limited to 1 total
-            if (!wall.getStation()->isNatural() && expected > 0) {
+            if (!wall.getStation()->isNatural() && expected > 0 && Spy::getEnemyBuild() != "FFE") {
                 expected = 1;
                 minimum = 1;
             }
@@ -342,8 +351,10 @@ namespace McRave::Walls {
                 minimum = 1;
             if (Spy::getEnemyBuild() != "FFE") {
                 if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
-                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2)
+                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4)
                     minimum = 2;
+                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0)
+                    expected--;
             }
 
             return max(minimum, expected - reduction);
@@ -358,20 +369,20 @@ namespace McRave::Walls {
 
             // 2Rax
             if (Spy::getEnemyBuild() == "2Rax") {
-                if (!Spy::enemyFastExpand() && !Spy::enemyRush())
-                    return (Util::getTime() > Time(3, 15))
-                    + (Util::getTime() > Time(4, 30))
-                    + (Util::getTime() > Time(5, 00));
                 if (Spy::enemyRush() || Spy::getEnemyOpener() == "BBS")
                     return (Util::getTime() > Time(2, 50))
                     + (Util::getTime() > Time(4, 30));
+                if (!Spy::enemyFastExpand())
+                    return (Util::getTime() > Time(3, 15))
+                    + (Util::getTime() > Time(4, 00))
+                    + (Util::getTime() > Time(4, 45));
             }
 
             // RaxCC
             if (Spy::getEnemyBuild() == "RaxCC") {
                 if (Spy::getEnemyOpener() == "8Rax")
                     return (Util::getTime() > Time(4, 00));
-                return (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00));
+                return (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 30));
             }
 
             // RaxFact
@@ -415,6 +426,10 @@ namespace McRave::Walls {
                 return 1 * (Util::getTime() > Time(5, 30));
 
             if (Spy::getEnemyBuild() == "2Rax" || Spy::getEnemyBuild() == "RaxCC") {
+                if (Spy::getEnemyTransition() == "MarineRush")
+                    return 2
+                    + (Util::getTime() > Time(4, 30))
+                    + (Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyTransition() == "Academy" || !Spy::enemyFastExpand())
                     return 2 * (Util::getTime() > Time(4, 30));
             }
@@ -508,8 +523,19 @@ namespace McRave::Walls {
         // If they expanded, we can skip a sunk after a delay
         if (Players::ZvP() && Spy::enemyFastExpand() && Spy::getEnemyBuild() != "FFE" && Util::getTime() > Time(4, 30)) {
             static Time now = Util::getTime();
-            if (Util::getTime() > now + Time(0, 45) && Util::getTime() < now + Time(1, 45))
-                groundCount+=1;
+            if (Util::getTime() > now + Time(0, 45))
+                groundCount++;
+            if (Spy::enemyGreedy())
+                groundCount++;
+        }
+
+        // Can't build defensives until closest hatch completes or we're on 3 hatch (assumption that 3rd hatch is not required)
+        if (Broodwar->self()->getRace() == Races::Zerg && Util::getTime() < Time(3, 30)) {
+            auto nearestHatch = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Self, [&](auto &u) {
+                return u->getType().isResourceDepot();
+            });
+            if (nearestHatch && nearestHatch->frameCompletesWhen() > Broodwar->getFrameCount() + 100)
+                return 0;
         }
 
         // Protoss

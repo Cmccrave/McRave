@@ -142,36 +142,40 @@ namespace McRave::Roles {
             // ZvP
             if (Players::ZvP() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && Util::getTime() < Time(6, 00)) {
 
-                // 2Gate or Cannon proxy, 4 drones
-                if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 && (Spy::getEnemyBuild() == "CannonRush" || Spy::getEnemyBuild() == "2Gate") && com(Zerg_Zergling) <= 6)
+                // Gateway or Cannon in territory, 4 drones
+                if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 6)
                     forceCombatWorker(4, proxyDangerousBuilding->getPosition());
+                //else if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0 && Spy::getEnemyBuild() == "2Gate" && com(Zerg_Zergling) <= 6)
+                //    forceCombatWorker(4, proxyDangerousBuilding->getPosition());
 
                 // Probe actively building proxy, 2 drones
                 else if (proxyBuilding && proxyBuildingWorker)
                     forceCombatWorker(2, proxyBuildingWorker->getPosition());
 
-                // Probe arrived early, 1 drone
-                else if (proxyWorker && Util::getTime() < Time(3, 00) && vis(Zerg_Spawning_Pool) == 0)
-                    forceCombatWorker(1, proxyWorker->getPosition());
-
                 // Proxy building, 1 drone
                 else if (proxyBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(1, proxyBuilding->getPosition());
 
-                // Likely proxy, worker arrived way too early
-                else if (likelyProxy && proxyWorker && Util::getTime() < Time(3, 00))
-                    forceCombatWorker(1, proxyWorker->getPosition());
+                //// Probe arrived early, 1 drone
+                //else if (proxyWorker && Util::getTime() < Time(3, 00) && vis(Zerg_Spawning_Pool) == 0)
+                //    forceCombatWorker(1, proxyWorker->getPosition());
 
-                // We know it's likely a proxy, watch the natural for now
-                else if (Spy::enemyPossibleProxy() && Util::getTime() < Time(2, 00)) {
-                    if (proxyWorker)
-                        forceCombatWorker(1, proxyWorker->getPosition());
-                    else
-                        forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
-                }
+                //// Likely proxy, worker arrived way too early
+                //else if (likelyProxy && proxyWorker && !proxyWorker->unit()->exists() && Util::getTime() < Time(3, 00))
+                //    forceCombatWorker(1, proxyWorker->getPosition());
+                //else if (likelyProxy && !proxyWorker && Util::getTime() < Time(2, 30))
+                //    forceCombatWorker(1, Terrain::getOldestPosition(Terrain::getMainArea()));
+
+                //// We know it's likely a proxy, watch the natural for now
+                //else if (Spy::enemyPossibleProxy() && Util::getTime() < Time(2, 00)) {
+                //    if (proxyWorker)
+                //        forceCombatWorker(1, proxyWorker->getPosition());
+                //    else
+                //        forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
+                //}
 
                 // We haven't got out hatchery down yet
-                else if (vis(Zerg_Hatchery) < 2 && proxyWorker && selfBuildingWorker)
+                else if (vis(Zerg_Hatchery) < 2 && BuildOrder::takeNatural() && proxyWorker && selfBuildingWorker && (Terrain::inArea(Terrain::getNaturalArea(), proxyWorker->getPosition()) || proxyWorker->hasAttackedRecently() || proxyWorker->isThreatening()))
                     forceCombatWorker(1, proxyWorker->getPosition());
             }
 
@@ -248,8 +252,6 @@ namespace McRave::Roles {
                         unit.setRole(Role::Support);
                     else if ((unit.getType().isBuilding() && !unit.canAttackGround() && !unit.canAttackAir() && unit.getType() != Zerg_Creep_Colony) || unit.getType() == Zerg_Larva || unit.getType() == Zerg_Egg)
                         unit.setRole(Role::Production);
-                    else if (unit.getType().isBuilding() && (unit.canAttackGround() || unit.canAttackAir() || unit.getType() == Zerg_Creep_Colony))
-                        unit.setRole(Role::Defender);
                     else if (unit.getType().spaceProvided() > 0)
                         unit.setRole(Role::Transport);
                     else if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Protoss_Scarab || unit.getType().isSpell() || unit.getType() == Terran_Nuclear_Missile)
@@ -260,11 +262,15 @@ namespace McRave::Roles {
 
                 // Check if a worker morphed into a building
                 if (unit.getRole() == Role::Worker && unit.getType().isBuilding()) {
-                    if (unit.getType().isBuilding() && !unit.canAttackGround() && !unit.canAttackAir() && unit.getType() != Zerg_Creep_Colony)
+                    if (unit.getType().isBuilding() && !unit.canAttackGround() && !unit.canAttackAir())
                         unit.setRole(Role::Production);
                     else
                         unit.setRole(Role::Defender);
                 }
+
+                // Check if a production building morphed into a defender
+                if (unit.getRole() == Role::Production && (unit.canAttackGround() || unit.canAttackGround()) && unit.isCompleted())
+                    unit.setRole(Role::Defender);
 
                 // Check if a worker was forced to fight
                 if (unit.getType().isWorker() && unit.getRole() == Role::Combat) {

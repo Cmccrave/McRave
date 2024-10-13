@@ -508,8 +508,8 @@ namespace BWEB {
             auto tile = geyser->TopLeft();
             if ((tile.y < base->Location().y - 3) || tile.y > base->Location().y + 5) {
                 auto placement = tile - base->Location();
-                basePlacements.push_back(placement + TilePosition(-2, 0));
-                basePlacements.push_back(placement + TilePosition(4, 0));
+                basePlacements.push_back(placement + TilePosition(-2, 1));
+                basePlacements.push_back(placement + TilePosition(4, 1));
 
                 // If a placement is where miners would path, shift it over
                 for (auto &spot : basePlacements) {
@@ -661,6 +661,14 @@ namespace BWEB::Stations {
                         continue;
 
                     const auto dist = Map::getGroundDistance(base.Center(), main->Center());
+
+                    // Sometimes we have a pocket natural, it contains 1 chokepoint
+                    if (base.GetArea()->ChokePoints().size() == 1 && dist < 1600.0) {
+                        distBest = 0.0;
+                        baseBest = &base;
+                    }
+
+                    // Otherwise the closest base with a shared choke is the natural
                     if (dist < distBest && dist < 1600.0) {
                         distBest = dist;
                         baseBest = &base;

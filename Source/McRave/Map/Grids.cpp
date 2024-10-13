@@ -123,8 +123,8 @@ namespace McRave::Grids
             const auto clusterBotRight = botRight + Position(88, 88);
             const auto allowCluster = (unit.getPlayer() != Broodwar->self() || unit.getRole() == Role::Combat);
             const auto allowCollision = !unit.isFlying() && !unit.isBurrowed();
-            const auto allowGround = unit.getPlayer() != Broodwar->self() && unit.canAttackGround();
-            const auto allowAir = unit.getPlayer() != Broodwar->self() && unit.canAttackAir();
+            const auto allowGround = unit.getPlayer() != Broodwar->self() && unit.getPlayer() != Broodwar->neutral() && unit.canAttackGround();
+            const auto allowAir = unit.getPlayer() != Broodwar->self() && unit.getPlayer() != Broodwar->neutral() && unit.canAttackAir();
 
             if (!unit.isFlying())
                 addCollision(unit);

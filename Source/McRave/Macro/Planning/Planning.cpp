@@ -271,8 +271,7 @@ namespace McRave::Planning {
                 // Zerg
                 if (Broodwar->self()->getRace() == Races::Zerg) {
                     if ((!Terrain::isIslandMap() && Broodwar->getGroundHeight(TilePosition(closestStation->getBase()->Center())) != Broodwar->getGroundHeight(TilePosition(block.getCenter())))
-                        || (closestStation->isNatural() && closestStation->getChokepoint() && Position(closestStation->getChokepoint()->Center()).getDistance(block.getCenter()) < Position(closestStation->getChokepoint()->Center()).getDistance(closestStation->getBase()->Center()))
-                        || (closestStation->getBase()->GetArea() != mapBWEM.GetArea(TilePosition(block.getCenter()))))
+                        || (closestStation->isNatural() && closestStation->getChokepoint() && Position(closestStation->getChokepoint()->Center()).getDistance(block.getCenter()) < Position(closestStation->getChokepoint()->Center()).getDistance(closestStation->getBase()->Center())))
                         continue;
                 }
 
@@ -450,7 +449,7 @@ namespace McRave::Planning {
 
                 // Place sunkens closest to the chokepoint by default
                 auto colonies = Stations::getColonyCount(station);
-                Position desiredCenter = (Players::ZvT() || Stations::needAirDefenses(station) > colonies) ? station->getResourceCentroid() : Stations::getDefendPosition(station);
+                Position desiredCenter = (Players::ZvT() || Players::ZvZ()) ? station->getResourceCentroid() : Stations::getDefendPosition(station);
 
                 // If pocket defense is buildable
                 if (Stations::needGroundDefenses(station) > colonies) {
@@ -470,7 +469,7 @@ namespace McRave::Planning {
 
             // Defense placements near walls
             for (auto &[_, wall] : BWEB::Walls::getWalls()) {
-                auto desiredCenter = Position(wall.getStation()->getBase()->Center());
+                auto desiredCenter = (Position(wall.getStation()->getBase()->Center()) + Position(wall.getChokePoint()->Center())) / 2;
                 auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(wall.getChokePoint()->Center()));
 
                 // How to dictate row order
@@ -548,6 +547,8 @@ namespace McRave::Planning {
                 if (wall.getStation()->isNatural() && !BuildOrder::isWallNat())
                     continue;
                 if (!wall.getStation()->isMain() && !wall.getStation()->isNatural() && !BuildOrder::isWallThird())
+                    continue;
+                if (building.isResourceDepot() && BuildOrder::shouldExpand())
                     continue;
 
                 // Setup placements

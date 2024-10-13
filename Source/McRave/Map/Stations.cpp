@@ -238,6 +238,10 @@ namespace McRave::Stations
             auto groundCount = getGroundDefenseCount(station);
 
             if (station->isMain()) {
+                // Add 2 sunks if we gave up the natural intentionally against a proxy
+                if (!BuildOrder::takeNatural() && Spy::getEnemyOpener() == "Proxy9/9")
+                    return (Util::getTime() > Time(2, 20)) + (Util::getTime() > Time(3, 00)) - groundCount;
+
                 // Add a sunk in main if we lost the natural, maybe it holds to get a win
                 if (BuildOrder::isOpener() && !BuildOrder::isWallMain() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None)
                     return (Util::getTime() > Time(3, 00)) - groundCount;
@@ -267,6 +271,8 @@ namespace McRave::Stations
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
                 if (BuildOrder::isOpener() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None)
                     return (Util::getTime() > Time(3, 00)) - groundCount;
+                if (Players::ZvT() && Spy::getEnemyBuild() == "WorkerRush")
+                    return 1 - groundCount;
                 if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(7, 00))
                     return 1 - groundCount;
             }
@@ -296,8 +302,12 @@ namespace McRave::Stations
             if (BuildOrder::getCurrentBuild() == "PoolHatch") {
                 if (station->isMain()) {
 
+                    auto latePool = BuildOrder::getCurrentOpener() != "9Pool" && BuildOrder::getCurrentOpener() != "Overpool";
+
                     // 4 Pool or 7 Pool
-                    if (Spy::getEnemyOpener() == "4Pool" || Spy::getEnemyOpener() == "7Pool")
+                    if (Spy::getEnemyOpener() == "4Pool")
+                        return 1 + latePool - groundCount;
+                    if (Spy::getEnemyOpener() == "7Pool")
                         return 1 - groundCount;
 
                     // 3 Hatch
@@ -594,7 +604,7 @@ namespace McRave::Stations
                 return (Util::getTime() > Time(4, 45)) - airCount;
 
             // Late spores if we're allin
-            if (station->isNatural() && enemyAir && BuildOrder::isAllIn() && !hydraBuild)
+            if (station->isNatural() && enemyAir && BuildOrder::isAllIn() && com(Zerg_Hydralisk) == 0 && com(Zerg_Mutalisk) == 0)
                 return (Util::getTime() > Time(5, 00)) - airCount;
             if (station->isNatural() && enemyAir && !hydraBuild && !mutaBuild)
                 return (Util::getTime() > Time(5, 00)) - airCount;
@@ -602,11 +612,7 @@ namespace McRave::Stations
                 return (Util::getTime() > Time(9, 00)) - airCount;
 
             // Corsair DT exist
-            if (!station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 )
-                return (Util::getTime() > Time(9, 00)) - airCount;
-
-            // Later spore for protection against high corsair counts
-            if (station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) >= 6)
+            if (!Combat::State::isStaticRetreat(Zerg_Hydralisk) && !station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 )
                 return (Util::getTime() > Time(9, 00)) - airCount;
         }
 
@@ -736,7 +742,7 @@ namespace McRave::Stations
                 return true;
 
             // If this is a main, check if we own a natural that isn't under attack
-            if (station->isNatural()) {
+            if (station->isNatural() && Stations::isCompleted(station) && !Terrain::isPocketNatural()) {
                 const auto closestMain = BWEB::Stations::getClosestMainStation(station->getBase()->Location());
                 if (closestMain && Stations::ownedBy(closestMain) == PlayerState::Self) {
                     if (Terrain::inArea(closestMain->getBase()->GetArea(), unit.getPosition()))
@@ -747,7 +753,7 @@ namespace McRave::Stations
         };
 
         const auto ownForwardBase = [&](auto station) {
-            if (station->isMain()) {
+            if (station->isMain() && Stations::isCompleted(station) && !Terrain::isPocketNatural()) {
                 const auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
                 if (Stations::ownedBy(closestNatural) == PlayerState::Self)
                     return true;
@@ -774,13 +780,7 @@ namespace McRave::Stations
             auto distDefend = defendPosition.getDistance(here);
             auto distCenter = station->getBase()->Center().getDistance(here);
 
-            if (unit.hasTarget()) {
-                auto target = unit.getTarget().lock();
-                if (Terrain::inTerritory(PlayerState::Self, target->getPosition()) && target->getPosition().getDistance(station->getBase()->Center()) < distCenter)
-                    continue;
-            }
-
-            if (distDefend < distBest && !ownForwardBase(station) && (closerThanSim(defendPosition) || alreadyInArea(station))) {
+            if (distDefend < distBest && !ownForwardBase(station)) {
                 bestStation = station;
                 distBest = distDefend;
             }

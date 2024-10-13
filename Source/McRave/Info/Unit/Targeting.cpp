@@ -39,7 +39,7 @@ namespace McRave::Targets {
 
             if (Util::getTime() < Time(8, 00)) {
                 return unit.getType().isWorker()
-                    || unit.getGroundRange() > 32.0
+                    || unit.isWithinRange(target)
                     || unit.attemptingRunby()
                     || target.hasAttackedRecently()
                     || target.hasRepairedRecently()
@@ -83,15 +83,25 @@ namespace McRave::Targets {
             // Combat Role
             if (unit.getRole() == Role::Combat) {
 
+                // Ignore if we need to runby
+                if (unit.attemptingRunby()) {
+                    if (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
+                        return Priority::Ignore;
+                    if (Grids::getGroundThreat(target.getPosition(), PlayerState::Enemy) <= 0.1f && Util::getTime() < Time(7, 30))
+                        return Priority::Major;
+                    if (!Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), target.getPosition()) && Util::getTime() < Time(7, 30))
+                        return Priority::Ignore;
+                }
+
                 // Generic trivial
                 if (!targetMatters)
                     return Priority::Trivial;
 
                 // Proxy worker
-                if (target.isProxy() && target.getType().isWorker() && target.unit()->exists()) {
+                if (target.isProxy() && target.getType().isWorker() && target.unit()->exists() && Spy::getEnemyBuild() != "2Gate") {
                     if (target.unit()->isConstructing())
                         return Priority::Critical;
-                    else
+                    else if (!Spy::enemyRush())
                         return Priority::Major;
                 }
 
@@ -108,7 +118,9 @@ namespace McRave::Targets {
                 }
 
                 // Generic major priority
-                if (!unit.getType().isWorker() && target.isThreatening() && !target.getType().isWorker() && unit.isFlying() == target.isFlying())
+                if (!unit.getType().isWorker() && (unit.isWithinReach(target) || Util::getTime() < Time(5, 00)) && target.isThreatening() && !target.getType().isWorker() && unit.isFlying() == target.isFlying())
+                    return Priority::Critical;
+                if (unit.isTargetedBySuicide() && (target.isTransport() || target.getType() == Protoss_Reaver || target.getType() == Protoss_High_Templar))
                     return Priority::Critical;
 
                 // Generic ignore
@@ -116,11 +128,26 @@ namespace McRave::Targets {
                     || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getUnitsTargetingThis().size()) >= 4 && !target.isBurrowed())                          // Don't over target spider mines
                     || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                                         // Don't target interceptors as a flying unit
                     || (target.getType().isWorker() && !allowWorkerTarget(unit, target))
-                    || (target.getType() == Protoss_Corsair && !unit.isFlying() && target.getUnitsTargetingThis().size() > 2 && !unit.isWithinRange(target))
+                    || (target.isLightAir() && !unit.isFlying() && !target.isThreatening() && !target.hasAttackedRecently() && !unit.isWithinRange(target))
                     || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())           // Don't target if invisible and can't attack this unit or we have no detectors in PvP
                     || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))           // Don't target flyers that we can't reach
                     || (unit.isFlying() && target.getType() == Protoss_Interceptor))
                     return Priority::Ignore;
+
+                // Kill workers and cannons if we're in the same area
+                if (unit.isMelee() && unit.isWithinReach(target) && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) && Terrain::inArea(mapBWEM.GetArea(target.getWalkPosition()), unit.getPosition())) {
+                    if (target.getType().isWorker())
+                        return Priority::Major;
+                    if (target.getType() == Protoss_Photon_Cannon && target.hasAttackedRecently())
+                        return Priority::Critical;
+                }
+
+                if (!unit.isMelee() && unit.isWithinRange(target)) {
+                    if (target.getType() == Protoss_Photon_Cannon && target.hasAttackedRecently())
+                        return Priority::Critical;
+                    if (target.getType() == Protoss_Photon_Cannon)
+                        return Priority::Major;
+                }
 
                 // Zergling
                 if (unit.getType() == Zerg_Zergling) {
@@ -129,17 +156,11 @@ namespace McRave::Targets {
                             return Priority::Ignore;
                     }
                     const auto targetSize = max(target.getType().width(), target.getType().height());
-                    const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->getType() == Zerg_Zergling; });
+                    const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->getType() == Zerg_Zergling && u.lock()->isWithinReach(target); });
                     if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
                         return Priority::Minor;
-
-                    // Kill workers and cannons if we're in the same area
-                    if (unit.isWithinReach(target) && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) && Terrain::inArea(mapBWEM.GetArea(target.getWalkPosition()),unit.getPosition())) {
-                        if (target.getType().isWorker())
-                            return Priority::Major;
-                        if (target.getType() == Protoss_Photon_Cannon)
-                            return Priority::Critical;
-                    }
+                    if (target.getType() == Protoss_Archon)
+                        return Priority::Minor;
 
                     // Already in range, continue to target it if possible
                     if (unit.isWithinRange(target) && !target.getType().isBuilding() && !target.getType().isWorker())
@@ -159,23 +180,30 @@ namespace McRave::Targets {
                         //    return Priority::Critical;
                         if (target.getType() == Protoss_Photon_Cannon && unit.isWithinReach(target) && target.unit()->exists() && !target.isCompleted())
                             return Priority::Critical;
-                        if (target.getType() == Protoss_Photon_Cannon && unit.isWithinReach(target) && (unit.canOneShot(target) || unit.canTwoShot(target)))
+                        if (target.getType() == Protoss_Photon_Cannon && unit.isWithinReach(target) && target.hasAttackedRecently() && (unit.canOneShot(target) || unit.canTwoShot(target)))
                             return Priority::Critical;
 
                         // Clean Zealots up vs rushes
                         if (Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == "ZealotRush")
                             return Priority::Major;
 
-                        // Stragglers are free to kill
-                        if (!target.getType().isBuilding() && unit.isWithinReach(target) && target.getUnitsInRangeOfThis().size() <= 1)
-                            return Priority::Major;
-                        if (target.getType().isBuilding() && unit.isWithinRange(target) && target.getUnitsInRangeOfThis().empty() && unit.getUnitsInRangeOfThis().empty())
-                            return Priority::Major;
-
-                        // Try to push for only worker kills to try and end the game
-                        if (Spy::getEnemyBuild() == "FFE" && Util::getTime() < Time(8, 00) && !target.getType().isWorker() && target.isCompleted() && !target.isThreatening())
+                        // Useless Corsairs can be ignored sometimes
+                        if (target.getType() == Protoss_Corsair && !unit.isWithinRange(target) && !target.isThreatening())
                             return Priority::Ignore;
+
+                        // Stragglers are free to kill
+                        //if (!target.getType().isBuilding() && unit.isWithinReach(target) && target.getUnitsInRangeOfThis().size() <= 1)
+                        //    return Priority::Major;
+                        //if (target.getType().isBuilding() && unit.isWithinRange(target) && target.getUnitsInRangeOfThis().empty() && unit.getUnitsInRangeOfThis().empty())
+                        //    return Priority::Major;
                     }
+
+                    if (Players::ZvT()) {
+                        if (target.getType() == Terran_Missile_Turret && unit.isWithinReach(target) && target.unit()->exists() && target.isCompleted() && unit.canTwoShot(target))
+                            return Priority::Critical;
+                    }
+
+
                     if (Players::ZvZ() && Util::getTime() < Time(8, 00) && target.getType() == Zerg_Zergling && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
                         return Priority::Major;
 
@@ -188,8 +216,8 @@ namespace McRave::Targets {
 
                     // Low priority targets, ignore when we haven't found the enemy
                     if (!anythingTime && !defendExpander && !target.isThreatening()) {
-                        if (!Players::ZvZ() && !unit.canOneShot(target) && !unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding() && !target.getType().isWorker())
-                            return Priority::Ignore;
+                        //if (!Players::ZvZ() && !unit.canOneShot(target) && !unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding() && !target.getType().isWorker())
+                        //    return Priority::Ignore;
                         if ((enemyCanHitAir || enemyCanHitGround) && !target.canAttackAir() && !target.canAttackGround())
                             return Priority::Ignore;
                     }
@@ -260,7 +288,7 @@ namespace McRave::Targets {
                 && mapBWEM.GetArea(unit.getTilePosition())->AccessibleFrom(mapBWEM.GetArea(target.getTilePosition()))
                 && boxDistance < unit.getEngageRadius()
                 && boxDistance > reach;
-            const auto actualDist =     useGrd ? BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) : boxDistance;
+            const auto actualDist =     (useGrd ? BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) : boxDistance) - max(range, enemyRange);
             const auto dist =           exp(0.0125 * actualDist);
 
             if (unit.isSiegeTank()) {
@@ -302,7 +330,7 @@ namespace McRave::Targets {
             };
 
             const auto healthScore = [&]() {
-                if (range > 32.0 && target.unit()->isCompleted())
+                if ((range > 32.0 || unit.isWithinRange(target)) && target.unit()->isCompleted())
                     return 1.0 + (0.1 * (1.0 - target.getPercentTotal()));
                 return 1.0;
             };
@@ -526,6 +554,10 @@ namespace McRave::Targets {
 
         void getTarget(UnitInfo& unit)
         {
+            // Don't select targets for incomplete units
+            if (!unit.isCompleted())
+                return;
+
             auto pState = unit.targetsFriendly() ? PlayerState::Self : PlayerState::Enemy;
 
             // Spider mines have a set order target, possibly scarabs too

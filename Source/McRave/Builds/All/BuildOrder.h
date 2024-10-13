@@ -6,7 +6,7 @@
 namespace McRave::BuildOrder {
 
     enum class AllinType {
-        None, Z_4HatchSpeedling, Z_5HatchSpeedling, Z_6HatchCrackling
+        None, Z_5HatchSpeedling, Z_6HatchSpeedling, Z_6HatchCrackling, Z_8HatchCrackling
     };
 
     struct Allin {
@@ -20,6 +20,9 @@ namespace McRave::BuildOrder {
         }
         bool isActive() {
             return type != BWAPI::UnitTypes::None && typeCount > 0 && total(type) >= typeCount;
+        }
+        bool isPreparing() {
+            return type != BWAPI::UnitTypes::None;
         }
     };
 
@@ -84,6 +87,7 @@ namespace McRave::BuildOrder {
         inline bool pumpLings = false;
         inline bool pumpHydras = false;
         inline bool pumpMutas = false;
+        inline bool pumpLurker = false;
         inline bool pumpScourge = false;
         inline bool pumpDefiler = false;
 
@@ -119,6 +123,7 @@ namespace McRave::BuildOrder {
     int gasWorkerLimit();
     int getUnitReservation(BWAPI::UnitType);
     bool isAllIn();
+    bool isPreparingAllIn();
     bool isUnitUnlocked(BWAPI::UnitType);
     bool isFocusUnit(BWAPI::UnitType);
     bool isOpener();

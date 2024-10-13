@@ -44,14 +44,16 @@ namespace McRave::Combat {
 
             // Attack furthest enemy station from enemy main, closest enemy station to us in FFA
             attackPosition = Terrain::getEnemyStartingPosition();
-            distBest = Players::vFFA() ? DBL_MAX : 0.0;
             posBest = Positions::Invalid;
+
+            auto goClosest = Players::vFFA() || BuildOrder::isAllIn();
+            distBest = goClosest ? DBL_MAX : 0.0;
 
             for (auto &station : Stations::getStations(PlayerState::Enemy)) {
                 auto dist = Terrain::getEnemyStartingPosition().getDistance(station->getBase()->Center());
 
-                if ((!Players::vFFA() && dist < distBest)
-                    || (Players::vFFA() && dist > distBest)
+                if ((!goClosest && dist < distBest)
+                    || (goClosest && dist > distBest)
                     || BWEB::Map::isUsed(station->getBase()->Location()) == UnitTypes::None)
                     continue;
 
@@ -88,9 +90,9 @@ namespace McRave::Combat {
             // When we don't want to defend our natural
             if (Players::ZvT() && (Spy::enemyRush() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0))
                 defendNatural = false;
-            if (Players::ZvP() && Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate" && total(Zerg_Zergling) < 12)
+            if (Players::ZvP() && Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate" && (!Stations::isCompleted(Terrain::getMyNatural()) || (vis(Zerg_Zergling) < 12 && Units::getImmThreat() < 0.1f && Util::getTime() < Time(5, 00))))
                 defendNatural = false;
-            if (Players::ZvZ() && BuildOrder::getCurrentOpener() == "12Pool" && (Spy::getEnemyOpener() == "Unknown" || Spy::enemyRush()))
+            if (Players::ZvZ() && BuildOrder::getCurrentBuild() != "PoolLair" && (Spy::getEnemyOpener() == "Unknown" || Spy::enemyRush()))
                 defendNatural = false;
 
             // Natural defending position
@@ -125,6 +127,32 @@ namespace McRave::Combat {
             const auto stationNotVisitedRecently = [&](auto &station) {
                 return Broodwar->getFrameCount() - Grids::getLastVisibleFrame(station->getResourceCentroid()) > 2880 && !commanderInRange(station->getResourceCentroid());
             };
+
+            // ZvT
+            if (Players::ZvT() && Util::getTime() > Time(5, 00)) {
+                const auto closestTank = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return u->isSiegeTank();
+                });
+
+                // Harass tanks if there is some en route
+                if (closestTank && Terrain::getEnemyNatural() && closestTank->getPosition().getDistance(Terrain::getNaturalPosition()) < closestTank->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center())) {
+                    harassPosition = closestTank->getPosition();
+                    return;
+                }
+            }
+
+            // ZvP
+            if (Players::ZvP() && Util::getTime() > Time(5, 00) && !BuildOrder::isPressure()) {
+
+                const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return !u->getType().isWorker() || u->isThreatening();
+                });
+
+                if (closest && Terrain::getEnemyNatural() && closest->getPosition().getDistance(Terrain::getNaturalPosition()) < closest->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center())) {
+                    harassPosition = closest->getPosition();
+                    return;
+                }
+            }
 
             // If a station is overdefended, it's not valid for harassing
             const auto validStation = [&](auto station) {
@@ -240,6 +268,8 @@ namespace McRave::Combat {
                     if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
                         holdChoke = false;
                     if (Terrain::isPocketNatural())
+                        holdChoke = false;
+                    if (!defendNatural && Stations::getGroundDefenseCount(Terrain::getMyMain()) > 0)
                         holdChoke = false;
                 }
                 if (Players::ZvT()) {

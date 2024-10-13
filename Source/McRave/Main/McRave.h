@@ -83,7 +83,7 @@ namespace McRave
     };
 
     enum class GoalType {
-        None, Attack, Contain, Explore, Escort, Defend, Block
+        None, Attack, Contain, Explore, Escort, Defend, Block, Harass, Runby
     };
 
     enum class Role {

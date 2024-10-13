@@ -151,6 +151,7 @@ namespace McRave
             movedFlag                   = false;
             stunned                     = !unit()->isPowered() || unit()->isMaelstrommed() || unit()->isStasised() || unit()->isLockedDown() || unit()->isMorphing() || !unit()->isCompleted();
             cloaked                     = unit()->isCloaked();
+            inDanger                    = Actions::isInDanger(*this, position);
 
             // McRave Stats
             data.groundRange            = Math::groundRange(*this);
@@ -405,14 +406,16 @@ namespace McRave
             if (Players::ZvZ())
                 return false;
 
-            // If in a territory with defenders, don't attack outside defender range
-            if (closestWall && Terrain::inArea(closestWall->getArea(), getPosition())) {
-                if ((closestWall->getGroundDefenseCount() > 0 && !isFlying()) || closestWall->getAirDefenseCount() > 0 && isFlying())
-                    return false;
-            }
-            if (closestStation && Terrain::inArea(closestStation->getBase()->GetArea(), getPosition())) {
-                if ((Stations::getGroundDefenseCount(closestStation) > 0 && !isFlying()) || (Stations::getAirDefenseCount(closestStation) > 0 && isFlying()))
-                    return false;
+            // If in a territory with a station/wall and there is no defenders, we will need to engage
+            if (Util::getTime() > Time(5, 00) && atHome) {
+                if (closestWall && Terrain::inArea(closestWall->getArea(), getPosition())) {
+                    if ((closestWall->getGroundDefenseCount() == 0 && !isFlying()) || closestWall->getAirDefenseCount() == 0 && isFlying())
+                        return true;
+                }
+                if (closestStation && Terrain::inArea(closestStation->getBase()->GetArea(), getPosition())) {
+                    if ((Stations::getGroundDefenseCount(closestStation) == 0 && !isFlying()) || (Stations::getAirDefenseCount(closestStation) == 0 && isFlying()))
+                        return true;
+                }
             }
 
             return (Util::getTime() > Time(5, 00) && Terrain::inArea(Terrain::getMainArea(), position) && Stations::getGroundDefenseCount(Terrain::getMyMain()) == 0 && (!Walls::getMainWall() || Walls::getMainWall()->getGroundDefenseCount() == 0))
@@ -423,9 +426,9 @@ namespace McRave
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
             auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getRole() == Role::Defender && ((u->canAttackGround() && !this->isFlying()) || (u->canAttackAir() && this->isFlying())) && u->isCompleted();
+                return u->getRole() == Role::Defender && ((u->canAttackGround() && !this->isFlying()) || (u->canAttackAir() && this->isFlying())) && (u->isCompleted() || Util::getTime() < Time(5, 00));
             });
-            return (closestDefender && closestDefender->isWithinRange(*this) && Terrain::inTerritory(PlayerState::Self, position))
+            return (closestDefender && closestDefender->isWithinRange(*this))
                 || (closestDefender && this->canAttackGround() && this->isWithinRange(*closestDefender));
         };
 
@@ -496,7 +499,8 @@ namespace McRave
         if (threateningFrames > 4)
             lastThreateningFrame = Broodwar->getFrameCount();
 
-        // Linger threatening for 0.5 seconds
+        // Linger threatening
+        auto lingerFrames = min(4 + ((Util::getTime().minutes - 6) * 24), 120);
         threatening = Broodwar->getFrameCount() - lastThreateningFrame <= 4;
 
         // Apply to others
@@ -528,6 +532,7 @@ namespace McRave
                 const auto closestNat = BWEB::Stations::getClosestNaturalStation(getTilePosition());
                 const auto closerToMyMain = closestMain && closestMain == Terrain::getMyMain();
                 const auto closerToMyNat = closestNat && closestNat == Terrain::getMyNatural();
+                const auto farFromHome = position.getDistance(closestMain->getBase()->Center()) > 960.0 && position.getDistance(closestNat->getBase()->Center()) > 960.0;
 
                 // When to consider a worker a proxy (potential proxy shenanigans)
                 const auto proxyWorker = (getType() == Protoss_Probe && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) == 0)
@@ -542,7 +547,7 @@ namespace McRave
                         proxy = closerToMyMain || closerToMyNat;
                 }
                 else
-                    proxy = closerToMyMain || closerToMyNat;
+                    proxy = closerToMyMain || closerToMyNat || farFromHome;
             }
         }
     }
@@ -736,7 +741,11 @@ namespace McRave
             celcelFrames =  accelPercent / (getType().acceleration() / 256.0);
         }
 
-        auto cooldownReady = cooldown <= min(int(turnFrames + arrivalFrames + celcelFrames), weaponCooldown / 2);
+        // Always important
+        auto lagFrames = Broodwar->getLatencyFrames();
+
+        auto anticipatedCooldown = int(turnFrames + arrivalFrames + celcelFrames + lagFrames);
+        auto cooldownReady = cooldown <= anticipatedCooldown; // min(anticipatedCooldown, weaponCooldown / 2);
         return cooldownReady;
     }
 
@@ -747,8 +756,14 @@ namespace McRave
 
     bool UnitInfo::canStartCast(TechType tech, Position here)
     {
+        // Not researched or overlaps our own cast
         if (!getPlayer()->hasResearched(tech)
             || Actions::overlapsActions(unit(), here, tech, PlayerState::Self, Util::getCastRadius(tech)))
+            return false;
+
+        // Neutral affecting techs check neutral player too
+        if ((tech == TechTypes::Dark_Swarm || tech == TechTypes::Disruption_Web || tech == TechTypes::EMP_Shockwave || tech == TechTypes::Psionic_Storm)
+            && Actions::overlapsActions(unit(), here, tech, PlayerState::Neutral, Util::getCastRadius(tech)))
             return false;
 
         auto energyNeeded = tech.energyCost() - data.energy;
@@ -941,9 +956,33 @@ namespace McRave
 
     bool UnitInfo::attemptingRunby()
     {
-        //if (Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate" && timeCompletesWhen() < Time(4, 30))
+        auto runbyDesired = false;
+        static auto pounce = false;
+
+        if (Players::ZvP() && getType() == Zerg_Zergling) {
+            auto enemyOneBase = Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore";
+            if (enemyOneBase && Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && !Terrain::isPocketNatural() && timeCompletesWhen() < Time(4, 00) && vis(Zerg_Sunken_Colony) > 0 && total(Zerg_Zergling) >= 24)
+                runbyDesired = true;
+            if (enemyOneBase && Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && !Terrain::isPocketNatural() && timeCompletesWhen() < Time(5, 00) && vis(Zerg_Sunken_Colony) >= 4)
+                runbyDesired = true;
+            if (Spy::getEnemyOpener() == "Proxy9/9" && timeCompletesWhen() < Time(4, 00) && Util::getTime() < Time(5, 00))
+                runbyDesired = true;
+        }
+
+        //// Already started a runby
+        //if (runbyDesired && pounce)
         //    return true;
-        return false;
+
+        //// Look to see if a runby would work
+        //if (runbyDesired) {
+        //    const auto closest = Util::getClosestUnit(Terrain::getEnemyNatural()->getBase()->Center(), PlayerState::Enemy, [&](auto &u) {
+        //        return !u->getType().isWorker() || u->isThreatening();
+        //    });
+        //    if (!closest || (Terrain::getEnemyNatural() && closest->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center()) >= 640.0)) {
+        //        pounce = true;
+        //    }
+        //}
+        return runbyDesired;
     }
 
     bool UnitInfo::attemptingSurround()
@@ -952,6 +991,8 @@ namespace McRave
             return false;
         auto target = *getTarget().lock();
         if (target.isThreatening() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 16.0)
+            return false;
+        if (!target.getType().isWorker() && Util::getTime() < Time(4, 00))
             return false;
 
         if (target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target.getPosition()))
@@ -978,35 +1019,6 @@ namespace McRave
                 || BuildOrder::getCurrentTransition() == Spy::getEnemyTransition()
                 || (vis(Zerg_Mutalisk) <= Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk))
                 || (Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0 && com(Zerg_Mutalisk) < 3))
-                return false;
-        }
-
-        // ZvT
-        if (Players::ZvT()) {
-            const auto closestTank = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
-                return u->isSiegeTank();
-            });
-
-            // Don't harass if they have tanks close
-            if (closestTank && Terrain::getEnemyNatural() && closestTank->getPosition().getDistance(Terrain::getNaturalPosition()) < closestTank->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center()))
-                return false;
-        }
-
-        // ZvP
-        if (Players::ZvP()) {
-
-            // If we don't plan on making mutalisks past what we have, use them to harass the enemy army
-            if (!BuildOrder::isUnitUnlocked(Zerg_Mutalisk))
-                return false;
-
-            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0)
-                return true;
-
-            const auto closestMelee = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
-                return u->getType() == Protoss_Zealot || u->getType() == Protoss_Dark_Templar;
-            });
-
-            if (closestMelee && Terrain::getEnemyNatural() && closestMelee->getPosition().getDistance(Terrain::getNaturalPosition()) < closestMelee->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center()))
                 return false;
         }
 

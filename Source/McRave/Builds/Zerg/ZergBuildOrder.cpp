@@ -18,6 +18,7 @@ namespace McRave::BuildOrder::Zerg {
         bool againstRandom = false;
         bool needSpores = false;
         bool needSunks = false;
+        bool needHatch = false;
         string nodeName = "[Zerg]: ";
 
         bool logFlags[10];
@@ -37,7 +38,7 @@ namespace McRave::BuildOrder::Zerg {
         {
             // Adding Wall defenses
             auto needLarvaSpending = vis(Zerg_Larva) > 3 && Broodwar->self()->supplyUsed() < Broodwar->self()->supplyTotal() && Util::getTime() < Time(4, 30) && com(Zerg_Sunken_Colony) >= 2;
-            if (!needLarvaSpending && !rush && !pressure && (vis(Zerg_Drone) >= 9 || Players::ZvZ())) {
+            if (!needLarvaSpending && !rush && (vis(Zerg_Drone) >= 9 || Players::ZvZ()) && !isPreparingAllIn()) {
                 for (auto &[_, wall] : BWEB::Walls::getWalls()) {
                     if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
                         continue;
@@ -93,7 +94,7 @@ namespace McRave::BuildOrder::Zerg {
                     needSpores = true;
                     wallNat = true;
                 }
-                if (Players::ZvP() && Spy::getEnemyTransition() == "Unknown" && ((Spy::getEnemyBuild() == "2Gate" && Util::getTime() > Time(4, 45)) || (Spy::getEnemyBuild() == "1GateCore" && Util::getTime() > Time(4, 15)))) {
+                if (Players::ZvP() && Spy::getEnemyTransition() == "Unknown" && !Spy::enemyFastExpand() && ((Spy::getEnemyBuild() == "2Gate" && Util::getTime() > Time(4, 45)) || (Spy::getEnemyBuild() == "1GateCore" && Util::getTime() > Time(4, 15)))) {
                     needSpores = true;
                     wallNat = false;
                 }
@@ -118,18 +119,23 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueSupply()
         {
-            // Adding Overlords outside opening book supply, offset by hatch count
+            // Adding Overlords outside opening book supply, offset by large hatch counts
             if (!inBookSupply) {
-                int offset = hatchCount() * 2;
-                int supplyPerOvie = 15 - (hatchCount() / 2);
+                int offset = (hatchCount() / 5) * 2;
+                int supplyPerOvie = 16;
                 int count = 1 + min(26, (s - offset) / supplyPerOvie);
                 buildQueue[Zerg_Overlord] = min(25, count);
+            }            
+
+            // Queue enough overlords to fit the reservations
+            if (reserveLarva > 0 && atPercent(Zerg_Spire, 0.25) && total(focusUnit) < reserveLarva && com(Zerg_Spire) == 0) {
+                auto expectedSupply = s + ((reserveLarva - total(focusUnit)) * 4);
+                auto expectedOverlords = int(ceil(double(expectedSupply) / 16.0));
+                buildQueue[Zerg_Overlord] = expectedOverlords + 1;
             }
 
             // Adding Overlords if we are sacrificing a scout or know we will lose one
-            if (Scouts::isSacrificeScout() && vis(Zerg_Overlord) == total(Zerg_Overlord) && Util::getTime() < Time(5, 30)
-                && (Players::getStrength(PlayerState::Enemy).airToAir > 0.0 || Players::getStrength(PlayerState::Enemy).groundToAir > 0.0)
-                && (Spy::getEnemyTransition() == "Corsair" || Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "Unknown")) {
+            if (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0.0) {
                 buildQueue[Zerg_Overlord]++;
             }
 
@@ -170,14 +176,13 @@ namespace McRave::BuildOrder::Zerg {
             if (needSpores)
                 buildQueue[Zerg_Evolution_Chamber] = max(buildQueue[Zerg_Evolution_Chamber], 1);
 
-            // Adding a Lair
-            if (Spy::enemyInvis() && !Players::ZvZ() && Util::getTime() > Time(4, 45)) {
+            // Lair upgrades
+            if (Util::getTime() > Time(8, 00) && int(Stations::getStations(PlayerState::Self).size()) >= 3 && vis(Zerg_Drone) >= 28) {
                 buildQueue[Zerg_Lair] = 1;
-                buildQueue[Zerg_Extractor] = max(vis(Zerg_Extractor), 2);
             }
 
             // Hive upgrades
-            if (int(Stations::getStations(PlayerState::Self).size()) >= 4 - Players::ZvT() && vis(Zerg_Drone) >= 36) {
+            if (int(Stations::getStations(PlayerState::Self).size()) >= 4 && vis(Zerg_Drone) >= 36 && com(Zerg_Lair) > 0) {
                 buildQueue[Zerg_Queens_Nest] = 1;
                 buildQueue[Zerg_Hive] = com(Zerg_Queens_Nest) >= 1;
                 buildQueue[Zerg_Lair] = com(Zerg_Queens_Nest) < 1;
@@ -186,12 +191,13 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueExpansions()
         {
+            expandDesired = false;
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 const auto availableGas = Broodwar->self()->gas() - BuildOrder::getGasQueued();
                 const auto incompleteHatch = vis(Zerg_Hatchery) - com(Zerg_Hatchery);
 
-                const auto waitForMinerals = 300 + (150 * incompleteHatch);
+                const auto waitForMinerals = 100 + (300 * incompleteHatch);
                 const auto resourceSat = (availableMinerals >= waitForMinerals && Resources::isHalfMineralSaturated() && Resources::isGasSaturated());
 
                 expandDesired = (resourceSat && techSat && productionSat)
@@ -200,7 +206,7 @@ namespace McRave::BuildOrder::Zerg {
                     || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1)
                     || (!Players::ZvZ() && Stations::getMiningStationsCount() < 2 && Util::getTime() > Time(12, 00));
 
-                buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive) + expandDesired);
+                buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + expandDesired);
 
                 if (expandDesired && int(Stations::getStations(PlayerState::Self).size()) <= 1)
                     wantNatural = true;
@@ -211,33 +217,35 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueProduction()
         {
+            rampDesired = false;
             if (!inOpening) {
 
-                // Calculate hatcheries per base with current composition
-                static double hatchPerBase = 0.0;
-                hatchPerBase = armyComposition[Zerg_Zergling] * 2.5
-                    + armyComposition[Zerg_Mutalisk] * 1.0
-                    + armyComposition[Zerg_Hydralisk] * 2.0
-                    + armyComposition[Zerg_Ultralisk] * 1.0
-                    + armyComposition[Zerg_Drone] * 1.5;
-                    + armyComposition[Zerg_Defiler] * 1.0;
+                // Calculate hatcheries per base
+                static double hatchPerBase = 1.0;
 
-                // Calculate hatcheries per base with next composition
-                // TODO: Create these
-                if (Players::ZvZ() && int(Stations::getStations(PlayerState::Self).size()) >= 2)
-                    hatchPerBase = 1.5;
-
-                // Log if we have a change in production expectations
-                static double oldHatchPerBase = 0.0;
-                if (hatchPerBase != oldHatchPerBase) {
-                    Util::debug("[BuildOrder]: Changed production to " + to_string(hatchPerBase) + " from " + to_string(oldHatchPerBase));
+                // ZvZ: Get 2 gas bases, then 2 hatch per base
+                if (Players::ZvZ()) {
+                    if (int(Stations::getStations(PlayerState::Self).size()) >= 2)
+                        hatchPerBase = 2.0;
                 }
-                oldHatchPerBase = hatchPerBase;
+
+                // ZvP: Get 3 gas bases, then 3 hatch per base, then 1 hatch per base
+                if (Players::ZvP()) {
+                    if (int(Stations::getStations(PlayerState::Self).size()) >= 3)
+                        hatchPerBase = 3.0;
+                    if (int(Stations::getStations(PlayerState::Self).size()) >= 4)
+                        hatchPerBase = 1.0;
+                }
+
+                // ZvT: Get 4 gas bases, then 2 hatch per base, then 1 hatch per base
+                if (Players::ZvT()) {
+                    if (int(Stations::getStations(PlayerState::Self).size()) >= 4)
+                        hatchPerBase = 2.25;
+                }
 
                 // Check if we are maxed on production
                 auto desiredProduction = int(round(hatchPerBase * double(Stations::getStations(PlayerState::Self).size())));
                 productionSat = hatchCount() >= min(6, desiredProduction);
-                auto maxSat = productionSat * 2;
 
                 // Queue production if we need it
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
@@ -307,7 +315,7 @@ namespace McRave::BuildOrder::Zerg {
 
             // Overlord speed can be done inside openings
             const auto queueOvieSpeed = (Players::ZvT() && Spy::getEnemyTransition() == "2PortWraith" && Util::getTime() > Time(6, 00))
-                || (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 160 && total(Zerg_Hydralisk) > 0)
+                || (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 140 && total(Zerg_Hydralisk) > 0)
                 || (Spy::enemyInvis() && (BuildOrder::isFocusUnit(Zerg_Hydralisk) || BuildOrder::isFocusUnit(Zerg_Ultralisk)))
                 || (!Players::ZvZ() && Players::getSupply(PlayerState::Self, Races::Zerg) >= 200);
 
@@ -371,6 +379,13 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueAllin()
         {
+            Allin Z_8HatchCrackling;
+            Z_8HatchCrackling.workerCount = 36;
+            Z_8HatchCrackling.productionCount = 8;
+            Z_8HatchCrackling.typeCount = 64;
+            Z_8HatchCrackling.type = Zerg_Zergling;
+            Z_8HatchCrackling.name = "8HatchCrackling";
+
             Allin Z_6HatchCrackling;
             Z_6HatchCrackling.workerCount = 30;
             Z_6HatchCrackling.productionCount = 6;
@@ -378,42 +393,44 @@ namespace McRave::BuildOrder::Zerg {
             Z_6HatchCrackling.type = Zerg_Zergling;
             Z_6HatchCrackling.name = "6HatchCrackling";
 
+            Allin Z_6HatchSpeedling;
+            Z_6HatchSpeedling.workerCount = 28;
+            Z_6HatchSpeedling.productionCount = 6;
+            Z_6HatchSpeedling.typeCount = 20;
+            Z_6HatchSpeedling.type = Zerg_Zergling;
+            Z_6HatchSpeedling.name = "6HatchSpeedling";
+
             Allin Z_5HatchSpeedling;
             Z_5HatchSpeedling.workerCount = 20;
             Z_5HatchSpeedling.productionCount = 5;
-            Z_5HatchSpeedling.typeCount = 48;
+            Z_5HatchSpeedling.typeCount = 16;
             Z_5HatchSpeedling.type = Zerg_Zergling;
             Z_5HatchSpeedling.name = "5HatchSpeedling";
 
-            Allin Z_4HatchSpeedling;
-            Z_4HatchSpeedling.workerCount = 18;
-            Z_4HatchSpeedling.productionCount = 4;
-            Z_4HatchSpeedling.typeCount = 32;
-            Z_4HatchSpeedling.type = Zerg_Zergling;
-            Z_4HatchSpeedling.name = "4HatchSpeedling";
-
             Allin Z_None;
 
+            // ZvP TODO
             // Get allin struct
-            if (activeAllinType == AllinType::Z_6HatchCrackling)
-                activeAllin = Z_6HatchCrackling;
+            if (activeAllinType == AllinType::Z_8HatchCrackling)
+                activeAllin = Z_8HatchCrackling;
+            if (activeAllinType == AllinType::Z_6HatchSpeedling)
+                activeAllin = Z_6HatchSpeedling;
             if (activeAllinType == AllinType::Z_5HatchSpeedling)
                 activeAllin = Z_5HatchSpeedling;
-            if (activeAllinType == AllinType::Z_4HatchSpeedling)
-                activeAllin = Z_4HatchSpeedling;
 
-            // Ling all-in
+            // ZvZ TODO
             if (Players::ZvZ() && (Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0 || Spy::enemyFortress()))
                 activeAllin = Z_6HatchCrackling;
 
+            // ZvT ?
+
             // Turn off all-ins against splash or weird tech
             auto turnOffAllin = Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_High_Templar) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) > 0
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_High_Templar) >= 6
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) >= 2
+                || Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) >= 4
                 || Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0
-                || (vis(activeAllin.type) > activeAllin.typeCount * 4);
+                || (activeAllinType == AllinType::None);
             if (turnOffAllin) {
                 activeAllin = Z_None;
                 return;
@@ -423,9 +440,12 @@ namespace McRave::BuildOrder::Zerg {
             if (activeAllin.name != "") {
                 armyComposition.clear();
                 reserveLarva = 0;
-                inOpening = false;
-                wantThird = false;
                 focusUnit = None;
+
+                if (inOpening) {
+                    inOpening = false;
+                    wantThird = false;
+                }
 
                 // Clear typical buildings we wont need
                 buildQueue[Zerg_Lair] = 0;
@@ -444,6 +464,33 @@ namespace McRave::BuildOrder::Zerg {
                     McRave::Util::debug("[BuildOrder] Started " + activeAllin.name + " all-in");
                     logFlags[2] = true;
                 }
+
+                // Common
+                if (hatchCount() < activeAllin.productionCount && (vis(Zerg_Larva) <= 2 || vis(Zerg_Drone) >= activeAllin.workerCount))
+                    buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
+            }
+
+            // 8HatchCrackling
+            if (activeAllin.name == "8HatchCrackling") {
+                gasLimit = 3;
+
+                // Buildings
+                buildQueue[Zerg_Extractor] = 1;
+                buildQueue[Zerg_Lair] = 1;
+                if (hatchCount() < activeAllin.productionCount && (vis(Zerg_Lair) > 0 || vis(Zerg_Hive) > 0) && vis(Zerg_Larva) <= 2)
+                    buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
+                if (hatchCount() >= 5)
+                    buildQueue[Zerg_Evolution_Chamber] = 2;
+
+                // Hive tech
+                buildQueue[Zerg_Queens_Nest] = 1;
+                buildQueue[Zerg_Hive] = atPercent(Zerg_Queens_Nest, 0.95);
+
+                // Upgrades
+                upgradeQueue[UpgradeTypes::Metabolic_Boost] = 1;
+                upgradeQueue[UpgradeTypes::Zerg_Carapace] = 3;
+                upgradeQueue[UpgradeTypes::Zerg_Melee_Attacks] = 3;
+                upgradeQueue[UpgradeTypes::Adrenal_Glands] = com(Zerg_Hive) > 0;
             }
 
             // 6HatchCrackling
@@ -469,17 +516,15 @@ namespace McRave::BuildOrder::Zerg {
                 upgradeQueue[UpgradeTypes::Adrenal_Glands] = com(Zerg_Hive) > 0;
             }
 
-            // 5HatchSpeedling
-            if (activeAllin.name == "5HatchSpeedling") {
-                gasLimit = (vis(Zerg_Evolution_Chamber) || !lingSpeed()) ? 1 : 0;
+            // 6HatchSpeedling
+            if (activeAllin.name == "6HatchSpeedling") {
+                gasLimit = (vis(Zerg_Evolution_Chamber) || !lingSpeed()) ? 2 : 0;
 
                 // Buildings
                 buildQueue[Zerg_Extractor] = 1;
-                if (hatchCount() >= 5)
+                if (hatchCount() >= 5 && total(Zerg_Zergling) >= 24)
                     buildQueue[Zerg_Evolution_Chamber] = 2;
-                if (hatchCount() < activeAllin.productionCount && vis(Zerg_Larva) <= 2)
-                    buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
-                if (Upgrading::haveOrUpgrading(UpgradeTypes::Zerg_Melee_Attacks, 1) && Upgrading::haveOrUpgrading(UpgradeTypes::Zerg_Carapace, 1))
+                if (Upgrading::haveOrUpgrading(UpgradeTypes::Zerg_Melee_Attacks, 1) && Upgrading::haveOrUpgrading(UpgradeTypes::Zerg_Carapace, 1) && total(Zerg_Zergling) >= 64)
                     buildQueue[Zerg_Lair] = 1;
 
                 // Upgrades
@@ -488,14 +533,12 @@ namespace McRave::BuildOrder::Zerg {
                 upgradeQueue[UpgradeTypes::Zerg_Melee_Attacks] = 2;
             }
 
-            // 4HatchSpeedling
-            if (activeAllin.name == "4HatchSpeedling") {
-                gasLimit = lingSpeed() ? 0 : 1;
+            // 5HatchSpeedling
+            if (activeAllin.name == "5HatchSpeedling") {
+                gasLimit = 1;
 
                 // Buildings
                 buildQueue[Zerg_Extractor] = 1;
-                if (hatchCount() < activeAllin.productionCount && vis(Zerg_Larva) <= 2)
-                    buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
 
                 // Upgrades
                 upgradeQueue[UpgradeTypes::Metabolic_Boost] = 1;
@@ -505,6 +548,7 @@ namespace McRave::BuildOrder::Zerg {
 
     void opener()
     {
+        againstRandom = false;
         if (Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0 && !Players::ZvFFA() && !Players::ZvTVB())
             againstRandom = true;
 
@@ -597,6 +641,7 @@ namespace McRave::BuildOrder::Zerg {
         removeExcessGas();
 
         // Outside of opening book, book no longer is in control of queuing production, expansions or gas limits
+        needHatch = false;
         queueExpansions();
         queueProduction();
         queueGeysers();
@@ -613,14 +658,21 @@ namespace McRave::BuildOrder::Zerg {
     {
         // Composition
         armyComposition.clear();
+        auto availGas = Broodwar->self()->gas() - (Upgrading::getReservedGas() + Researching::getReservedGas() + Planning::getPlannedGas());
         if (inOpening) {
-            if (pumpDefiler)
+
+            // Unit based
+            if (pumpLurker && availGas > 100 && com(Zerg_Hydralisk) > 0)
+                armyComposition[Zerg_Lurker] =              1.00;
+
+            // Larva based
+            else if (pumpDefiler && availGas > 150)
                 armyComposition[Zerg_Defiler] =             1.00;
-            else if (pumpScourge)
+            else if (pumpScourge && availGas > 75)
                 armyComposition[Zerg_Scourge] =             1.00;
-            else if (pumpMutas)
+            else if (pumpMutas && availGas > 100)
                 armyComposition[Zerg_Mutalisk] =            1.00;
-            else if (pumpHydras)
+            else if (pumpHydras && availGas > 25)
                 armyComposition[Zerg_Hydralisk] =           1.00;
             else if (pumpLings)
                 armyComposition[Zerg_Zergling] =            1.00;
@@ -629,94 +681,42 @@ namespace McRave::BuildOrder::Zerg {
             return;
         }
 
-        const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5GateGoon" || Spy::getEnemyTransition() == "CorsairGoon" || Spy::getEnemyTransition() == "5FactGoliath" || Spy::getEnemyTransition() == "3FactGoliath";
+        if (!inOpening && availGas > 0) {
 
-        // ZvT
-        if (Players::vT() && !inOpening) {
+            // Gas pumping priority
+            vector<pair<UnitType, int>> priorityOrder;
 
-            // Defiler tech
-            if (isFocusUnit(Zerg_Defiler)) {
-                armyComposition[Zerg_Drone] =               0.55;
-                armyComposition[Zerg_Zergling] =            0.30;
-                armyComposition[Zerg_Ultralisk] =           0.10;
-                armyComposition[Zerg_Defiler] =             0.05;
-            }
-
-            // Ultralisk tech
-            else if (isFocusUnit(Zerg_Ultralisk) && com(Zerg_Hive)) {
-                armyComposition[Zerg_Drone] =               0.45;
-                armyComposition[Zerg_Mutalisk] =            0.00;
-                armyComposition[Zerg_Zergling] =            0.45;
-                armyComposition[Zerg_Ultralisk] =           0.10;
+            // ZvP
+            if (Players::ZvP()) {
+                priorityOrder ={ {Zerg_Drone, 30},                                              // Min
+                                 {Zerg_Defiler, 4}, {Zerg_Lurker, 2},                           // A few tech units
+                                 {Zerg_Hydralisk, 32}, {Zerg_Drone, 50},                        // Almost min
+                                 {Zerg_Hydralisk, 64}, {Zerg_Mutalisk, 9}, {Zerg_Drone, 60},    // Almost max
+                                 {Zerg_Hydralisk, 100}, {Zerg_Mutalisk, 60} };                  // Max
             }
 
-            // Lurker tech
-            else if (isFocusUnit(Zerg_Lurker) && atPercent(TechTypes::Lurker_Aspect, 0.8)) {
-                armyComposition[Zerg_Drone] =                   0.60;
-                armyComposition[Zerg_Zergling] =                0.15;
-                armyComposition[Zerg_Hydralisk] =               0.05;
-                armyComposition[Zerg_Lurker] =                  1.00;
-                armyComposition[Zerg_Mutalisk] =                0.20;
+            // ZvT
+            if (Players::ZvT()) {
+                priorityOrder ={ {Zerg_Drone, 30},                                              // Min
+                                 {Zerg_Defiler, 4}, {Zerg_Lurker, 2},                           // A few tech units
+                                 {Zerg_Ultralisk, 4}, {Zerg_Drone, 45},                         // Almost min
+                                 {Zerg_Ultralisk, 12}, {Zerg_Lurker, 12}, {Zerg_Mutalisk, 60} };
             }
 
-            // Hydralisk tech
-            else if (isFocusUnit(Zerg_Hydralisk) && isFocusUnit(Zerg_Mutalisk)) {
-                armyComposition[Zerg_Drone] =                   0.60;
-                armyComposition[Zerg_Zergling] =                0.00;
-                armyComposition[Zerg_Hydralisk] =               0.30;
-                armyComposition[Zerg_Mutalisk] =                0.10;
+            // ZvZ
+            if (Players::ZvZ()) {
+                priorityOrder ={ {Zerg_Mutalisk, 200} };
             }
 
-            // Mutalisk tech
-            else if (isFocusUnit(Zerg_Mutalisk)) {
-                armyComposition[Zerg_Drone] =               0.60;
-                armyComposition[Zerg_Zergling] =            0.20;
-                armyComposition[Zerg_Mutalisk] =            0.20;
-            }
-        }
-
-        // ZvP
-        if (Players::vP() && !inOpening) {
-            if (isFocusUnit(Zerg_Defiler) && Researching::haveOrResearching(TechTypes::Consume)) {
-                armyComposition[Zerg_Drone] =                   0.50;
-                armyComposition[Zerg_Zergling] =                0.01;
-                armyComposition[Zerg_Hydralisk] =               0.40;
-                armyComposition[Zerg_Defiler] =                 0.05;
-            }
-            else if (isFocusUnit(Zerg_Hydralisk) && isFocusUnit(Zerg_Mutalisk) && isFocusUnit(Zerg_Lurker)) {
-                armyComposition[Zerg_Drone] =                   0.50;
-                armyComposition[Zerg_Zergling] =                0.01;
-                armyComposition[Zerg_Hydralisk] =               0.35;
-                armyComposition[Zerg_Lurker] =                  0.05;
-                armyComposition[Zerg_Mutalisk] =                0.10;
-            }
-            else if (isFocusUnit(Zerg_Hydralisk) && isFocusUnit(Zerg_Mutalisk)) {
-                armyComposition[Zerg_Drone] =                   0.60;
-                armyComposition[Zerg_Zergling] =                0.00;
-                armyComposition[Zerg_Hydralisk] =               0.30;
-                armyComposition[Zerg_Mutalisk] =                0.10;
-            }
-            else if (isFocusUnit(Zerg_Hydralisk) && isFocusUnit(Zerg_Lurker)) {
-                armyComposition[Zerg_Drone] =                   0.60;
-                armyComposition[Zerg_Zergling] =                0.00;
-                armyComposition[Zerg_Hydralisk] =               0.40;
-                armyComposition[Zerg_Lurker] =                  0.25;
-            }
-            else if (isFocusUnit(Zerg_Mutalisk)) {
-                armyComposition[Zerg_Drone] =                   0.60;
-                armyComposition[Zerg_Zergling] =                0.10;
-                armyComposition[Zerg_Mutalisk] =                0.30;
-            }
-            else if (isFocusUnit(Zerg_Lurker)) {
-                armyComposition[Zerg_Drone] =                   0.60;
-                armyComposition[Zerg_Zergling] =                0.20;
-                armyComposition[Zerg_Hydralisk] =               0.20;
-                armyComposition[Zerg_Lurker] =                  1.00;
-            }
-            else if (isFocusUnit(Zerg_Hydralisk)) {
-                armyComposition[Zerg_Drone] =                   0.60;
-                armyComposition[Zerg_Zergling] =                0.00;
-                armyComposition[Zerg_Hydralisk] =               0.40;
+            for (auto &[type, count] : priorityOrder) {
+                if (isFocusUnit(type) && unlockReady(type) && vis(type) < count && availGas > type.gasPrice()) {
+                    armyComposition[type] = 1.00;
+                    break;
+                }
+                if (type.isWorker() && vis(type) < count) {
+                    armyComposition[type] = 1.00;
+                    break;
+                }
             }
         }
 
@@ -728,38 +728,26 @@ namespace McRave::BuildOrder::Zerg {
                 else
                     armyComposition[Zerg_Drone] =                   1.00;
             }
-            else if (isFocusUnit(Zerg_Mutalisk) && vis(Zerg_Drone) >= 18) {
-                armyComposition[Zerg_Drone] =                   0.30;
-                armyComposition[Zerg_Zergling] =                0.40;
-                armyComposition[Zerg_Mutalisk] =                0.30;
-            }
-            else if (isFocusUnit(Zerg_Mutalisk)) {
-                armyComposition[Zerg_Drone] =                   0.75;
-                armyComposition[Zerg_Mutalisk] =                0.25;
-            }
-            else if (isFocusUnit(Zerg_Hydralisk)) {
-                armyComposition[Zerg_Hydralisk] =               1.00;
-            }
         }
 
         // ZvFFA
         if ((Players::ZvTVB() || Players::ZvFFA()) && !inOpening) {
             if (isFocusUnit(Zerg_Hydralisk) && isFocusUnit(Zerg_Mutalisk) && isFocusUnit(Zerg_Lurker)) {
                 armyComposition[Zerg_Drone] =                   0.60;
-                armyComposition[Zerg_Zergling] =                0.00;
+                armyComposition[Zerg_Zergling] =                0.01;
                 armyComposition[Zerg_Hydralisk] =               0.25;
                 armyComposition[Zerg_Lurker] =                  0.05;
                 armyComposition[Zerg_Mutalisk] =                0.10;
             }
             else if (isFocusUnit(Zerg_Hydralisk) && isFocusUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.70;
-                armyComposition[Zerg_Zergling] =                0.00;
+                armyComposition[Zerg_Zergling] =                0.01;
                 armyComposition[Zerg_Hydralisk] =               0.20;
                 armyComposition[Zerg_Mutalisk] =                0.10;
             }
             else if (isFocusUnit(Zerg_Mutalisk)) {
                 armyComposition[Zerg_Drone] =                   0.70;
-                armyComposition[Zerg_Zergling] =                0.00;
+                armyComposition[Zerg_Zergling] =                0.01;
                 armyComposition[Zerg_Mutalisk] =                0.30;
             }
             else {
@@ -769,13 +757,13 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         // Turn off drones if we hit a cap
-        if (armyComposition[Zerg_Zergling] > 0.0) {
+        if (availGas <= 0 || armyComposition.empty()) {
             if (pumpLings || vis(Zerg_Drone) >= 60 || Resources::isMineralSaturated()) {
-                armyComposition[Zerg_Zergling] += armyComposition[Zerg_Drone];
+                armyComposition[Zerg_Zergling] = 1.0;
                 armyComposition[Zerg_Drone] = 0.0;
             }
             else {
-                armyComposition[Zerg_Drone] += armyComposition[Zerg_Zergling];
+                armyComposition[Zerg_Drone] = 1.0;
                 armyComposition[Zerg_Zergling] = 0.0;
             }
         }
@@ -804,14 +792,6 @@ namespace McRave::BuildOrder::Zerg {
                 unitReservations[Zerg_Scourge] = 1;
         }
 
-        // Queue enough overlords to fit the reservations
-        if (reserveLarva > 0 && atPercent(Zerg_Spire, 0.25) && total(focusUnit) < reserveLarva && com(Zerg_Spire) == 0) {
-            auto enemyAirThreat = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0;
-            auto expectedSupply = s + ((reserveLarva - total(focusUnit)) * 4);
-            auto expectedOverlords = int(ceil(double(expectedSupply) / 16.0));
-            buildQueue[Zerg_Overlord] = expectedOverlords + int(enemyAirThreat) + 1;
-        }
-
         // Unlocking units
         unlockedType.clear();
         for (auto &[type, per] : armyComposition) {
@@ -831,11 +811,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Always allowed to make basic units
         unlockedType.insert(Zerg_Overlord);
-        unlockedType.insert(Zerg_Drone);
-        unlockedType.insert(Zerg_Zergling);
     }
-
-
 
     bool lingSpeed() {
         return BWAPI::Broodwar->self()->isUpgrading(BWAPI::UpgradeTypes::Metabolic_Boost)

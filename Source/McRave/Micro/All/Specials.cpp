@@ -100,7 +100,6 @@ namespace McRave::Command
         if (!unit.getType().isWorker())
             return false;
 
-        vector<const BWEM::Area *> validAreas;
         if (unit.getDestination().isValid() && !unit.isBurrowed() && unit.getPosition().getDistance(unit.getDestination()) > 480.0) {
             auto closestDist = DBL_MAX;
             const auto destDist = BWEB::Map::getGroundDistance(unit.getPosition(), unit.getDestination());
@@ -122,12 +121,20 @@ namespace McRave::Command
                     checkCloserToDestination(mineral);
             }
 
-            // Gather it
+            // Gather it if we are close to another unit, egg, etc
+            // TODO: Egg lookup
             if (closestResource) {
-                unit.unit()->gather(closestResource->unit());
-                unit.commandText = "MineralWalk";
-                unit.commandFrame = Broodwar->getFrameCount();
-                return true;
+
+                auto closestUnit = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                    return !u->getType().isWorker() && !u->getType().isBuilding() && !u->isFlying() && u->getPosition().getDistance(unit.getPosition()) < 160.0;
+                });
+
+                if (closestUnit) {
+                    unit.unit()->gather(closestResource->unit());
+                    unit.commandText = "MineralWalk";
+                    unit.commandFrame = Broodwar->getFrameCount();
+                    return true;
+                }
             }
         }
         //for (auto &g : Resources::getMyGas()) {
@@ -446,8 +453,10 @@ namespace McRave::Command
         // Defiler - Dark Swarm / Plague
         else if (unit.getType() == Zerg_Defiler && !unit.isBurrowed()) {
 
+            auto castSwarm = Players::ZvT() || (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) && vis(Zerg_Zergling) + vis(Zerg_Ultralisk) > vis(Zerg_Hydralisk));
+
             // If close to target and can cast Plague
-            if (!unit.targetsFriendly() && unit.getLocalState() != LocalState::None && unit.canStartCast(Plague, target.getPosition())) {
+            if (!unit.targetsFriendly() && !castSwarm && unit.getLocalState() != LocalState::None && unit.canStartCast(Plague, target.getPosition())) {
                 unit.setCommand(Plague, target.getPosition());
                 unit.commandText = "Plague";
                 Actions::addAction(unit.unit(), target.getPosition(), Plague, PlayerState::Neutral, Util::getCastRadius(Plague));
@@ -455,14 +464,14 @@ namespace McRave::Command
             }
 
             // If close to target and can cast Dark Swarm
-            if (!unit.targetsFriendly() && vis(Zerg_Zergling) + vis(Zerg_Ultralisk) > vis(Zerg_Hydralisk) && unit.getPosition().getDistance(target.getPosition()) <= 400 && unit.canStartCast(Dark_Swarm, target.getPosition())) {
+            if (!unit.targetsFriendly() && castSwarm && unit.getPosition().getDistance(target.getPosition()) <= 400 && unit.canStartCast(Dark_Swarm, target.getPosition())) {
                 unit.setCommand(Dark_Swarm, target.getPosition());
                 unit.commandText = "DarkSwarm";
                 Actions::addAction(unit.unit(), target.getPosition(), Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
                 return true;
             }
 
-            // If within range of an intermediate point within engaging distance
+            // If within range of an intermediate point within engaging distance of a tank
             if (!unit.targetsFriendly() && vis(Zerg_Zergling) + vis(Zerg_Ultralisk) > vis(Zerg_Hydralisk) && target.isSiegeTank()) {
                 for (auto &tile : unit.getDestinationPath().getTiles()) {
                     auto center = Position(tile) + Position(16, 16);
@@ -676,6 +685,8 @@ namespace McRave::Command
             auto closestChokepoint = Util::getClosestChokepoint(unit.getPosition());
             auto nearNonBlockingChoke = closestChokepoint && !closestChokepoint->Blocked() && unit.getPosition().getDistance(Position(closestChokepoint->Center())) < 160.0;
 
+            if (!Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && Util::getTime() < Time(4, 00))
+                return true;
             if (Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) > 0.0f)
                 return true;
             if (hasMineableResource && (unit.isWithinGatherRange() || Grids::getGroundDensity(unit.getPosition(), PlayerState::Self) > 0.0f || nearNonBlockingChoke))

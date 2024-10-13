@@ -25,7 +25,7 @@ namespace McRave::Defender {
         {
             // Set formation to closest station chokepoint to align units to
             const auto closestStation = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
-            if (closestStation && closestStation->getChokepoint()) {
+            if (closestStation) {
                 auto defendPosition = Stations::getDefendPosition(closestStation);
                 unit.setFormation(defendPosition);
                 Broodwar->drawLineMap(unit.getPosition(), unit.getFormation(), Colors::Blue);
