@@ -189,7 +189,7 @@ namespace McRave::Targets {
                         if (Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == "ZealotRush")
                             return Priority::Major;
 
-                        if (BuildOrder::isPressure() && !target.getType().isWorker() && !target.isThreatening() && Util::getTime() < Time(7, 00))
+                        if (BuildOrder::isPressure() && !target.getType().isWorker() && !target.isThreatening() && Util::getTime() < Time(8, 00))
                             return Priority::Ignore;
 
                         // Stragglers are free to kill

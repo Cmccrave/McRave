@@ -342,7 +342,7 @@ namespace McRave::Walls {
             auto minimum = 0;
 
             // Greedy builds skip almost 2 production cycles, so we can skip sunks if we have more than 1
-            if (Spy::enemyGreedy() && expected >= 2)
+            if (Spy::enemyGreedy() && expected >= 2 && Util::getTime() < Time(7, 00))
                 expected--;
 
             // 3h builds make roughly half as many

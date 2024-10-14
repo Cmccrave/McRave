@@ -74,7 +74,7 @@ namespace McRave::Spy::Protoss {
                     theSpy.build.name = "1GateCore";
 
                 // 2Gate Proxy - No info estimation
-                auto nothing = Players::getVisibleCount(PlayerState::Enemy, Protoss_Forge) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Nexus) <= 1;
+                auto nothing = Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Forge) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Nexus) <= 1;
                 if (Util::getTime() < Time(3, 30) && nothing && Scouts::gotFullScout()) {
                     theSpy.build.name = "2Gate";
                     theSpy.opener.name = "Proxy9/9";

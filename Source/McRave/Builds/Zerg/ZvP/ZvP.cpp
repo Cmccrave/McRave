@@ -113,7 +113,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // 2Gate
         if (Spy::getEnemyBuild() == "2Gate") {
-            initialValue = 12;
+            initialValue = 10;
             if (Spy::getEnemyOpener() == "Proxy9/9")
                 initialValue = 16;
             if (Spy::getEnemyOpener() == "9/9")
@@ -180,8 +180,9 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit =                                     Zerg_Mutalisk;
         reserveLarva =                                  (Spy::getEnemyBuild() == "FFE" || Spy::enemyFastExpand()) ? 6 : 0;
         hideTech =                                      true;
-        pressure =                                      total(Zerg_Mutalisk) >= 6;
+        pressure =                                      (total(Zerg_Mutalisk) >= 6);
         wantThird =                                     false;
+        wallNat =                                       hatchCount() >= 2;
 
         // Tech
         unitOrder ={ Zerg_Mutalisk, Zerg_Zergling };
@@ -190,11 +191,11 @@ namespace McRave::BuildOrder::Zerg {
         auto secondGas = (hatchCount() >= 3 && vis(Zerg_Drone) >= 20) || (com(Zerg_Spire) > 0);
 
         auto thirdHatch = (total(Zerg_Mutalisk) >= 6 && vis(Zerg_Drone) >= 20) || (Spy::getEnemyBuild() == "FFE" && vis(Zerg_Spire) > 0);
-        auto fourthHatch = (total(Zerg_Mutalisk) >= 10 && vis(Zerg_Drone) >= 24);
+        auto fourthHatch = (total(Zerg_Mutalisk) >= 10 && vis(Zerg_Drone) >= 26);
 
         // Buildings
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32);
-        buildQueue[Zerg_Hatchery] =                     2 + thirdHatch + fourthHatch + (vis(Zerg_Drone) >= 27);
+        buildQueue[Zerg_Hatchery] =                     2 + thirdHatch + fourthHatch + (vis(Zerg_Drone) >= 30);
         buildQueue[Zerg_Extractor] =                    firstGas + secondGas;
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        (s >= 32 && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 16);
