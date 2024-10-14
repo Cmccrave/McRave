@@ -17,7 +17,7 @@ namespace McRave::Combat::State {
             return vis(t) > 0 || BuildOrder::isUnitUnlocked(t);
         };
 
-        if (Units::getImmThreat() > 0.0 || Broodwar->getGameType() == GameTypes::Use_Map_Settings)
+        if (Units::getImmThreat() > 0.0)
             return;
 
         // Hydralisks
@@ -167,7 +167,7 @@ namespace McRave::Combat::State {
     {
         if (!unit.hasTarget())
             return false;
-        auto target = *unit.getTarget().lock();
+        auto &target = *unit.getTarget().lock();
 
         auto countDefensesInRange = 0.0;
         if (unit.getType() == Zerg_Mutalisk) {
@@ -210,7 +210,7 @@ namespace McRave::Combat::State {
             //|| (Util::getTime() < Time(8, 00) && unit.getType() == Zerg_Mutalisk && target.getType() == Protoss_Photon_Cannon && !target.isCompleted())
             || (target.getType() == Terran_Vulture_Spider_Mine && !target.isBurrowed())
             || (unit.isLightAir() && target.isLightAir() && target.hasAttackedRecently())
-            || (unit.attemptingRunby() && target.getType().isWorker() && unit.getHealth() > 10)
+            || (unit.attemptingRunby() && target.getType().isWorker() && (unit.getHealth() > 15 || Util::getTime() > Time(6, 00)))
             || (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_High_Templar && unit.canStartCast(TechTypes::Psionic_Storm, target.getPosition()) && unit.isWithinRange(target))
             || (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_Reaver && unit.canStartAttack()) && unit.isWithinRange(target));
     }
@@ -229,7 +229,7 @@ namespace McRave::Combat::State {
             const auto sparseCorsairVsScourge = unit.getType() == Protoss_Corsair && target.isSuicidal() && com(Protoss_Corsair) < 6; // TODO: Check density instead
             const auto lowShieldFlyer = false;// (unit.isLightAir() && unit.getType().maxShields() > 0 && target.getType() == Zerg_Overlord && Grids::getAirThreat(unit.getEngagePosition(), PlayerState::Enemy) * 5.0 > (double)unit.getShields());
             const auto oomMedic = unit.getType() == Terran_Medic && unit.getEnergy() <= TechTypes::Healing.energyCost();
-            const auto hurtLingVsWorker = (unit.getType() == Zerg_Zergling && unit.getHealth() <= 10 && target.getType().isWorker() && Util::getTime() < Time(6, 00));
+            const auto hurtLingVsWorker = (unit.getType() == Zerg_Zergling && unit.getHealth() <= 15 && target.getType().isWorker() && Util::getTime() < Time(6, 00));
             const auto regroupingAir = unit.isLightAir() && !unit.getGoal().isValid() && !target.isThreatening() && unit.attemptingRegroup();
 
             if (slowZealotVsVulture || sparseCorsairVsScourge || lowShieldFlyer || oomMedic || hurtLingVsWorker || regroupingAir)
@@ -285,8 +285,8 @@ namespace McRave::Combat::State {
         return (atHome && unit.getSimState() == SimState::Win && !Players::ZvZ())
             || (atHome && freeAttacks())
             || (atHome && !unit.getType().isWorker() && !Spy::enemyRush() && (unit.getGroundRange() > target.getGroundRange() || target.getType().isWorker()) && !target.isHidden())
-            || (target.isThreatening() && !target.isHidden())
-            || (unit.isSuicidal() && (Terrain::inTerritory(PlayerState::Self, target.getPosition()) || target.isThreatening() || target.getPosition().getDistance(unit.getGoal()) < 160.0))
+            || (target.isThreatening() && !target.isHidden() && Util::getTime() < Time(6, 00))
+            || (unit.isSuicidal() && (Terrain::inTerritory(PlayerState::Self, target.getPosition()) || target.isThreatening()))
             || (unit.isSuicidal() && !nearGrdToAir())
             || (unit.isHidden() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
             || (unit.getType() == Zerg_Lurker && unit.isBurrowed() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
@@ -345,8 +345,14 @@ namespace McRave::Combat::State {
         auto &simTarget = *unit.getSimTarget().lock();
         auto &target = *unit.getTarget().lock();
         const auto atHome = Terrain::inTerritory(PlayerState::Self, target.getPosition());
-        const auto distSim = double(Util::boxDistance(unit.getType(), unit.getPosition(), simTarget.getType(), simTarget.getPosition()));
-        const auto distTarget = double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
+
+        const auto distSim = (unit.isFlying() || simTarget.isFlying() || unit.isWithinRange(simTarget) || simTarget.isWithinRange(unit))
+            ? double(Util::boxDistance(unit.getType(), unit.getPosition(), simTarget.getType(), simTarget.getPosition()))
+            : BWEB::Map::getGroundDistance(unit.getPosition(), simTarget.getPosition());
+        
+        const auto distTarget = (unit.isFlying() || target.isFlying() || unit.isWithinRange(target) || target.isWithinRange(unit)) ?
+            double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()))
+            : BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition());
 
         const auto insideRetreatRadius = distSim < unit.getRetreatRadius() && !atHome;
         const auto insideEngageRadius = distTarget < unit.getEngageRadius() && (unit.getGlobalState() == GlobalState::Attack || atHome);

@@ -44,6 +44,8 @@ namespace McRave::Horizon {
                 return 65.0 / 24.0;
             if (unit.getType() == UnitTypes::Zerg_Lurker && !unit.isBurrowed())
                 return 36.0 / 24.0;
+            if (unit.attemptingSurround())
+                return 0.2;
             return 0.0;
         }
     }
@@ -64,8 +66,10 @@ namespace McRave::Horizon {
 
         const auto timePad = Util::getTime().minutes / 6;
         const auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
-        const auto simulationTime = unitToEngage + 5.0 + addPrepTime(unit) - rangeDisplacement;
-        const auto targetDisplacement = 0.0;// unitToEngage * unitTarget->getSpeed() * 24.0;
+
+        const auto extendDuration = unit.isLightAir() ? 2.0 : 5.0;
+        const auto simulationTime = unitToEngage + extendDuration + addPrepTime(unit) - rangeDisplacement;
+        const auto targetDisplacement = unitToEngage * unitTarget->getSpeed() * 24.0;
         map<Player, SimStrength> simStrengthPerPlayer;
 
         if (unit.unit()->isSelected())

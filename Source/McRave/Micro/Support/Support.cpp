@@ -54,7 +54,10 @@ namespace McRave::Support {
             });
 
             if (closestStation && !closestStation->isMain()) {
-                assignInBox(closestStation->getBase()->Center(), unit);
+                if (closestSpore && closestSpore->getPosition().getDistance(closestStation->getBase()->Center()) < 160.0)
+                    assignInBox(closestSpore->getPosition(), unit);
+                else
+                    assignInBox(closestStation->getBase()->Center(), unit);
             }
 
             // Overlords safe at a spore
@@ -90,20 +93,23 @@ namespace McRave::Support {
         {
             // For each cluster, assign an overlord to the commander
             auto distBest = DBL_MAX;
-            auto cnt = 2;
+            auto cnt = 0;
 
             for (auto &cluster : Combat::Clusters::getClusters()) {
                 auto commander = cluster.commander.lock();
 
-                if (commander && !commander->isTargetedByHidden() && !commander->isNearHidden())
-                    continue;
+                if (commander && !commander->isTargetedByHidden() && !commander->isNearHidden()) {
+                    cnt++;
+                    if (cnt >= 2)
+                        break;
+                }
 
                 if (commander && types.find(commander->getType()) != types.end() && assignedOverlords.find(commander->getPosition()) == assignedOverlords.end()) {
                     auto dist = commander->getPosition().getDistance(unit.getPosition());
                     if (dist < distBest) {
                         auto position = commander->getPosition();
                         if (commander->getSimState() == SimState::Win && commander->hasTarget()) {
-                            auto commanderTarget = commander->getTarget().lock();
+                            auto &commanderTarget = commander->getTarget().lock();
                             if ((commanderTarget->cloaked || commanderTarget->isBurrowed()) && commander->isWithinReach(*commanderTarget))
                                 position = commanderTarget->getPosition();
                         }
@@ -162,12 +168,9 @@ namespace McRave::Support {
             }
 
             // Send Overlords to a safe home
-            else if (!followArmyPossible) {
+            if (!followArmyPossible || !unit.getDestination().isValid()) {
                 getSafeHome(unit);
             }
-
-            if (!unit.getDestination().isValid())
-                unit.setDestination(Terrain::getMainPosition());
         }
 
         void updatePath(UnitInfo& unit)

@@ -227,7 +227,7 @@ namespace McRave::Spy::Protoss {
             if (Players::ZvP() && theSpy.build.name == "FFE") {
                 if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) >= 4 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 1 && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) == 0)
                     || (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) == 0)
-                    || (completesBy(1, UpgradeTypes::Singularity_Charge, Time(6, 30)) && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) == 0))
+                    || (completesBy(1, UpgradeTypes::Singularity_Charge, Time(7, 00)) && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) == 0))
                     theSpy.transition.name = "5GateGoon";
                 else if (completesBy(1, Protoss_Stargate, Time(5, 45)) && completesBy(1, Protoss_Citadel_of_Adun, Time(5, 45)) && theSpy.typeUpgrading.find(Protoss_Forge) != theSpy.typeUpgrading.end())
                     theSpy.transition.name = "NeoBisu";
@@ -237,10 +237,11 @@ namespace McRave::Spy::Protoss {
                     theSpy.transition.name = "CorsairGoon";
                 else if (completesBy(1, Protoss_Templar_Archives, Time(7, 30)))
                     theSpy.transition.name = "ZealotArchon";
-                else if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) <= 0 && theSpy.typeUpgrading.find(Protoss_Forge) != theSpy.typeUpgrading.end() && theSpy.typeUpgrading.find(Protoss_Cybernetics_Core) == theSpy.typeUpgrading.end() && Util::getTime() < Time(5, 30))
-                    || (completesBy(1, Protoss_Citadel_of_Adun, Time(5, 30)) && completesBy(2, Protoss_Gateway, Time(5, 45)))
-                    || (Util::getTime() < Time(8,30) && completesBy(1, UpgradeTypes::Leg_Enhancements, Time(8, 00)) && completesBy(1, UpgradeTypes::Protoss_Ground_Weapons, Time(7, 45))))
+                else if ((completesBy(1, Protoss_Citadel_of_Adun, Time(5, 30)) && completesBy(2, Protoss_Gateway, Time(5, 45)))
+                    || (Util::getTime() < Time(8,30) && completesBy(1, UpgradeTypes::Leg_Enhancements, Time(7, 00)) && completesBy(1, UpgradeTypes::Protoss_Ground_Weapons, Time(7, 45))))
                     theSpy.transition.name = "Speedlot";
+                else if (Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Util::getTime() < Time(8, 30) && completesBy(1, UpgradeTypes::Leg_Enhancements, Time(8, 00)) && completesBy(1, UpgradeTypes::Protoss_Ground_Weapons, Time(7, 45)))
+                    theSpy.transition.name = "Sairlot";
                 else if (completesBy(2, Protoss_Stargate, Time(7, 00)))
                     theSpy.transition.name = "DoubleStargate";
                 else if (completesBy(1, Protoss_Fleet_Beacon, Time(9, 30)) || completesBy(1, Protoss_Carrier, Time(12, 00)))

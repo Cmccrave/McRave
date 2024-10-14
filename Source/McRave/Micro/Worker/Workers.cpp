@@ -203,14 +203,14 @@ namespace McRave::Workers {
             unit.setNavigation(unit.getDestination());
             if (unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())) {
                 auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) {
-                    return p.getDistance(unit.getPosition()) >= 160.0;
+                    return p.getDistance(unit.getPosition()) >= 96.0;
                 });
 
                 if (newDestination.isValid())
                     unit.setNavigation(newDestination);
             }
-            //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
-            //Visuals::drawPath(unit.getDestinationPath());
+            Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
+            Visuals::drawPath(unit.getDestinationPath());
         }
 
         void updateDestination(UnitInfo& unit)

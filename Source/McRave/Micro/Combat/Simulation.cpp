@@ -42,7 +42,7 @@ namespace McRave::Combat::Simulation {
         auto belowGrdtoAirLimit = false;
         auto belowAirtoAirLimit = false;
         auto belowAirtoGrdLimit = false;
-        auto unitTarget = unit.getTarget().lock();
+        auto &unitTarget = unit.getTarget().lock();
         auto selfEngaged = false;
         auto enemyEngaged = false;
         auto allyEngaged = false;
@@ -139,6 +139,12 @@ namespace McRave::Combat::Simulation {
         if (BuildOrder::isAllIn() && !Combat::State::isStaticRetreat(unit.getType()) && Util::getTime() < Time(8, 00)) {
             minWinPercent -= 0.20;
             maxWinPercent -= 0.10;
+        }
+
+        // Override if target is threatening
+        if (target.isThreatening()) {
+            minWinPercent = 0.2;
+            maxWinPercent = 0.5;
         }
 
         minThreshold = minWinPercent;

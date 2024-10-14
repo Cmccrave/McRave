@@ -61,6 +61,10 @@ namespace McRave::Targets {
                 return Priority::Ignore;
 
             // Check if the target is important right now to attack
+            auto anyTime = Time(6, 00);
+            if (BuildOrder::isRush())
+                anyTime = Time(7, 00);
+
             bool targetMatters = (target.canAttackAir() && selfHasAir)
                 || (target.canAttackGround() && selfHasGround)
                 || (target.getType().spaceProvided() > 0)
@@ -69,7 +73,7 @@ namespace McRave::Targets {
                 || (!enemyHasGround && !enemyHasAir)
                 || (target.getType() == Terran_Bunker && !target.isCompleted())
                 || (Players::ZvZ() && Spy::enemyFastExpand())
-                || Util::getTime() > Time(6, 00)
+                || Util::getTime() > anyTime
                 || Spy::enemyGreedy();
 
             // Support Role
@@ -84,7 +88,7 @@ namespace McRave::Targets {
             if (unit.getRole() == Role::Combat) {
 
                 // Ignore if we need to runby
-                if (unit.attemptingRunby()) {
+                if (unit.attemptingRunby() && Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) < 8) {
                     if (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
                         return Priority::Ignore;
                     if (Grids::getGroundThreat(target.getPosition(), PlayerState::Enemy) <= 0.1f && Util::getTime() < Time(7, 30))
@@ -128,13 +132,13 @@ namespace McRave::Targets {
                     || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getUnitsTargetingThis().size()) >= 4 && !target.isBurrowed())                          // Don't over target spider mines
                     || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                                         // Don't target interceptors as a flying unit
                     || (target.getType().isWorker() && !allowWorkerTarget(unit, target))
-                    || (target.isLightAir() && !unit.isFlying() && !target.isThreatening() && !target.hasAttackedRecently() && !unit.isWithinRange(target))
+                    || (target.getType() == Protoss_Corsair && !unit.isFlying() && !target.isThreatening() && !target.hasAttackedRecently() && !unit.isWithinRange(target))
                     || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())           // Don't target if invisible and can't attack this unit or we have no detectors in PvP
                     || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))           // Don't target flyers that we can't reach
                     || (unit.isFlying() && target.getType() == Protoss_Interceptor))
                     return Priority::Ignore;
 
-                // Kill workers and cannons if we're in the same area
+                // Kill workers and cannons if we're in the same area in enemy territory
                 if (unit.isMelee() && unit.isWithinReach(target) && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) && Terrain::inArea(mapBWEM.GetArea(target.getWalkPosition()), unit.getPosition())) {
                     if (target.getType().isWorker())
                         return Priority::Major;
@@ -156,11 +160,9 @@ namespace McRave::Targets {
                             return Priority::Ignore;
                     }
                     const auto targetSize = max(target.getType().width(), target.getType().height());
-                    const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->getType() == Zerg_Zergling && u.lock()->isWithinReach(target); });
-                    if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
-                        return Priority::Minor;
-                    if (target.getType() == Protoss_Archon)
-                        return Priority::Minor;
+                    const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->getType() == Zerg_Zergling && u.lock()->isWithinRange(target); });
+                    //if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
+                    //    return Priority::Minor;
 
                     // Already in range, continue to target it if possible
                     if (unit.isWithinRange(target) && !target.getType().isBuilding() && !target.getType().isWorker())
@@ -187,8 +189,7 @@ namespace McRave::Targets {
                         if (Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == "ZealotRush")
                             return Priority::Major;
 
-                        // Useless Corsairs can be ignored sometimes
-                        if (target.getType() == Protoss_Corsair && !unit.isWithinRange(target) && !target.isThreatening())
+                        if (BuildOrder::isPressure() && !target.getType().isWorker() && !target.isThreatening() && Util::getTime() < Time(7, 00))
                             return Priority::Ignore;
 
                         // Stragglers are free to kill
@@ -346,7 +347,7 @@ namespace McRave::Targets {
                 const auto withinRangeMelee = range <= 32.0 && boxDistance <= 64.0;
 
                 if (withinReachHigherRange || withinRangeLessRange || withinRangeMelee)
-                    return (1.0 + double(target.getUnitsTargetingThis().size()));
+                    return (1.0 + (0.1 * double(target.getUnitsTargetingThis().size())));
                 return 1.0;
             };
 
@@ -495,31 +496,31 @@ namespace McRave::Targets {
                 }
             }
 
-            // Check for any self targets marked for death
-            for (auto &t : Units::getUnits(PlayerState::Self)) {
-                UnitInfo &target = *t;
+            //// Check for any self targets marked for death
+            //for (auto &t : Units::getUnits(PlayerState::Self)) {
+            //    UnitInfo &target = *t;
 
-                if (!isValidTarget(target)
-                    || !target.isMarkedForDeath()
-                    || unit.isLightAir())
-                    continue;
+            //    if (!isValidTarget(target)
+            //        || !target.isMarkedForDeath()
+            //        || unit.isLightAir())
+            //        continue;
 
-                auto priority = getPriority(unit, target);
-                if (priority == Priority::Ignore || priority < priorityBest)
-                    continue;
+            //    auto priority = getPriority(unit, target);
+            //    if (priority == Priority::Ignore || priority < priorityBest)
+            //        continue;
 
-                if (priority > priorityBest) {
-                    scoreBest = 0.0;
-                    priorityBest = priority;
-                }
+            //    if (priority > priorityBest) {
+            //        scoreBest = 0.0;
+            //        priorityBest = priority;
+            //    }
 
-                // If this target is more important to target, set as current target
-                const auto thisUnit = scoreTarget(unit, target);
-                if (thisUnit > scoreBest && checkGroundAccess(target)) {
-                    scoreBest = thisUnit;
-                    unit.setTarget(&target);
-                }
-            }
+            //    // If this target is more important to target, set as current target
+            //    const auto thisUnit = scoreTarget(unit, target);
+            //    if (thisUnit > scoreBest && checkGroundAccess(target)) {
+            //        scoreBest = thisUnit;
+            //        unit.setTarget(&target);
+            //    }
+            //}
 
             // Check for any neutral targets marked for death
             for (auto &t : Units::getUnits(PlayerState::Neutral)) {

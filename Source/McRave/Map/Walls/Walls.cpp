@@ -194,7 +194,7 @@ namespace McRave::Walls {
                     + (Util::getTime() > Time(4, 00))
                     + (Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
-                    return (earlySunk && Util::getTime() > Time(3, 00))
+                    return (Util::getTime() > Time(3, 00) && total(Zerg_Zergling) >= 6)
                     + (Util::getTime() > Time(4, 30));
                 if (Spy::getEnemyOpener() == "Proxy9/9")
                     return 0;
@@ -295,13 +295,23 @@ namespace McRave::Walls {
             // FFE transitions
             if (Spy::getEnemyBuild() == "FFE") {
                 if (Spy::getEnemyTransition() == "5GateGoon")
-                    return
-                    (Util::getTime() > Time(7, 00))
-                    + (Util::getTime() > Time(7, 30))
+                    return  (Util::getTime() > Time(6, 00))
+                    + (Util::getTime() > Time(6, 30))
                     + (Util::getTime() > Time(8, 00));
 
                 if (Spy::getEnemyTransition() == "CorsairGoon")
                     return (Util::getTime() > Time(7, 00));
+
+                if (Spy::getEnemyTransition() == "Speedlot")
+                    return (Util::getTime() > Time(6, 30))
+                    + (Util::getTime() > Time(7, 00))
+                    + (Util::getTime() > Time(8, 00));
+
+                if (Spy::getEnemyTransition() == "Sairlot")
+                    return 2 * (Util::getTime() > Time(6, 50));
+
+                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0)
+                    return (Util::getTime() > Time(6, 00));
 
                 return (Util::getTime() > Time(7, 15));
             }
@@ -351,6 +361,7 @@ namespace McRave::Walls {
                 minimum = 1;
             if (Spy::getEnemyBuild() != "FFE") {
                 if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
+                    || Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Singularity_Charge, 1)
                     || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4)
                     minimum = 2;
                 if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0)

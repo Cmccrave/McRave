@@ -234,7 +234,6 @@ namespace McRave::Terrain {
                     if (station.isMain() && !Stations::isBaseExplored(&station)) {
                         groundCleanupPositions.push_back(station.getBase()->Center());
                         airCleanupPositions.push_back(station.getBase()->Center());
-                        Visuals::drawCircle(station.getBase()->Center(), 4, Colors::Teal, true);
                     }
                 }
                 return;

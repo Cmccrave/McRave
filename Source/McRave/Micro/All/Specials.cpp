@@ -10,6 +10,7 @@ namespace McRave::Command
 {
     namespace {
         set<Position> testPositions;
+        int lastMorphFrame = -999;
     }
 
     bool lift(UnitInfo& unit)
@@ -126,7 +127,7 @@ namespace McRave::Command
             if (closestResource) {
 
                 auto closestUnit = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return !u->getType().isWorker() && !u->getType().isBuilding() && !u->isFlying() && u->getPosition().getDistance(unit.getPosition()) < 160.0;
+                    return !u->getType().isWorker() && u->isCompleted() && !u->getType().isBuilding() && !u->isFlying() && u->getPosition().getDistance(unit.getPosition()) < 64.0;
                 });
 
                 if (closestUnit) {
@@ -501,6 +502,9 @@ namespace McRave::Command
 
     bool morph(UnitInfo& unit)
     {
+        if (lastMorphFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4)
+            return false;
+
         auto canAffordMorph = [&](UnitType type) {
             if (Broodwar->self()->minerals() >= type.mineralPrice() && Broodwar->self()->gas() >= type.gasPrice() && Broodwar->self()->supplyTotal() - Broodwar->self()->supplyUsed() > type.supplyRequired())
                 return true;
@@ -522,6 +526,7 @@ namespace McRave::Command
                 if (templar) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->useTech(Archon_Warp, templar->unit());
+                    lastMorphFrame = Broodwar->getFrameCount();
                     unit.commandText = "Archonification";
                     unit.commandFrame = Broodwar->getFrameCount();
                     return true;
@@ -541,6 +546,7 @@ namespace McRave::Command
                 if (canAffordMorph(Zerg_Lurker) && furthestHydra && unit == *furthestHydra) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->morph(Zerg_Lurker);
+                    lastMorphFrame = Broodwar->getFrameCount();
                     unit.commandText = "Lurkification";
                     unit.commandFrame = Broodwar->getFrameCount();
                     return true;
@@ -560,6 +566,7 @@ namespace McRave::Command
                 if (canAffordMorph(Zerg_Guardian) && unit.getPosition().getDistance(unit.getSimTarget().lock()->getPosition()) >= unit.getEngageRadius() && unit.getPosition().getDistance(unit.getSimTarget().lock()->getPosition()) < unit.getEngageRadius() + 160.0) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->morph(Zerg_Guardian);
+                    lastMorphFrame = Broodwar->getFrameCount();
                     unit.commandText = "Guardianification";
                     unit.commandFrame = Broodwar->getFrameCount();
                     return true;
@@ -569,7 +576,8 @@ namespace McRave::Command
                 if (canAffordMorph(Zerg_Devourer) && unit.getPosition().getDistance(unit.getSimTarget().lock()->getPosition()) >= unit.getEngageRadius()) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->morph(Zerg_Devourer);
-                    unit.commandText = "Devoification";
+                    lastMorphFrame = Broodwar->getFrameCount();
+                    unit.commandText = "Devourification";
                     unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }
@@ -611,7 +619,7 @@ namespace McRave::Command
         // For now only workers clear neutrals
         auto resourceDepot = Broodwar->self()->getRace().getResourceDepot();
         if (!unit.getType().isWorker()
-            || Util::getTime() < Time(6, 0)
+            || Util::getTime() < Time(8, 00)
             || Stations::getStations(PlayerState::Self).size() <= 2
             || (BuildOrder::buildCount(resourceDepot) == vis(resourceDepot) && BuildOrder::isOpener())
             || unit.unit()->isCarryingMinerals()

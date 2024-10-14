@@ -238,13 +238,21 @@ namespace McRave::Stations
             auto groundCount = getGroundDefenseCount(station);
 
             if (station->isMain()) {
-                // Add 2 sunks if we gave up the natural intentionally against a proxy
-                if (!BuildOrder::takeNatural() && Spy::getEnemyOpener() == "Proxy9/9")
+                // Add 2 sunks if we gave up the natural intentionally against a proxy unless it's horror gates
+                if (!BuildOrder::takeNatural() && Spy::getEnemyOpener() == "Proxy9/9") {
+                    if (Broodwar->getStartLocations().size() <= 2) {
+                        if (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0 && Util::getTime() < Time(3, 45))
+                            return (Util::getTime() > Time(2, 00)) + (Util::getTime() > Time(2, 20)) - groundCount;
+                        return 0;
+                    }
                     return (Util::getTime() > Time(2, 20)) + (Util::getTime() > Time(3, 00)) - groundCount;
+                }
 
                 // Add a sunk in main if we lost the natural, maybe it holds to get a win
-                if (BuildOrder::isOpener() && !BuildOrder::isWallMain() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None)
-                    return (Util::getTime() > Time(3, 00)) - groundCount;
+                if (Players::getDeadCount(PlayerState::Self, Zerg_Hatchery) > 0) {
+                    if (BuildOrder::isOpener() && !BuildOrder::isWallMain() && Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::None && Util::getTime() < Time(4, 00))
+                        return (Util::getTime() > Time(3, 00)) - groundCount;
+                }
             }
             else if (!station->isMain() && !station->isNatural()) {
                 // Early sunk vs all-in Zealot rush
@@ -612,7 +620,7 @@ namespace McRave::Stations
                 return (Util::getTime() > Time(9, 00)) - airCount;
 
             // Corsair DT exist
-            if (!Combat::State::isStaticRetreat(Zerg_Hydralisk) && !station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 )
+            if (!Combat::State::isStaticRetreat(Zerg_Hydralisk) && !station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0)
                 return (Util::getTime() > Time(9, 00)) - airCount;
         }
 

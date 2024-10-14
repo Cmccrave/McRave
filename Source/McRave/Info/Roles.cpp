@@ -145,8 +145,8 @@ namespace McRave::Roles {
                 // Gateway or Cannon in territory, 4 drones
                 if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 6)
                     forceCombatWorker(4, proxyDangerousBuilding->getPosition());
-                //else if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0 && Spy::getEnemyBuild() == "2Gate" && com(Zerg_Zergling) <= 6)
-                //    forceCombatWorker(4, proxyDangerousBuilding->getPosition());
+                else if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0 && Spy::getEnemyBuild() == "2Gate" && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0)
+                    forceCombatWorker(6, proxyDangerousBuilding->getPosition());
 
                 // Probe actively building proxy, 2 drones
                 else if (proxyBuilding && proxyBuildingWorker)

@@ -48,8 +48,11 @@ namespace McRave::Defender {
                 }
 
                 // HACK: Helps form static formations
-                if ((!Players::ZvZ() || unit.getType().isResourceDepot()) && unit.getType().isBuilding() && unit.getRole() == Role::Production) {
-                    updateFormation(unit);
+                if (unit.getType().isResourceDepot()) {
+                    const auto closestStation = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
+                    auto stationDepot = closestStation && unit.getTilePosition() == closestStation->getBase()->Location();                    
+                    if (stationDepot)
+                        updateFormation(unit);                    
                 }
             }
         }

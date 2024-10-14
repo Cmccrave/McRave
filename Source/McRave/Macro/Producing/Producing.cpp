@@ -292,8 +292,9 @@ namespace McRave::Producing {
                     return false;
 
                 // Strategic checks
-                if (Players::ZvP()) {
-                    if (bestType == Zerg_Overlord && !station->isNatural() && Util::getTime() > Time(4, 00) && Players::getTotalCount(PlayerState::Self, Zerg_Mutalisk) == 0 && Players::getTotalCount(PlayerState::Self, Zerg_Scourge) == 0)
+                if (Players::ZvP() && Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::Self) {
+                    auto time = (Spy::getEnemyBuild() != "FFE") ? Time(4, 00) : Time(6, 00);
+                    if (bestType == Zerg_Overlord && !station->isNatural() && Util::getTime() > time && Players::getTotalCount(PlayerState::Self, Zerg_Mutalisk) == 0 && Players::getTotalCount(PlayerState::Self, Zerg_Scourge) == 0)
                         return false;
                 }
 
@@ -309,6 +310,7 @@ namespace McRave::Producing {
 
                 const auto value = scoreUnit(type);
                 scoreThisFrame += "{" + string(type.c_str()) + ", " + to_string(value) + "}, ";
+
                 if (value >= best) {
                     best = value;
                     bestType = type;
@@ -320,7 +322,7 @@ namespace McRave::Producing {
             multimap<double, const BWEB::Station *> stations;
             for (auto &[val, station] : Stations::getStationsBySaturation()) {
                 auto saturation = bestType.isWorker() ? val : 1.0 / val;
-                auto larvaCount = count_if(Units::getUnits(PlayerState::Self).begin(), Units::getUnits(PlayerState::Self).end(), [&](auto &u) {
+                auto larvaCount = (int)count_if(Units::getUnits(PlayerState::Self).begin(), Units::getUnits(PlayerState::Self).end(), [&](auto &u) {
                     auto &unit = *u;
                     return unit.getType() == Zerg_Larva && unit.unit()->getHatchery() && unit.unit()->getHatchery()->getTilePosition() == station->getBase()->Location();
                 });
@@ -334,14 +336,14 @@ namespace McRave::Producing {
                 if (larvaCount > 1 && totalLarva <= 4 && !BuildOrder::isOpener() && bestType.isWorker() && saturation >= 1.6)
                     continue;
 
-                stations.emplace(saturation * larvaCount, station);
+                stations.emplace(saturation * (double)larvaCount, station);
             }
 
             for (auto &[val, station] : stations) {
                 for (auto &u : Units::getUnits(PlayerState::Self)) {
                     UnitInfo &larva = *u;
-                    if (!larvaTrickRequired(larva)) {
-                        if (validLarva(larva, val, station)) {                            
+                    if (larva.getType() == Zerg_Larva && !larvaTrickRequired(larva)) {
+                        if (validLarva(larva, val, station)) {
                             produced = produce(larva, bestType);
                         }
                         else if (larvaTrickOptional(larva))

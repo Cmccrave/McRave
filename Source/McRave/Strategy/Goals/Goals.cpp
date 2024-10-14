@@ -290,26 +290,14 @@ namespace McRave::Goals {
             }
         }
 
-        void updateZergGoals()
+        void updateOverlordGoals()
         {
-            if (Broodwar->self()->getRace() != Races::Zerg)
-                return;
-
-            auto enemyStrength = Players::getStrength(PlayerState::Enemy);
-            auto enemyAir = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith);
-
-            // Clear out base early game
-            if (Util::getTime() < Time(4, 00) && !Spy::enemyProxy() && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
-                auto oldestTile = Terrain::getOldestPosition(Terrain::getMainArea());
-
-                if (oldestTile.isValid())
-                    assignNumberToGoal(oldestTile, Zerg_Zergling, 1, GoalType::Explore);
-            }
+            auto enemyAir = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk);
 
             // Assign an Overlord to watch our Choke early on
             if (Terrain::getNaturalChoke() && !Spy::enemyRush()) {
                 const auto natSpot = Position(Terrain::getNaturalChoke()->Center());
-                if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && enemyStrength.airToAir <= 0.0)) {
+                if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && !enemyAir)) {
                     assignNumberToGoal(natSpot, Zerg_Overlord, 1, GoalType::Escort);
                     return;
                 }
@@ -341,27 +329,39 @@ namespace McRave::Goals {
                         break;
                 }
             }
+        }
+
+        void updateZergGoals()
+        {
+            if (Broodwar->self()->getRace() != Races::Zerg)
+                return;
+
+            auto enemyStrength = Players::getStrength(PlayerState::Enemy);
+
+            // Clear out base early game
+            if (Util::getTime() < Time(4, 00) && !Spy::enemyProxy() && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
+                auto oldestTile = Terrain::getOldestPosition(Terrain::getMainArea());
+
+                if (oldestTile.isValid())
+                    assignNumberToGoal(oldestTile, Zerg_Zergling, 1, GoalType::Explore);
+            }
 
             // Before we have a spore, we need to defend overlords            
             auto &stations = Stations::getStations(PlayerState::Self);
             auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto& s) { return s->isMain(); }));
 
             // Before Hydras have upgrades, defend vulnerable bases, put lings on defense too
-            if (Combat::State::isStaticRetreat(Zerg_Hydralisk) && !BuildOrder::isAllIn() && com(Zerg_Hydralisk_Den)) {
+            if (Combat::State::isStaticRetreat(Zerg_Hydralisk) && !BuildOrder::isAllIn() && com(Zerg_Hydralisk_Den) > 0) {
                 auto evenSplit = (1.0 / double(stations.size() - mainStations));
-                auto hydraPercent = evenSplit;
 
                 if (!stations.empty()) {
                     for (auto &station : stations) {
                         if ((station->isNatural() && Terrain::isPocketNatural()) || (station->isMain() && !Terrain::isPocketNatural()))
                             continue;
-                        //assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, hydraPercent, GoalType::Defend);
+                        assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, evenSplit, GoalType::Defend);
                         assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Zergling, evenSplit, GoalType::Defend);
                     }
                 }
-
-                // Remaining hydras defend natural (expected bust position)
-                //assignPercentToGoal(Stations::getDefendPosition(Terrain::getMyNatural()), Zerg_Hydralisk, 1.0, GoalType::Defend);
             }
 
             // Always keep 2 hydras at home to protect from sairs if we dont have a spore
@@ -447,6 +447,7 @@ namespace McRave::Goals {
         updateGenericGoals();
         updateProtossGoals();
         updateTerranGoals();
+        updateOverlordGoals();
         updateZergGoals();
         updateCampaignGoals();
     }

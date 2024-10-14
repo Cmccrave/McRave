@@ -122,7 +122,7 @@ namespace McRave::BuildOrder::Zerg {
             // Adding Overlords outside opening book supply, offset by large hatch counts
             if (!inBookSupply) {
                 int offset = (hatchCount() / 5) * 2;
-                int supplyPerOvie = 16;
+                int supplyPerOvie = 16 - (hatchCount() / 5);
                 int count = 1 + min(26, (s - offset) / supplyPerOvie);
                 buildQueue[Zerg_Overlord] = min(25, count);
             }            
@@ -316,6 +316,7 @@ namespace McRave::BuildOrder::Zerg {
             // Overlord speed can be done inside openings
             const auto queueOvieSpeed = (Players::ZvT() && Spy::getEnemyTransition() == "2PortWraith" && Util::getTime() > Time(6, 00))
                 || (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 140 && total(Zerg_Hydralisk) > 0)
+                || (Players::ZvP() && Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0)
                 || (Spy::enemyInvis() && (BuildOrder::isFocusUnit(Zerg_Hydralisk) || BuildOrder::isFocusUnit(Zerg_Ultralisk)))
                 || (!Players::ZvZ() && Players::getSupply(PlayerState::Self, Races::Zerg) >= 200);
 

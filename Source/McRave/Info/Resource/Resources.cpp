@@ -180,7 +180,7 @@ namespace McRave::Resources {
         }
 
         myRaceChar = *Broodwar->self()->getRace().c_str();
-        ifstream readFileA("bwapi-data/AI/" + mapName + "GatherInfo" + myRaceChar + ".txt");
+        ifstream readFileA("bwapi-data/read/" + mapName + "GatherInfo" + myRaceChar + ".txt");
         int x, y, cnt;
         string line;
         while (readFileA) {
@@ -217,7 +217,7 @@ namespace McRave::Resources {
 
     void onEnd()
     {
-        ofstream readFileA("bwapi-data/AI/" + mapName + "GatherInfo" + myRaceChar + ".txt");
+        ofstream readFileA("bwapi-data/write/" + mapName + "GatherInfo" + myRaceChar + ".txt");
         if (readFileA) {
             for (auto &mineral : myMinerals) {
                 if (!mineral->getGatherOrderPositions().empty()) {

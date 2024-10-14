@@ -64,7 +64,7 @@ namespace McRave::Pathing {
 
                 if (unit.isFlying()
                     || unit.getType().isBuilding()
-                    || (unit.hasAttackedRecently() && unit.getType() != Protoss_Dragoon)
+                    || (unit.hasAttackedRecently())
                     || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()))
                     continue;
 
@@ -80,15 +80,11 @@ namespace McRave::Pathing {
 
 
                     // Figure out how to trap the unit
-                    auto trapTowards = unit.getPosition();
-                    if (unit.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, unit.getPosition())) {
-                        trapTowards = unit.getPosition() + Position(int(unit.unit()->getVelocityX() * furthestFramesToArrive), int(unit.unit()->getVelocityY() * furthestFramesToArrive));
+                    auto trapTowards = unit.getPosition() + Position(int(unit.unit()->getVelocityX() * furthestFramesToArrive), int(unit.unit()->getVelocityY() * furthestFramesToArrive));
+                    if (unit.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, unit.getPosition())) {                        
                         trapTowards += Terrain::getMainPosition();
                         trapTowards /= 2.0;
-                        furthestFramesToArrive *= 1.5;
-                    }
-                    else {
-                        trapTowards = unit.unit()->getOrderTargetPosition();
+                        //furthestFramesToArrive *= 1.15;
                     }
                     //Visuals::drawLine(unit.getPosition(), trapTowards, Colors::Purple);
 
@@ -133,12 +129,13 @@ namespace McRave::Pathing {
 
                             auto closestFramesToArrive = (clamp(pow(closestTargeter->getPosition().getDistance(pos) / closestTargeter->getSpeed(), 1.5), 2.0, 64.0));
 
-                            auto ct_angle = BWEB::Map::getAngle(closestTargeter->getPosition(), pos);
-                            auto pos_angle = BWEB::Map::getAngle(pos, unit.getPosition());
+                            if (!unit.getType().isWorker()) {
+                                auto ct_angle = BWEB::Map::getAngle(closestTargeter->getPosition(), pos);
+                                auto pos_angle = BWEB::Map::getAngle(pos, unit.getPosition());
 
-                            auto angleDiff = abs(ct_angle - pos_angle);
-                            if (angleDiff > 0.25)
-                                closestFramesToArrive *= min(2.5, angleDiff);
+                                auto angleDiff = abs(ct_angle - pos_angle);
+                                closestFramesToArrive += angleDiff * 15.0;
+                            }
 
                             auto correctedPos = pos + Position(int(dirx * closestFramesToArrive), int(diry * closestFramesToArrive)) + Position(int(expandx * closestFramesToArrive), int(expandy * closestFramesToArrive));
 

@@ -500,7 +500,7 @@ namespace McRave
             lastThreateningFrame = Broodwar->getFrameCount();
 
         // Linger threatening
-        auto lingerFrames = min(4 + ((Util::getTime().minutes - 6) * 24), 120);
+        //auto lingerFrames = min(4 + ((Util::getTime().minutes - 6) * 24), 120);
         threatening = Broodwar->getFrameCount() - lastThreateningFrame <= 4;
 
         // Apply to others
@@ -840,7 +840,7 @@ namespace McRave
         if (getType() == Terran_Ghost)
             return !Terrain::inArea(mapBWEM.GetArea(TilePosition(getDestination())), getPosition());
 
-        auto unitTarget = getTarget().lock();
+        auto &unitTarget = getTarget().lock();
         auto range = unitTarget->isFlying() ? getAirRange() : getGroundRange();
         auto cargoPickup = getType() == BWAPI::UnitTypes::Protoss_High_Templar ? (!canStartCast(BWAPI::TechTypes::Psionic_Storm, unitTarget->getPosition()) || Grids::getGroundThreat(getPosition(), PlayerState::Enemy) <= 0.1f) : !canStartAttack();
 
@@ -961,43 +961,51 @@ namespace McRave
 
         if (Players::ZvP() && getType() == Zerg_Zergling) {
             auto enemyOneBase = Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore";
-            if (enemyOneBase && Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && !Terrain::isPocketNatural() && timeCompletesWhen() < Time(4, 00) && vis(Zerg_Sunken_Colony) > 0 && total(Zerg_Zergling) >= 24)
-                runbyDesired = true;
+            auto backstabTiming = (Spy::getEnemyBuild() == "2Gate") ? Time(5, 00) : Time(4, 00);
+
+            if (enemyOneBase && Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && !Terrain::isPocketNatural() && timeCompletesWhen() < Time(4, 00) && vis(Zerg_Sunken_Colony) > 0 && total(Zerg_Zergling) >= 12 && Util::getTime() > backstabTiming)
+                return true;
             if (enemyOneBase && Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && !Terrain::isPocketNatural() && timeCompletesWhen() < Time(5, 00) && vis(Zerg_Sunken_Colony) >= 4)
-                runbyDesired = true;
+                return true;
             if (Spy::getEnemyOpener() == "Proxy9/9" && timeCompletesWhen() < Time(4, 00) && Util::getTime() < Time(5, 00))
+                return true;
+
+            // FFE runby are just automatically triggered, don't wait
+            if (Spy::getEnemyBuild() == "FFE" && Spy::getEnemyOpener() == "Nexus" && timeCompletesWhen() < Time(5, 00) && Util::getTime() > Time(4, 45))
                 runbyDesired = true;
         }
 
-        //// Already started a runby
-        //if (runbyDesired && pounce)
-        //    return true;
+        // Already started a runby
+        if (runbyDesired && pounce)
+            return true;
 
-        //// Look to see if a runby would work
-        //if (runbyDesired) {
-        //    const auto closest = Util::getClosestUnit(Terrain::getEnemyNatural()->getBase()->Center(), PlayerState::Enemy, [&](auto &u) {
-        //        return !u->getType().isWorker() || u->isThreatening();
-        //    });
-        //    if (!closest || (Terrain::getEnemyNatural() && closest->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center()) >= 640.0)) {
-        //        pounce = true;
-        //    }
-        //}
+        // Look to see if a runby would work
+        if (runbyDesired) {
+            const auto closest = Util::getClosestUnit(Terrain::getMyNatural()->getBase()->Center(), PlayerState::Enemy, [&](auto &u) {
+                return !u->getType().isWorker() || u->isThreatening();
+            });
+            if (!closest || (Terrain::getEnemyNatural() && closest->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center()) >= 640.0)) {
+                pounce = true;
+            }
+        }
         return runbyDesired;
     }
 
     bool UnitInfo::attemptingSurround()
     {
-        if (!hasTarget())
+        if (!hasTarget() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 24.0)
             return false;
-        auto target = *getTarget().lock();
-        if (target.isThreatening() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 16.0)
+
+
+        auto &target = *getTarget().lock();
+        if (target.isThreatening())
             return false;
-        if (!target.getType().isWorker() && Util::getTime() < Time(4, 00))
+        if (!target.getType().isWorker() && Util::getTime() < Time(4, 00) && Broodwar->getGameType() != GameTypes::Use_Map_Settings)
             return false;
 
         if (target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target.getPosition()))
             return true;
-        return position.getDistance(surroundPosition) > 16.0;
+        return position.getDistance(surroundPosition) > 24.0;
 
         //if (target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target.getPosition()))
         //    return true;

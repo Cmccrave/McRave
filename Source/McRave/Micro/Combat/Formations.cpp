@@ -27,13 +27,26 @@ namespace McRave::Combat::Formations {
                 return u->getType().isBuilding() && u->getFormation().isValid() && (u->getFormation().getDistance(cluster.marchPosition) < 160.0 || (Terrain::inArea(u->getPosition(), cluster.avgPosition) && Terrain::inArea(u->getPosition(), cluster.retreatPosition)));
             });
 
+            auto offset = 0.0;// (Util::getTime() > Time(6, 30)) ? max(commander->getGroundRange(), 96.0) : commander->getGroundRange();
+            if (Players::ZvP()) {
+                if (Spy::getEnemyBuild() == "FFE" && Spy::getEnemyTransition() == "Speedlot" && Util::getTime() < Time(8, 00))
+                    offset = -32.0;
+                if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Singularity_Charge, 1))
+                    offset = 64.0;
+            }
+
+            if (Players::ZvT()) {
+                if (Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) > 0)
+                    offset = 64.0;
+            }
+
             // Need to not do this if our formation is far away ... somehow
             if (closestBuilding) {
                 auto commander = cluster.commander.lock();
                 auto buildingDist = closestBuilding->getPosition().getDistance(cluster.marchPosition);
-                auto offset = (Util::getTime() > Time(6, 30)) ? max(commander->getGroundRange(), 96.0) : commander->getGroundRange();
+                
                 closestBuilding->circle(Colors::Yellow);
-                formation.center = Util::shiftTowards(closestBuilding->getPosition(), cluster.retreatPosition, commander->getGroundRange() + offset);
+                formation.center = Util::shiftTowards(closestBuilding->getPosition(), cluster.retreatPosition, offset);
                 formation.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition);
                 formation.angle = BWEB::Map::getAngle(closestBuilding->getFormation(), cluster.retreatPosition);
                 return;
@@ -418,7 +431,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
-        //drawFormations();
+        drawFormations();
     }
 
     vector<Formation>& getFormations() { return formations; }

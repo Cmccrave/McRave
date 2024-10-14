@@ -330,9 +330,11 @@ namespace McRave::Planning {
         {
             const auto baseType = Broodwar->self()->getRace().getResourceDepot();
             const auto hatchCount = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
+            const auto takeThirdFirst = !BuildOrder::takeNatural() && BuildOrder::takeThird() && Stations::getStations(PlayerState::Self).size() <= 2;
 
             // If we are expanding, it must be on an expansion area and be when build order requests one
             const auto expand = Broodwar->self()->getRace() != Races::Zerg
+                || takeThirdFirst
                 || (int(Stations::getStations(PlayerState::Self).size()) <= 1 && BuildOrder::takeNatural() && !BuildOrder::shouldRamp())
                 || (int(Stations::getStations(PlayerState::Self).size()) == 2 && BuildOrder::takeThird() && !BuildOrder::shouldRamp())
                 || (int(Stations::getStations(PlayerState::Self).size()) > 2 && BuildOrder::shouldExpand());
@@ -344,7 +346,7 @@ namespace McRave::Planning {
                 return false;
 
             // First expansion is always the Natural
-            if (Stations::getStations(PlayerState::Self).size() == 1 && isBuildable(baseType, Terrain::getNaturalTile()) && isPlannable(baseType, Terrain::getNaturalTile()) && isPathable(building, Terrain::getNaturalTile())) {
+            if (BuildOrder::takeNatural() && isBuildable(baseType, Terrain::getNaturalTile()) && isPlannable(baseType, Terrain::getNaturalTile()) && isPathable(building, Terrain::getNaturalTile())) {
                 placement = Terrain::getNaturalTile();
                 currentExpansion = Terrain::getMyNatural();
                 expansionPlanned = true;
