@@ -290,6 +290,20 @@ namespace McRave::Units {
     Position getEnemyArmyCenter() { return enemyArmyCenter; }
     double getImmThreat() { return immThreat; }
 
+    bool inBoundUnit(UnitInfo& unit, int seconds) {
+        if (unit.movedFlag || unit.getType().isBuilding() || unit.getType().isWorker())
+            return false;
+
+        const auto visDiff = Broodwar->getFrameCount() - unit.getLastVisibleFrame();
+        const auto inbound = Time(unit.frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, seconds);
+
+        // Check if we know they weren't at home and are missing on the map for arg seconds
+        if (!Terrain::getEnemyNatural() || !Terrain::getEnemyMain()
+            || (!Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), unit.getPosition()) && !Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), unit.getPosition())))
+            return inbound;
+        return false;
+    }
+
     bool commandAllowed(UnitInfo& unit) {
         auto idx = find_if(commandQueue.begin(), commandQueue.end(), [&](auto &u) {
             return u == &unit;

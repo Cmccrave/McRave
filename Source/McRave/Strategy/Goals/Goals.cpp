@@ -186,18 +186,18 @@ namespace McRave::Goals {
                         return u->getBuildType().isResourceDepot();
                     });
                     auto type = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
+                    auto perEnemy = (type == airType) ? 1 : 4;
 
                     if (closestBuilder && !closestBuilder->isWithinBuildRange()) {
                         for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
                             if (!unit->isSuicidal() && unit->getPosition().getDistance(closestBuilder->getPosition()) < 640.0)
-                                assignNumberToGoal(unit->getPosition(), type, 1, GoalType::Escort);
+                                assignNumberToGoal(unit->getPosition(), type, perEnemy, GoalType::Escort);
                         }
-                        assignPercentToGoal(closestBuilder->getPosition(), type, 1.0, GoalType::Escort);
                     }
                     else {
                         for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
                             if (unit->getPosition().getDistance(nextExpand) < 640.0)
-                                assignNumberToGoal(unit->getPosition(), type, 1, GoalType::Escort);
+                                assignNumberToGoal(unit->getPosition(), type, perEnemy, GoalType::Escort);
                         }
                     }
                 }

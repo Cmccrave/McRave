@@ -17,8 +17,6 @@ namespace McRave::BuildOrder::Protoss {
         {
             // Experimental build from Best
             inOpening =                                     s < 70;
-
-            unitLimits[Protoss_Dragoon] =                   1;
             inTransition =                                  total(Protoss_Citadel_of_Adun) > 0;
             focusUnit =                                     Protoss_Dark_Templar;
 
@@ -30,36 +28,46 @@ namespace McRave::BuildOrder::Protoss {
             // Research
             techQueue[Psionic_Storm] =                      vis(Protoss_Dark_Templar) >= 2;
 
-            // Composition
-            armyComposition[Protoss_Zealot] =               0.80;
-            armyComposition[Protoss_Dragoon] =              0.10;
-            armyComposition[Protoss_Dark_Templar] =         0.10;
+            // Pumping
+            protossUnitPump[Protoss_Probe] = true;
+            protossUnitPump[Protoss_Zealot] = com(Protoss_Gateway) > 0;
+            protossUnitPump[Protoss_Dark_Templar] = com(Protoss_Gateway) > 0 && com(Protoss_Templar_Archives) > 0;
         }
 
         void PvZ_1GC_ZCore()
         {
             scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
             gasLimit =                                      INT_MAX;
-            unitLimits[Protoss_Zealot] =                    vis(Protoss_Cybernetics_Core) > 0 ? INT_MAX : 1;
+            transitionReady =                               vis(Protoss_Cybernetics_Core) > 0;
 
+            // Buildings
             buildQueue[Protoss_Nexus] =                     1;
             buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 32);
             buildQueue[Protoss_Gateway] =                   s >= 20;
             buildQueue[Protoss_Assimilator] =               s >= 24;
             buildQueue[Protoss_Cybernetics_Core] =          s >= 34;
+
+            // Pumping
+            protossUnitPump[Protoss_Probe] = true;
+            protossUnitPump[Protoss_Zealot] = com(Protoss_Gateway) > 0;
         }
 
         void PvZ_1GC_ZZCore()
         {
             scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
             gasLimit =                                      INT_MAX;
-            unitLimits[Protoss_Zealot] =                    vis(Protoss_Cybernetics_Core) > 0 ? INT_MAX : 2;
+            transitionReady =                               vis(Protoss_Cybernetics_Core) > 0;
 
+            // Buildings
             buildQueue[Protoss_Nexus] =                     1;
             buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 24);
             buildQueue[Protoss_Gateway] =                   s >= 20;
             buildQueue[Protoss_Assimilator] =               s >= 32;
             buildQueue[Protoss_Cybernetics_Core] =          s >= 40;
+
+            // Pumping
+            protossUnitPump[Protoss_Probe] = true;
+            protossUnitPump[Protoss_Zealot] = com(Protoss_Gateway) > 0;
         }
     }
 
@@ -77,7 +85,7 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         // Openers
-        if (currentOpener == "1Zealot")
+        if (currentOpener == "ZCore")
             PvZ_1GC_ZCore();
         if (currentOpener == "2Zealot")
             PvZ_1GC_ZZCore();

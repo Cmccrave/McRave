@@ -69,10 +69,16 @@ namespace McRave::Roles {
             int completedDefenders = com(Protoss_Photon_Cannon) + com(Protoss_Zealot);
             int visibleDefenders = vis(Protoss_Photon_Cannon) + vis(Protoss_Zealot);
 
+            auto cannon = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &c) {
+                return c->getType() == Protoss_Photon_Cannon;
+            });
+
             // If trying to FFE, pull based on Cannon/Zealot numbers, or lack of scouting information
             if (BuildOrder::getCurrentBuild() == "FFE") {
-                if (Spy::getEnemyOpener() == "4Pool" && visibleDefenders >= 1)
-                    forceCombatWorker(8 - 2 * completedDefenders, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
+                if (Spy::getEnemyOpener() == "4Pool" && visibleDefenders >= 1) {
+                    auto pos = cannon ? cannon->getPosition() : Position(Terrain::getNaturalChoke()->Center());
+                    forceCombatWorker(8 - 2 * completedDefenders, pos, LocalState::None, GlobalState::Retreat);
+                }
                 else if (Spy::enemyRush() && Spy::getEnemyOpener() == "9Pool" && Util::getTime() > Time(3, 15) && completedDefenders < 3)
                     forceCombatWorker(3, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
                 else if (!Terrain::getEnemyStartingPosition().isValid() && Spy::getEnemyBuild() == "Unknown" && completedDefenders < 1 && visibleDefenders > 0)
@@ -156,6 +162,9 @@ namespace McRave::Roles {
                 else if (proxyBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(1, proxyBuilding->getPosition());
 
+                // TODO: Check if we need this for cannon rush bots
+                // We changed how `proxy` flag is determined, check for no zealots/marines/zerglings 
+
                 //// Probe arrived early, 1 drone
                 //else if (proxyWorker && Util::getTime() < Time(3, 00) && vis(Zerg_Spawning_Pool) == 0)
                 //    forceCombatWorker(1, proxyWorker->getPosition());
@@ -181,7 +190,7 @@ namespace McRave::Roles {
 
             // ZvT
             if (Players::ZvT() && Util::getTime() < Time(3, 30)) {
-                auto count = (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) * 3);
+                auto count = (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) * 2);
                 if (proxyDangerousBuilding)
                     count += 3;
 
@@ -215,7 +224,7 @@ namespace McRave::Roles {
                     forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
 
                 // We haven't got out hatchery down yet
-                else if (vis(Zerg_Hatchery) < 2 && proxyWorker && selfBuildingWorker)
+                else if (vis(Zerg_Hatchery) < 2 && BuildOrder::takeNatural() && proxyWorker && selfBuildingWorker && (Terrain::inArea(Terrain::getNaturalArea(), proxyWorker->getPosition()) || proxyWorker->hasAttackedRecently() || proxyWorker->isThreatening()))
                     forceCombatWorker(1, proxyWorker->getPosition());
             }
 

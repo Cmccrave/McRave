@@ -49,7 +49,7 @@ namespace BWEB {
         // Add reserved tiles
         for (auto &m : base->Minerals()) {
             Map::addReserve(m->TopLeft(), 2, 1);
-            //biggerReserve(m->Unit(), m->Unit()->getTilePosition(), base->Location());
+            biggerReserve(m->Unit(), m->Unit()->getTilePosition(), TilePosition(base->Center()));
             //biggerReserve(m->Unit(), m->Unit()->getTilePosition() + TilePosition(1, 0), base->Location() + TilePosition(3, 2));
         }
         for (auto &g : base->Geysers()) {

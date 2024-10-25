@@ -33,6 +33,11 @@ namespace McRave::BuildOrder::Terran {
                 if (grdNeeded > 0)
                     buildQueue[Terran_Bunker] = vis(Terran_Bunker) + 1;
             }
+
+            // Add comsats
+            if (com(Terran_Academy) > 0) {
+                buildQueue[Terran_Comsat_Station] = com(Terran_Command_Center);
+            }
         }
 
         void queueSupply()
@@ -118,7 +123,7 @@ namespace McRave::BuildOrder::Terran {
                 if (rampType == Terran_Factory) {
                     auto maxFacts = 8;
                     auto factsPerBase = 3;
-                    productionSat = (vis(Terran_Factory) >= int(factsPerBase * vis(Terran_Command_Center)) || vis(Terran_Command_Center) >= maxFacts);
+                    productionSat = (vis(Terran_Factory) >= int(factsPerBase * vis(Terran_Command_Center)) || vis(Terran_Factory) >= maxFacts);
                     rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
 
                     if (rampDesired) {
@@ -228,6 +233,7 @@ namespace McRave::BuildOrder::Terran {
             return;
         }
 
+        terranUnitPump.clear();
         if (Players::TvZ())
             TvZ();
         else
@@ -236,7 +242,7 @@ namespace McRave::BuildOrder::Terran {
 
     void tech()
     {
-        auto techVal = int(focusUnits.size()) + 1;
+        auto techVal = int(focusUnits.size());
         techSat = (techVal > com(Terran_Command_Center));
         unitOrder ={ Terran_Vulture, Terran_Siege_Tank_Tank_Mode };
 
@@ -246,7 +252,7 @@ namespace McRave::BuildOrder::Terran {
             getTech = true;
 
         if (Players::TvZ())
-            unitOrder ={ Terran_Medic, Terran_Science_Vessel, Terran_Siege_Tank_Tank_Mode };
+            unitOrder ={ Terran_Medic, Terran_Science_Vessel };
         if (Players::TvP())
             unitOrder ={ Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Science_Vessel };
         if (Players::TvT())
@@ -282,30 +288,97 @@ namespace McRave::BuildOrder::Terran {
 
     void composition()
     {
-        // Clear composition before setting
-        if (!inOpening)
-            armyComposition.clear();
+        armyComposition.clear();
+        auto availGas = Broodwar->self()->gas() - (Upgrading::getReservedGas() + Researching::getReservedGas() + Planning::getPlannedGas());
+        const auto withoutAddon ={ Terran_Goliath, Terran_Vulture, Terran_Wraith };
 
-        if (Players::TvZ() && !inOpening) {
+        const auto buildingAvailable = [&](auto &type) {
+            auto needAddon = type.whatBuilds().first.canBuildAddon() && find(withoutAddon.begin(), withoutAddon.end(), type) == withoutAddon.end();
 
-            if (isFocusUnit(Terran_Science_Vessel)) {
-                armyComposition[Terran_Marine] = 0.80;
-                armyComposition[Terran_Medic] = 0.20;
-                armyComposition[Terran_Science_Vessel] = 1.00;
+            auto building = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
+                return u->getType() == type.whatBuilds().first && u->isCompleted() && (!needAddon || u->unit()->getAddon()) && u->getRemainingTrainFrames() < 10;
+            });
+            return building;
+        };
+
+        if (inOpening) {
+            if (terranUnitPump[Terran_SCV])
                 armyComposition[Terran_SCV] = 1.00;
-            }
-            else if (isFocusUnit(Terran_Medic)) {
-                armyComposition[Terran_Marine] = 0.80;
-                armyComposition[Terran_Medic] = 0.20;
-                armyComposition[Terran_SCV] = 1.00;
+
+            const auto buildings ={ Terran_Barracks, Terran_Factory, Terran_Starport };
+
+            for (auto &building : buildings) {
+                vector<UnitType> sortedByGas ={ building.buildsWhat().begin(), building.buildsWhat().end() };
+                sort(sortedByGas.begin(), sortedByGas.end(), [&](auto &lhs, auto &rhs) {
+                    return lhs.gasPrice() >= rhs.gasPrice();
+                });
+
+                for (auto &type : sortedByGas) {
+                    if (!terranUnitPump[type] || availGas < type.gasPrice() || !buildingAvailable(type))
+                        continue;
+                    armyComposition[type] = 1.00;
+                    break;
+                }
             }
         }
 
-        if ((Players::TvT() || Players::TvP()) && !inOpening) {
-            armyComposition[Terran_Vulture] =                   0.50;
-            armyComposition[Terran_Siege_Tank_Tank_Mode] =      0.40;
-            armyComposition[Terran_Goliath] =                   0.10;
-            armyComposition[Terran_SCV] =                       1.00;
+        if (!inOpening) {
+            static vector<pair<UnitType, int>> priorityOrder;
+
+            if (rampType == Terran_Factory) {
+                priorityOrder ={
+                    {Terran_SCV, 30},
+                    {Terran_Siege_Tank_Tank_Mode, 2}, {Terran_Vulture, 2}, {Terran_Goliath, 1}, {Terran_Science_Vessel, 1},
+                    {Terran_Siege_Tank_Tank_Mode, 4}, {Terran_Vulture, 8}, {Terran_Goliath, 2},
+
+                    {Terran_SCV, 45},
+                    {Terran_Siege_Tank_Tank_Mode, 8}, {Terran_Vulture, 16}, {Terran_Goliath, 4}, {Terran_Science_Vessel, 2},
+                    {Terran_Siege_Tank_Tank_Mode, 16}, {Terran_Vulture, 24}, {Terran_Goliath, 4},
+
+                    {Terran_SCV, 60},
+                    {Terran_Siege_Tank_Tank_Mode, 32}, {Terran_Vulture, 32}, {Terran_Goliath, 6}, {Terran_Science_Vessel, 3},
+                };
+
+                // Swap tank/goliath count vs carriers
+                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0) {
+                    for (auto &[type, cnt] : priorityOrder) {
+                        if (type == Terran_Siege_Tank_Tank_Mode) {
+                            type = Terran_Goliath;
+                        }
+                        else if (type == Terran_Goliath) {
+                            type = Terran_Siege_Tank_Tank_Mode;
+                        }
+                    }
+                }
+            }
+
+            if (rampType == Terran_Barracks) {
+                priorityOrder ={
+                    {Terran_SCV, 30},
+
+                    {Terran_Marine, 5}, {Terran_Medic, 1},
+                    {Terran_Science_Vessel, 6},
+
+                    {Terran_Marine, 10}, {Terran_Medic, 3}, 
+
+                    {Terran_SCV, 45},
+                    {Terran_Marine, 20}, {Terran_Medic, 6}, 
+                    {Terran_Marine, 40}, {Terran_Medic, 8}, 
+
+                    {Terran_SCV, 60},
+                    {Terran_Marine, 80}, {Terran_Medic, 12},
+                };
+            }
+
+            for (auto &[type, count] : priorityOrder) {
+                auto typeAvailable = (unlockReady(type) && vis(type) < count);
+                if (type.isWorker() && Resources::isMineralSaturated() && Resources::isGasSaturated())
+                    continue;
+                if (!typeAvailable || availGas < type.gasPrice() || !buildingAvailable(type))
+                    continue;
+                armyComposition[type] = 1.00;
+                break;
+            }
         }
     }
 
@@ -316,27 +389,6 @@ namespace McRave::BuildOrder::Terran {
         for (auto &[type, per] : armyComposition) {
             if (per > 0.0)
                 unlockedType.insert(type);
-        }
-
-        // Unit limiting in opening book
-        if (inOpening) {
-            for (auto &type : unitLimits) {
-                if (type.second > vis(type.first))
-                    unlockedType.insert(type.first);
-                else
-                    unlockedType.erase(type.first);
-            }
-        }
-
-        // UMS Unlocking
-        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings) {
-            for (auto &type : BWAPI::UnitTypes::allUnitTypes()) {
-                if (!type.isBuilding() && type.getRace() == Races::Terran && vis(type) >= 2) {
-                    unlockedType.insert(type);
-                    if (!type.isWorker())
-                        focusUnits.insert(type);
-                }
-            }
         }
     }
 }

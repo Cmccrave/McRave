@@ -23,15 +23,8 @@ namespace McRave::BuildOrder::Protoss {
         transitionReady =                               false;
 
         gasLimit =                                      INT_MAX;
-        unitLimits[Protoss_Zealot] =                    1;
-        unitLimits[Protoss_Dragoon] =                   INT_MAX;
-        unitLimits[Protoss_Probe] =                     INT_MAX;
 
         desiredDetection =                              Protoss_Observer;
-
-        armyComposition[Protoss_Probe] =                1.00;
-        armyComposition[Protoss_Zealot] =               0.10;
-        armyComposition[Protoss_Dragoon] =              0.90;
     }
 
     void PvFFA()

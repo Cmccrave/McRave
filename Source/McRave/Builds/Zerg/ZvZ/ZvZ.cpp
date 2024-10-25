@@ -103,9 +103,6 @@ namespace McRave::BuildOrder::Zerg {
 
         desiredDetection =                              Zerg_Overlord;
         focusUnit =                                     UnitTypes::None;
-
-        unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvZ();
-        pumpLings =                                     unitLimits[Zerg_Zergling] > vis(Zerg_Zergling);
     }
 
     void ZvZ_1HatchMuta()
@@ -130,20 +127,16 @@ namespace McRave::BuildOrder::Zerg {
         // Upgrades
         upgradeQueue[Metabolic_Boost] =                 (speedFirst || vis(Zerg_Lair) > 0) && (total(Zerg_Zergling) >= 6 && gas(100));
 
-        // Limits
-        if (com(Zerg_Spawning_Pool) > 0)
-            unitLimits[Zerg_Drone] = 12;
-
         // Pumping
-        pumpLings = lingsNeeded_ZvZ() > vis(Zerg_Zergling) || (com(Zerg_Spire) == 1 && !gas(100)) || vis(Zerg_Drone) >= unitLimits[Zerg_Drone];
-        pumpScourge = com(Zerg_Spire) == 1 && hatchCount() >= 2 && total(Zerg_Scourge) <= 24 && Spy::enemyTurtle();
-        pumpMutas = !pumpScourge && com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
+        zergUnitPump[Zerg_Drone] |=                     vis(Zerg_Drone) < 12 && com(Zerg_Spawning_Pool) > 0;
+        zergUnitPump[Zerg_Zergling] =                   lingsNeeded_ZvZ() > vis(Zerg_Zergling) || (com(Zerg_Spire) == 1 && !gas(100)) || vis(Zerg_Drone) >= 12;
+        zergUnitPump[Zerg_Scourge] =                    com(Zerg_Spire) == 1 && hatchCount() >= 2 && total(Zerg_Scourge) < 6 && Spy::enemyTurtle();
+        zergUnitPump[Zerg_Mutalisk] =                   !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
 
         // Reactions
         if (Spy::enemyTurtle() && Spy::getEnemyTransition() != "2HatchHydra") {
             wantNatural = true;
-            pumpLings = false;
-            focusUnit = Zerg_Scourge;
+            zergUnitPump[Zerg_Zergling] = false;
         }
 
         // Gas
@@ -158,7 +151,7 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvZ_2HatchMuta()
     {
-        inOpening =                                     total(Zerg_Mutalisk) < 6 && total(Zerg_Scourge) < 12;
+        inOpening =                                     total(Zerg_Mutalisk) < 6 && total(Zerg_Scourge) < 24;
         inTransition =                                  vis(Zerg_Lair) > 0;
         inBookSupply =                                  vis(Zerg_Overlord) < 3;
 
@@ -169,34 +162,31 @@ namespace McRave::BuildOrder::Zerg {
         // Build
         buildQueue[Zerg_Extractor] =                    (s >= 24) + (vis(Zerg_Drone) >= 16);
         buildQueue[Zerg_Lair] =                         (!speedFirst || lingSpeed()) && gas(100) && vis(Zerg_Drone) >= 8 && (vis(Zerg_Larva) == 0 || vis(Zerg_Drone) >= 14);
-        buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && com(Zerg_Drone) >= 11 && vis(Zerg_Larva) == 0;
+        buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && com(Zerg_Drone) >= 12 && vis(Zerg_Larva) <= 1;
         buildQueue[Zerg_Overlord] =                     1 + (vis(Zerg_Extractor) + Spy::enemyGasSteal() >= 1) + (s >= 32) + (s >= 46);
 
         // Upgrades
         upgradeQueue[Metabolic_Boost] =                 (speedFirst || vis(Zerg_Lair) > 0) && (total(Zerg_Zergling) >= 6 && gas(100));
 
-        // Limits
-        if (com(Zerg_Spawning_Pool) > 0)
-            unitLimits[Zerg_Drone] = 24;
-
         // Pumping
-        pumpLings = lingsNeeded_ZvZ() > vis(Zerg_Zergling)
+        zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 24 && com(Zerg_Spawning_Pool) > 0;
+        zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling)
             || (com(Zerg_Spire) == 1 && !gas(100) && !Spy::enemyTurtle())
-            || (vis(Zerg_Drone) >= unitLimits[Zerg_Drone] && !gas(100))
-            || (vis(Zerg_Drone) >= unitLimits[Zerg_Drone] && com(Zerg_Spire) == 0);
+            || (vis(Zerg_Drone) >= 24 && !gas(100))
+            || (vis(Zerg_Drone) >= 24 && com(Zerg_Spire) == 0);
 
         // Reactions
-        if (Spy::getEnemyTransition() == "1HatchMuta") {
-            pumpScourge = com(Zerg_Spire) == 1 && gas(75) && total(Zerg_Scourge) <= 24;
-            pumpMutas = !pumpScourge && com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
+        if (Spy::getEnemyTransition() == "1HatchMuta" && !Spy::enemyTurtle()) {
+            zergUnitPump[Zerg_Scourge] = com(Zerg_Spire) == 1 && gas(75) && total(Zerg_Scourge) < 24;
+            zergUnitPump[Zerg_Mutalisk] = !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
             reserveLarva = 0;
         }
         else if (Spy::enemyPressure()) {
-            pumpMutas = com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
+            zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
             reserveLarva = 0;
         }
         else {
-            pumpMutas = com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
+            zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
             reserveLarva = 3;
         }
 
@@ -232,13 +222,10 @@ namespace McRave::BuildOrder::Zerg {
         upgradeQueue[UpgradeTypes::Muscular_Augments] = vis(Zerg_Hydralisk_Den) > 0;
         upgradeQueue[UpgradeTypes::Grooved_Spines] = vis(Zerg_Hydralisk_Den) > 0 && hydraSpeed();
 
-        // Limits
-        if (com(Zerg_Spawning_Pool) > 0)
-            unitLimits[Zerg_Drone] = 20;
-
         // Pumping
-        pumpLings = vis(Zerg_Zergling) < unitLimits[Zerg_Zergling];
-        pumpHydras = Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 && com(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Hydralisk) < Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) + 6;
+        zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 20 && com(Zerg_Spawning_Pool) > 0;
+        zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvZ();
+        zergUnitPump[Zerg_Hydralisk] = Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 && com(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Hydralisk) < Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) + 6;
 
         // Gas
         gasLimit = 3;

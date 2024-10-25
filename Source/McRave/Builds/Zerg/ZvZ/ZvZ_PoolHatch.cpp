@@ -13,9 +13,11 @@ namespace McRave::BuildOrder::Zerg {
 
         void ZvZ_PH_Overpool()
         {
-            transitionReady =                               com(Zerg_Spawning_Pool) > 0;
-            unitLimits[Zerg_Drone] =                        11 - vis(Zerg_Extractor);
+            transitionReady =                               hatchCount() >= 2;
             gasLimit =                                      capGas(100);
+
+            zergUnitPump[Zerg_Drone] = vis(Zerg_Drone) < (11 - vis(Zerg_Extractor));
+            zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvP();
 
             auto secondHatch = Spy::enemyRush() ? com(Zerg_Sunken_Colony) >= 1 : (s >= 22 && vis(Zerg_Extractor) > 0 && total(Zerg_Zergling) >= 6);
             
@@ -28,10 +30,11 @@ namespace McRave::BuildOrder::Zerg {
 
         void ZvZ_PH_12Pool()
         {
-            transitionReady =                               com(Zerg_Spawning_Pool) > 0;
-            unitLimits[Zerg_Drone] =                        13 - vis(Zerg_Hatchery) - vis(Zerg_Spawning_Pool);
-            gasLimit =                                      com(Zerg_Drone) >= 10 ? gasMax() : 0;
+            transitionReady =                               hatchCount() >= 2;
             wantNatural =                                   !Spy::enemyRush();
+
+            zergUnitPump[Zerg_Drone] = vis(Zerg_Drone) < (13 - vis(Zerg_Hatchery) - vis(Zerg_Spawning_Pool));
+            zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvP();
 
             auto secondHatch = Spy::enemyRush() ? com(Zerg_Sunken_Colony) >= 1 : (s >= 22 && vis(Zerg_Extractor) > 0);
             

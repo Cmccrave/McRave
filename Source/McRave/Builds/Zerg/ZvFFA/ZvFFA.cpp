@@ -25,14 +25,9 @@ namespace McRave::BuildOrder::Zerg {
         reserveLarva =                              0;
 
         gasLimit =                                  gasMax();
-        unitLimits[Zerg_Zergling] =                 6;
-        unitLimits[Zerg_Drone] =                    INT_MAX;
 
         desiredDetection =                          Zerg_Overlord;
         focusUnit =                                 UnitTypes::None;
-
-        armyComposition[Zerg_Drone] =               0.60;
-        armyComposition[Zerg_Zergling] =            0.40;
     }
 
     int lingsNeeded_ZvFFA() {

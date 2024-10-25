@@ -166,7 +166,7 @@ namespace McRave::Stations
                     if (count > 0)
                         defendPosition /= count;
                     else
-                        defendPosition = Position(Terrain::getNaturalChoke()->Center());
+                        defendPosition = Position(defendChoke->Center());
                 }
 
                 // If defend position isn't walkable, move it towards the closest base
@@ -254,19 +254,6 @@ namespace McRave::Stations
                         return (Util::getTime() > Time(3, 00)) - groundCount;
                 }
             }
-            else if (!station->isMain() && !station->isNatural()) {
-                // Early sunk vs all-in Zealot rush
-                if (Spy::getEnemyTransition() == "ZealotRush")
-                    return (Util::getTime() > Time(6, 00)) - groundCount;
-
-                // Add one later against likely tech builds
-                if (Spy::getEnemyBuild() == "1GateCore" || Spy::getEnemyBuild() == "2Gate")
-                    return (Util::getTime() > Time(7, 00)) - groundCount;
-
-                // Corsair DT exists
-                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0)
-                    return (Util::getTime() > Time(9, 00)) - groundCount;
-            }
             return 0;
         }
 
@@ -279,15 +266,10 @@ namespace McRave::Stations
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
                 if (BuildOrder::isOpener() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None)
                     return (Util::getTime() > Time(3, 00)) - groundCount;
-                if (Players::ZvT() && Spy::getEnemyBuild() == "WorkerRush")
+                if (Players::ZvT() && Spy::getEnemyTransition() == "WorkerRush")
                     return 1 - groundCount;
                 if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(7, 00))
                     return 1 - groundCount;
-            }
-            else if (station->isNatural()) {
-            }
-            else {
-                return (Util::getTime() > Time(4, 30)) - groundCount;
             }
             return 0;
         }

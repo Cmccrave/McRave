@@ -57,6 +57,7 @@
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ_2Rax.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZergBuildOrder.cpp" />
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZSilly.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZvFFA.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZvFFA_HatchPool.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvP\ZvP.cpp" />
@@ -69,7 +70,6 @@
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ_HatchPool.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ_PoolHatch.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ_PoolLair.cpp" />
-    <ClCompile Include="..\Source\McRave\Builds\Zerg\Z_RetiredBuilds.cpp" />
     <ClCompile Include="..\Source\McRave\Info\Building\Buildings.cpp" />
     <ClCompile Include="..\Source\McRave\Info\Player\PlayerInfo.cpp" />
     <ClCompile Include="..\Source\McRave\Info\Player\Players.cpp" />

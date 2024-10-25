@@ -51,13 +51,13 @@ namespace McRave::Learning {
             // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (Players::PvP())
-                    BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "Robo");
+                    BuildOrder::setLearnedBuild("1GateCore", "ZCore", "Robo");
                 else if (Players::PvZ())
                     BuildOrder::setLearnedBuild("2Gate", "Main", "4Gate");
                 else if (Players::PvT())
                     BuildOrder::setLearnedBuild("2Base", "21Nexus", "Obs");
                 else if (Players::PvFFA() || Players::PvTVB())
-                    BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "3Gate");
+                    BuildOrder::setLearnedBuild("1GateCore", "ZCore", "3Gate");
                 else
                     BuildOrder::setLearnedBuild("2Gate", "Main", "Robo");
             }
@@ -216,7 +216,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::PvP()) {
-                    BuildOrder::setLearnedBuild("1GateCore", "1Zealot", "DT");
+                    BuildOrder::setLearnedBuild("1GateCore", "ZCore", "DT");
                     return;
                 }
                 if (Players::PvT()) {
@@ -247,7 +247,7 @@ namespace McRave::Learning {
 
             // PvT
             if (Players::PvT()) {
-                OneGateCore.setOpeners({ "0Zealot", "1Zealot" });
+                OneGateCore.setOpeners({ "NZCore", "ZCore" });
                 OneGateCore.setTransitions({ "DT" });
 
                 TwoGate.setOpeners({ "Main" });
@@ -261,7 +261,7 @@ namespace McRave::Learning {
 
             // PvP
             if (Players::PvP()) {
-                OneGateCore.setOpeners({ "1Zealot" });
+                OneGateCore.setOpeners({ "ZCore" });
                 OneGateCore.setTransitions({ "DT", "Robo", "4Gate", "3Gate" });
 
                 TwoGate.setOpeners({ "Main" });
@@ -276,7 +276,7 @@ namespace McRave::Learning {
                 TwoGate.setTransitions({ "4Gate" });
 
                 FFE.setOpeners({ "Forge" });
-                FFE.setTransitions({ "NeoBisu", "2Stargate", "StormRush", "5GateGoon" });
+                FFE.setTransitions({ "NeoBisu", "2Stargate", "5GateGoon" });
 
                 myBuilds ={ TwoGate, FFE };
             }
@@ -473,7 +473,7 @@ namespace McRave::Learning {
         mapLearning         = false;
         myRaceChar          ={ *Broodwar->self()->getRace().c_str() };
         enemyRaceChar       ={ *Broodwar->enemy()->getRace().c_str() };
-        version             = "Offseason2023";
+        version             = "AIIDE2024";
         noStats             = " 0 0 ";
         learningExtension   = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + " Learning.txt";
         gameInfoExtension   = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + " Info.txt";

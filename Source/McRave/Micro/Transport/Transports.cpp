@@ -40,13 +40,16 @@ namespace McRave::Transports {
 
             // Check if we are ready to assign this unit to a transport
             const auto readyToAssignUnit = [&](UnitInfo& cargo) {
-                auto targetDist = BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getEngagePosition());
                 if (cargo.getType() == Terran_Ghost)
                     return cargo.getDestination().isValid() && (!Terrain::inArea(mapBWEM.GetArea(TilePosition(cargo.getDestination())), cargo.getPosition()) || cargo.unit()->isLoaded());
                 if (cargo.getType() == Protoss_Reaver || cargo.getType() == Protoss_High_Templar)
                     return cargo.getDestination().isValid();
-                if (Terrain::isIslandMap() && !cargo.getType().isFlyer() && targetDist == DBL_MAX)
-                    return true;
+                if (Terrain::isIslandMap() && !cargo.getType().isFlyer()) {
+                    auto destinationArea = mapBWEM.GetArea(WalkPosition(cargo.getDestination()));
+                    auto currentArea = mapBWEM.GetArea(WalkPosition(cargo.getPosition()));
+                    auto needsRide = !currentArea || !destinationArea || (destinationArea && currentArea && !currentArea->AccessibleFrom(destinationArea));
+                    return needsRide;
+                }
                 return false;
             };
 

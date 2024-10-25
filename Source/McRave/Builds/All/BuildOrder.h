@@ -6,7 +6,7 @@
 namespace McRave::BuildOrder {
 
     enum class AllinType {
-        None, Z_5HatchSpeedling, Z_6HatchSpeedling, Z_6HatchCrackling, Z_8HatchCrackling
+        None, Z_3HatchSpeedling, Z_5HatchSpeedling, Z_8HatchCrackling
     };
 
     struct Allin {
@@ -82,22 +82,6 @@ namespace McRave::BuildOrder {
         inline AllinType activeAllinType;
     }
 
-    namespace Zerg {
-        inline int reserveLarva = 0;
-        inline bool pumpLings = false;
-        inline bool pumpHydras = false;
-        inline bool pumpMutas = false;
-        inline bool pumpLurker = false;
-        inline bool pumpScourge = false;
-        inline bool pumpDefiler = false;
-
-        inline std::map<int, int> baseToHatchRatio;
-    }
-
-    namespace Terran {
-        inline BWAPI::UnitType rampType = BWAPI::UnitTypes::Terran_Barracks;
-    }
-
     double getCompositionPercentage(BWAPI::UnitType);
     std::map<BWAPI::UnitType, double> getArmyComposition();
     int buildCount(BWAPI::UnitType);
@@ -121,6 +105,7 @@ namespace McRave::BuildOrder {
     BWAPI::UnitType getFirstFocusUnit();
     std::set <BWAPI::UnitType>& getUnlockedList();
     int gasWorkerLimit();
+    int gasMax();
     int getUnitReservation(BWAPI::UnitType);
     bool isAllIn();
     bool isPreparingAllIn();

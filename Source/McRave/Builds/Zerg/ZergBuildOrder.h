@@ -2,6 +2,9 @@
 
 namespace McRave::BuildOrder::Zerg {
 
+    inline int reserveLarva = 0;
+    inline std::map<BWAPI::UnitType, bool> zergUnitPump;
+
     void opener();
     void tech();
     void situational();
@@ -24,10 +27,8 @@ namespace McRave::BuildOrder::Zerg {
     bool hydraRange();
     bool gas(int);
     bool minerals(int);
-    int gasMax();
     int capGas(int);
     int hatchCount();
-    int colonyCount();
 
     int lingsNeeded_ZvFFA();
     int lingsNeeded_ZvP();

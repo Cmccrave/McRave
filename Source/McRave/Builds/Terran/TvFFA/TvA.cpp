@@ -29,11 +29,11 @@ namespace McRave::BuildOrder::Terran
             // Upgrades
             upgradeQueue[Ion_Thrusters] =           com(Terran_Machine_Shop) > 0;
 
-            // Composition
-            armyComposition[Terran_SCV] = 1.00;
-            armyComposition[Terran_Marine] = 0.05;
-            armyComposition[Terran_Vulture] = 0.75;
-            armyComposition[Terran_Siege_Tank_Tank_Mode] = 0.20;
+            // Pumping
+            terranUnitPump[Terran_SCV] = true;
+            terranUnitPump[Terran_Marine] = total(Terran_Marine) < 4;
+            terranUnitPump[Terran_Vulture] = (total(Terran_Siege_Tank_Siege_Mode) + total(Terran_Siege_Tank_Siege_Mode)) >= 2;
+            terranUnitPump[Terran_Siege_Tank_Tank_Mode] = (total(Terran_Siege_Tank_Siege_Mode) + total(Terran_Siege_Tank_Siege_Mode)) < 2;
         }
 
         if (currentTransition == "NukeRush") {
@@ -60,13 +60,13 @@ namespace McRave::BuildOrder::Terran
             // Research
             techQueue[Personnel_Cloaking] =             com(Terran_Covert_Ops) > 0;
 
-            // Composition
-            armyComposition[Terran_SCV] = 1.00;
-            armyComposition[Terran_Marine] = 1.00;
-            armyComposition[Terran_Vulture] = 1.00;
-            armyComposition[Terran_Ghost] = 1.00;
-            armyComposition[Terran_Dropship] = 1.00;
-            armyComposition[Terran_Nuclear_Missile] = 1.00;
+            // Pumping
+            terranUnitPump[Terran_SCV] = true;
+            terranUnitPump[Terran_Marine] = total(Terran_Marine) < 4;
+            terranUnitPump[Terran_Vulture] = com(Terran_Factory) > 0;
+            terranUnitPump[Terran_Ghost] = com(Terran_Covert_Ops) > 0 && total(Terran_Ghost) < 4;
+            terranUnitPump[Terran_Dropship] = com(Terran_Control_Tower) > 0 && total(Terran_Dropship) < 2;
+            terranUnitPump[Terran_Nuclear_Missile] = com(Terran_Covert_Ops) > 0 && com(Terran_Nuclear_Silo) > 0;
         }
     }
 }

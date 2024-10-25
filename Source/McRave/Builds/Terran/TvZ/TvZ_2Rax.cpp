@@ -20,6 +20,9 @@ namespace McRave::BuildOrder::Terran {
 
             buildQueue[Terran_Supply_Depot] =               (s >= 18);
             buildQueue[Terran_Barracks] =                   (s >= 22) + (s >= 26);
+
+            terranUnitPump[Terran_SCV] = true;
+            terranUnitPump[Terran_Marine] = true;
         }
     }
 

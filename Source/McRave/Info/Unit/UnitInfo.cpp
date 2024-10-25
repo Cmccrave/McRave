@@ -285,7 +285,7 @@ namespace McRave
     void UnitInfo::checkStuck()
     {
         // Buildings and stationary units can't get stuck
-        if (data.speed <= 0.0) {
+        if (data.speed <= 0.0 || unit()->getLastCommand().getType() == UnitCommandTypes::Stop) {
             lastMoveFrame = Broodwar->getFrameCount();
             return;
         }
@@ -298,49 +298,23 @@ namespace McRave
         else
             resourceHeldFrames = 0;
 
-        // Check if clipped between terrain or buildings
-        bool trapped = false;
-        if (getType().isWorker()) {
-            trapped = true;
-            vector<TilePosition> directions{ {1,0}, {-1,0}, {0, 1}, {0,-1} };
-
-            // Check if the unit is stuck by terrain and buildings
-            for (auto &tile : directions) {
-                auto current = getTilePosition() + tile;
-                if (BWEB::Map::isUsed(current) == None || BWEB::Map::isWalkable(current, getType()))
-                    trapped = false;
-            }
-
-            // Check if the unit intends to be here to build
-            if (getBuildPosition().isValid()) {
-                const auto center = Position(getBuildPosition()) + Position(getBuildType().tileWidth() * 16, getBuildType().tileHeight() * 16);
-                if (Util::boxDistance(getType(), getPosition(), getBuildType(), center) <= 0.0)
-                    trapped = false;
-
-                // Check if the unit is trapped between 3 mineral patches
-                auto cnt = 0;
-                for (auto &tile : directions) {
-                    auto current = getTilePosition() + tile;
-                    if (BWEB::Map::isUsed(current).isMineralField())
-                        cnt++;
-                }
-                if (cnt < 3)
-                    trapped = false;
-            }
-
-            if (!trapped)
-                lastMoveFrame = Broodwar->getFrameCount();
-        }
-
         // Check if the unit has attacked at least half as fast as it normally can
         const auto attacked = Broodwar->getFrameCount() - lastAttackFrame < 2 * max(type.groundWeapon().damageCooldown(), type.airWeapon().damageCooldown());
         if (attacked)
             lastMoveFrame = Broodwar->getFrameCount();
 
+        // Check if a worker hasn't moved off their tile
+        if (getType().isWorker()) {
+            if (lastTile != getTilePosition() || unit()->isGatheringMinerals() || unit()->isGatheringGas() || unit()->isConstructing() || isWithinBuildRange())
+                lastMoveFrame = Broodwar->getFrameCount();
+        }
         // Check if a unit hasn't moved in a while but is trying to
-        if (!bwUnit->isAttackFrame() && !trapped && (getPlayer() != Broodwar->self() || lastPos != getPosition() || !unit()->isMoving() || unit()->getLastCommand().getType() == UnitCommandTypes::Stop))
-            lastMoveFrame = Broodwar->getFrameCount();
-        else if (isStuck())
+        else {            
+            if (!bwUnit->isAttackFrame() && (getPlayer() != Broodwar->self() || lastTile != getTilePosition() || !unit()->isMoving()))
+                lastMoveFrame = Broodwar->getFrameCount();
+        }
+
+        if (isStuck())
             lastStuckFrame = Broodwar->getFrameCount();
     }
 
@@ -417,6 +391,10 @@ namespace McRave
                         return true;
                 }
             }
+            
+            // Dangerous harassing units are always a threat in our area
+            if (getType() == Protoss_Reaver || getType() == Protoss_High_Templar || getType() == Protoss_Dark_Templar || getType() == Terran_Vulture)
+                return atHome;
 
             return (Util::getTime() > Time(5, 00) && Terrain::inArea(Terrain::getMainArea(), position) && Stations::getGroundDefenseCount(Terrain::getMyMain()) == 0 && (!Walls::getMainWall() || Walls::getMainWall()->getGroundDefenseCount() == 0))
                 || (Util::getTime() > Time(7, 00) && Terrain::inArea(Terrain::getNaturalArea(), position) && Stations::getGroundDefenseCount(Terrain::getMyNatural()) == 0 && (!Walls::getNaturalWall() || Walls::getNaturalWall()->getGroundDefenseCount() == 0))
@@ -539,7 +517,7 @@ namespace McRave
                     || (getType() == Terran_SCV && (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) == 0 || bwUnit->isConstructing()))
                     || (getType() == Zerg_Drone && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0);
 
-                const auto timedOrKnown = Util::getTime() < Time(3, 00) || Spy::getEnemyBuild() == "CannonRush" || Spy::getEnemyOpener() == "8Rax";
+                const auto timedOrKnown = Util::getTime() < Time(3, 00) || Spy::getEnemyBuild() == "CannonRush" || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush";
 
                 // Workers are proxy if they're close enough to our bases and considered suspicious
                 if (getType().isWorker()) {
@@ -959,36 +937,30 @@ namespace McRave
         auto runbyDesired = false;
         static auto pounce = false;
 
+        // ZvP ling runby
         if (Players::ZvP() && getType() == Zerg_Zergling) {
             auto enemyOneBase = Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore";
             auto backstabTiming = (Spy::getEnemyBuild() == "2Gate") ? Time(5, 00) : Time(4, 00);
+            auto backstabEasy = !Terrain::isPocketNatural() && enemyOneBase && Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0
+                && Spy::getEnemyTransition() != "Speedlot" && Spy::getEnemyTransition() != "ZealotRush";
 
-            if (enemyOneBase && Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && !Terrain::isPocketNatural() && timeCompletesWhen() < Time(4, 00) && vis(Zerg_Sunken_Colony) > 0 && total(Zerg_Zergling) >= 12 && Util::getTime() > backstabTiming)
-                return true;
-            if (enemyOneBase && Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && !Terrain::isPocketNatural() && timeCompletesWhen() < Time(5, 00) && vis(Zerg_Sunken_Colony) >= 4)
-                return true;
+            if (backstabEasy && Util::getTime() > backstabTiming) {
+                if (timeCompletesWhen() < Time(4, 00) && vis(Zerg_Sunken_Colony) > 0 && total(Zerg_Zergling) >= 12)
+                    return true;
+                if (timeCompletesWhen() < Time(5, 00) && vis(Zerg_Sunken_Colony) >= 4)
+                    return true;
+            }
             if (Spy::getEnemyOpener() == "Proxy9/9" && timeCompletesWhen() < Time(4, 00) && Util::getTime() < Time(5, 00))
                 return true;
-
-            // FFE runby are just automatically triggered, don't wait
-            if (Spy::getEnemyBuild() == "FFE" && Spy::getEnemyOpener() == "Nexus" && timeCompletesWhen() < Time(5, 00) && Util::getTime() > Time(4, 45))
-                runbyDesired = true;
         }
 
-        // Already started a runby
-        if (runbyDesired && pounce)
-            return true;
-
-        // Look to see if a runby would work
-        if (runbyDesired) {
-            const auto closest = Util::getClosestUnit(Terrain::getMyNatural()->getBase()->Center(), PlayerState::Enemy, [&](auto &u) {
-                return !u->getType().isWorker() || u->isThreatening();
-            });
-            if (!closest || (Terrain::getEnemyNatural() && closest->getPosition().getDistance(Terrain::getEnemyNatural()->getBase()->Center()) >= 640.0)) {
-                pounce = true;
-            }
+        // ZvZ ling runby
+        if (Players::ZvZ() && getType() == Zerg_Zergling) {
+            if (Spy::enemyTurtle() && Util::getTime() > Time(4, 00) && timeCompletesWhen() < Time(3, 45) && Upgrading::haveOrUpgrading(UpgradeTypes::Metabolic_Boost, 1))
+                return true;
         }
-        return runbyDesired;
+
+        return false;
     }
 
     bool UnitInfo::attemptingSurround()

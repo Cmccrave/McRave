@@ -11,110 +11,110 @@ using namespace TechTypes;
 
 namespace McRave::BuildOrder::Protoss {
 
-    namespace {
+    void PvT_1GC_Robo()
+    {
+        // "http://liquipedia.net/starcraft/1_Gate_Reaver" 
+        inTransition =                                  total(Protoss_Robotics_Facility) > 0;
+        inOpening =                                     s < 60;
+        hideTech =                                      com(Protoss_Reaver) <= 0;
+        focusUnit =                                     Spy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
 
-        void PvT_1GC_Robo()
-        {
-            // "http://liquipedia.net/starcraft/1_Gate_Reaver" 
-            inTransition =                                  total(Protoss_Robotics_Facility) > 0;
-            inOpening =                                     s < 60;
-            hideTech =                                      com(Protoss_Reaver) <= 0;
-            focusUnit =                                     Spy::enemyPressure() ? Protoss_Reaver : Protoss_Observer;
+        // Buildings
+        buildQueue[Protoss_Nexus] =                     1 + (s >= 74);
+        buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 60) + (s >= 62);
+        buildQueue[Protoss_Robotics_Facility] =         s >= 52;
+        buildQueue[Protoss_Robotics_Support_Bay] =      com(Protoss_Robotics_Facility) > 0 && focusUnit == Protoss_Reaver;
+        buildQueue[Protoss_Observatory] =               com(Protoss_Robotics_Facility) > 0 && focusUnit == Protoss_Observer;
 
-            // Buildings
-            buildQueue[Protoss_Nexus] =                     1 + (s >= 74);
-            buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 60) + (s >= 62);
-            buildQueue[Protoss_Robotics_Facility] =         s >= 52;
+        // Upgrades
+        upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
 
-            // Upgrades
-            upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
+        // Pumping
+        protossUnitPump[Protoss_Probe] =                true;
+        protossUnitPump[Protoss_Zealot] =               com(Protoss_Gateway) > 0 && zealotsNeeded_PvT() > total(Protoss_Zealot);
+        protossUnitPump[Protoss_Dragoon] =              com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
+        protossUnitPump[Protoss_Reaver] =               com(Protoss_Robotics_Facility) > 0 && com(Protoss_Robotics_Support_Bay) > 0;
+        protossUnitPump[Protoss_Observer] =             com(Protoss_Robotics_Facility) > 0 && com(Protoss_Observatory) > 0;
+        protossUnitPump[Protoss_Shuttle] =              com(Protoss_Robotics_Facility) > 0 && vis(Protoss_Reaver) > vis(Protoss_Shuttle) * 2;
+    }
 
-            // Composition
-            armyComposition[Protoss_Zealot] =               0.10;
-            armyComposition[Protoss_Dragoon] =              0.90;
+    void PvT_1GC_DT()
+    {
+        // "https://liquipedia.net/starcraft/DT_Fast_Expand_(vs._Terran)"
+        inTransition =                                  total(Protoss_Citadel_of_Adun) > 0;
+        inOpening =                                     total(Protoss_Dark_Templar) < 4;
+        hideTech =                                      com(Protoss_Dark_Templar) <= 0;
+        focusUnit =                                     Protoss_Dark_Templar;
 
-            armyComposition[Protoss_Reaver] =               0.50;
-            armyComposition[Protoss_Observer] =             0.25;
-            armyComposition[Protoss_Shuttle] =              0.25;
-        }
+        // Buildings
+        buildQueue[Protoss_Gateway] =                   (s >= 20) + (vis(Protoss_Templar_Archives) > 0);
+        buildQueue[Protoss_Nexus] =                     1 + (total(Protoss_Dark_Templar) >= 2);
+        buildQueue[Protoss_Assimilator] =               (s >= 24) + (vis(Protoss_Nexus) >= 2);
+        buildQueue[Protoss_Citadel_of_Adun] =           (com(Protoss_Cybernetics_Core) > 0) && s >= 36;
+        buildQueue[Protoss_Templar_Archives] =          (com(Protoss_Citadel_of_Adun) > 0) && s >= 48;
 
-        void PvT_1GC_DT()
-        {
-            // "https://liquipedia.net/starcraft/DT_Fast_Expand_(vs._Terran)"
-            inTransition =                                  total(Protoss_Citadel_of_Adun) > 0;
-            inOpening =                                     total(Protoss_Dark_Templar) < 4;
-            hideTech =                                      com(Protoss_Dark_Templar) <= 0;
-            focusUnit =                                     Protoss_Dark_Templar;
+        // Upgrades
+        upgradeQueue[Singularity_Charge] =              vis(Protoss_Citadel_of_Adun) > 0;
 
-            // Buildings
-            buildQueue[Protoss_Gateway] =                   (s >= 20) + (vis(Protoss_Templar_Archives) > 0);
-            buildQueue[Protoss_Nexus] =                     1 + (total(Protoss_Dark_Templar) >= 2);
-            buildQueue[Protoss_Assimilator] =               (s >= 24) + (vis(Protoss_Nexus) >= 2);
-            buildQueue[Protoss_Citadel_of_Adun] =           (com(Protoss_Cybernetics_Core) > 0) && s >= 36;
-            buildQueue[Protoss_Templar_Archives] =          (com(Protoss_Citadel_of_Adun) > 0) && s >= 48;
+        // Pumping
+        protossUnitPump[Protoss_Probe] =                true;
+        protossUnitPump[Protoss_Zealot] =               com(Protoss_Gateway) > 0 && zealotsNeeded_PvT() > total(Protoss_Zealot);
+        protossUnitPump[Protoss_Dragoon] =              com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
+        protossUnitPump[Protoss_Dark_Templar] =         com(Protoss_Gateway) > 0 && com(Protoss_Templar_Archives) > 0 && total(Protoss_Dark_Templar) < 4;
+    }
 
-            // Upgrades
-            upgradeQueue[Singularity_Charge] =              vis(Protoss_Citadel_of_Adun) > 0;
+    void PvT_1GC_4Gate()
+    {
+        // "https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)"
+        inTransition =                                  total(Protoss_Gateway) >= 4;
+        inOpening =                                     s < 80;
 
-            // Composition
-            if (com(Protoss_Templar_Archives) > 0 && total(Protoss_Dark_Templar) < 4)
-                armyComposition[Protoss_Dark_Templar] =     1.00;
-            else
-                armyComposition[Protoss_Dragoon] =          1.00;
-        }
+        // Buildings
+        buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 30) + (2 * (s >= 62));
+        buildQueue[Protoss_Assimilator] =               s >= 22;
+        buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
 
-        void PvT_1GC_4Gate()
-        {
-            // "https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)"
-            inTransition =                                  total(Protoss_Gateway) >= 4;
-            inOpening =                                     s < 80;
+        // Upgrades
+        upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
 
-            // Buildings
-            buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 30) + (2 * (s >= 62));
-            buildQueue[Protoss_Assimilator] =               s >= 22;
-            buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
+        // Pumping
+        protossUnitPump[Protoss_Probe] =                true;
+        protossUnitPump[Protoss_Zealot] =               com(Protoss_Gateway) > 0 && zealotsNeeded_PvT() > total(Protoss_Zealot);
+        protossUnitPump[Protoss_Dragoon] =              com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
+    }
 
-            // Upgrades
-            upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
+    void PvT_NZCore()
+    {
+        // "https://liquipedia.net/starcraft/1_Gate_Core_(vs._Terran)"
+        scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
 
-            // Army composition
-            armyComposition[Protoss_Dragoon] =              0.95;
-            armyComposition[Protoss_Zealot] =               0.05;
-        }
+        // Buildings
+        buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 30);
+        buildQueue[Protoss_Gateway] =                   s >= 20;
+        buildQueue[Protoss_Assimilator] =               s >= 24;
+        buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
 
-        void PvT_1GC_NZCore()
-        {
-            // "https://liquipedia.net/starcraft/1_Gate_Core_(vs._Terran)"
-            scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
-            unitLimits[Protoss_Zealot] =                    0;
+        // Pumping
+        protossUnitPump[Protoss_Probe] =                true;
+        protossUnitPump[Protoss_Zealot] =               com(Protoss_Gateway) > 0 && zealotsNeeded_PvT() > total(Protoss_Zealot);
+        protossUnitPump[Protoss_Dragoon] =              com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
+    }
 
-            // Buildings
-            buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 30);
-            buildQueue[Protoss_Gateway] =                   s >= 20;
-            buildQueue[Protoss_Assimilator] =               s >= 24;
-            buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
+    void PvT_ZCore()
+    {
+        // "https://liquipedia.net/starcraft/1_Gate_Core_(vs._Terran)"
+        scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
 
-            // Army composition
-            armyComposition[Protoss_Dragoon] =              0.95;
-            armyComposition[Protoss_Zealot] =               0.05;
-        }
+        // Buildings
+        buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 32);
+        buildQueue[Protoss_Gateway] =                   s >= 20;
+        buildQueue[Protoss_Assimilator] =               s >= 24;
+        buildQueue[Protoss_Cybernetics_Core] =          s >= 36;
 
-        void PvT_1GC_ZCore()
-        {
-            // "https://liquipedia.net/starcraft/1_Gate_Core_(vs._Terran)"
-            scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
-            unitLimits[Protoss_Zealot] =                    1;
-
-            // Buildings
-            buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 32);
-            buildQueue[Protoss_Gateway] =                   s >= 20;
-            buildQueue[Protoss_Assimilator] =               s >= 24;
-            buildQueue[Protoss_Cybernetics_Core] =          s >= 36;
-
-            // Army composition
-            armyComposition[Protoss_Dragoon] =              0.95;
-            armyComposition[Protoss_Zealot] =               0.05;
-        }
+        // Pumping
+        protossUnitPump[Protoss_Probe] =                true;
+        protossUnitPump[Protoss_Zealot] =               com(Protoss_Gateway) > 0 && zealotsNeeded_PvT() > total(Protoss_Zealot);
+        protossUnitPump[Protoss_Dragoon] =              com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
     }
 
     void PvT_1GC()
@@ -137,10 +137,10 @@ namespace McRave::BuildOrder::Protoss {
         }
 
         // Openers
-        if (currentOpener == "0Zealot")
-            PvT_1GC_NZCore();
-        if (currentOpener == "1Zealot")
-            PvT_1GC_ZCore();
+        if (currentOpener == "NZCore")
+            PvT_NZCore();
+        if (currentOpener == "ZCore")
+            PvT_ZCore();
 
         // Transitions
         if (currentTransition == "Robo")

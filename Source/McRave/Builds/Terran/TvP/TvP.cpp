@@ -24,12 +24,6 @@ namespace McRave::BuildOrder::Terran
 
         desiredDetection =                                  Terran_Missile_Turret;
 
-        armyComposition[Terran_Vulture] =                   0.50;
-        armyComposition[Terran_Siege_Tank_Tank_Mode] =      0.40;
-        armyComposition[Terran_Goliath] =                   0.10;
-        armyComposition[Terran_SCV] =                       1.00;
-        armyComposition[Terran_Marine] =                    1.00;
-
         wallNat =                                           false;
         wallMain =                                          false;
     }
@@ -50,7 +44,7 @@ namespace McRave::BuildOrder::Terran
         buildQueue[Terran_Armory] =                     (s >= 72) + vis(Terran_Science_Facility) > 0;
         buildQueue[Terran_Comsat_Station] =             2 * (s >= 88);
         buildQueue[Terran_Factory] =                    1 + (s >= 88) + 3 * (s >= 94);
-        buildQueue[Terran_Machine_Shop] =               vis(Terran_Factory) > 0;
+        buildQueue[Terran_Machine_Shop] =               vis(Terran_Factory) > 0 && total(Terran_Vulture) > 0;
         buildQueue[Terran_Starport] =                   vis(Terran_Command_Center) >= 3;
         buildQueue[Terran_Science_Facility] =           com(Terran_Starport) > 0;
 
@@ -62,23 +56,15 @@ namespace McRave::BuildOrder::Terran
         // Upgrades
         upgradeQueue[UpgradeTypes::Terran_Vehicle_Weapons] = (com(Terran_Armory) > 0) * 2;
 
+        // Pumping
+        terranUnitPump[Terran_SCV] = vis(Terran_SCV) < 45;
+        terranUnitPump[Terran_Siege_Tank_Tank_Mode] = true;
+        terranUnitPump[Terran_Vulture] = true;
+
         // Gas
         gasLimit = 1;
-        if (vis(Terran_Command_Center) >= 2)
-            gasLimit = Resources::getGasCount() * 3;
-
-        // Pumping TODO
-        auto pumpTanks = (total(Terran_Siege_Tank_Tank_Mode) == 0);
-        auto pumpMarines = total(Terran_Marine) < 4;
-        if (pumpTanks) {
-            armyComposition.clear();
-            armyComposition[Terran_SCV] = 1.00;
-            armyComposition[Terran_Siege_Tank_Tank_Mode] = 1.00;
-        }
-
-        if (pumpMarines) {
-            armyComposition[Terran_Marine] = 1.00;
-        }
+        if (com(Terran_Command_Center) >= 2)
+            gasLimit = gasMax();
     }
 
     void TvP()

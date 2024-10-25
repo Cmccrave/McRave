@@ -451,7 +451,9 @@ namespace McRave::Command {
                     if (Util::getTime() < Time(4, 30) && !target.isThreatening() && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10)
                         return true;
                 }
-                if ((unit.getType() == Zerg_Hydralisk || unit.getType() == Protoss_Dragoon) && !target.isFlying()) {
+
+                // Special Case: Hydras only kite when units almost in range due to GrdAttkInit being long
+                if (unit.getType() == Zerg_Hydralisk && !target.isFlying()) {
                     if (Util::getTime() < Time(7, 00) && targetKitable && boxDist <= enemyRange + 48.0 && !unit.getUnitsTargetingThis().empty())
                         return true;
                 }
@@ -486,7 +488,7 @@ namespace McRave::Command {
                     return false;
 
                 // If we're already outside the range of the unit, no point in kiting, do full damage
-                if (!unit.isFlying() && !target.isWithinRange(unit) && unit.getType() != Protoss_Dragoon && unit.getType() != Terran_Siege_Tank_Tank_Mode && unit.getType() != Terran_Goliath)
+                if (!unit.isFlying() && !target.isWithinRange(unit) && unit.getType() == Zerg_Hydralisk)
                     return false;
 
                 if (unit.getType() == UnitTypes::Protoss_Reaver                                                                 // Reavers: Always kite after shooting

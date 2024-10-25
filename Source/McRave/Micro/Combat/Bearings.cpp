@@ -8,6 +8,24 @@ namespace McRave::Combat::Bearings {
 
     void getCleanupPosition(UnitInfo& unit)
     {
+        // Scourge with nothing to do should stay close to home or a flying commander
+        if (unit.getType() == Zerg_Scourge) {
+            const auto closestMuta = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                return u->getType() == Zerg_Mutalisk && u->getGlobalState() == GlobalState::Attack;
+            });
+            if (closestMuta) {
+                unit.setDestination(closestMuta->getPosition());
+                return;
+            }
+            else {
+                const auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
+                if (closestStation) {
+                    unit.setDestination(closestStation->getBase()->Center());
+                    return;
+                }
+            }
+        }
+
         // Finish off positions that are old
         auto &list = unit.isFlying() ? Terrain::getAirCleanupPositions() : Terrain::getGroundCleanupPositions();
         auto posBest = Positions::Invalid;

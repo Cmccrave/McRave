@@ -24,16 +24,19 @@ namespace McRave::BuildOrder::Protoss {
         rush =                                          false;
         transitionReady =                               false;
 
-        gasLimit =                                      INT_MAX;
-        unitLimits[Protoss_Zealot] =                    0;
-        unitLimits[Protoss_Dragoon] =                   INT_MAX;
-        unitLimits[Protoss_Probe] =                     INT_MAX;
+        gasLimit =                                      gasMax();
 
         desiredDetection =                              Protoss_Observer;
-
-        armyComposition[Protoss_Probe] =                1.00;
-        armyComposition[Protoss_Dragoon] =              1.00;
     }
+
+    int zealotsNeeded_PvT() {
+        if (currentOpener == "NZCore")
+            return 0;
+        if (currentOpener == "ZCore")
+            return 1;
+        return 0;
+    }
+
 
     void PvT()
     {

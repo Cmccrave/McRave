@@ -655,12 +655,29 @@ namespace McRave::Command
         if (unit.getRole() != Role::Worker || !unit.getBuildPosition().isValid())
             return false;
 
+        const auto topLeft = Position(unit.getBuildPosition());
+        const auto botRight = Position(unit.getBuildPosition() + TilePosition(unit.getBuildType().tileWidth(), unit.getBuildType().tileHeight()));
+        const auto center = (topLeft + botRight) / 2;
+
         const auto fullyVisible = Broodwar->isVisible(unit.getBuildPosition())
             && Broodwar->isVisible(unit.getBuildPosition() + TilePosition(unit.getBuildType().tileWidth(), 0))
             && Broodwar->isVisible(unit.getBuildPosition() + TilePosition(unit.getBuildType().tileWidth(), unit.getBuildType().tileHeight()))
             && Broodwar->isVisible(unit.getBuildPosition() + TilePosition(0, unit.getBuildType().tileHeight()));
 
         const auto canAfford = Broodwar->self()->minerals() >= unit.getBuildType().mineralPrice() && Broodwar->self()->gas() >= unit.getBuildType().gasPrice();
+
+        // Check for spidermines blocking it that can be killed
+        if (Players::getVisibleCount(PlayerState::Self, Terran_Vulture_Spider_Mine) > 0) {
+            auto closestMine = Util::getClosestUnit(center, PlayerState::Self, [&](auto &u) {
+                return u->getType() == Terran_Vulture_Spider_Mine && Util::rectangleIntersect(u->getPosition(), topLeft, botRight);
+            });
+            if (closestMine) {
+                unit.setCommand(Attack_Unit, *closestMine);
+                unit.commandText = "Attack Mine";
+                unit.commandFrame = Broodwar->getFrameCount();
+                return true;
+            }
+        }
 
         // If build position is fully visible and unit is close to it, start building as soon as possible
         if (fullyVisible && canAfford && unit.isWithinBuildRange()) {

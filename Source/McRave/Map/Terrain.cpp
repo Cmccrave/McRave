@@ -79,7 +79,7 @@ namespace McRave::Terrain {
                     const auto closestMain = BWEB::Stations::getClosestMainStation(unit.getTilePosition());
                     const auto closestNatural = BWEB::Stations::getClosestNaturalStation(unit.getTilePosition());
 
-                    if (find(bannedStart.begin(), bannedStart.end(), unit.getTilePosition()) != bannedStart.end())
+                    if (find(bannedStart.begin(), bannedStart.end(), closestMain->getBase()->Location()) != bannedStart.end())
                         continue;
 
                     // Set start if valid
@@ -143,10 +143,12 @@ namespace McRave::Terrain {
             // Assume based on only 1 remaining location
             vector<TilePosition> unexploredStarts;
             if (!enemyStartingPosition.isValid()) {
-                for (auto &topLeft : mapBWEM.StartingLocations()) {
-                    auto botRight = topLeft + TilePosition(3, 2);
-                    if (!Broodwar->isExplored(botRight) || !Broodwar->isExplored(topLeft))
-                        unexploredStarts.push_back(topLeft);
+                for (auto &station : BWEB::Stations::getStations()) {
+                    if (!station.isMain())
+                        continue;
+
+                    if (!Stations::isBaseExplored(&station))
+                        unexploredStarts.push_back(station.getBase()->Location());
                 }
 
                 if (int(unexploredStarts.size()) == 1) {

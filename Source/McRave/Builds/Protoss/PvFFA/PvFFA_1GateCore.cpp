@@ -21,6 +21,10 @@ namespace McRave::BuildOrder::Protoss {
 
         // Build
         buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 38) + (s >= 40);
+
+        // Pumping
+        protossUnitPump[Protoss_Probe] = true;
+        protossUnitPump[Protoss_Dragoon] = com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
     }
 
     void PvFFA_1GC_ZCore()
@@ -39,12 +43,16 @@ namespace McRave::BuildOrder::Protoss {
 
         // Upgrades
         upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
+
+        // Pumping
+        protossUnitPump[Protoss_Probe] = true;
+        protossUnitPump[Protoss_Zealot] = com(Protoss_Gateway) > 0 && total(Protoss_Zealot) < 1;
     }
 
     void PvFFA_1GC()
     {
         // Openers
-        if (currentOpener == "1Zealot")
+        if (currentOpener == "ZCore")
             PvFFA_1GC_ZCore();
 
         // Transitions

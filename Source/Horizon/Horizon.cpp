@@ -128,7 +128,7 @@ namespace McRave::Horizon {
             auto &selfTarget = self.getTarget().lock();
             const auto range = max(self.getAirRange(), self.getGroundRange());
             const auto reach = max(self.getAirReach(), self.getGroundReach());
-            const auto distance = self.getEngDist() + targetDisplacement;
+            const auto distance = self.getEngDist();
             const auto speed = self.getSpeed() > 0.0 ? self.getSpeed() * 24.0 : unit.getSpeed() * 24.0;
             const auto engageTime = max(0.0, ((distance - range) / speed) - unitToEngage);
             auto simRatio = max(0.0, simulationTime - engageTime - addPrepTime(self));

@@ -52,8 +52,12 @@ namespace McRave::Defender {
                     const auto closestStation = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
                     auto stationDepot = closestStation && unit.getTilePosition() == closestStation->getBase()->Location();                    
                     if (stationDepot)
-                        updateFormation(unit);                    
+                        updateFormation(unit);
                 }
+
+                // 
+                if (unit.getType().isBuilding() && unit.getType().getRace() != Races::Zerg)
+                    updateFormation(unit);
             }
         }
     }

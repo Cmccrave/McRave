@@ -24,10 +24,6 @@ namespace McRave::BuildOrder::Terran
 
         desiredDetection =                          Terran_Missile_Turret;
 
-        armyComposition[Terran_Marine] =            0.80;
-        armyComposition[Terran_Medic] =             0.20;
-        armyComposition[Terran_SCV] =               1.00;
-
         wallNat =                                   false;
         wallMain =                                  false;
     }
@@ -40,14 +36,20 @@ namespace McRave::BuildOrder::Terran
         inOpening =         vis(Terran_Comsat_Station) == 0;
 
         // Buildings
-        buildQueue[Terran_Supply_Depot] =                   1 + (s >= 28) + (s >= 48);
+        buildQueue[Terran_Supply_Depot] =                   1 + (s >= 28) + (vis(Terran_Academy) > 0);
         buildQueue[Terran_Barracks] =                       (s >= 22) + (s >= 26);
-        buildQueue[Terran_Refinery] =                       (s >= 36);
-        buildQueue[Terran_Academy] =                        (s >= 38);
+        buildQueue[Terran_Refinery] =                       (s >= 38);
+        buildQueue[Terran_Academy] =                        (s >= 46);
         buildQueue[Terran_Comsat_Station] =                 (s >= 56);
 
         // Research
-        techQueue[Stim_Packs] =                             (s >= 52);
+        techQueue[Stim_Packs] =                             com(Terran_Academy) > 0;
+        upgradeQueue[U_238_Shells] =                        Researching::haveOrResearching(Stim_Packs);
+
+        // Pumping
+        terranUnitPump[Terran_SCV] = true;
+        terranUnitPump[Terran_Marine] = total(Terran_Marine) < 4 || total(Terran_Supply_Depot) >= 3;
+        terranUnitPump[Terran_Medic] = com(Terran_Academy) > 0 && vis(Terran_Medic) < 2;
     }
 
     void TvZ()

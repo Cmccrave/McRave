@@ -73,24 +73,6 @@ namespace BWEB {
             }
         }
 
-        // Pylon needs a fallback placement
-        if (type == Protoss_Pylon && !pylonWall) {
-            auto distBest = DBL_MAX;
-            auto tileBest = TilePositions::Invalid;
-            for (auto &tile : station->getDefenses()) {
-                auto dist = tile.getDistance(TilePosition(choke->Center()));
-                if (dist < distBest) {
-                    distBest = dist;
-                    tileBest = tile;
-                }
-            }
-
-            if (BWEB::Map::isPlaceable(type, tileBest)) {
-                insertList.insert(tileBest);
-                Map::addUsed(tileBest, type);
-                return true;
-            }
-        }
         return false;
     }
 
@@ -99,7 +81,7 @@ namespace BWEB {
         // For each piece, try to place it a known distance away depending on how the angles of chokes look     
         auto closestMain = Stations::getClosestMainStation(station->getBase()->Location());
         auto mainChokeCenter = Position(closestMain->getChokepoint()->Center());
-        vector<TilePosition> smlOrder, medOrder, lrgOrder, opnOrder;
+        vector<TilePosition> smlOrder, medOrder, lrgOrder, opnOrder, pylOrder;
         auto flipOrder = false; // TODO: Right now we flip the opposite way so we always can get out            
         auto flipHorizontal = false;
         auto flipVertical = false;
@@ -126,6 +108,9 @@ namespace BWEB {
 
         // Iteration attempts move buildings closer
         auto iteration = 0;
+        if (station->isNatural() && Broodwar->self()->getRace() == Races::Protoss)
+            iteration = 1;
+
         //if (station->isNatural()) {
         //    auto dist = Position(choke->Center()).getDistance(station->getBase()->Center());
         //    if (dist >= 288.0)
@@ -157,6 +142,7 @@ namespace BWEB {
                 lrgOrder        ={ {-4, -5}, {-3, -5}, {-2, -5}, {-1, -5}, {0, -5}, {1, -5}, {2, -5}, {3, -5}, {4, -5} };
                 medOrder        ={ {-4, -4}, {-3, -4}, {-2, -4}, {-1, -4}, {0, -4}, {1, -4}, {2, -4}, {3, -4}, {4, -4} };
                 smlOrder        ={ {-2, -4}, {-1, -4}, { 0, -4}, { 1, -4}, {2, -4}, {3, -4}, {4, -4}, {5, -4} };
+                pylOrder        ={ { 0, -2}, {2, -2} };
                 flipOrder       = station->isNatural() && mainChokeCenter.x > base->Center().x;
                 flipVertical    = base->Center().y < Position(choke->Center()).y;
 
@@ -171,9 +157,10 @@ namespace BWEB {
 
             // pi/4 - Angled
             else if (defenseArrangement == 1 || defenseArrangement == 3) {
-                lrgOrder        ={ {0, -7}, {-2, -5}, {-4, -3}, {-6, -1}, {-8,  0} };
-                medOrder        ={ {1, -6}, {-1, -4}, {-3, -2}, {-5, 0} };
-                smlOrder        ={ {0, -4}, {-2, -2}, {-4,  0} };
+                lrgOrder        ={ { 0, -7}, {-2, -5}, {-4, -3}, {-6, -1}, {-8,  0} };
+                medOrder        ={ { 1, -6}, {-1, -4}, {-3, -2}, {-5, 0} };
+                smlOrder        ={ { 0, -4}, {-2, -2}, {-4,  0} };
+                pylOrder        ={ {-2,  0}, { 0, -2} };
 
                 // TODO: these flips don't really work as intended
                 flipOrder       = (station->isNatural() && mainChokeCenter.x < base->Center().x && mainChokeCenter.y > base->Center().y)
@@ -207,6 +194,8 @@ namespace BWEB {
                 lrgOrder        ={ {-6, -4}, {-6, -3}, {-6, -2}, {-6, -1}, {-6,  0}, {-6,  1}, {-6,  2}, {-6,  3}, {-6,  4} };
                 medOrder        ={ {-5, -3}, {-5, -2}, {-5, -1}, {-5,  0}, {-5,  1}, {-5,  2}, {-5,  3}, {-5,  4} };
                 smlOrder        ={ {-4, -1}, {-4,  0}, {-4,  1}, {-4,  2} };
+                pylOrder        ={ {-2,  0}, {-2,  2} };
+
                 flipOrder       = station->isNatural() && mainChokeCenter.y > base->Center().y;
                 flipHorizontal  = base->Center().x < Position(choke->Center()).x;
 
@@ -245,6 +234,7 @@ namespace BWEB {
 
             // Check if positions need to be flipped vertically or horizontally
             flipPositions(smlOrder, Protoss_Pylon);
+            flipPositions(pylOrder, Protoss_Pylon);
             flipPositions(medOrder, Protoss_Forge);
             flipPositions(lrgOrder, Protoss_Gateway);
             flipPositions(opnOrder, Protoss_Dragoon);
@@ -263,21 +253,30 @@ namespace BWEB {
 
             // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                std::reverse(lrgOrder.begin(), lrgOrder.end());
+                std::reverse(lrgOrder.begin(), lrgOrder.end());      // Flip large order so that gateway is opposite of forge, center opening
                 tryLocations(medOrder, mediumTiles, Protoss_Forge);
                 tryLocations(lrgOrder, largeTiles, Protoss_Gateway);
                 tryLocations(opnOrder, smallTiles, Protoss_Dragoon); // Make sure we always have an opening before placing a Pylon
                 tryLocations(smlOrder, smallTiles, Protoss_Pylon);
+                tryLocations(pylOrder, smallTiles, Protoss_Pylon);
             }
 
             // Terran
             if (Broodwar->self()->getRace() == Races::Terran) {
-                tryLocations(lrgOrder, largeTiles, Terran_Barracks);
-                tryLocations(medOrder, mediumTiles, Terran_Bunker);
+                for (auto &building : rawBuildings) {
+                    if (building.tileWidth() == 4)
+                        tryLocations(lrgOrder, largeTiles, Terran_Barracks);
+                    if (building.tileWidth() == 3)
+                        tryLocations(medOrder, mediumTiles, Terran_Supply_Depot);
+                }
             }
 
             // If iteration was negative, we prevent moving the defenses backwards by resetting the walloffset here
             if (iteration < 0)
+                wallOffset = TilePosition(0, 0);
+
+            // Always place cannons where the station is as P
+            if (Broodwar->self()->getRace() == Races::Protoss)
                 wallOffset = TilePosition(0, 0);
 
             if ((getSmallTiles().size() + getMediumTiles().size() + getLargeTiles().size()) == getRawBuildings().size())
@@ -429,15 +428,15 @@ namespace BWEB {
         if (drawBoxes) {
             for (auto &tile : smallTiles) {
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), color);
-                Broodwar->drawTextMap(Position(tile) + Position(4, 4), "%cW", textColor);
+                Broodwar->drawTextMap(Position(tile) + Position(4, 4), "%cWS", textColor);
             }
             for (auto &tile : mediumTiles) {
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(97, 65), color);
-                Broodwar->drawTextMap(Position(tile) + Position(4, 4), "%cW", textColor);
+                Broodwar->drawTextMap(Position(tile) + Position(4, 4), "%cWM", textColor);
             }
             for (auto &tile : largeTiles) {
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(129, 97), color);
-                Broodwar->drawTextMap(Position(tile) + Position(4, 4), "%cW", textColor);
+                Broodwar->drawTextMap(Position(tile) + Position(4, 4), "%cWL", textColor);
             }
             for (auto &tile : openings) {
                 Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(33, 33), color, true);
@@ -445,7 +444,8 @@ namespace BWEB {
             for (int i = 1; i <= 4; i++) {
                 for (auto &tile : defenses[i]) {
                     Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), color);
-                    Broodwar->drawTextMap(Position(tile) + Position(4, 4), "%cW %d", textColor, i);
+                    Broodwar->drawTextMap(Position(tile) + Position(4, 4), "%cW", textColor);
+                    Broodwar->drawTextMap(Position(tile) + Position(4, 20), "%c%d", textColor, i);
                 }
             }
         }

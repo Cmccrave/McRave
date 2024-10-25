@@ -98,7 +98,7 @@ namespace McRave::Support {
             for (auto &cluster : Combat::Clusters::getClusters()) {
                 auto commander = cluster.commander.lock();
 
-                if (commander && !commander->isTargetedByHidden() && !commander->isNearHidden()) {
+                if (unit.getType() == Zerg_Overlord && commander && !commander->isTargetedByHidden() && !commander->isNearHidden()) {
                     cnt++;
                     if (cnt >= 2)
                         break;

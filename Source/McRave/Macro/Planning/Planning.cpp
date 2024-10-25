@@ -197,6 +197,22 @@ namespace McRave::Planning {
                 if (Broodwar->self()->getRace() == Races::Protoss && int(block.getMediumTiles().size()) < 2)
                     continue;
 
+                // TOOD: Make this better
+                const auto hasAddonLocation = [&](BWEB::Block block, TilePosition tile) {
+                    for (auto &small : block.getSmallTiles()) {
+                        if (tile + TilePosition(4, 1) == small)
+                            return true;
+                    }
+                    return false;
+                };
+                if (building == Terran_Starport || building == Terran_Science_Facility) {
+                    for (auto &tile : block.getLargeTiles()) {
+                        if (hasAddonLocation(block, tile))
+                            placements.insert(tile);
+                    }
+                    continue;
+                }
+
                 // Setup placements
                 if (building.tileWidth() == 4)
                     placements.insert(block.getLargeTiles().begin(), block.getLargeTiles().end());
@@ -204,6 +220,8 @@ namespace McRave::Planning {
                     placements.insert(block.getMediumTiles().begin(), block.getMediumTiles().end());
                 else
                     placements.insert(block.getSmallTiles().begin(), block.getSmallTiles().end());
+
+
             }
             return returnFurthest(building, placements, here);
         }
@@ -367,10 +385,15 @@ namespace McRave::Planning {
             if (!isProductionType(building))
                 return false;
 
-            // Main gets hatcheries if we don't have a natural base yet
-            if (BuildOrder::isOpener() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None) {
-                auto desiredCenter = BWEB::Stations::getStartingMain()->getBase()->Center();
-                placement = closestLocation(building, desiredCenter);
+            auto funcCall = (building == Terran_Starport) ? furthestLocation : closestLocation;
+
+            // Main gets production if we don't have a natural base yet
+            if (BuildOrder::isOpener() && Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::None) {
+                auto desiredCenter = Terrain::getMainPosition();
+                if (building.getRace() != Races::Zerg)
+                    desiredCenter = (Position(Terrain::getMainChoke()->Center()) + Terrain::getMainPosition()) / 2;
+                
+                placement = funcCall(building, desiredCenter);
                 if (placement.isValid())
                     return true;
             }
@@ -380,7 +403,7 @@ namespace McRave::Planning {
                 if (!station->isMain() && Broodwar->self()->getRace() != Races::Zerg)
                     continue;
                 auto desiredCenter = station->getBase()->Center();
-                placement = closestLocation(building, desiredCenter);
+                placement = funcCall(building, desiredCenter);
                 if (placement.isValid())
                     return true;
             }

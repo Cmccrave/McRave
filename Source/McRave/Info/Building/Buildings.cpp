@@ -56,9 +56,11 @@ namespace McRave::Buildings {
                 building.unit()->cancelMorph();
             }
 
-            // Cancelling refineries we don't want
-            if (building.getType().isRefinery() && Spy::enemyRush() && vis(building.getType()) == 1 && building.getType().getRace() != Races::Zerg && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
+            // Cancelling refineries we don't want (only once ever)
+            static bool cancelAllowed = true;
+            if (cancelAllowed && building.getType().isRefinery() && BuildOrder::buildCount(Zerg_Extractor) == 0 && BuildOrder::gasWorkerLimit() == 0 && Util::getTime() < Time(4, 00)) {
                 building.unit()->cancelConstruction();
+                cancelAllowed = false;
             }
 
             // Cancelling buildings that are being built/morphed but will be dead
@@ -67,20 +69,28 @@ namespace McRave::Buildings {
                 building.unit()->cancelConstruction();
             }
 
-
+            auto mainHatch = building.getType() == Zerg_Hatchery && isStation && Terrain::getMyMain() && building.getTilePosition() == Terrain::getMyMain()->getBase()->Location();
             auto naturalHatch = building.getType() == Zerg_Hatchery && isStation && Terrain::getMyNatural() && building.getTilePosition() == Terrain::getMyNatural()->getBase()->Location();
-            auto cancelTiming = !BuildOrder::takeNatural() && Util::getTime() < Time(4, 00);
+            auto thirdHatch = !mainHatch && !naturalHatch && isStation;
+
+            auto cancelTiming = (naturalHatch && !BuildOrder::takeNatural() && Util::getTime() < Time(4, 00)) || (thirdHatch && !BuildOrder::takeThird() && Util::getTime() < Time(4, 00));
             auto cancelLow = (building.frameCompletesWhen() - Broodwar->getFrameCount() < 24 || building.getHealth() < 50);
 
-            // Cancelling hatcheries if we're being proxy 2gated and took a 3rd
+            // Cancelling natural hatchery if we're being proxy 2gated
             if (naturalHatch && cancelTiming && cancelLow && vis(Zerg_Hatchery) >= 3 && Spy::getEnemyOpener() == "Proxy9/9") {
+                Events::onUnitCancelBecauseBWAPISucks(building);
+                building.unit()->cancelConstruction();
+            }
+
+            // Cancelling third hatchery if we're against a 1 base build
+            if (thirdHatch && cancelTiming && vis(Zerg_Hatchery) >= 3) {
                 Events::onUnitCancelBecauseBWAPISucks(building);
                 building.unit()->cancelConstruction();
             }
 
             // Cancelling hatchery if against early pool
             auto earlyPool = Spy::getEnemyOpener() == "4Pool" || Spy::getEnemyOpener() == "7Pool";
-            if (naturalHatch && cancelTiming && earlyPool) {
+            if (naturalHatch && earlyPool && cancelTiming && cancelLow) {
                 Events::onUnitCancelBecauseBWAPISucks(building);
                 building.unit()->cancelConstruction();
             }
@@ -141,7 +151,7 @@ namespace McRave::Buildings {
             }
 
             // Look for the closest possible non worker enemy
-            if (plannedType == Zerg_Sunken_Colony && Spy::getEnemyBuild() != "CannonRush" && Spy::getEnemyBuild() != "WorkerRush") {
+            if (plannedType == Zerg_Sunken_Colony && Spy::getEnemyBuild() != "CannonRush" && Spy::getEnemyTransition() != "WorkerRush") {
                 auto closestThreat = Util::getClosestUnit(building.getPosition(), PlayerState::Enemy, [&](auto &u) {
                     if (!u->getType().isWorker() && !u->getType().isBuilding() && !u->isFlying()) {
                         if (!Terrain::getEnemyMain())

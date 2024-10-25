@@ -57,6 +57,7 @@ namespace McRave::Spy::Terran {
             // RaxFact
             if (completesBy(1, Terran_Factory, Time(4, 00))
                 || (Util::getTime() < Time(5, 15) && hasMech)
+                || (theSpy.proxy.confirmed && theSpy.opener.name == "8Rax")
                 || arrivesBy(1, Terran_Wraith, Time(6, 00)))
                 theSpy.build.name = "RaxFact";
 
@@ -91,6 +92,9 @@ namespace McRave::Spy::Terran {
                     || arrivesBy(3, Terran_Marine, Time(3, 40))
                     || arrivesBy(5, Terran_Marine, Time(4, 00)))
                     theSpy.opener.name = "11/13";
+                else if (completesBy(2, Terran_Barracks, Time(3, 55))
+                    || completesBy(1, Terran_Academy, Time(3, 25)))
+                    theSpy.opener.name = "11/18";
             }
 
             // Mech builds
@@ -128,7 +132,7 @@ namespace McRave::Spy::Terran {
             auto hasGols = Players::getVisibleCount(PlayerState::Enemy, Terran_Goliath) > 0;
             auto hasWraiths = Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > 0;
 
-            if (theSpy.workersPulled >= 4 && Util::getTime() < Time(3, 00))
+            if (theSpy.workersPulled >= 4 && Util::getTime() < Time(3, 30))
                 theSpy.transition.name = "WorkerRush";
 
             // PvT

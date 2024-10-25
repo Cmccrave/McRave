@@ -264,6 +264,10 @@ namespace McRave::Combat::Clusters {
                             cluster.shape = Shape::Line;
                         else
                             cluster.shape = Shape::Concave;
+
+                        // HACK: Flip to a better shape
+                        if (Terrain::inArea(Terrain::getMainArea(), cluster.avgPosition) && cluster.state == LocalState::Hold && Terrain::isFlatRamp())
+                            cluster.shape = Shape::Concave;
                     }
                 }
             }

@@ -78,18 +78,25 @@ namespace McRave::Combat::State {
                         || (BuildOrder::getCurrentOpener() == "12Pool")
                         || (BuildOrder::getCurrentOpener() == "12Hatch");
                     const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(3, 15);
-                    const auto confidentLingLead = Players::getVisibleCount(PlayerState::Self, Zerg_Zergling) * 2 > Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) * 3;
+                    const auto enemyHatchAdvatange = (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair))
+                    > (Players::getVisibleCount(PlayerState::Self, Zerg_Hatchery) + Players::getVisibleCount(PlayerState::Self, Zerg_Lair));
 
-                    // 1hm early
-                    if (!confidentLingLead) {
+                    const auto lingAdvantage = Players::getVisibleCount(PlayerState::Self, Zerg_Zergling) * 2 > Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) * 3;
+                    const auto expansionAdvantage = Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && !Spy::enemyTurtle() && !Spy::enemyFortress();
+                    
+                    if (!lingAdvantage) {
+
+                        // 1hm early
                         if (BuildOrder::getCurrentTransition() == "1HatchMuta" && Util::getTime() < Time(7, 00)) {
-                            if (Spy::Zerg::enemyFasterPool() || Spy::Zerg::enemyEqualPool() || enemyLingVomit || enemyDroneScouted || Spy::enemyTurtle())
+                            if (Spy::Zerg::enemyFasterPool() || Spy::Zerg::enemyEqualPool() || Spy::enemyTurtle() || enemyLingVomit || enemyDroneScouted || enemyHatchAdvatange)
                                 staticRetreatTypes.push_back(Zerg_Zergling);
                         }
 
                         // 1hm mid
-                        if (BuildOrder::getCurrentTransition() == "1HatchMuta" && Spy::getEnemyBuild() == "HatchPool" && Util::getTime() > Time(3, 15) && Util::getTime() < Time(10, 00))
-                            staticRetreatTypes.push_back(Zerg_Zergling);
+                        if (BuildOrder::getCurrentTransition() == "1HatchMuta" && Util::getTime() > Time(3, 15) && Util::getTime() < Time(10, 00)) {
+                            if (enemyHatchAdvatange)
+                                staticRetreatTypes.push_back(Zerg_Zergling);
+                        }
 
                         // 2hm early
                         if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(5, 30) && !Spy::enemyFastExpand() && !Spy::Zerg::enemySlowerSpeed()) {
@@ -99,7 +106,7 @@ namespace McRave::Combat::State {
 
                         // 2hm mid
                         if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(10, 00) && !Spy::enemyFastExpand() && !Spy::Zerg::enemySlowerSpeed()) {
-                            if (enemyLingVomit || Spy::Zerg::enemyFasterSpeed())
+                            if (enemyLingVomit || Spy::Zerg::enemyFasterSpeed() || expansionAdvantage)
                                 staticRetreatTypes.push_back(Zerg_Zergling);
                         }
                     }
@@ -131,9 +138,9 @@ namespace McRave::Combat::State {
 
         // Zealots / Dragoons
         if (unlockedOrVis(Protoss_Zealot) || unlockedOrVis(Protoss_Dragoon)) {
-            if (Players::PvZ()) {
+            if (Players::PvZ() && !BuildOrder::isPressure()) {
                 auto gateUnits = total(Protoss_Zealot) + total(Protoss_Dragoon);
-                if ((gateUnits < 24 && int(Stations::getStations(PlayerState::Enemy).size()) < 2) || gateUnits < 3)
+                if ((gateUnits < 12 && int(Stations::getStations(PlayerState::Enemy).size()) < 2) || gateUnits < 3)
                     lockGateways();
             }
         }
@@ -210,7 +217,7 @@ namespace McRave::Combat::State {
             //|| (Util::getTime() < Time(8, 00) && unit.getType() == Zerg_Mutalisk && target.getType() == Protoss_Photon_Cannon && !target.isCompleted())
             || (target.getType() == Terran_Vulture_Spider_Mine && !target.isBurrowed())
             || (unit.isLightAir() && target.isLightAir() && target.hasAttackedRecently())
-            || (unit.attemptingRunby() && target.getType().isWorker() && (unit.getHealth() > 15 || Util::getTime() > Time(6, 00)))
+            || (unit.attemptingRunby() && target.getType().isWorker() && (unit.getHealth() > 15 || Util::getTime() > Time(6, 00) || Players::ZvZ()))
             || (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_High_Templar && unit.canStartCast(TechTypes::Psionic_Storm, target.getPosition()) && unit.isWithinRange(target))
             || (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_Reaver && unit.canStartAttack()) && unit.isWithinRange(target));
     }
@@ -346,11 +353,11 @@ namespace McRave::Combat::State {
         auto &target = *unit.getTarget().lock();
         const auto atHome = Terrain::inTerritory(PlayerState::Self, target.getPosition());
 
-        const auto distSim = (unit.isFlying() || simTarget.isFlying() || unit.isWithinRange(simTarget) || simTarget.isWithinRange(unit))
+        const auto distSim = (unit.isFlying() || simTarget.isFlying() || unit.isWithinRange(simTarget) || simTarget.isWithinRange(unit) || unit.hasTransport())
             ? double(Util::boxDistance(unit.getType(), unit.getPosition(), simTarget.getType(), simTarget.getPosition()))
             : BWEB::Map::getGroundDistance(unit.getPosition(), simTarget.getPosition());
         
-        const auto distTarget = (unit.isFlying() || target.isFlying() || unit.isWithinRange(target) || target.isWithinRange(unit)) ?
+        const auto distTarget = (unit.isFlying() || target.isFlying() || unit.isWithinRange(target) || target.isWithinRange(unit) || unit.hasTransport()) ?
             double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()))
             : BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition());
 

@@ -10,6 +10,8 @@ namespace McRave::Combat::Formations {
 
     void holdFormation(Formation& formation, Cluster& cluster)
     {
+        auto commander = cluster.commander.lock();
+
         // Formation with a building
         if (!Combat::holdAtChoke()) {
 
@@ -42,7 +44,6 @@ namespace McRave::Combat::Formations {
 
             // Need to not do this if our formation is far away ... somehow
             if (closestBuilding) {
-                auto commander = cluster.commander.lock();
                 auto buildingDist = closestBuilding->getPosition().getDistance(cluster.marchPosition);
                 
                 closestBuilding->circle(Colors::Yellow);
@@ -59,35 +60,36 @@ namespace McRave::Combat::Formations {
 
             // Concave
             if (cluster.shape == Shape::Concave) {
-                if (choke == Terrain::getMainChoke()) {
+                if (choke == Terrain::getMainChoke() && !Terrain::isFlatRamp()) {
                     formation.angle = Terrain::getMainRamp().angle;
                     formation.radius = Terrain::getMainRamp().center.getDistance(Terrain::getMainRamp().entrance) + 48.0;
                     formation.center = Terrain::getMainRamp().center;
                 }
                 else {
                     formation.angle = Terrain::getChokepointAngle(choke);
-                    formation.radius = clamp(cluster.spacing * double(cluster.units.size()) / 2.0, 64.0, double(choke->Width()));
-                    formation.center = Terrain::getChokepointCenter(choke);
+                    formation.radius = max(commander->getGroundRange(), double(choke->Width()));
+                    formation.center = Position(choke->Center());
                 }
             }
 
             // Line
             if (cluster.shape == Shape::Line) {
-                if (choke == Terrain::getMainChoke()) {
+                if (choke == Terrain::getMainChoke() && !Terrain::isFlatRamp()) {
                     formation.angle = Terrain::getMainRamp().angle;
                     formation.radius = Terrain::getMainRamp().center.getDistance(Terrain::getMainRamp().entrance) + 48.0;
                     formation.center = Terrain::getMainRamp().entrance;
+                    Visuals::drawCircle(formation.center, 2, Colors::Cyan);
                 }
                 else {
                     formation.angle = Terrain::getChokepointAngle(choke);
-                    formation.radius = clamp(cluster.spacing * double(cluster.units.size()) / 2.0, 64.0, double(choke->Width()));
-                    formation.center = Util::shiftTowards(Terrain::getChokepointCenter(choke), cluster.retreatPosition, formation.radius);
+                    formation.radius = double(choke->Width());// clamp(cluster.spacing * double(cluster.units.size()) / 2.0, 64.0, double(choke->Width()));
+                    formation.center = Position(choke->Center());// Terrain::getChokepointCenter(choke);// Util::shiftTowards(Terrain::getChokepointCenter(choke), cluster.retreatPosition, formation.radius);
                 }
             }
         }
 
         // Formation with current commander position
-        if (cluster.shape == Shape::Concave && cluster.state == LocalState::Hold) {
+        else if (cluster.shape == Shape::Concave && cluster.state == LocalState::Hold) {
             formation.center = Util::shiftTowards(cluster.commander.lock()->getPosition(), cluster.marchNavigation, formation.radius);
             formation.angle = BWEB::Map::getAngle(cluster.marchNavigation, cluster.retreatNavigation);
         }
@@ -173,6 +175,8 @@ namespace McRave::Combat::Formations {
         // Checks if a position is okay, stores if it is
         vector<Position> row;
         auto checkPosition = [&](Position &p, Position &last, bool& skip, int& bump) {
+            Broodwar->drawCircleMap(p, 2, Colors::Orange);
+
             if (skip
                 || !p.isValid()
                 || (p == lastPositions.first)
@@ -215,20 +219,15 @@ namespace McRave::Combat::Formations {
 
             if (count * pixelsPerUnit > line.radius) {
                 wrap++;
+                Visuals::drawCircle(line.center, 4, Colors::Green);
                 line.center = Util::shiftTowards(line.center, cluster.marchPosition, -pixelsPerUnit);
-                line.radius += 2 * pixelsPerUnit;
+                Visuals::drawCircle(line.center, 4, Colors::Yellow, true);
+                Visuals::drawCircle(cluster.marchPosition, 4, Colors::Grey);
                 count = 0;
                 skipPos = false;
                 skipNeg = false;
                 bumpedPos = 0;
                 bumpedNeg = 0;
-                //reverse(row.begin(), row.end());
-                //line.positions.insert(line.positions.end(), row.begin(), row.end());
-                //row.clear();
-
-                //for (auto &position : row)
-                //    line.positions.push_back(position);
-                //row.clear();
             }
 
             if (assignmentsRemaining <= 0 || wrap >= 50)
@@ -431,7 +430,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
-        drawFormations();
+        //drawFormations();
     }
 
     vector<Formation>& getFormations() { return formations; }

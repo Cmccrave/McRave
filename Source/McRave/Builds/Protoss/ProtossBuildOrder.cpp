@@ -122,19 +122,11 @@ namespace McRave::BuildOrder::Protoss
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 auto maxGates = Players::vT() ? 16 : 12;
-                auto gatesPerBase = 3.5;
+                auto gatesPerBase = 2.5;
 
-                if (isFocusUnit(Protoss_Carrier) || isFocusUnit(Protoss_Scout)) {
-                    auto gatesPerBase = 2.5;
-                    productionSat = (vis(Protoss_Gateway) >= int(gatesPerBase * Stations::getGasingStationsCount())) || vis(Protoss_Gateway) >= maxGates;
-                }
-                else {
-                    productionSat = (vis(Protoss_Gateway) >= int(gatesPerBase * Stations::getGasingStationsCount())) || vis(Protoss_Gateway) >= maxGates;
-                }
+                productionSat = (vis(Protoss_Gateway) >= int(gatesPerBase * Stations::getGasingStationsCount())) || vis(Protoss_Gateway) >= maxGates;
 
                 // Adding production
-
-
                 rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || Stations::getGasingStationsCount() >= 3)) || availableMinerals >= 300);
 
                 if (rampDesired) {
@@ -230,7 +222,7 @@ namespace McRave::BuildOrder::Protoss
     }
 
     bool goonRange() {
-        return Broodwar->self()->isUpgrading(UpgradeTypes::Singularity_Charge) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Singularity_Charge);
+        return Upgrading::haveOrUpgrading(UpgradeTypes::Singularity_Charge, 1);
     }
 
     void opener()
@@ -238,6 +230,7 @@ namespace McRave::BuildOrder::Protoss
         if (Players::getRaceCount(Races::Unknown, PlayerState::Enemy) > 0 && !Players::PvFFA() && !Players::PvTVB())
             againstRandom = true;
 
+        protossUnitPump.clear();
         if (Players::PvT())
             PvT();
         else if (Players::PvP())
@@ -344,7 +337,7 @@ namespace McRave::BuildOrder::Protoss
 
         // Optimize our gas mining by dropping gas mining at specific excessive values
         removeExcessGas();
-        
+
         // Queue upgrades/research
         queueUpgrades();
         queueResearch();
@@ -352,67 +345,135 @@ namespace McRave::BuildOrder::Protoss
 
     void composition()
     {
-        if (inOpening)
-            return;
+        // PvP
+        // Remove zealot if no speed
+        // 
+
+        // PvZ
+        // Remove dragoons if no range
+        // 
+
+        // PvT
+        // Remove zealot if no speed
+        //
 
         armyComposition.clear();
-        armyComposition[Protoss_Probe] = 1.00;
+        auto availGas = Broodwar->self()->gas() - (Upgrading::getReservedGas() + Researching::getReservedGas() + Planning::getPlannedGas());
 
-        // Ordered sections in reverse tech order such that it only checks the most relevant section first
-        if (Players::vP()) {
-            if (Stations::getStations(PlayerState::Self).size() >= 4) {
-                armyComposition[Protoss_Zealot] = 0.50;
-                armyComposition[Protoss_Dragoon] = 0.25;
-                armyComposition[Protoss_Archon] = 0.25;
-            }
-            else if (isFocusUnit(Protoss_High_Templar)) {
-                armyComposition[Protoss_Zealot] = 0.50;
-                armyComposition[Protoss_Dragoon] = 0.50;
-            }
-            else {
-                armyComposition[Protoss_Zealot] = 0.05;
-                armyComposition[Protoss_Dragoon] = 0.95;
+        const auto buildingAvailable = [&](auto &type) {
+            auto building = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
+                return u->getType() == type.whatBuilds().first && u->isCompleted() && u->unit()->isPowered() && u->getRemainingTrainFrames() < 10;
+            });
+            return building;
+        };
+
+        if (inOpening) {
+            if (protossUnitPump[Protoss_Probe])
+                armyComposition[Protoss_Probe] = 1.00;
+
+            const auto buildings ={ Protoss_Gateway, Protoss_Robotics_Facility, Protoss_Stargate };
+            for (auto &building : buildings) {
+                vector<UnitType> sortedByGas ={ building.buildsWhat().begin(), building.buildsWhat().end() };
+                sort(sortedByGas.begin(), sortedByGas.end(), [&](auto &lhs, auto &rhs) {
+                    return lhs.gasPrice() >= rhs.gasPrice();
+                });
+
+                for (auto &type : sortedByGas) {
+                    if (!protossUnitPump[type] || availGas < type.gasPrice() || !buildingAvailable(type))
+                        continue;
+
+                    armyComposition[type] = 1.00;
+                    break;
+                }
             }
         }
 
-        if (Players::vT()) {
-            if (isFocusUnit(Protoss_Carrier)) {
-                armyComposition[Protoss_Zealot] = 0.25;
-                armyComposition[Protoss_Dragoon] = 0.75;
-            }
-            else if (isFocusUnit(Protoss_High_Templar) || isFocusUnit(Protoss_Arbiter)) {
-                armyComposition[Protoss_Zealot] = 0.40;
-                armyComposition[Protoss_Dragoon] = 0.60;
-            }
-            else
-                armyComposition[Protoss_Dragoon] = 1.00;
-        }
 
-        if (Players::vZ()) {
-            if (currentTransition == "4Gate" || currentTransition == "5GateGoon")
-                armyComposition[Protoss_Dragoon] = 1.00;
-            else if (currentTransition == "4StargateScout")
-                armyComposition[Protoss_Zealot] = 1.00;
-            else if (Stations::getStations(PlayerState::Self).size() >= 3) {
-                armyComposition[Protoss_Zealot] = 0.40;
-                armyComposition[Protoss_Dragoon] = 0.20;
-                armyComposition[Protoss_Archon] = 0.40;
-            }
-            else
-                armyComposition[Protoss_Zealot] = 1.00;
-        }
+        if (!inOpening) {
+            static vector<pair<UnitType, int>> priorityOrder;
 
-        if (Players::PvFFA()) {
-            if (isFocusUnit(Protoss_Observer)) {
-                armyComposition[Protoss_Zealot] = 0.40;
-                armyComposition[Protoss_Dragoon] = 0.60;
-            }
-            else
-                armyComposition[Protoss_Dragoon] = 1.00;
-        }
+            // PvP
+            if (Players::PvP() || Players::PvTVB() || Players::PvFFA()) {
+                priorityOrder ={
+                    {Protoss_Probe, 60}, 
+                    
+                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1},
+                    {Protoss_Dragoon, 12}, {Protoss_Zealot, 2},
+                    {Protoss_Dragoon, 24}, {Protoss_Zealot, 4}, {Protoss_High_Templar, 2},
+                    {Protoss_Dragoon, 36}, {Protoss_Zealot, 12}, {Protoss_High_Templar, 4},
+                    {Protoss_Dragoon, 64},
 
-        for (auto &type : focusUnits)
-            armyComposition[type] = 0.05;
+                    {Protoss_Observer, 1}, {Protoss_Reaver, 1}, {Protoss_Shuttle, 1},
+                    {Protoss_Reaver, 4}, {Protoss_Shuttle, 2},
+                    {Protoss_Reaver, 8}, {Protoss_Shuttle, 4},
+                };
+            }
+
+            // PvT
+            if (Players::PvT()) {
+                priorityOrder ={
+                    {Protoss_Probe, 60},
+
+                    {Protoss_Carrier, 12}, {Protoss_Arbiter, 4},
+
+                    {Protoss_Observer, 1}, {Protoss_Reaver, 1}, {Protoss_Shuttle, 1},
+                    {Protoss_Observer, 2}, {Protoss_Reaver, 4}, {Protoss_Shuttle, 2},
+                    {Protoss_Observer, 3}, {Protoss_Reaver, 8}, {Protoss_Shuttle, 4},
+
+                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1},
+                    {Protoss_Dragoon, 12}, {Protoss_Zealot, 2},
+                    {Protoss_Dragoon, 24}, {Protoss_Zealot, 4}, {Protoss_High_Templar, 2},
+                    {Protoss_Dragoon, 36}, {Protoss_Zealot, 12}, {Protoss_High_Templar, 4},
+                    {Protoss_Dragoon, 64},
+                };
+            }
+
+            // PvZ
+            if (Players::PvZ()) {
+                priorityOrder ={
+                    {Protoss_Probe, 60},
+
+                    {Protoss_Corsair, 12},
+
+                    {Protoss_Observer, 1}, {Protoss_Reaver, 1}, {Protoss_Shuttle, 1},
+                    {Protoss_Observer, 2}, {Protoss_Reaver, 4}, {Protoss_Shuttle, 2},
+                    {Protoss_Observer, 3}, {Protoss_Reaver, 8}, {Protoss_Shuttle, 4},
+
+                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1},
+                    {Protoss_Zealot, 12}, {Protoss_Dragoon, 2},
+                    {Protoss_Zealot, 24}, {Protoss_Dragoon, 4}, {Protoss_High_Templar, 3},
+                    {Protoss_Dragoon, 36}, {Protoss_High_Templar, 6},
+                    {Protoss_Dragoon, 64},
+                };
+            }
+
+            // Remove HT if no storm
+            if (!Researching::haveOrResearching(TechTypes::Psionic_Storm)) {
+                for (auto &[type, cnt] : priorityOrder) {
+                    if (type == Protoss_High_Templar)
+                        cnt = 0;
+                }
+            }
+
+            // Remove Dragoon if no range
+            if (!Upgrading::haveOrUpgrading(UpgradeTypes::Singularity_Charge, 1)) {
+                for (auto &[type, cnt] : priorityOrder) {
+                    if (type == Protoss_Dragoon)
+                        cnt = 0;
+                }
+            }
+
+            for (auto &[type, count] : priorityOrder) {
+                auto typeAvailable = (unlockReady(type) && vis(type) < count);
+                if (type.isWorker() && Resources::isMineralSaturated() && Resources::isGasSaturated())
+                    continue;
+                if (!typeAvailable || availGas < type.gasPrice() || !buildingAvailable(type))
+                    continue;
+
+                armyComposition[type] = 1.00;
+                break;
+            }
+        }
     }
 
     void unlocks()
@@ -422,65 +483,6 @@ namespace McRave::BuildOrder::Protoss
         for (auto &[type, per] : armyComposition) {
             if (per > 0.0)
                 unlockedType.insert(type);
-        }
-
-        // Leg upgrade check
-        auto zealotLegs = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) > 0
-            || (com(Protoss_Citadel_of_Adun) > 0 && s >= 200);
-
-        // Check if we should always make Zealots
-        if (unitLimits[Protoss_Zealot] > vis(Protoss_Zealot)
-            || armyComposition[Protoss_Zealot] > 0.10
-            || zealotLegs)
-            unlockedType.insert(Protoss_Zealot);
-        else
-            unlockedType.erase(Protoss_Zealot);
-
-        // Check if we should always make Dragoons
-        if ((Players::vZ() && Broodwar->getFrameCount() > 20000)
-            || Players::getVisibleCount(PlayerState::Enemy, Zerg_Lurker) > 0
-            || unitLimits[Protoss_Dragoon] > vis(Protoss_Dragoon))
-            unlockedType.insert(Protoss_Dragoon);
-        else
-            unlockedType.erase(Protoss_Dragoon);
-
-        //// Add Observers if we have a Reaver
-        //if (vis(Protoss_Reaver) >= 2) {
-        //    focusUnits.insert(Protoss_Observer);
-        //    unlockedType.insert(Protoss_Observer);
-        //}
-
-        //// Add Reavers if we have a Observer in PvP
-        //if (Players::vP() && vis(Protoss_Observer) >= 1) {
-        //    focusUnits.insert(Protoss_Reaver);
-        //    unlockedType.insert(Protoss_Reaver);
-        //}
-
-        // Add Shuttles if we have Reavers/HT
-        if (com(Protoss_Robotics_Facility) > 0 && (isFocusUnit(Protoss_Reaver) || isFocusUnit(Protoss_High_Templar) || (Players::vP() && !Spy::enemyInvis() && isFocusUnit(Protoss_Observer)))) {
-            focusUnits.insert(Protoss_Shuttle);
-            unlockedType.insert(Protoss_Shuttle);
-        }
-
-        // Add DT late game
-        if (Stations::getStations(PlayerState::Self).size() >= 4) {
-            focusUnits.insert(Protoss_Dark_Templar);
-            unlockedType.insert(Protoss_Dark_Templar);
-        }
-
-        // Add HT or Arbiter if enemy has detection
-        if (com(Protoss_Dark_Templar) > 0) {
-            auto substitute = Players::vT() ? Protoss_Arbiter : Protoss_High_Templar;
-            if (!Players::vP() && Players::hasDetection(PlayerState::Enemy)) {
-                unlockedType.insert(substitute);
-                focusUnits.insert(substitute);
-            }
-        }
-
-        // Remove DT if enemy has Observers in PvP
-        if (Players::PvP() && total(Protoss_Dark_Templar) >= 4 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Observer) > 0) {
-            unlockedType.erase(Protoss_Dark_Templar);
-            focusUnits.erase(Protoss_Dark_Templar);
         }
     }
 }

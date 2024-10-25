@@ -1,6 +1,8 @@
 #pragma once
 
 namespace McRave::BuildOrder::Protoss {
+    inline std::map<BWAPI::UnitType, bool> protossUnitPump;
+
     void opener();
     void tech();
     void situational();
@@ -19,6 +21,11 @@ namespace McRave::BuildOrder::Protoss {
     void PvZ_FFE();
 
     void PvFFA_1GC();
+
+    int zealotsNeeded_PvFFA();
+    int zealotsNeeded_PvP();
+    int zealotsNeeded_PvZ();
+    int zealotsNeeded_PvT();
 
     bool goonRange();
     bool enemyMoreZealots();

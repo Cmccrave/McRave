@@ -21,5 +21,7 @@ namespace McRave::Units {
 
     bool commandAllowed(UnitInfo&);
 
+    bool inBoundUnit(UnitInfo& unit, int seconds = 30);
+
     void onFrame();
 }

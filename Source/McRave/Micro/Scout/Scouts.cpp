@@ -277,7 +277,7 @@ namespace McRave::Scouts {
                     // Zergling
                     main.desiredTypeCounts[Zerg_Zergling] = (!Terrain::foundEnemy() && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost))
                         || (!Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0);
-                    if (Spy::enemyRush() || Spy::enemyPressure())
+                    if (Spy::enemyRush() || Spy::enemyPressure() || Spy::enemyTurtle() || Spy::enemyFortress())
                         main.desiredTypeCounts[Zerg_Zergling] = 0;
 
                     // Overlord
@@ -753,6 +753,12 @@ namespace McRave::Scouts {
                         sacrificeCount++;
                     }
                 }
+                if (Players::ZvT()) {
+                    if (!Spy::enemyFastExpand() && Util::getTime() > Time(5, 30) && sacrificeCount == 0) {
+                        unit.setMarkForDeath(true);
+                        sacrificeCount++;
+                    }
+                }
 
                 // Reset its path and set it to run to the main
                 if (unit.isMarkedForDeath()) {
@@ -833,7 +839,9 @@ namespace McRave::Scouts {
                     updateDestination(*unit);
                     updatePath(*unit);
                     updateDecision(*unit);
-                    if (Terrain::inTerritory(PlayerState::Enemy, unit->getPosition()))
+
+                    // If we're in their territory or ralphing, we have info
+                    if (Terrain::inTerritory(PlayerState::Enemy, unit->getPosition()) || unit->getType() == Zerg_Zergling)
                         info = true;
                 }
             }
@@ -854,7 +862,7 @@ namespace McRave::Scouts {
         updateExpansionScouting();
         updateScoutRoles();
         updateScouts();
-        drawScouting();
+        //drawScouting();
         Visuals::endPerfTest("Scouts");
     }
 

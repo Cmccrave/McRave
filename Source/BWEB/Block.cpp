@@ -128,8 +128,8 @@ namespace BWEB::Blocks
                 else if (height == 4) {
                     if (width == 3)
                         pieces ={ Piece::Medium, Piece::Row, Piece::Medium };
-                    if (width == 5)
-                        pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Small, Piece::Medium };
+                    if (width == 6)
+                        pieces ={ Piece::Medium, Piece::Medium, Piece::Row, Piece::Medium, Piece::Medium };
                 }
                 else if (height == 5) {
                     if (width == 8)
@@ -275,14 +275,16 @@ namespace BWEB::Blocks
             }
 
             // Check if a Block of specified size would overlap any bases, resources or other blocks
-            auto ff = (type != BlockType::Supply) ? 1 : 0;
+            auto ff = (type != BlockType::Supply && Broodwar->self()->getRace() != BWAPI::Races::Zerg) ? 1 : 0;
             for (auto x = here.x - ff; x < here.x + width + ff; x++) {
                 for (auto y = here.y - ff; y < here.y + height + ff; y++) {
                     const TilePosition t(x, y);
-                    if (type == BlockType::Supply && Map::mapBWEM.GetTile(t).MinAltitude() > 170)
-                        return false;
-                    if (!t.isValid() || !Map::mapBWEM.GetTile(t).Buildable() || Map::isReserved(t))
-                        return false;
+                    if (t.isValid()) {
+                        if (type == BlockType::Supply && Map::mapBWEM.GetTile(t).MinAltitude() > 170)
+                            return false;
+                        if (!Map::mapBWEM.GetTile(t).Buildable() || Map::isReserved(t))
+                            return false;
+                    }
                 }
             }
             return true;
@@ -350,7 +352,7 @@ namespace BWEB::Blocks
             const auto searchStart = [&](Position start) {
                 auto tileStart = TilePosition(start);
                 auto tileBest = TilePositions::Invalid;
-                auto distBest = DBL_MAX;
+                auto distBest = (Broodwar->self()->getRace() != BWAPI::Races::Zerg) ? DBL_MAX : 0.0;
                 multimap<TilePosition, Piece> bestPieceLayout;
                 bool generated = false;
                 for (int i = 10; i > 1; i--) {
@@ -374,8 +376,8 @@ namespace BWEB::Blocks
 
                                 if (!tile.isValid()
                                     || mediumCount < 1
-                                    || (race == Races::Zerg && smallCount > 0 && piecePerArea[area].count(Piece::Small) >= 2)
-                                    || (race == Races::Zerg && smallCount == 0 && mediumCount == 0)
+                                    || (race == Races::Zerg && mediumCount != 1)
+                                    || (race == Races::Zerg && smallCount > 0)
                                     || (race == Races::Protoss && largeCount < 2)
                                     || (race == Races::Terran && largeCount < 1)
                                     || (race == Races::Zerg && !creepOnCorners(tile, i, j)))
@@ -383,8 +385,9 @@ namespace BWEB::Blocks
 
                                 multimap<TilePosition, Piece> pieceLayout = generatePieceLayout(pieces, layout);
                                 const auto dist = blockCenter.getDistance(start);
+                                const auto betterDist = (Broodwar->self()->getRace() != BWAPI::Races::Zerg) ? (dist < distBest) : (dist > distBest);
 
-                                if (dist < distBest && canAddBlock(tile, i, j, pieceLayout, BlockType::Start)) {
+                                if (betterDist && canAddBlock(tile, i, j, pieceLayout, BlockType::Start)) {
                                     bestPieceLayout = pieceLayout;
                                     distBest = dist;
                                     tileBest = tile;
@@ -408,6 +411,8 @@ namespace BWEB::Blocks
 
         void findProductionBlocks()
         {
+            return;
+
             // Iterate every tile
             for (int i = 20; i > 0; i--) {
                 for (int j = 20; j > 0; j--) {

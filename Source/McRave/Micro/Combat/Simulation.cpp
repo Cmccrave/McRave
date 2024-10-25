@@ -118,13 +118,13 @@ namespace McRave::Combat::Simulation {
         auto &target = *unit.getTarget().lock();
 
         // Adjust winrates if we have static defense that would make the fight easier and we're at home
-        if (Util::getTime() < Time(8, 00) && !unit.isFlying() && com(Zerg_Sunken_Colony) > 0 && Combat::State::isStaticRetreat(unit.getType())) {
+        if (!unit.isFlying() && Combat::State::isStaticRetreat(unit.getType())) {
             const auto defendStation = Stations::getClosestStationAir(unit.retreatPos, PlayerState::Self);
-            const auto furthestSunk = Util::getFurthestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getType() == Zerg_Sunken_Colony && u->isCompleted() && Terrain::inArea(defendStation->getBase()->GetArea(), u->getPosition());
+            const auto furthestDefender = Util::getFurthestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
+                return u->getType().isBuilding() && u->canAttackGround() && u->isCompleted() && Terrain::inArea(defendStation->getBase()->GetArea(), u->getPosition());
             });
-            if (furthestSunk) {
-                if (furthestSunk->isWithinRange(target)) {
+            if (furthestDefender) {
+                if (furthestDefender->isWithinRange(target)) {
                     minWinPercent = 0.0;
                     maxWinPercent = 0.0;
                 }
@@ -132,6 +132,7 @@ namespace McRave::Combat::Simulation {
                     minWinPercent *=4;
                     maxWinPercent *=4;
                 }
+                return;
             }
         }
 

@@ -137,9 +137,9 @@ namespace McRave::Spy::Protoss {
             // 1Gate Openers -  need timings for when Core completes
             if (theSpy.build.name == "1GateCore") {
                 if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) == 0)
-                    theSpy.opener.name = "0Zealot";
+                    theSpy.opener.name = "NZCore";
                 else if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) == 1)
-                    theSpy.opener.name = "1Zealot";
+                    theSpy.opener.name = "ZCore";
                 else if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 2)
                     theSpy.opener.name = "2Zealot";
             }

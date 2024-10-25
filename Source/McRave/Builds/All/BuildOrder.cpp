@@ -166,37 +166,71 @@ namespace McRave::BuildOrder
     }
 
     bool unlockReady(UnitType type) {
-        bool ready = false;
 
         // P
+        if (type == Protoss_Probe)
+            return true;
+        if (type == Protoss_Zealot)
+            return com(Protoss_Gateway) > 0;
+        if (type == Protoss_Dragoon)
+            return com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
         if (type == Protoss_High_Templar || type == Protoss_Dark_Templar || type == Protoss_Archon || type == Protoss_Dark_Archon)
-            ready = com(Protoss_Citadel_of_Adun) > 0;
+            return com(Protoss_Gateway) > 0 && com(Protoss_Templar_Archives) > 0;
         if (type == Protoss_Corsair || type == Protoss_Scout)
-            ready = com(Protoss_Stargate) > 0;
-        if (type == Protoss_Reaver || type == Protoss_Observer)
-            ready = com(Protoss_Robotics_Facility) > 0;
+            return com(Protoss_Stargate) > 0;
         if (type == Protoss_Carrier)
-            ready = com(Protoss_Fleet_Beacon) > 0;
+            return com(Protoss_Stargate) > 0 && com(Protoss_Fleet_Beacon) > 0;
         if (type == Protoss_Arbiter)
-            ready = com(Protoss_Arbiter_Tribunal) > 0;
+            return com(Protoss_Stargate) > 0 && com(Protoss_Arbiter_Tribunal) > 0;
+        if (type == Protoss_Shuttle)
+            return com(Protoss_Robotics_Facility) > 0;
+        if (type == Protoss_Reaver)
+            return com(Protoss_Robotics_Facility) > 0 && com(Protoss_Robotics_Support_Bay) > 0;
+        if (type == Protoss_Observer)
+            return com(Protoss_Robotics_Facility) > 0 && (Protoss_Observatory) > 0;
+
+        // T
+        if (type == Terran_SCV)
+            return true;
+        if (type == Terran_Marine)
+            return com(Terran_Barracks) > 0;
+        if (type == Terran_Firebat || type == Terran_Medic)
+            return com(Terran_Academy) > 0;
+        if (type == Terran_Vulture)
+            return com(Terran_Factory) > 0;
+        if (type == Terran_Siege_Tank_Tank_Mode)
+            return com(Terran_Machine_Shop) > 0;
+        if (type == Terran_Goliath)
+            return com(Terran_Armory) > 0;
+        if (type == Terran_Wraith)
+            return com(Terran_Starport) > 0;
+        if (type == Terran_Dropship)
+            return com(Terran_Starport) > 0 && com(Terran_Control_Tower) > 0;
+        if (type == Terran_Valkyrie)
+            return com(Terran_Starport) > 0 && com(Terran_Control_Tower) > 0 && com(Terran_Armory) > 0;
+        if (type == Terran_Science_Vessel)
+            return com(Terran_Starport) > 0 && com(Terran_Control_Tower) > 0 && com(Terran_Science_Facility) > 0;
+        if (type == Terran_Battlecruiser)
+            return com(Terran_Starport) > 0 && com(Terran_Control_Tower) > 0 && com(Terran_Physics_Lab) > 0;
 
         // Z
         if (type == Zerg_Drone)
             return true;
         if (type == Zerg_Zergling)
-            ready = com(Zerg_Spawning_Pool) > 0;
+            return com(Zerg_Spawning_Pool) > 0;
         if (type == Zerg_Mutalisk)
-            ready = com(Zerg_Spire) > 0;
+            return com(Zerg_Spire) > 0;
         if (type == Zerg_Hydralisk)
-            ready = com(Zerg_Hydralisk_Den) > 0;
+            return com(Zerg_Hydralisk_Den) > 0;
         if (type == Zerg_Lurker)
-            ready = com(Zerg_Hydralisk_Den) > 0 && com(Zerg_Lair) > 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
+            return com(Zerg_Hydralisk_Den) > 0 && com(Zerg_Lair) > 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
         if (type == Zerg_Ultralisk)
-            ready = com(Zerg_Ultralisk_Cavern) > 0;
+            return com(Zerg_Ultralisk_Cavern) > 0;
         if (type == Zerg_Defiler)
-            ready = com(Zerg_Defiler_Mound) > 0;
-
-        return ready;
+            return com(Zerg_Defiler_Mound) > 0;
+        
+        Broodwar << "Type not checked for training: " << type.c_str() << endl;
+        return false;
     }
 
     void getNewTech()
@@ -330,6 +364,11 @@ namespace McRave::BuildOrder
     }
 
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
+
+
+    int gasMax() {
+        return Resources::getGasCount() * 3;
+    }
     
     bool isOpener() { return inOpening; }
     bool takeNatural() { return wantNatural; }

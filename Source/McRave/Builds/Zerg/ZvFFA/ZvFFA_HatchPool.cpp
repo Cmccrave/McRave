@@ -19,8 +19,6 @@ namespace McRave::BuildOrder::Zerg {
             inBookSupply =                                  vis(Zerg_Overlord) < 8 || total(Zerg_Mutalisk) < 9;
 
             focusUnit =                                     Zerg_Mutalisk;
-            unitLimits[Zerg_Drone] =                        com(Zerg_Spawning_Pool) > 0 ? 33 : 15 - hatchCount();
-            unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvFFA();
             wantThird =                                     Spy::enemyFastExpand() || hatchCount() >= 3;
             gasLimit =                                      (vis(Zerg_Drone) >= 11) ? gasMax() : 0;
 
@@ -35,20 +33,22 @@ namespace McRave::BuildOrder::Zerg {
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + spireOverlords;
 
             // Pumping
-            pumpLings = lingsNeeded_ZvFFA() > vis(Zerg_Zergling);
-            pumpMutas = com(Zerg_Spire) > 0;
+            zergUnitPump[Zerg_Drone] |= com(Zerg_Spawning_Pool) > 0 && vis(Zerg_Drone) < 33;
+            zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvFFA() > vis(Zerg_Zergling);
+            zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) > 0;
         }
 
         void ZvFFA_HP_10Hatch()
         {
             // 'https://liquipedia.net/starcraft/10_Hatch'
             transitionReady =                               total(Zerg_Overlord) >= 2;
-            unitLimits[Zerg_Zergling] =                     lingsNeeded_ZvFFA();
             gasLimit =                                      0;
             wantNatural =                                   !Spy::enemyProxy();
-            unitLimits[Zerg_Drone] =                        10;
             planEarly =                                     hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150;
             gasTrick =                                      s >= 18 && hatchCount() < 2 && total(Zerg_Spawning_Pool) == 0;
+
+            zergUnitPump[Zerg_Drone] = vis(Zerg_Drone) < 10;
+            zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvFFA();
 
             // Buildings
             buildQueue[Zerg_Hatchery] =                     1 + (s >= 20);
