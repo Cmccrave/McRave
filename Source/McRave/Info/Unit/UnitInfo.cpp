@@ -32,7 +32,7 @@ namespace McRave
             const auto cancelAttackRisk = frameSinceAttack <= unit->data.minStopFrame - Broodwar->getLatencyFrames();
 
             // Allows skipping the command but still printing the result to screen
-            return (!cancelAttackRisk || unit->isLightAir() || unit->isHovering());
+            return !cancelAttackRisk;
         }
 
         Position getOvershootPosition(UnitInfo* unit, Position here)
@@ -512,16 +512,11 @@ namespace McRave
                 const auto closerToMyNat = closestNat && closestNat == Terrain::getMyNatural();
                 const auto farFromHome = position.getDistance(closestMain->getBase()->Center()) > 960.0 && position.getDistance(closestNat->getBase()->Center()) > 960.0;
 
-                // When to consider a worker a proxy (potential proxy shenanigans)
-                const auto proxyWorker = (getType() == Protoss_Probe && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) == 0)
-                    || (getType() == Terran_SCV && (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) == 0 || bwUnit->isConstructing()))
-                    || (getType() == Zerg_Drone && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0);
-
-                const auto timedOrKnown = Util::getTime() < Time(3, 00) || Spy::getEnemyBuild() == "CannonRush" || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush";
+                const auto timedOrKnown = Util::getTime() < Time(4, 00) || Spy::getEnemyBuild() == "CannonRush" || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush";
 
                 // Workers are proxy if they're close enough to our bases and considered suspicious
                 if (getType().isWorker()) {
-                    if (timedOrKnown && proxyWorker && (position.getDistance(closestMain->getBase()->Center()) < 960.0 || position.getDistance(closestNat->getBase()->Center()) < 960.0))
+                    if (timedOrKnown && (position.getDistance(closestMain->getBase()->Center()) < 960.0 || position.getDistance(closestNat->getBase()->Center()) < 960.0))
                         proxy = closerToMyMain || closerToMyNat;
                 }
                 else
@@ -585,6 +580,8 @@ namespace McRave
                 unit()->burrow();
             if (cmd == UnitCommandTypes::Unburrow)
                 unit()->unburrow();
+
+            Visuals::drawLine(getPosition(), here, Colors::Cyan);
         }
     }
 
@@ -689,23 +686,23 @@ namespace McRave
         auto angleDiff = (M_PI - fabs(fmod(fabs(angle - facingAngle), 2 * M_PI) - M_PI));
 
         // Time to turn and face - confirmed
-        auto turnFrames = 0.0;
+        auto turnFrames = 0;
         if (getType().turnRadius() > 0.0) {
-            auto turnSpeed = (getType().turnRadius() * 0.0174533); // Degs/framme -> Rads/frame, muta is 40deg per frame, so a turn around takes 5 frames ceil(180/40)
-            turnFrames = angleDiff / turnSpeed;
+            auto turnSpeed = double(getType().turnRadius()) * 0.0174533 * 2.0; // Degs/framme -> Rads/frame, muta is 40deg per frame, so a turn around takes 5 frames ceil(180/40)
+            turnFrames = int(ceil(angleDiff / turnSpeed));
         }
 
         // Time to arrive in range - confirmed
-        auto arrivalFrames = 0.0;
+        auto arrivalFrames = 0;
         if (getSpeed() > 0.0) {
             auto boxDistance = double(Util::boxDistance(getType(), getPosition(), target.getType(), target.getPosition()));
             auto range = (target.getType().isFlyer() ? getAirRange() : getGroundRange());
             auto speed = hasTransport() ? getTransport().lock()->getSpeed() : getSpeed();
-            arrivalFrames = max(0.0, (boxDistance - range) / speed);
+            arrivalFrames = int(ceil(max(0.0, (boxDistance - range) / speed)));
         }
 
-        // Time to deccel/accel - WIP it's kinda fucked idk?
-        auto celcelFrames = 0.0;
+        // Time to deccel/accel - reasonably confirmed
+        auto celcelFrames = 0;
         if (isFlying() || isHovering()) {
             auto velocityVector = getPosition() + Position(32.0 * unit()->getVelocityX(), 32.0 * unit()->getVelocityY()); // You think I care it's a Position?
             auto velocityDirection = BWEB::Map::getAngle(getPosition(), velocityVector);
@@ -716,14 +713,19 @@ namespace McRave
 
             auto velocityPercent = clamp((getType().topSpeed() - currentSpeed) / getType().topSpeed(), 0.0, 1.0);
             auto accelPercent = clamp(velocityPercent + directionPercent, 0.0, 2.0);
-            celcelFrames =  accelPercent / (getType().acceleration() / 256.0);
+            celcelFrames =  int(ceil(accelPercent / (getType().acceleration() / 256.0)) * 2.0);
         }
 
         // Always important
         auto lagFrames = Broodwar->getLatencyFrames();
 
-        auto anticipatedCooldown = int(turnFrames + arrivalFrames + celcelFrames + lagFrames);
-        auto cooldownReady = cooldown <= anticipatedCooldown; // min(anticipatedCooldown, weaponCooldown / 2);
+        //Broodwar->drawTextMap(getPosition(), "%d", cooldown);
+        //Broodwar->drawTextMap(getPosition() + Position(0, 16), "%d", turnFrames);
+        //Broodwar->drawTextMap(getPosition() + Position(0, 32), "%d", arrivalFrames);
+        //Broodwar->drawTextMap(getPosition() + Position(0, 48), "%d", celcelFrames);
+
+        auto anticipatedCooldown = turnFrames + arrivalFrames + celcelFrames + lagFrames;
+        auto cooldownReady = cooldown <= anticipatedCooldown;
         return cooldownReady;
     }
 
@@ -970,7 +972,7 @@ namespace McRave
 
 
         auto &target = *getTarget().lock();
-        if (target.isThreatening())
+        if (target.isThreatening() && target.getType() != Terran_Vulture)
             return false;
         if (!target.getType().isWorker() && Util::getTime() < Time(4, 00) && Broodwar->getGameType() != GameTypes::Use_Map_Settings)
             return false;
@@ -1009,6 +1011,6 @@ namespace McRave
     {
         if (!isLightAir())
             return false;
-        return hasCommander() && getPosition().getDistance(getCommander().lock()->getPosition()) > 128.0;
+        return hasCommander() && getPosition().getDistance(getCommander().lock()->getPosition()) > 64.0;
     }
 }

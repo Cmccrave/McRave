@@ -11,7 +11,7 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvT_PH_4Pool()
     {
-        auto enemyHeldRush = Players::getCompleteCount(PlayerState::Enemy, Terran_Bunker) > 0;
+        auto enemyHeldRush = Players::getCompleteCount(PlayerState::Enemy, Terran_Bunker) > 0 || Spy::enemyWalled() || Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0;
 
         // 4p
         scout =                                         scout || (vis(Zerg_Spawning_Pool) > 0 && com(Zerg_Drone) >= 4 && !Terrain::getEnemyStartingPosition().isValid());

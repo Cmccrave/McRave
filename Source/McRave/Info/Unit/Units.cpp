@@ -97,8 +97,9 @@ namespace McRave::Units {
                         || unit.getRole() == Role::Scout || unit.getRole() == Role::Support || unit.getRole() == Role::Transport
                         || unit.getRole() == Role::Worker;
 
-                    auto frames = unit.isLightAir() ? 3 : 9;
-                    auto newCommandFrame = (Broodwar->getFrameCount() - unit.commandFrame > frames) || (unit.getRole() != Role::Combat && unit.getRole() != Role::Scout && Util::getTime() < Time(4, 00));
+                    auto frames = unit.isLightAir() ? 2 : 9;
+                    auto newCommandFrame = (Broodwar->getFrameCount() - unit.commandFrame > frames)
+                        || (unit.getRole() != Role::Combat && unit.getRole() != Role::Scout && Util::getTime() < Time(4, 00));
 
                     if (newCommandFrame && validRole)
                         commandQueue.push_back(&unit);
@@ -298,10 +299,13 @@ namespace McRave::Units {
         const auto inbound = Time(unit.frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, seconds);
 
         // Check if we know they weren't at home and are missing on the map for arg seconds
-        if (!Terrain::getEnemyNatural() || !Terrain::getEnemyMain()
-            || (!Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), unit.getPosition()) && !Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), unit.getPosition())))
+        if (!Terrain::getEnemyNatural() || !Terrain::getEnemyMain() || !Scouts::gatheringInformation())
             return inbound;
-        return false;
+
+        const auto notInNatural = !Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), unit.getPosition());
+        const auto notInMain = !Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), unit.getPosition());
+
+        return (Spy::enemyFastExpand() && notInNatural && notInMain) || (!Spy::enemyFastExpand() && notInMain);
     }
 
     bool commandAllowed(UnitInfo& unit) {

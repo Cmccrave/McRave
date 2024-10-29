@@ -44,6 +44,7 @@ namespace McRave::Combat::Decision {
 
             // Update remaining units
             for (auto &unit : cluster.units) {
+                unit->canStartAttack();
                 if (unit == &*commander && commander->isLightAir())
                     continue;
                 if (!Units::commandAllowed(*unit))

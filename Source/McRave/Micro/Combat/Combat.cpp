@@ -88,7 +88,7 @@ namespace McRave::Combat {
             }
 
             // When we don't want to defend our natural
-            if (Players::ZvT() && (Spy::enemyRush() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0))
+            if (Players::ZvT() && Util::getTime() < Time(8, 00) && (Spy::enemyRush() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0))
                 defendNatural = false;
             if (Players::ZvP() && Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate" && (!Stations::isCompleted(Terrain::getMyNatural()) || (vis(Zerg_Zergling) < 12 && Units::getImmThreat() < 0.1f && Util::getTime() < Time(5, 00))))
                 defendNatural = false;

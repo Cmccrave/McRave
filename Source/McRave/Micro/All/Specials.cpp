@@ -454,7 +454,11 @@ namespace McRave::Command
         // Defiler - Dark Swarm / Plague
         else if (unit.getType() == Zerg_Defiler && !unit.isBurrowed()) {
 
-            auto castSwarm = Players::ZvT() || (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) && vis(Zerg_Zergling) + vis(Zerg_Ultralisk) > vis(Zerg_Hydralisk));
+            auto selfMoreMelee = vis(Zerg_Zergling) + vis(Zerg_Ultralisk) > vis(Zerg_Hydralisk);
+            auto enemyLessMelee = (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot))
+                || (Players::ZvT());
+
+            auto castSwarm = selfMoreMelee && enemyLessMelee;
 
             // If close to target and can cast Plague
             if (!unit.targetsFriendly() && !castSwarm && unit.getLocalState() != LocalState::None && unit.canStartCast(Plague, target.getPosition())) {

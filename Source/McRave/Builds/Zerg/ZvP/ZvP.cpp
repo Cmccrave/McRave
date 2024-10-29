@@ -57,18 +57,6 @@ namespace McRave::BuildOrder::Zerg {
         if (Players::hasUpgraded(PlayerState::Enemy, Protoss_Ground_Weapons, 1))
             trackables[Protoss_Zealot] += 0.5;
 
-        auto inBoundUnit = [&](auto &u) {
-            if (!Terrain::getEnemyMain())
-                return true;
-            const auto visDiff = Broodwar->getFrameCount() - u->getLastVisibleFrame();
-
-            // Check if we know they weren't at home and are missing on the map for 45 seconds
-            if (!u->movedFlag && !u->isThreatening() && (!Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), u->getPosition()) || Util::getTime() < Time(5, 00))
-                && (!Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), u->getPosition()) || Util::getTime() < Time(3, 30)))
-                return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 45);
-            return false;
-        };
-
         // Economic estimate (have information on army, they aren't close):
         // For each unit, assume it arrives with enough time for us to create defenders
         auto arrivalValue = 0.0;
@@ -78,13 +66,13 @@ namespace McRave::BuildOrder::Zerg {
             auto idx = trackables.find(unit.getType());
             if (idx != trackables.end() && (inOpening || unit.isThreatening())) {
                 arrivalValue += idx->second / 1.25;
-                if (inBoundUnit(u) || vis(Zerg_Zergling) < 6)
+                if (Units::inBoundUnit(unit, 45) || vis(Zerg_Zergling) < 6)
                     arrivalValue += idx->second / 1.15;
             }
         }
 
         // Make less if we have some other units outside our opening
-        if (total(Zerg_Zergling) >= 16 && vis(Zerg_Zergling) >= 10) {
+        if (total(Zerg_Zergling) >= transitionLings || com(Zerg_Sunken_Colony) > 0) {
             arrivalValue -= vis(Zerg_Hydralisk);
             arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 6.0;
         }
@@ -110,13 +98,13 @@ namespace McRave::BuildOrder::Zerg {
 
         // 2Gate
         if (Spy::getEnemyBuild() == "2Gate") {
-            initialValue = 10;
+            initialValue = 6;
             if (Spy::getEnemyOpener() == "Proxy9/9")
-                initialValue = 16;
-            if (Spy::getEnemyOpener() == "9/9")
-                initialValue = 14;
-            if (Spy::getEnemyOpener() == "10/12")
                 initialValue = 12;
+            if (Spy::getEnemyOpener() == "9/9")
+                initialValue = 10;
+            if (Spy::getEnemyOpener() == "10/12")
+                initialValue = 6;
             if (Spy::getEnemyOpener() == "10/15")
                 initialValue = 4;
         }
@@ -346,7 +334,7 @@ namespace McRave::BuildOrder::Zerg {
         unitOrder ={ Zerg_Hydralisk, Zerg_Mutalisk };
 
         // Third hatch first, but wait for lings
-        auto thirdHatch = (s >= 26 && total(Zerg_Zergling) >= transitionLings) || (s >= 40);
+        auto thirdHatch = (s >= 26 && total(Zerg_Zergling) >= transitionLings && Spy::getEnemyBuild() != "Unknown") || (s >= 40);
 
         // Buildings
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48) + (s >= 54);
@@ -388,7 +376,7 @@ namespace McRave::BuildOrder::Zerg {
             unitOrder ={ Zerg_Hydralisk, Zerg_Mutalisk, Zerg_Lurker };
 
         // Third hatch first, but wait for lings
-        auto thirdHatch = (s >= 28 && total(Zerg_Zergling) >= transitionLings) || (s >= 40);
+        auto thirdHatch = (s >= 28 && total(Zerg_Zergling) >= transitionLings && Spy::getEnemyBuild() != "Unknown") || (s >= 40);
         auto fourthHatch = (s >= 54 && vis(Zerg_Drone) >= 18 && total(Zerg_Hydralisk) > 0);
 
         // Buildings
@@ -404,7 +392,7 @@ namespace McRave::BuildOrder::Zerg {
         upgradeQueue[Metabolic_Boost] =                 total(Zerg_Zergling) >= 18 && com(Zerg_Hydralisk_Den) > 0;
         upgradeQueue[Grooved_Spines] =                  rangeFirst ? total(Zerg_Hydralisk) >= 6 : hydraSpeed();
         upgradeQueue[Muscular_Augments] =               rangeFirst ? hydraRange() : total(Zerg_Hydralisk) >= 6;
-        upgradeQueue[Zerg_Carapace] =                   com(Zerg_Evolution_Chamber) > 0 && total(Zerg_Hydralisk) >= 18;        
+        upgradeQueue[Zerg_Carapace] =                   com(Zerg_Evolution_Chamber) > 0 && total(Zerg_Hydralisk) >= 18;
 
         // Pumping
         auto needMinimumHydras = com(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Hydralisk) < Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + 2;

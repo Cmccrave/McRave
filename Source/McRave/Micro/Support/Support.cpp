@@ -21,7 +21,7 @@ namespace McRave::Support {
                     types.insert(t);
             }
 
-            if (Players::ZvT() && Spy::enemyInvis())
+            if (Players::ZvT() && Spy::enemyInvis() && vis(Zerg_Hydralisk) == 0)
                 types.insert(Zerg_Mutalisk);
             if (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) == 0 && com(Zerg_Hydralisk) == 0)
                 types.insert(Zerg_Zergling);
@@ -98,12 +98,6 @@ namespace McRave::Support {
             for (auto &cluster : Combat::Clusters::getClusters()) {
                 auto commander = cluster.commander.lock();
 
-                if (unit.getType() == Zerg_Overlord && commander && !commander->isTargetedByHidden() && !commander->isNearHidden()) {
-                    cnt++;
-                    if (cnt >= 2)
-                        break;
-                }
-
                 if (commander && types.find(commander->getType()) != types.end() && assignedOverlords.find(commander->getPosition()) == assignedOverlords.end()) {
                     auto dist = commander->getPosition().getDistance(unit.getPosition());
                     if (dist < distBest) {
@@ -119,32 +113,8 @@ namespace McRave::Support {
                 }
             }
 
-            //// Find the closest unit without a detector assigned - this doesn't work great so far
-            //if (!unit.getDestination().isValid()) {
-            //    distBest = DBL_MAX;
-            //    for (auto &u : Units::getUnits(PlayerState::Self)) {
-            //        auto assignedDist = 320.0;
-            //        if (types.find(u->getType()) != types.end()) {
-            //            for (auto &position : assignedOverlords)
-            //                assignedDist = min(assignedDist, position.getDistance(u->getPosition()));
-
-            //            auto dist = u->getPosition().getDistance(unit.getPosition()) / assignedDist;
-            //            if (dist < distBest) {
-            //                unit.setDestination(u->getPosition());
-            //                distBest = dist;
-            //            }
-            //        }
-            //    }
-            //}
-
             // Assign placement
             assignedOverlords.insert(unit.getDestination());
-
-            // Adjust detectors not in use between closest self station
-            auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
-            if (unit.getType() == Zerg_Overlord && closestStation) {
-                unit.setDestination(Util::shiftTowards(unit.getDestination(), closestStation->getBase()->Center(), 96.0));
-            }
         }
 
         void updateDestination(UnitInfo& unit)

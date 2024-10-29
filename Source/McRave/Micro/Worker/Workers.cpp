@@ -97,10 +97,6 @@ namespace McRave::Workers {
                 if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(unit.getTilePosition()) == station->getBase()->GetArea())
                     safeStations.push_back(station);
 
-                // If station has defenses or it's early, it's probably safe
-                else if (Stations::getGroundDefenseCount(station) > 0 || Stations::getAirDefenseCount(station) > 0 || Util::getTime() < Time(6, 00))
-                    safeStations.push_back(station);
-
                 else {
                     auto &path = Stations::getPathBetween(closestStation, station);
                     auto threatPos = Util::findPointOnPath(path, [&](auto &t) {

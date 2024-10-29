@@ -49,7 +49,7 @@ namespace McRave::Combat::Navigation {
 
     void updatePath(UnitInfo& unit)
     {
-        if (unit.isLightAir() /*&& !unit.getGoal().isValid()*/) {
+        if (unit.isLightAir() && !unit.getGoal().isValid()) {
             auto regrouping = unit.attemptingRegroup();
             auto retreating = unit.getLocalState() == LocalState::Retreat;
             auto attacking = unit.getLocalState() == LocalState::Attack;
@@ -111,8 +111,6 @@ namespace McRave::Combat::Navigation {
             if (newDestination.isValid())
                 unit.setNavigation(newDestination);
         }
-
-        Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Cyan);
     }
 
     void updateSimPositions(UnitInfo& unit)
@@ -175,8 +173,12 @@ namespace McRave::Combat::Navigation {
     {
         // Create one path from commander to retreat
         auto harassingCommander = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
-            return u->isLightAir() && !u->hasCommander() && u->getGlobalState() == GlobalState::Attack;
+            return u->isLightAir() && !u->hasCommander() && u->getGlobalState() == GlobalState::Attack && !u->getGoal().isValid();
         });
+
+        flyerRegroupPath ={};
+        flyerHarassPath ={};
+        flyerRetreatPath ={};
 
         if (harassingCommander) {
             auto &unit = *harassingCommander;

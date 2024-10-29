@@ -14,10 +14,13 @@ namespace McRave::BuildOrder::Zerg {
     void defaultZvT() {
         inOpening =                                 true;
         inBookSupply =                              true;
+
         wallNat =                                   false;
         wallMain =                                  false;
+
         wantNatural =                               true;
-        wantThird =                                 false;
+        wantThird =                                 hatchCount() >= 3 || Spy::enemyFastExpand();
+
         mineralThird =                              false;
         proxy =                                     false;
         hideTech =                                  false;
@@ -92,7 +95,7 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         // RaxFact
-        if (Spy::getEnemyBuild() == "RaxFact") {
+        if (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()) {
             initialValue = 2;
             if (Util::getTime() > Time(4, 00))
                 initialValue = 10;
@@ -121,11 +124,10 @@ namespace McRave::BuildOrder::Zerg {
     {
         inTransition =                                  vis(Zerg_Lair) > 0;
         inOpening =                                     total(Zerg_Mutalisk) <= 9;
-        inBookSupply =                                  total(Zerg_Mutalisk) < 3;
+        inBookSupply =                                  total(Zerg_Overlord) < 3;
 
         focusUnit =                                     Zerg_Mutalisk;
         reserveLarva =                                  6;
-        wantThird =                                     Spy::getEnemyBuild() == "RaxFact" || hatchCount() >= 3;
 
         auto thirdHatch = (Spy::getEnemyBuild() == "RaxFact") ? total(Zerg_Mutalisk) >= 6 : (vis(Zerg_Spire) > 0);
 
@@ -155,7 +157,7 @@ namespace McRave::BuildOrder::Zerg {
                 gasLimit = 0;
             else if (vis(Zerg_Lair) > 0 && Spy::getEnemyBuild() == "2Rax" && Util::getTime() < Time(4, 00))
                 gasLimit = 0;
-            else if (Spy::enemyProxy() && Util::getTime() < Time(3, 30))
+            else if (Spy::enemyProxy() && Util::getTime() < Time(3, 00))
                 gasLimit = 0;
         }
     }
@@ -168,8 +170,7 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                                  vis(Zerg_Overlord) < 4;
 
         focusUnit =                                     Zerg_Mutalisk;
-        wantThird =                                     !Spy::enemyProxy() && !Spy::enemyRush();
-        reserveLarva =                                  9;
+        reserveLarva =                                  6;
 
         auto thirdHatch = Spy::enemyProxy() ? total(Zerg_Zergling) >= 6 : (s >= 26 && vis(Zerg_Drone) >= 11);
         auto fourthHatch = (Spy::getEnemyBuild() == "RaxFact") ? total(Zerg_Mutalisk) >= 9 : (vis(Zerg_Spire) > 0 && s >= 66);
@@ -182,7 +183,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Spire] =                        (s >= 42 && atPercent(Zerg_Lair, 0.80));
 
         // Upgrades
-        upgradeQueue[Metabolic_Boost] =                 vis(Zerg_Zergling) >= 6 && gas(80);
+        upgradeQueue[Metabolic_Boost] =                 Spy::getEnemyBuild() != "RaxFact" && vis(Zerg_Zergling) >= 6 && gas(80);
 
         // Research
         techQueue[TechTypes::Burrowing] =               Spy::getEnemyBuild() == "RaxFact" && Util::getTime() > Time(4, 15);
@@ -197,7 +198,7 @@ namespace McRave::BuildOrder::Zerg {
         if (!Spy::enemyFastExpand()) {
             if (vis(Zerg_Drone) + vis(Zerg_Extractor) < 10)
                 gasLimit = 0;
-            else if (vis(Zerg_Lair) > 0 && Util::getTime() < Time(4, 30))
+            else if (vis(Zerg_Lair) > 0 && Spy::getEnemyBuild() == "2Rax" && Util::getTime() < Time(4, 30))
                 gasLimit = 0;
             else if (Spy::enemyProxy() && Util::getTime() < Time(3, 30))
                 gasLimit = 0;
@@ -213,17 +214,6 @@ namespace McRave::BuildOrder::Zerg {
             ZvT_HP();
         if (currentBuild == "PoolHatch")
             ZvT_PH();
-
-        // Reactions
-        if (!inTransition) {
-            if (Spy::getEnemyTransition() == "WorkerRush") {
-                currentBuild = "PoolHatch";
-                currentOpener = "12Pool";
-                currentTransition = "2HatchMuta";
-            }
-            if (currentBuild == "3HatchMuta" && (Spy::enemyRush() || Spy::enemyProxy()))
-                currentTransition = "2HatchMuta";
-        }
 
         // Transitions
         if (transitionReady) {

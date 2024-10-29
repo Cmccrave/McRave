@@ -193,6 +193,9 @@ namespace McRave::Goals {
                             if (!unit->isSuicidal() && unit->getPosition().getDistance(closestBuilder->getPosition()) < 640.0)
                                 assignNumberToGoal(unit->getPosition(), type, perEnemy, GoalType::Escort);
                         }
+
+                        // Have all mutas go escort
+                        assignPercentToGoal(closestBuilder->getPosition(), airType, 1.0, GoalType::Escort);
                     }
                     else {
                         for (auto &unit : Units::getUnits(PlayerState::Enemy)) {

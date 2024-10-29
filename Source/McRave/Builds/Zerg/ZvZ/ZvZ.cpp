@@ -137,6 +137,7 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::enemyTurtle() && Spy::getEnemyTransition() != "2HatchHydra") {
             wantNatural = true;
             zergUnitPump[Zerg_Zergling] = false;
+            zergUnitPump[Zerg_Drone] = vis(Zerg_Drone) < 16;
         }
 
         // Gas

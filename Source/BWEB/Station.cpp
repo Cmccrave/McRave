@@ -29,6 +29,7 @@ namespace BWEB {
             while (next != end) {
                 auto distBest = DBL_MAX;
                 start = next;
+                int itrcount = 0;
                 for (auto &t : directions) {
                     auto tile = start + t;
                     auto pos = Position(tile);
@@ -40,9 +41,12 @@ namespace BWEB {
                     if (dist <= distBest) {
                         next = tile;
                         distBest = dist;
+                        itrcount++;
                     }
                 }
-                Map::addReserve(next, 1, 1);
+
+                auto size = 1 + (itrcount > 1);
+                Map::addReserve(next, size, size);
             }
         };
 
@@ -54,7 +58,7 @@ namespace BWEB {
         }
         for (auto &g : base->Geysers()) {
             Map::addReserve(g->TopLeft(), 4, 2);
-            //biggerReserve(g->Unit(), g->Unit()->getTilePosition(), base->Location());
+            biggerReserve(g->Unit(), g->Unit()->getTilePosition() + TilePosition(1, 0), base->Location());
             //biggerReserve(g->Unit(), g->Unit()->getTilePosition() + TilePosition(3, 1), base->Location() + TilePosition(3, 2));
         }
     }

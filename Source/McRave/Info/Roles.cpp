@@ -137,6 +137,11 @@ namespace McRave::Roles {
                 return u->getType().isWorker() && u->getBuildType() == Zerg_Hatchery && Broodwar->self()->minerals() >= 200;
             });
 
+            // All-in with marines/zealots - don't pull
+            if (Spy::getEnemyTransition() == "WorkerRush" && (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0 || Players::getCompleteCount(PlayerState::Enemy,Protoss_Zealot) > 0)) {
+                return;
+            }
+
             // ZvZ
             if (Players::ZvZ() && Util::getTime() < Time(6, 00) && !Spy::enemyTurtle() && !Spy::enemyFastExpand()) {
                 if ((Spy::getEnemyOpener() == "9Pool" || Spy::getEnemyOpener() == "Overpool" || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling))
@@ -209,10 +214,6 @@ namespace McRave::Roles {
 
                 // Proxy, 3 drones per marine
                 else if (proxyCombatUnit && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8)
-                    forceCombatWorker(count, location);
-
-                // All-in with marines
-                else if (Spy::getEnemyTransition() == "WorkerRush" && total(Zerg_Zergling) < 12 && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
                     forceCombatWorker(count, location);
 
                 // Likely proxy, worker arrived way too early

@@ -50,6 +50,10 @@ namespace McRave::Buildings {
         {
             auto isStation = BWEB::Stations::getClosestStation(building.getTilePosition())->getBase()->Location() == building.getTilePosition();
 
+            // We don't cancel anything else right now and we don't do very good checks here for larva
+            if (!building.getType().isBuilding() || building.getType() == Zerg_Larva)
+                return;
+
             // Cancelling refineries for our gas trick
             if (BuildOrder::isGasTrick() && building.getType().isRefinery() && !building.unit()->isCompleted() && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
                 BWEB::Map::removeUsed(building.getTilePosition(), 4, 2);
@@ -153,17 +157,7 @@ namespace McRave::Buildings {
             // Look for the closest possible non worker enemy
             if (plannedType == Zerg_Sunken_Colony && Spy::getEnemyBuild() != "CannonRush" && Spy::getEnemyTransition() != "WorkerRush") {
                 auto closestThreat = Util::getClosestUnit(building.getPosition(), PlayerState::Enemy, [&](auto &u) {
-                    if (!u->getType().isWorker() && !u->getType().isBuilding() && !u->isFlying()) {
-                        if (!Terrain::getEnemyMain())
-                            return true;
-                        const auto visDiff = Broodwar->getFrameCount() - u->getLastVisibleFrame();
-
-                        // Check if we know they weren't at home and are missing on the map for 30 seconds
-                        if (!Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), u->getPosition()))
-                            return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 30);
-                        return false;
-                    }
-                    return false;
+                    return Units::inBoundUnit(*u);
                 });
                 if (!closestThreat)
                     return;

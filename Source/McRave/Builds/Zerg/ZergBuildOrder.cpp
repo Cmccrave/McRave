@@ -182,7 +182,9 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Hive upgrades
-            if (int(Stations::getStations(PlayerState::Self).size()) >= 4 && vis(Zerg_Drone) >= 36 && com(Zerg_Lair) > 0) {
+            auto hiveStations = Players::ZvT() ? 3 : 4;
+            auto hiveDrones = Players::ZvT() ? 28 : 36;
+            if (int(Stations::getStations(PlayerState::Self).size()) >= hiveStations && vis(Zerg_Drone) >= hiveDrones && com(Zerg_Lair) > 0) {
                 buildQueue[Zerg_Queens_Nest] = 1;
                 buildQueue[Zerg_Hive] = com(Zerg_Queens_Nest) >= 1;
                 buildQueue[Zerg_Lair] = com(Zerg_Queens_Nest) < 1;
@@ -239,8 +241,12 @@ namespace McRave::BuildOrder::Zerg {
 
                 // ZvT: Get 4 gas bases, then 2 hatch per base, then 1 hatch per base
                 if (Players::ZvT()) {
-                    if (int(Stations::getStations(PlayerState::Self).size()) >= 4)
+                    if (int(Stations::getStations(PlayerState::Self).size()) >= 3 && isFocusUnit(Zerg_Hydralisk))
                         hatchPerBase = 2.25;
+                    if (int(Stations::getStations(PlayerState::Self).size()) >= 4 || isFocusUnit(Zerg_Zergling))
+                        hatchPerBase = 2.25;
+                    if (int(Stations::getStations(PlayerState::Self).size()) >= 5)
+                        hatchPerBase = 1.0;
                 }
 
                 // Check if we are maxed on production
@@ -380,7 +386,7 @@ namespace McRave::BuildOrder::Zerg {
             if (inOpening)
                 return;
 
-            techQueue[Lurker_Aspect] = !BuildOrder::isFocusUnit(Zerg_Hydralisk) || (Upgrading::haveOrUpgrading(UpgradeTypes::Grooved_Spines, 1) && Upgrading::haveOrUpgrading(UpgradeTypes::Muscular_Augments, 1));
+            techQueue[Lurker_Aspect] = !BuildOrder::isFocusUnit(Zerg_Hydralisk) || (Upgrading::haveOrUpgrading(UpgradeTypes::Grooved_Spines, 1) && Upgrading::haveOrUpgrading(UpgradeTypes::Muscular_Augments, 1) && BuildOrder::isFocusUnit(Zerg_Lurker));
             techQueue[Burrowing] = Stations::getStations(PlayerState::Self).size() >= 3 && Players::getSupply(PlayerState::Self, Races::Zerg) > 140;
             techQueue[Consume] = true;
             techQueue[Plague] = Broodwar->self()->hasResearched(Consume);
@@ -411,7 +417,6 @@ namespace McRave::BuildOrder::Zerg {
 
             Allin Z_None;
 
-            // ZvP TODO
             // Get allin struct
             if (activeAllinType == AllinType::Z_8HatchCrackling)
                 activeAllin = Z_8HatchCrackling;
@@ -419,8 +424,6 @@ namespace McRave::BuildOrder::Zerg {
                 activeAllin = Z_5HatchSpeedling;
             if (activeAllinType == AllinType::Z_3HatchSpeedling)
                 activeAllin = Z_3HatchSpeedling;
-
-            // ZvT ?
 
             // Turn off all-ins against splash or weird tech
             auto turnOffAllin = Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0
@@ -538,7 +541,11 @@ namespace McRave::BuildOrder::Zerg {
     void tech()
     {
         const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5GateGoon" || Spy::getEnemyTransition() == "CorsairGoon" || Spy::getEnemyTransition() == "5FactGoliath" || Spy::getEnemyTransition() == "3FactGoliath";
-        const auto vsAnnoyingShit = Spy::getEnemyTransition() == "2FactVulture" || Spy::getEnemyTransition() == "2PortWraith";
+        const auto vsAnnoyingShit = Spy::getEnemyTransition() == "2Fact" || Spy::getEnemyTransition() == "2PortWraith";
+        const auto vsMech = (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) + Players::getTotalCount(PlayerState::Enemy, Terran_Goliath)
+            + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode))
+            > (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) + Players::getTotalCount(PlayerState::Enemy, Terran_Firebat) + Players::getTotalCount(PlayerState::Enemy, Terran_Medic));
+
         auto techOffset = 0;
 
         // ZvP
@@ -548,13 +555,14 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvT
         if (Players::ZvT()) {
-            techOffset = 2;
-            if (vsAnnoyingShit) {
-                unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk };
-                techOffset = 1;
+            if (vsMech) {
+                unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Defiler };
+                techOffset = 0;
             }
-            else
+            else {
                 unitOrder ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Defiler };
+                techOffset = 2;
+            }
         }
 
         // ZvZ
@@ -655,21 +663,43 @@ namespace McRave::BuildOrder::Zerg {
             // ZvP
             if (Players::ZvP() || Players::ZvTVB() || Players::ZvFFA()) {
                 priorityOrder ={
-                    {Zerg_Drone, 30},                                              // Min
-                    {Zerg_Defiler, 4}, {Zerg_Lurker, 2},                           // A few tech units
-                    {Zerg_Hydralisk, 32}, {Zerg_Drone, 50},                        // Almost min
-                    {Zerg_Hydralisk, 64}, {Zerg_Mutalisk, 9}, {Zerg_Drone, 60},    // Almost max
-                    {Zerg_Hydralisk, 100}, {Zerg_Mutalisk, 60}                     // Max
+                    {Zerg_Drone, 30},
+                    {Zerg_Defiler, 2},
+                    {Zerg_Lurker, 2},
+                    {Zerg_Hydralisk, 32}, 
+                
+                    {Zerg_Drone, 45},
+                    {Zerg_Hydralisk, 64},
+                    {Zerg_Mutalisk, 9},
+                
+                    {Zerg_Drone, 60},
+                    {Zerg_Hydralisk, 100},
+                    {Zerg_Mutalisk, 60}
                 };
             }
 
             // ZvT
             if (Players::ZvT()) {
                 priorityOrder ={
-                    {Zerg_Drone, 30},                                              // Min                                 
-                    {Zerg_Defiler, 4}, {Zerg_Lurker, 2},                           // A few tech units                                 
-                    {Zerg_Ultralisk, 4}, {Zerg_Drone, 45},                         // Almost min
-                    {Zerg_Ultralisk, 12}, {Zerg_Lurker, 12}, {Zerg_Mutalisk, 60}
+                    {Zerg_Drone, 30},
+                    {Zerg_Defiler, 2},
+                    {Zerg_Lurker, 2},
+                    {Zerg_Ultralisk, 4},
+                    {Zerg_Hydralisk, 12},
+                    {Zerg_Mutalisk, 9},
+
+                    {Zerg_Drone, 45},
+                    {Zerg_Defiler, 4},
+                    {Zerg_Lurker, 4},
+                    {Zerg_Ultralisk, 8},
+                    {Zerg_Hydralisk, 36},
+                    {Zerg_Mutalisk, 18},
+
+                    {Zerg_Drone, 60},
+                    {Zerg_Lurker, 8},
+                    {Zerg_Ultralisk, 12},
+                    {Zerg_Hydralisk, 64},
+                    {Zerg_Mutalisk, 32},
                 };
             }
 

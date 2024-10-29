@@ -13,7 +13,7 @@ namespace McRave::BuildOrder::Protoss {
 
     void PvT_2B_12Nexus()
     {
-        // "http://liquipedia.net/starcraft/12_Nexus"
+        // 8p 12n 12g 13g 15c
         unitLimits[Protoss_Zealot] =                    1;
         scout =                                         vis(Protoss_Pylon) > 0;
         transitionReady =                               vis(Protoss_Gateway) >= 2;
@@ -21,16 +21,16 @@ namespace McRave::BuildOrder::Protoss {
         // Buildings
         buildQueue[Protoss_Nexus] =                     1 + (s >= 24);
         buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 44);
-        buildQueue[Protoss_Assimilator] =               s >= 30;
-        buildQueue[Protoss_Gateway] =                   (s >= 28);
-        buildQueue[Protoss_Cybernetics_Core] =          vis(Protoss_Gateway) >= 2;
+        buildQueue[Protoss_Assimilator] =               (s >= 26);
+        buildQueue[Protoss_Gateway] =                   (vis(Protoss_Nexus) >= 2) + (s >= 34);
+        buildQueue[Protoss_Cybernetics_Core] =          (s >= 30);
 
         // Upgrades
         upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
 
         // Pumping
         protossUnitPump[Protoss_Probe] =                true;
-        protossUnitPump[Protoss_Zealot] =               com(Protoss_Gateway) > 0 && zealotsNeeded_PvT() > total(Protoss_Zealot);
+        protossUnitPump[Protoss_Zealot] =               com(Protoss_Gateway) > 0 && vis(Protoss_Cybernetics_Core) > 0 && total(Protoss_Zealot) < 2;
         protossUnitPump[Protoss_Dragoon] =              com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
 
         // Gas

@@ -49,7 +49,7 @@ namespace McRave::Targets {
                     || Spy::getEnemyTransition() == "WorkerRush"
                     || Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
             }
-            return int(target.getUnitsTargetingThis().size()) <= 4;
+            return int(target.getUnitsTargetingThis().size()) <= 4 || unit.isLightAir();
         }
 
         Priority getPriority(UnitInfo &unit, UnitInfo& target)
@@ -200,13 +200,18 @@ namespace McRave::Targets {
                     }
 
                     if (Players::ZvT()) {
-                        if (target.getType() == Terran_Missile_Turret && unit.isWithinReach(target) && target.unit()->exists() && target.isCompleted() && unit.canTwoShot(target))
-                            return Priority::Critical;
+                        if (target.getType() == Terran_Missile_Turret && unit.isWithinReach(target) && !target.hasRepairedRecently() && target.unit()->exists() && target.isCompleted())
+                            return Priority::Major;
+                        if (target.getType() == Terran_Vulture && !unit.isWithinRange(target) && !unit.getGoal().isValid() && !target.isThreatening())
+                            return Priority::Ignore;
                     }
 
-
-                    if (Players::ZvZ() && Util::getTime() < Time(8, 00) && target.getType() == Zerg_Zergling && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
-                        return Priority::Major;
+                    if (Players::ZvZ()) {
+                        if (target.getType() == Zerg_Scourge && unit.isWithinReach(target))
+                            return Priority::Critical;
+                        if (Util::getTime() < Time(8, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) == 0 && target.getType() == Zerg_Zergling && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
+                            return Priority::Major;
+                    }
 
                     if (unit.canOneShot(target) && unit.isWithinReach(target))
                         return Priority::Major;
@@ -226,9 +231,20 @@ namespace McRave::Targets {
 
                 // Scourge
                 if (unit.getType() == Zerg_Scourge) {
-                    if ((!Stations::getStations(PlayerState::Enemy).empty() && target.getType().isBuilding())                                                                            // Avoid targeting buildings if the enemy has a base still
+                    if ((!Stations::getStations(PlayerState::Enemy).empty() && target.getType().isBuilding())                                                               // Avoid targeting buildings if the enemy has a base still
                         || target.getType() == Zerg_Overlord                                                                                                                // Don't target overlords
                         || target.getType() == Protoss_Interceptor)                                                                                                         // Don't target interceptors
+                        return Priority::Ignore;
+
+                    // Determine if we have enough scourge on this target already
+                    int cnt = 0;
+                    for (auto &t : target.getUnitsTargetingThis()) {
+                        if (auto targeter = t.lock()) {
+                            if (targeter->getType() == Zerg_Scourge)
+                                cnt+=110;
+                        }
+                    }
+                    if (cnt >= unit.getHealth())
                         return Priority::Ignore;
                 }
 

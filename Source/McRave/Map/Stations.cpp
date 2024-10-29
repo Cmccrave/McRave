@@ -264,8 +264,6 @@ namespace McRave::Stations
             if (station->isMain()) {
                 if (Players::getTotalCount(PlayerState::Enemy, Terran_Dropship) > 0)
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
-                if (BuildOrder::isOpener() && Stations::ownedBy(BWEB::Stations::getStartingNatural()) == PlayerState::None)
-                    return (Util::getTime() > Time(3, 00)) - groundCount;
                 if (Players::ZvT() && Spy::getEnemyTransition() == "WorkerRush")
                     return 1 - groundCount;
                 if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(7, 00))
@@ -522,8 +520,6 @@ namespace McRave::Stations
         for (auto& tile : station->getDefenses()) {
             if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony)
                 colonies++;
-            //if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony && wallNeeds && BWEB::Walls::getWall(station->getChokepoint())->getDefenses().find(tile) != BWEB::Walls::getWall(station->getChokepoint())->getDefenses().end())
-            //    colonies--;
         }
         if (BWEB::Map::isUsed(station->getPocketDefense()) == Zerg_Creep_Colony)
             colonies++;

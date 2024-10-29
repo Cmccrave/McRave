@@ -91,7 +91,7 @@ namespace McRave::Scouts {
             for (auto &[scoutType, target] : scoutTargets) {
                 Broodwar->drawBoxMap(target.center - Position(64, 64), target.center + Position(64, 64), Colors::White);
 
-                for (auto &p: target.positions)
+                for (auto &p : target.positions)
                     Broodwar->drawLineMap(p, target.center, Colors::White);
 
                 auto y = 62;
@@ -411,20 +411,17 @@ namespace McRave::Scouts {
 
                     safe.desiredTypeCounts[Zerg_Overlord] = 1;
                     if (total(Zerg_Mutalisk) >= 6
-                        || (Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0)
                         || Players::ZvP()
-                        || Players::ZvT()
+                        || (Players::ZvT() && Spy::enemyFastExpand())
                         || (!Players::ZvZ() && Stations::getStations(PlayerState::Enemy).size() >= 2)
                         || (Players::ZvZ() && Util::getTime() > Time(5, 00)))
                         safe.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
 
-                // Removing this as Ralph scouting is more effective
-                if (false && vis(Zerg_Overlord) > 0) {
-                    safe.addTargets(safePositions[Terrain::getEnemyNatural()]);
-                    if (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())) >= 200)
-                        safe.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
-                }
+                // Overlord scouting sometimes needed
+                safe.addTargets(safePositions[Terrain::getEnemyNatural()]);
+                if (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())) >= 200)
+                    safe.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
             }
         }
 
@@ -437,8 +434,6 @@ namespace McRave::Scouts {
             // No threat at home, we should use a ling to scout the enemy
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 auto time = Time(1, 00);
-                if (Spy::getEnemyBuild() == "2Gate")
-                    time = Time(4, 00);
                 if (Spy::enemyRush() || Spy::enemyProxy())
                     time = Time(5, 00);
 
@@ -668,7 +663,7 @@ namespace McRave::Scouts {
             for (auto &[type, target] : scoutTargets) {
 
                 if (unit.getDestination().isValid()
-                    || !target.center.isValid()                    
+                    || !target.center.isValid()
                     || target.currentTypeCounts[unit.getType()] >= target.desiredTypeCounts[unit.getType()])
                     continue;
 

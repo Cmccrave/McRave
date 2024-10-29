@@ -237,7 +237,7 @@ namespace McRave::Combat::State {
             const auto lowShieldFlyer = false;// (unit.isLightAir() && unit.getType().maxShields() > 0 && target.getType() == Zerg_Overlord && Grids::getAirThreat(unit.getEngagePosition(), PlayerState::Enemy) * 5.0 > (double)unit.getShields());
             const auto oomMedic = unit.getType() == Terran_Medic && unit.getEnergy() <= TechTypes::Healing.energyCost();
             const auto hurtLingVsWorker = (unit.getType() == Zerg_Zergling && unit.getHealth() <= 15 && target.getType().isWorker() && Util::getTime() < Time(6, 00));
-            const auto regroupingAir = unit.isLightAir() && !unit.getGoal().isValid() && !target.isThreatening() && unit.attemptingRegroup();
+            const auto regroupingAir = unit.isLightAir() && !unit.getGoal().isValid() && !target.isThreatening() && unit.attemptingRegroup() && !unit.getUnitsInReachOfThis().empty();
 
             if (slowZealotVsVulture || sparseCorsairVsScourge || lowShieldFlyer || oomMedic || hurtLingVsWorker || regroupingAir)
                 return true;

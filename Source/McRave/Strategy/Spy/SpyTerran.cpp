@@ -56,7 +56,7 @@ namespace McRave::Spy::Terran {
 
             // RaxFact
             if (completesBy(1, Terran_Factory, Time(4, 00))
-                || (Util::getTime() < Time(5, 15) && hasMech)
+                || (Util::getTime() < Time(6, 00) && hasMech)
                 || (theSpy.proxy.confirmed && theSpy.opener.name == "8Rax")
                 || arrivesBy(1, Terran_Wraith, Time(6, 00)))
                 theSpy.build.name = "RaxFact";
@@ -159,7 +159,7 @@ namespace McRave::Spy::Terran {
 
                     if ((Players::getTotalCount(PlayerState::Enemy, Terran_Machine_Shop) >= 2 && (theSpy.typeUpgrading.find(Terran_Machine_Shop) != theSpy.typeUpgrading.end() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture_Spider_Mine) > 0))
                         || (Players::getTotalCount(PlayerState::Enemy, Terran_Machine_Shop) >= 2 && Util::getTime() < Time(6, 00))
-                        || completesBy(1, UpgradeTypes::Ion_Thrusters, Time(6, 15)))
+                        || completesBy(1, UpgradeTypes::Ion_Thrusters, Time(6, 45)))
                         theSpy.transition.name = "2Fact";
                 }
 

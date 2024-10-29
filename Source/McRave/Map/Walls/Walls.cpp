@@ -180,31 +180,28 @@ namespace McRave::Walls {
         // ZvP
         int ZvP_Opener(const BWEB::Wall& wall)
         {
-            // If we are opening 12 hatch or a 2h build, we sometimes need a faster sunken
-            auto earlySunk = BuildOrder::getCurrentOpener() == "12Hatch" || BuildOrder::getCurrentTransition().find("2Hatch") != string::npos || Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 1;
-
             // 1GateCore
             if (Spy::getEnemyBuild() == "1GateCore" || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
-                return (earlySunk && Util::getTime() > Time(3, 45))
+                return (Util::getTime() > Time(3, 45))
                     + (Util::getTime() > Time(4, 30));
             }
 
             // 2Gate
             if (Spy::getEnemyBuild() == "2Gate") {
                 if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
-                    return (earlySunk && Util::getTime() > Time(3, 15))
+                    return (Util::getTime() > Time(3, 15))
                     + (Util::getTime() > Time(4, 10))
                     + (Util::getTime() > Time(4, 30));
                 if (Spy::getEnemyOpener() == "10/15")
-                    return (earlySunk && Util::getTime() > Time(3, 15))
+                    return (Util::getTime() > Time(3, 15))
                     + (Util::getTime() > Time(4, 10))
                     + (Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyOpener() == "10/12" || Spy::getEnemyOpener() == "Unknown")
-                    return (earlySunk && Util::getTime() > Time(3, 00))
+                    return 1
                     + (Util::getTime() > Time(4, 00))
                     + (Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
-                    return (Util::getTime() > Time(3, 00) && total(Zerg_Zergling) >= 6)
+                    return 1
                     + (Util::getTime() > Time(4, 30));
                 if (Spy::getEnemyOpener() == "Proxy9/9")
                     return 0;
@@ -419,7 +416,7 @@ namespace McRave::Walls {
 
             // Enemy not expanding, probably something scary coming
             if (!Spy::enemyFastExpand() && !Spy::enemyRush())
-                return (Util::getTime() > Time(3, 25))
+                return (Util::getTime() > Time(3, 45))
                 + (Util::getTime() > Time(4, 30))
                 + (Util::getTime() > Time(5, 00));
 
@@ -439,24 +436,34 @@ namespace McRave::Walls {
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto firstHatchNeeded = !threeHatch || BuildOrder::getCurrentOpener() == "12Hatch";
 
-            auto vsMech = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 2 || Players::getTotalCount(PlayerState::Enemy, Terran_Armory) > 0;
-
-            // Need 3 sunkens to defend against 7:30 timing
-            if (Spy::getEnemyTransition() == "3FactGoliath")
-                return 1
-                + (Util::getTime() > Time(6, 00))
-                + (Util::getTime() > Time(6, 30));
-
-            if (Spy::getEnemyTransition() == "2PortWraith")
-                return 1 * (Util::getTime() > Time(5, 30));
-
             if (Spy::getEnemyBuild() == "2Rax") {
+
+                // Upwards of 4 sunkens vs marine flood
                 if (Spy::getEnemyTransition() == "MarineRush")
                     return 2
                     + (Util::getTime() > Time(4, 30))
                     + (Util::getTime() > Time(5, 00));
+
+                // Need 3 sunkens to defend against ~5:00 timing
                 if (Spy::getEnemyTransition() == "Academy" || !Spy::enemyFastExpand())
                     return 3 * (Util::getTime() > Time(4, 30));
+            }
+
+            if (Spy::getEnemyBuild() == "RaxFact") {
+
+                // Need 3 sunkens to defend against 7:30 timing
+                if (Spy::getEnemyTransition() == "3FactGoliath")
+                    return 1
+                    + (Util::getTime() > Time(6, 00))
+                    + (Util::getTime() > Time(6, 30));
+
+                // Need 1 sunken to defend vulture threat
+                if (Spy::getEnemyTransition() == "2PortWraith")
+                    return (Util::getTime() > Time(5, 30));
+
+                // Otherwise throw down 2 if they haven't expanded by 6:00
+                if (!Spy::enemyFastExpand())
+                    return 2 * (Util::getTime() > Time(6, 00));
             }
 
             return 0;
@@ -476,7 +483,6 @@ namespace McRave::Walls {
             auto expected = max(ZvT_Opener(wall), ZvT_Transition(wall));
             auto reduction = (unitsKilled / 8) + buildingsKilled;
 
-            // Kind of hacky solution to build less with 3h
             if (expected > 0)
                 minimum = 1;
 
@@ -528,6 +534,16 @@ namespace McRave::Walls {
         }
     }
 
+    int getColonyCount(const BWEB::Wall *  const wall)
+    {
+        auto colonies = 0;
+        for (auto& tile : wall->getDefenses()) {
+            if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony)
+                colonies++;
+        }
+        return colonies;
+    }
+
     int needGroundDefenses(const BWEB::Wall& wall)
     {
         auto groundCount = wall.getGroundDefenseCount();
@@ -543,7 +559,7 @@ namespace McRave::Walls {
         }
 
         // (ZvZ) If enemy adds defenses, we can start to cut defenses too
-        if (Players::ZvZ && Util::getTime() > Time(4, 00))
+        if (Players::ZvZ() && Util::getTime() > Time(4, 00))
             groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Creep_Colony)
             + Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
 
@@ -566,7 +582,7 @@ namespace McRave::Walls {
         }
 
         // If they're only at home and not proxying units, don't make any defenses
-        if (Scouts::gatheringInformation() && !Spy::enemyProxy()) {
+        if (!Spy::enemyProxy() && (groundCount >= 1 || getColonyCount(&wall) >= 1)) {
             auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) {
                 return Units::inBoundUnit(*u);
             });
