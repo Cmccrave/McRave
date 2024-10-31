@@ -427,7 +427,7 @@ namespace McRave::Scouts {
 
         void updateArmyScouting()
         {
-            if (!Terrain::getEnemyNatural() || !Terrain::getMyNatural())
+            if (!Terrain::getEnemyNatural() || !Terrain::getMyNatural() || BuildOrder::isRush())
                 return;
             auto &army = scoutTargets[ScoutType::Army];
 

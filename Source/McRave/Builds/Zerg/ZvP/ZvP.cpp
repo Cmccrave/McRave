@@ -204,7 +204,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Gas
         gasLimit = gasMax();
-        if (Spy::getEnemyBuild() != "FFE") {
+        if (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != "FFE" && !Spy::enemyFastExpand()) {
             if (vis(Zerg_Drone) + vis(Zerg_Extractor) < 10)
                 gasLimit = 0;
             else if (vis(Zerg_Lair) > 0 && Spy::getEnemyBuild() == "2Gate" && Util::getTime() < Time(3, 45))
@@ -303,7 +303,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Gas
         gasLimit = gasMax();
-        if (Spy::getEnemyBuild() != "FFE" && !Spy::enemyFastExpand()) {
+        if (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != "FFE" && !Spy::enemyFastExpand()) {
             if (Util::getTime() < Time(4, 00))
                 gasLimit = 0;
             else if (vis(Zerg_Drone) + vis(Zerg_Extractor) < 10)
@@ -413,7 +413,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Gas
         gasLimit = gasMax();
-        if (Spy::getEnemyBuild() != "FFE") {
+        if (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != "FFE") {
             if (zergUnitPump[Zerg_Hydralisk])
                 gasLimit = min(5, gasMax());
             else if (vis(Zerg_Hydralisk_Den) > 0 && Util::getTime() < Time(4, 30))

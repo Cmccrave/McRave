@@ -297,24 +297,26 @@ namespace McRave::BuildOrder::Zerg {
 
         void removeExcessGas()
         {
-            // Removing gas workers if we are adding Sunkens or have excess gas
-            if (Util::getTime() > Time(3, 00) || Players::ZvZ()) {
-                auto gasRemaining       = Broodwar->self()->gas() - BuildOrder::getGasQueued();
-                auto minRemaining       = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                auto dropGasRush        = !Players::ZvZ() && Spy::enemyRush();
-                auto dropGasLarva       = !Players::ZvZ() && vis(Zerg_Larva) >= hatchCount() && unitReservations.empty();
-                auto dropGasDefenses    = needSunks && (Players::ZvZ() || Spy::enemyProxy() || Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "8Rax");
+            // Removing gas workers if we are adding Sunkens or have excess gas (and we already have an extractor complete)
+            if (com(Zerg_Extractor) > 0) {
+                if (Util::getTime() > Time(3, 00) || Players::ZvZ()) {
+                    auto gasRemaining       = Broodwar->self()->gas() - BuildOrder::getGasQueued();
+                    auto minRemaining       = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
+                    auto dropGasRush        = !Players::ZvZ() && Spy::enemyRush();
+                    auto dropGasLarva       = !Players::ZvZ() && vis(Zerg_Larva) >= hatchCount() && unitReservations.empty();
+                    auto dropGasDefenses    = needSunks && (Players::ZvZ() || Spy::enemyProxy() || Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "8Rax");
 
-                auto mineralToGasRatio  = minRemaining < max(100, 8 * vis(Zerg_Drone)) && gasRemaining > max(150, 13 * vis(Zerg_Drone));
+                    auto mineralToGasRatio  = minRemaining < max(100, 8 * vis(Zerg_Drone)) && gasRemaining > max(150, 13 * vis(Zerg_Drone));
 
 
-                if (mineralToGasRatio && !rush && !pressure) {
-                    if (dropGasRush
-                        || dropGasLarva
-                        || dropGasDefenses
-                        || Roles::getMyRoleCount(Role::Worker) < 5
-                        || Players::ZvZ())
-                        gasLimit = 0;
+                    if (mineralToGasRatio && !rush && !pressure) {
+                        if (dropGasRush
+                            || dropGasLarva
+                            || dropGasDefenses
+                            || Roles::getMyRoleCount(Role::Worker) < 5
+                            || Players::ZvZ())
+                            gasLimit = 0;
+                    }
                 }
             }
 

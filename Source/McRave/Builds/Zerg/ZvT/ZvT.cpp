@@ -129,7 +129,7 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit =                                     Zerg_Mutalisk;
         reserveLarva =                                  6;
 
-        auto thirdHatch = (Spy::getEnemyBuild() == "RaxFact") ? total(Zerg_Mutalisk) >= 6 : (vis(Zerg_Spire) > 0);
+        auto thirdHatch = (Spy::getEnemyBuild() == "RaxFact" || !Spy::enemyFastExpand()) ? total(Zerg_Mutalisk) >= 6 : (vis(Zerg_Spire) > 0);
 
         // Buildings
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
@@ -173,7 +173,7 @@ namespace McRave::BuildOrder::Zerg {
         reserveLarva =                                  6;
 
         auto thirdHatch = Spy::enemyProxy() ? total(Zerg_Zergling) >= 6 : (s >= 26 && vis(Zerg_Drone) >= 11);
-        auto fourthHatch = (Spy::getEnemyBuild() == "RaxFact") ? total(Zerg_Mutalisk) >= 9 : (vis(Zerg_Spire) > 0 && s >= 66);
+        auto fourthHatch = (Spy::getEnemyBuild() == "RaxFact" || !Spy::enemyFastExpand()) ? total(Zerg_Mutalisk) >= 9 : (vis(Zerg_Spire) > 0 && s >= 66);
 
         // Buildings
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch + fourthHatch;

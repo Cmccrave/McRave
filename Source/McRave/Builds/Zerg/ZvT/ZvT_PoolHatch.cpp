@@ -31,7 +31,6 @@ namespace McRave::BuildOrder::Zerg {
     {
         // 9o 9p
         transitionReady =                               hatchCount() >= 2;
-        gasLimit =                                      0;
         scout =                                         scout || (hatchCount() >= 2);
 
         // Buildings
@@ -48,7 +47,6 @@ namespace McRave::BuildOrder::Zerg {
     {
         // 13p 12h
         transitionReady =                               hatchCount() >= 2;
-        gasLimit =                                      com(Zerg_Drone) >= 11 ? gasMax() : 0;
         scout =                                         scout || (com(Zerg_Drone) >= 9);
 
         // Buildings
