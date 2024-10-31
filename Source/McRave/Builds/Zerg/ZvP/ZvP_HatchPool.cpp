@@ -11,14 +11,14 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvP_HP_12Hatch()
     {
-        // 11h 10p
+        // 12h 11p
         transitionReady =                               vis(Zerg_Spawning_Pool) > 0;
         scout =                                         scout || (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
         planEarly =                                     !Spy::enemyProxy() && (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
 
         // Buildings
-        buildQueue[Zerg_Hatchery] =                     1 + (s >= 22);
-        buildQueue[Zerg_Spawning_Pool] =                (s >= 20 && hatchCount() >= 2);
+        buildQueue[Zerg_Hatchery] =                     1 + (s >= 24);
+        buildQueue[Zerg_Spawning_Pool] =                (hatchCount() >= 2);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 16) + (s >= 30);
 
         // Pumping

@@ -61,8 +61,11 @@ namespace McRave::Combat::State {
                     const auto hideCheese = BuildOrder::isHideTech() && BuildOrder::isOpener() && !BuildOrder::isPressure();
                     const auto defendProxy = Spy::enemyProxy() && !speedLing && Util::getTime() < Time(5, 00) && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0;
                     const auto defendTiming = Spy::getEnemyBuild() == "FFE" && Util::getTime() > Time(6, 00) && Util::getTime() < Time(8, 00);
-                    if (!killedWorkers && (scaryOpeners || hideCheese || defendProxy || defendTiming))
-                        staticRetreatTypes.push_back(Zerg_Zergling);
+
+                    if (!killedWorkers && Spy::getEnemyBuild() != "CannonRush") {
+                        if (scaryOpeners || hideCheese || defendProxy || defendTiming)
+                            staticRetreatTypes.push_back(Zerg_Zergling);
+                    }
                 }
                 if (Players::ZvT()) {
                     const auto defendSunkens = com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0 && !speedLing;

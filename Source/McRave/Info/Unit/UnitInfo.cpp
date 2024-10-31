@@ -580,8 +580,6 @@ namespace McRave
                 unit()->burrow();
             if (cmd == UnitCommandTypes::Unburrow)
                 unit()->unburrow();
-
-            Visuals::drawLine(getPosition(), here, Colors::Cyan);
         }
     }
 

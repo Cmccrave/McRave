@@ -55,6 +55,8 @@ namespace McRave::Combat::Clusters {
                 auto matchedStrat = (parent.unit->getGlobalState() == child.unit->getGlobalState());
                 auto matchedDistance = child.position.getDistance(root.position) < 160.0
                     || child.position.getDistance(parent.position) < 96.0
+                    || (child.position.getDistance(parent.unit->retreatPos) < 128.0 && parent.position.getDistance(parent.unit->retreatPos) < 128.0)
+                    || (child.position.getDistance(parent.unit->marchPos) < 128.0 && parent.position.getDistance(parent.unit->marchPos) < 128.0)
                     || (parent.unit->isLightAir() && child.unit->isLightAir());
                 auto matchedTarget = (parent.unit->hasTarget() && child.unit->hasTarget() && parent.unit->getTarget().lock()->isFlying() == child.unit->getTarget().lock()->isFlying()) || (!parent.unit->hasTarget() && !child.unit->hasTarget());
                 return matchedType && matchedStrat && matchedDistance && matchedGoal && matchedTarget;
@@ -351,7 +353,7 @@ namespace McRave::Combat::Clusters {
         shapeClusters();
         finishClusters();
         fixNavigations();
-        //drawClusters();
+        drawClusters();
     }
 
     vector<Cluster>& getClusters() { return clusters; }

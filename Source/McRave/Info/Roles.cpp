@@ -145,7 +145,7 @@ namespace McRave::Roles {
             // ZvZ
             if (Players::ZvZ() && Util::getTime() < Time(6, 00) && !Spy::enemyTurtle() && !Spy::enemyFastExpand()) {
                 if ((Spy::getEnemyOpener() == "9Pool" || Spy::getEnemyOpener() == "Overpool" || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling))
-                    && Util::getTime() > Time(2, 45) && Util::getTime() < Time(3, 30)
+                    && Util::getTime() > Time(2, 45) && Util::getTime() < Time(3, 45)
                     && BuildOrder::getCurrentOpener() == "12Pool" && total(Zerg_Zergling) < 20 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
                     forceCombatWorker(2, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
             }

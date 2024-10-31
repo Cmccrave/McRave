@@ -188,7 +188,7 @@ namespace McRave::Walls {
 
             // 2Gate
             if (Spy::getEnemyBuild() == "2Gate") {
-                if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
+                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
                     return (Util::getTime() > Time(3, 15))
                     + (Util::getTime() > Time(4, 10))
                     + (Util::getTime() > Time(4, 30));
@@ -209,7 +209,9 @@ namespace McRave::Walls {
 
             // FFE
             if (Spy::getEnemyBuild() == "FFE") {
-                return 0;
+                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2)
+                    return 2;
+                return Util::getTime() > Time(5, 00);
             }
 
             // Always make one that is a safety measure vs unknown builds

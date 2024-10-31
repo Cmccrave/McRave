@@ -10,8 +10,6 @@ namespace McRave::Combat::Simulation {
         bool ignoreSim = false;
         double minWinPercent = 0.6;
         double maxWinPercent = 1.2;
-        double minThreshold = 0.0;
-        double maxThreshold = 0.0;
     }
 
     void updateSimulation(UnitInfo& unit)
@@ -48,9 +46,9 @@ namespace McRave::Combat::Simulation {
         auto allyEngaged = false;
 
         // If above/below thresholds, it's a sim win/loss
-        if (unit.getSimValue() >= maxThreshold)
+        if (unit.getSimValue() >= maxWinPercent)
             unit.setSimState(SimState::Win);
-        else if (unit.getSimValue() < minThreshold || (unit.getSimState() == SimState::None && unit.getSimValue() < maxThreshold))
+        else if (unit.getSimValue() < minWinPercent || (unit.getSimState() == SimState::None && unit.getSimValue() < maxWinPercent))
             unit.setSimState(SimState::Loss);
 
         // Reset counter if we're losing
@@ -147,9 +145,6 @@ namespace McRave::Combat::Simulation {
             minWinPercent = 0.2;
             maxWinPercent = 0.5;
         }
-
-        minThreshold = minWinPercent;
-        maxThreshold = maxWinPercent;
     }
 
     void onFrame()

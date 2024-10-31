@@ -136,6 +136,8 @@ namespace McRave::Combat::Bearings {
                 //Broodwar->drawTextMap(unit.getPosition(), "z_clean");
             }
         }
+
+        Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
     }
 
     void onFrame()

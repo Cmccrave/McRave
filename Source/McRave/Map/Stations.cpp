@@ -283,12 +283,15 @@ namespace McRave::Stations
                 + Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
 
             if (station->isMain()) {
-                if (!Spy::enemyRush() && (BuildOrder::takeNatural() || getStations(PlayerState::Self).size() > 1))
+                if (!Spy::enemyRush() && getStations(PlayerState::Self).size() > 1)
                     return 0;
             }
 
             if (BuildOrder::getCurrentBuild() == "PoolHatch") {
                 if (station->isMain()) {
+
+                    if (!Spy::enemyRush() && (BuildOrder::takeNatural() || getStations(PlayerState::Self).size() > 1))
+                        return 0;
 
                     auto latePool = BuildOrder::getCurrentOpener() != "9Pool" && BuildOrder::getCurrentOpener() != "Overpool";
 

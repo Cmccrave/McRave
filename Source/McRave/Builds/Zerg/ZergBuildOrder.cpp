@@ -557,14 +557,8 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvT
         if (Players::ZvT()) {
-            if (vsMech) {
-                unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Defiler };
-                techOffset = 0;
-            }
-            else {
-                unitOrder ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Defiler };
-                techOffset = 2;
-            }
+            unitOrder ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Defiler };
+            techOffset = 2;
         }
 
         // ZvZ
@@ -690,14 +684,14 @@ namespace McRave::BuildOrder::Zerg {
                     {Zerg_Hydralisk, 12},
                     {Zerg_Mutalisk, 9},
 
-                    {Zerg_Drone, 45},
+                    {Zerg_Drone, 40},
                     {Zerg_Defiler, 4},
                     {Zerg_Lurker, 4},
                     {Zerg_Ultralisk, 8},
                     {Zerg_Hydralisk, 36},
                     {Zerg_Mutalisk, 18},
 
-                    {Zerg_Drone, 60},
+                    {Zerg_Drone, 50},
                     {Zerg_Lurker, 8},
                     {Zerg_Ultralisk, 12},
                     {Zerg_Hydralisk, 64},

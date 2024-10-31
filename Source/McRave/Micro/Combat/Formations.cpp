@@ -172,6 +172,9 @@ namespace McRave::Combat::Formations {
         auto wrap = 0;
         auto assignmentsRemaining = max(3, int(cluster.units.size()));
 
+        // Radius is sort of just set to diameter above, stupid code
+        line.radius /= 2.0;
+
         // Checks if a position is okay, stores if it is
         vector<Position> row;
         auto checkPosition = [&](Position &p, Position &last, bool& skip, int& bump) {
