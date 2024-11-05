@@ -106,7 +106,7 @@ namespace McRave::Spy::Protoss {
         {
             // 2Gate Openers
             if (theSpy.build.name == "2Gate") {
-                if (theSpy.proxy.possible || arrivesBy(1, Protoss_Zealot, Time(2, 50)) || arrivesBy(2, Protoss_Zealot, Time(3, 15)) || arrivesBy(4, Protoss_Zealot, Time(3, 40))) {
+                if (theSpy.proxy.possible || arrivesBy(1, Protoss_Zealot, Time(2, 50)) || arrivesBy(2, Protoss_Zealot, Time(3, 10)) || arrivesBy(4, Protoss_Zealot, Time(3, 40))) {
                     theSpy.opener.name = "Proxy9/9";
                     theSpy.proxy.possible = true;
                 }
@@ -157,7 +157,7 @@ namespace McRave::Spy::Protoss {
                     theSpy.transition.name = "ZealotRush";
             }
 
-            if (theSpy.workersPulled >= 4 && Util::getTime() < Time(3, 00))
+            if (theSpy.workersPulled >= 4 && Util::getTime() < Time(4, 00))
                 theSpy.transition.name = "WorkerRush";
 
             // 2Gate

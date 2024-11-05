@@ -130,7 +130,7 @@ namespace McRave::Combat::Navigation {
         if (unit.hasSimTarget()) {
             auto newSimUnit = simUnits.find(unit.getSimTarget()) == simUnits.end();
             if (newSimUnit)
-                simUnits[unit.getSimTarget()] = Broodwar->getFrameCount() + (unit.getSimTarget().lock()->getType().isBuilding() ? 480 : 60);
+                simUnits[unit.getSimTarget()] = Broodwar->getFrameCount() + (unit.getSimTarget().lock()->getType().isBuilding() ? 480 : 240);
         }
 
         // For pathing purposes, we store light air commander sim positions

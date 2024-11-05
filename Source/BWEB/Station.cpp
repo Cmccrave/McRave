@@ -45,7 +45,7 @@ namespace BWEB {
                     }
                 }
 
-                auto size = 1 + (itrcount > 1);
+                auto size = 1;
                 Map::addReserve(next, size, size);
             }
         };
@@ -53,13 +53,16 @@ namespace BWEB {
         // Add reserved tiles
         for (auto &m : base->Minerals()) {
             Map::addReserve(m->TopLeft(), 2, 1);
-            biggerReserve(m->Unit(), m->Unit()->getTilePosition(), TilePosition(base->Center()));
-            //biggerReserve(m->Unit(), m->Unit()->getTilePosition() + TilePosition(1, 0), base->Location() + TilePosition(3, 2));
+            for (int x = 0; x < 2; x++) {
+                biggerReserve(m->Unit(), m->Unit()->getTilePosition() + TilePosition(x, 0), TilePosition(base->Center()));
+            }
         }
         for (auto &g : base->Geysers()) {
             Map::addReserve(g->TopLeft(), 4, 2);
-            biggerReserve(g->Unit(), g->Unit()->getTilePosition() + TilePosition(1, 0), base->Location());
-            //biggerReserve(g->Unit(), g->Unit()->getTilePosition() + TilePosition(3, 1), base->Location() + TilePosition(3, 2));
+            for (int x = 0; x < 4; x++) {
+                for (int y = 0; y < 2; y++)
+                    biggerReserve(g->Unit(), g->Unit()->getTilePosition() + TilePosition(x, y), TilePosition(base->Center()));
+            }
         }
     }
 

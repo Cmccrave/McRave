@@ -98,15 +98,15 @@ namespace McRave::BuildOrder::Zerg {
 
         // 2Gate
         if (Spy::getEnemyBuild() == "2Gate") {
-            initialValue = 6;
+            initialValue = 10;
             if (Spy::getEnemyOpener() == "Proxy9/9")
-                initialValue = 12;
+                initialValue = 16;
             if (Spy::getEnemyOpener() == "9/9")
-                initialValue = 10;
+                initialValue = 12;
             if (Spy::getEnemyOpener() == "10/12")
-                initialValue = 6;
+                initialValue = 10;
             if (Spy::getEnemyOpener() == "10/15")
-                initialValue = 4;
+                initialValue = 6;
         }
 
         // FFE
@@ -129,7 +129,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // If they're aggressive, delay remaining build until we've made a transitional count (at 10 lings, we have minerals)
         transitionLings = min(initialValue, 10);
-        if (Spy::getEnemyOpener() == "Proxy9/9")
+        if (Spy::getEnemyOpener() == "Proxy9/9" || Spy::getEnemyTransition() == "WorkerRush")
             transitionLings = 16;
 
         if (total(Zerg_Zergling) < initialValue)
@@ -274,7 +274,8 @@ namespace McRave::BuildOrder::Zerg {
         auto secondHydraPump = com(Zerg_Hydralisk_Den) > 0 && hydraOpen && mutaDone && vis(Zerg_Drone) >= 38;
 
         // Muta pump - 5 then any
-        auto firstMutaPump = com(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 30 && mutaOpen && total(Zerg_Mutalisk) < 5;
+        auto initialMutas = hydraDone ? 5 : 12;
+        auto firstMutaPump = com(Zerg_Spire) > 0 && mutaOpen && total(Zerg_Mutalisk) < initialMutas;
         auto secondMutaPump = com(Zerg_Spire) > 0 && !hydraOpen && mutaOpen && vis(Zerg_Drone) >= 45;
 
         // Scourge pump
@@ -352,7 +353,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Pumping
         zergUnitPump[Zerg_Drone] |=                     vis(Zerg_Drone) < 19 && com(Zerg_Spawning_Pool) > 0;
-        zergUnitPump[Zerg_Zergling] =                   (com(Zerg_Spawning_Pool) > 0 && total(Zerg_Zergling) < 6);
+        zergUnitPump[Zerg_Zergling] =                   (com(Zerg_Spawning_Pool) > 0 && total(Zerg_Zergling) < 6) || (lingsNeeded_ZvP() > vis(Zerg_Zergling) && com(Zerg_Hydralisk_Den) == 0);
         zergUnitPump[Zerg_Hydralisk] =                  firstHydraPump || secondHydraPump;
 
         // Gas
@@ -397,7 +398,7 @@ namespace McRave::BuildOrder::Zerg {
         // Pumping
         auto needMinimumHydras = com(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Hydralisk) < Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + 2;
         auto firstHydraPump = (vis(Zerg_Drone) >= 30 && total(Zerg_Hydralisk) < 18);
-        auto secondHydraPump = (vis(Zerg_Drone) >= 45 && hatchCount() >= 5);
+        auto secondHydraPump = (vis(Zerg_Drone) >= 45);
 
         auto firstLingPump = lingsNeeded_ZvP() > vis(Zerg_Zergling) && com(Zerg_Hydralisk_Den) == 0;
 
@@ -521,6 +522,9 @@ namespace McRave::BuildOrder::Zerg {
                 currentOpener = "Overpool";
                 currentTransition = "4HatchHydra";
             }
+
+            if (Spy::getEnemyBuild() == "CannonRush")
+                activeAllinType = AllinType::Z_3HatchSpeedling;
 
             if (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != "FFE" && (currentTransition == "6HatchHydra" || currentTransition == "3HatchHydra"))
                 currentTransition = "4HatchHydra";

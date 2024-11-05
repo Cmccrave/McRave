@@ -23,6 +23,7 @@ namespace McRave::Combat::Decision {
     void updateSharedDecision(UnitInfo& unit, UnitInfo& commander)
     {
         // Use commands that the commander is using if okay to do so
+        unit.commandText = "";
         if (commander.getCommandType() == UnitCommandTypes::Attack_Unit && commander.hasTarget())
             unit.setCommand(commander.getCommandType(), *commander.getTarget().lock());
         else if (commander.getCommandType() == UnitCommandTypes::Move && !unit.isTargetedBySplash())
@@ -44,7 +45,6 @@ namespace McRave::Combat::Decision {
 
             // Update remaining units
             for (auto &unit : cluster.units) {
-                unit->canStartAttack();
                 if (unit == &*commander && commander->isLightAir())
                     continue;
                 if (!Units::commandAllowed(*unit))

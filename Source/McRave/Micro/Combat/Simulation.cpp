@@ -56,7 +56,7 @@ namespace McRave::Combat::Simulation {
             unit.framesCommitted = 0;
 
         // Only commit to a win after some debouncing
-        if (unit.getSimState() == SimState::Win) {
+        if (unit.getSimState() == SimState::Win && !unit.isLightAir()) {
             unit.framesCommitted++;
             if (unit.framesCommitted < 80)
                 unit.setSimState(SimState::Loss);
@@ -116,20 +116,14 @@ namespace McRave::Combat::Simulation {
         auto &target = *unit.getTarget().lock();
 
         // Adjust winrates if we have static defense that would make the fight easier and we're at home
-        if (!unit.isFlying() && Combat::State::isStaticRetreat(unit.getType())) {
+        if (!unit.isFlying()) {
             const auto defendStation = Stations::getClosestStationAir(unit.retreatPos, PlayerState::Self);
             const auto furthestDefender = Util::getFurthestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
                 return u->getType().isBuilding() && u->canAttackGround() && u->isCompleted() && Terrain::inArea(defendStation->getBase()->GetArea(), u->getPosition());
             });
-            if (furthestDefender) {
-                if (furthestDefender->isWithinRange(target)) {
-                    minWinPercent = 0.0;
-                    maxWinPercent = 0.0;
-                }
-                else {
-                    minWinPercent *=4;
-                    maxWinPercent *=4;
-                }
+            if (furthestDefender && furthestDefender->isWithinRange(target)) {
+                minWinPercent = 0.0;
+                maxWinPercent = 0.0;
                 return;
             }
         }

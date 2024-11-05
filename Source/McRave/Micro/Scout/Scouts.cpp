@@ -435,7 +435,7 @@ namespace McRave::Scouts {
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 auto time = Time(1, 00);
                 if (Spy::enemyRush() || Spy::enemyProxy())
-                    time = Time(5, 00);
+                    time = Time(4, 00);
 
                 if (Util::getTime() > time) {
                     if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)

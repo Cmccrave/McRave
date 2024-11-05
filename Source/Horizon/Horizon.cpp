@@ -72,9 +72,6 @@ namespace McRave::Horizon {
         const auto targetDisplacement = unitToEngage * unitTarget->getSpeed() * 24.0;
         map<Player, SimStrength> simStrengthPerPlayer;
 
-        if (unit.unit()->isSelected())
-            Broodwar << simulationTime << endl;
-
         for (auto &e : Units::getUnits(PlayerState::Enemy)) {
             UnitInfo &enemy = *e;
             if (!addToSim(enemy))
@@ -111,9 +108,6 @@ namespace McRave::Horizon {
                 simRatio =                          max(0.0, simulationTime - engageTime);
             }
 
-            if (unit.unit()->isSelected())
-                Broodwar->drawTextMap(enemy.getPosition(), "%.2f", simRatio);
-
             // Add their values to the simulation
             addBonus(enemy, *enemyTarget, simRatio);
             simStrengthPerPlayer[enemy.getPlayer()].ground += enemy.getVisibleGroundStrength() * simRatio;
@@ -142,9 +136,6 @@ namespace McRave::Horizon {
                 || (self.getGlobalState() == GlobalState::Retreat)
                 || (Combat::State::isStaticRetreat(self.getType()) && !self.attemptingRunby() && !Terrain::inTerritory(PlayerState::Self, self.getPosition())))
                 continue;
-
-            if (unit.unit()->isSelected())
-                Broodwar->drawTextMap(self.getPosition(), "%.2f", simRatio);
 
             // Add their values to the simulation
             addBonus(self, *selfTarget, simRatio);

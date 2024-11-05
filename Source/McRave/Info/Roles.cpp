@@ -167,6 +167,10 @@ namespace McRave::Roles {
                 else if (proxyBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(1, proxyBuilding->getPosition());
 
+                //// 2Gate all-in with probes
+                //else if (Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "WorkerRush" && com(Zerg_Zergling) > 0 && com(Zerg_Zergling) <= 6)
+                //    forceCombatWorker(vis(Zerg_Drone), Position(Terrain::getNaturalChoke()->Center()), LocalState::Attack, GlobalState::Attack);
+
                 // TODO: Check if we need this for cannon rush bots
                 // We changed how `proxy` flag is determined, check for no zealots/marines/zerglings 
 
@@ -188,7 +192,7 @@ namespace McRave::Roles {
                 //        forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
                 //}
 
-                // We haven't got out hatchery down yet
+                // We haven't got our hatchery down yet
                 else if (vis(Zerg_Hatchery) < 2 && BuildOrder::takeNatural() && proxyWorker && selfBuildingWorker && (Terrain::inArea(Terrain::getNaturalArea(), proxyWorker->getPosition()) || proxyWorker->hasAttackedRecently() || proxyWorker->isThreatening()))
                     forceCombatWorker(1, proxyWorker->getPosition());
             }

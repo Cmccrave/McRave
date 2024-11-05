@@ -449,7 +449,7 @@ namespace McRave
 
         // Worker
         else if (getType().isWorker())
-            threateningThisFrame = nearMe && (constructing || attackedWorkers || attackedDefender || attackedBuildings);
+            threateningThisFrame = nearMe && (constructing || hasAttackedRecently());
 
         // Unit
         else
@@ -485,7 +485,7 @@ namespace McRave
         if (threatening && threateningFrames > 4) {
             for (auto unit : Units::getUnits(PlayerState::Enemy)) {
                 if (*unit != *this) {
-                    if (unit->isFlying() == this->isFlying() && unit->getPosition().getDistance(position) < 320.0)
+                    if (unit->isFlying() == this->isFlying() && unit->getType().isWorker() == this->getType().isWorker() && unit->getPosition().getDistance(position) < 320.0)
                         unit->lastThreateningFrame = Broodwar->getFrameCount();
                 }
             }
@@ -872,66 +872,6 @@ namespace McRave
         return (sameArea && distResource < 256.0) || distResource < 128.0 || distStation < 128.0;
     }
 
-    bool UnitInfo::canOneShot(UnitInfo& target) {
-
-        // Create an offset that increases over time to prevent low muta counts engaging large numbers
-        auto minutesPastPressure = clamp(Util::getTime().minutes - 7, 0, 2);
-        auto offset = Grids::getAirThreat(target.getPosition(), PlayerState::Enemy) > 0.0f ? minutesPastPressure : 0.0f;
-
-        // Check if this unit could load into a bunker
-        if (Util::getTime() < Time(10, 00) && (target.getType() == Terran_Marine || target.getType() == Terran_SCV || target.getType() == Terran_Firebat)) {
-            if (Players::getVisibleCount(PlayerState::Enemy, Terran_Bunker) > 0) {
-                auto closestBunker = Util::getClosestUnit(target.getPosition(), PlayerState::Enemy, [&](auto &b) {
-                    return b->getType() == Terran_Bunker;
-                });
-                if (closestBunker && closestBunker->getPosition().getDistance(target.getPosition()) < 200.0) {
-                    return false;
-                }
-            }
-        }
-
-        // One shotting workers
-        if (target.getType().isWorker()) {
-            if (target.getType() == Protoss_Probe || target.getType() == Zerg_Drone)
-                return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 5.0f + offset;
-            if (target.getType() == Terran_SCV)
-                return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 7.0f + offset;
-        }
-
-        // One shot threshold for individual units
-        if (target.getType() == Terran_Marine)
-            return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 5.0f + offset;
-        if (target.getType() == Terran_Firebat)
-            return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 7.0f + offset;
-        if (target.getType() == Terran_Medic)
-            return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 8.0f + offset;
-        if (target.getType() == Terran_Vulture)
-            return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 9.0f + offset;
-        if (target.getType() == Protoss_Dragoon)
-            return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 24.0f + offset;
-        if (target.getType() == Terran_Goliath) {
-            if (target.isWithinRange(*this))
-                return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 16.0f + offset;
-            else
-                return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 18.0f + offset;
-        }
-
-        // Check if it's a low life unit - doesn't account for armor 
-        if (target.unit()->exists() && (target.getHealth() + target.getShields()) < Grids::getAirDensity(getPosition(), PlayerState::Self) * 7.0f)
-            return true;
-        return false;
-    }
-
-    bool UnitInfo::canTwoShot(UnitInfo& target) {
-        if (target.getType() == Terran_Goliath || target.getType() == Protoss_Scout)
-            return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 8.0f;
-        if (target.getType() == Protoss_Zealot || target.isSiegeTank())
-            return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 10.0f;
-        if (target.getType() == Protoss_Dragoon || target.getType() == Protoss_Photon_Cannon || target.getType() == Protoss_Corsair || target.getType() == Terran_Missile_Turret)
-            return Grids::getAirDensity(getPosition(), PlayerState::Self) >= 12.0f;
-        return false;
-    }
-
     bool UnitInfo::attemptingRunby()
     {
         auto runbyDesired = false;
@@ -942,7 +882,7 @@ namespace McRave
             auto enemyOneBase = Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore";
             auto backstabTiming = (Spy::getEnemyBuild() == "2Gate") ? Time(5, 00) : Time(4, 00);
             auto backstabEasy = !Terrain::isPocketNatural() && enemyOneBase && Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0
-                && Spy::getEnemyTransition() != "Speedlot" && Spy::getEnemyTransition() != "ZealotRush";
+                && Spy::getEnemyTransition() != "Speedlot" && Spy::getEnemyTransition() != "ZealotRush" && Spy::getEnemyTransition() != "Unknown";
 
             if (backstabEasy && Util::getTime() > backstabTiming) {
                 if (timeCompletesWhen() < Time(4, 00) && vis(Zerg_Sunken_Colony) > 0 && total(Zerg_Zergling) >= 12)
@@ -1007,7 +947,7 @@ namespace McRave
 
     bool UnitInfo::attemptingRegroup()
     {
-        if (!isLightAir())
+        if (!isLightAir() || saveUnit)
             return false;
         return hasCommander() && getPosition().getDistance(getCommander().lock()->getPosition()) > 64.0;
     }

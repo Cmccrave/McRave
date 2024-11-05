@@ -86,7 +86,7 @@ namespace McRave::Combat::State {
 
                     const auto lingAdvantage = Players::getVisibleCount(PlayerState::Self, Zerg_Zergling) * 2 > Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) * 3;
                     const auto expansionAdvantage = Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && !Spy::enemyTurtle() && !Spy::enemyFortress();
-                    
+
                     if (!lingAdvantage) {
 
                         // 1hm early
@@ -182,33 +182,26 @@ namespace McRave::Combat::State {
         auto countDefensesInRange = 0.0;
         if (unit.getType() == Zerg_Mutalisk) {
 
-            // If we're not in range, calculate the risk
-            if (!unit.isWithinRange(target)) {
-                for (auto &e : Units::getUnits(PlayerState::Enemy)) {
-                    auto &enemy = *e;
-                    if (enemy.canAttackAir() && enemy != target) {
-                        if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 96.0) {
-                            if (enemy.getType().isBuilding())
-                                countDefensesInRange += 1.0;
-                            else if (enemy.hasAttackedRecently())
-                                countDefensesInRange += 0.2;
-                        }
+            // Calculate the risk
+            for (auto &e : Units::getUnits(PlayerState::Enemy)) {
+                auto &enemy = *e;
+                if (enemy.canAttackAir() && enemy != target) {
+                    if (enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 32.0) {
+                        if (enemy.getType().isBuilding())
+                            countDefensesInRange += 1.0;
                     }
                 }
             }
 
-            // One shotting units for free
-            if (unit.canOneShot(target) && !unit.isTargetedBySplash() && !unit.isNearSplash()) {
-                if ((countDefensesInRange > 0.0 && Players::ZvZ() && !target.getType().isWorker())
-                    || (countDefensesInRange <= 2.0 && Util::getTime() < Time(8, 00))
-                    || (countDefensesInRange <= 3.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(10, 00))
+            // One shotting units for free / two shotting important units
+            auto easilyKilled = Clusters::canDecimate(unit, target, 2) || Clusters::canDecimate(unit, target, 1);
+            if (easilyKilled && !unit.isTargetedBySplash() && !unit.isNearSplash()) {
+                if ((countDefensesInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker())
+                    || (countDefensesInRange <= 3.0 && Util::getTime() < Time(8, 00))
+                    || (countDefensesInRange <= 4.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(10, 00))
                     || Util::getTime() > Time(10, 00))
                     return true;
             }
-
-            // Two shotting buildings is good too
-            if (unit.canTwoShot(target) && target.getType().isBuilding())
-                return true;
         }
 
         auto engageWhenInRange = (target.isSiegeTank() || target.isLightAir() || target.isTransport() || target.getType() == Protoss_Reaver || target.getType() == Protoss_High_Templar);
@@ -240,9 +233,8 @@ namespace McRave::Combat::State {
             const auto lowShieldFlyer = false;// (unit.isLightAir() && unit.getType().maxShields() > 0 && target.getType() == Zerg_Overlord && Grids::getAirThreat(unit.getEngagePosition(), PlayerState::Enemy) * 5.0 > (double)unit.getShields());
             const auto oomMedic = unit.getType() == Terran_Medic && unit.getEnergy() <= TechTypes::Healing.energyCost();
             const auto hurtLingVsWorker = (unit.getType() == Zerg_Zergling && unit.getHealth() <= 15 && target.getType().isWorker() && Util::getTime() < Time(6, 00));
-            const auto regroupingAir = unit.isLightAir() && !unit.getGoal().isValid() && !target.isThreatening() && unit.attemptingRegroup() && !unit.getUnitsInReachOfThis().empty();
 
-            if (slowZealotVsVulture || sparseCorsairVsScourge || lowShieldFlyer || oomMedic || hurtLingVsWorker || regroupingAir)
+            if (slowZealotVsVulture || sparseCorsairVsScourge || lowShieldFlyer || oomMedic || hurtLingVsWorker)
                 return true;
         }
         return unit.unit()->isIrradiated();
@@ -359,7 +351,7 @@ namespace McRave::Combat::State {
         const auto distSim = (unit.isFlying() || simTarget.isFlying() || unit.isWithinRange(simTarget) || simTarget.isWithinRange(unit) || unit.hasTransport())
             ? double(Util::boxDistance(unit.getType(), unit.getPosition(), simTarget.getType(), simTarget.getPosition()))
             : BWEB::Map::getGroundDistance(unit.getPosition(), simTarget.getPosition());
-        
+
         const auto distTarget = (unit.isFlying() || target.isFlying() || unit.isWithinRange(target) || target.isWithinRange(unit) || unit.hasTransport()) ?
             double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()))
             : BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition());

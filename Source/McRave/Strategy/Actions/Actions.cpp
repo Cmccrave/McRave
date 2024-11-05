@@ -17,17 +17,20 @@ namespace McRave::Actions {
                 for (auto &action : neutralActions) {
                     auto topLeft = action.pos - Position(48, 48);
                     auto botRight = action.pos + Position(48, 48);
-                    Visuals::drawBox(topLeft, botRight, Colors::Blue);
+                    vector<string> text ={ "Neutral", action.type.c_str(), action.tech.c_str(), action.unit ? to_string(action.unit->getID()) : "no source" };
+                    Visuals::drawTextBox(action.pos, text);
                 }
                 for (auto &action : enemyActions) {
                     auto topLeft = action.pos - Position(48, 48);
                     auto botRight = action.pos + Position(48, 48);
-                    Visuals::drawBox(topLeft, botRight, Colors::Red);
+                    vector<string> text ={ "Enemy", action.type.c_str(), action.tech.c_str(), action.unit ? to_string(action.unit->getID()) : "no source" };
+                    Visuals::drawTextBox(action.pos, text);
                 }
                 for (auto &action : myActions) {
                     auto topLeft = action.pos - Position(48, 48);
                     auto botRight = action.pos + Position(48, 48);
-                    Visuals::drawBox(topLeft, botRight, Colors::Green);
+                    vector<string> text ={ "Self", action.type.c_str(), action.tech.c_str(), action.unit ? to_string(action.unit->getID()) : "no source" };
+                    Visuals::drawTextBox(action.pos, text);
                 }
             }
         }
@@ -276,20 +279,7 @@ namespace McRave::Actions {
 
         // Check outgoing TechType Actions for this PlayerState
         for (auto &action : *actions) {
-            if (action.unit == unit || action.type != type)
-                continue;
-
-            if (action.tech == TechTypes::Stasis_Field || action.tech == TechTypes::EMP_Shockwave || action.tech == TechTypes::Dark_Swarm) {
-                if (boxOverlap(action, checkPositions, Util::getCastRadius(action.tech)))
-                    return true;
-            }
-            else if (circleOverlap(action, checkPositions, Util::getCastRadius(action.tech)))
-                return true;
-        }
-
-        // Check outgoing TechType Actions for neutral PlayerState
-        for (auto &action : neutralActions) {
-            if (action.unit == unit || action.type != type)
+            if (action.tech != type)
                 continue;
 
             if (action.tech == TechTypes::Stasis_Field || action.tech == TechTypes::EMP_Shockwave || action.tech == TechTypes::Dark_Swarm) {

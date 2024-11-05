@@ -18,9 +18,9 @@ namespace McRave::Workers {
             // Transfer counts depending on if we think it's safe or not
             auto desiredTransfer = 1;
             if (Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyOpener() == "BBS")
-                desiredTransfer = (total(Zerg_Creep_Colony) == 0 && total(Zerg_Sunken_Colony) == 0) ? 1 : 0;
+                desiredTransfer = 1;
             if (Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "Proxy9/9")
-                desiredTransfer = (total(Zerg_Creep_Colony) == 0 && total(Zerg_Sunken_Colony) == 0) ? 1 : 0;
+                desiredTransfer = 1;
             if (Units::getImmThreat() > 0.0f)
                 desiredTransfer = 0;
             if (Players::ZvZ())

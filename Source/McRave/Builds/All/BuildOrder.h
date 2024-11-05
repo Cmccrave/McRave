@@ -15,11 +15,12 @@ namespace McRave::BuildOrder {
         int workerCount = 0;
         int productionCount = 0;
         int typeCount = 0;
+
         bool isValid() {
             return name != "";
         }
         bool isActive() {
-            return type != BWAPI::UnitTypes::None && typeCount > 0 && total(type) >= typeCount;
+            return type != BWAPI::UnitTypes::None && typeCount > 0 && total(type) >= typeCount && !Combat::State::isStaticRetreat(BWAPI::UnitTypes::Zerg_Zergling);
         }
         bool isPreparing() {
             return type != BWAPI::UnitTypes::None;

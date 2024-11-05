@@ -73,7 +73,7 @@ namespace McRave::Visuals {
         bool bweb = false;
         bool paths = true;
         bool strengths = false;
-        bool orders = false;
+        bool orders = true;
         bool states = false;
         bool resources = false;
         bool timers = true;
@@ -467,6 +467,11 @@ namespace McRave::Visuals {
     void drawDiagnostic(Diagnostic diagnostic, Position p)
     {
 
+    }
+
+    void drawTextBox(Position here, vector<string> text)
+    {
+        TextBox box(text, here);
     }
 
     void drawDebugText(std::string s, double d) {

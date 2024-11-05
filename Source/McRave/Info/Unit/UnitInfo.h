@@ -162,8 +162,6 @@ namespace McRave {
         bool canStartGather();
         bool canAttackGround();
         bool canAttackAir();
-        bool canOneShot(UnitInfo&);
-        bool canTwoShot(UnitInfo&);
 
         // General commands that verify we aren't spamming the same command and sticking the unit
         void setCommand(BWAPI::UnitCommandType, BWAPI::Position);

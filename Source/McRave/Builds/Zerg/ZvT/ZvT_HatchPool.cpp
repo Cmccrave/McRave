@@ -23,7 +23,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Pumping
         zergUnitPump[Zerg_Drone] =                      vis(Zerg_Drone) < 13;
-        zergUnitPump[Zerg_Zergling] =                   vis(Zerg_Zergling) < lingsNeeded_ZvP();
+        zergUnitPump[Zerg_Zergling] =                   vis(Zerg_Zergling) < lingsNeeded_ZvT();
     }
 
     void ZvT_HP()

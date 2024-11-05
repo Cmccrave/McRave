@@ -96,8 +96,20 @@ namespace McRave::Terrain {
                 }
             }
 
-            // Infer based on enemy Overlord
+            // Infer based on enemy Zealot
             static bool inferComplete = false;
+            if (!Players::vP() && !inferComplete && Util::getTime() < Time(2, 45) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) > 0) {
+                auto zealot = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return u->getType() == Protoss_Zealot;
+                });
+                auto closestMain = BWEB::Stations::getClosestMainStation(zealot->getTilePosition());
+                if (closestMain != Terrain::getMyMain()) {
+                    inferComplete = true;
+                    Util::debug(string("[Terrain]: Inferred enemy start: ") + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
+                }
+            }
+
+            // Infer based on enemy Overlord
             if (Players::vZ() && Util::getTime() < Time(3, 15) && !inferComplete) {
                 auto inferedStart = TilePositions::Invalid;
                 auto inferedCount = 0;

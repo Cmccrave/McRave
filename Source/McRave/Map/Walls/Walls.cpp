@@ -339,11 +339,7 @@ namespace McRave::Walls {
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto expected = max(ZvP_Opener(wall), ZvP_Transition(wall));
             auto reduction = (unitsKilled / 8) + buildingsKilled;
-            auto minimum = 0;
-
-            // Greedy builds skip almost 2 production cycles, so we can skip sunks if we have more than 1
-            if (Spy::enemyGreedy() && expected >= 2 && Util::getTime() < Time(7, 00))
-                expected--;
+            auto minimum = int(expected > 0);
 
             // 3h builds make roughly half as many
             if (threeHatch && expected > 1 && Spy::getEnemyBuild() != "FFE") {
@@ -401,7 +397,7 @@ namespace McRave::Walls {
             if (Spy::getEnemyBuild() == "RaxCC") {
                 if (Spy::getEnemyOpener() == "8Rax")
                     return (Util::getTime() > Time(4, 00));
-                return (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 30));
+                return (Util::getTime() > Time(5, 00));
             }
 
             // RaxFact
@@ -570,8 +566,6 @@ namespace McRave::Walls {
             static Time now = Util::getTime();
             if (Util::getTime() > now + Time(0, 45))
                 groundCount++;
-            if (Spy::enemyGreedy())
-                groundCount++;
         }
 
         // (Zv) Can't build defensives early until closest hatch almost completes 
@@ -579,7 +573,7 @@ namespace McRave::Walls {
             auto nearestHatch = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Self, [&](auto &u) {
                 return u->getType().isResourceDepot();
             });
-            if (nearestHatch && nearestHatch->frameCompletesWhen() > Broodwar->getFrameCount() + 100)
+            if (nearestHatch && nearestHatch->frameCompletesWhen() > Broodwar->getFrameCount() + 200)
                 return 0;
         }
 

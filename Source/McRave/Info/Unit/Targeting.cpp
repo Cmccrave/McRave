@@ -52,6 +52,69 @@ namespace McRave::Targets {
             return int(target.getUnitsTargetingThis().size()) <= 4 || unit.isLightAir();
         }
 
+        Priority zerglingPriority(UnitInfo& unit, UnitInfo& target)
+        {
+            if (Util::getTime() < Time(5, 00)) {
+                if (Players::ZvZ() && !target.canAttackGround() && !Spy::enemyFastExpand())                                                                 // Avoid non ground hitters to try and kill drones
+                    return Priority::Ignore;
+            }
+            const auto targetSize = max(target.getType().width(), target.getType().height());
+            const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->getType() == Zerg_Zergling && u.lock()->isWithinRange(target); });
+            //if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
+            //    return Priority::Minor;
+
+            // Already in range, continue to target it if possible
+            if (unit.isWithinRange(target) && !target.getType().isBuilding() && !target.getType().isWorker())
+                return Priority::Major;
+            return Priority::Normal;
+        }
+
+        Priority mutaliskPriority(UnitInfo& unit, UnitInfo& target)
+        {
+            auto anythingTime = Util::getTime() > (Players::ZvZ() ? Time(7, 00) : Time(10, 00));
+            auto anythingSupply = !Players::ZvZ() && Players::getSupply(PlayerState::Enemy, Races::None) < 20;
+            auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
+
+            if (Players::ZvP()) {
+
+                // Clean Zealots up vs rushes
+                if (Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == "ZealotRush")
+                    return Priority::Major;
+
+                // If our build is hitting a timing, kill workers
+                if (BuildOrder::isPressure() && !target.getType().isWorker() && !target.isThreatening() && Util::getTime() < Time(8, 00))
+                    return Priority::Ignore;
+            }
+
+            if (Players::ZvT()) {
+
+                // Ignore vultures so we don't chase them too much
+                if (target.getType() == Terran_Vulture && !unit.isWithinRange(target) && !unit.getGoal().isValid() && !target.isThreatening())
+                    return Priority::Ignore;
+            }
+
+            if (Players::ZvZ()) {
+
+                // Kill scourge immediately
+                if (target.getType() == Zerg_Scourge && unit.isWithinReach(target))
+                    return Priority::Critical;
+
+                // Kill zerglings if they have more and no mutas
+                if (Util::getTime() < Time(8, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) == 0 && target.getType() == Zerg_Zergling && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
+                    return Priority::Major;
+            }
+
+            // One/two shot is high priority to hit
+            if (Combat::Clusters::canDecimate(unit, target, 2) || Combat::Clusters::canDecimate(unit, target, 1))
+                return Priority::Major;
+
+            // If a building is unprotected
+            if (unit.getType().isBuilding() && target.getUnitsInRangeOfThis().empty() && unit.isWithinRange(target))
+                return Priority::Major;
+
+            return Priority::Normal;
+        }
+
         Priority getPriority(UnitInfo &unit, UnitInfo& target)
         {
             bool targetCanAttack = !unit.isHidden() && (((unit.getType().isFlyer() && target.canAttackAir()) || (!unit.getType().isFlyer() && target.canAttackGround()) || (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine)));
@@ -91,7 +154,7 @@ namespace McRave::Targets {
                 if (unit.attemptingRunby() && Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) < 8) {
                     if (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
                         return Priority::Ignore;
-                    if (Grids::getGroundThreat(target.getPosition(), PlayerState::Enemy) <= 0.1f && Util::getTime() < Time(7, 30))
+                    if (target.getPosition().isValid() && Grids::getGroundThreat(target.getPosition(), PlayerState::Enemy) <= 0.1f && Util::getTime() < Time(7, 30))
                         return Priority::Major;
                     if (!Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), target.getPosition()) && Util::getTime() < Time(7, 30))
                         return Priority::Ignore;
@@ -102,14 +165,14 @@ namespace McRave::Targets {
                     return Priority::Trivial;
 
                 // Proxy worker
-                if (target.isProxy() && target.getType().isWorker() && target.unit()->exists() && Spy::getEnemyBuild() != "2Gate") {
+                if (target.isProxy() && target.getType().isWorker() && target.unit()->exists()) {
                     if (target.unit()->isConstructing())
                         return Priority::Critical;
-                    else if (!Spy::enemyRush())
+                    else if (!Spy::enemyRush() && Spy::getEnemyBuild() != "2Gate")
                         return Priority::Major;
                 }
 
-                // Proxy priority
+                // Proxy building
                 if (target.isProxy() && target.getType().isBuilding() && Spy::enemyProxy() && unit.getType() != Zerg_Mutalisk) {
                     if (target.unit()->getBuildUnit() || (target.getType().getRace() == Races::Terran && !target.isCompleted()))
                         return Priority::Minor;
@@ -121,9 +184,13 @@ namespace McRave::Targets {
                         return Priority::Ignore;
                 }
 
-                // Generic major priority
+                // Threatening priority
                 if (!unit.getType().isWorker() && (unit.isWithinReach(target) || Util::getTime() < Time(5, 00)) && target.isThreatening() && !target.getType().isWorker() && unit.isFlying() == target.isFlying())
+                    return Priority::Major;
+                if (target.getType().isWorker() && target.isThreatening())
                     return Priority::Critical;
+
+                // Sacrifice unit away from army
                 if (unit.isTargetedBySuicide() && (target.isTransport() || target.getType() == Protoss_Reaver || target.getType() == Protoss_High_Templar))
                     return Priority::Critical;
 
@@ -134,8 +201,7 @@ namespace McRave::Targets {
                     || (target.getType().isWorker() && !allowWorkerTarget(unit, target))
                     || (target.getType() == Protoss_Corsair && !unit.isFlying() && !target.isThreatening() && !target.hasAttackedRecently() && !unit.isWithinRange(target))
                     || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) && !unit.getType().isDetector())           // Don't target if invisible and can't attack this unit or we have no detectors in PvP
-                    || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))           // Don't target flyers that we can't reach
-                    || (unit.isFlying() && target.getType() == Protoss_Interceptor))
+                    || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target)))           // Don't target flyers that we can't reach)
                     return Priority::Ignore;
 
                 // Kill workers and cannons if we're in the same area in enemy territory
@@ -146,6 +212,7 @@ namespace McRave::Targets {
                         return Priority::Critical;
                 }
 
+                // Kill photon cannons when in range
                 if (!unit.isMelee() && unit.isWithinRange(target)) {
                     if (target.getType() == Protoss_Photon_Cannon && target.hasAttackedRecently())
                         return Priority::Critical;
@@ -155,78 +222,12 @@ namespace McRave::Targets {
 
                 // Zergling
                 if (unit.getType() == Zerg_Zergling) {
-                    if (Util::getTime() < Time(5, 00)) {
-                        if (Players::ZvZ() && !target.canAttackGround() && !Spy::enemyFastExpand())                                                                 // Avoid non ground hitters to try and kill drones
-                            return Priority::Ignore;
-                    }
-                    const auto targetSize = max(target.getType().width(), target.getType().height());
-                    const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->getType() == Zerg_Zergling && u.lock()->isWithinRange(target); });
-                    //if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
-                    //    return Priority::Minor;
-
-                    // Already in range, continue to target it if possible
-                    if (unit.isWithinRange(target) && !target.getType().isBuilding() && !target.getType().isWorker())
-                        return Priority::Major;
+                    return zerglingPriority(unit, target);
                 }
 
                 // Mutalisk
                 if (unit.getType() == Zerg_Mutalisk) {
-                    auto anythingTime = Util::getTime() > (Players::ZvZ() ? Time(7, 00) : Time(10, 00));
-                    auto anythingSupply = !Players::ZvZ() && Players::getSupply(PlayerState::Enemy, Races::None) < 20;
-                    auto defendExpander = BuildOrder::shouldExpand() && unit.getGoal().isValid();
-
-                    if (Players::ZvP()) {
-
-                        // Always kill cannons
-                        //if (target.getType() == Protoss_Photon_Cannon && unit.attemptingHarass() && target.getPosition().getDistance(Combat::getHarassPosition()) < 160.0)
-                        //    return Priority::Critical;
-                        if (target.getType() == Protoss_Photon_Cannon && unit.isWithinReach(target) && target.unit()->exists() && !target.isCompleted())
-                            return Priority::Critical;
-                        if (target.getType() == Protoss_Photon_Cannon && unit.isWithinReach(target) && target.hasAttackedRecently() && (unit.canOneShot(target) || unit.canTwoShot(target)))
-                            return Priority::Critical;
-
-                        // Clean Zealots up vs rushes
-                        if (Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == "ZealotRush")
-                            return Priority::Major;
-
-                        if (BuildOrder::isPressure() && !target.getType().isWorker() && !target.isThreatening() && Util::getTime() < Time(8, 00))
-                            return Priority::Ignore;
-
-                        // Stragglers are free to kill
-                        //if (!target.getType().isBuilding() && unit.isWithinReach(target) && target.getUnitsInRangeOfThis().size() <= 1)
-                        //    return Priority::Major;
-                        //if (target.getType().isBuilding() && unit.isWithinRange(target) && target.getUnitsInRangeOfThis().empty() && unit.getUnitsInRangeOfThis().empty())
-                        //    return Priority::Major;
-                    }
-
-                    if (Players::ZvT()) {
-                        if (target.getType() == Terran_Missile_Turret && unit.isWithinReach(target) && !target.hasRepairedRecently() && target.unit()->exists() && target.isCompleted())
-                            return Priority::Major;
-                        if (target.getType() == Terran_Vulture && !unit.isWithinRange(target) && !unit.getGoal().isValid() && !target.isThreatening())
-                            return Priority::Ignore;
-                    }
-
-                    if (Players::ZvZ()) {
-                        if (target.getType() == Zerg_Scourge && unit.isWithinReach(target))
-                            return Priority::Critical;
-                        if (Util::getTime() < Time(8, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) == 0 && target.getType() == Zerg_Zergling && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
-                            return Priority::Major;
-                    }
-
-                    if (unit.canOneShot(target) && unit.isWithinReach(target))
-                        return Priority::Major;
-
-                    //// If a building is unprotected
-                    //if (unit.getType().isBuilding() && int(target.getUnitsInRangeOfThis().size()) <= 3 && unit.isWithinReach(target))
-                    //    return Priority::Major;
-
-                    // Low priority targets, ignore when we haven't found the enemy
-                    if (!anythingTime && !defendExpander && !target.isThreatening()) {
-                        //if (!Players::ZvZ() && !unit.canOneShot(target) && !unit.canTwoShot(target) && !target.isFlying() && !target.getType().isBuilding() && !target.getType().isWorker())
-                        //    return Priority::Ignore;
-                        if ((enemyCanHitAir || enemyCanHitGround) && !target.canAttackAir() && !target.canAttackGround())
-                            return Priority::Ignore;
-                    }
+                    return mutaliskPriority(unit, target);
                 }
 
                 // Scourge
@@ -255,6 +256,9 @@ namespace McRave::Targets {
                         || target.isFlying()
                         || (unit.targetsFriendly() && target.getType() != Zerg_Zergling)
                         || (unit.targetsFriendly() && target.getRole() != Role::Combat))
+                        return Priority::Ignore;
+
+                    if (Actions::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm)))
                         return Priority::Ignore;
                 }
 
@@ -335,14 +339,6 @@ namespace McRave::Targets {
                 if (unit.getType() == Protoss_Dark_Templar && unit.isWithinReach(target) && !Actions::overlapsDetection(target.unit(), target.getPosition(), PlayerState::Enemy)
                     && (target.getType().isWorker() || target.isSiegeTank() || target.getType().isDetector() || target.getType() == Protoss_Observatory || target.getType() == Protoss_Robotics_Facility))
                     return 20.0;
-
-                // Add bonus for being able to one shot a unit
-                if (!Players::ZvZ() && unit.isLightAir() && unit.canOneShot(target) && Util::getTime() < Time(10, 00))
-                    return 4.0;
-
-                // Add bonus for being able to two shot a unit
-                if (!Players::ZvZ() && unit.isLightAir() && unit.canTwoShot(target) && Util::getTime() < Time(10, 00))
-                    return 2.0;
                 return 1.0;
             };
 
@@ -495,6 +491,9 @@ namespace McRave::Targets {
                     continue;
 
                 auto priority = getPriority(unit, target);
+
+                Broodwar->drawTextMap(target.getPosition(), "%d", int(priority));
+
                 if (priority == Priority::Ignore || priority < priorityBest)
                     continue;
 
@@ -505,6 +504,8 @@ namespace McRave::Targets {
 
                 // If this target is more important to target, set as current target
                 const auto thisUnit = scoreTarget(unit, target);
+                if (unit.unit()->isSelected())
+                    Broodwar->drawTextMap(target.getPosition() + Position(0, 16), "%.2f", target.getPriority());
                 if (thisUnit > scoreBest && checkGroundAccess(target)) {
                     scoreBest = thisUnit;
                     unit.setTarget(&target);
@@ -548,6 +549,7 @@ namespace McRave::Targets {
                     continue;
 
                 auto priority = getPriority(unit, target);
+
                 if (priority == Priority::Ignore || priority < priorityBest)
                     continue;
 

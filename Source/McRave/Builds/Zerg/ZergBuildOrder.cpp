@@ -90,7 +90,7 @@ namespace McRave::BuildOrder::Zerg {
 
             // Prepare evo chamber just in case and not a hydra build
             if (focusUnit != Zerg_Hydralisk) {
-                if (Players::ZvT() && Spy::getEnemyBuild() == "RaxFact" && Util::getTime() > Time(4, 30)) {
+                if (Players::ZvT() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()) && Util::getTime() > Time(4, 30)) {
                     needSpores = true;
                     wallNat = true;
                 }
@@ -241,11 +241,9 @@ namespace McRave::BuildOrder::Zerg {
 
                 // ZvT: Get 4 gas bases, then 2 hatch per base, then 1 hatch per base
                 if (Players::ZvT()) {
-                    if (int(Stations::getStations(PlayerState::Self).size()) >= 3 && isFocusUnit(Zerg_Hydralisk))
+                    if (int(Stations::getStations(PlayerState::Self).size()) >= 3)
                         hatchPerBase = 2.25;
-                    if (int(Stations::getStations(PlayerState::Self).size()) >= 4 || isFocusUnit(Zerg_Zergling))
-                        hatchPerBase = 2.25;
-                    if (int(Stations::getStations(PlayerState::Self).size()) >= 5)
+                    if (int(Stations::getStations(PlayerState::Self).size()) >= 4)
                         hatchPerBase = 1.0;
                 }
 
@@ -557,8 +555,11 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvT
         if (Players::ZvT()) {
-            unitOrder ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Defiler };
-            techOffset = 2;
+            if (vsMech)
+                unitOrder ={ Zerg_Mutalisk, Zerg_Defiler, Zerg_Ultralisk };
+            else
+                unitOrder ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Defiler };
+            techOffset = 1;
         }
 
         // ZvZ
@@ -677,25 +678,26 @@ namespace McRave::BuildOrder::Zerg {
             // ZvT
             if (Players::ZvT()) {
                 priorityOrder ={
-                    {Zerg_Drone, 30},
-                    {Zerg_Defiler, 2},
+                    {Zerg_Drone, 25},
+                    {Zerg_Defiler, 1},
                     {Zerg_Lurker, 2},
                     {Zerg_Ultralisk, 4},
                     {Zerg_Hydralisk, 12},
-                    {Zerg_Mutalisk, 9},
+                    {Zerg_Mutalisk, 18},
 
-                    {Zerg_Drone, 40},
-                    {Zerg_Defiler, 4},
+                    {Zerg_Drone, 35},
+                    {Zerg_Defiler, 2},
                     {Zerg_Lurker, 4},
                     {Zerg_Ultralisk, 8},
                     {Zerg_Hydralisk, 36},
-                    {Zerg_Mutalisk, 18},
+                    {Zerg_Mutalisk, 24},
 
-                    {Zerg_Drone, 50},
+                    {Zerg_Drone, 40},
+                    {Zerg_Defiler, 4},
                     {Zerg_Lurker, 8},
                     {Zerg_Ultralisk, 12},
                     {Zerg_Hydralisk, 64},
-                    {Zerg_Mutalisk, 32},
+                    {Zerg_Mutalisk, 30},
                 };
             }
 
@@ -723,9 +725,9 @@ namespace McRave::BuildOrder::Zerg {
             }
         }
 
-        // Turn off drones if we hit a cap
+        // Pump lings or drones if nothing else to do
         if (availGas <= 0 || armyComposition.empty()) {
-            if (zergUnitPump[Zerg_Zergling] || vis(Zerg_Drone) >= 60 || Resources::isMineralSaturated()) {
+            if (zergUnitPump[Zerg_Zergling] || vis(Zerg_Drone) >= 45 || Resources::isMineralSaturated()) {
                 armyComposition[Zerg_Zergling] = 1.0;
                 armyComposition[Zerg_Drone] = 0.0;
             }

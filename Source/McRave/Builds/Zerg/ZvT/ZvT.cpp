@@ -129,7 +129,7 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit =                                     Zerg_Mutalisk;
         reserveLarva =                                  6;
 
-        auto thirdHatch = (Spy::getEnemyBuild() == "RaxFact" || !Spy::enemyFastExpand()) ? total(Zerg_Mutalisk) >= 6 : (vis(Zerg_Spire) > 0);
+        auto thirdHatch = (vis(Zerg_Spire) > 0 && s >= 50);
 
         // Buildings
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;

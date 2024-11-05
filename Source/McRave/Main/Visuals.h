@@ -13,6 +13,8 @@ namespace McRave::Visuals {
 
     void drawDiagnostic(Diagnostic, BWAPI::Position);
 
+    void drawTextBox(BWAPI::Position, std::vector<std::string>);
+
     void drawDebugText(std::string, double);
     void drawDebugText(std::string, int);
 

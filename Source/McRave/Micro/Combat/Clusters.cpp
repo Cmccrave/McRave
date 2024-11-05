@@ -324,9 +324,11 @@ namespace McRave::Combat::Clusters {
         void drawClusters()
         {
             for (auto &cluster : clusters) {
-                for (auto &unit : cluster.units) {
-                    Visuals::drawLine(unit->getPosition(), cluster.commander.lock()->getPosition(), cluster.color);
-                    unit->circle(cluster.color);
+                if (cluster.commander.lock()) {
+                    for (auto &unit : cluster.units) {
+                        Visuals::drawLine(unit->getPosition(), cluster.commander.lock()->getPosition(), cluster.color);
+                        unit->circle(cluster.color);
+                    }
                 }
 
                 Visuals::drawPath(cluster.marchPath);
@@ -353,8 +355,49 @@ namespace McRave::Combat::Clusters {
         shapeClusters();
         finishClusters();
         fixNavigations();
-        drawClusters();
+        //drawClusters();
     }
 
     vector<Cluster>& getClusters() { return clusters; }
+
+    bool canDecimate(UnitInfo& unit, UnitInfo& target, int cnt)
+    {
+        // Create an offset that increases over time to prevent low muta counts engaging large numbers
+        auto minutesPastPressure = clamp(Util::getTime().minutes - 7, 0, 2);
+        auto offset = Grids::getAirThreat(target.getPosition(), PlayerState::Enemy) > 0.0f ? minutesPastPressure : 0.0f;
+
+        // Remove the offset if we're in range already, or they're in range of us
+        if (unit.isWithinRange(target) || target.isWithinRange(unit))
+            offset = 0;
+
+        // Only allow certain types for cnt > 1
+        if (cnt > 1) {
+            auto twoShotAcceptable = target.getType() == Terran_Goliath || target.isSiegeTank() || target.getType() == Protoss_Dragoon || target.getType().isBuilding();
+            if (!twoShotAcceptable)
+                return false;
+        }
+
+        // Check if this unit could load into a bunker
+        if (Util::getTime() < Time(10, 00) && (target.getType() == Terran_Marine || target.getType() == Terran_SCV || target.getType() == Terran_Firebat)) {
+            if (Players::getVisibleCount(PlayerState::Enemy, Terran_Bunker) > 0) {
+                auto closestBunker = Util::getClosestUnit(target.getPosition(), PlayerState::Enemy, [&](auto &b) {
+                    return b->getType() == Terran_Bunker;
+                });
+                if (closestBunker && closestBunker->getPosition().getDistance(target.getPosition()) < 200.0) {
+                    return false;
+                }
+            }
+        }
+
+        // TODO: Use cluster size instead with count of units in range
+        auto multiplier = 9.0 - target.data.armor;
+        auto damageEstimate = Grids::getAirDensity(unit.getPosition(), PlayerState::Self) * multiplier;
+
+        // Check if we can one shot it
+        if (target.unit()->exists() && damageEstimate >= (target.getHealth() + target.getShields()) * cnt)
+            return true;
+        if (!target.unit()->exists() && damageEstimate >= (target.getType().maxHitPoints() + target.getType().maxShields()) * cnt)
+            return true;
+        return false;
+    }
 }
