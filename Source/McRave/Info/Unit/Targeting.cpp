@@ -115,6 +115,28 @@ namespace McRave::Targets {
             return Priority::Normal;
         }
 
+        Priority scourgePriority(UnitInfo& unit, UnitInfo& target)
+        {
+            if ((!Stations::getStations(PlayerState::Enemy).empty() && target.getType().isBuilding())                                                               // Avoid targeting buildings if the enemy has a base still
+                || target.getType() == Zerg_Overlord                                                                                                                // Don't target overlords
+                || target.getType() == Protoss_Interceptor)                                                                                                         // Don't target interceptors
+                return Priority::Ignore;
+
+            // Determine if we have enough scourge on this target already
+            int cnt = 0;
+            for (auto &t : target.getUnitsTargetingThis()) {
+                if (auto targeter = t.lock()) {
+                    if (targeter->getType() == Zerg_Scourge)
+                        cnt+=110;
+                }
+            }
+            if (cnt >= unit.getHealth())
+                return Priority::Ignore;
+            return Priority::Normal;
+        }
+
+
+
         Priority getPriority(UnitInfo &unit, UnitInfo& target)
         {
             bool targetCanAttack = !unit.isHidden() && (((unit.getType().isFlyer() && target.canAttackAir()) || (!unit.getType().isFlyer() && target.canAttackGround()) || (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine)));
@@ -232,21 +254,7 @@ namespace McRave::Targets {
 
                 // Scourge
                 if (unit.getType() == Zerg_Scourge) {
-                    if ((!Stations::getStations(PlayerState::Enemy).empty() && target.getType().isBuilding())                                                               // Avoid targeting buildings if the enemy has a base still
-                        || target.getType() == Zerg_Overlord                                                                                                                // Don't target overlords
-                        || target.getType() == Protoss_Interceptor)                                                                                                         // Don't target interceptors
-                        return Priority::Ignore;
 
-                    // Determine if we have enough scourge on this target already
-                    int cnt = 0;
-                    for (auto &t : target.getUnitsTargetingThis()) {
-                        if (auto targeter = t.lock()) {
-                            if (targeter->getType() == Zerg_Scourge)
-                                cnt+=110;
-                        }
-                    }
-                    if (cnt >= unit.getHealth())
-                        return Priority::Ignore;
                 }
 
                 // Defiler

@@ -364,7 +364,7 @@ namespace McRave::Workers {
 
         void updateDecision(UnitInfo& unit)
         {
-            if (!Units::commandAllowed(unit))
+            if (!Units::commandAllowed(unit) || unit.unit()->isSelected())
                 return;
 
             // Iterate commands, if one is executed then don't try to execute other commands
