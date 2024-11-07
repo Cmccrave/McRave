@@ -174,6 +174,7 @@ namespace McRave::Combat::Formations {
 
         // Radius is sort of just set to diameter above, stupid code
         line.radius /= 2.0;
+        line.radius = max(line.radius, 160.0);
 
         // Checks if a position is okay, stores if it is
         vector<Position> row;

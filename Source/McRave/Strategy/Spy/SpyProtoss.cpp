@@ -255,11 +255,11 @@ namespace McRave::Spy::Protoss {
         for (auto &p : Players::getPlayers()) {
             PlayerInfo &player = p.second;
             if (player.isEnemy() && player.getCurrentRace() == Races::Protoss) {
-                if (!theSpy.build.confirmed || theSpy.build.changeable)
+                if (!theSpy.build.likely || theSpy.build.changeable)
                     enemyProtossBuilds(player, theSpy);
-                if (!theSpy.opener.confirmed || theSpy.opener.changeable)
+                if (!theSpy.opener.likely || theSpy.opener.changeable)
                     enemyProtossOpeners(player, theSpy);
-                if (!theSpy.transition.confirmed || theSpy.transition.changeable)
+                if (!theSpy.transition.likely || theSpy.transition.changeable)
                     enemyProtossTransitions(player, theSpy);
             }
         }

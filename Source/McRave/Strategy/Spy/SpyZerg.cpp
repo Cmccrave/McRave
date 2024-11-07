@@ -161,9 +161,9 @@ namespace McRave::Spy::Zerg {
 
                 // ZvZ
                 if (Players::ZvZ()) {
-                    if (!theSpy.expand.confirmed && theSpy.productionCount == 1 && Util::getTime() > Time(5, 30))
+                    if (!theSpy.expand.likely && theSpy.productionCount == 1 && Util::getTime() > Time(5, 30))
                         theSpy.transition.name = "1HatchMuta";
-                    else if (theSpy.expand.confirmed && theSpy.productionCount == 2 && Util::getTime() > Time(6, 00))
+                    else if (theSpy.expand.likely && theSpy.productionCount == 2 && Util::getTime() > Time(6, 00))
                         theSpy.transition.name = "2HatchMuta";
                 }
             }
@@ -186,11 +186,11 @@ namespace McRave::Spy::Zerg {
         for (auto &p : Players::getPlayers()) {
             PlayerInfo &player = p.second;
             if (player.isEnemy() && player.getCurrentRace() == Races::Zerg) {
-                if (!theSpy.build.confirmed || theSpy.build.changeable)
+                if (!theSpy.build.likely || theSpy.build.changeable)
                     enemyZergBuilds(player, theSpy);
-                if (!theSpy.opener.confirmed || theSpy.opener.changeable)
+                if (!theSpy.opener.likely || theSpy.opener.changeable)
                     enemyZergOpeners(player, theSpy);
-                if (!theSpy.transition.confirmed || theSpy.transition.changeable)
+                if (!theSpy.transition.likely || theSpy.transition.changeable)
                     enemyZergTransitions(player, theSpy);
                 enemyZergMisc(player, theSpy);
             }

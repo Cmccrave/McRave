@@ -92,15 +92,15 @@ namespace McRave::BuildOrder::Zerg {
 
             // Prepare evo chamber just in case and not a hydra build
             if (focusUnit != Zerg_Hydralisk) {
-                if (Players::ZvT() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()) && Util::getTime() > Time(4, 30)) {
+                if (Players::ZvT() && !Spy::enemyFastExpand() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()) && Util::getTime() > Time(4, 30)) {
                     needSpores = true;
                     wallNat = true;
                 }
-                if (Players::ZvP() && Spy::getEnemyTransition() == "Unknown" && !Spy::enemyFastExpand() && ((Spy::getEnemyBuild() == "2Gate" && Util::getTime() > Time(4, 45)) || (Spy::getEnemyBuild() == "1GateCore" && Util::getTime() > Time(4, 15)))) {
+                if (Players::ZvP() && !Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown" && !Spy::enemyFastExpand() && ((Spy::getEnemyBuild() == "2Gate" && Util::getTime() > Time(4, 45)) || (Spy::getEnemyBuild() == "1GateCore" && Util::getTime() > Time(4, 15)))) {
                     needSpores = true;
                     wallNat = false;
                 }
-                if (Players::ZvZ() && Spy::getEnemyOpener() != "4Pool" && !Spy::enemyTurtle() && Spy::getEnemyOpener() != "7Pool" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00)) {
+                if (Players::ZvZ() && !Spy::enemyFastExpand() && Spy::getEnemyOpener() != "4Pool" && !Spy::enemyTurtle() && Spy::getEnemyOpener() != "7Pool" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00)) {
                     needSpores = true;
                     wallNat = true;
                 }
@@ -129,15 +129,14 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Queue enough overlords to fit the reservations
-            if (reserveLarva > 0 && atPercent(Zerg_Spire, 0.25) && total(focusUnit) < reserveLarva && com(Zerg_Spire) == 0) {
+            if (reserveLarva > 0 && atPercent(Zerg_Spire, 0.33) && total(focusUnit) < reserveLarva && com(Zerg_Spire) == 0) {
                 auto expectedSupply = s + ((reserveLarva - total(focusUnit)) * 4);
                 auto expectedOverlords = int(ceil(double(expectedSupply) / 16.0));
-                auto extraTempo = !Players::ZvZ();
-                buildQueue[Zerg_Overlord] = expectedOverlords + extraTempo;
+                buildQueue[Zerg_Overlord] = expectedOverlords;
             }
 
             // Adding Overlords if we are sacrificing a scout or know we will lose one
-            if (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0.0) {
+            if (!Players::ZvZ() && Players::getStrength(PlayerState::Enemy).airToAir > 0.0 && Util::getTime() < Time(8, 00)) {
                 buildQueue[Zerg_Overlord]++;
             }
 
@@ -229,32 +228,24 @@ namespace McRave::BuildOrder::Zerg {
                 // Calculate hatcheries per base
                 static double hatchPerBase = 1.0;
 
-                // ZvZ: Get 2 gas bases, then 2 hatch per base
+                // ZvZ: Get 2 gas bases first
                 if (Players::ZvZ()) {
                     if (int(Stations::getStations(PlayerState::Self).size()) >= 2)
                         hatchPerBase = 2.0;
                 }
 
-                // ZvP: Get 3 gas bases, then 3 hatch per base, then 1 hatch per base
+                // ZvP: Get 3 gas bases first
                 if (Players::ZvP()) {
                     if (int(Stations::getStations(PlayerState::Self).size()) >= 3)
                         hatchPerBase = 3.0;
-                    if (int(Stations::getStations(PlayerState::Self).size()) >= 4)
-                        hatchPerBase = 1.0;
                 }
 
-                // ZvT: Get 4 gas bases, then 2 hatch per base, then 1 hatch per base
+                // ZvT: Get 3 gas bases first
                 if (Players::ZvT()) {
-<<<<<<< HEAD
-                    if (int(Stations::getStations(PlayerState::Self).size()) >= 3)
-=======
                     if (vsMech && int(Stations::getStations(PlayerState::Self).size()) >= 3)
                         hatchPerBase = 2.50;
                     if (int(Stations::getStations(PlayerState::Self).size()) >= 4)
->>>>>>> 5853ef8... zvz 12p fix, station defense testing
                         hatchPerBase = 2.25;
-                    if (int(Stations::getStations(PlayerState::Self).size()) >= 4)
-                        hatchPerBase = 1.0;
                 }
 
                 // Check if we are maxed on production
@@ -562,11 +553,14 @@ namespace McRave::BuildOrder::Zerg {
 
         // ZvT
         if (Players::ZvT()) {
-            if (vsMech)
+            if (vsMech) {
                 unitOrder ={ Zerg_Mutalisk, Zerg_Defiler, Zerg_Ultralisk };
-            else
+                techOffset = 2;
+            }
+            else {
                 unitOrder ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Defiler };
-            techOffset = 1;
+                techOffset = 1;
+            }
         }
 
         // ZvZ

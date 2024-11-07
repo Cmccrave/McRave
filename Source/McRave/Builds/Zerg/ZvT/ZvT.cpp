@@ -19,7 +19,7 @@ namespace McRave::BuildOrder::Zerg {
         wallMain =                                  false;
 
         wantNatural =                               true;
-        wantThird =                                 hatchCount() >= 3 || Spy::enemyFastExpand();
+        wantThird =                                 hatchCount() >= 3 || (Spy::enemyFastExpand() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0);
 
         mineralThird =                              false;
         proxy =                                     false;
@@ -97,8 +97,8 @@ namespace McRave::BuildOrder::Zerg {
         // RaxFact
         if (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()) {
             initialValue = 2;
-            if (Util::getTime() > Time(4, 00))
-                initialValue = 10;
+            if (Util::getTime() > Time(3, 45))
+                initialValue = 8;
         }
 
         // TODO: Fix T spy

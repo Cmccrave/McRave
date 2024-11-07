@@ -22,7 +22,7 @@ namespace McRave::Command {
 
         double distance(UnitInfo& unit, WalkPosition w) {
             const auto p = Position(w) + Position(4, 4);
-            return max(1.0, p.getDistance(unit.getNavigation()));
+            return max(10.0, p.getDistance(unit.getNavigation()));
         }
 
         double mobility(UnitInfo& unit, WalkPosition w) {
@@ -45,16 +45,9 @@ namespace McRave::Command {
             return max(0.01f, unit.getType().isFlyer() ? (Grids::getAirThreat(w, PlayerState::Enemy) - current) : (Grids::getGroundThreat(w, PlayerState::Enemy) - current));
         }
 
-        double avoidance(UnitInfo& unit, Position p, Position sim)
-        {
-            return (p.getDistance(sim));
-        }
-
         double altitude(UnitInfo& unit, WalkPosition w)
         {
-            if (unit.isFlying())
-                return 1.0 + mapBWEM.GetMiniTile(w).Altitude();
-            return 1.0;
+            return unit.isFlying() ? Util::log10(10.0 + mapBWEM.GetMiniTile(w).Altitude()) : 1.0;
         }
 
         Position findViablePosition(UnitInfo& unit, Position pstart, function<double(WalkPosition)> score)
@@ -344,7 +337,7 @@ namespace McRave::Command {
             }
 
             // Necessary for mutas to not overshoot when already in range and melee struggling to ever hit anything
-            auto clickToTarget = (unit.getRole() == Role::Combat && unit.hasTarget() && unit.canStartAttack() && (unit.isLightAir() || unit.isMelee()) && unit.isWithinReach(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack)                
+            auto clickToTarget = (unit.getRole() == Role::Combat && unit.hasTarget() && unit.canStartAttack() && (unit.isLightAir() || unit.isMelee()) && unit.isWithinReach(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack)
                 || !unit.getDestinationPath().isReachable();
 
             // Just move to the destination
@@ -382,10 +375,16 @@ namespace McRave::Command {
 
         // Find the best possible position to kite towards
         auto kiteTowards = Positions::Invalid;
-        if (unit.isLightAir() && Grids::getAirThreat(unit.getPosition(), PlayerState::Enemy) > 0.0) {
+        if (unit.isLightAir() && unit.hasCommander() && Grids::getAirThreat(unit.getPosition(), PlayerState::Enemy) > 0.0) {
             auto maxRange = max(unit.getAirRange(), unit.getGroundRange());
+            auto commander = unit.getCommander().lock();
             const auto kiteRange = unit.getType().groundWeapon().damageCooldown() * unit.getType().topSpeed() + 64.0;
             const auto threatCalc = [&](auto &p) {
+                if (unit.isTargetedBySplash()) {
+                    unit.circle(Colors::Yellow);
+                    Broodwar->drawTextMap(p, "%.2f", p.getDistance(commander->getPosition()));
+                    return 1.0 / p.getDistance(commander->getPosition());
+                }
                 return double(Grids::getAirThreat(p, PlayerState::Enemy));
             };
             auto calcPair = Util::findPointOnCircle(unit.getPosition(), target.getPosition(), maxRange, threatCalc);
@@ -467,7 +466,7 @@ namespace McRave::Command {
                     if (targetedByStationary)
                         return true;
                 }
-                
+
 
                 if (unit.isTargetedBySuicide() && !unit.isFlying())
                     return false;
@@ -502,6 +501,8 @@ namespace McRave::Command {
         };
 
         if (shouldKite() && canKite()) {
+
+            Broodwar->drawLineMap(unit.getPosition(), kiteTowards, Colors::Red);
 
             //// HACK: Drilling with workers. Should add some sort of getClosestResource or fix how PlayerState::Neutral units are stored (we don't store resources in them)
             //if (unit.getType().isWorker() && unit.getRole() == Role::Combat) {

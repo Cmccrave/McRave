@@ -185,21 +185,23 @@ namespace McRave::Combat::State {
             // Calculate the risk
             for (auto &e : Units::getUnits(PlayerState::Enemy)) {
                 auto &enemy = *e;
-                if (enemy.canAttackAir() && enemy != target) {
-                    if (enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 32.0) {
+                if (enemy.canAttackAir()) {
+                    if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 96.0) {
                         if (enemy.getType().isBuilding())
                             countDefensesInRange += 1.0;
+                        else if (enemy.getType() == Terran_Goliath)
+                            countDefensesInRange += 0.1;
                     }
                 }
             }
 
             // One shotting units for free / two shotting important units
             auto easilyKilled = Clusters::canDecimate(unit, target, 2) || Clusters::canDecimate(unit, target, 1);
-            if (easilyKilled && !unit.isTargetedBySplash() && !unit.isNearSplash()) {
+            if (easilyKilled) {
                 if ((countDefensesInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker())
-                    || (countDefensesInRange <= 3.0 && Util::getTime() < Time(8, 00))
-                    || (countDefensesInRange <= 4.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(10, 00))
-                    || Util::getTime() > Time(10, 00))
+                    || (countDefensesInRange <= 2.0 && Util::getTime() < Time(8, 00))
+                    || (countDefensesInRange <= 3.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))
+                    || (countDefensesInRange <= 4.0 && Util::getTime() > Time(12, 00)))
                     return true;
             }
         }
@@ -212,7 +214,6 @@ namespace McRave::Combat::State {
             || (target.getType() == Protoss_Dragoon && Util::getTime() > Time(5, 00) && unit.getType() == Zerg_Zergling && unit.isWithinRange(target))
             //|| (Util::getTime() < Time(8, 00) && unit.getType() == Zerg_Mutalisk && target.getType() == Protoss_Photon_Cannon && !target.isCompleted())
             || (target.getType() == Terran_Vulture_Spider_Mine && !target.isBurrowed())
-            || (unit.isLightAir() && target.isLightAir() && target.hasAttackedRecently())
             || (unit.attemptingRunby() && target.getType().isWorker() && (unit.getHealth() > 15 || Util::getTime() > Time(6, 00) || Players::ZvZ()))
             || (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_High_Templar && unit.canStartCast(TechTypes::Psionic_Storm, target.getPosition()) && unit.isWithinRange(target))
             || (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_Reaver && unit.canStartAttack()) && unit.isWithinRange(target));

@@ -57,7 +57,7 @@ namespace McRave::Spy::Terran {
             // RaxFact
             if (completesBy(1, Terran_Factory, Time(4, 00))
                 || (Util::getTime() < Time(6, 00) && hasMech)
-                || (theSpy.proxy.confirmed && theSpy.opener.name == "8Rax")
+                || (theSpy.proxy.likely && theSpy.opener.name == "8Rax")
                 || arrivesBy(1, Terran_Wraith, Time(6, 00)))
                 theSpy.build.name = "RaxFact";
 
@@ -167,7 +167,7 @@ namespace McRave::Spy::Terran {
                 if (theSpy.build.name == "2Rax") {
                     if (theSpy.expand.possible && (hasTanks || Players::getVisibleCount(PlayerState::Enemy, Terran_Machine_Shop) > 0) && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) <= 1 && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) >= 3 && Util::getTime() < Time(10, 30))
                         theSpy.transition.name = "1FactTanks";
-                    else if (theSpy.proxy.confirmed
+                    else if (theSpy.proxy.likely
                         || arrivesBy(10, Terran_Marine, Time(5, 15))
                         || completesBy(2, Terran_Barracks, Time(2, 35))
                         || completesBy(3, Terran_Barracks, Time(4, 00)))
@@ -210,11 +210,11 @@ namespace McRave::Spy::Terran {
         for (auto &p : Players::getPlayers()) {
             PlayerInfo &player = p.second;
             if (player.isEnemy() && player.getCurrentRace() == Races::Terran) {
-                if (!theSpy.build.confirmed || theSpy.build.changeable)
+                if (!theSpy.build.likely || theSpy.build.changeable)
                     enemyTerranBuilds(player, theSpy);
-                if (!theSpy.opener.confirmed || theSpy.opener.changeable)
+                if (!theSpy.opener.likely || theSpy.opener.changeable)
                     enemyTerranOpeners(player, theSpy);
-                if (!theSpy.transition.confirmed || theSpy.transition.changeable)
+                if (!theSpy.transition.likely || theSpy.transition.changeable)
                     enemyTerranTransitions(player, theSpy);
             }
         }

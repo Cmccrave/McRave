@@ -10,6 +10,7 @@ namespace McRave::Visuals {
     namespace {
         chrono::steady_clock::time_point start;
         int screenOffset = 0;
+        bool drawStuff = true;
 
         // Yoinked from https://github.com/dgant/PurpleWave/blob/master/src/Debugging/Visualizations/Rendering/DrawMap.scala#L126
         struct TextBox {
@@ -39,12 +40,19 @@ namespace McRave::Visuals {
                 auto boxX = textX - horizontalMargin;
                 auto boxY = textY;
 
+                auto boxTL = Position(boxX, boxY);
+                auto boxBR = Position(boxX + boxWidth, boxY + boxHeight);
 
-                Visuals::drawBox(Position(boxX, boxY), Position(boxX + boxWidth, boxY + boxHeight), color, true);
-                Visuals::drawBox(Position(boxX - 1, boxY - 1), Position(boxX + boxWidth + 1, boxY + boxHeight + 1), border);
-                for (auto &s : textLines) {
-                    Broodwar->drawTextMap(Position(textX, textY), "%s", s.c_str());
-                    textY += 11;
+                if (boxTL.isValid() && boxBR.isValid()) {
+                    Visuals::drawBox(boxTL, boxBR, color, true);
+                    Visuals::drawBox(boxTL - Position(1, 1), boxTL + Position(1, 1), border);
+                    for (auto &s : textLines) {
+                        auto pos = Position(textX, textY);
+                        if (pos.isValid()) {
+                            Broodwar->drawTextMap(pos, "%s", s.c_str());
+                            textY += 11;
+                        }
+                    }
                 }
             }
         };
@@ -71,13 +79,12 @@ namespace McRave::Visuals {
         bool targets = false;
         bool builds = true;
         bool bweb = false;
-        bool paths = true;
         bool strengths = false;
-        bool orders = true;
+        bool orders = false;
         bool states = false;
         bool resources = false;
-        bool timers = true;
-        bool scores = true;
+        bool timers = false;
+        bool scores = false;
         bool roles = false;
         bool stations = false;
         bool gameFocused = false;
@@ -438,7 +445,6 @@ namespace McRave::Visuals {
         else if (text == "/strengths")       strengths = !strengths;
         else if (text == "/builds")          builds = !builds;
         else if (text == "/bweb")            bweb = !bweb;
-        else if (text == "/paths")           paths = !paths;
         else if (text == "/orders")          orders = !orders;
         else if (text == "/resources")       resources = !resources;
         else if (text == "/timers")          timers = !timers;
@@ -450,16 +456,18 @@ namespace McRave::Visuals {
 
     void drawPath(BWEB::Path& path)
     {
-        int color = Broodwar->self()->getColor();
-        if (paths && !path.getTiles().empty()) {
-            TilePosition next = path.getSource();
-            for (auto &tile : path.getTiles()) {
-                if (next.isValid() && tile.isValid()) {
-                    Visuals::drawLine(Position(next) + Position(16, 16), Position(tile) + Position(16, 16), color);
-                    Visuals::drawCircle(Position(next) + Position(16, 16), 4, color, true);
-                }
+        if (drawStuff) {
+            int color = Broodwar->self()->getColor();
+            if (!path.getTiles().empty()) {
+                TilePosition next = path.getSource();
+                for (auto &tile : path.getTiles()) {
+                    if (next.isValid() && tile.isValid()) {
+                        Visuals::drawLine(Position(next) + Position(16, 16), Position(tile) + Position(16, 16), color);
+                        Visuals::drawCircle(Position(next) + Position(16, 16), 4, color, true);
+                    }
 
-                next = tile;
+                    next = tile;
+                }
             }
         }
     }
@@ -471,23 +479,31 @@ namespace McRave::Visuals {
 
     void drawTextBox(Position here, vector<string> text)
     {
-        TextBox box(text, here);
+        if (drawStuff) {
+            TextBox box(text, here);
+        }
     }
 
     void drawDebugText(std::string s, double d) {
-        Broodwar->drawTextScreen(Position(0, 50 + screenOffset), "%s: %.2f", s.c_str(), d);
-        screenOffset += 10;
+        if (drawStuff) {
+            Broodwar->drawTextScreen(Position(0, 50 + screenOffset), "%s: %.2f", s.c_str(), d);
+            screenOffset += 10;
+        }
     }
 
     void drawDebugText(std::string s, int i) {
-        Broodwar->drawTextScreen(Position(0, 50 + screenOffset), "%s: %d", s.c_str(), i);
-        screenOffset += 10;
+        if (drawStuff) {
+            Broodwar->drawTextScreen(Position(0, 50 + screenOffset), "%s: %d", s.c_str(), i);
+            screenOffset += 10;
+        }
     }
 
     void drawBox(Position here, Position there, Color color, bool solid) {
-        here = Util::clipPosition(here);
-        there = Util::clipPosition(there);
-        Broodwar->drawBoxMap(here, there, color, solid);
+        if (drawStuff) {
+            here = Util::clipPosition(here);
+            there = Util::clipPosition(there);
+            Broodwar->drawBoxMap(here, there, color, solid);
+        }
     }
     void drawBox(WalkPosition here, WalkPosition there, Color color, bool solid) {
         drawBox(Position(here), Position(there), color, solid);
@@ -497,8 +513,10 @@ namespace McRave::Visuals {
     }
 
     void drawCircle(Position here, int radius, Color color, bool solid) {
-        here = Util::clipPosition(here);
-        Broodwar->drawCircleMap(here, radius, color, solid);
+        if (drawStuff) {
+            here = Util::clipPosition(here);
+            Broodwar->drawCircleMap(here, radius, color, solid);
+        }
     }
     void drawCircle(WalkPosition here, int radius, Color color, bool solid) {
         drawCircle(Position(here), radius, color, solid);
@@ -509,12 +527,16 @@ namespace McRave::Visuals {
 
     void drawLine(const BWEM::ChokePoint * choke, Color color)
     {
-        Broodwar->drawLineMap(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2)), color);
+        if (drawStuff) {
+            Broodwar->drawLineMap(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2)), color);
+        }
     }
     void drawLine(Position here, Position there, Color color) {
-        here = Util::clipPosition(here);
-        there = Util::clipPosition(there);
-        Broodwar->drawLineMap(here, there, color);
+        if (drawStuff) {
+            here = Util::clipPosition(here);
+            there = Util::clipPosition(there);
+            Broodwar->drawLineMap(here, there, color);
+        }
     }
     void drawLine(WalkPosition here, WalkPosition there, Color color) {
         drawLine(Position(here), Position(there), color);

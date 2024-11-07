@@ -374,9 +374,10 @@ namespace McRave::Math {
             return 0.0;
 
         if (unit.isLightAir()) {
+            if (Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0)
+                return 320.0;
             if (Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0
                 || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0
                 || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0
                 || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0
                 || Players::getTotalCount(PlayerState::Enemy, Zerg_Scourge) > 0)

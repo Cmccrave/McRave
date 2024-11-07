@@ -69,6 +69,12 @@ namespace McRave::BuildOrder::Protoss
                     buildQueue[Protoss_Forge] = 2 - (int)Terrain::isIslandMap();
                 }
 
+                // Add robo tech if we have the opposite one
+                if (com(Protoss_Robotics_Facility) > 0 && (com(Protoss_Observatory) > 0 || com(Protoss_Robotics_Support_Bay) > 0)) {
+                    buildQueue[Protoss_Observatory] = total(Protoss_Reaver) > 0;
+                    buildQueue[Protoss_Robotics_Support_Bay] = total(Protoss_Observer) > 0;
+                }
+
                 // Important to have a forge vs Z
                 if (com(Protoss_Nexus) >= 2 && Players::vZ())
                     buildQueue[Protoss_Forge] = 1;
@@ -312,7 +318,7 @@ namespace McRave::BuildOrder::Protoss
             getTech = true;
 
         // If we need detection
-        if (getTech && Spy::enemyInvis() && !isFocusUnit(desiredDetection))
+        if (getTech && Spy::enemyInvis() && desiredDetection == Protoss_Observer && !isFocusUnit(desiredDetection))
             focusUnit = desiredDetection;
 
         getNewTech();
@@ -445,6 +451,14 @@ namespace McRave::BuildOrder::Protoss
                     {Protoss_Dragoon, 36}, {Protoss_High_Templar, 6},
                     {Protoss_Dragoon, 64},
                 };
+            }
+
+            // Remove Shuttles if no HT/Reaver
+            if (vis(Protoss_High_Templar) == 0 && vis(Protoss_Reaver) == 0) {
+                for (auto &[type, cnt] : priorityOrder) {
+                    if (type == Protoss_Shuttle)
+                        cnt = 0;
+                }
             }
 
             // Remove HT if no storm

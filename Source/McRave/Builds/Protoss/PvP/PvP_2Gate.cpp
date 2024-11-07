@@ -38,7 +38,7 @@ namespace McRave::BuildOrder::Protoss {
     {
         // "https://liquipedia.net/starcraft/2_Gate_Reaver_(vs._Protoss)"
         inTransition =                              total(Protoss_Robotics_Facility) > 0;
-        inOpening =                                 s < 80;
+        inOpening =                                 com(Protoss_Robotics_Facility) == 0;
         focusUnit =                                 enemyMaybeDT() ? Protoss_Observer : Protoss_Reaver;
 
         // Buildings

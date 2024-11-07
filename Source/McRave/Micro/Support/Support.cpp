@@ -138,7 +138,7 @@ namespace McRave::Support {
             }
 
             // Send Overlords to a safe home
-            if (!followArmyPossible || !unit.getDestination().isValid()) {
+            if (!unit.getDestination().isValid()) {
                 getSafeHome(unit);
             }
         }

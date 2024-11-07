@@ -320,18 +320,6 @@ namespace McRave::Goals {
                     }
                 }
             }
-
-            // Assign an Overlord to each possible expansion the enemy can take
-            if (Broodwar->self()->getRace() == Races::Zerg && Util::getTime() > Time(6, 00) && vis(Zerg_Overlord) >= 8) {
-                int i = vis(Zerg_Overlord) - 8;
-                for (auto &[dist, station] : stationsByDistance) {
-                    auto notScoutedRecently = (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(station.getBase()->Center())) > 1440);
-                    assignNumberToGoal(station.getResourceCentroid(), Zerg_Overlord, 1, GoalType::Explore);
-                    i--;
-                    if (i <= 0)
-                        break;
-                }
-            }
         }
 
         void updateZergGoals()

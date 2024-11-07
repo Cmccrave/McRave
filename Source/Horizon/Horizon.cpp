@@ -60,14 +60,11 @@ namespace McRave::Horizon {
         // Determine when to start tracking engagement times, if nothing is in range, it cannot count towards simulation time
         const auto maxRange = max({ unit.getGroundRange(), unit.getAirRange(), unitTarget->getGroundRange(), unitTarget->getAirRange() });
         const auto maxSpeed = max(unit.getSpeed(), unitTarget->getSpeed()) * 24.0;
-        const auto rangeDisplacement = (unit.getPosition().getDistance(unitTarget->getPosition()) - maxRange) / maxSpeed;
-
-
-
+        const auto rangeDisplacement = (Util::boxDistance(unit.getType(), unit.getPosition(), unitTarget->getType(), unitTarget->getPosition()) - maxRange) / maxSpeed;
         const auto timePad = Util::getTime().minutes / 6;
         const auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
 
-        const auto extendDuration = unit.isLightAir() ? 2.0 : 5.0;
+        const auto extendDuration = unit.isLightAir() ? 2.5 : 5.0;
         const auto simulationTime = unitToEngage + extendDuration + addPrepTime(unit) - rangeDisplacement;
         const auto targetDisplacement = unitToEngage * unitTarget->getSpeed() * 24.0;
         map<Player, SimStrength> simStrengthPerPlayer;

@@ -156,11 +156,6 @@ namespace McRave::Combat {
 
             // If a station is overdefended, it's not valid for harassing
             const auto validStation = [&](auto station) {
-                const auto defCount = Stations::getAirDefenseCount(station);
-                if (defCount >= 2 && Util::getTime() < Time(8, 00))
-                    return false;
-                if (defCount >= 3 && Util::getTime() < Time(10, 00))
-                    return false;
                 return true;
             };
 

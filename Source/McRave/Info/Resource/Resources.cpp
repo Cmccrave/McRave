@@ -203,25 +203,6 @@ namespace McRave::Resources {
                 }
             }
         }
-<<<<<<< HEAD
-
-        //ifstream readFileB("bwapi-data/AI/" + mapName + "ReturnInfo" + myRaceChar + ".txt");
-        //while (readFileB) {
-        //    readFileB >> x >> y >> cnt;
-
-        //    for (auto &mineral : myMinerals) {
-
-        //        if (x == mineral->getPosition().x && y == mineral->getPosition().y) {
-        //            while (cnt > 0) {
-        //                readFileB >> x >> y;
-        //                mineral->getReturnOrderPositions().insert(Position(x, y));
-        //                cnt--;
-        //            }
-        //        }
-        //    }
-        //}
-=======
->>>>>>> 5853ef8... zvz 12p fix, station defense testing
     }
 
     void onEnd()
@@ -237,21 +218,6 @@ namespace McRave::Resources {
                 }
             }
         }
-<<<<<<< HEAD
-
-        //ofstream readFileB("bwapi-data/AI/" + mapName + "ReturnInfo" + myRaceChar + ".txt");
-        //if (readFileB) {
-        //    for (auto &mineral : myMinerals) {
-        //        if (!mineral->getReturnOrderPositions().empty()) {
-        //            readFileB << mineral->getPosition().x << " " << mineral->getPosition().y << " " << mineral->getReturnOrderPositions().size() << "\n";
-        //            for (auto &pos : mineral->getReturnOrderPositions())
-        //                readFileB << pos.x << " " << pos.y << " ";
-        //            readFileB << "\n";
-        //        }
-        //    }
-        //}
-=======
->>>>>>> 5853ef8... zvz 12p fix, station defense testing
     }
 
     void storeResource(Unit resource)

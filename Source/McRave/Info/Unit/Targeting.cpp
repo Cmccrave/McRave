@@ -89,7 +89,7 @@ namespace McRave::Targets {
             if (Players::ZvT()) {
 
                 // Ignore vultures so we don't chase them too much
-                if (target.getType() == Terran_Vulture && !unit.isWithinRange(target) && !unit.getGoal().isValid() && !target.isThreatening())
+                if (target.getType() == Terran_Vulture && !unit.isWithinRange(target) && !unit.getGoal().isValid() && !target.isThreatening() && Util::getTime() < Time(8, 00))
                     return Priority::Ignore;
             }
 
@@ -109,7 +109,7 @@ namespace McRave::Targets {
                 return Priority::Major;
 
             // If a building is unprotected
-            if (unit.getType().isBuilding() && target.getUnitsInRangeOfThis().empty() && unit.isWithinRange(target))
+            if (target.getType().isBuilding() && target.getUnitsInRangeOfThis().empty() && unit.isWithinRange(target))
                 return Priority::Major;
 
             return Priority::Normal;
@@ -196,7 +196,7 @@ namespace McRave::Targets {
 
                 // Proxy building
                 if (target.isProxy() && target.getType().isBuilding() && Spy::enemyProxy() && unit.getType() != Zerg_Mutalisk) {
-                    if (target.unit()->getBuildUnit() || (target.getType().getRace() == Races::Terran && !target.isCompleted()))
+                    if ((target.unit()->exists() && target.unit()->getBuildUnit()) || (target.getType().getRace() == Races::Terran && !target.isCompleted()))
                         return Priority::Minor;
                     else if (proxyTargeting.find(target.getType()) != proxyTargeting.end() && ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Marine) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) == 0) || !unit.getType().isWorker()))
                         return Priority::Critical;
@@ -332,7 +332,7 @@ namespace McRave::Targets {
                     return 20.0;
 
                 // Add penalty for a Terran building that's being constructed
-                if (target.getType().isBuilding() && target.getType().getRace() == Races::Terran && !target.unit()->isCompleted() && !target.isThreatening() && !target.unit()->getBuildUnit())
+                if (target.getType().isBuilding() && target.unit()->exists() && target.getType().getRace() == Races::Terran && !target.isCompleted() && !target.isThreatening() && !target.unit()->getBuildUnit())
                     return 0.1;
 
                 // Add penalty for a Terran building that has been repaired recently
@@ -351,7 +351,7 @@ namespace McRave::Targets {
             };
 
             const auto healthScore = [&]() {
-                if ((range > 32.0 || unit.isWithinRange(target)) && target.unit()->isCompleted())
+                if ((range > 32.0 || unit.isWithinRange(target)) && target.isCompleted())
                     return 1.0 + (0.1 * (1.0 - target.getPercentTotal()));
                 return 1.0;
             };
@@ -399,7 +399,7 @@ namespace McRave::Targets {
             const auto targetScore = healthScore() * focusScore() * priorityScore() * bonusScore();
 
             // Detector targeting (distance to nearest ally added)
-            if ((target.isBurrowed() || target.unit()->isCloaked()) && ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == Terran_Comsat_Station)) {
+            if ((target.isBurrowed() || target.cloaked) && ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == Terran_Comsat_Station)) {
                 auto closest = Util::getClosestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
                     return *u != unit && u->getRole() == Role::Combat && target.getType().isFlyer() ? u->getAirRange() > 0 : u->getGroundRange() > 0;
                 });
@@ -499,9 +499,6 @@ namespace McRave::Targets {
                     continue;
 
                 auto priority = getPriority(unit, target);
-
-                Broodwar->drawTextMap(target.getPosition(), "%d", int(priority));
-
                 if (priority == Priority::Ignore || priority < priorityBest)
                     continue;
 
@@ -512,8 +509,6 @@ namespace McRave::Targets {
 
                 // If this target is more important to target, set as current target
                 const auto thisUnit = scoreTarget(unit, target);
-                if (unit.unit()->isSelected())
-                    Broodwar->drawTextMap(target.getPosition() + Position(0, 16), "%.2f", target.getPriority());
                 if (thisUnit > scoreBest && checkGroundAccess(target)) {
                     scoreBest = thisUnit;
                     unit.setTarget(&target);
@@ -588,7 +583,7 @@ namespace McRave::Targets {
             auto pState = unit.targetsFriendly() ? PlayerState::Self : PlayerState::Enemy;
 
             // Spider mines have a set order target, possibly scarabs too
-            if (unit.getType() == Terran_Vulture_Spider_Mine) {
+            if (unit.getType() == Terran_Vulture_Spider_Mine && unit.unit()->exists()) {
                 if (unit.unit()->getOrderTarget())
                     unit.setTarget(&*Units::getUnitInfo(unit.unit()->getOrderTarget()));
             }
@@ -601,12 +596,16 @@ namespace McRave::Targets {
 
             // Enemy units are assumed targets or order targets
             if (unit.getPlayer()->isEnemy(Broodwar->self())) {
-                auto &targetInfo = unit.unit()->getOrderTarget() ? Units::getUnitInfo(unit.unit()->getOrderTarget()) : nullptr;
-                if (targetInfo) {
-                    unit.setTarget(&*targetInfo);
-                    targetInfo->getUnitsTargetingThis().push_back(unit.weak_from_this());
+                if (unit.unit()->exists() && unit.unit()->getOrderTarget()) {
+                    auto &targetInfo = Units::getUnitInfo(unit.unit()->getOrderTarget());
+                    if (targetInfo) {
+                        unit.setTarget(&*targetInfo);
+                        targetInfo->getUnitsTargetingThis().push_back(unit.weak_from_this());
+                    }
                 }
-                else if (unit.getType() != Terran_Vulture_Spider_Mine) {
+
+                // Backup target closest self
+                if (unit.getType() != Terran_Vulture_Spider_Mine && !unit.hasTarget()) {
                     auto closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                         return (u->isFlying() && unit.getAirDamage() > 0.0) || (!u->isFlying() && unit.getGroundDamage() > 0.0);
                     });

@@ -362,6 +362,9 @@ namespace McRave::Combat::Clusters {
 
     bool canDecimate(UnitInfo& unit, UnitInfo& target, int cnt)
     {
+        if (target.isHidden())
+            return false;
+
         // Create an offset that increases over time to prevent low muta counts engaging large numbers
         auto minutesPastPressure = clamp(Util::getTime().minutes - 7, 0, 2);
         auto offset = Grids::getAirThreat(target.getPosition(), PlayerState::Enemy) > 0.0f ? minutesPastPressure : 0.0f;

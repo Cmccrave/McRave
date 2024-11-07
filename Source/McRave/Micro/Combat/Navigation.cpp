@@ -56,15 +56,15 @@ namespace McRave::Combat::Navigation {
             auto harassing = unit.attemptingHarass();
 
             if (regrouping) {
-                unit.circle(Colors::Yellow);
+                //unit.circle(Colors::Yellow);
                 unit.setDestinationPath(flyerRegroupPath);
             }
             else if (retreating) {
-                unit.circle(Colors::Red);
+                //unit.circle(Colors::Red);
                 unit.setDestinationPath(flyerRetreatPath);
             }
             else if (harassing && !attacking) {
-                unit.circle(Colors::Green);
+                //unit.circle(Colors::Green);
                 unit.setDestinationPath(flyerHarassPath);
             }
             Visuals::drawPath(unit.getDestinationPath());

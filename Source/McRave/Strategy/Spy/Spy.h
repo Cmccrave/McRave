@@ -5,13 +5,14 @@ namespace McRave::Spy {
 
     struct Strat {
         bool possible = false;
+        bool likely = false;
         bool confirmed = false;
         bool changeable = false;
         bool loggedPossible = false;
         bool loggedConfirmed = false;
         int framesTrue = 0;
         int framesRequired = 0;
-        int framesChangeable = 200;
+        int framesLikely = 24;
         std::string name = "Unknown";
         Time timeConfirmed = Time(999, 00);
 
@@ -21,22 +22,16 @@ namespace McRave::Spy {
                 loggedPossible = true;
             }
             if (confirmed && !loggedConfirmed) {
-                Util::debug("[Spy]: " + name + " confirmed.");
+                Util::debug("[Spy]: " + name + " likely.");
                 loggedConfirmed = true;
                 timeConfirmed = Util::getTime();
             }
         }
 
-        void updateStrat() { 
-            if (possible)
-                framesTrue++;
-            else
-                framesTrue = 0;
-
-            if (framesTrue > framesRequired)
-                confirmed = true;
-            else
-                possible = false;
+        void updateStrat() {
+            possible ? framesTrue++ : framesTrue = 0;
+            (framesTrue > framesRequired) ? likely = true : possible = false;
+            (framesTrue > framesLikely) ? confirmed = true : 0;
         }
 
         void updateBlueprint() {
@@ -48,7 +43,7 @@ namespace McRave::Spy {
                 framesTrue = 0;
 
             if (framesTrue > framesRequired)
-                confirmed = true;
+                likely = true;
             else {
                 name = "Unknown";
                 possible = false;
@@ -83,11 +78,13 @@ namespace McRave::Spy {
             strats ={ &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &allin, &turtle, &fortress };
             blueprints ={ &build, &opener, &transition };
             build.framesRequired = 24;
-            build.framesChangeable = 500;
+            build.framesLikely = 500;
+            build.changeable = true;
             opener.framesRequired = 24;
-            opener.framesChangeable = 500;
+            opener.framesLikely = 500;
+            opener.changeable = true;
             transition.framesRequired = 24;
-            transition.framesChangeable = 500;
+            transition.framesLikely = 500;
 
             // Attaching names to strats for logging purposes
             expand.name = "Expand";
