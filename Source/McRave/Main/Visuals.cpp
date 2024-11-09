@@ -116,6 +116,12 @@ namespace McRave::Visuals {
             // Reset the screenOffset for the performance tests
             screenOffset = 0;
 
+            // Always draw ingame clock
+            int minutes = Util::getTime().minutes;
+            int seconds = Util::getTime().seconds;
+            Broodwar->drawTextScreen(432, 36, "%c%d", Text::Grey, Broodwar->getFrameCount());
+            Broodwar->drawTextScreen(482, 36, "%c%d:%02d", Text::Grey, minutes, seconds);
+
             // Builds
             if (builds) {
                 Broodwar->drawTextScreen(432, 16, "%c%s: %c%s %s", Text::White, BuildOrder::getCurrentBuild().c_str(), Text::Grey, BuildOrder::getCurrentOpener().c_str(), BuildOrder::getCurrentTransition().c_str());
@@ -146,12 +152,6 @@ namespace McRave::Visuals {
 
             // Timers
             if (timers) {
-                int time = Broodwar->getFrameCount() / 24;
-                int seconds = time % 60;
-                int minute = time / 60;
-                Broodwar->drawTextScreen(432, 36, "%c%d", Text::Grey, Broodwar->getFrameCount());
-                Broodwar->drawTextScreen(482, 36, "%c%d:%02d", Text::Grey, minute, seconds);
-
                 sort(frameTests.begin(), frameTests.end(), [&](auto &left, auto &right) { return left.average > right.average; });
 
                 auto overall = 0.0;

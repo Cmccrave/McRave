@@ -31,7 +31,7 @@ namespace McRave::Spy::General {
 
                 // Attempt to remove drones that morphed into a building
                 auto itr = unitsStored.find(unit.unit());
-                if (itr != unitsStored.end() && itr->second != unit.getType())
+                if (itr != unitsStored.end() && itr->second != unit.getType() && !unit.isSiegeTank())
                     unitsStored.erase(unit.unit());
 
                 // If not tracked, store timing metrics

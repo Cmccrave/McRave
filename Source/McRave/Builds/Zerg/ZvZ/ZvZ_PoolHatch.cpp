@@ -36,11 +36,11 @@ namespace McRave::BuildOrder::Zerg {
             zergUnitPump[Zerg_Drone] = vis(Zerg_Drone) < (13 - vis(Zerg_Hatchery) - vis(Zerg_Spawning_Pool));
             zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvP();
 
-            auto secondHatch = Spy::enemyRush() ? com(Zerg_Sunken_Colony) >= 1 : (s >= 22 && vis(Zerg_Extractor) > 0);
+            auto secondHatch = Spy::enemyRush() ? com(Zerg_Sunken_Colony) >= 1 : (s >= 22 && vis(Zerg_Extractor) > 0 && com(Zerg_Drone) >= 11);
             
             buildQueue[Zerg_Hatchery] =                     1 + secondHatch;
             buildQueue[Zerg_Spawning_Pool] =                s >= 24;
-            buildQueue[Zerg_Extractor] =                    (s >= 22 && vis(Zerg_Spawning_Pool) > 0);
+            buildQueue[Zerg_Extractor] =                    (s >= 22 && vis(Zerg_Spawning_Pool) > 0 && com(Zerg_Drone) >= 11);
             buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32);
         }
     }

@@ -391,7 +391,7 @@ namespace McRave::Combat::Clusters {
 
         // TODO: Use cluster size instead with count of units in range
         auto multiplier = 9.0 - target.data.armor;
-        auto damageEstimate = Grids::getAirDensity(unit.getPosition(), PlayerState::Self) * multiplier;
+        auto damageEstimate = (Grids::getAirDensity(unit.getPosition(), PlayerState::Self) - offset) * multiplier;
 
         // Check if we can one shot it
         if (target.unit()->exists() && damageEstimate >= (target.getHealth() + target.getShields()) * cnt)

@@ -19,6 +19,8 @@ namespace McRave::BuildOrder::Zerg {
         bool needSpores = false;
         bool needSunks = false;
         bool needHatch = false;
+
+        bool vsMech = false;
         string nodeName = "[Zerg]: ";
 
         bool logFlags[10];
@@ -184,7 +186,9 @@ namespace McRave::BuildOrder::Zerg {
             // Hive upgrades
             auto hiveStations = Players::ZvT() ? 3 : 4;
             auto hiveDrones = Players::ZvT() ? 28 : 36;
-            if (int(Stations::getStations(PlayerState::Self).size()) >= hiveStations && vis(Zerg_Drone) >= hiveDrones && com(Zerg_Lair) > 0) {
+            auto lateGameHive = int(Stations::getStations(PlayerState::Self).size()) >= hiveStations && vis(Zerg_Drone) >= hiveDrones;
+            auto earlyGameHive = isFocusUnit(Zerg_Zergling);
+            if (!inOpening && com(Zerg_Lair) > 0 && (lateGameHive || earlyGameHive)) {
                 buildQueue[Zerg_Queens_Nest] = 1;
                 buildQueue[Zerg_Hive] = com(Zerg_Queens_Nest) >= 1;
                 buildQueue[Zerg_Lair] = com(Zerg_Queens_Nest) < 1;
@@ -241,7 +245,13 @@ namespace McRave::BuildOrder::Zerg {
 
                 // ZvT: Get 4 gas bases, then 2 hatch per base, then 1 hatch per base
                 if (Players::ZvT()) {
+<<<<<<< HEAD
                     if (int(Stations::getStations(PlayerState::Self).size()) >= 3)
+=======
+                    if (vsMech && int(Stations::getStations(PlayerState::Self).size()) >= 3)
+                        hatchPerBase = 2.50;
+                    if (int(Stations::getStations(PlayerState::Self).size()) >= 4)
+>>>>>>> 5853ef8... zvz 12p fix, station defense testing
                         hatchPerBase = 2.25;
                     if (int(Stations::getStations(PlayerState::Self).size()) >= 4)
                         hatchPerBase = 1.0;
@@ -542,9 +552,6 @@ namespace McRave::BuildOrder::Zerg {
     {
         const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5GateGoon" || Spy::getEnemyTransition() == "CorsairGoon" || Spy::getEnemyTransition() == "5FactGoliath" || Spy::getEnemyTransition() == "3FactGoliath";
         const auto vsAnnoyingShit = Spy::getEnemyTransition() == "2Fact" || Spy::getEnemyTransition() == "2PortWraith";
-        const auto vsMech = (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) + Players::getTotalCount(PlayerState::Enemy, Terran_Goliath)
-            + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode))
-            > (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) + Players::getTotalCount(PlayerState::Enemy, Terran_Firebat) + Players::getTotalCount(PlayerState::Enemy, Terran_Medic));
 
         auto techOffset = 0;
 
@@ -592,6 +599,10 @@ namespace McRave::BuildOrder::Zerg {
 
     void situational()
     {
+        vsMech = (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) + Players::getTotalCount(PlayerState::Enemy, Terran_Goliath)
+            + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode))
+            > (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) + Players::getTotalCount(PlayerState::Enemy, Terran_Firebat) + Players::getTotalCount(PlayerState::Enemy, Terran_Medic));
+
         // Queue up defenses
         needSunks = false;
         needSpores = false;
@@ -715,12 +726,13 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             for (auto &[type, count] : priorityOrder) {
-                auto typeAvailable = (unlockReady(type) && vis(type) < count);
-                if (type.isWorker() && Resources::isMineralSaturated() && Resources::isGasSaturated())
+                auto typeAvailable = (unlockReady(type) && vis(type) < count) || (type.isWorker() && Resources::isMineralSaturated() && Resources::isGasSaturated());
+                if (!typeAvailable)
                     continue;
-                if (!typeAvailable || availGas < type.gasPrice())
-                    continue;
-                armyComposition[type] = 1.00;
+
+                // Queue if affordable, break otherwise to prevent spending gas on other units
+                if (availGas >= type.gasPrice())
+                    armyComposition[type] = 1.00;                
                 break;
             }
         }

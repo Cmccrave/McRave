@@ -18,6 +18,7 @@ namespace McRave::Resources {
         int maxGas;
         int maxMin;
         string mapName, myRaceChar;
+        string nodeName = "[Resources]: ";
 
         void updateIncome(const shared_ptr<ResourceInfo>& r)
         {
@@ -181,6 +182,11 @@ namespace McRave::Resources {
 
         myRaceChar = *Broodwar->self()->getRace().c_str();
         ifstream readFileA("bwapi-data/read/" + mapName + "GatherInfo" + myRaceChar + ".txt");
+        if (!readFileA) {
+            readFileA = ifstream("bwapi-data/write/" + mapName + "GatherInfo" + myRaceChar + ".txt");
+            Util::debug(nodeName + "using backup gather info.");
+        }
+
         int x, y, cnt;
         string line;
         while (readFileA) {
@@ -197,6 +203,7 @@ namespace McRave::Resources {
                 }
             }
         }
+<<<<<<< HEAD
 
         //ifstream readFileB("bwapi-data/AI/" + mapName + "ReturnInfo" + myRaceChar + ".txt");
         //while (readFileB) {
@@ -213,6 +220,8 @@ namespace McRave::Resources {
         //        }
         //    }
         //}
+=======
+>>>>>>> 5853ef8... zvz 12p fix, station defense testing
     }
 
     void onEnd()
@@ -228,6 +237,7 @@ namespace McRave::Resources {
                 }
             }
         }
+<<<<<<< HEAD
 
         //ofstream readFileB("bwapi-data/AI/" + mapName + "ReturnInfo" + myRaceChar + ".txt");
         //if (readFileB) {
@@ -240,6 +250,8 @@ namespace McRave::Resources {
         //        }
         //    }
         //}
+=======
+>>>>>>> 5853ef8... zvz 12p fix, station defense testing
     }
 
     void storeResource(Unit resource)

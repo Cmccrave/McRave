@@ -25,7 +25,6 @@ namespace BWEB {
         void findAngles();
         void findSecondaryLocations();
         void findDefenses();
-        void findNestedDefenses();
         void addResourceReserves();
         void cleanup();
 
@@ -45,11 +44,12 @@ namespace BWEB {
             findChoke();
             findAngles();
             findSecondaryLocations();
-            //findNestedDefenses();
             findDefenses();
             addResourceReserves();
             cleanup();
         }
+
+        const void testingDefenses() const;
 
         /// <summary> Returns the central position of the resources associated with this Station including geysers. </summary>
         const BWAPI::Position getResourceCentroid() const { return resourceCentroid; }

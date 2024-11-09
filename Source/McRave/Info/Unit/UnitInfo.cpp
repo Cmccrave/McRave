@@ -900,6 +900,12 @@ namespace McRave
                 return true;
         }
 
+        // ZvT ling runby
+        if (Players::ZvT() && getType() == Zerg_Zergling) {
+            if (BuildOrder::isRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0)
+                return true;
+        }
+
         return false;
     }
 

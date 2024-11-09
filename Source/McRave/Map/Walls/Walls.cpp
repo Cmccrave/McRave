@@ -433,6 +433,11 @@ namespace McRave::Walls {
             auto noExpandOrTech = noExpand && noTech;
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto firstHatchNeeded = !threeHatch || BuildOrder::getCurrentOpener() == "12Hatch";
+ 
+            if (Spy::getEnemyTransition() == "WorkerRush") {
+                return 1
+                    + (Util::getTime() > Time(4, 00));
+            }
 
             if (Spy::getEnemyBuild() == "2Rax") {
 

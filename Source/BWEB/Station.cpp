@@ -3,6 +3,8 @@
 using namespace std;
 using namespace BWAPI;
 
+#include <optional>
+
 namespace BWEB {
 
     namespace {
@@ -14,8 +16,6 @@ namespace BWEB {
         vector<const BWEM::ChokePoint*> mainChokes;
         vector<const BWEM::ChokePoint*> natChokes;
         set<const BWEM::ChokePoint*> nonsenseChokes;
-        map<const BWEM::Mineral * const, vector<TilePosition>> testTiles;
-        vector<BWEB::Path> testPaths;
         UnitType defenseType;
     }
 
@@ -404,89 +404,65 @@ namespace BWEB {
         }
     }
 
-    void Station::findNestedDefenses()
+    const void Station::testingDefenses() const
     {
-        // Unused atm
-        vector<TilePosition> placements;
-        for (auto &mineral : base->Minerals()) {
-            vector<TilePosition>& tiles = testTiles[mineral];
+        // TODO: Determine if workers can fit through (P/Z/T are diff sizes, assume worse case for now - zerg)
 
-            for (int x = -2; x < 3; x++) {
-                for (int y = -2; y < 2; y++) {
-                    auto tile = mineral->TopLeft() + TilePosition(x, y);
-                    auto pos = Position(tile) + Position(16, 16);
-                    if (tile.isValid() && find(placements.begin(), placements.end(), tile) == placements.end() && pos.getDistance(base->Center()) < mineral->Pos().getDistance(base->Center()))
-                        placements.push_back(tile);
+        // count how many tiles avail
+        // nullopt ? val : min(thing, val);
+        // place, check adjacent tiles (not diagonal), if 1, it's blocking
+
+        // 1. Find mining spots
+        map<TilePosition, optional<int>> spacePerTile;
+        for (auto &geyser : base->Geysers()) {
+            for (int x = -1; x < 5; x++) {
+                for (int y = -1; y < 3; y++) {
+                    auto tile = geyser->TopLeft() + TilePosition(x, y);
+                    if (Map::isUsed(tile) == UnitTypes::None)
+                        spacePerTile[tile] = 1;
                 }
             }
+        }
 
+        // For each mineral, find how many tiles of space it has
+        for (auto &mineral : base->Minerals()) {
+            vector<TilePosition> miningTiles;
+            int cnt = 0;
             for (int x = -1; x < 3; x++) {
                 for (int y = -1; y < 2; y++) {
                     auto tile = mineral->TopLeft() + TilePosition(x, y);
-                    if (tile.isValid() && find(tiles.begin(), tiles.end(), tile) == tiles.end())
-                        tiles.push_back(tile);
+                    auto br = tile + TilePosition(1, 1);
+
+
+                    auto center = Position(tile) + Position(16, 16);
+                    if (center.getDistance(base->Center()) <= mineral->Pos().getDistance(base->Center()) - 8 && Map::isUsed(tile) == UnitTypes::None) {
+                        Broodwar->drawLineMap(center, mineral->Pos(), Colors::Yellow);
+                        miningTiles.push_back(tile);
+                        cnt++;
+                    }
                 }
             }
 
-            // Sort tiles by closest to base
-            sort(tiles.begin(), tiles.end(), [&](auto &l, auto &r) {
-                auto pl = Position(l) + Position(16, 16);
-                auto pr = Position(r) + Position(16, 16);
-                return pl.getDistance(base->Center()) < pr.getDistance(base->Center());
-            });
-
-            // Resize to 3
-            tiles.resize(3);
-
-            // Narrow down to only walkable
-            tiles.erase(remove_if(tiles.begin(), tiles.end(), [&](auto &t) {
-                return BWEB::Map::isUsed(t).isMineralField();
-            }), tiles.end());
+            // For each tile, store the space as the minimum value 
+            for (auto &tile : miningTiles) {
+                auto &val = spacePerTile[tile];
+                val = val.has_value() ? min(spacePerTile[tile].value(), cnt) : cnt;
+            }
         }
 
-        if (choke) {
-            auto chokeCenter = Position(choke->Center());
-            sort(placements.begin(), placements.end(), [&](auto &l, auto &r) {
-                auto pl = Position(l) + Position(16, 16);
-                auto pr = Position(r) + Position(16, 16);
-                return pl.getDistance(chokeCenter) < pr.getDistance(chokeCenter);
-            });
-        }
-
-        // Iterate all placements and verify that each mineral has a guaranteed reasonable path to the hatchery
-        for (auto &placement : placements) {
-            if (BWEB::Map::isPlaceable(defenseType, placement)) {
-                auto buildable = true;
-                auto pathable = true;
-                Map::addUsed(placement, defenseType);
-                for (auto &mineral : base->Minerals()) {
-                    vector<TilePosition>& tiles = testTiles[mineral];
-                    auto count = count_if(tiles.begin(), tiles.end(), [&](auto &t) {
-                        return t.x >= placement.x && t.x < placement.x + 2 && t.y >= placement.y && t.y < placement.y + 2;
-                    });
-                    if (count >= int(tiles.size())) {
-                        buildable = false;
-                    }
-
-                    count = 0;
-                    for (auto &tile : tiles) {
-                        BWEB::Path newPath(base->Center(), Position(tile) + Position(16, 16), UnitTypes::Zerg_Drone, false, false);
-                        newPath.generateBFS([&](auto &t) { return newPath.unitWalkable(t) || BWEB::Map::isUsed(t).isResourceDepot(); });
-                        if (newPath.isReachable() && newPath.getDistance() < 320.0) {
-                            count++;
-                            break;
-                        }
-                    }
-                    BWEB::Pathfinding::clearCacheFully();
-                    if (count == 0)
-                        pathable = false;
+        vector<TilePosition> adjacents ={ {-1,0}, {0,-1}, {1,0}, {0,1} };
+        for (auto &[tile, val] : spacePerTile) {
+            if (val >= 3) {
+                auto placeable = true;
+                for (auto &adj : adjacents) {
+                    auto adjTile = tile + adj;
+                    auto adjVal = spacePerTile[adjTile];
+                    if (adjVal.has_value() && adjVal.value() <= 2)
+                        placeable = false;
                 }
 
-                Map::removeUsed(placement, 2, 2);
-                if (buildable && pathable) {
-                    defenses.insert(placement);
-                    Map::addUsed(placement, defenseType);
-                }
+                //if (placeable)
+                //    Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(32,32), Colors::Yellow, false);
             }
         }
     }
@@ -738,8 +714,10 @@ namespace BWEB::Stations {
 
     void draw()
     {
-        for (auto &station : Stations::getStations())
+        for (auto &station : Stations::getStations()) {
             station.draw();
+            station.testingDefenses();
+        }
     }
 
     const Station * getStartingMain() { return startMainStation; }

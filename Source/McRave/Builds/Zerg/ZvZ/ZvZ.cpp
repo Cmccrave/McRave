@@ -161,7 +161,7 @@ namespace McRave::BuildOrder::Zerg {
         auto speedFirst = !Spy::enemyTurtle();
 
         // Build
-        buildQueue[Zerg_Extractor] =                    (s >= 24) + (vis(Zerg_Drone) >= 16);
+        buildQueue[Zerg_Extractor] =                    (s >= 24 && Util::getTime() > Time(1, 45)) + (vis(Zerg_Drone) >= 16);
         buildQueue[Zerg_Lair] =                         (!speedFirst || lingSpeed()) && gas(100) && vis(Zerg_Drone) >= 8 && (vis(Zerg_Larva) == 0 || vis(Zerg_Drone) >= 14);
         buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && com(Zerg_Drone) >= 12 && vis(Zerg_Larva) <= 1;
         buildQueue[Zerg_Overlord] =                     1 + (vis(Zerg_Extractor) + Spy::enemyGasSteal() >= 1) + (s >= 32) + (s >= 46);

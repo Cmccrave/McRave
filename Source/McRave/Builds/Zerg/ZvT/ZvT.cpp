@@ -120,6 +120,11 @@ namespace McRave::BuildOrder::Zerg {
         return 0;
     }
 
+    void ZvT_1HatchLurker()
+    {
+
+    }
+
     void ZvT_2HatchMuta()
     {
         inTransition =                                  vis(Zerg_Lair) > 0;
@@ -208,6 +213,15 @@ namespace McRave::BuildOrder::Zerg {
     void ZvT()
     {
         defaultZvT();
+
+        // Reactions
+        if (!inTransition) {
+            if (Spy::getEnemyTransition() == "WorkerRush") {
+                currentBuild = "PoolHatch";
+                currentOpener = "OverPool";
+                currentTransition = "2HatchMuta";
+            }
+        }
 
         // Builds
         if (currentBuild == "HatchPool")
