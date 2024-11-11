@@ -212,6 +212,8 @@ namespace McRave::Producing {
                         continue;
 
                     const auto value = scoreUnit(type);
+                    scoreThisFrame += "{" + string(type.c_str()) + ", " + to_string(value) + "}, ";
+
                     if (value > best) {
                         best = value;
                         bestType = type;

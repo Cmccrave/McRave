@@ -245,11 +245,7 @@ namespace McRave::BuildOrder::Terran {
         auto techVal = int(focusUnits.size());
         techSat = (techVal > com(Terran_Command_Center));
         unitOrder ={ Terran_Vulture, Terran_Siege_Tank_Tank_Mode };
-
-        if (techComplete())
-            focusUnit = None;
-        if (!inOpening && !getTech && !techSat && focusUnit == None)
-            getTech = true;
+        getTech = !inOpening && !techSat;
 
         if (Players::TvZ())
             unitOrder ={ Terran_Medic, Terran_Science_Vessel };

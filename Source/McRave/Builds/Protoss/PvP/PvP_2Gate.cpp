@@ -47,6 +47,8 @@ namespace McRave::BuildOrder::Protoss {
         buildQueue[Protoss_Assimilator] =           total(Protoss_Zealot) >= 3;
         buildQueue[Protoss_Cybernetics_Core] =      (total(Protoss_Zealot) >= 5 && vis(Protoss_Assimilator) >= 1);
         buildQueue[Protoss_Robotics_Facility] =     com(Protoss_Dragoon) >= 2;
+        buildQueue[Protoss_Observatory] =           enemyMaybeDT() || total(Protoss_Reaver) > 0;
+        buildQueue[Protoss_Robotics_Support_Bay] =  !enemyMaybeDT() || total(Protoss_Observer) > 0;
 
         // Upgrades
         upgradeQueue[Singularity_Charge] =          vis(Protoss_Dragoon) > 0;

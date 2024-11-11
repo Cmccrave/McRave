@@ -37,7 +37,7 @@ namespace BWEB {
         if (type.tileWidth() == 2 && type.tileHeight() == 2 && type != Protoss_Pylon && type != Zerg_Spire) {
             for (auto placement : tryOrder) {
                 auto tile = station->getBase()->Location() + placement;
-                auto stationDefense = type.tileHeight() == 2 && type.tileHeight() == 2 && station->getDefenses().find(tile) != station->getDefenses().end();
+                auto stationDefense = type.tileHeight() == 2 && type.tileWidth() == 2 && station->getDefenses().find(tile) != station->getDefenses().end();
                 if ((!Map::isReserved(tile, 2, 2) && BWEB::Map::isPlaceable(type, tile)) || stationDefense) {
                     insertList.insert(tile);
                     Map::addUsed(tile, type);
@@ -126,7 +126,7 @@ namespace BWEB {
         
         // This is ugly
         auto hatchOffset = requireTight ? 6 : 0;
-        if (station->isMain()) {
+        if (station && station->isMain()) {
             iteration = 5;
             maxIteration = 8;
         }

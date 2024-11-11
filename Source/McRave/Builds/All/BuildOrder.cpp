@@ -15,6 +15,8 @@ namespace McRave::BuildOrder
 {
     namespace {
 
+        string nodeName = "[BuildOrder]: ";
+
         void updateBuild()
         {
             // Set s for better build readability - TODO: better build order management
@@ -22,9 +24,6 @@ namespace McRave::BuildOrder
             upgradeQueue.clear();
             techQueue.clear();
             armyComposition.clear();
-
-            // TODO: Dont wipe this here, use a queue instead
-            focusUnit = UnitTypes::None;
 
             // TODO: Check if we own a <race> unit - have a build order allowed PER race for FFA weirdness and maybe mind control shenanigans
             if (Players::getSupply(PlayerState::Self, Races::Protoss) > 0) {
@@ -85,7 +84,7 @@ namespace McRave::BuildOrder
                 morphOffset = vis(Zerg_Hive);
 
             if (count > vis(building) + morphOffset)
-                minQueued += building.mineralPrice() * (count - vis(building) - morphOffset);            
+                minQueued += building.mineralPrice() * (count - vis(building) - morphOffset);
         }
         return minQueued;
     }
@@ -120,33 +119,35 @@ namespace McRave::BuildOrder
 
     bool techComplete()
     {
-        if (Spy::enemyInvis() && focusUnit == Protoss_Observer)
-            return vis(Protoss_Robotics_Facility) > 0;
+        for (auto &type : focusUnits) {
 
-        // When 1 unit finishes
-        if (focusUnit == Protoss_Scout || focusUnit == Protoss_Corsair || focusUnit == Protoss_Reaver || focusUnit == Protoss_Observer || focusUnit == Terran_Science_Vessel)
-            return com(focusUnit) > 0;
+            // Trigger detection completion early
+            if (Spy::enemyInvis() && type == Protoss_Observer)
+                return total(Protoss_Robotics_Facility) > 0;
 
-        // When 2 units are visible
-        if (focusUnit == Protoss_High_Templar)
-            return vis(focusUnit) >= 1 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm);
+            // When caster units are ready
+            if (type == Protoss_High_Templar)
+                return total(type) > 0 && Players::hasResearched(PlayerState::Self, TechTypes::Psionic_Storm);
+            if (type == Zerg_Defiler)
+                return total(type) > 0 && Players::hasResearched(PlayerState::Self, TechTypes::Consume);
 
-        // When 2 units finish
-        if (focusUnit == Protoss_Dark_Templar)
-            return total(focusUnit) >= 4;
+            // When timing attack finishes
+            if (type == Protoss_Dark_Templar || type == Zerg_Ultralisk)
+                return total(type) >= 4;
+            if (type == Zerg_Mutalisk || type == Zerg_Hydralisk)
+                return total(type) >= 6;
+            if (type == Zerg_Lurker) {
+                auto vsMech = Spy::getEnemyTransition() == "2Fact"
+                    || Spy::getEnemyTransition() == "1FactTanks"
+                    || Spy::getEnemyTransition() == "5FactGoliath";
+                return Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) || vsMech;
+            }
 
-        // When timing attack finishes
-        if (focusUnit == Zerg_Mutalisk || focusUnit == Zerg_Hydralisk)
-            return total(focusUnit) >= 6;
-        if (focusUnit == Zerg_Lurker) {
-            auto vsMech = Spy::getEnemyTransition() == "2Fact"
-                || Spy::getEnemyTransition() == "1FactTanks"
-                || Spy::getEnemyTransition() == "5FactGoliath";
-            return Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) || vsMech;
+            // Default to any completion
+            if (total(type) == 0)
+                return false;
         }
-
-        // When 1 unit is visible
-        return vis(focusUnit) > 0;
+        return true;
     }
 
     double getCompositionPercentage(UnitType unit)
@@ -228,42 +229,29 @@ namespace McRave::BuildOrder
             return com(Zerg_Ultralisk_Cavern) > 0;
         if (type == Zerg_Defiler)
             return com(Zerg_Defiler_Mound) > 0;
-        
+
         Broodwar << "Type not checked for training: " << type.c_str() << endl;
         return false;
     }
 
     void getNewTech()
     {
-        // If we already have a tech choice based on build, only try to unlock it and nothing else for now
-        if (focusUnit != None && !isFocusUnit(focusUnit)) {
-            if (unlockReady(focusUnit)) {
-                getTech = false;
-                focusUnits.insert(focusUnit);
-                unlockedType.insert(focusUnit);
-            }
+        if (!getTech || !techComplete())
+            return;
+
+        // First one always gets inserted
+        if (!isFocusUnit(focusUnit)) {
+            focusUnits.insert(focusUnit);
             return;
         }
 
-        if (getTech) {
-
-            // If we already chose a tech unit
-            if (focusUnit != None) {
+        // Select next tech based on the order
+        for (auto &type : unitOrder) {
+            if (!isFocusUnit(type)) {
                 getTech = false;
-                focusUnits.insert(focusUnit);
-                unlockedType.insert(focusUnit);
+                focusUnits.insert(type);
+                Util::debug(nodeName + "teching up to " + type.c_str());
                 return;
-            }
-
-            // Select next tech based on the order
-            for (auto &type : unitOrder) {
-                if (!isFocusUnit(type)) {
-                    focusUnit = type;
-                    getTech = false;
-                    focusUnits.insert(focusUnit);
-                    unlockedType.insert(focusUnit);
-                    break;
-                }
             }
         }
     }
@@ -349,10 +337,10 @@ namespace McRave::BuildOrder
 
     set<UnitType>& getUnlockedList() { return  unlockedType; }
     int gasWorkerLimit() { return gasLimit; }
-    int getUnitReservation(UnitType type) { 
+    int getUnitReservation(UnitType type) {
         if (unitReservations.find(type) == unitReservations.end())
             return 0;
-        return unitReservations[type]; 
+        return unitReservations[type];
     }
 
     bool isAllIn() {
@@ -369,7 +357,7 @@ namespace McRave::BuildOrder
     int gasMax() {
         return Resources::getGasCount() * 3;
     }
-    
+
     bool isOpener() { return inOpening; }
     bool takeNatural() { return wantNatural; }
     bool takeThird() { return wantThird; }

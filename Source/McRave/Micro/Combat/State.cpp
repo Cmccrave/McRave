@@ -189,7 +189,7 @@ namespace McRave::Combat::State {
                     if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 96.0) {
                         if (enemy.getType().isBuilding())
                             countDefensesInRange += 1.0;
-                        else if (enemy.getType() == Terran_Goliath)
+                        else
                             countDefensesInRange += 0.1;
                     }
                 }
@@ -357,7 +357,7 @@ namespace McRave::Combat::State {
             double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()))
             : BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition());
 
-        const auto insideRetreatRadius = distSim < unit.getRetreatRadius() && !atHome;
+        const auto insideRetreatRadius = distSim < unit.getRetreatRadius() && !atHome && (!unit.isLightAir() || !unit.hasTarget() || !unit.getUnitsInReachOfThis().empty());
         const auto insideEngageRadius = distTarget < unit.getEngageRadius() && (unit.getGlobalState() == GlobalState::Attack || atHome);
         const auto exploringGoal = unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore && unit.getUnitsInReachOfThis().empty() && Util::getTime() > Time(4, 00);
 

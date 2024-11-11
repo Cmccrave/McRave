@@ -129,6 +129,8 @@ namespace McRave::Walls {
         // PvP
         int PvP_Defenses(const BWEB::Wall& wall)
         {
+            if (BuildOrder::getCurrentTransition() == "DT")
+                return 3;
             return 0;
         }
 

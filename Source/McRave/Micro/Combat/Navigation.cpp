@@ -55,7 +55,10 @@ namespace McRave::Combat::Navigation {
             auto attacking = unit.getLocalState() == LocalState::Attack;
             auto harassing = unit.attemptingHarass();
 
-            if (regrouping) {
+            if (attacking) {
+                getFlyingPath(unit);
+            }
+            else if (regrouping) {
                 //unit.circle(Colors::Yellow);
                 unit.setDestinationPath(flyerRegroupPath);
             }
@@ -63,7 +66,7 @@ namespace McRave::Combat::Navigation {
                 //unit.circle(Colors::Red);
                 unit.setDestinationPath(flyerRetreatPath);
             }
-            else if (harassing && !attacking) {
+            else if (harassing) {
                 //unit.circle(Colors::Green);
                 unit.setDestinationPath(flyerHarassPath);
             }

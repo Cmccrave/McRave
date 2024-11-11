@@ -541,61 +541,58 @@ namespace McRave::BuildOrder::Zerg {
 
     void tech()
     {
-        const auto vsGoonsGols = Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "5GateGoon" || Spy::getEnemyTransition() == "CorsairGoon" || Spy::getEnemyTransition() == "5FactGoliath" || Spy::getEnemyTransition() == "3FactGoliath";
-        const auto vsAnnoyingShit = Spy::getEnemyTransition() == "2Fact" || Spy::getEnemyTransition() == "2PortWraith";
+        getTech = false;
+        if (!inOpening) {
 
-        auto techOffset = 0;
+            auto techOffset = 0;
 
-        // ZvP
-        if (Players::ZvP()) {
-            techOffset = 2;
-        }
-
-        // ZvT
-        if (Players::ZvT()) {
-            if (vsMech) {
-                unitOrder ={ Zerg_Mutalisk, Zerg_Defiler, Zerg_Ultralisk };
+            // ZvP
+            if (Players::ZvP()) {
                 techOffset = 2;
             }
-            else {
-                unitOrder ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Defiler };
-                techOffset = 1;
+
+            // ZvT
+            if (Players::ZvT()) {
+                if (vsMech) {
+                    unitOrder ={ Zerg_Mutalisk, Zerg_Defiler, Zerg_Ultralisk };
+                    techOffset = 2;
+                }
+                else {
+                    unitOrder ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Defiler };
+                    techOffset = 1;
+                }
             }
+
+            // ZvZ
+            if (Players::ZvZ()) {
+                if (focusUnit == Zerg_Hydralisk)
+                    unitOrder ={ Zerg_Hydralisk };
+                else
+                    unitOrder ={ Zerg_Mutalisk };
+            }
+
+            // ZvFFA
+            if (Players::ZvFFA())
+                unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker };
+
+            // Adding tech
+            const auto endOfTech = !unitOrder.empty() && isFocusUnit(unitOrder.back());
+            const auto techVal = int(focusUnits.size()) + techOffset + mineralThird;
+            const auto readyToTech = (vis(Zerg_Extractor) >= 2 || int(Stations::getStations(PlayerState::Self).size()) >= 4 || focusUnits.empty()) && vis(Zerg_Drone) >= 10;
+            techSat = (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
+
+            getTech = readyToTech && !techSat && productionSat;
+            getNewTech();
+            getTechBuildings();
         }
-
-        // ZvZ
-        if (Players::ZvZ()) {
-            if (focusUnit == Zerg_Hydralisk)
-                unitOrder ={ Zerg_Hydralisk };
-            else
-                unitOrder ={ Zerg_Mutalisk };
-        }
-
-        // ZvFFA
-        if (Players::ZvFFA())
-            unitOrder ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker };
-
-        // If we have our tech unit, set to none
-        if (techComplete())
-            focusUnit = None;
-
-        // Adding tech
-        const auto endOfTech = !unitOrder.empty() && isFocusUnit(unitOrder.back());
-        const auto techVal = int(focusUnits.size()) + techOffset + mineralThird;
-        techSat = !focusUnits.empty() && (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
-        auto readyToTech = vis(Zerg_Extractor) >= 2 || int(Stations::getStations(PlayerState::Self).size()) >= 4 || focusUnits.empty();
-        if (!inOpening && readyToTech && focusUnit == None && !techSat && productionSat && vis(Zerg_Drone) >= 10)
-            getTech = true;
-
-        getNewTech();
-        getTechBuildings();
     }
 
     void situational()
     {
-        vsMech = (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) + Players::getTotalCount(PlayerState::Enemy, Terran_Goliath)
+        vsMech = ((Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) + Players::getTotalCount(PlayerState::Enemy, Terran_Goliath)
             + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode))
-            > (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) + Players::getTotalCount(PlayerState::Enemy, Terran_Firebat) + Players::getTotalCount(PlayerState::Enemy, Terran_Medic));
+            > (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) + Players::getTotalCount(PlayerState::Enemy, Terran_Firebat) + Players::getTotalCount(PlayerState::Enemy, Terran_Medic)))
+            || Spy::getEnemyBuild() == "RaxFact";
 
         // Queue up defenses
         needSunks = false;

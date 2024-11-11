@@ -190,7 +190,7 @@ namespace McRave::BuildOrder::Protoss
 
             // Ground unit upgrades
             auto upgradingGrdWeapon = (Broodwar->self()->getUpgradeLevel(Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Ground_Armor)) || Broodwar->self()->isUpgrading(Protoss_Ground_Weapons);
-            upgradeQueue[Protoss_Ground_Weapons] = true;
+            upgradeQueue[Protoss_Ground_Weapons] = int(Stations::getStations(PlayerState::Self).size()) >= 2;
             upgradeQueue[Protoss_Ground_Armor] = upgradingGrdWeapon;
             upgradeQueue[Protoss_Plasma_Shields] = Upgrading::haveOrUpgrading(Protoss_Ground_Weapons, 3) && Upgrading::haveOrUpgrading(Protoss_Ground_Armor, 3);
 
@@ -206,7 +206,7 @@ namespace McRave::BuildOrder::Protoss
             auto PvPAirAttack = false;
 
             if (vis(Protoss_Stargate) > 0) {
-                upgradeQueue[Protoss_Air_Weapons] = PvZAirAttack || PvTAirAttack || PvTAirAttack;
+                upgradeQueue[Protoss_Air_Weapons] = PvZAirAttack || PvTAirAttack || PvPAirAttack;
                 upgradeQueue[Protoss_Air_Armor] = upgradingAirAttack;
             }
 
@@ -297,10 +297,6 @@ namespace McRave::BuildOrder::Protoss
         const auto techVal = int(focusUnits.size()) + techOffset + mineralThird;
         techSat = (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
 
-        // If we have our tech unit, set to none
-        if (techComplete())
-            focusUnit = None;
-
         // Change desired detection if we get Cannons
         // TODO: Clean up all below this section
         if (Spy::enemyInvis() && desiredDetection == Protoss_Forge) {
@@ -314,7 +310,7 @@ namespace McRave::BuildOrder::Protoss
         }
 
         // If production is saturated and none are idle or we need detection, choose a tech
-        if ((!inOpening && !getTech && !techSat && focusUnit == None) || (Spy::enemyInvis() && !isFocusUnit(desiredDetection)))
+        if ((!inOpening && !getTech && !techSat) || (Spy::enemyInvis() && !isFocusUnit(desiredDetection)))
             getTech = true;
 
         // If we need detection

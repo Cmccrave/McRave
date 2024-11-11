@@ -43,6 +43,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // Buildings
         buildQueue[Protoss_Robotics_Facility] =         total(Protoss_Dragoon) >= 3;
+        buildQueue[Protoss_Robotics_Support_Bay] =      com(Protoss_Robotics_Facility) > 0;
 
         // Upgrades
         upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;

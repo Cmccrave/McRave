@@ -508,19 +508,21 @@ namespace McRave
                 || proxyUnit) {
                 const auto closestMain = BWEB::Stations::getClosestMainStation(getTilePosition());
                 const auto closestNat = BWEB::Stations::getClosestNaturalStation(getTilePosition());
-                const auto closerToMyMain = closestMain && closestMain == Terrain::getMyMain();
-                const auto closerToMyNat = closestNat && closestNat == Terrain::getMyNatural();
-                const auto farFromHome = position.getDistance(closestMain->getBase()->Center()) > 960.0 && position.getDistance(closestNat->getBase()->Center()) > 960.0;
+                if (closestMain && closestNat) {
+                    const auto closerToMyMain = closestMain && closestMain == Terrain::getMyMain();
+                    const auto closerToMyNat = closestNat && closestNat == Terrain::getMyNatural();
+                    const auto farFromHome = position.getDistance(closestMain->getBase()->Center()) > 960.0 && position.getDistance(closestNat->getBase()->Center()) > 960.0;
 
-                const auto timedOrKnown = Util::getTime() < Time(4, 00) || Spy::getEnemyBuild() == "CannonRush" || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush";
+                    const auto timedOrKnown = Util::getTime() < Time(4, 00) || Spy::getEnemyBuild() == "CannonRush" || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush";
 
-                // Workers are proxy if they're close enough to our bases and considered suspicious
-                if (getType().isWorker()) {
-                    if (timedOrKnown && (position.getDistance(closestMain->getBase()->Center()) < 960.0 || position.getDistance(closestNat->getBase()->Center()) < 960.0))
-                        proxy = closerToMyMain || closerToMyNat;
+                    // Workers are proxy if they're close enough to our bases and considered suspicious
+                    if (getType().isWorker()) {
+                        if (timedOrKnown && (position.getDistance(closestMain->getBase()->Center()) < 960.0 || position.getDistance(closestNat->getBase()->Center()) < 960.0))
+                            proxy = closerToMyMain || closerToMyNat;
+                    }
+                    else
+                        proxy = closerToMyMain || closerToMyNat || farFromHome;
                 }
-                else
-                    proxy = closerToMyMain || closerToMyNat || farFromHome;
             }
         }
     }

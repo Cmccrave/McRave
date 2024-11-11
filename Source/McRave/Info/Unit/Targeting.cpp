@@ -37,10 +37,15 @@ namespace McRave::Targets {
                     || target.getUnitsTargetingThis().empty();
             }
 
+            // Rushes gotta not chase workers in our base
+            if (BuildOrder::isRush() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
+                return false;
+
             if (Util::getTime() < Time(8, 00)) {
                 return unit.getType().isWorker()
                     || unit.isWithinRange(target)
                     || unit.attemptingRunby()
+                    || unit.isLightAir()
                     || target.hasAttackedRecently()
                     || target.hasRepairedRecently()
                     || target.isThreatening()
@@ -105,8 +110,8 @@ namespace McRave::Targets {
             }
 
             // One/two shot is high priority to hit
-            if (Combat::Clusters::canDecimate(unit, target, 2) || Combat::Clusters::canDecimate(unit, target, 1))
-                return Priority::Major;
+            if (unit.isWithinReach(target) && (Combat::Clusters::canDecimate(unit, target, 2) || Combat::Clusters::canDecimate(unit, target, 1)))
+                return Priority::Critical;
 
             // If a building is unprotected
             if (target.getType().isBuilding() && target.getUnitsInRangeOfThis().empty() && unit.isWithinRange(target))
@@ -174,7 +179,7 @@ namespace McRave::Targets {
 
                 // Ignore if we need to runby
                 if (unit.attemptingRunby() && Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) < 8) {
-                    if (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
+                    if (target.getType() != Terran_Marine && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
                         return Priority::Ignore;
                     if (target.getPosition().isValid() && Grids::getGroundThreat(target.getPosition(), PlayerState::Enemy) <= 0.1f && Util::getTime() < Time(7, 30))
                         return Priority::Major;
@@ -187,7 +192,7 @@ namespace McRave::Targets {
                     return Priority::Trivial;
 
                 // Proxy worker
-                if (target.isProxy() && target.getType().isWorker() && target.unit()->exists()) {
+                if (target.isProxy() && target.getType().isWorker() && target.unit()->exists() && !BuildOrder::isRush()) {
                     if (target.unit()->isConstructing())
                         return Priority::Critical;
                     else if (!Spy::enemyRush() && Spy::getEnemyBuild() != "2Gate")
@@ -254,7 +259,7 @@ namespace McRave::Targets {
 
                 // Scourge
                 if (unit.getType() == Zerg_Scourge) {
-
+                    return scourgePriority(unit, target);
                 }
 
                 // Defiler
@@ -300,7 +305,7 @@ namespace McRave::Targets {
                     return Priority::Ignore;
                 }
             }
-            return Priority::Normal;
+            return Priority::Minor;
         }
 
         double scoreTarget(UnitInfo& unit, UnitInfo& target)
@@ -427,7 +432,7 @@ namespace McRave::Targets {
                 return 1.0 / dist;
 
             // Proximity targeting (targetScore not used)
-            else if (unit.getType() == Protoss_Reaver || unit.getType() == Zerg_Ultralisk) {
+            else if (unit.getType() == Protoss_Reaver || unit.getType() == Zerg_Ultralisk || unit.isLightAir()) {
                 if (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir())
                     return 0.1 / dist;
                 return 1.0 / dist;

@@ -216,8 +216,7 @@ namespace McRave::Combat {
             // Harass all stations by last visited
             auto best = -1.0;
             for (auto &station : stations) {
-                auto defCount = double(Stations::getAirDefenseCount(station));
-                auto score = double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(station->getResourceCentroid()))) / exp(1.0 + defCount);
+                auto score = double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(station->getResourceCentroid())));
                 if (score > best) {
                     best = score;
                     harassPosition = station->getResourceCentroid();
