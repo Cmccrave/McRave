@@ -556,6 +556,12 @@ namespace McRave::Command {
 
         if (canExplore && shouldExplore) {
 
+            if (unit.getPosition().getDistance(unit.getDestination()) < 32.0) {
+                unit.setCommand(Move, unit.getDestination());
+                unit.commandText = "Explore";
+                return true;
+            }
+
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
 
             if (bestPosition.isValid()) {

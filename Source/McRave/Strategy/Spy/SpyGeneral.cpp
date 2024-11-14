@@ -232,7 +232,7 @@ namespace McRave::Spy::General {
             // Greedy detection
             if (!Terrain::isPocketNatural() && Util::getTime() > Time(3, 30)) {
                 theSpy.greedy.possible = (Players::ZvP() && Spy::getEnemyBuild() == "FFE" && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(7, 00))
-                    || (Players::ZvP() && Spy::getEnemyBuild() != "FFE" && theSpy.expand.likely && Util::getTime() < Time(5, 15))
+                    || (Players::ZvP() && Spy::getEnemyBuild() == "1GateCore" && theSpy.expand.likely && Util::getTime() < Time(5, 15))
                     || (Players::ZvT() && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(10, 00));
             }
             if (Util::getTime() > Time(10, 00))

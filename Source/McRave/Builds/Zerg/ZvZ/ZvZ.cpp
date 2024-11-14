@@ -36,6 +36,13 @@ namespace McRave::BuildOrder::Zerg {
                     arrivalValue += idx->second / 2.0;
             }
         }
+
+        // Make less if we have some other units outside our opening
+        if (com(Zerg_Sunken_Colony) > 0) {
+            arrivalValue -= vis(Zerg_Hydralisk);
+            arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 6.0;
+        }
+
         return int(arrivalValue);
     }
 

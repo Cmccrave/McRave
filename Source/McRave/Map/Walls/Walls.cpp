@@ -500,7 +500,7 @@ namespace McRave::Walls {
             if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 || Spy::getEnemyTransition() == "3HatchSpeedling")
                 return 1 + (Util::getTime() > Time(4, 15));
             if (Spy::getEnemyTransition() == "2HatchSpeedling" || (Stations::getStations(PlayerState::Enemy).size() <= 1 && Players::getTotalCount(PlayerState::Enemy, Zerg_Hatchery) >= 2))
-                return 1;
+                return 1 + (Util::getTime() > Time(4, 45));
             if (Spy::getEnemyOpener() == "12Hatch" || Spy::getEnemyOpener() == "10Hatch")
                 return 1;
             return 0;

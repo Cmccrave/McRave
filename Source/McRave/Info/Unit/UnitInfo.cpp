@@ -37,6 +37,9 @@ namespace McRave
 
         Position getOvershootPosition(UnitInfo* unit, Position here)
         {
+            if (unit->getType() == Zerg_Overlord)
+                return here;
+
             // Check if we should overshoot for halting distance
             if (!unit->getBuildPosition().isValid() && (unit->isFlying() || unit->isHovering() || unit->getType() == Protoss_High_Templar || unit->attemptingSurround())) {
                 auto distance = unit->getPosition().getDistance(here);
@@ -565,10 +568,12 @@ namespace McRave
             commandPosition = here;
             commandType = cmd;
 
-            // Try adding randomness
-            auto dist = 1 + int(getPosition().getDistance(here) / 32.0);
-            here.x += dist - rand() % dist;
-            here.y += dist - rand() % dist;
+            // Try adding randomness to non air units
+            if (!isFlying()) {
+                auto dist = 1 + int(getPosition().getDistance(here) / 32.0);
+                here.x += dist - rand() % dist;
+                here.y += dist - rand() % dist;
+            }
 
             if (cmd == UnitCommandTypes::Move) {
                 here = getOvershootPosition(this, here);

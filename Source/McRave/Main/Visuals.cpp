@@ -84,7 +84,7 @@ namespace McRave::Visuals {
         bool states = false;
         bool resources = false;
         bool timers = false;
-        bool scores = false;
+        bool scores = true;
         bool roles = false;
         bool stations = false;
         bool gameFocused = false;
@@ -377,13 +377,13 @@ namespace McRave::Visuals {
 
         void getCurrentWindow()
         {
-            //// Thanks random cpp forum user
-            //char wnd_title[256];
-            //string str_title;
-            //HWND hwnd=GetForegroundWindow();
-            //GetWindowText(hwnd, wnd_title, sizeof(wnd_title));
-            //str_title = string(wnd_title);
-            //gameFocused = (str_title == "Brood War");
+            // Thanks random cpp forum user
+            char wnd_title[256];
+            string str_title;
+            HWND hwnd=GetForegroundWindow();
+            GetWindowText(hwnd, wnd_title, sizeof(wnd_title));
+            str_title = string(wnd_title);
+            gameFocused = (str_title == "Brood War");
         }
     }
 

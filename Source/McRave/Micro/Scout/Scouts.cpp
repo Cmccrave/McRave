@@ -420,7 +420,7 @@ namespace McRave::Scouts {
 
                 // Overlord scouting sometimes needed
                 safe.addTargets(safePositions[Terrain::getEnemyNatural()]);
-                if (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())) >= 200)
+                if (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())) >= 200 && Util::getTime() > Time(4, 00))
                     safe.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
             }
         }
@@ -794,8 +794,8 @@ namespace McRave::Scouts {
 
         void updateDecision(UnitInfo& unit)
         {
-            Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
-            Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
+            //Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+            //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
 
             if (!Units::commandAllowed(unit))
                 return;
@@ -859,74 +859,209 @@ namespace McRave::Scouts {
         updateScouts();
         //drawScouting();
         Visuals::endPerfTest("Scouts");
+
+
+        // TODO still:
+        // - figure out whether we want to watch main vs nat
+        //   - ex HBR we want nat, destination we want main
+        // - send ovie there safely and send home safely
+
+        set<Position> overlordPositions;
+        static bool safeDiscovered = false;
+        if (!Terrain::getEnemyMain() || !Terrain::getEnemyNatural() || safeDiscovered) {
+            return;
+        }
+
+
+        vector<const BWEB::Station *> enemyStations ={ Terrain::getEnemyNatural(), Terrain::getEnemyMain() };
+        safeDiscovered = true;
+
+        auto natWatch = Stations::getDefendPosition(Terrain::getEnemyNatural());
+        auto mainWatch = Stations::getDefendPosition(Terrain::getEnemyMain());
+        set<TilePosition> safeTiles;
+        set<TilePosition> enemyTiles;
+
+        auto neighborAreas = Terrain::getEnemyNatural()->getBase()->GetArea()->AccessibleNeighbours();
+
+        // Not accessible from "enemy territory"
+        const auto tileInEnemyArea = [&](TilePosition tile) {
+            for (auto x = 0; x < 4; x++) {
+                for (auto y = 0; y < 4; y++) {
+                    auto w = WalkPosition(tile) + WalkPosition(x, y);
+                    if (Terrain::inTerritory(PlayerState::Enemy, Position(w))
+                        || Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), Position(w))
+                        || Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), Position(w))
+                        || find(neighborAreas.begin(), neighborAreas.end(), mapBWEM.GetArea(w)) != neighborAreas.end()
+                        || (mapBWEM.GetArea(w) && !mapBWEM.GetArea(w)->AccessibleFrom(Terrain::getEnemyNatural()->getBase()->GetArea())))
+                        return true;
+                }
+            }
+            return false;
+        };
+
+        // Create a path from natural to natural, tiles around it with equal height or less are considered dangerous
+        BWEB::Path path ={ Terrain::getEnemyNatural()->getChokepoint()->Center(), Terrain::getMyNatural()->getChokepoint()->Center(), Protoss_Dragoon, true, false };
+        path.generateJPS([&](auto t) {return path.unitWalkable(t); });
+
+        for (auto &parent : path.getTiles()) {
+            auto parentHeight = Broodwar->getGroundHeight(parent);
+
+            Util::testAllPointOnPath(path, [&](auto &pos) {
+                for (auto &t : Util::getTileCircle(6)) {
+                    auto tile = TilePosition(pos) + t;
+                    if (tile.isValid() && pos.isValid() && Broodwar->getGroundHeight(tile) >= parentHeight) {
+                        enemyTiles.insert(tile);
+                    }
+                }
+            });
+        }
+
+        // Designate tiles as either safe tiles, enemy tiles, or not useful
+        const auto checkAround = [&](auto station){
+        auto watch = Stations::getDefendPosition(station);
+            for (auto &t : Util::getTileCircle(20)) {
+                auto tile = t + TilePosition(watch);
+                auto pos = Position(tile) + Position(16, 16);
+
+                if (!tile.isValid())
+                    continue;
+
+                // Within range of overlord sight sort of
+                auto withinChokeSight = pos.getDistance(watch) <= 480.0;
+                auto enemyArea = tileInEnemyArea(tile);
+
+                if (enemyArea)
+                    enemyTiles.insert(tile);
+                else if (withinChokeSight)
+                    safeTiles.insert(tile);
+            }
+        };
+
+        for (auto &station : enemyStations)
+            checkAround(station);
+
+        set<Position> potentialSafePositions;
+        for (auto &parent : safeTiles) {
+            auto lowestHeight = 4;
+            auto expectedCenter = Position(parent + TilePosition(1, 1));
+            auto valid = true;
+            for (int x = 0; x < 2; x++) {
+                for (int y = 0; y < 2; y++) {
+                    auto tile = parent + TilePosition(x, y);
+                    if (tile.isValid())
+                        lowestHeight = min(lowestHeight, Broodwar->getGroundHeight(tile));
+                }
+            }
+
+            // Check a hollow box around for having an adjacent enemy area tile
+            for (int x = -1; x < 3; x++) {
+                int y = -1;
+                for (; y < 3; ) {
+                    auto tile = parent + TilePosition(x, y);
+                    if (tile.isValid() && enemyTiles.find(tile) != enemyTiles.end())
+                        valid = false;
+
+                    y+= (x == -1 || x == 2) ? 1 : 3;
+                }
+            }
+
+            if (valid) {
+                Broodwar->drawCircleMap(expectedCenter, 4, Colors::Green);
+                //potentialSafePositions.insert(Position(parent + TilePosition(1, 1)));
+            }
+
+            // Each potential tile needs to look for a >= height tile within 5 range zvt, 6 range zvp
+            auto range = Players::ZvT() ? 5 : 6;
+            for (auto &w : Util::getWalkCircle(range * 4)) {
+                auto pos = Position(WalkPosition(parent) + w);
+                auto tile = TilePosition(pos);
+
+                if (Broodwar->getGroundHeight(tile) >= lowestHeight && pos.getDistance(expectedCenter) < range * 32 && enemyTiles.find(tile) != enemyTiles.end())
+                    valid = false;
+            }
+
+            if (valid) {
+                Broodwar->drawCircleMap(expectedCenter, 4, Colors::Green, true);
+                potentialSafePositions.insert(expectedCenter);
+            }
+        }
+
+        // Get closest safe position
+        auto distBest = DBL_MAX;
+        for (auto &pos : potentialSafePositions) {
+            auto dist = pos.getDistance(Position(Terrain::getEnemyNatural()->getChokepoint()->Center()));
+            if (dist < distBest) {
+                safePositions[Terrain::getEnemyNatural()] = pos;
+                distBest = dist;
+            }
+        }
     }
 
     void onStart()
     {
-        // Attempt to find a position that is hard to reach for enemy ranged units
-        for (auto &station : BWEB::Stations::getStations()) {
-            auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(station.getBase()->Center()));
-            if (!station.isNatural()
-                || !station.getChokepoint()
-                || !closestMain
-                || !closestMain->getChokepoint())
-                continue;
+        //// Attempt to find a position that is hard to reach for enemy ranged units
+        //for (auto &station : BWEB::Stations::getStations()) {
+        //    auto closestMain = BWEB::Stations::getClosestMainStation(TilePosition(station.getBase()->Center()));
+        //    if (!station.getChokepoint()
+        //        || !closestMain
+        //        || !closestMain->getChokepoint())
+        //        continue;
 
-            const auto closestWatchable = [&](auto &t, auto &p) {
-                auto closest = 320.0;
-                for (int x = -8; x <= 8; x++) {
-                    for (int y = -8; y <= 8; y++) {
-                        const auto tile = t + TilePosition(x, y);
-                        if (!tile.isValid())
-                            continue;
+        //    const auto closestWatchable = [&](auto &t, auto &p) {
+        //        auto closest = 320.0;
+        //        for (int x = -8; x <= 8; x++) {
+        //            for (int y = -8; y <= 8; y++) {
+        //                const auto tile = t + TilePosition(x, y);
+        //                if (!tile.isValid())
+        //                    continue;
 
-                        const auto enemyPos = Position(tile) + Position(16, 16);
-                        const auto boxDist = Util::boxDistance(Zerg_Overlord, p, Protoss_Dragoon, enemyPos);
-                        const auto walkableAndConnected = BWEB::Map::isWalkable(tile, Protoss_Dragoon) && mapBWEM.GetArea(tile) && !mapBWEM.GetArea(tile)->AccessibleNeighbours().empty();
+        //                const auto enemyPos = Position(tile) + Position(16, 16);
+        //                const auto boxDist = Util::boxDistance(Zerg_Overlord, p, Protoss_Dragoon, enemyPos);
+        //                const auto walkableAndConnected = BWEB::Map::isWalkable(tile, Protoss_Dragoon) && mapBWEM.GetArea(tile) && !mapBWEM.GetArea(tile)->AccessibleNeighbours().empty();
 
-                        if (boxDist < closest && walkableAndConnected) {
-                            closest = boxDist;
-                        }
-                    }
-                }
-                return closest;
-            };
+        //                if (boxDist < closest && walkableAndConnected) {
+        //                    closest = boxDist;
+        //                }
+        //            }
+        //        }
+        //        return closest;
+        //    };
 
-            auto distBest = 0.0;
-            auto posBest = station.getBase()->Center();
-            for (int x = -14; x < 14; x++) {
-                for (int y = -14; y < 14; y++) {
-                    auto tile = TilePosition(station.getBase()->Center()) + TilePosition(x, y);
-                    auto pos = Position(tile) + Position(16, 16);
-                    auto dist = closestWatchable(tile, pos);
+        //    auto distBest = 0.0;
+        //    auto posBest = Position(station.getChokepoint()->Center());
+        //    for (int x = -14; x < 14; x++) {
+        //        for (int y = -14; y < 14; y++) {
+        //            auto tile = TilePosition(station.getChokepoint()->Center()) + TilePosition(x, y);
+        //            auto pos = Position(tile) + Position(16, 16);
+        //            auto dist = closestWatchable(tile, pos);
 
-                    if (!pos.isValid() || !tile.isValid())
-                        continue;
+        //            if (!pos.isValid() || !tile.isValid())
+        //                continue;
 
-                    if (dist > distBest) {
-                        distBest = dist;
-                        posBest = pos;
-                    }
-                }
-            }
+        //            if (dist > distBest) {
+        //                distBest = dist;
+        //                posBest = pos;
+        //            }
+        //        }
+        //    }
 
-            Visuals::drawCircle(posBest, 4, Colors::Cyan, false);
-            safePositions[&station] = posBest;
-        }
+        //    Visuals::drawCircle(posBest, 4, Colors::Cyan, false);
+        //    safePositions[&station] = posBest;
+        //}
 
-        // Create a grid of positions that have mineral walking capabilities
-        for (int x = 0; x < 256; x++) {
-            for (int y = 0; y < 256; y++) {
-                const TilePosition t = TilePosition(x, y);
-                const Position p = Position(t) + Position(16, 16);
+        //// Create a grid of positions that have mineral walking capabilities
+        //for (int x = 0; x < 256; x++) {
+        //    for (int y = 0; y < 256; y++) {
+        //        const TilePosition t = TilePosition(x, y);
+        //        const Position p = Position(t) + Position(16, 16);
 
-                auto resource = Resources::getClosestResource(p, [&](auto &r) {
-                    return r->getPosition().getDistance(p) < 128.0;
-                });
-                if (resource && BWEB::Map::isWalkable(t, Protoss_Dragoon) && !BWEB::Map::isUsed(t).isMineralField() && !BWEB::Map::isUsed(t).isRefinery())
-                    resourceWalkPossible[x][y] = true;
-            }
-        }
+        //        auto resource = Resources::getClosestResource(p, [&](auto &r) {
+        //            return r->getPosition().getDistance(p) < 128.0;
+        //        });
+        //        if (resource && BWEB::Map::isWalkable(t, Protoss_Dragoon) && !BWEB::Map::isUsed(t).isMineralField() && !BWEB::Map::isUsed(t).isRefinery())
+        //            resourceWalkPossible[x][y] = true;
+        //    }
+        //}
     }
 
     void removeUnit(UnitInfo& unit)

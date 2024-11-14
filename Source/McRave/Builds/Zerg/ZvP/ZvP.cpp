@@ -526,8 +526,10 @@ namespace McRave::BuildOrder::Zerg {
             if (Spy::getEnemyBuild() == "CannonRush")
                 activeAllinType = AllinType::Z_3HatchSpeedling;
 
-            if (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != "FFE" && (currentTransition == "6HatchHydra" || currentTransition == "3HatchHydra"))
+            if (Spy::getEnemyBuild() == "1GateCore" && (currentTransition == "6HatchHydra" || currentTransition == "3HatchHydra"))
                 currentTransition = "4HatchHydra";
+            if (Spy::getEnemyBuild() == "2Gate" && (currentTransition == "6HatchHydra" || currentTransition == "3HatchHydra"))
+                currentTransition = "3HatchMuta";
             if (Spy::getEnemyBuild() == "FFE" && currentTransition == "4HatchHydra")
                 currentTransition = "6HatchHydra";
         }

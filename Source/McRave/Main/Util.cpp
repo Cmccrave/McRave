@@ -9,7 +9,9 @@ namespace McRave::Util {
     namespace {
         Time gameTime(0, 0);
         double log10Lookup[1000];
-        map<int, vector<WalkPosition>> circleCache;
+        map<int, vector<Position>> posCircleCache;
+        map<int, vector<WalkPosition>> walkCircleCache;
+        map<int, vector<TilePosition>> tileCircleCache;
 
         /// Approximation of Euclidian distance
         /// This is the same approximation that StarCraft's engine uses
@@ -316,16 +318,25 @@ namespace McRave::Util {
             log10Lookup[x] = log(x);
         }
 
-        auto center = WalkPosition(0, 0);
-        auto centerp = Position(center) + Position(4, 4);
+        // TODO: Check all these, Tile feels off (i * 33 felt right?)
+        auto center = Position(0, 0);
         for (auto i = 1; i < 256; i++) {
-            auto &cache = circleCache[i];
+            auto &posCache = posCircleCache[i];
+            auto &walkCache = walkCircleCache[i];
+            auto &tileCache = tileCircleCache[i];
+
+
             for (auto x = -i; x <= i; x++) {
                 for (auto y = -i; y <= i; y++) {
+                    auto p = Position(x, y);
                     auto w = WalkPosition(x, y);
-                    auto p = Position(w) + Position(4, 4);
-                    if (p.getDistance(centerp) < i * 8) {
-                        cache.push_back(w);
+                    auto t = TilePosition(x, y);
+
+                    if (Position(w).getDistance(center) <= i * 8) {
+                        walkCache.push_back(w);
+                    }
+                    if (Position(t).getDistance(center) <= i * 32) {
+                        tileCache.push_back(t);
                     }
                 }
             }
@@ -410,6 +421,11 @@ namespace McRave::Util {
 
     vector<WalkPosition>& getWalkCircle(int radius)
     {
-        return circleCache[radius];
+        return walkCircleCache[radius];
+    }
+
+    vector<TilePosition>& getTileCircle(int radius)
+    {
+        return tileCircleCache[radius];
     }
 }

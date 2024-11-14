@@ -53,7 +53,21 @@ namespace McRave::Support {
                 return u->getType() == Zerg_Spore_Colony;
             });
 
-            if (closestStation && !closestStation->isMain()) {
+            // If this overlord was excessively far from home (maybe it was scouting), send it far away
+            if (Util::getTime() > Time(4, 00) && closestStation && unit.getPosition().getDistance(closestStation->getBase()->Center()) >= 960.0 && Terrain::getEnemyNatural() && Terrain::getMyNatural()) {
+                auto furthest = 0.0;
+                for (auto &station : BWEB::Stations::getStations()) {
+                    auto dist = station.getBase()->Center().getDistance(Terrain::getEnemyNatural()->getBase()->Center()) + station.getBase()->Center().getDistance(Terrain::getMyNatural()->getBase()->Center());
+                    if (dist > furthest) {
+                        unit.setDestination(station.getBase()->Center());
+                        furthest = dist;
+                        Broodwar->drawLineMap(unit.getPosition(), unit.getDestination(), Colors::Green);
+                    }
+                }
+            }
+
+            // Assign in a safe box formation around a station or spore
+            else if (closestStation && !closestStation->isMain()) {
                 if (closestSpore && closestSpore->getPosition().getDistance(closestStation->getBase()->Center()) < 160.0)
                     assignInBox(closestSpore->getPosition(), unit);
                 else
