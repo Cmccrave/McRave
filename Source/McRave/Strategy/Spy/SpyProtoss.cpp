@@ -125,10 +125,9 @@ namespace McRave::Spy::Protoss {
 
                 if (completesBy(1, Protoss_Photon_Cannon, Time(3, 30)) || completesBy(1, Protoss_Forge, Time(2, 55)))
                     theSpy.opener.name = "Forge";
-
-                else if (startedEarlier(Protoss_Nexus, Protoss_Forge))
+                else if (completesBy(1, Protoss_Nexus, Time(3, 20)))
                     theSpy.opener.name = "Nexus";
-                else if (startedEarlier(Protoss_Gateway, Protoss_Forge))
+                else if (completesBy(1, Protoss_Gateway, Time(2, 40)) || arrivesBy(1, Protoss_Zealot, Time(3, 15)))
                     theSpy.opener.name = "Gateway";
                 else
                     theSpy.opener.name = "Forge";

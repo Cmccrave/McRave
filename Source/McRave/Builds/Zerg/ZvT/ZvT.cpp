@@ -40,16 +40,6 @@ namespace McRave::BuildOrder::Zerg {
     int inboundUnits_ZvT()
     {
         static map<UnitType, double> trackables ={ {Terran_Marine, 1.0}, {Terran_Medic, 1.0}, {Terran_Firebat, 1.0} };
-        auto inBoundUnit = [&](auto &u) {
-            if (!Terrain::getEnemyMain())
-                return true;
-            const auto visDiff = Broodwar->getFrameCount() - u->getLastVisibleFrame();
-
-            // Check if we know they weren't at home and are missing on the map for 35 seconds
-            if (!u->movedFlag && !Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), u->getPosition()) && !Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), u->getPosition()))
-                return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 35);
-            return false;
-        };
 
         // Economic estimate (have information on army, they aren't close):
         // For each unit, assume it arrives with enough time for us to create defenders
@@ -60,7 +50,7 @@ namespace McRave::BuildOrder::Zerg {
             auto idx = trackables.find(unit.getType());
             if (idx != trackables.end()) {
                 arrivalValue += idx->second;
-                if (inBoundUnit(u))
+                if (Units::inBoundUnit(unit))
                     arrivalValue += idx->second / 2.0;
             }
         }
@@ -138,7 +128,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Buildings
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
-        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 20);
+        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 18);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.95);
@@ -218,7 +208,7 @@ namespace McRave::BuildOrder::Zerg {
         if (!inTransition) {
             if (Spy::getEnemyTransition() == "WorkerRush") {
                 currentBuild = "PoolHatch";
-                currentOpener = "OverPool";
+                currentOpener = "Overpool";
                 currentTransition = "2HatchMuta";
             }
         }

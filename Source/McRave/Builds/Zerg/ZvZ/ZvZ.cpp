@@ -14,14 +14,6 @@ namespace McRave::BuildOrder::Zerg {
     int inboundUnits_ZvZ()
     {
         static map<UnitType, double> trackables ={ {Zerg_Zergling, 0.7} };
-        auto inBoundUnit = [&](auto &u) {
-            if (!Terrain::getEnemyMain())
-                return true;
-            const auto visDiff = Broodwar->getFrameCount() - u->getLastVisibleFrame();
-
-            // Check if we know they weren't at home and are missing on the map for 25 seconds
-            return Time(u->frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, 25);
-        };
 
         // Economic estimate (have information on army, they aren't close):
         // For each unit, assume it arrives with enough time for us to create defenders
@@ -32,7 +24,7 @@ namespace McRave::BuildOrder::Zerg {
             auto idx = trackables.find(unit.getType());
             if (idx != trackables.end()) {
                 arrivalValue += idx->second;
-                if (inBoundUnit(u))
+                if (Units::inBoundUnit(unit))
                     arrivalValue += idx->second / 2.0;
             }
         }
@@ -40,7 +32,7 @@ namespace McRave::BuildOrder::Zerg {
         // Make less if we have some other units outside our opening
         if (com(Zerg_Sunken_Colony) > 0) {
             arrivalValue -= vis(Zerg_Hydralisk);
-            arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 6.0;
+            arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 4.0;
         }
 
         return int(arrivalValue);

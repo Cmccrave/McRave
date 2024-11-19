@@ -111,7 +111,7 @@ namespace McRave::Roles {
 
         void zPullWorker()
         {
-            if (Broodwar->self()->getRace() != Races::Zerg)
+            if (Broodwar->self()->getRace() != Races::Zerg || BuildOrder::isRush())
                 return;
 
             auto proxyBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
@@ -159,8 +159,8 @@ namespace McRave::Roles {
                 else if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0 && Spy::getEnemyBuild() == "2Gate" && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0)
                     forceCombatWorker(6, proxyDangerousBuilding->getPosition());
 
-                // Probe actively building proxy, 2 drones
-                else if (proxyBuilding && proxyBuildingWorker)
+                // Probe actively building dangerous proxy, 2 drones
+                else if (proxyBuilding && proxyBuildingWorker && proxyDangerousBuilding)
                     forceCombatWorker(2, proxyBuildingWorker->getPosition());
 
                 // Proxy building, 1 drone

@@ -403,7 +403,7 @@ namespace McRave::Scouts {
             auto &safe = scoutTargets[ScoutType::Safe];
             auto &main = scoutTargets[ScoutType::Main];
 
-            if (Terrain::getEnemyNatural()) {
+            if (Terrain::getEnemyNatural() && safePositions[Terrain::getEnemyNatural()].isValid()) {
                 safe.center = safePositions[Terrain::getEnemyNatural()];
 
                 // Zerg
@@ -860,13 +860,6 @@ namespace McRave::Scouts {
         //drawScouting();
         Visuals::endPerfTest("Scouts");
 
-
-        // TODO still:
-        // - figure out whether we want to watch main vs nat
-        //   - ex HBR we want nat, destination we want main
-        // - send ovie there safely and send home safely
-
-        set<Position> overlordPositions;
         static bool safeDiscovered = false;
         if (!Terrain::getEnemyMain() || !Terrain::getEnemyNatural() || safeDiscovered) {
             return;
@@ -875,6 +868,8 @@ namespace McRave::Scouts {
 
         vector<const BWEB::Station *> enemyStations ={ Terrain::getEnemyNatural(), Terrain::getEnemyMain() };
         safeDiscovered = true;
+        safePositions[Terrain::getEnemyNatural()] = Positions::Invalid;
+        safePositions[Terrain::getEnemyMain()] = Positions::Invalid;
 
         auto natWatch = Stations::getDefendPosition(Terrain::getEnemyNatural());
         auto mainWatch = Stations::getDefendPosition(Terrain::getEnemyMain());

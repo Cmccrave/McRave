@@ -269,6 +269,21 @@ namespace McRave::BuildOrder::Zerg {
                 if (vis(Zerg_Larva) >= (2 + hatchCount()))
                     buildQueue[Zerg_Hatchery] = hatchCount();
             }
+
+            // Determine if we've tried to expand for a while and seem to be getting denied, ramp instead
+            static auto denialTime = Util::getTime();
+            if (!expandDesired || !minerals(300))
+                denialTime = Util::getTime();
+
+            auto expansionDenied =  Util::getTime() > denialTime + Time(1, 00);
+            if (expandDesired && expansionDenied && hatchCount() < 5) {
+                expandDesired = false;
+                rampDesired = true;
+                if (!logFlags[3]) {
+                    logFlags[3] = true;
+                    Util::debug(nodeName + "ramping instead due to expansion denial.");
+                }
+            }
         }
 
         void calculateGasLimit()
@@ -468,7 +483,9 @@ namespace McRave::BuildOrder::Zerg {
                 }
 
                 // Common
-                if (hatchCount() < activeAllin.productionCount && (vis(Zerg_Larva) <= 2 || vis(Zerg_Drone) >= activeAllin.workerCount))
+                auto lowLarvaCount = vis(Zerg_Larva) <= 2;
+                auto highEconomy = vis(Zerg_Drone) >= activeAllin.workerCount && vis(Zerg_Hatchery) == com(Zerg_Hatchery);
+                if (hatchCount() < activeAllin.productionCount && (lowLarvaCount || highEconomy))
                     buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
             }
 

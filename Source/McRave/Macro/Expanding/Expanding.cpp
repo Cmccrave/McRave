@@ -138,6 +138,7 @@ namespace McRave::Expansion {
                         || (find_if(islandStations.begin(), islandStations.end(), [&](auto &s) { return s == &station; }) != islandStations.end())
                         || (Terrain::getEnemyMain() && &station == Terrain::getEnemyMain())
                         || (Terrain::getEnemyNatural() && &station == Terrain::getEnemyNatural())
+                        || (station == Terrain::getMyNatural() && !BuildOrder::takeNatural())
                         || (station.getBase()->Geysers().empty() && int(expansionOrder.size()) < allowedFirstMineralBase)
                         || (station.getBase()->Geysers().empty() && geysersOwned + int(station.getBase()->Geysers().size()) < allowedFirstMineralBase)
                         || (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea())))

@@ -298,8 +298,8 @@ namespace McRave::Units {
         const auto visDiff = Broodwar->getFrameCount() - unit.getLastVisibleFrame();
         const auto inbound = Time(unit.frameArrivesWhen() - visDiff) <= Util::getTime() + Time(0, seconds);
 
-        // Check if we know they weren't at home and are missing on the map for arg seconds
-        if (!Terrain::getEnemyNatural() || !Terrain::getEnemyMain() || !Scouts::gatheringInformation())
+        // Check if we know they weren't at home and are missing on the map for arg seconds, ZvZ is always inbound
+        if (!Terrain::getEnemyNatural() || !Terrain::getEnemyMain() || !Scouts::gatheringInformation() || Players::ZvZ())
             return inbound;
 
         const auto notInNatural = !Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), unit.getPosition());

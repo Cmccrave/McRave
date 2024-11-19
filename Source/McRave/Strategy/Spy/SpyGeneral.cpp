@@ -46,8 +46,10 @@ namespace McRave::Spy::General {
                     auto count = int(ut.countStartedWhen.size());
                     if (!unit.getType().isBuilding())
                         Util::debug(nodeName + string(unit.getType().c_str()) + " " + to_string(count) + " arrives at " + unit.timeArrivesWhen().toString());
-                    else
+                    else {
+                        Util::debug(nodeName + string(unit.getType().c_str()) + " " + to_string(count) + " starts at " + unit.timeStartedWhen().toString());
                         Util::debug(nodeName + string(unit.getType().c_str()) + " " + to_string(count) + " completes at " + unit.timeCompletesWhen().toString());
+                    }
 
                     // If this timing is sooner than arrival, start or completion, overwrite existing data
                     if (ut.firstArrivesWhen.isUnknown() || unit.timeArrivesWhen() < ut.firstArrivesWhen)
@@ -55,7 +57,7 @@ namespace McRave::Spy::General {
                     if (ut.firstStartedWhen.isUnknown() || unit.timeStartedWhen() < ut.firstStartedWhen)
                         ut.firstStartedWhen = unit.timeStartedWhen();
                     if (ut.firstCompletedWhen.isUnknown() || unit.timeCompletesWhen() < ut.firstCompletedWhen)
-                        ut.firstCompletedWhen = unit.timeCompletesWhen();                    
+                        ut.firstCompletedWhen = unit.timeCompletesWhen();
                 }
             }
         }

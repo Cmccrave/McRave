@@ -265,7 +265,7 @@ namespace McRave::Stations
                 if (Players::getTotalCount(PlayerState::Enemy, Terran_Dropship) > 0)
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
                 if (Players::ZvT() && Spy::getEnemyTransition() == "WorkerRush")
-                    return 1 - groundCount;
+                    return 2 - groundCount;
                 if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(7, 00))
                     return 1 - groundCount;
             }

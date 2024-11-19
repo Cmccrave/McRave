@@ -8,8 +8,11 @@ namespace McRave::Horizon {
     namespace {
 
         struct SimStrength {
-            double air = 0.0;
-            double ground = 0.0;
+            double airToAir = 0.01;
+            double airToGround = 0.01;
+            double groundToAir = 0.01;
+            double groundToGround = 0.01;
+            double combined = 0.01;
         };
 
         bool addToSim(UnitInfo& u) {
@@ -22,6 +25,22 @@ namespace McRave::Horizon {
                 || !u.hasTarget())
                 return false;
             return true;
+        }
+
+        void addSimStrength(SimStrength &sim, UnitInfo &unit, double ratio)
+        {
+            auto grd = unit.getVisibleGroundStrength() * ratio;
+            auto air = unit.getVisibleAirStrength() * ratio;
+            sim.combined += max(grd, air);
+
+            if (unit.isFlying()) {
+                sim.airToGround += grd;
+                sim.airToAir += air;
+            }
+            else {
+                sim.groundToGround += grd;
+                sim.groundToAir += air;
+            }
         }
 
         // TODO: Figure out how to utilize simulating enemies "intercepting" my units
@@ -68,6 +87,7 @@ namespace McRave::Horizon {
         const auto simulationTime = unitToEngage + extendDuration + addPrepTime(unit) - rangeDisplacement;
         const auto targetDisplacement = unitToEngage * unitTarget->getSpeed() * 24.0;
         map<Player, SimStrength> simStrengthPerPlayer;
+        map<PlayerState, SimStrength> simStrengthPerState;
 
         for (auto &e : Units::getUnits(PlayerState::Enemy)) {
             UnitInfo &enemy = *e;
@@ -107,8 +127,8 @@ namespace McRave::Horizon {
 
             // Add their values to the simulation
             addBonus(enemy, *enemyTarget, simRatio);
-            simStrengthPerPlayer[enemy.getPlayer()].ground += enemy.getVisibleGroundStrength() * simRatio;
-            simStrengthPerPlayer[enemy.getPlayer()].air += enemy.getVisibleAirStrength() * simRatio;
+            addSimStrength(simStrengthPerPlayer[enemy.getPlayer()], enemy, simRatio);
+            addSimStrength(simStrengthPerState[PlayerState::Enemy], enemy, simRatio);
         }
 
         for (auto &a : Units::getUnits(PlayerState::Self)) {
@@ -136,8 +156,8 @@ namespace McRave::Horizon {
 
             // Add their values to the simulation
             addBonus(self, *selfTarget, simRatio);
-            simStrengthPerPlayer[self.getPlayer()].ground += self.getVisibleGroundStrength() * simRatio;
-            simStrengthPerPlayer[self.getPlayer()].air += self.getVisibleAirStrength() * simRatio;
+            addSimStrength(simStrengthPerPlayer[self.getPlayer()], self, simRatio);
+            addSimStrength(simStrengthPerState[PlayerState::Self], self, simRatio);
         }
 
         for (auto &a : Units::getUnits(PlayerState::Ally)) {
@@ -160,35 +180,43 @@ namespace McRave::Horizon {
 
             // Add their values to the simulation
             addBonus(ally, *allyTarget, simRatio);
-            simStrengthPerPlayer[ally.getPlayer()].ground += ally.getVisibleGroundStrength() * simRatio;
-            simStrengthPerPlayer[ally.getPlayer()].air += ally.getVisibleAirStrength() * simRatio;
+            addSimStrength(simStrengthPerPlayer[ally.getPlayer()], ally, simRatio);
+            addSimStrength(simStrengthPerState[PlayerState::Ally], ally, simRatio);
         }
 
         // Determine sim value based on max of enemy forces and max of self/ally forces
         auto addForces = Broodwar->getGameType() == GameTypes::Top_vs_Bottom;
-        auto enemyAirStrength = 0.0, enemyGroundStrength = 0.0;
-        auto allyAirStrength = 0.0, allyGroundStrength = 0.0;
-        for (auto &[player, sim] : simStrengthPerPlayer) {
-            auto enemy = player->isEnemy(Broodwar->self());
-            if (enemy) {
-                addForces ? enemyGroundStrength += sim.ground : enemyGroundStrength = max(enemyGroundStrength, sim.ground);
-                addForces ? enemyAirStrength += sim.air : enemyAirStrength = max(enemyAirStrength, sim.air);
+        if (addForces) {
+
+        }
+        else {
+
+            // Check if both raw engagement wins (flyer engages just a2a + g2a, ground engages just a2g + g2g)
+            // Check if combined engagement wins 
+            // If raw engagement is a stronger win than combined, engage only if part of the raw engagement type
+                // i.e. Mutas engage alone vs Tanks, they significantly outpower, while Lings would just be suicdal to engage
+                // Mutas engaged vs Goliaths could make use of Lings however
+            auto enemyVsAir = (simStrengthPerState[PlayerState::Enemy].airToAir + simStrengthPerState[PlayerState::Enemy].groundToAir);
+            auto enemyVsGrd = (simStrengthPerState[PlayerState::Enemy].airToGround + simStrengthPerState[PlayerState::Enemy].groundToGround);
+            auto combined = simStrengthPerState[PlayerState::Self].combined / simStrengthPerState[PlayerState::Enemy].combined;
+
+            // Occasionally solo engagements might be better than a combined engagement
+            auto solo = 0.0;
+            if (unitTarget->getType().isFlyer()) {
+                if (unit.isFlying())
+                    solo = simStrengthPerState[PlayerState::Self].airToAir / enemyVsAir;
+                else
+                    solo = simStrengthPerState[PlayerState::Self].groundToAir / enemyVsGrd;
             }
             else {
-                addForces ? allyGroundStrength = sim.ground : allyGroundStrength = max(allyGroundStrength, sim.ground);
-                addForces ? allyAirStrength = sim.air : allyAirStrength = max(allyAirStrength, sim.air);
+                if (unit.isFlying())
+                    solo = simStrengthPerState[PlayerState::Self].airToGround / enemyVsAir;
+                else
+                    solo = simStrengthPerState[PlayerState::Self].groundToGround / enemyVsGrd;
             }
-        }
 
-        // Assign the sim value
-        const auto attackAirAsAir =         enemyAirStrength > 0.0 ? allyAirStrength / enemyAirStrength : 10.0;
-        const auto attackGroundAsAir =      enemyAirStrength > 0.0 ? allyGroundStrength / enemyAirStrength : 10.0;
-        const auto attackAirAsGround =      enemyGroundStrength > 0.0 ? allyAirStrength / enemyGroundStrength : 10.0;
-        const auto attackGroundAsGround =   enemyGroundStrength > 0.0 ? allyGroundStrength / enemyGroundStrength : 10.0;
-
-        if (!unit.hasTarget())
-            unit.getType().isFlyer() ? unit.setSimValue(min(attackAirAsAir, attackGroundAsAir)) : unit.setSimValue(min(attackAirAsGround, attackGroundAsGround));
-        else
-            unit.getType().isFlyer() ? unit.setSimValue(unitTarget->getType().isFlyer() ? attackAirAsAir : attackGroundAsAir) : unit.setSimValue(unitTarget->getType().isFlyer() ? attackAirAsGround : attackGroundAsGround);
+            // Assign the highest value
+            unit.setSimValue(max(solo, combined));
+        }       
     }
 }

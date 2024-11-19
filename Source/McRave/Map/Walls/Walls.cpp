@@ -437,8 +437,7 @@ namespace McRave::Walls {
             auto firstHatchNeeded = !threeHatch || BuildOrder::getCurrentOpener() == "12Hatch";
  
             if (Spy::getEnemyTransition() == "WorkerRush") {
-                return 1
-                    + (Util::getTime() > Time(4, 00));
+                return 0;
             }
 
             if (Spy::getEnemyBuild() == "2Rax") {

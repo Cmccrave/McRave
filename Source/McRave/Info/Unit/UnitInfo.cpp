@@ -171,6 +171,7 @@ namespace McRave
             data.priority               = Math::priority(*this);
             engageRadius                = Math::simRadius(*this) + 160.0;
             retreatRadius               = Math::simRadius(*this) + 64.0;
+            simValue                    = (player == Broodwar->self()) ? 0.0 : 10.0;
 
             // States
             lState                      = LocalState::None;

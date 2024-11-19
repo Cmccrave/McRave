@@ -38,7 +38,7 @@ namespace McRave::Targets {
             }
 
             // Rushes gotta not chase workers in our base
-            if (BuildOrder::isRush() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
+            if (BuildOrder::isRush() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()) && Spy::getEnemyTransition() != "WorkerRush")
                 return false;
 
             if (Util::getTime() < Time(8, 00)) {
