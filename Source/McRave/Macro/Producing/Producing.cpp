@@ -137,7 +137,8 @@ namespace McRave::Producing {
                     continue;
 
                 const auto value = scoreUnit(type);
-                scoreThisFrame += "{" + string(type.c_str()) + ", " + to_string(value) + "}, ";
+                if (value > 0.0)
+                    scoreThisFrame += "{" + string(type.c_str()) + ", " + to_string(value) + "}, ";
 
                 if (value >= best) {
                     best = value;
@@ -212,7 +213,8 @@ namespace McRave::Producing {
                         continue;
 
                     const auto value = scoreUnit(type);
-                    scoreThisFrame += "{" + string(type.c_str()) + ", " + to_string(value) + "}, ";
+                    if (value > 0.0)
+                        scoreThisFrame += "{" + string(type.c_str()) + ", " + to_string(value) + "}, ";
 
                     if (value > best) {
                         best = value;

@@ -21,7 +21,7 @@ namespace McRave::Workers {
                 desiredTransfer = 1;
             if (Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "Proxy9/9")
                 desiredTransfer = 1;
-            if (Units::getImmThreat() > 0.0f)
+            if (Units::getImmThreat() > 0.0f || Spy::getEnemyTransition() == "WorkerRush")
                 desiredTransfer = 0;
             if (Players::ZvZ())
                 desiredTransfer = 0;

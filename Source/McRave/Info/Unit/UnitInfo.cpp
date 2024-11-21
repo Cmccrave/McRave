@@ -171,7 +171,6 @@ namespace McRave
             data.priority               = Math::priority(*this);
             engageRadius                = Math::simRadius(*this) + 160.0;
             retreatRadius               = Math::simRadius(*this) + 64.0;
-            simValue                    = (player == Broodwar->self()) ? 0.0 : 10.0;
 
             // States
             lState                      = LocalState::None;
@@ -815,7 +814,7 @@ namespace McRave
             || unit()->isLoaded())
             return false;
 
-        // Check if we Unit being attacked by multiple bullets
+        // Check if we are being attacked by multiple bullets
         auto bulletCount = 0;
         for (auto &bullet : BWAPI::Broodwar->getBullets()) {
             if (bullet && bullet->exists() && bullet->getPlayer() != BWAPI::Broodwar->self() && bullet->getTarget() == bwUnit)
@@ -882,39 +881,7 @@ namespace McRave
 
     bool UnitInfo::attemptingRunby()
     {
-        auto runbyDesired = false;
-        static auto pounce = false;
-
-        // ZvP ling runby
-        if (Players::ZvP() && getType() == Zerg_Zergling) {
-            auto enemyOneBase = Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore";
-            auto backstabTiming = (Spy::getEnemyBuild() == "2Gate") ? Time(5, 00) : Time(4, 00);
-            auto backstabEasy = !Terrain::isPocketNatural() && enemyOneBase && Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0
-                && Spy::getEnemyTransition() != "Speedlot" && Spy::getEnemyTransition() != "ZealotRush" && Spy::getEnemyTransition() != "Unknown";
-
-            if (backstabEasy && Util::getTime() > backstabTiming) {
-                if (timeCompletesWhen() < Time(4, 00) && vis(Zerg_Sunken_Colony) > 0 && total(Zerg_Zergling) >= 12)
-                    return true;
-                if (timeCompletesWhen() < Time(5, 00) && vis(Zerg_Sunken_Colony) >= 4)
-                    return true;
-            }
-            if (Spy::getEnemyOpener() == "Proxy9/9" && timeCompletesWhen() < Time(4, 00) && Util::getTime() < Time(5, 00))
-                return true;
-        }
-
-        // ZvZ ling runby
-        if (Players::ZvZ() && getType() == Zerg_Zergling) {
-            if (Spy::enemyTurtle() && Util::getTime() > Time(4, 00) && timeCompletesWhen() < Time(3, 45) && Upgrading::haveOrUpgrading(UpgradeTypes::Metabolic_Boost, 1))
-                return true;
-        }
-
-        // ZvT ling runby
-        if (Players::ZvT() && getType() == Zerg_Zergling) {
-            if (BuildOrder::isRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0)
-                return true;
-        }
-
-        return false;
+        return gType == GoalType::Runby;
     }
 
     bool UnitInfo::attemptingSurround()

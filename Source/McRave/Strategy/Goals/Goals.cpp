@@ -100,11 +100,46 @@ namespace McRave::Goals {
         {
             oldGoals.clear();
             for (auto &unit : Units::getUnits(PlayerState::Self)) {
-                oldGoals[&*unit] = make_pair(unit->getGoal(), unit->getGoalType());
-                if (unit->getGoalType() != GoalType::Harass) {
+                if (unit->getGoalType() != GoalType::Runby) {
+                    oldGoals[&*unit] = make_pair(unit->getGoal(), unit->getGoalType());
                     unit->setGoal(Positions::Invalid);
                     unit->setGoalType(GoalType::None);
                 }
+            }
+        }
+
+        void runbyGoals()
+        {
+            if (!Terrain::getEnemyStartingPosition().isValid())
+                return;
+
+            // ZvP ling runby
+            if (Players::ZvP()) {
+                auto enemyOneBase = Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore";
+                auto backstabTiming = (Spy::getEnemyBuild() == "2Gate") ? Time(5, 00) : Time(4, 00);
+                auto backstabEasy = !Terrain::isPocketNatural() && enemyOneBase && Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0
+                    && Spy::getEnemyTransition() != "Speedlot" && Spy::getEnemyTransition() != "ZealotRush" && Spy::getEnemyTransition() != "Unknown";
+
+                if (backstabEasy && Util::getTime() > backstabTiming) {
+                    if (Util::getTime() < Time(4, 00) && vis(Zerg_Sunken_Colony) > 0 && total(Zerg_Zergling) >= 12)
+                        assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
+                    if (Util::getTime() < Time(5, 00) && vis(Zerg_Sunken_Colony) >= 4)
+                        assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
+                }
+                if (Spy::getEnemyOpener() == "Proxy9/9" && Util::getTime() < Time(4, 00))
+                    assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
+            }
+
+            // ZvZ ling runby
+            if (Players::ZvZ()) {
+                if (Spy::enemyTurtle() && Util::getTime() > Time(4, 00) && Upgrading::haveOrUpgrading(UpgradeTypes::Metabolic_Boost, 1))
+                    assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
+            }
+
+            // ZvT ling runby
+            if (Players::ZvT()) {
+                if (BuildOrder::isRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0)
+                    assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
             }
         }
 
@@ -435,6 +470,7 @@ namespace McRave::Goals {
     void onFrame()
     {
         clearGoals();
+        runbyGoals();
         updateGenericGoals();
         updateProtossGoals();
         updateTerranGoals();

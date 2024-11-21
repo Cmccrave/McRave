@@ -101,36 +101,31 @@ namespace McRave::Command
         if (!unit.getType().isWorker())
             return false;
 
-        if (unit.getDestination().isValid() && !unit.isBurrowed() && unit.getPosition().getDistance(unit.getDestination()) > 480.0) {
-            auto closestDist = DBL_MAX;
-            const auto destDist = BWEB::Map::getGroundDistance(unit.getPosition(), unit.getDestination());
-            ResourceInfo * closestResource = nullptr;
-            const auto checkCloserToDestination = [&](auto resource) {
-                const auto dist = BWEB::Map::getGroundDistance(resource->getPosition(), unit.getDestination());
-                if (dist < closestDist && dist < destDist - 320.0) {
-                    closestDist = dist;
-                    closestResource = resource;
-                    return true;
+        if (unit.getDestination().isValid() && !unit.isBurrowed()) {
+
+            // See if there's a way to resource walk closer to the destination
+            if (unit.getPosition().getDistance(unit.getDestination()) > 480.0) {
+                auto closestDist = DBL_MAX;
+                const auto destDist = BWEB::Map::getGroundDistance(unit.getPosition(), unit.getDestination());
+                ResourceInfo * closestResource = nullptr;
+
+                const auto checkCloserToDestination = [&](auto resource) {
+                    const auto dist = BWEB::Map::getGroundDistance(resource->getPosition(), unit.getDestination());
+                    if (dist < closestDist && dist < destDist - 320.0) {
+                        closestDist = dist;
+                        closestResource = resource;
+                        return true;
+                    }
+                    return false;
+                };
+
+                for (auto &m : Resources::getMyMinerals()) {
+                    auto mineral = &*m;
+                    if (mineral->unit()->exists())
+                        checkCloserToDestination(mineral);
                 }
-                return false;
-            };
 
-            // See if there's a way to resource walk
-            for (auto &m : Resources::getMyMinerals()) {
-                auto mineral = &*m;
-                if (mineral->unit()->exists())
-                    checkCloserToDestination(mineral);
-            }
-
-            // Gather it if we are close to another unit, egg, etc
-            // TODO: Egg lookup
-            if (closestResource) {
-
-                auto closestUnit = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return !u->getType().isWorker() && u->isCompleted() && !u->getType().isBuilding() && !u->isFlying() && u->getPosition().getDistance(unit.getPosition()) < 64.0;
-                });
-
-                if (closestUnit) {
+                if (closestResource) {
                     unit.unit()->gather(closestResource->unit());
                     unit.commandText = "MineralWalk";
                     unit.commandFrame = Broodwar->getFrameCount();
@@ -138,20 +133,6 @@ namespace McRave::Command
                 }
             }
         }
-        //for (auto &g : Resources::getMyGas()) {
-        //    auto &gas = *g;
-        //    if (unit.getNavigation() == gas.getPosition()) {
-        //        unit.unit()->rightClick(gas.unit());
-        //        return true;
-        //    }
-        //}
-        //for (auto &b : Resources::getMyBoulders()) {
-        //    auto &boulder = *b;
-        //    if (unit.getNavigation() == boulder.getPosition()) {
-        //        unit.unit()->gather(boulder.unit());
-        //        return true;
-        //    }
-        //}
 
         return false;
     }
@@ -704,16 +685,22 @@ namespace McRave::Command
         if (!resource)
             return false;
 
+
+        auto closestChokepoint = Util::getClosestChokepoint(unit.getPosition());
+        auto nearNonBlockingChoke = closestChokepoint && !closestChokepoint->Blocked() && unit.getPosition().getDistance(Position(closestChokepoint->Center())) < 160.0;
+        auto boxDist = Util::boxDistance(unit.getType(), unit.getPosition(), resource->getType(), resource->getPosition());
+
+
+        auto closestUnit = Util::getClosestUnit(unit.getPosition(), PlayerState::None, [&](auto &u) {
+            return u->isCompleted() && *u != unit && !u->getType().isBuilding() && !u->isFlying() && u->getPosition().getDistance(unit.getPosition()) < 64.0;
+        });
+
         const auto canGather = [&](ResourceInfo * resource) {
             if (unit.unit()->getTarget() == resource->unit() && unit.unit()->getLastCommand().getType() == UnitCommandTypes::Gather)
                 return false;
-            auto boxDist = Util::boxDistance(unit.getType(), unit.getPosition(), resource->getType(), resource->getPosition());
-            if ((unit.hasResource() && boxDist > 0 && unit.unit()->getOrder() == Orders::MoveToMinerals && unit.getResource().lock()->getGatherOrderPositions().find(unit.getPosition()) != unit.getResource().lock()->getGatherOrderPositions().end()))
+
+            if (boxDist > 0 && unit.unit()->getOrder() == Orders::MoveToMinerals && resource->getGatherOrderPositions().find(unit.getPosition()) != resource->getGatherOrderPositions().end())
                 return true;
-
-            auto closestChokepoint = Util::getClosestChokepoint(unit.getPosition());
-            auto nearNonBlockingChoke = closestChokepoint && !closestChokepoint->Blocked() && unit.getPosition().getDistance(Position(closestChokepoint->Center())) < 160.0;
-
             if (!Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && Util::getTime() < Time(4, 00))
                 return true;
             if (Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) > 0.0f)
@@ -724,13 +711,9 @@ namespace McRave::Command
                 return true;
             if (Planning::overlapsPlan(unit, unit.getPosition()))
                 return true;
+            if (closestUnit && boxDist >= 160.0)
+                return true;
             return false;
-        };
-
-        const auto canClick = [&](ResourceInfo * resource) {
-            if (unit.unit()->getTarget() == resource->unit() && unit.unit()->getLastCommand().getType() == UnitCommandTypes::Right_Click_Unit)
-                return false;
-            return (resource->getType().isRefinery() && !resource->unit()->isCompleted());
         };
 
         // These worker order timers are based off Stardust: https://github.com/bmnielsen/Stardust/blob/master/src/Workers/WorkerOrderTimer.cpp#L153
@@ -743,8 +726,8 @@ namespace McRave::Command
                 if (optimal != unit.getPositionHistory().end()) {
 
                     // Must check if we found a position to close, otherwise sometimes we send gather commands every frame or issue the command too early, not benefting from our optimization
-                    for (auto &[frame, position] : unit.getPositionHistory()) {
-                        if (frame <= (frame + 2))
+                    for (auto &[f, position] : unit.getPositionHistory()) {
+                        if (f <= (frame + 2))
                             continue;
                         unit.getResource().lock()->getGatherOrderPositions().erase(position);
                     }
@@ -799,12 +782,6 @@ namespace McRave::Command
         // Gather from resource
         auto station = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
         if (resource->unit()->exists()) {
-            if (canClick(resource)) {
-                unit.unit()->rightClick(resource->unit());
-                unit.commandText = "Gather";
-                unit.commandFrame = Broodwar->getFrameCount();
-                return true;
-            }
             if (canGather(resource)) {
                 unit.unit()->gather(resource->unit());
                 unit.commandText = "Gather";

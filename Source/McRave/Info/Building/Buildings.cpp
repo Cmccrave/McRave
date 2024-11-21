@@ -78,10 +78,11 @@ namespace McRave::Buildings {
             auto thirdHatch = !mainHatch && !naturalHatch && isStation;
 
             auto cancelTiming = (naturalHatch && !BuildOrder::takeNatural() && Util::getTime() < Time(4, 00)) || (thirdHatch && !BuildOrder::takeThird() && Util::getTime() < Time(4, 00));
-            auto cancelLow = (building.frameCompletesWhen() - Broodwar->getFrameCount() < 24 || building.getHealth() < 50);
+            auto cancelLow = building.getHealth() < 50;
+            auto cancelLate = building.frameCompletesWhen() - Broodwar->getFrameCount() < 50;
 
             // Cancelling natural hatchery if we're being proxy 2gated
-            if (naturalHatch && cancelTiming && cancelLow && vis(Zerg_Hatchery) >= 3 && Spy::getEnemyOpener() == "Proxy9/9") {
+            if (naturalHatch && cancelTiming && cancelLow && Spy::getEnemyOpener() == "Proxy9/9") {
                 Events::onUnitCancelBecauseBWAPISucks(building);
                 building.unit()->cancelConstruction();
             }

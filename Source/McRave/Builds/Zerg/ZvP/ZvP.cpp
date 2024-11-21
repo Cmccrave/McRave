@@ -19,13 +19,14 @@ namespace McRave::BuildOrder::Zerg {
         inOpening =                                 true;
         inBookSupply =                              true;
 
-        wantNatural =                               (Spy::getEnemyOpener() != "Proxy9/9" || hatchCount() >= 3);
+        wantNatural =                               hatchCount() >= 3 || (Spy::getEnemyOpener() != "Proxy9/9");
 
         wantThird =                                 !wantNatural || Spy::getEnemyBuild() == "FFE" || (Spy::enemyFastExpand() && hatchCount() >= 3) || hatchCount() >= 5
                                                     || (Util::getTime() < Time(3, 30) && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) == 0 && Spy::getEnemyBuild() == "Unknown");
 
         wallNat =                                   (Spy::getEnemyOpener() == "Proxy9/9" && Stations::getStations(PlayerState::Self).size() >= 2)
                                                     || (Spy::getEnemyBuild() == "FFE" && hatchCount() >= 4)
+                                                    || (Spy::getEnemyBuild() == "2Gate" && hatchCount() >= 2)
                                                     || Spy::getEnemyTransition() == "Speedlot" || Spy::getEnemyTransition() == "ZealotRush";
 
         wallMain =                                  Terrain::isPocketNatural() && !wantThird;
@@ -66,7 +67,7 @@ namespace McRave::BuildOrder::Zerg {
             auto idx = trackables.find(unit.getType());
             if (idx != trackables.end() && (inOpening || unit.isThreatening())) {
                 arrivalValue += idx->second / 1.25;
-                if (Units::inBoundUnit(unit, 45) || vis(Zerg_Zergling) < 6)
+                if (Units::inBoundUnit(unit))
                     arrivalValue += idx->second / 1.15;
             }
         }
@@ -124,13 +125,11 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         // CannonRush
-        if (Spy::getEnemyBuild() == "CannonRush")
+        if (Spy::getEnemyBuild() == "CannonRush" || Spy::getEnemyTransition() == "WorkerRush")
             initialValue = 12;
 
         // If they're aggressive, delay remaining build until we've made a transitional count (at 10 lings, we have minerals)
         transitionLings = min(initialValue, 10);
-        if (Spy::getEnemyOpener() == "Proxy9/9" || Spy::getEnemyTransition() == "WorkerRush")
-            transitionLings = 16;
 
         if (total(Zerg_Zergling) < initialValue)
             return initialValue;
@@ -396,7 +395,7 @@ namespace McRave::BuildOrder::Zerg {
         upgradeQueue[Zerg_Carapace] =                   com(Zerg_Evolution_Chamber) > 0 && total(Zerg_Hydralisk) >= 18;
 
         // Pumping
-        auto needMinimumHydras = com(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Hydralisk) < Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + 2;
+        auto needMinimumHydras = com(Zerg_Hydralisk_Den) > 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0 && vis(Zerg_Hydralisk) < Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + 2;
         auto firstHydraPump = (vis(Zerg_Drone) >= 30 && total(Zerg_Hydralisk) < 18);
         auto secondHydraPump = (vis(Zerg_Drone) >= 45);
 

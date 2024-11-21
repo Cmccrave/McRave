@@ -61,7 +61,7 @@ namespace McRave::BuildOrder::Zerg {
                     if (grdNeeded > colonies)
                         needSunks = true;
 
-                    if ((atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies) || (vis(Zerg_Spawning_Pool) > 0 && grdNeeded > colonies)) {
+                    if ((atPercent(Zerg_Spawning_Pool, 0.66) && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
                         buildQueue[Zerg_Creep_Colony] += 1;
                         return; // TODO: Only queue 1 for now otherwise sometimes we plan 2 (2 walls separately request a colony)
                     }
@@ -83,7 +83,7 @@ namespace McRave::BuildOrder::Zerg {
                     if (grdNeeded > colonies)
                         needSunks = true;
 
-                    if ((vis(Zerg_Spawning_Pool) > 0 && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
+                    if ((atPercent(Zerg_Spawning_Pool, 0.66) && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
                         buildQueue[Zerg_Creep_Colony] += 1;
                         return; // TODO: Only queue 1 for now otherwise sometimes we plan 2 (2 stations separately request a colony)
                     }
@@ -161,10 +161,6 @@ namespace McRave::BuildOrder::Zerg {
                 gasDesired = allowNewGeyser && needGeyser;
 
                 buildQueue[Zerg_Extractor] = min(vis(Zerg_Extractor) + gasDesired, Resources::getGasCount());
-
-                // Try to cancel extractors we don't need
-                if (gasLimit == 0 && !Players::ZvZ())
-                    buildQueue[Zerg_Extractor] = 0;
             }
         }
 
@@ -300,8 +296,11 @@ namespace McRave::BuildOrder::Zerg {
             if (Spy::enemyInvis() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 && Util::getTime() > Time(4, 45) && atPercent(Zerg_Lair, 0.5))
                 gasLimit += 1;
 
-            // If we have very limited mineral mining (maybe we pulled workers to fight) we need to cut all gas
-            if (!Players::ZvZ() && Workers::getMineralWorkers() <= 5 && Util::getTime() < Time(5, 00))
+            //// If we have very limited mineral mining (maybe we pulled workers to fight) we need to cut all gas
+            //if (!Players::ZvZ() && Workers::getMineralWorkers() <= 5 && Util::getTime() < Time(5, 00))
+            //    gasLimit = 0;
+
+            if (!Players::ZvZ() && Spy::getEnemyTransition() == "WorkerRush" && Util::getTime() < Time(3, 00))
                 gasLimit = 0;
 
             // If we have to pull everything we have

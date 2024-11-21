@@ -12,7 +12,7 @@ BWEM/EasyBMP_1.06/EasyBMP_UserManual.pdf
 BWEM/EasyBMP_1.06/sample/EasyBMPtext.bmp
 BWEM/EasyBMP_1.06/sample/makefile
 VisualStudio/.vs/McRave/v15/.suo
-VisualStudio/Debug/area.obj
+VisualStudio/Debug/*
 *.obj
 *.log
 *.tlog

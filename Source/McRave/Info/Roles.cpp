@@ -27,7 +27,7 @@ namespace McRave::Roles {
                     health = 31;
 
                 return (unit->getType() == Protoss_Probe && unit->getShields() <= 4)
-                    || (unit->getType() == Zerg_Drone && unit->getHealth() < (Spy::getEnemyTransition() == "WorkerRush" ? 6 : health));
+                    || (unit->getType() == Zerg_Drone && unit->getHealth() < (Spy::getEnemyTransition() == "WorkerRush" ? 16 : health));
             };
 
             // Only pull the closest worker
@@ -137,8 +137,12 @@ namespace McRave::Roles {
                 return u->getType().isWorker() && u->getBuildType() == Zerg_Hatchery && Broodwar->self()->minerals() >= 200;
             });
 
-            // All-in with marines/zealots - don't pull
-            if (Spy::getEnemyTransition() == "WorkerRush" && (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0 || Players::getCompleteCount(PlayerState::Enemy,Protoss_Zealot) > 0)) {
+            // Worker rush - pull 3 unless they all in
+            if (Spy::getEnemyTransition() == "WorkerRush") {
+                if (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0 || Players::getCompleteCount(PlayerState::Enemy, Protoss_Zealot) > 0)
+                    return;
+                if (com(Zerg_Spawning_Pool) == 0 && Units::getImmThreat() > 0.0f)
+                    forceCombatWorker(3, Position(Terrain::getMainPosition()), LocalState::Attack, GlobalState::Attack);
                 return;
             }
 

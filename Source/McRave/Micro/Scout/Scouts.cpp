@@ -229,6 +229,7 @@ namespace McRave::Scouts {
                         || Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0
                         || Players::getTotalCount(PlayerState::Enemy, Terran_Factory) > 0
                         || (Terrain::getEnemyStartingPosition().isValid() && vis(Zerg_Zergling) > 0)
+                        || Spy::getEnemyTransition() == "WorkerRush"
                         || Util::getTime() > Time(4, 00))
                         main.desiredTypeCounts[Zerg_Drone] = 0;
 

@@ -21,6 +21,7 @@ namespace McRave::Units {
         set<shared_ptr<UnitInfo>> myUnits;
         set<shared_ptr<UnitInfo>> neutralUnits;
         set<shared_ptr<UnitInfo>> allyUnits;
+        set<shared_ptr<UnitInfo>> noneUnits;
         map<UnitSizeType, int> allyGrdSizes;
         map<UnitSizeType, int> enemyGrdSizes;
         map<UnitSizeType, int> allyAirSizes;
@@ -123,6 +124,7 @@ namespace McRave::Units {
                 for (auto &u : player.getUnits()) {
                     UnitInfo &unit = *u;
                     neutralUnits.insert(u);
+                    noneUnits.insert(u);
 
                     unit.update();
 
@@ -140,6 +142,7 @@ namespace McRave::Units {
             myUnits.clear();
             neutralUnits.clear();
             allyUnits.clear();
+            noneUnits.clear();
 
             allyGrdSizes.clear();
             enemyGrdSizes.clear();
@@ -174,6 +177,7 @@ namespace McRave::Units {
                         UnitInfo &unit = *u;
 
                         myUnits.insert(u);
+                        noneUnits.insert(u);
                         auto canAttack = (unit.canAttackGround() || unit.canAttackAir());
                         auto attackingUnit = (unit.getType().isBuilding() && canAttack) || (!unit.getType().isBuilding() && !unit.getType().isWorker() && canAttack);
                         if (attackingUnit) {
@@ -191,6 +195,7 @@ namespace McRave::Units {
                         UnitInfo &unit = *u;
 
                         enemyUnits.insert(u);
+                        noneUnits.insert(u);
                         auto canAttack = (unit.canAttackGround() || unit.canAttackAir());
                         auto attackingUnit = (unit.getType().isBuilding() && canAttack) || (!unit.getType().isBuilding() && !unit.getType().isWorker() && canAttack);
                         if (attackingUnit) {
@@ -262,8 +267,11 @@ namespace McRave::Units {
             return neutralUnits;
         case PlayerState::Self:
             return myUnits;
+        case PlayerState::None:
+            return noneUnits;
         }
-        return myUnits;
+        Broodwar << "Returning all unit set, not intended?" << endl;
+        return noneUnits;
     }
 
     double getDamageRatioGrd(PlayerState state, DamageType type) {

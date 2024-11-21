@@ -203,7 +203,7 @@ namespace McRave::Targets {
                 if (target.isProxy() && target.getType().isBuilding() && Spy::enemyProxy() && unit.getType() != Zerg_Mutalisk) {
                     if ((target.unit()->exists() && target.unit()->getBuildUnit()) || (target.getType().getRace() == Races::Terran && !target.isCompleted()))
                         return Priority::Minor;
-                    else if (proxyTargeting.find(target.getType()) != proxyTargeting.end() && ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && Players::getVisibleCount(PlayerState::Enemy, Terran_Marine) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) == 0) || !unit.getType().isWorker()))
+                    else if (proxyTargeting.find(target.getType()) != proxyTargeting.end() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) == 0 && Players::getCompleteCount(PlayerState::Enemy, Protoss_Zealot) == 0)
                         return Priority::Critical;
                     else if (target.canAttackGround())
                         return Priority::Critical;

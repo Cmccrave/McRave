@@ -18,7 +18,7 @@ namespace McRave::BuildOrder::Zerg {
         wallNat =                                   false;
         wallMain =                                  false;
 
-        wantNatural =                               true;
+        wantNatural =                               hatchCount() >= 3 || (Spy::getEnemyTransition() != "WorkerRush");
         wantThird =                                 hatchCount() >= 3 || (Spy::enemyFastExpand() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0);
 
         mineralThird =                              false;
@@ -128,7 +128,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Buildings
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
-        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10) + (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 18);
+        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10 && vis(Zerg_Spawning_Pool) > 0) + (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 18);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.95);
@@ -208,7 +208,7 @@ namespace McRave::BuildOrder::Zerg {
         if (!inTransition) {
             if (Spy::getEnemyTransition() == "WorkerRush") {
                 currentBuild = "PoolHatch";
-                currentOpener = "Overpool";
+                currentOpener = "12Pool";
                 currentTransition = "2HatchMuta";
             }
         }
