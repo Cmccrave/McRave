@@ -881,7 +881,7 @@ namespace McRave
 
     bool UnitInfo::attemptingRunby()
     {
-        return gType == GoalType::Runby;
+        return Terrain::getEnemyStartingPosition().isValid() && gType == GoalType::Runby;
     }
 
     bool UnitInfo::attemptingSurround()

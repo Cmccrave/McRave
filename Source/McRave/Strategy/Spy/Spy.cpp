@@ -63,7 +63,7 @@ namespace McRave::Spy {
         }
         return current >= count;
     }
-    
+
     void onFrame()
     {
         if (Players::vFFA())
@@ -77,12 +77,13 @@ namespace McRave::Spy {
         // Verify strategy checking for confirmations
         for (auto &strat : theSpy.strats) {
             strat->debugLog();
-            if (!strat->likely || strat->changeable)
+            if (!strat->confirmed && (!strat->likely || strat->changeable))
                 strat->updateStrat();
         }
         for (auto &blueprint : theSpy.blueprints) {
+            blueprint->possible = blueprint->name != "Unknown";
             blueprint->debugLog();
-            if (!blueprint->likely || blueprint->changeable)
+            if (!blueprint->confirmed && (!blueprint->likely || blueprint->changeable))
                 blueprint->updateBlueprint();
         }
 

@@ -131,9 +131,12 @@ namespace McRave::Combat::Navigation {
 
         // Add any new sim units
         if (unit.hasSimTarget()) {
-            auto newSimUnit = simUnits.find(unit.getSimTarget()) == simUnits.end();
-            if (newSimUnit)
-                simUnits[unit.getSimTarget()] = Broodwar->getFrameCount() + (unit.getSimTarget().lock()->getType().isBuilding() ? 480 : 240);
+            auto simTarget = unit.getSimTarget().lock();
+            if (simTarget->canAttackAir()) {
+                auto newSimUnit = simUnits.find(unit.getSimTarget()) == simUnits.end();
+                if (newSimUnit)
+                    simUnits[unit.getSimTarget()] = Broodwar->getFrameCount() + 1000;
+            }
         }
 
         // For pathing purposes, we store light air commander sim positions
@@ -145,6 +148,9 @@ namespace McRave::Combat::Navigation {
 
     void updateGlobalGroundPaths()
     {
+        if (!Terrain::getEnemyStartingPosition().isValid())
+            return;
+
         // Create one path from commander to retreat
         auto harassingCommander = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
             return !u->hasCommander() && u->attemptingRunby() && u->getGlobalState() == GlobalState::Attack;
@@ -174,6 +180,9 @@ namespace McRave::Combat::Navigation {
 
     void updateGlobalFlyingPaths()
     {
+        if (!Combat::getHarassPosition().isValid())
+            return;
+
         // Create one path from commander to retreat
         auto harassingCommander = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
             return u->isLightAir() && !u->hasCommander() && u->getGlobalState() == GlobalState::Attack && !u->getGoal().isValid();
@@ -199,7 +208,7 @@ namespace McRave::Combat::Navigation {
 
             // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
             auto &simPositions = lastSimPositions[&unit];
-            auto cachedDist = min(simDistCurrent, int(unit.getRetreatRadius() + 32.0));
+            auto cachedDist = min(simDistCurrent, int(unit.getRetreatRadius() + 64.0));
             const auto flyerAttack = [&](const TilePosition &t) {
                 const auto center = Position(t) + Position(16, 16);
 
@@ -208,8 +217,14 @@ namespace McRave::Combat::Navigation {
                     d = min(d, center.getApproxDistance(pos));
 
                 auto dist = max(0.01, double(d) - cachedDist);
-                auto vis = clamp(double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(t)) / 960.0, 0.05, 3.0);
-                return 1.0 / (vis * dist);
+                auto vis = clamp(double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(t)) / 2000.0, 0.05, 0.5);
+                return 1.0 / (dist * vis);
+
+
+                //if (center.getDistance(simPosition) < unit.getRetreatRadius() + 64.0)
+                //    return 99999.9;
+                //auto threat = Grids::getAirThreat(t, PlayerState::Enemy) * 2500.0;
+                //return threat;
             };
 
             flyerHarassPath ={ unit.getDestination(), unit.getPosition(), unit.getType() };

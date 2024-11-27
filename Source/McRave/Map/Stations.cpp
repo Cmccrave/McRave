@@ -238,15 +238,13 @@ namespace McRave::Stations
             auto groundCount = getGroundDefenseCount(station);
 
             if (station->isMain()) {
-                // Add 2 sunks if we gave up the natural intentionally against a proxy unless it's horror gates
-                if (!BuildOrder::takeNatural() && Spy::getEnemyOpener() == "Proxy9/9") {
-                    if (Broodwar->getStartLocations().size() <= 2) {
-                        if (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0 && Util::getTime() < Time(3, 45))
-                            return (Util::getTime() > Time(2, 00)) + (Util::getTime() > Time(2, 20)) - groundCount;
-                        return 0;
-                    }
-                    return (Util::getTime() > Time(2, 20)) + (Util::getTime() > Time(3, 00)) - groundCount;
-                }
+                // Add 2 sunks if we gave up the natural intentionally against horror gates
+                if (Spy::getEnemyOpener() == "Horror9/9")
+                    return (Util::getTime() > Time(2, 00)) + (Util::getTime() > Time(2, 20)) - groundCount;
+
+                //// Add 1 sunks if we opened greedy against proxy gates
+                //if (Spy::getEnemyOpener() == "Proxy9/9" && BuildOrder::getCurrentBuild() == "HatchPool")
+                //    return (Util::getTime() > Time(3, 30)) - groundCount;
 
                 // Add a sunk in main if we lost the natural, maybe it holds to get a win
                 if (Players::getDeadCount(PlayerState::Self, Zerg_Hatchery) > 0) {
@@ -321,7 +319,7 @@ namespace McRave::Stations
                         desiredDefenses = max(desiredDefenses, 1 + (vis(Zerg_Spire) > 0));
 
                     // 3 Hatch
-                    if (Util::getTime() < Time(6, 30) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && vis(Zerg_Spire) > 0)
+                    if (Util::getTime() < Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && vis(Zerg_Spire) > 0)
                         return 4 - groundCount;
 
                     if (total(Zerg_Mutalisk) >= 4) {

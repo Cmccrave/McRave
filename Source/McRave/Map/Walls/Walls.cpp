@@ -204,8 +204,11 @@ namespace McRave::Walls {
                     + (Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == "9/9")
                     return 1
+                    + (BuildOrder::getCurrentOpener() == "12Hatch")
                     + (Util::getTime() > Time(4, 30));
                 if (Spy::getEnemyOpener() == "Proxy9/9")
+                    return 2;
+                if (Spy::getEnemyOpener() == "Horror9/9")
                     return 0;
             }
 
@@ -251,9 +254,9 @@ namespace McRave::Walls {
                 // DT
                 if (Spy::getEnemyTransition() == "DT") {
                     return (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(5, 00))
-                        + (Util::getTime() > Time(5, 20))
-                        + (Util::getTime() > Time(5, 40));
+                        + (Util::getTime() > Time(4, 45))
+                        + (Util::getTime() > Time(4, 45))
+                        + (Util::getTime() > Time(5, 30));
                 }
 
                 // Corsair
@@ -297,8 +300,8 @@ namespace McRave::Walls {
                 if (noTech && Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown") {
                     return (Util::getTime() > Time(4, 00))
                         + (Util::getTime() > Time(4, 30))
-                        + (Util::getTime() > Time(8, 00))
-                        + (Util::getTime() > Time(8, 30))
+                        + (Util::getTime() > Time(7, 00))
+                        + (Util::getTime() > Time(7, 30))
                         - Spy::enemyProxy();
                 }
             }
@@ -314,9 +317,9 @@ namespace McRave::Walls {
                     return (Util::getTime() > Time(7, 00));
 
                 if (Spy::getEnemyTransition() == "Speedlot")
-                    return (Util::getTime() > Time(6, 30))
-                    + (Util::getTime() > Time(7, 00))
-                    + (Util::getTime() > Time(8, 00));
+                    return (Util::getTime() > Time(6, 00))
+                    + (Util::getTime() > Time(6, 20))
+                    + (Util::getTime() > Time(6, 40));
 
                 if (Spy::getEnemyTransition() == "Sairlot")
                     return 2 * (Util::getTime() > Time(6, 50));
@@ -365,6 +368,10 @@ namespace McRave::Walls {
                 if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0)
                     expected--;
             }
+
+            // Against turtle builds we don't need any for a while
+            if (Spy::enemyTurtle() && Util::getTime() < Time(5, 00))
+                return 0;
 
             return max(minimum, expected - reduction);
         }

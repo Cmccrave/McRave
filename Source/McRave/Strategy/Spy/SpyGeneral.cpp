@@ -105,14 +105,14 @@ namespace McRave::Spy::General {
                 UnitInfo &unit =*u;
 
                 // Monitor for worker pulls
-                if (unit.getType().isWorker()) {
+                if (unit.getType().isWorker() && unit.getPosition().isValid() && !unit.movedFlag) {
                     auto myMain = false;
                     if (unit.getTilePosition().isValid()) {
                         auto closestMain = BWEB::Stations::getClosestMainStation(unit.getTilePosition());
                         if (closestMain == Terrain::getMyMain())
                             myMain = true;
                     }
-                    if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) || unit.isProxy() || myMain)
+                    if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) || unit.isProxy() || myMain || (Terrain::getEnemyStartingPosition().isValid() && !Terrain::inTerritory(PlayerState::Enemy, unit.getPosition())))
                         theSpy.workersPulled++;
                 }
 

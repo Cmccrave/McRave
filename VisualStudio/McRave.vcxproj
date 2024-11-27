@@ -66,6 +66,7 @@
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvT\ZvT.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvT\ZvT_HatchPool.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvT\ZvT_PoolHatch.cpp" />
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvT\ZvT_PoolLair.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ_HatchPool.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvZ\ZvZ_PoolHatch.cpp" />

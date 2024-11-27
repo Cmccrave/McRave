@@ -110,12 +110,15 @@ namespace McRave::Targets {
             }
 
             // One/two shot is high priority to hit
-            if (unit.isWithinReach(target) && (Combat::Clusters::canDecimate(unit, target, 2) || Combat::Clusters::canDecimate(unit, target, 1)))
+            if ((unit.isWithinRange(target) || target.isWithinRange(unit)) && (Combat::Clusters::canDecimate(unit, target, 2) || Combat::Clusters::canDecimate(unit, target, 1)))
                 return Priority::Critical;
 
             // If a building is unprotected
-            if (target.getType().isBuilding() && target.getUnitsInRangeOfThis().empty() && unit.isWithinRange(target))
+            if (target.getType().isBuilding() && !target.canAttackAir() && target.getUnitsInRangeOfThis().empty() && (unit.isWithinRange(target) || target.isWithinRange(unit))) {
+                if (target.getType() == Terran_Armory)
+                    return Priority::Critical;
                 return Priority::Major;
+            }
 
             return Priority::Normal;
         }
@@ -179,7 +182,9 @@ namespace McRave::Targets {
 
                 // Ignore if we need to runby
                 if (unit.attemptingRunby() && Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) < 8) {
-                    if (target.getType() != Terran_Marine && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
+                    if (target.getType().isBuilding() && !target.canAttackGround() && target.getUnitsInRangeOfThis().empty() && unit.getHealth() < unit.getType().maxHitPoints())
+                        return Priority::Critical;
+                    if (target.getType() != Terran_Marine && !target.hasAttackedRecently() && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
                         return Priority::Ignore;
                     if (target.getPosition().isValid() && Grids::getGroundThreat(target.getPosition(), PlayerState::Enemy) <= 0.1f && Util::getTime() < Time(7, 30))
                         return Priority::Major;
@@ -445,8 +450,8 @@ namespace McRave::Targets {
             double distBest = DBL_MAX;
             for (auto &t : Units::getUnits(pState)) {
                 UnitInfo &target = *t;
-                auto targetCanAttack = ((unit.isFlying() && target.getAirDamage() > 0.0) || (!unit.isFlying() && target.canAttackGround()) || (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine));
-                auto unitCanAttack = ((target.isFlying() && unit.getAirDamage() > 0.0) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));
+                auto targetCanAttack = ((unit.isFlying() && target.canAttackAir()) || (!unit.isFlying() && target.canAttackGround()) || (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine));
+                auto unitCanAttack = ((target.isFlying() && unit.canAttackAir()) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));
 
                 if (!targetCanAttack && (!unit.hasTarget() || target != unit.getTarget()))
                     continue;

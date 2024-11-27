@@ -39,8 +39,7 @@ namespace McRave::BuildOrder::Zerg {
         void queueWallDefenses()
         {
             // Adding Wall defenses
-            auto needLarvaSpending = vis(Zerg_Larva) > 3 && Broodwar->self()->supplyUsed() < Broodwar->self()->supplyTotal() && Util::getTime() < Time(4, 30) && com(Zerg_Sunken_Colony) >= 2;
-            if (!needLarvaSpending && !rush && (vis(Zerg_Drone) >= 9 || Players::ZvZ()) && !isPreparingAllIn()) {
+            if ((vis(Zerg_Drone) >= 8 || Players::ZvZ()) && !isPreparingAllIn()) {
                 for (auto &[_, wall] : BWEB::Walls::getWalls()) {
                     if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
                         continue;
@@ -91,7 +90,7 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Prepare evo chamber just in case and not a hydra build
-            if (focusUnit != Zerg_Hydralisk) {
+            if (focusUnit != Zerg_Hydralisk && focusUnit != Zerg_Lurker) {
                 if (Players::ZvT() && !Spy::enemyFastExpand() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()) && Util::getTime() > Time(4, 30)) {
                     needSpores = true;
                     wallNat = true;
@@ -238,8 +237,8 @@ namespace McRave::BuildOrder::Zerg {
 
                 // ZvT: Get 3 gas bases first
                 if (Players::ZvT()) {
-                    if (vsMech && int(Stations::getStations(PlayerState::Self).size()) >= 3)
-                        hatchPerBase = 2.50;
+                    //if (vsMech && int(Stations::getStations(PlayerState::Self).size()) >= 3)
+                    //    hatchPerBase = 2.50;
                     if (int(Stations::getStations(PlayerState::Self).size()) >= 4)
                         hatchPerBase = 2.25;
                 }
@@ -319,7 +318,9 @@ namespace McRave::BuildOrder::Zerg {
                     auto dropGasLarva       = !Players::ZvZ() && vis(Zerg_Larva) >= hatchCount() && unitReservations.empty();
                     auto dropGasDefenses    = needSunks && (Players::ZvZ() || Spy::enemyProxy() || Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "8Rax");
 
-                    auto mineralToGasRatio  = minRemaining < max(100, 8 * vis(Zerg_Drone)) && gasRemaining > max(150, 13 * vis(Zerg_Drone));
+
+                    auto gasPer = (vis(Zerg_Spire) > 0) ? 20 : 13;
+                    auto mineralToGasRatio  = minRemaining < max(100, 8 * vis(Zerg_Drone)) && gasRemaining > max(150, gasPer * vis(Zerg_Drone));
 
 
                     if (mineralToGasRatio && !rush && !pressure) {
@@ -733,7 +734,7 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             for (auto &[type, count] : priorityOrder) {
-                auto typeAvailable = (unlockReady(type) && vis(type) < count) || (type.isWorker() && Resources::isMineralSaturated() && Resources::isGasSaturated());
+                auto typeAvailable = (unlockReady(type) && isFocusUnit(type) && vis(type) < count) || (type.isWorker() && (!Resources::isMineralSaturated() || !Resources::isGasSaturated()) && vis(type) < count);
                 if (!typeAvailable)
                     continue;
 

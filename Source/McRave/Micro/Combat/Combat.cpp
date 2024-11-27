@@ -17,7 +17,6 @@ namespace McRave::Combat {
         Position defendPosition = Positions::Invalid;
 
         // Harassing
-        int timeHarassingHere = 1500;
         Position harassPosition = Positions::Invalid;
 
         // Attacking

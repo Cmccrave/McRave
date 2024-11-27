@@ -68,9 +68,9 @@ namespace McRave::Command {
                 const auto w = WalkPosition(p);
                 auto current = score(w);
 
-                if (unit.isLightAir() && unit.getLocalState() != LocalState::Attack) {
-                    auto edgePush = clamp(Terrain::getClosestMapEdge(unit.getPosition()).getDistance(p) / 160.0, 0.01, 1.00);
-                    auto cornerPush = clamp(Terrain::getClosestMapCorner(unit.getPosition()).getDistance(p) / 320.0, 0.01, 1.00);
+                if (unit.isLightAir()) {
+                    auto edgePush = clamp(Terrain::getClosestMapEdge(unit.getPosition()).getDistance(p) / 160.0, 0.01, 5.00);
+                    auto cornerPush = clamp(Terrain::getClosestMapCorner(unit.getPosition()).getDistance(p) / 320.0, 0.01, 5.00);
                     current = current * cornerPush * edgePush;
                 }
 
@@ -445,7 +445,7 @@ namespace McRave::Command {
                     const auto selfFasterSpeed = (Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost, 1) && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost, 1));
                     const auto defenders = com(Zerg_Sunken_Colony) > 0 && Combat::State::isStaticRetreat(unit.getType());
 
-                    if (Util::getTime() < Time(4, 30) && Players::ZvP() && unit.getHealth() <= 16)
+                    if (Util::getTime() < Time(4, 30) && Players::ZvP() && unit.getHealth() <= 16 && com(Zerg_Sunken_Colony) > 0)
                         return true;
                     if (Util::getTime() < Time(4, 30) && !target.isThreatening() && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10)
                         return true;

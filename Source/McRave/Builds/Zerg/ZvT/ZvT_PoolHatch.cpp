@@ -17,6 +17,7 @@ namespace McRave::BuildOrder::Zerg {
         scout =                                         scout || (vis(Zerg_Spawning_Pool) > 0 && com(Zerg_Drone) >= 4 && !Terrain::getEnemyStartingPosition().isValid());
         transitionReady =                               (enemyHeldRush && vis(Zerg_Drone) >= 10);
         rush =                                          !enemyHeldRush || total(Zerg_Drone) < 8;
+        inTransition =                                  true;
 
         // Buildings
         buildQueue[Zerg_Spawning_Pool] =                s >= 8;

@@ -45,7 +45,7 @@ namespace McRave::Visuals {
 
                 if (boxTL.isValid() && boxBR.isValid()) {
                     Visuals::drawBox(boxTL, boxBR, color, true);
-                    Visuals::drawBox(boxTL - Position(1, 1), boxTL + Position(1, 1), border);
+                    Visuals::drawBox(boxTL - Position(1, 1), boxBR + Position(1, 1), border);
                     for (auto &s : textLines) {
                         auto pos = Position(textX, textY);
                         if (pos.isValid()) {

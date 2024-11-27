@@ -24,7 +24,7 @@ namespace McRave::BuildOrder::Zerg {
             auto idx = trackables.find(unit.getType());
             if (idx != trackables.end()) {
                 arrivalValue += idx->second;
-                if (Units::inBoundUnit(unit))
+                if (Units::inBoundUnit(unit, 25))
                     arrivalValue += idx->second / 2.0;
             }
         }

@@ -366,7 +366,7 @@ namespace McRave::Combat::Clusters {
             return false;
 
         // Create an offset that increases over time to prevent low muta counts engaging large numbers
-        auto minutesPastPressure = clamp(Util::getTime().minutes - 7, 0, 2);
+        auto minutesPastPressure = clamp(Util::getTime().minutes - 7, 0, 3);
         auto offset = Grids::getAirThreat(target.getPosition(), PlayerState::Enemy) > 0.0f ? minutesPastPressure : 0.0f;
 
         // Remove the offset if we're in range already, or they're in range of us
@@ -396,11 +396,42 @@ namespace McRave::Combat::Clusters {
         auto multiplier = 9.0 - target.data.armor;
         auto damageEstimate = (Grids::getAirDensity(unit.getPosition(), PlayerState::Self) - offset) * multiplier;
 
+        // Calculate the risk
+        auto countDefensesInRange = 0.0;
+        for (auto &e : target.getUnitsInReachOfThis()) {
+            if (e.expired())
+                continue;
+
+            auto &enemy = *e.lock();
+            if (enemy.canAttackAir() && !enemy.isStale()) {
+                if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 160.0) {
+                    if (enemy.getType().isBuilding())
+                        countDefensesInRange += 0.5;
+                    else
+                        countDefensesInRange += 0.2;
+                }
+            }
+        }
+
+        // Try to avoid hitting non air hitters under active defense
+        if (!target.canAttackAir())
+            countDefensesInRange *= 2.0;
+
+        // One shotting units for free / two shotting important units
+        auto easilyKilled = (target.unit()->exists() && damageEstimate >= (target.getHealth() + target.getShields()) * cnt) || (!target.unit()->exists() && damageEstimate >= (target.getType().maxHitPoints() + target.getType().maxShields()) * cnt);
+        if (easilyKilled) {
+            if ((countDefensesInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker())
+                || (countDefensesInRange <= 2.0 && Util::getTime() < Time(8, 00))
+                || (countDefensesInRange <= 2.5 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))
+                || (countDefensesInRange <= 3.0 && Util::getTime() > Time(12, 00)))
+                return true;
+        }
+
         // Check if we can one shot it
-        if (target.unit()->exists() && damageEstimate >= (target.getHealth() + target.getShields()) * cnt)
-            return true;
-        if (!target.unit()->exists() && damageEstimate >= (target.getType().maxHitPoints() + target.getType().maxShields()) * cnt)
-            return true;
+        //if (target.unit()->exists() && damageEstimate >= (target.getHealth() + target.getShields()) * cnt)
+        //    return true;
+        //if (!target.unit()->exists() && damageEstimate >= (target.getType().maxHitPoints() + target.getType().maxShields()) * cnt)
+        //    return true;
         return false;
     }
 }

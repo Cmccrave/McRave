@@ -54,13 +54,14 @@ namespace McRave::Terrain {
         {
             // If we think we found the enemy but we were wrong
             if (enemyStartingPosition.isValid()) {
-                if (Broodwar->isExplored(enemyStartingTilePosition) && Util::getTime() < Time(5, 00) && BWEB::Map::isUsed(enemyStartingTilePosition) == UnitTypes::None) {
+                if (enemyMain && Stations::isBaseExplored(enemyMain) && Util::getTime() < Time(5, 00) && BWEB::Map::isUsed(enemyStartingTilePosition) == UnitTypes::None) {
                     bannedStart.insert(enemyStartingTilePosition);
                     enemyStartingPosition = Positions::Invalid;
                     enemyStartingTilePosition = TilePositions::Invalid;
                     enemyNatural = nullptr;
                     enemyMain = nullptr;
                     Stations::removeStation(enemyStartingPosition, PlayerState::Enemy);
+                    Util::debug(nodeName + "reset enemy starting position");
                 }
                 else
                     return;

@@ -325,6 +325,9 @@
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZSilly.cpp">
       <Filter>McRave\Builds\Zerg\ZvFFA</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvT\ZvT_PoolLair.cpp">
+      <Filter>McRave\Builds\Zerg\ZvT</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">

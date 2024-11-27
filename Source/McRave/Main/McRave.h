@@ -10,6 +10,10 @@ namespace McRave
     class ResourceInfo;
     class PlayerInfo;
 
+    //namespace build {
+    //    const string_view HatchPool = "HatchPool";
+    //}
+
     struct Time {
         int minutes;
         int seconds;

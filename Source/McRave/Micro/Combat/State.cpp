@@ -68,12 +68,15 @@ namespace McRave::Combat::State {
                     }
                 }
                 if (Players::ZvT()) {
+                    const auto speedVultures = Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters, 1);
                     const auto defendSunkens = com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0 && !speedLing;
                     const auto vulturesExist = Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0;
                     const auto vultureThreat = Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy() && !Spy::enemyProxy()
                         && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled());
-                    if (defendSunkens || vulturesExist || vultureThreat)
-                        staticRetreatTypes.push_back(Zerg_Zergling);
+                    if (speedVultures || !speedLing || total(Zerg_Mutalisk) < 12) {
+                        if (defendSunkens || vulturesExist || vultureThreat)
+                            staticRetreatTypes.push_back(Zerg_Zergling);
+                    }
                 }
                 if (Players::ZvZ()) {
                     const auto enemyLingVomit = (Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling") && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) < 9;
@@ -181,30 +184,21 @@ namespace McRave::Combat::State {
 
         auto countDefensesInRange = 0.0;
         if (unit.getType() == Zerg_Mutalisk) {
-
-            // Calculate the risk
-            for (auto &e : Units::getUnits(PlayerState::Enemy)) {
-                auto &enemy = *e;
-                if (enemy.canAttackAir()) {
-                    if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 96.0) {
-                        if (enemy.getType().isBuilding())
-                            countDefensesInRange += 1.0;
-                        else
-                            countDefensesInRange += 0.1;
-                    }
-                }
-            }
-
-            // One shotting units for free / two shotting important units
-            auto easilyKilled = Clusters::canDecimate(unit, target, 2) || Clusters::canDecimate(unit, target, 1);
-            if (easilyKilled) {
-                if ((countDefensesInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker())
-                    || (countDefensesInRange <= 2.0 && Util::getTime() < Time(8, 00))
-                    || (countDefensesInRange <= 3.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))
-                    || (countDefensesInRange <= 4.0 && Util::getTime() > Time(12, 00)))
-                    return true;
-            }
+            if (Clusters::canDecimate(unit, target, 1) || Clusters::canDecimate(unit, target, 2))
+                return true;
         }
+
+        // Lings are glass cannons and should engage if anything is hitting it
+        if (unit.getType() == Zerg_Zergling && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Adrenal_Glands)) {
+            if (target.isWithinRange(unit) && (target.getType() == Terran_Goliath || target.isSiegeTank() || target.getType() == Protoss_Dragoon))
+                return true;
+        }
+
+        // Melee should engage under dark swarm always
+        if (unit.isMelee() && !target.isMelee() && Actions::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm))) {
+            return true;
+        }
+
 
         auto engageWhenInRange = (target.isSiegeTank() || target.isLightAir() || target.isTransport() || target.getType() == Protoss_Reaver || target.getType() == Protoss_High_Templar);
 
@@ -233,6 +227,11 @@ namespace McRave::Combat::State {
             const auto sparseCorsairVsScourge = unit.getType() == Protoss_Corsair && target.isSuicidal() && com(Protoss_Corsair) < 6; // TODO: Check density instead
             const auto lowShieldFlyer = false;// (unit.isLightAir() && unit.getType().maxShields() > 0 && target.getType() == Zerg_Overlord && Grids::getAirThreat(unit.getEngagePosition(), PlayerState::Enemy) * 5.0 > (double)unit.getShields());
             const auto oomMedic = unit.getType() == Terran_Medic && unit.getEnergy() <= TechTypes::Healing.energyCost();
+
+            if (unit.getType() == Zerg_Zergling) {
+                if (BuildOrder::isRush() && unit.getHealth() < 20 && !target.getType().isBuilding())
+                    return true;
+            }
             const auto hurtLingVsWorker = (unit.getType() == Zerg_Zergling && unit.getHealth() <= 15 && target.getType().isWorker() && Util::getTime() < Time(6, 00));
 
             if (slowZealotVsVulture || sparseCorsairVsScourge || lowShieldFlyer || oomMedic || hurtLingVsWorker)
@@ -291,6 +290,7 @@ namespace McRave::Combat::State {
             || (target.isThreatening() && !target.isHidden() && Util::getTime() < Time(6, 00))
             || (unit.isSuicidal() && (Terrain::inTerritory(PlayerState::Self, target.getPosition()) || target.isThreatening()))
             || (unit.isSuicidal() && !nearGrdToAir())
+            || (unit.getType() == Zerg_Lurker && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
             || (unit.isHidden() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
             || (unit.getType() == Zerg_Lurker && unit.isBurrowed() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))
             || (!unit.isFlying() && unit.getGroundRange() < 32.0 && unit.getGoalType() == GoalType::Explore && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) && Util::getTime() > Time(8, 00) && !Players::ZvZ() && nearEnemyStation())
@@ -310,7 +310,7 @@ namespace McRave::Combat::State {
             // Try to save Mutas that are low hp when the firepower isn't needed
             const auto mutaSavingRequired = unit.getType() == Zerg_Mutalisk &&
                 (Players::ZvZ() ? (Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) == 0) : (Util::getTime() > Time(8, 00)))
-                && !unit.isWithinRange(target) && !target.isWithinRange(unit) && unit.getHealth() <= 30
+                && !unit.isWithinRange(target) && unit.getHealth() <= 30 && unit.getUnitsInRangeOfThis().empty()
                 && !Terrain::inTerritory(PlayerState::Enemy, unit.getPosition());
 
             // Try to save scouts as they have high shield counts

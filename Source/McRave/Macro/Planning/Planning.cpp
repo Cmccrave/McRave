@@ -472,9 +472,9 @@ namespace McRave::Planning {
             // Defense placements near stations
             for (auto &station : Stations::getStations(PlayerState::Self)) {
 
-                // Place sunkens closest to the chokepoint by default
+                // Place sunkens closest to the resources by default
                 auto colonies = Stations::getColonyCount(station);
-                Position desiredCenter = (Players::ZvT() || Players::ZvZ()) ? station->getResourceCentroid() : Stations::getDefendPosition(station);
+                Position desiredCenter = station->getResourceCentroid();
 
                 // If pocket defense is buildable
                 if (Stations::needGroundDefenses(station) > colonies) {

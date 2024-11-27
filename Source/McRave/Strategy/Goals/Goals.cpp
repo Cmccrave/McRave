@@ -126,7 +126,9 @@ namespace McRave::Goals {
                     if (Util::getTime() < Time(5, 00) && vis(Zerg_Sunken_Colony) >= 4)
                         assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
                 }
-                if (Spy::getEnemyOpener() == "Proxy9/9" && Util::getTime() < Time(4, 00))
+                if (Spy::getEnemyOpener() == "Proxy9/9" && Util::getTime() < Time(4, 00) && com(Zerg_Sunken_Colony) > 0)
+                    assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
+                if (Spy::getEnemyOpener() == "Horror9/9" && Util::getTime() < Time(4, 00) && com(Zerg_Sunken_Colony) > 0)
                     assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
             }
 
@@ -216,9 +218,9 @@ namespace McRave::Goals {
                 }
 
                 // Escort expanders
-                if (nextExpand.isValid() && BuildOrder::shouldExpand()) {
+                if (nextExpand.isValid()) {
                     auto closestBuilder = Util::getClosestUnit(nextExpand, PlayerState::Self, [&](auto &u) {
-                        return u->getBuildType().isResourceDepot();
+                        return u->getBuildType().isResourceDepot() && u->getBuildPosition() == Planning::getCurrentExpansion()->getBase()->Location();
                     });
                     auto type = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
                     auto perEnemy = (type == airType) ? 1 : 4;
@@ -231,12 +233,6 @@ namespace McRave::Goals {
 
                         // Have all mutas go escort
                         assignPercentToGoal(closestBuilder->getPosition(), airType, 1.0, GoalType::Escort);
-                    }
-                    else {
-                        for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
-                            if (unit->getPosition().getDistance(nextExpand) < 640.0)
-                                assignNumberToGoal(unit->getPosition(), type, perEnemy, GoalType::Escort);
-                        }
                     }
                 }
             }
@@ -365,7 +361,7 @@ namespace McRave::Goals {
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
 
             // Clear out base early game
-            if (Util::getTime() < Time(4, 00) && !Spy::enemyProxy() && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
+            if (Util::getTime() < Time(4, 00) && !BuildOrder::isRush() && !Spy::enemyProxy() && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() && Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
                 auto oldestTile = Terrain::getOldestPosition(Terrain::getMainArea());
 
                 if (oldestTile.isValid())

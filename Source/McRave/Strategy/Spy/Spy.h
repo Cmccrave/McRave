@@ -9,10 +9,11 @@ namespace McRave::Spy {
         bool confirmed = false;
         bool changeable = false;
         bool loggedPossible = false;
+        bool loggedLikely = false;
         bool loggedConfirmed = false;
         int framesTrue = 0;
-        int framesRequired = 0;
-        int framesLikely = 24;
+        int framesRequired = 12;
+        int framesLikely = 12;
         std::string name = "Unknown";
         Time timeConfirmed = Time(999, 00);
 
@@ -21,8 +22,12 @@ namespace McRave::Spy {
                 Util::debug("[Spy]: " + name + " possible.");
                 loggedPossible = true;
             }
-            if (confirmed && !loggedConfirmed) {
+            if (likely && !loggedLikely) {
                 Util::debug("[Spy]: " + name + " likely.");
+                loggedLikely = true;
+            }
+            if (confirmed && !loggedConfirmed) {
+                Util::debug("[Spy]: " + name + " confirmed.");
                 loggedConfirmed = true;
                 timeConfirmed = Util::getTime();
             }
@@ -30,24 +35,18 @@ namespace McRave::Spy {
 
         void updateStrat() {
             possible ? framesTrue++ : framesTrue = 0;
-            (framesTrue > framesRequired) ? likely = true : possible = false;
-            (framesTrue > framesLikely) ? confirmed = true : 0;
+            (framesTrue >= framesRequired) ? likely = true : possible = false;
+            if ((likely && !changeable) || (framesTrue >= framesLikely))
+                confirmed = true;
         }
 
         void updateBlueprint() {
-            if (name != "Unknown") {
-                framesTrue++;
-                possible = true;
-            }
-            else
-                framesTrue = 0;
-
-            if (framesTrue > framesRequired)
-                likely = true;
-            else {
+            possible ? framesTrue++ : framesTrue = 0;
+            (framesTrue >= framesRequired) ? likely = true : possible = false;
+            if ((likely && !changeable) || (framesTrue >= framesLikely))
+                confirmed = true;
+            if (!possible)
                 name = "Unknown";
-                possible = false;
-            }
         }
     };
 
@@ -77,14 +76,15 @@ namespace McRave::Spy {
         StrategySpy() {
             strats ={ &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &allin, &turtle, &fortress };
             blueprints ={ &build, &opener, &transition };
-            build.framesRequired = 24;
+            build.framesRequired = 12;
             build.framesLikely = 500;
             build.changeable = true;
-            opener.framesRequired = 24;
+            opener.framesRequired = 12;
             opener.framesLikely = 500;
             opener.changeable = true;
-            transition.framesRequired = 24;
+            transition.framesRequired = 12;
             transition.framesLikely = 500;
+            transition.changeable = true;
 
             // Attaching names to strats for logging purposes
             expand.name = "Expand";

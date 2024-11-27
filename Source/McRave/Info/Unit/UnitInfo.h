@@ -110,6 +110,8 @@ namespace McRave {
         bool stunned = false;
         bool cloaked = false;
         bool inDanger = false;
+        bool sacrifice = false;
+
         int commandFrame = -999;
         int lastThreateningFrame = -999;
         int framesVisible = -999;
@@ -148,6 +150,7 @@ namespace McRave {
         bool isStimmed() { return BWAPI::Broodwar->getFrameCount() - lastStimFrame < 300; }
         bool isStuck() { return BWAPI::Broodwar->getFrameCount() - lastMoveFrame > 48; }
         bool isInvincible() { return invincible; }
+        bool isStale() { return !getType().isBuilding() && BWAPI::Broodwar->getFrameCount() - lastVisibleFrame > 240; }
         bool wasStuckRecently() { return BWAPI::Broodwar->getFrameCount() - lastStuckFrame < 240; }
 
         bool isHealthy();

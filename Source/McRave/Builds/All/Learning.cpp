@@ -228,7 +228,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvT()) {
-                    BuildOrder::setLearnedBuild("PoolHatch", "4Pool", "2HatchMuta");
+                    BuildOrder::setLearnedBuild("PoolLair", "4Pool", "1HatchLurker");
                     return;
                 }
                 if (Players::ZvP()) {
@@ -310,13 +310,16 @@ namespace McRave::Learning {
             }
 
             if (Players::ZvT()) {
-                PoolHatch.setOpeners({ "4Pool", "Overpool", "12Pool" });
+                PoolHatch.setOpeners({ "Overpool", "12Pool" });
                 PoolHatch.setTransitions({ "2HatchMuta", "3HatchMuta" });
 
                 HatchPool.setOpeners({ "12Hatch" });
                 HatchPool.setTransitions({ "2HatchMuta", "3HatchMuta" });
 
-                myBuilds ={ PoolHatch, HatchPool };
+                PoolLair.setOpeners({ "4Pool" });
+                PoolLair.setTransitions({ "1HatchLurker" });
+
+                myBuilds ={ PoolHatch, HatchPool/*, PoolLair*/ };
             }
 
             if (Players::ZvZ()) {
@@ -473,10 +476,10 @@ namespace McRave::Learning {
         mapLearning         = false;
         myRaceChar          ={ *Broodwar->self()->getRace().c_str() };
         enemyRaceChar       ={ *Broodwar->enemy()->getRace().c_str() };
-        version             = "AIIDE2024";
+        version             = "BASIL_2024_1";
         noStats             = " 0 0 ";
-        learningExtension   = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + " Learning.txt";
-        gameInfoExtension   = myRaceChar + "v" + enemyRaceChar + " " + Broodwar->enemy()->getName() + " " + version + " Info.txt";
+        learningExtension   = myRaceChar + "v" + enemyRaceChar + "_" + Broodwar->enemy()->getName() + "_" + version + " Learning.txt";
+        gameInfoExtension   = myRaceChar + "v" + enemyRaceChar + "_" + Broodwar->enemy()->getName() + "_" + version + " Info.txt";
 
         createBuildMaps();
         getDefaultBuild();

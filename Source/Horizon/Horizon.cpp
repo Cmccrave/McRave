@@ -53,7 +53,7 @@ namespace McRave::Horizon {
                 simRatio *= 2.0;
             if (!u.isFlying() && !t.isFlying() && u.getGroundRange() > 32.0 && Broodwar->getGroundHeight(u.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(t.getEngagePosition())))
                 simRatio *= 1.15;
-            if (u.getType().isWorker() && !u.hasAttackedRecently())
+            if (u.getType().isWorker() && (!u.hasAttackedRecently() || BuildOrder::isRush()))
                 simRatio /= 10.0;
             return;
         }
@@ -83,9 +83,9 @@ namespace McRave::Horizon {
         const auto timePad = Util::getTime().minutes / 6;
         const auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
 
-        const auto extendDuration = unit.isLightAir() ? 2.5 : 5.0;
+        const auto extendDuration = unit.isLightAir() ? 0.0 : 5.0;
         const auto simulationTime = unitToEngage + extendDuration + addPrepTime(unit) - rangeDisplacement;
-        const auto targetDisplacement = unitToEngage * unitTarget->getSpeed() * 24.0;
+        const auto targetDisplacement = 0.0;// unitToEngage * unitTarget->getSpeed() * 24.0;
         map<Player, SimStrength> simStrengthPerPlayer;
         map<PlayerState, SimStrength> simStrengthPerState;
 

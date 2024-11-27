@@ -186,11 +186,11 @@ namespace McRave::Spy::Zerg {
         for (auto &p : Players::getPlayers()) {
             PlayerInfo &player = p.second;
             if (player.isEnemy() && player.getCurrentRace() == Races::Zerg) {
-                if (!theSpy.build.likely || theSpy.build.changeable)
+                if (!theSpy.build.confirmed)
                     enemyZergBuilds(player, theSpy);
-                if (!theSpy.opener.likely || theSpy.opener.changeable)
+                if (!theSpy.opener.confirmed)
                     enemyZergOpeners(player, theSpy);
-                if (!theSpy.transition.likely || theSpy.transition.changeable)
+                if (!theSpy.transition.confirmed)
                     enemyZergTransitions(player, theSpy);
                 enemyZergMisc(player, theSpy);
             }

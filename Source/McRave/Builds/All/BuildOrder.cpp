@@ -236,21 +236,22 @@ namespace McRave::BuildOrder
 
     void getNewTech()
     {
-        if (!getTech || !techComplete())
-            return;
-
         // First one always gets inserted
         if (!isFocusUnit(focusUnit)) {
             focusUnits.insert(focusUnit);
+            Util::debug(nodeName + "focusing existing " + focusUnit.c_str());
             return;
         }
+
+        if (!getTech || !techComplete())
+            return;
 
         // Select next tech based on the order
         for (auto &type : unitOrder) {
             if (!isFocusUnit(type)) {
                 getTech = false;
                 focusUnits.insert(type);
-                Util::debug(nodeName + "teching up to " + type.c_str());
+                Util::debug(nodeName + "focusing new " + type.c_str());
                 return;
             }
         }

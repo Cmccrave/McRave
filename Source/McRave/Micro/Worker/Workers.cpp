@@ -15,14 +15,24 @@ namespace McRave::Workers {
 
         const BWEB::Station * const getTransferStation(UnitInfo& unit)
         {
-            // Transfer counts depending on if we think it's safe or not
+            // Transfer counts depending on if we think it's safe or not or if we need emergency sunkens
             auto desiredTransfer = 1;
-            if (Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyOpener() == "BBS")
-                desiredTransfer = 1;
-            if (Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "Proxy9/9")
-                desiredTransfer = 1;
-            if (Units::getImmThreat() > 0.0f || Spy::getEnemyTransition() == "WorkerRush")
-                desiredTransfer = 0;
+            if (Players::ZvT()) {
+                if (Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyOpener() == "BBS")
+                    desiredTransfer = 1;
+                if (Units::getImmThreat() > 0.0f || Spy::getEnemyTransition() == "WorkerRush")
+                    desiredTransfer = 0;
+            }
+
+            if (Players::ZvP()) {
+                if (Spy::getEnemyOpener() == "9/9")
+                    desiredTransfer = 2;
+                if (Spy::getEnemyOpener() == "Proxy9/9")
+                    desiredTransfer = 2;
+                if (Units::getImmThreat() > 0.0f)
+                    desiredTransfer = 0;
+            }
+
             if (Players::ZvZ())
                 desiredTransfer = 0;
 

@@ -127,7 +127,26 @@ namespace McRave::Command
 
                 if (closestResource) {
                     unit.unit()->gather(closestResource->unit());
-                    unit.commandText = "MineralWalk";
+                    unit.commandText = "MineralWalkA";
+                    unit.commandFrame = Broodwar->getFrameCount();
+                    return true;
+                }
+            }
+        }
+
+        // If unit has a resource and wants to gather but a unit is close by, mineral walk past it
+        if (unit.hasResource()) {
+            auto resource = unit.getResource().lock();
+            auto boxDist = Util::boxDistance(unit.getType(), unit.getPosition(), resource->getType(), resource->getPosition());
+
+            if (unit.getDestination() == resource->getPosition() && boxDist >= 128.0) {
+                auto closestUnit = Util::getClosestUnit(unit.getPosition(), PlayerState::None, [&](auto &u) {
+                    return u->isCompleted() && *u != unit && !u->getType().isBuilding() && !u->isFlying() && u->getPosition().getDistance(unit.getPosition()) < 64.0;
+                });
+
+                if (closestUnit) {
+                    unit.unit()->gather(resource->unit());
+                    unit.commandText = "MineralWalkB";
                     unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }
@@ -439,7 +458,7 @@ namespace McRave::Command
             auto enemyLessMelee = (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot))
                 || (Players::ZvT());
 
-            auto castSwarm = selfMoreMelee && enemyLessMelee;
+            auto castSwarm = selfMoreMelee && enemyLessMelee && (target.getType() == Terran_Marine || target.getType() == Terran_Medic || target.isSiegeTank());
 
             // If close to target and can cast Plague
             if (!unit.targetsFriendly() && !castSwarm && unit.getLocalState() != LocalState::None && unit.canStartCast(Plague, target.getPosition())) {
@@ -691,10 +710,6 @@ namespace McRave::Command
         auto boxDist = Util::boxDistance(unit.getType(), unit.getPosition(), resource->getType(), resource->getPosition());
 
 
-        auto closestUnit = Util::getClosestUnit(unit.getPosition(), PlayerState::None, [&](auto &u) {
-            return u->isCompleted() && *u != unit && !u->getType().isBuilding() && !u->isFlying() && u->getPosition().getDistance(unit.getPosition()) < 64.0;
-        });
-
         const auto canGather = [&](ResourceInfo * resource) {
             if (unit.unit()->getTarget() == resource->unit() && unit.unit()->getLastCommand().getType() == UnitCommandTypes::Gather)
                 return false;
@@ -711,8 +726,7 @@ namespace McRave::Command
                 return true;
             if (Planning::overlapsPlan(unit, unit.getPosition()))
                 return true;
-            if (closestUnit && boxDist >= 160.0)
-                return true;
+
             return false;
         };
 

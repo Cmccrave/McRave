@@ -55,7 +55,8 @@ namespace McRave::Spy::Terran {
                 theSpy.build.name = "RaxCC";
 
             // RaxFact
-            if (completesBy(1, Terran_Factory, Time(4, 00))
+            if (completesBy(1, Terran_Refinery, Time(2, 30))
+                || completesBy(1, Terran_Factory, Time(4, 00))
                 || (Util::getTime() < Time(6, 00) && hasMech)
                 || (theSpy.proxy.likely && theSpy.opener.name == "8Rax")
                 || arrivesBy(1, Terran_Wraith, Time(6, 00)))
@@ -210,11 +211,11 @@ namespace McRave::Spy::Terran {
         for (auto &p : Players::getPlayers()) {
             PlayerInfo &player = p.second;
             if (player.isEnemy() && player.getCurrentRace() == Races::Terran) {
-                if (!theSpy.build.likely || theSpy.build.changeable)
+                if (!theSpy.build.confirmed)
                     enemyTerranBuilds(player, theSpy);
-                if (!theSpy.opener.likely || theSpy.opener.changeable)
+                if (!theSpy.opener.confirmed)
                     enemyTerranOpeners(player, theSpy);
-                if (!theSpy.transition.likely || theSpy.transition.changeable)
+                if (!theSpy.transition.confirmed)
                     enemyTerranTransitions(player, theSpy);
             }
         }

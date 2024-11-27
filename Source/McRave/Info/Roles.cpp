@@ -25,9 +25,19 @@ namespace McRave::Roles {
                 auto health = 26;
                 if (Players::ZvZ())
                     health = 31;
+                if (Players::ZvP()) {
+                    health = 11;
+                    if (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0)
+                        health = 22;
+                }
+                if (Players::ZvT()) {
+                    health = 16;
+                    if (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0)
+                        health = 22;
+                }
 
                 return (unit->getType() == Protoss_Probe && unit->getShields() <= 4)
-                    || (unit->getType() == Zerg_Drone && unit->getHealth() < (Spy::getEnemyTransition() == "WorkerRush" ? 16 : health));
+                    || (unit->getType() == Zerg_Drone && unit->getHealth() < health);
             };
 
             // Only pull the closest worker
@@ -130,19 +140,28 @@ namespace McRave::Roles {
             auto proxyCombatUnit = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy, [&](auto &u) {
                 return u->isProxy() && !u->getType().isWorker() && !u->getType().isBuilding() && u->canAttackGround();
             });
-
-            static bool likelyProxy = likelyProxy || (proxyWorker && Util::getTime() < Time(2, 00));
-
             auto selfBuildingWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
                 return u->getType().isWorker() && u->getBuildType() == Zerg_Hatchery && Broodwar->self()->minerals() >= 200;
             });
 
+            static bool sixLings = false;
+            if (com(Zerg_Zergling) >= 6)
+                sixLings = true;
+
             // Worker rush - pull 3 unless they all in
-            if (Spy::getEnemyTransition() == "WorkerRush") {
-                if (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0 || Players::getCompleteCount(PlayerState::Enemy, Protoss_Zealot) > 0)
+            if (Spy::getEnemyTransition() == "WorkerRush" && Units::getImmThreat() > 0.0f) {
+                if (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
                     return;
-                if (com(Zerg_Spawning_Pool) == 0 && Units::getImmThreat() > 0.0f)
+
+
+                if (Players::ZvT() && com(Zerg_Spawning_Pool) == 0) {
                     forceCombatWorker(3, Position(Terrain::getMainPosition()), LocalState::Attack, GlobalState::Attack);
+                }
+
+                if (Players::ZvP() && sixLings && com(Zerg_Sunken_Colony) == 0 && Combat::isDefendNatural()) {
+                    auto cnt = 3 + Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot);
+                    forceCombatWorker(5, Position(Terrain::getNaturalPosition()), LocalState::Attack, GlobalState::Retreat);
+                }
                 return;
             }
 
@@ -170,10 +189,8 @@ namespace McRave::Roles {
                 // Proxy building, 1 drone
                 else if (proxyBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(1, proxyBuilding->getPosition());
-
-                //// 2Gate all-in with probes
-                //else if (Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "WorkerRush" && com(Zerg_Zergling) > 0 && com(Zerg_Zergling) <= 6)
-                //    forceCombatWorker(vis(Zerg_Drone), Position(Terrain::getNaturalChoke()->Center()), LocalState::Attack, GlobalState::Attack);
+                else if (Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
+                    forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
 
                 // TODO: Check if we need this for cannon rush bots
                 // We changed how `proxy` flag is determined, check for no zealots/marines/zerglings 
@@ -181,12 +198,6 @@ namespace McRave::Roles {
                 //// Probe arrived early, 1 drone
                 //else if (proxyWorker && Util::getTime() < Time(3, 00) && vis(Zerg_Spawning_Pool) == 0)
                 //    forceCombatWorker(1, proxyWorker->getPosition());
-
-                //// Likely proxy, worker arrived way too early
-                //else if (likelyProxy && proxyWorker && !proxyWorker->unit()->exists() && Util::getTime() < Time(3, 00))
-                //    forceCombatWorker(1, proxyWorker->getPosition());
-                //else if (likelyProxy && !proxyWorker && Util::getTime() < Time(2, 30))
-                //    forceCombatWorker(1, Terrain::getOldestPosition(Terrain::getMainArea()));
 
                 //// We know it's likely a proxy, watch the natural for now
                 //else if (Spy::enemyPossibleProxy() && Util::getTime() < Time(2, 00)) {
@@ -223,10 +234,6 @@ namespace McRave::Roles {
                 // Proxy, 3 drones per marine
                 else if (proxyCombatUnit && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8)
                     forceCombatWorker(count, location);
-
-                // Likely proxy, worker arrived way too early
-                else if (likelyProxy && Util::getTime() < Time(3, 00))
-                    forceCombatWorker(1, location);
 
                 // We know it's likely a proxy, watch the natural for now
                 else if (Spy::enemyPossibleProxy() && Util::getTime() < Time(2, 00))
