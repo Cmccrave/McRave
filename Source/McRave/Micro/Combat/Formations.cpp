@@ -12,26 +12,27 @@ namespace McRave::Combat::Formations {
     {
         auto commander = cluster.commander.lock();
 
-        // Formation with a building
-        if (!Combat::holdAtChoke()) {
+        formation.center = cluster.marchPosition;
+        formation.angle = BWEB::Map::getAngle(cluster.marchPosition, cluster.retreatPosition);
 
-            // Concave
-            if (cluster.shape == Shape::Concave)
-                formation.center = cluster.marchPosition;
+        auto closestChoke = Util::getClosestChokepoint(cluster.marchPosition);
+        auto closestBuilding = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
+            return u->getType().isBuilding() && u->getFormation().isValid() && (u->getFormation().getDistance(cluster.marchPosition) < 160.0 || (Terrain::inArea(u->getPosition(), cluster.avgPosition) && Terrain::inArea(u->getPosition(), cluster.retreatPosition)));
+        });
 
-            // Line
-            if (cluster.shape == Shape::Line)
-                formation.center = cluster.retreatPosition;
+        auto formationWithBuilding = !Combat::holdAtChoke() && closestBuilding;
+        auto formationWithChoke = Combat::holdAtChoke() && closestChoke && Position(closestChoke->Center()).getDistance(cluster.marchPosition) < 32.0;
+        auto formationWithCommander = cluster.shape == Shape::Concave;
 
-            // Common
-            formation.angle = BWEB::Map::getAngle(make_pair(cluster.marchPosition, cluster.retreatPosition));
-            auto closestBuilding = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
-                return u->getType().isBuilding() && u->getFormation().isValid() && (u->getFormation().getDistance(cluster.marchPosition) < 160.0 || (Terrain::inArea(u->getPosition(), cluster.avgPosition) && Terrain::inArea(u->getPosition(), cluster.retreatPosition)));
-            });
+        // Hold with building
+        if (!Combat::holdAtChoke() && closestBuilding) {
 
-            auto offset = 0.0;// (Util::getTime() > Time(6, 30)) ? max(commander->getGroundRange(), 96.0) : commander->getGroundRange();
+            Broodwar->drawTextMap(commander->getPosition(), "HB");
+
+            // TODO: Get enemy max range
+            auto offset = double(-1 * max(closestBuilding->getType().width(), closestBuilding->getType().height()));// (Util::getTime() > Time(6, 30)) ? max(commander->getGroundRange(), 96.0) : commander->getGroundRange();
             if (Players::ZvP()) {
-                if (Spy::getEnemyBuild() == "FFE" && Spy::getEnemyTransition() == "Speedlot" && Util::getTime() < Time(8, 00))
+                if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() < Time(8, 00))
                     offset = -32.0;
                 if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Singularity_Charge, 1))
                     offset = 64.0;
@@ -42,54 +43,31 @@ namespace McRave::Combat::Formations {
                     offset = 64.0;
             }
 
-            // Need to not do this if our formation is far away ... somehow
-            if (closestBuilding) {
-                auto buildingDist = closestBuilding->getPosition().getDistance(cluster.marchPosition);
-                
-                closestBuilding->circle(Colors::Yellow);
-                formation.center = Util::shiftTowards(closestBuilding->getPosition(), cluster.retreatPosition, offset);
-                formation.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition);
-                formation.angle = BWEB::Map::getAngle(closestBuilding->getFormation(), cluster.retreatPosition);
-                return;
+            closestBuilding->circle(Colors::Yellow);
+            formation.center = Util::shiftTowards(cluster.marchPosition, closestBuilding->getPosition(), offset);
+            formation.radius = closestBuilding->getPosition().getDistance(cluster.marchPosition);
+            formation.angle = (round(formation.angle / M_PI_D4)) * M_PI_D4;
+        }
+
+        // Hold with choke, use ramp angles if provided
+        else if (Combat::holdAtChoke() && closestChoke) {
+
+            Broodwar->drawTextMap(commander->getPosition(), "HC");
+
+            if (closestChoke == Terrain::getMainChoke() && !Terrain::isFlatRamp()) {
+                formation.angle = Terrain::getMainRamp().angle;
+                formation.radius = Terrain::getMainRamp().center.getDistance(Terrain::getMainRamp().entrance);
+                formation.center = Terrain::getMainRamp().center;
+            }
+            else {
+                formation.angle = Terrain::getChokepointAngle(closestChoke);
+                formation.radius = max(commander->getGroundRange(), double(closestChoke->Width()));
+                formation.center = Position(closestChoke->Center());
             }
         }
 
-        // Formation with a chokepoint
-        auto choke = Util::getClosestChokepoint(cluster.marchPosition);
-        if (Position(choke->Center()).getDistance(cluster.marchPosition) < 32.0) {
-
-            // Concave
-            if (cluster.shape == Shape::Concave) {
-                if (choke == Terrain::getMainChoke() && !Terrain::isFlatRamp()) {
-                    formation.angle = Terrain::getMainRamp().angle;
-                    formation.radius = Terrain::getMainRamp().center.getDistance(Terrain::getMainRamp().entrance) + 48.0;
-                    formation.center = Terrain::getMainRamp().center;
-                }
-                else {
-                    formation.angle = Terrain::getChokepointAngle(choke);
-                    formation.radius = max(commander->getGroundRange(), double(choke->Width()));
-                    formation.center = Position(choke->Center());
-                }
-            }
-
-            // Line
-            if (cluster.shape == Shape::Line) {
-                if (choke == Terrain::getMainChoke() && !Terrain::isFlatRamp()) {
-                    formation.angle = Terrain::getMainRamp().angle;
-                    formation.radius = Terrain::getMainRamp().center.getDistance(Terrain::getMainRamp().entrance) + 48.0;
-                    formation.center = Terrain::getMainRamp().entrance;
-                    Visuals::drawCircle(formation.center, 2, Colors::Cyan);
-                }
-                else {
-                    formation.angle = Terrain::getChokepointAngle(choke);
-                    formation.radius = double(choke->Width());// clamp(cluster.spacing * double(cluster.units.size()) / 2.0, 64.0, double(choke->Width()));
-                    formation.center = Position(choke->Center());// Terrain::getChokepointCenter(choke);// Util::shiftTowards(Terrain::getChokepointCenter(choke), cluster.retreatPosition, formation.radius);
-                }
-            }
-        }
-
-        // Formation with current commander position
-        else if (cluster.shape == Shape::Concave && cluster.state == LocalState::Hold) {
+        // Hold with commander
+        else if (formationWithCommander) {
             formation.center = Util::shiftTowards(cluster.commander.lock()->getPosition(), cluster.marchNavigation, formation.radius);
             formation.angle = BWEB::Map::getAngle(cluster.marchNavigation, cluster.retreatNavigation);
         }
@@ -131,7 +109,7 @@ namespace McRave::Combat::Formations {
         else if (cluster.state == LocalState::Retreat)
             retreatFormation(formation, cluster);
         else
-            marchFormation(formation, cluster);        
+            marchFormation(formation, cluster);
 
         // Lines are perpendicular arrangements
         if (cluster.shape == Shape::Line)
@@ -153,193 +131,169 @@ namespace McRave::Combat::Formations {
         if (closestUnit) {
             //Util::findWalkable(*closestUnit, p);
             closestUnit->setFormation(p);
+            Visuals::drawLine(closestUnit->getPosition(), p, Colors::Green);
         }
     }
 
-    void generateLinePositions(Formation& line, Cluster& cluster)
+    void generatePositions(Formation& formation, Cluster& cluster, function<void(Position&, Position&)> stepFunction, function<bool(bool)> wrapFunction)
     {
+        auto commander = cluster.commander.lock();
+        auto assignmentsRemaining = max(3, int(cluster.units.size()));
+        pair<Position, Position> lastPositions ={ Positions::Invalid, Positions::Invalid };
+
         // Prevent blocking our own buildings
-        auto closestBuilder = Util::getClosestUnit(line.center, PlayerState::Self, [&](auto &u) {
+        auto closestBuilder = Util::getClosestUnit(formation.center, PlayerState::Self, [&](auto &u) {
             return u->getBuildPosition().isValid();
         });
 
-        auto commander = cluster.commander.lock();
-        const auto type = cluster.commander.lock()->getType();
-        auto pixelsPerUnit = max(type.width(), type.height()) + (Combat::holdAtChoke() ? 0 : 8);
-        pair<Position, Position> lastPositions ={ Positions::Invalid, Positions::Invalid };
-
-        auto first = line.center;
-        auto wrap = 0;
-        auto assignmentsRemaining = max(3, int(cluster.units.size()));
-
-        // Radius is sort of just set to diameter above, stupid code
-        line.radius /= 2.0;
-        line.radius = max(line.radius, 160.0);
+        bool first = true;
 
         // Checks if a position is okay, stores if it is
-        vector<Position> row;
-        auto checkPosition = [&](Position &p, Position &last, bool& skip, int& bump) {
-            Broodwar->drawCircleMap(p, 2, Colors::Orange);
+        auto checkPosition = [&](Position &p, Position &last, bool& skip) {
 
-            if (skip
-                || !p.isValid()
-                || (p == lastPositions.first)
-                || (p == lastPositions.second)
-                || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None
-                || (closestBuilder && p.getDistance(closestBuilder->getPosition()) < 128.0)
-                || (cluster.state == LocalState::Hold && !BWEB::Map::isWalkable(TilePosition(p), commander->getType()))) {
+            // Can't be the same as the last positions
+            if (!p.isValid()
+                || p == lastPositions.first
+                || p == lastPositions.second)
                 return;
-            }
-            const auto mobility = Grids::getMobility(p);
-
-            // We bumped into terrain
-            if (mobility <= 3) {
-                bump++;
-                skip = (bump >= 2);
-                return;
-            }
-            assignmentsRemaining--;
-            row.push_back(p);
-            line.positions.push_back(p);
             last = p;
+
+            // Must be walkable for this type (TODO: Check size being assigned)
+            if (p.isValid() && !Util::findTerrainWalkable(p, commander->getType())) {
+                Broodwar->drawCircleMap(p, 3, Colors::Yellow);
+                skip = true;
+                return;
+            }
+
+            // 
+            if (skip
+                || assignmentsRemaining <= 0
+                || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None
+                || (closestBuilder && p.getDistance(closestBuilder->getPosition()) < 128.0)) {
+                return;
+            }
+
+            auto box = Util::typeBoundingBox(p, commander->getType());
+            auto color = first ? Colors::Blue : Colors::Green;
+            first = false;
+            Visuals::drawBox(box.first, box.second, color);
+            assignmentsRemaining--;
+            formation.positions.push_back(p);
         };
 
-        auto bumpedPos = 0;
-        auto bumpedNeg = 0;
         auto skipPos = false;
         auto skipNeg = false;
-        auto count = 0;
-        auto xStepPer = cos(line.angle) * pixelsPerUnit;
-        auto yStepPer = sin(line.angle) * pixelsPerUnit;
+        auto wrap = 0;
+
+        auto posPosition = formation.center;
+        auto negPosition = formation.center;
+
         while (assignmentsRemaining > 0) {
 
-            // Check positions
-            auto posPosition = line.center + Position(-xStepPer * count, yStepPer * count);
-            auto negPosition = line.center - Position(-xStepPer * count, yStepPer * count);
+            stepFunction(posPosition, negPosition);
+            checkPosition(posPosition, lastPositions.first, skipPos);
+            checkPosition(negPosition, lastPositions.second, skipNeg);
 
-            checkPosition(posPosition, lastPositions.first, skipPos, bumpedPos);
-            checkPosition(negPosition, lastPositions.second, skipNeg, bumpedNeg);
-            count++;
-
-            if (count * pixelsPerUnit > line.radius) {
-                wrap++;
-                Visuals::drawCircle(line.center, 4, Colors::Green);
-                line.center = Util::shiftTowards(line.center, cluster.marchPosition, -pixelsPerUnit);
-                Visuals::drawCircle(line.center, 4, Colors::Yellow, true);
-                Visuals::drawCircle(cluster.marchPosition, 4, Colors::Grey);
-                count = 0;
+            if (wrapFunction(skipPos && skipNeg)) {
                 skipPos = false;
                 skipNeg = false;
-                bumpedPos = 0;
-                bumpedNeg = 0;
+                wrap++;
             }
 
-            if (assignmentsRemaining <= 0 || wrap >= 50)
+            if (assignmentsRemaining <= 0 || wrap >= 5)
                 break;
         }
 
-        //if (cluster.state == LocalState::Attack)
-        reverse(line.positions.begin(), line.positions.end());
-        for (auto &position : line.positions)
-            assignPosition(cluster, line, position);
+        if (cluster.state == LocalState::Attack)
+            reverse(formation.positions.begin(), formation.positions.end());
+        for (auto &position : formation.positions)
+            assignPosition(cluster, formation, position);
     }
 
-    void generateConcavePositions(Formation& concave, Cluster& cluster, double size)
+    void generateLinePositions(Formation& formation, Cluster& cluster)
+    {
+        auto commander = cluster.commander.lock();
+        auto pixelsPerUnit = max(commander->getType().width(), commander->getType().height()) + 2;
+        auto first = formation.center;
+        formation.center = Util::shiftTowards(formation.center, cluster.retreatPosition, formation.radius);
+        formation.radius = max(formation.radius, 160.0);
+
+        // Steps
+        double xStepPer = cos(formation.angle) * double(pixelsPerUnit);
+        double yStepPer = sin(formation.angle) * double(pixelsPerUnit);
+
+        if (abs(cos(formation.angle)) > abs(sin(formation.angle)))
+            xStepPer = (xStepPer >= 0 ? 1.0 : -1.0) * max(double(commander->getType().width()), abs(xStepPer));
+        else
+            yStepPer = (yStepPer >= 0 ? 1.0 : -1.0) * max(double(commander->getType().height()), abs(yStepPer));
+
+        // Step function
+        auto count = 0;
+        Broodwar << xStepPer << endl;
+        Broodwar << yStepPer << endl;
+
+        const auto stepFunc = [&](auto& np, auto& pp) {
+            pp = formation.center + Position(int(-xStepPer * count), int(yStepPer * count));
+            np = formation.center - Position(int(-xStepPer * count), int(yStepPer * count));
+            count++;
+        };
+
+        // Wrap function
+        const auto wrapFunc = [&](auto skipAll) {
+            if (skipAll || count * pixelsPerUnit > formation.radius) {
+                count = 0;
+                //formation.center = Util::shiftTowards(formation.center, cluster.retreatPosition, pixelsPerUnit);
+                formation.center = formation.center + Position(yStepPer, xStepPer);
+                return true;
+            }
+            return false;
+        };
+
+        // Generate positions
+        generatePositions(formation, cluster, stepFunc, wrapFunc);
+    }
+
+    void generateConcavePositions(Formation& formation, Cluster& cluster, double size)
     {
         // Prevent blocking our own buildings
-        auto closestBuilder = Util::getClosestUnit(concave.center, PlayerState::Self, [&](auto &u) {
+        auto closestBuilder = Util::getClosestUnit(formation.center, PlayerState::Self, [&](auto &u) {
             return u->getBuildPosition().isValid();
         });
 
         if (cluster.radius <= 0)
             return;
 
+        auto commander = cluster.commander.lock();
         const auto type = cluster.commander.lock()->getType();
-        const auto biggestDimension = max(type.width(), type.height()) + 2 + (Combat::holdAtChoke() ? 0 : 8);
-        const auto radiusIncrement = cluster.state == LocalState::Retreat ? biggestDimension : -biggestDimension;
-        auto radsPerUnit = (biggestDimension / concave.radius);
-        auto first = concave.center - Position(-int(concave.radius * cos(concave.angle)), int(concave.radius * sin(concave.angle)));
-        Visuals::drawCircle(first, 5, Colors::Grey, true);
+        const auto biggestDimension = max(type.width(), type.height()) + 2;
+        const auto radiusIncrement = cluster.state != LocalState::Attack ? biggestDimension : -biggestDimension;
+        auto radsPerUnit = (biggestDimension / formation.radius);
 
+        auto pRads = formation.angle;
+        auto nRads = formation.angle;
 
-        // Check if the units are loose
-        for (auto &u : concave.cluster->units) {
-            if (u->getPosition().getDistance(concave.center) < concave.radius - biggestDimension) {
-                concave.loose = true;
-                break;
-            }
-        }
-
-        auto pRads = concave.angle;
-        auto nRads = concave.angle;
-        pair<Position, Position> lastPositions ={ Positions::Invalid, Positions::Invalid };
-
-        auto wrap = 0;
-        auto assignmentsRemaining = max(3, int(cluster.units.size()));
-
-        // Checks if a position is okay, stores if it is
-        auto checkPosition = [&](Position &p, Position &last, bool& skip, int& bump) {
-            if (skip
-                || !p.isValid()
-                || (p == lastPositions.first)
-                || (p == lastPositions.second)
-                || (!mapBWEM.GetMiniTile(WalkPosition(p)).Walkable())
-                || (!BWEB::Map::isWalkable(TilePosition(p), type))
-                //|| Planning::overlapsPlan(p) impl?
-                || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None
-                || (p.getDistance(first) > concave.leash)
-                || (closestBuilder && p.getDistance(closestBuilder->getPosition()) < 128.0)) {
-                return;
-            }
-            const auto mobility = Grids::getMobility(p);
-
-            // We bumped into terrain
-            if (mobility <= 3) {
-                bump++;
-                skip = (bump >= 2);
-                return;
-            }
-            assignmentsRemaining--;
-            concave.positions.push_back(p);
-            last = p;
-        };
-
-        auto bumpedPos = 0;
-        auto bumpedNeg = 0;
-        auto skipPos = false;
-        auto skipNeg = false;
-        while (assignmentsRemaining > 0) {
-
-            // Check positions
-            auto rp = Position(-int(concave.radius * cos(pRads)), int(concave.radius * sin(pRads)));
-            auto rn = Position(-int(concave.radius * cos(nRads)), int(concave.radius * sin(nRads)));
-            auto posPosition = concave.center - rp;
-            auto negPosition = concave.center - rn;
-
-            checkPosition(posPosition, lastPositions.first, skipPos, bumpedPos);
-            checkPosition(negPosition, lastPositions.second, skipNeg, bumpedNeg);
+        // Step function
+        auto count = 0;
+        const auto stepFunc = [&](auto& np, auto& pp) {
+            pp = formation.center - Position(-int(formation.radius * cos(pRads)), int(formation.radius * sin(pRads)));
+            np = formation.center - Position(-int(formation.radius * cos(nRads)), int(formation.radius * sin(nRads)));
             pRads+=radsPerUnit;
             nRads-=radsPerUnit;
+        };
 
-            if ((skipPos && skipNeg) || pRads > (concave.angle + size) || nRads < (concave.angle - size)) {
-                concave.radius += radiusIncrement;
-                radsPerUnit = (biggestDimension / concave.radius);
-                nRads = pRads = concave.angle;
-                wrap++;
-                skipPos = false;
-                skipNeg = false;
-                bumpedPos = 0;
-                bumpedNeg = 0;
+        // Wrap function
+        const auto wrapFunc = [&](auto skipAll) {
+            if (skipAll || pRads > (formation.angle + size) || nRads < (formation.angle - size)) {
+                formation.radius += radiusIncrement;
+                radsPerUnit = (biggestDimension / formation.radius);
+                nRads = pRads = formation.angle;
+                return true;
             }
+            return false;
+        };
 
-            if (assignmentsRemaining <= 0 || wrap >= 50 || concave.radius <= 32)
-                break;
-        }
-
-        if (cluster.state == LocalState::Attack)
-            reverse(concave.positions.begin(), concave.positions.end());
-        for (auto &position : concave.positions)
-            assignPosition(cluster, concave, position);
+        // Generate positions
+        generatePositions(formation, cluster, stepFunc, wrapFunc);
     }
 
     void createConcave(Formation& formation, Cluster& cluster)

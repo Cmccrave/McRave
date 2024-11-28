@@ -8,7 +8,7 @@ namespace McRave::Actions {
 
     namespace {
 
-        bool draw = true;
+        bool draw = false;
 
         void drawActions()
         {

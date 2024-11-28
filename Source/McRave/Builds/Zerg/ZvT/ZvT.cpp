@@ -88,7 +88,7 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()) {
             initialValue = 2;
             if (Util::getTime() > Time(3, 45))
-                initialValue = 6;
+                initialValue = 10;
         }
 
         // TODO: Fix T spy
@@ -194,9 +194,11 @@ namespace McRave::BuildOrder::Zerg {
         auto thirdHatch = Spy::enemyProxy() ? total(Zerg_Zergling) >= 6 : (s >= 26 && vis(Zerg_Drone) >= 11);
         auto fourthHatch = (Spy::getEnemyBuild() == "RaxFact" || !Spy::enemyFastExpand()) ? com(Zerg_Mutalisk) > 0 : (vis(Zerg_Spire) > 0 && s >= 66);
 
+        auto secondGas = Spy::enemyFastExpand() ? (s >= 44 && vis(Zerg_Drone) >= 20) : (com(Zerg_Lair) > 0);
+
         // Buildings
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch + fourthHatch;
-        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 3) + (s >= 44 && vis(Zerg_Drone) >= 20);
+        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 3) + secondGas;
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32) + (s >= 48);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        (s >= 42 && atPercent(Zerg_Lair, 0.80));

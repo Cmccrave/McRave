@@ -19,7 +19,11 @@ namespace McRave::Visuals {
     void drawDebugText(std::string, int);
 
     void drawBox(BWAPI::Position, BWAPI::Position, BWAPI::Color, bool solid = false);
+
+    void drawBox(BWAPI::WalkPosition, BWAPI::Color, bool solid = false);
     void drawBox(BWAPI::WalkPosition, BWAPI::WalkPosition, BWAPI::Color, bool solid = false);
+
+    void drawBox(BWAPI::TilePosition, BWAPI::Color, bool solid = false);
     void drawBox(BWAPI::TilePosition, BWAPI::TilePosition, BWAPI::Color, bool solid = false);
 
     void drawCircle(BWAPI::Position, int, BWAPI::Color, bool solid = false);

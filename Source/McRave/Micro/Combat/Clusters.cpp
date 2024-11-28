@@ -265,7 +265,7 @@ namespace McRave::Combat::Clusters {
                         if (cluster.state == LocalState::Hold && atHome)
                             cluster.shape = Shape::Line;
                         else
-                            cluster.shape = Shape::Concave;
+                            cluster.shape = Shape::Line;
 
                         // HACK: Flip to a better shape
                         if (Terrain::inArea(Terrain::getMainArea(), cluster.avgPosition) && cluster.state == LocalState::Hold && Terrain::isFlatRamp())
@@ -426,12 +426,6 @@ namespace McRave::Combat::Clusters {
                 || (countDefensesInRange <= 3.0 && Util::getTime() > Time(12, 00)))
                 return true;
         }
-
-        // Check if we can one shot it
-        //if (target.unit()->exists() && damageEstimate >= (target.getHealth() + target.getShields()) * cnt)
-        //    return true;
-        //if (!target.unit()->exists() && damageEstimate >= (target.getType().maxHitPoints() + target.getType().maxShields()) * cnt)
-        //    return true;
         return false;
     }
 }

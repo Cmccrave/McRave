@@ -281,6 +281,8 @@ namespace McRave::Roles {
                         unit.setRole(Role::Transport);
                     else if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Protoss_Scarab || unit.getType().isSpell() || unit.getType() == Terran_Nuclear_Missile)
                         unit.setRole(Role::Consumable);
+                    else if (unit.getType().isBuilding() && (unit.canAttackAir() || unit.canAttackGround()))
+                        unit.setRole(Role::Defender);
                     else
                         unit.setRole(Role::Combat);
                 }

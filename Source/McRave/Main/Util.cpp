@@ -143,6 +143,29 @@ namespace McRave::Util {
         return false;
     }
 
+    pair<Position, Position> typeBoundingBox(Position here, UnitType type)
+    {
+        const auto topLeft = Position(here.x - type.dimensionLeft(), here.y - type.dimensionUp());
+        const auto botRight = Position(here.x + type.dimensionRight() + 1, here.y + type.dimensionDown() + 1);
+        return make_pair(topLeft, botRight);
+    }
+
+    bool findTerrainWalkable(Position here, UnitType type)
+    {
+        const auto box = typeBoundingBox(here, type);
+        for (int x = WalkPosition(box.first).x; x <= WalkPosition(box.second).x; x++) {        
+            for (int y = WalkPosition(box.first).y; y <= WalkPosition(box.second).y; y++) {
+                auto walk = WalkPosition(x, y);
+                if (!mapBWEM.GetMiniTile(walk).Walkable())
+                    return false;
+            }
+        }
+
+        // TODO: Adjust if possible
+
+        return true;
+    }
+
     bool findWalkable(Position current, UnitType type, Position& here, bool visual)
     {
         // Take in a position by reference, create rectangles

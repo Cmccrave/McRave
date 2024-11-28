@@ -41,8 +41,7 @@ namespace McRave::Combat {
     struct Formation {
         Cluster* cluster;
         BWAPI::Position center;
-        double radius, leash, angle, spacing;
-        bool loose = false;
+        double radius, leash, angle;
         std::vector<BWAPI::Position> positions;
     };
 

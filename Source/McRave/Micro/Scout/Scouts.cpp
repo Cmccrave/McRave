@@ -463,12 +463,6 @@ namespace McRave::Scouts {
             auto start = Position(station->getChokepoint()->Center());
             auto end = Position(Terrain::getNaturalChoke()->Center());
 
-            // Try to scout the main if they're 1 base, flip how to detect threat (stop on first threatening tile)
-            //if ((Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore") && Util::getTime() > Time(4, 00) && Spy::getEnemyTransition() == "Unknown") {
-            //    start = Position(Terrain::getEnemyNatural()->getChokepoint()->Center());
-            //    end = Terrain::getEnemyStartingPosition();
-            //}
-
             // Army scouting between my natural and enemy natural
             BWEB::Path newPath(start, end, Zerg_Zergling);
             newPath.generateJPS([&](auto t) {return newPath.terrainWalkable(t); });
@@ -477,7 +471,7 @@ namespace McRave::Scouts {
             });
 
             army.center = safeTarget;
-            army.addTargets(safeTarget, 160.0);
+            army.addTargets(safeTarget, 96.0);
 
             // If they haven't expanded, check it occasionally, unless we really need army info
             if (!Spy::enemyFastExpand() && !contained)

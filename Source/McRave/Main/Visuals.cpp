@@ -505,8 +505,16 @@ namespace McRave::Visuals {
             Broodwar->drawBoxMap(here, there, color, solid);
         }
     }
+
+    void drawBox(WalkPosition here, Color color, bool solid) {
+        drawBox(Position(here), Position(here + WalkPosition(1,1)), color, solid);
+    }
     void drawBox(WalkPosition here, WalkPosition there, Color color, bool solid) {
         drawBox(Position(here), Position(there), color, solid);
+    }
+
+    void drawBox(TilePosition here, Color color, bool solid) {
+        drawBox(Position(here), Position(here + TilePosition(1,1)), color, solid);
     }
     void drawBox(TilePosition here, TilePosition there, Color color, bool solid) {
         drawBox(Position(here), Position(there), color, solid);

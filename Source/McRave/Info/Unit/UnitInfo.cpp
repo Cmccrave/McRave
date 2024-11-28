@@ -568,11 +568,10 @@ namespace McRave
             commandPosition = here;
             commandType = cmd;
 
-            // Try adding randomness to non air units
-            if (!isFlying()) {
-                auto dist = 1 + int(getPosition().getDistance(here) / 32.0);
-                here.x += dist - rand() % dist;
-                here.y += dist - rand() % dist;
+            // Try adding overshoot to non air units if they aren't pixel perfect, this seems to work great
+            if (!isFlying() && getPosition().getDistance(here) >= 2.0) {
+                auto dist = 2 + int(getPosition().getDistance(here) / 8.0);
+                here = Util::shiftTowards(getPosition(), here, getPosition().getDistance(here) + dist);
             }
 
             if (cmd == UnitCommandTypes::Move) {

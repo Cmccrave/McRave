@@ -12,6 +12,11 @@ namespace McRave::Util {
 
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);
+
+    std::pair<BWAPI::Position, BWAPI::Position> typeBoundingBox(BWAPI::Position here, BWAPI::UnitType type);
+
+    bool findTerrainWalkable(BWAPI::Position here, BWAPI::UnitType type);
+
     bool findWalkable(BWAPI::Position, BWAPI::UnitType, BWAPI::Position&, bool visual = false);
     bool findWalkable(UnitInfo&, BWAPI::Position&, bool visual = false);
 

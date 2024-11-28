@@ -800,6 +800,26 @@ namespace McRave::Terrain {
         updateAreas();
         //drawTerritory();
         Visuals::endPerfTest("Terrain");
+
+
+
+
+        // Try to find the angle by locating nearest unwalkable tiles to entrance
+        auto distBest = DBL_MAX;
+        auto posBest = Positions::Invalid;
+        for (auto w : Util::getWalkCircle(16)) {
+            auto walk = w + WalkPosition(mainRamp.entrance);
+            if (walk.isValid() && !mapBWEM.GetMiniTile(walk).Walkable()) {
+                Visuals::drawBox(walk, walk + WalkPosition(1,1), Colors::Teal);
+                auto dist = Position(walk).getDistance(mainRamp.entrance);
+                if (dist < distBest) {
+                    distBest = dist;
+                    posBest = Position(walk);
+                }
+            }
+        }
+
+        Visuals::drawCircle(posBest, 5, Colors::Teal);
     }
 
     set<const Base*>& getAllBases() { return allBases; }

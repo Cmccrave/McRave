@@ -150,12 +150,12 @@ namespace McRave::Command {
             }
         }
 
-        // Specal case: Holding a chokepoint, don't move
-        if (Players::ZvZ() && Combat::holdAtChoke() && Combat::State::isStaticRetreat(unit.getType()) && unit.getPosition().getDistance(unit.getFormation()) <= 2) {
-            unit.setCommand(Hold_Position);
-            unit.commandText = "HoldPosition";
-            return true;
-        }
+        //// Specal case: Holding a chokepoint, don't move
+        //if (Players::ZvZ() && Combat::holdAtChoke() && Combat::State::isStaticRetreat(unit.getType()) && unit.getPosition().getDistance(unit.getFormation()) <= 2) {
+        //    unit.setCommand(Hold_Position);
+        //    unit.commandText = "HoldPosition";
+        //    return true;
+        //}
         return false;
     }
 
