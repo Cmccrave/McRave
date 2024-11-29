@@ -20,7 +20,7 @@ namespace McRave::Workers {
             if (Players::ZvT()) {
                 if (Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyOpener() == "BBS")
                     desiredTransfer = 1;
-                if (Units::getImmThreat() > 0.0f || Spy::getEnemyTransition() == "WorkerRush")
+                if (Units::getImmThreat() > 0.0f || Spy::getEnemyTransition() == "WorkerRush" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
                     desiredTransfer = 0;
             }
 

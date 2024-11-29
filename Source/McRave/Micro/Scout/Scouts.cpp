@@ -731,6 +731,7 @@ namespace McRave::Scouts {
             }
 
             unit.setNavigation(unit.getDestination());
+            Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Yellow);
         }
 
         void updatePath(UnitInfo& unit)
@@ -770,6 +771,7 @@ namespace McRave::Scouts {
                 if (unit.getDestination().isValid() && unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination()) && (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.getDestination())) || mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.getDestination()))))) {
 
                     auto pathPoint = Util::getPathPoint(unit, unit.getDestination());
+                    Visuals::drawLine(unit.getPosition(), pathPoint, Colors::Orange);
 
                     BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
 
@@ -782,10 +784,11 @@ namespace McRave::Scouts {
                     };
 
                     // Suicidal scouts don't care about threat
-                    if (unit.isMarkedForDeath())
-                        newPath.generateJPS(walkable);
-                    else
-                        newPath.generateAS(threat, walkable);
+                    //if (unit.isMarkedForDeath())
+                    //    newPath.generateJPS(walkable);
+                    //else
+                    //    newPath.generateAS(threat, walkable);
+                    newPath.generateAS(threat, walkable);
                     unit.setDestinationPath(newPath);
                 }
 
@@ -796,6 +799,7 @@ namespace McRave::Scouts {
                 if (newDestination.isValid())
                     unit.setNavigation(newDestination);
                 Visuals::drawPath(unit.getDestinationPath());
+                //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
             }
         }
 

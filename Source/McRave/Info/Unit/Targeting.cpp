@@ -63,6 +63,10 @@ namespace McRave::Targets {
                 if (Players::ZvZ() && !target.canAttackGround() && !Spy::enemyFastExpand())                                                                 // Avoid non ground hitters to try and kill drones
                     return Priority::Ignore;
             }
+
+            if (target.getType() == Terran_Vulture && !target.getUnitsTargetingThis().empty() && !target.isThreatening() && target.getSpeed() > unit.getSpeed() && !unit.isWithinRange(target))
+                return Priority::Ignore;            
+
             const auto targetSize = max(target.getType().width(), target.getType().height());
             const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->getType() == Zerg_Zergling && u.lock()->isWithinRange(target); });
             //if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)

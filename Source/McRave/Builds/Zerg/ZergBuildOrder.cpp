@@ -237,8 +237,6 @@ namespace McRave::BuildOrder::Zerg {
 
                 // ZvT: Get 3 gas bases first
                 if (Players::ZvT()) {
-                    //if (vsMech && int(Stations::getStations(PlayerState::Self).size()) >= 3)
-                    //    hatchPerBase = 2.50;
                     if (int(Stations::getStations(PlayerState::Self).size()) >= 4)
                         hatchPerBase = 2.25;
                 }
@@ -571,7 +569,7 @@ namespace McRave::BuildOrder::Zerg {
             // ZvT
             if (Players::ZvT()) {
                 if (vsMech) {
-                    unitOrder ={ Zerg_Mutalisk, Zerg_Defiler, Zerg_Ultralisk };
+                    unitOrder ={ Zerg_Mutalisk, Zerg_Zergling, Zerg_Defiler };
                     techOffset = 2;
                 }
                 else {
@@ -702,21 +700,21 @@ namespace McRave::BuildOrder::Zerg {
                     {Zerg_Lurker, 2},
                     {Zerg_Ultralisk, 4},
                     {Zerg_Hydralisk, 12},
-                    {Zerg_Mutalisk, 18},
+                    {Zerg_Mutalisk, 12},
 
-                    {Zerg_Drone, 35},
+                    {Zerg_Drone, 40},
                     {Zerg_Defiler, 2},
                     {Zerg_Lurker, 4},
                     {Zerg_Ultralisk, 8},
-                    {Zerg_Hydralisk, 36},
-                    {Zerg_Mutalisk, 24},
+                    {Zerg_Hydralisk, 24},
+                    {Zerg_Mutalisk, 30},
 
-                    {Zerg_Drone, 40},
+                    {Zerg_Drone, 50},
                     {Zerg_Defiler, 4},
                     {Zerg_Lurker, 8},
                     {Zerg_Ultralisk, 12},
                     {Zerg_Hydralisk, 64},
-                    {Zerg_Mutalisk, 30},
+                    {Zerg_Mutalisk, 48},
                 };
             }
 

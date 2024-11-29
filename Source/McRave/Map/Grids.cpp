@@ -11,6 +11,7 @@ namespace McRave::Grids
         vector<WalkPosition> resetVector;
 
         struct Grid {
+            bool set = false;
             float airThreat, groundThreat;
             int airDensity, groundDensity;
             int fullCollision; // TODO: Can we remove this? Use vertical + horizontal instead
@@ -25,6 +26,7 @@ namespace McRave::Grids
                 fullCollision = 0;
                 horizontalCollision = 0;
                 verticalCollision = 0;
+                set = false;
             }
         };
         Grid enemyGrid[1048576];
@@ -106,11 +108,6 @@ namespace McRave::Grids
             // Limit checks so we don't have to check validity
             auto radius = unit.getPlayer() != Broodwar->self() ? 1 + int(max(unit.getGroundReach(), unit.getAirReach())) / 8 : 8;
 
-            const auto left = max(0, unit.getWalkPosition().x - radius);
-            const auto right = min(1024, unit.getWalkPosition().x + unit.getWalkWidth() + radius);
-            const auto top = max(0, unit.getWalkPosition().y - radius);
-            const auto bottom = min(1024, unit.getWalkPosition().y + unit.getWalkHeight() + radius);
-
             // Pixel rectangle (make any even size units an extra WalkPosition)
             const auto topLeft = Position(unit.getPosition().x - unit.getType().dimensionLeft(), unit.getPosition().y - unit.getType().dimensionUp());
             const auto topRight = Position(unit.getPosition().x + unit.getType().dimensionRight() + 1, unit.getPosition().y - unit.getType().dimensionUp());
@@ -118,6 +115,7 @@ namespace McRave::Grids
             const auto botRight = Position(unit.getPosition().x + unit.getType().dimensionRight() + 1, unit.getPosition().y + unit.getType().dimensionDown() + 1);
             const auto x1 = unit.getPosition().x;
             const auto y1 = unit.getPosition().y;
+            const auto center = WalkPosition(unit.getPosition());
 
             const auto clusterTopLeft = topLeft - Position(88, 88);
             const auto clusterBotRight = botRight + Position(88, 88);
@@ -129,37 +127,69 @@ namespace McRave::Grids
             if (!unit.isFlying())
                 addCollision(unit);
 
-            // Iterate tiles and add to grid
-            for (int x = left; x < right; x++) {
-                for (int y = top; y < bottom; y++) {
-                    auto &index = grid[gridWalkScale * y + x];
-                    auto savePlease = false;
-                    const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4) - 32;
+            //// Iterate tiles and add to grid
+            //for (int x = left; x < right; x++) {
+            //    for (int y = top; y < bottom; y++) {
+            //        auto &index = grid[gridWalkScale * y + x];
+            //        auto savePlease = false;
+            //        const auto dist = fasterDistGrids(x1, y1, (x * 8) + 4, (y * 8) + 4) - 32;
 
-                    // Cluster
-                    if (allowCluster && x * 8 >= clusterTopLeft.x && y * 8 >= clusterTopLeft.y && x * 8 <= clusterBotRight.x && y * 8 <= clusterBotRight.y) {
-                        unit.isFlying() ? index.airDensity++ : index.groundDensity++;
-                        savePlease = true;
-                    }
+            //        // Cluster
+            //        if (allowCluster && x * 8 >= clusterTopLeft.x && y * 8 >= clusterTopLeft.y && x * 8 <= clusterBotRight.x && y * 8 <= clusterBotRight.y) {
+            //            unit.isFlying() ? index.airDensity++ : index.groundDensity++;
+            //            savePlease = true;
+            //        }
 
-                    // Collision
-                    if (allowCollision && Util::rectangleIntersect(topLeft, botRight, x * 8, y * 8) && Util::rectangleIntersect(topLeft, botRight, (x + 1) * 8 - 1, (y + 1) * 8 - 1)) {
-                        index.fullCollision++;
-                        savePlease = true;
-                    }
+            //        // Collision
+            //        if (allowCollision && Util::rectangleIntersect(topLeft, botRight, x * 8, y * 8) && Util::rectangleIntersect(topLeft, botRight, (x + 1) * 8 - 1, (y + 1) * 8 - 1)) {
+            //            index.fullCollision++;
+            //            savePlease = true;
+            //        }
 
-                    // Threat
-                    if (allowGround && dist <= unit.getGroundReach()) {
-                        index.groundThreat += (dist <= unit.getGroundRange() ? float(unit.getVisibleGroundStrength()) : float(unit.getVisibleGroundStrength() / max(1.0, logLookup16[dist / 16])));
-                        savePlease = true;
-                    }
-                    if (allowAir && dist <= unit.getAirReach()) {
-                        index.airThreat += (dist <= unit.getAirRange() ? float(unit.getVisibleAirStrength()) : float(unit.getVisibleAirStrength() / max(1.0, logLookup16[dist / 16])));
-                        savePlease = true;
-                    }
+            //        // Threat
+            //        if (allowGround && dist <= unit.getGroundReach()) {
+            //            index.groundThreat += (dist <= unit.getGroundRange() ? float(unit.getVisibleGroundStrength()) : float(unit.getVisibleGroundStrength() / max(1.0, logLookup16[dist / 16])));
+            //            savePlease = true;
+            //        }
+            //        if (allowAir && dist <= unit.getAirReach()) {
+            //            index.airThreat += (dist <= unit.getAirRange() ? float(unit.getVisibleAirStrength()) : float(unit.getVisibleAirStrength() / max(1.0, logLookup16[dist / 16])));
+            //            savePlease = true;
+            //        }
 
-                    if (savePlease)
-                        saveReset(x, y);
+            //        if (savePlease)
+            //            saveReset(x, y);
+            //    }
+            //}
+
+            for (auto &w : Util::getWalkCircle(radius)) {
+                auto walk = center + w;
+                if (!walk.isValid())
+                    continue;
+
+                auto &index = grid[gridWalkScale * walk.y + walk.x];
+                const auto dist = fasterDistGrids(x1, y1, (walk.x * 8) + 4, (walk.y * 8) + 4) - 32;
+
+                if (!index.set) {
+                    index.set = true;
+                    resetVector.push_back(walk);
+                }
+
+                // Cluster
+                if (allowCluster && walk.x * 8 >= clusterTopLeft.x && walk.y * 8 >= clusterTopLeft.y && walk.x * 8 <= clusterBotRight.x && walk.y * 8 <= clusterBotRight.y) {
+                    unit.isFlying() ? index.airDensity++ : index.groundDensity++;
+                }
+
+                // Collision
+                if (allowCollision && Util::rectangleIntersect(topLeft, botRight, walk.x * 8, walk.y * 8) && Util::rectangleIntersect(topLeft, botRight, (walk.x + 1) * 8 - 1, (walk.y + 1) * 8 - 1)) {
+                    index.fullCollision++;
+                }
+
+                // Threat
+                if (allowGround) {
+                    index.groundThreat += (dist <= unit.getGroundRange() ? float(unit.getVisibleGroundStrength()) : float(unit.getVisibleGroundStrength() / max(1.0, logLookup16[dist / 16])));
+                }
+                if (allowAir) {
+                    index.airThreat += (dist <= unit.getAirRange() ? float(unit.getVisibleAirStrength()) : float(unit.getVisibleAirStrength() / max(1.0, logLookup16[dist / 16])));
                 }
             }
         }
@@ -172,6 +202,7 @@ namespace McRave::Grids
                 enemyGrid[gridWalkScale * pos.y + pos.x].wipe();
                 neutralGrid[gridWalkScale * pos.y + pos.x].wipe();
             }
+            resetVector.clear();
             Visuals::endPerfTest("Grid Reset");
         }
 

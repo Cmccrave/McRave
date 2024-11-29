@@ -19,7 +19,7 @@ namespace McRave::BuildOrder::Zerg {
         wallMain =                                  false;
 
         wantNatural =                               hatchCount() >= 3 || (Spy::getEnemyTransition() != "WorkerRush");
-        wantThird =                                 hatchCount() >= 3 || (Spy::enemyFastExpand() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0);
+        wantThird =                                 hatchCount() >= 3;
 
         mineralThird =                              false;
         proxy =                                     false;
@@ -88,7 +88,7 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()) {
             initialValue = 2;
             if (Util::getTime() > Time(3, 45))
-                initialValue = 10;
+                initialValue = 6;
         }
 
         // TODO: Fix T spy
@@ -148,11 +148,11 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit =                                     Zerg_Mutalisk;
         reserveLarva =                                  6;
 
-        auto thirdHatch = (vis(Zerg_Spire) > 0 && s >= 50);
+        auto thirdHatch = (com(Zerg_Spire) == 0 && s >= 50 && vis(Zerg_Drone) >= 22) || (com(Zerg_Spire) == 1 && total(Zerg_Mutalisk) >= 6 && vis(Zerg_Drone) >= 22);
 
         // Buildings
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
-        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10 && vis(Zerg_Spawning_Pool) > 0) + (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 18);
+        buildQueue[Zerg_Extractor] =                    (hatchCount() >= 2 && vis(Zerg_Drone) >= 10 && vis(Zerg_Spawning_Pool) > 0) + (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 20);
         buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32);
         buildQueue[Zerg_Lair] =                         (s >= 24 && gas(80));
         buildQueue[Zerg_Spire] =                        atPercent(Zerg_Lair, 0.95);

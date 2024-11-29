@@ -156,7 +156,7 @@ namespace McRave::Util {
         for (int x = WalkPosition(box.first).x; x <= WalkPosition(box.second).x; x++) {        
             for (int y = WalkPosition(box.first).y; y <= WalkPosition(box.second).y; y++) {
                 auto walk = WalkPosition(x, y);
-                if (!mapBWEM.GetMiniTile(walk).Walkable())
+                if (walk.isValid() && !mapBWEM.GetMiniTile(walk).Walkable())
                     return false;
             }
         }

@@ -411,8 +411,10 @@ namespace McRave::Walls {
 
             // RaxFact
             if (Spy::getEnemyBuild() == "RaxFact") {
-                if (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::enemyWalled())
-                    return (Util::getTime() > Time(3, 30));
+                if (Spy::getEnemyTransition() == "2Fact" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
+                    return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45));
+                if (Spy::enemyWalled())
+                    return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45));
                 if (Spy::getEnemyOpener() == "8Rax")
                     return (Util::getTime() > Time(4, 30));
             }
@@ -493,6 +495,12 @@ namespace McRave::Walls {
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto expected = max(ZvT_Opener(wall), ZvT_Transition(wall));
             auto reduction = (unitsKilled / 8) + buildingsKilled;
+
+            // Non natural walls are limited to 1 total
+            if (!wall.getStation()->isNatural() && expected > 0) {
+                expected = 1;
+                minimum = 1;
+            }
 
             if (expected > 0)
                 minimum = 1;
