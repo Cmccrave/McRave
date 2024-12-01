@@ -32,7 +32,7 @@ namespace McRave::Combat::Formations {
             // TODO: Get enemy max range
             auto offset = double(-1 * max(closestBuilding->getType().width(), closestBuilding->getType().height()));// (Util::getTime() > Time(6, 30)) ? max(commander->getGroundRange(), 96.0) : commander->getGroundRange();
             if (Players::ZvP()) {
-                if (Spy::getEnemyTransition() == "Speedlot" && Util::getTime() < Time(8, 00))
+                if (Spy::getEnemyTransition() == P_Speedlot && Util::getTime() < Time(8, 00))
                     offset = -32.0;
                 if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Singularity_Charge, 1))
                     offset = 64.0;
@@ -54,6 +54,14 @@ namespace McRave::Combat::Formations {
 
             Broodwar->drawTextMap(commander->getPosition(), "HC");
 
+            // If any unit is in the wrong side of the chokepoint, shift the center back
+            // Assumes only main area is correct for now
+            auto badArea = false;
+            for (auto &unit : cluster.units) {
+                if (!Terrain::inArea(Terrain::getMainArea(), unit->getPosition()) && !Combat::isDefendNatural())
+                    badArea = true;
+            }
+
             if (closestChoke == Terrain::getMainChoke() && !Terrain::isFlatRamp()) {
                 formation.angle = Terrain::getMainRamp().angle;
                 formation.radius = Terrain::getMainRamp().center.getDistance(Terrain::getMainRamp().entrance);
@@ -64,6 +72,9 @@ namespace McRave::Combat::Formations {
                 formation.radius = max(commander->getGroundRange(), double(closestChoke->Width()));
                 formation.center = Position(closestChoke->Center());
             }
+
+            if (badArea)
+                formation.radius += 64.0;
         }
 
         // Hold with commander
@@ -229,8 +240,6 @@ namespace McRave::Combat::Formations {
 
         // Step function
         auto count = 0;
-        Broodwar << xStepPer << endl;
-        Broodwar << yStepPer << endl;
 
         const auto stepFunc = [&](auto& np, auto& pp) {
             pp = formation.center + Position(int(-xStepPer * count), int(yStepPer * count));
@@ -243,7 +252,7 @@ namespace McRave::Combat::Formations {
             if (skipAll || count * pixelsPerUnit > formation.radius) {
                 count = 0;
                 //formation.center = Util::shiftTowards(formation.center, cluster.retreatPosition, pixelsPerUnit);
-                formation.center = formation.center + Position(yStepPer, xStepPer);
+                formation.center = formation.center + Position(int(round(yStepPer)), int(round(xStepPer)));
                 return true;
             }
             return false;

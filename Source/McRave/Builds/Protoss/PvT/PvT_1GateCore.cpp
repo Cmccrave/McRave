@@ -121,33 +121,33 @@ namespace McRave::BuildOrder::Protoss {
     {
         // Reactions
         if (!inTransition) {
-            if (currentBuild == "1GateCore") {
+            if (currentBuild == P_1GateCore) {
                 if (Spy::enemyRush()) {
-                    currentBuild = "2Gate";
-                    currentOpener = "Main";
-                    currentTransition = "DT";
+                    currentBuild = P_2Gate;
+                    currentOpener = P_10_12;
+                    currentTransition = P_DT;
                 }
                 else if (Spy::enemyFastExpand())
-                    currentTransition = "DT";
+                    currentTransition = P_DT;
             }
-            if (currentBuild == "2Gate") {
+            if (currentBuild == P_2Gate) {
                 if (Spy::enemyFastExpand())
-                    currentTransition = "DT";
+                    currentTransition = P_DT;
             }
         }
 
         // Openers
-        if (currentOpener == "NZCore")
+        if (currentOpener == P_NZCore)
             PvT_NZCore();
-        if (currentOpener == "ZCore")
+        if (currentOpener == P_ZCore)
             PvT_ZCore();
 
         // Transitions
-        if (currentTransition == "Robo")
+        if (currentTransition == P_Robo)
             PvT_1GC_Robo();
-        if (currentTransition == "DT")
+        if (currentTransition == P_DT)
             PvT_1GC_DT();
-        if (currentTransition == "4Gate")
+        if (currentTransition == P_4Gate)
             PvT_1GC_4Gate();
     }
 }

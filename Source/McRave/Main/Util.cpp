@@ -326,7 +326,7 @@ namespace McRave::Util {
             return here;
         const auto directionVector = target - here;
         const auto currentDist = target.getDistance(here);
-        return here + (directionVector * dist / currentDist);
+        return here + Position(int(directionVector.x * dist / currentDist), int(directionVector.y * dist / currentDist));
     }
 
     Time getTime()
@@ -377,13 +377,6 @@ namespace McRave::Util {
         auto minutes = int(double(Broodwar->getFrameCount()) / 23.81) / 60;
         gameTime.seconds = seconds;
         gameTime.minutes = minutes;
-    }
-
-    pair<double, Position> getClosestPointToRadiusAir(Position source, Position target, double radius)
-    {
-        auto diff = source - target;
-        auto dist = source.getDistance(target);
-        return { dist, source - (diff * ((dist - radius) / dist)) };
     }
 
     pair<double, Position> findPointOnCircle(Position source, Position target, double radius, function<double(Position)> calc)

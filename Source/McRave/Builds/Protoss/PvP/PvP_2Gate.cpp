@@ -85,23 +85,23 @@ namespace McRave::BuildOrder::Protoss {
     {
         // Reactions
         if (!inTransition) {
-            if (Spy::getEnemyBuild() == "FFE" || Spy::getEnemyTransition() == "DT")
-                currentTransition = "Robo";
-            else if (Spy::getEnemyBuild() == "CannonRush")
-                currentTransition = "Robo";
+            if (Spy::getEnemyBuild() == P_FFE || Spy::getEnemyTransition() == P_DT)
+                currentTransition = P_Robo;
+            else if (Spy::getEnemyBuild() == P_CannonRush)
+                currentTransition = P_Robo;
             else if (Spy::enemyPressure())
-                currentTransition = "DT";
+                currentTransition = P_DT;
         }
 
         // Openers
-        if (currentOpener == "Main")
+        if (currentOpener == P_10_12)
             PvP_2G_Main();
 
         // Transitions
         if (transitionReady) {
-            if (currentTransition == "Robo")
+            if (currentTransition == P_Robo)
                 PvP_2G_Robo();
-            if (currentTransition == "DT")
+            if (currentTransition == P_DT)
                 PvP_2G_DT();
         }
     }

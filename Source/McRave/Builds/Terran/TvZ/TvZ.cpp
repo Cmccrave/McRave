@@ -57,12 +57,12 @@ namespace McRave::BuildOrder::Terran
         defaultTvZ();
 
         // Builds
-        if (currentBuild == "2Rax")
+        if (currentBuild == T_2Rax)
             TvZ_2Rax();
 
         // Transitions
         if (transitionReady) {
-            if (currentTransition == "Academy")
+            if (currentTransition == T_Academy)
                 TvZ_Academy();
         }
     }

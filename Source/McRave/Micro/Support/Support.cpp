@@ -133,8 +133,8 @@ namespace McRave::Support {
 
         void updateDestination(UnitInfo& unit)
         {
-            auto enemyAir = Spy::getEnemyTransition() == "Corsair"
-                || Spy::getEnemyTransition() == "2PortWraith"
+            auto enemyAir = Spy::getEnemyTransition() == P_Corsair
+                || Spy::getEnemyTransition() == T_2PortWraith
                 || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
 
             auto followArmyPossible = unit.isHealthy()

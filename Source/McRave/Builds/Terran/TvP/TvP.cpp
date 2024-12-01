@@ -72,12 +72,12 @@ namespace McRave::BuildOrder::Terran
         defaultTvP();
 
         // Builds
-        if (currentBuild == "RaxFact")
+        if (currentBuild == T_RaxFact)
             TvP_RaxFact();
 
         // Transitions
         if (transitionReady) {
-            if (currentTransition == "5Fact")
+            if (currentTransition == T_5Fact)
                 TvP_5Fact();
         }
     }

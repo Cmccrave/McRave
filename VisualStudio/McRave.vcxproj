@@ -187,6 +187,7 @@
     <ClInclude Include="..\Source\McRave\Micro\Worker\Workers.h" />
     <ClInclude Include="..\Source\McRave\Strategy\Actions\Actions.h" />
     <ClInclude Include="..\Source\McRave\Strategy\Goals\Goals.h" />
+    <ClInclude Include="..\Source\McRave\Strategy\Spy\Defs.h" />
     <ClInclude Include="..\Source\McRave\Strategy\Spy\Spy.h" />
     <ClInclude Include="..\Source\McRave\Strategy\Zones\Zones.h" />
   </ItemGroup>

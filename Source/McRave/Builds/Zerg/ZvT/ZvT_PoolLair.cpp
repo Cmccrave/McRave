@@ -31,7 +31,7 @@ namespace McRave::BuildOrder::Zerg {
     void ZvT_PL()
     {
         // Openers
-        if (currentOpener == "4Pool")
+        if (currentOpener == Z_4Pool)
             ZvT_PL_4Pool();
     }
 }

@@ -29,7 +29,7 @@ namespace McRave::BuildOrder::Terran {
     void TvZ_2Rax()
     {
         // Openers
-        if (currentOpener == "11/13")
+        if (currentOpener == T_11_13)
             TvZ_2Rax_1113();
     }
 }

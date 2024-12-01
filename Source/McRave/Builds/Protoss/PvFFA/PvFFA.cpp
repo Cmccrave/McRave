@@ -32,7 +32,7 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvFFA();
 
         // Builds
-        if (currentBuild == "1GateCore")
+        if (currentBuild == P_1GateCore)
             PvFFA_1GC();
     }
 }

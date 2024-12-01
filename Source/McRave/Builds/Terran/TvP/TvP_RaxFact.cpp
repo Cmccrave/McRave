@@ -55,9 +55,9 @@ namespace McRave::BuildOrder::Terran {
     void TvP_RaxFact()
     {
         // Openers
-        if (currentOpener == "1FactFE")
+        if (currentOpener == T_1FactFE)
             TvP_1FactFE();
-        if (currentOpener == "2FactFE")
+        if (currentOpener == T_2FactFE)
             TvP_2FactFE();
     }
 }

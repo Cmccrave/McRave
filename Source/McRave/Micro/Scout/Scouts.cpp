@@ -223,13 +223,13 @@ namespace McRave::Scouts {
                 if (Players::ZvT()) {
 
                     // Drone
-                    if (Spy::getEnemyOpener() == "8Rax"
+                    if (Spy::getEnemyOpener() == T_8Rax
                         || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0
                         || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0
                         || Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0
                         || Players::getTotalCount(PlayerState::Enemy, Terran_Factory) > 0
                         || (Terrain::getEnemyStartingPosition().isValid() && vis(Zerg_Zergling) > 0)
-                        || Spy::getEnemyTransition() == "WorkerRush"
+                        || Spy::getEnemyTransition() == U_WorkerRush
                         || Util::getTime() > Time(4, 00))
                         main.desiredTypeCounts[Zerg_Drone] = 0;
 
@@ -245,9 +245,9 @@ namespace McRave::Scouts {
                 if (Players::ZvP()) {
 
                     // Drone
-                    if (Spy::getEnemyBuild() == "2Gate"
-                        || Spy::getEnemyBuild() == "1GateCore"
-                        || Spy::getEnemyBuild() == "FFE"
+                    if (Spy::getEnemyBuild() == P_2Gate
+                        || Spy::getEnemyBuild() == P_1GateCore
+                        || Spy::getEnemyBuild() == P_FFE
                         || Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 3
                         || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
                         || Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0
@@ -367,7 +367,7 @@ namespace McRave::Scouts {
 
             // Against known proxies without visible proxy style buildings
             if (Spy::enemyProxy() && !closestProxyBuilding) {
-                if (Spy::getEnemyBuild() == "CannonRush") {
+                if (Spy::getEnemyBuild() == P_CannonRush) {
                     proxy.center = mapBWEM.Center();
                     proxy.addTargets(Terrain::getMainPosition(), 200);
                 }
@@ -466,12 +466,15 @@ namespace McRave::Scouts {
             // Army scouting between my natural and enemy natural
             BWEB::Path newPath(start, end, Zerg_Zergling);
             newPath.generateJPS([&](auto t) {return newPath.terrainWalkable(t); });
-            auto safeTarget = Util::findPointOnPath(newPath, [&](auto &t) {
+            auto primarySafeTarget = Util::findPointOnPath(newPath, [&](auto &t) {
                 return Grids::getGroundThreat(t, PlayerState::Enemy) <= 0.1;
             });
+            auto secondarySafeTarget = Util::findPointOnPath(newPath, [&](auto &t) {
+                return Position(t).getDistance(primarySafeTarget) > 96.0 && Grids::getGroundThreat(t, PlayerState::Enemy) <= 0.1;
+            });
 
-            army.center = safeTarget;
-            army.addTargets(safeTarget, 96.0);
+            army.center = primarySafeTarget;
+            army.addTargets(secondarySafeTarget, 96);
 
             // If they haven't expanded, check it occasionally, unless we really need army info
             if (!Spy::enemyFastExpand() && !contained)
@@ -745,7 +748,11 @@ namespace McRave::Scouts {
                 // Sometimes we need to just sacrifice a zergling to get some info based on timings
                 if (!BuildOrder::isRush() && Terrain::getEnemyStartingPosition().isValid() && unit.getType() == Zerg_Zergling) {
                     if (Players::ZvP()) {
-                        if (Spy::getEnemyBuild() == "FFE" && Util::getTime() > Time(7, 00) && sacrificeCount == 0) {
+                        if (Spy::getEnemyBuild() == P_FFE && Util::getTime() > Time(7, 00) && sacrificeCount == 0) {
+                            unit.sacrifice = true;
+                            sacrificeCount++;
+                        }
+                        if (Spy::getEnemyBuild() == P_FFE && BuildOrder::getCurrentTransition() == Z_3HatchHydra && Util::getTime() > Time(4, 30) && sacrificeCount == 0) {
                             unit.sacrifice = true;
                             sacrificeCount++;
                         }

@@ -78,21 +78,21 @@ namespace McRave::BuildOrder::Protoss {
 
             // If enemy is rushing, pressuring or stole gas
             if (Spy::enemyRush() || Spy::enemyPressure() || Spy::enemyGasSteal()) {
-                currentBuild = "2Gate";
-                currentOpener = "Main";
-                currentTransition = "4Gate";
+                currentBuild = P_2Gate;
+                currentOpener = P_10_12;
+                currentTransition = P_4Gate;
             }
         }
 
         // Openers
-        if (currentOpener == "ZCore")
+        if (currentOpener == P_ZCore)
             PvZ_1GC_ZCore();
-        if (currentOpener == "2Zealot")
+        if (currentOpener == P_ZZCore)
             PvZ_1GC_ZZCore();
 
         // Transitions
         if (transitionReady) {
-            if (currentTransition == "DT")
+            if (currentTransition == P_DT)
                 PvZ_1GC_DT();
         }
     }

@@ -203,8 +203,8 @@ namespace McRave::Combat::Clusters {
 
                     // Now take the center and try to shift it perpendicular towards lower altitude
                     while (newNav.isValid() && mapBWEM.GetMiniTile(WalkPosition(newNav)).Altitude() < desiredAltitude) {
-                        auto p1 = Util::clipPosition(newNav - Position(-size * cos(perpAngle), size * sin(perpAngle)));
-                        auto p2 = Util::clipPosition(newNav + Position(-size * cos(perpAngle), size * sin(perpAngle)));
+                        auto p1 = Util::clipPosition(newNav - Position(-size * int(cos(perpAngle)), size * int(sin(perpAngle))));
+                        auto p2 = Util::clipPosition(newNav + Position(-size * int(cos(perpAngle)), size * int(sin(perpAngle))));
                         auto altitude1 = mapBWEM.GetMiniTile(WalkPosition(p1)).Altitude();
                         auto altitude2 = mapBWEM.GetMiniTile(WalkPosition(p2)).Altitude();
 

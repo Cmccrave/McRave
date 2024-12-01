@@ -15,7 +15,7 @@ namespace McRave::BuildOrder::Zerg {
         wallNat =                                   hatchCount() >= 4;
         wallMain =                                  false;
         wantNatural =                               true;
-        wantThird =                                 Spy::getEnemyBuild() == "FFE";
+        wantThird =                                 Spy::getEnemyBuild() == P_FFE;
         proxy =                                     false;
         hideTech =                                  false;
         rush =                                      false;
@@ -50,7 +50,7 @@ namespace McRave::BuildOrder::Zerg {
         defaultZvFFA();
 
         // Builds
-        if (currentBuild == "HatchPool")
+        if (currentBuild == Z_HatchPool)
             ZvFFA_HP();
     }
 }

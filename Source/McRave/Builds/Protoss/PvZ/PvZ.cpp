@@ -12,7 +12,7 @@ namespace McRave::BuildOrder::Protoss {
     void defaultPvZ() {
         inOpening =                                     true;
         inBookSupply =                                  vis(Protoss_Pylon) < 2;
-        wallNat =                                       vis(Protoss_Nexus) >= 2 || currentOpener == "Natural";
+        wallNat =                                       vis(Protoss_Nexus) >= 2;
         wallMain =                                      false;
         scout =                                         vis(Protoss_Gateway) > 0;
         wantNatural =                                   false;
@@ -33,11 +33,11 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvZ();
 
         // Builds
-        if (currentBuild == "2Gate")
+        if (currentBuild == P_2Gate)
             PvZ_2G();
-        if (currentBuild == "1GateCore")
+        if (currentBuild == P_1GateCore)
             PvZ_1GC();
-        if (currentBuild == "FFE")
+        if (currentBuild == P_FFE)
             PvZ_FFE();
     }
 }

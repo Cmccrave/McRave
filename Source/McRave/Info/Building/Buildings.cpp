@@ -82,7 +82,7 @@ namespace McRave::Buildings {
             auto cancelLate = building.frameCompletesWhen() - Broodwar->getFrameCount() < 50;
 
             // Cancelling natural hatchery if we're being horror 2gated
-            if (naturalHatch && cancelTiming && cancelLow && Spy::getEnemyOpener() == "Horror9/9") {
+            if (naturalHatch && cancelTiming && cancelLow && Spy::getEnemyOpener() == P_Horror_9_9) {
                 Events::onUnitCancelBecauseBWAPISucks(building);
                 building.unit()->cancelConstruction();
             }
@@ -94,7 +94,7 @@ namespace McRave::Buildings {
             }
 
             // Cancelling hatchery if against early pool
-            auto earlyPool = Spy::getEnemyOpener() == "4Pool" || Spy::getEnemyOpener() == "7Pool";
+            auto earlyPool = Spy::getEnemyOpener() == Z_4Pool || Spy::getEnemyOpener() == Z_7Pool;
             if (naturalHatch && earlyPool && cancelTiming && cancelLow) {
                 Events::onUnitCancelBecauseBWAPISucks(building);
                 building.unit()->cancelConstruction();
@@ -156,7 +156,7 @@ namespace McRave::Buildings {
             }
 
             // Look for the closest possible non worker enemy
-            if (plannedType == Zerg_Sunken_Colony && Spy::getEnemyBuild() != "CannonRush" && Spy::getEnemyTransition() != "WorkerRush") {
+            if (plannedType == Zerg_Sunken_Colony && Spy::getEnemyBuild() != P_CannonRush && Spy::getEnemyTransition() != U_WorkerRush) {
                 auto closestThreat = Util::getClosestUnit(building.getPosition(), PlayerState::Enemy, [&](auto &u) {
                     return Units::inBoundUnit(*u);
                 });

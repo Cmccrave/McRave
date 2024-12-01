@@ -21,16 +21,16 @@ namespace McRave::Combat::State {
             return;
 
         // Hydralisks
-        if (!BuildOrder::isPressure() && (unlockedOrVis(Zerg_Hydralisk) || BuildOrder::getCurrentTransition() == "4HatchHydra" || BuildOrder::getCurrentTransition() == "6HatchHydra")) {
+        if (!BuildOrder::isPressure() && (unlockedOrVis(Zerg_Hydralisk) || BuildOrder::getCurrentTransition() == Z_4HatchHydra || BuildOrder::getCurrentTransition() == Z_6HatchHydra)) {
             const auto hydraSpeed = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments);
             const auto hydraRange = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines);
-            const auto defendTiming = Spy::getEnemyBuild() == "FFE" && !BuildOrder::isPressure() && Util::getTime() < Time(12, 00);
+            const auto defendTiming = Spy::getEnemyBuild() == P_FFE && !BuildOrder::isPressure() && Util::getTime() < Time(12, 00);
             if (!hydraRange || !hydraSpeed || BuildOrder::isAllIn() || defendTiming)
                 staticRetreatTypes.push_back(Zerg_Hydralisk);
         }
 
         // Mutalisks
-        if (unlockedOrVis(Zerg_Mutalisk) || BuildOrder::getCurrentTransition() == "2HatchMuta" || BuildOrder::getCurrentTransition() == "3HatchMuta") {
+        if (unlockedOrVis(Zerg_Mutalisk) || BuildOrder::getCurrentTransition() == Z_2HatchMuta || BuildOrder::getCurrentTransition() == Z_3HatchMuta) {
             if (Players::ZvZ()) {
                 const auto lessMutas = com(Zerg_Mutalisk) < Players::getCompleteCount(PlayerState::Enemy, Zerg_Mutalisk);
                 if (lessMutas)
@@ -57,12 +57,12 @@ namespace McRave::Combat::State {
             if (!crackling && !volume && !BuildOrder::isRush() && !BuildOrder::isAllIn()) {
                 if (Players::ZvP()) {
                     const auto killedWorkers = Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) >= 8;
-                    const auto scaryOpeners = Spy::getEnemyBuild() != "FFE" && Util::getTime() < Time(8, 00);
+                    const auto scaryOpeners = Spy::getEnemyBuild() != P_FFE && Util::getTime() < Time(8, 00);
                     const auto hideCheese = BuildOrder::isHideTech() && BuildOrder::isOpener() && !BuildOrder::isPressure();
                     const auto defendProxy = Spy::enemyProxy() && !speedLing && Util::getTime() < Time(5, 00) && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0;
-                    const auto defendTiming = Spy::getEnemyBuild() == "FFE" && Util::getTime() > Time(6, 00) && Util::getTime() < Time(8, 00);
+                    const auto defendTiming = Spy::getEnemyBuild() == P_FFE && Util::getTime() > Time(6, 00) && Util::getTime() < Time(8, 00);
 
-                    if (!killedWorkers && Spy::getEnemyBuild() != "CannonRush") {
+                    if (!killedWorkers && Spy::getEnemyBuild() != P_CannonRush) {
                         if (scaryOpeners || hideCheese || defendProxy || defendTiming)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
@@ -72,17 +72,17 @@ namespace McRave::Combat::State {
                     const auto defendSunkens = com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0 && !speedLing;
                     const auto vulturesExist = Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0;
                     const auto vultureThreat = Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy() && !Spy::enemyProxy()
-                        && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled());
+                        && (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled());
                     if (speedVultures || !speedLing || total(Zerg_Mutalisk) < 12) {
                         if (defendSunkens || vulturesExist || vultureThreat)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
                 }
                 if (Players::ZvZ()) {
-                    const auto enemyLingVomit = (Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling") && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) < 9;
+                    const auto enemyLingVomit = (Spy::getEnemyTransition() == Z_2HatchSpeedling || Spy::getEnemyTransition() == Z_3HatchSpeedling) && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) < 9;
                     const auto avoidDiceRoll = (Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 15) && !Terrain::getEnemyStartingPosition().isValid())
-                        || (BuildOrder::getCurrentOpener() == "12Pool")
-                        || (BuildOrder::getCurrentOpener() == "12Hatch");
+                        || (BuildOrder::getCurrentOpener() == Z_12Pool)
+                        || (BuildOrder::getCurrentOpener() == Z_12Hatch);
                     const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(3, 15);
                     const auto enemyHatchAdvatange = (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair))
                     > (Players::getVisibleCount(PlayerState::Self, Zerg_Hatchery) + Players::getVisibleCount(PlayerState::Self, Zerg_Lair));
@@ -93,25 +93,25 @@ namespace McRave::Combat::State {
                     if (!lingAdvantage) {
 
                         // 1hm early
-                        if (BuildOrder::getCurrentTransition() == "1HatchMuta" && Util::getTime() < Time(7, 00)) {
+                        if (BuildOrder::getCurrentTransition() == Z_1HatchMuta && Util::getTime() < Time(7, 00)) {
                             if (Spy::Zerg::enemyFasterPool() || Spy::Zerg::enemyEqualPool() || Spy::enemyTurtle() || enemyLingVomit || enemyDroneScouted || enemyHatchAdvatange)
                                 staticRetreatTypes.push_back(Zerg_Zergling);
                         }
 
                         // 1hm mid
-                        if (BuildOrder::getCurrentTransition() == "1HatchMuta" && Util::getTime() > Time(3, 15) && Util::getTime() < Time(10, 00)) {
+                        if (BuildOrder::getCurrentTransition() == Z_1HatchMuta && Util::getTime() > Time(3, 15) && Util::getTime() < Time(10, 00)) {
                             if (enemyHatchAdvatange)
                                 staticRetreatTypes.push_back(Zerg_Zergling);
                         }
 
                         // 2hm early
-                        if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(5, 30) && !Spy::enemyFastExpand() && !Spy::Zerg::enemySlowerSpeed()) {
+                        if (BuildOrder::getCurrentTransition() == Z_2HatchMuta && Util::getTime() < Time(5, 30) && !Spy::enemyFastExpand() && !Spy::Zerg::enemySlowerSpeed()) {
                             if (Spy::Zerg::enemyFasterPool() || Spy::Zerg::enemyEqualPool() || avoidDiceRoll || enemyDroneScouted)
                                 staticRetreatTypes.push_back(Zerg_Zergling);
                         }
 
                         // 2hm mid
-                        if (BuildOrder::getCurrentTransition() == "2HatchMuta" && Util::getTime() < Time(10, 00) && !Spy::enemyFastExpand() && !Spy::Zerg::enemySlowerSpeed()) {
+                        if (BuildOrder::getCurrentTransition() == Z_2HatchMuta && Util::getTime() < Time(10, 00) && !Spy::enemyFastExpand() && !Spy::Zerg::enemySlowerSpeed()) {
                             if (enemyLingVomit || Spy::Zerg::enemyFasterSpeed() || expansionAdvantage)
                                 staticRetreatTypes.push_back(Zerg_Zergling);
                         }

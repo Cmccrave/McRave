@@ -43,29 +43,29 @@ namespace McRave::BuildOrder::Zerg {
         if (com(Zerg_Spawning_Pool) == 0)
             return 0;
 
-        auto macroHatch = (currentBuild == "PoolHatch" || currentBuild == "HatchPool") ? 1 : 0;
+        auto macroHatch = (currentBuild == Z_PoolHatch || currentBuild == Z_HatchPool) ? 1 : 0;
         auto enemyDrones = Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone);
         auto minDrones = max(enemyDrones + 1, (Stations::getGasingStationsCount() * 8) + int(macroHatch * 3));
 
         // 1Hatch builds can't make too many lings
-        if (currentTransition == "1HatchMuta" && total(Zerg_Mutalisk) == 0) {
+        if (currentTransition == Z_1HatchMuta && total(Zerg_Mutalisk) == 0) {
             initialValue = 24;
             if (Spy::enemyTurtle())
                 initialValue = 12;
-            else if (Spy::getEnemyTransition() == "1HatchMuta")
+            else if (Spy::getEnemyTransition() == Z_1HatchMuta)
                 initialValue = 30;
-            else if (Spy::getEnemyTransition() == "2HatchMuta" || Spy::getEnemyTransition() == "3HatchLing" || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
+            else if (Spy::getEnemyTransition() == Z_2HatchMuta || Spy::getEnemyTransition() == Z_3HatchSpeedling || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
                 initialValue = 18;
         }
 
         // 2Hatch builds can make more lings
-        if (currentTransition == "2HatchMuta" && total(Zerg_Mutalisk) == 0) {
+        if (currentTransition == Z_2HatchMuta && total(Zerg_Mutalisk) == 0) {
             initialValue = 36;
-            if (Spy::getEnemyTransition() == "1HatchMuta")
+            if (Spy::getEnemyTransition() == Z_1HatchMuta)
                 initialValue = 24;
             if (Spy::enemyTurtle())
                 initialValue = 18;
-            if (Spy::getEnemyBuild() == "12Hatch" || Spy::getEnemyTransition() == "3HatchLing" || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
+            if (Spy::getEnemyBuild() == Z_12Hatch || Spy::getEnemyTransition() == Z_3HatchSpeedling || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
                 initialValue = 8;
         }
 
@@ -88,7 +88,7 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply =                                  true;
         wallNat =                                       false;
         wallMain =                                      false;
-        wantNatural =                                   (Spy::getEnemyOpener() != "4Pool" && Spy::getEnemyOpener() != "7Pool") || hatchCount() >= 3 || Spy::getEnemyTransition() == "2HatchMuta";
+        wantNatural =                                   (Spy::getEnemyOpener() != "4Pool" && Spy::getEnemyOpener() != "7Pool") || hatchCount() >= 3 || Spy::getEnemyTransition() == Z_2HatchMuta;
         wantThird =                                     false;
         proxy =                                         false;
         hideTech =                                      false;
@@ -113,7 +113,7 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit =                                     Zerg_Mutalisk;
         reserveLarva =                                  3;
 
-        auto secondHatch = (Spy::getEnemyTransition() == "1HatchMuta" && atPercent(Zerg_Spire, 0.5))
+        auto secondHatch = (Spy::getEnemyTransition() == Z_1HatchMuta && atPercent(Zerg_Spire, 0.5))
             || (Spy::enemyTurtle() && atPercent(Zerg_Spire, 0.5));
 
         auto speedFirst = !Spy::enemyTurtle();
@@ -133,7 +133,7 @@ namespace McRave::BuildOrder::Zerg {
         zergUnitPump[Zerg_Mutalisk] =                   !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
 
         // Reactions
-        if (Spy::enemyTurtle() && Spy::getEnemyTransition() != "2HatchHydra") {
+        if (Spy::enemyTurtle() && Spy::getEnemyTransition() != Z_2HatchHydra) {
             wantNatural = true;
             zergUnitPump[Zerg_Zergling] = false;
             zergUnitPump[Zerg_Drone] = vis(Zerg_Drone) < 16;
@@ -176,7 +176,7 @@ namespace McRave::BuildOrder::Zerg {
             || (vis(Zerg_Drone) >= 24 && com(Zerg_Spire) == 0);
 
         // Reactions
-        if (Spy::getEnemyTransition() == "1HatchMuta" && !Spy::enemyTurtle()) {
+        if (Spy::getEnemyTransition() == Z_1HatchMuta && !Spy::enemyTurtle()) {
             zergUnitPump[Zerg_Scourge] = com(Zerg_Spire) == 1 && gas(75) && total(Zerg_Scourge) < 24;
             zergUnitPump[Zerg_Mutalisk] = !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
             reserveLarva = 0;
@@ -195,7 +195,7 @@ namespace McRave::BuildOrder::Zerg {
         if (!Spy::enemyTurtle() && !Spy::enemyFastExpand()) {
             if (Spy::enemyPressure() && Util::getTime() < Time(5, 00))
                 gasLimit = 0;
-            else if ((Spy::getEnemyOpener() == "9Pool" || Spy::getEnemyOpener() == "Overpool") && Util::getTime() < Time(3, 20))
+            else if ((Spy::getEnemyOpener() == Z_9Pool || Spy::getEnemyOpener() == Z_Overpool) && Util::getTime() < Time(3, 20))
                 gasLimit = 0;
             else if (lingSpeed() && vis(Zerg_Lair) > 0 && Util::getTime() < Time(6, 00))
                 gasLimit = 2;
@@ -242,24 +242,24 @@ namespace McRave::BuildOrder::Zerg {
         defaultZvZ();
 
         // Builds
-        if (currentBuild == "PoolHatch")
+        if (currentBuild == Z_PoolHatch)
             ZvZ_PH();
-        if (currentBuild == "PoolLair")
+        if (currentBuild == Z_PoolLair)
             ZvZ_PL();
 
         // Reactions
         if (!inTransition) {
             if (Spy::enemyGasSteal())
-                currentTransition = "2HatchMuta";
+                currentTransition = Z_2HatchMuta;
         }
 
         // Transitions
         if (transitionReady) {
-            if (currentTransition == "1HatchMuta")
+            if (currentTransition == Z_1HatchMuta)
                 ZvZ_1HatchMuta();
-            if (currentTransition == "2HatchMuta")
+            if (currentTransition == Z_2HatchMuta)
                 ZvZ_2HatchMuta();
-            if (currentTransition == "2HatchHydra")
+            if (currentTransition == Z_2HatchHydra)
                 ZvZ_2HatchHydra();
         }
     }

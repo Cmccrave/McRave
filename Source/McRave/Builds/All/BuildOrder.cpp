@@ -137,9 +137,9 @@ namespace McRave::BuildOrder
             if (type == Zerg_Mutalisk || type == Zerg_Hydralisk)
                 return total(type) >= 6;
             if (type == Zerg_Lurker) {
-                auto vsMech = Spy::getEnemyTransition() == "2Fact"
-                    || Spy::getEnemyTransition() == "1FactTanks"
-                    || Spy::getEnemyTransition() == "5FactGoliath";
+                auto vsMech = Spy::getEnemyTransition() == T_2FactVulture
+                    || Spy::getEnemyTransition() == T_1FactTanks
+                    || Spy::getEnemyTransition() == T_5FactGoliath;
                 return Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) || vsMech;
             }
 
@@ -308,7 +308,7 @@ namespace McRave::BuildOrder
         }
     }
 
-    void setLearnedBuild(string newBuild, string newOpener, string newTransition) {
+    void setLearnedBuild(string_view newBuild, string_view newOpener, string_view newTransition) {
         currentBuild = newBuild;
         currentOpener = newOpener;
         currentTransition = newTransition;

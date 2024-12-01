@@ -239,11 +239,11 @@ namespace McRave::Stations
 
             if (station->isMain()) {
                 // Add 2 sunks if we gave up the natural intentionally against horror gates
-                if (Spy::getEnemyOpener() == "Horror9/9")
+                if (Spy::getEnemyOpener() == P_Horror_9_9)
                     return (Util::getTime() > Time(2, 00)) + (Util::getTime() > Time(2, 20)) - groundCount;
 
                 //// Add 1 sunks if we opened greedy against proxy gates
-                //if (Spy::getEnemyOpener() == "Proxy9/9" && BuildOrder::getCurrentBuild() == "HatchPool")
+                //if (Spy::getEnemyOpener() == "Proxy9/9" && BuildOrder::getCurrentBuild() == Z_HatchPool)
                 //    return (Util::getTime() > Time(3, 30)) - groundCount;
 
                 // Add a sunk in main if we lost the natural, maybe it holds to get a win
@@ -262,7 +262,7 @@ namespace McRave::Stations
             if (station->isMain()) {
                 if (Players::getTotalCount(PlayerState::Enemy, Terran_Dropship) > 0)
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
-                if (Players::ZvT() && Spy::getEnemyTransition() == "WorkerRush")
+                if (Players::ZvT() && Spy::getEnemyTransition() == U_WorkerRush)
                     return 2 - groundCount;
                 if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(7, 00))
                     return 1 - groundCount;
@@ -285,24 +285,24 @@ namespace McRave::Stations
                     return 0;
             }
 
-            if (BuildOrder::getCurrentBuild() == "PoolHatch") {
+            if (BuildOrder::getCurrentBuild() == Z_PoolHatch) {
                 if (station->isMain()) {
 
                     if (!Spy::enemyRush() && (BuildOrder::takeNatural() || getStations(PlayerState::Self).size() > 1))
                         return 0;
 
-                    auto latePool = BuildOrder::getCurrentOpener() != "9Pool" && BuildOrder::getCurrentOpener() != "Overpool";
+                    auto latePool = BuildOrder::getCurrentOpener() != Z_9Pool && BuildOrder::getCurrentOpener() != Z_Overpool;
 
                     // 4 Pool or 7 Pool
-                    if (Spy::getEnemyOpener() == "4Pool")
+                    if (Spy::getEnemyOpener() == Z_4Pool)
                         return 1 + latePool - groundCount;
-                    if (Spy::getEnemyOpener() == "7Pool")
+                    if (Spy::getEnemyOpener() == Z_7Pool)
                         return 1 - groundCount;
 
                     // 3 Hatch
                     if (Util::getTime() < Time(6, 30) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && com(Zerg_Spire) > 0)
                         return 4 - groundCount;
-                    if (Spy::getEnemyTransition() == "3HatchSpeedling" && com(Zerg_Spire) > 0)
+                    if (Spy::getEnemyTransition() == Z_3HatchSpeedling && com(Zerg_Spire) > 0)
                         return 4 - groundCount;
 
                     // Excess lings compared to me
@@ -311,11 +311,11 @@ namespace McRave::Stations
                 }
             }
 
-            if (BuildOrder::getCurrentBuild() == "PoolLair") {
+            if (BuildOrder::getCurrentBuild() == Z_PoolLair) {
                 if (station->isMain() && vis(Zerg_Drone) >= 8) {
 
                     // 4 Pool
-                    if (Spy::getEnemyOpener() == "4Pool")
+                    if (Spy::getEnemyOpener() == Z_4Pool)
                         desiredDefenses = max(desiredDefenses, 1 + (vis(Zerg_Spire) > 0));
 
                     // 3 Hatch
@@ -325,30 +325,30 @@ namespace McRave::Stations
                     if (total(Zerg_Mutalisk) >= 4) {
 
                         // 12 Pool
-                        if (Spy::getEnemyOpener() == "12Pool" && Spy::getEnemyTransition() != "1HatchMuta")
+                        if (Spy::getEnemyOpener() == Z_12Pool && Spy::getEnemyTransition() != Z_1HatchMuta)
                             //desiredDefenses = max(desiredDefenses, int(Util::getTime() > Time(4, 00)));
                             return 2 - groundCount;
 
                         // Speedling all-in
-                        if (Spy::getEnemyTransition() == "2HatchSpeedling" && vis(Zerg_Spire) > 0)
+                        if (Spy::getEnemyTransition() == Z_2HatchSpeedling && vis(Zerg_Spire) > 0)
                             //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 30)));
                             return 2 - groundCount;
 
                         // +1Ling
-                        if (Spy::getEnemyTransition() == "+1Ling")
+                        if (Spy::getEnemyTransition() == Z_UpgradeLing)
                             //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(4, 45)));
                             return 2 - groundCount;
 
                         // 2 Hatch
-                        if (Spy::getEnemyBuild() == "PoolHatch")
+                        if (Spy::getEnemyBuild() == Z_PoolHatch)
                             //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(4, 45)));
                             return 2 - groundCount;
 
                         // Unknown
                         if ((!Terrain::foundEnemy() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 24)
                             || Spy::enemyFastExpand()
-                            || Spy::getEnemyBuild() == "HatchPool"
-                            || Spy::getEnemyTransition() == "2HatchMuta"
+                            || Spy::getEnemyBuild() == Z_HatchPool
+                            || Spy::getEnemyTransition() == Z_2HatchMuta
                             || (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling)))
                             //desiredDefenses = max(desiredDefenses, 1);
                             return 1 - groundCount;
@@ -373,7 +373,7 @@ namespace McRave::Stations
 
             if (Players::TvFFA() && station->isMain() && com(Terran_Marine) > 0)
                 return 1 - groundCount;
-            if (Players::TvZ() && station->isMain() && (Spy::getEnemyOpener() == "4Pool" || Spy::getEnemyOpener() == "9Pool"))
+            if (Players::TvZ() && station->isMain() && (Spy::getEnemyOpener() == Z_4Pool || Spy::getEnemyOpener() == Z_9Pool))
                 return 1 - groundCount;
             return 0;
         }
@@ -531,7 +531,7 @@ namespace McRave::Stations
 
         if (BuildOrder::isRush()
             || BuildOrder::isPressure()
-            || Spy::getEnemyTransition() == "Carriers")
+            || Spy::getEnemyTransition() == P_Carrier)
             return 0;
 
         // We don't want to pull workers to build things if none are nearby
@@ -577,17 +577,17 @@ namespace McRave::Stations
 
             // Get a spore after a delay, hydras deflect temporarily
             if (station->isNatural() && hydraBuild && enemyAir && !Combat::State::isStaticRetreat(Zerg_Hydralisk)) {
-                if (Spy::getEnemyBuild() == "FFE")
+                if (Spy::getEnemyBuild() == P_FFE)
                     return (Util::getTime() > Time(7, 30)) - airCount;
                 return (Util::getTime() > Time(6, 30)) - airCount;
             }
 
             // Spore blocking corsair timings
-            if (station->isNatural() && Spy::getEnemyBuild() == "1GateCore" && Spy::getEnemyTransition() == "Corsair" && !hydraBuild)
+            if (station->isNatural() && Spy::getEnemyBuild() == P_1GateCore && Spy::getEnemyTransition() == P_Corsair && !hydraBuild)
                 return (Util::getTime() > Time(4, 20)) - airCount;
-            if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyOpener() == "10/15" && Spy::getEnemyTransition() == "Corsair" && !hydraBuild)
+            if (station->isNatural() && Spy::getEnemyBuild() == P_2Gate && Spy::getEnemyOpener() == P_10_15 && Spy::getEnemyTransition() == P_Corsair && !hydraBuild)
                 return (Util::getTime() > Time(4, 25)) - airCount;
-            if (station->isNatural() && Spy::getEnemyBuild() == "2Gate" && Spy::getEnemyTransition() == "Corsair" && !hydraBuild)
+            if (station->isNatural() && Spy::getEnemyBuild() == P_2Gate && Spy::getEnemyTransition() == P_Corsair && !hydraBuild)
                 return (Util::getTime() > Time(4, 45)) - airCount;
 
             // Late spores if we're allin
@@ -606,7 +606,7 @@ namespace McRave::Stations
         if (Players::ZvZ()) {
 
             // Get a spore vs 1h muta if we aren't 1h muta or 2h muta on one base
-            if (Spy::getEnemyTransition() == "1HatchMuta" && BuildOrder::getCurrentTransition() != "1HatchMuta")
+            if (Spy::getEnemyTransition() == Z_1HatchMuta && BuildOrder::getCurrentTransition() != Z_1HatchMuta)
                 return (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(6, 15)) - airCount;
 
             // We have more bases
@@ -617,11 +617,11 @@ namespace McRave::Stations
         if (Players::ZvT()) {
 
             // Must get a spore if they have cloak
-            if (Spy::getEnemyTransition() == "2PortWraith" && Spy::enemyInvis())
+            if (Spy::getEnemyTransition() == T_2PortWraith && Spy::enemyInvis())
                 return 1 - airCount;
 
             // Need a spore with later mutas
-            if (Spy::getEnemyTransition() == "2PortWraith" && BuildOrder::getCurrentTransition() != "2HatchMuta")
+            if (Spy::getEnemyTransition() == T_2PortWraith && BuildOrder::getCurrentTransition() != Z_2HatchMuta)
                 return (Util::getTime() > Time(5, 30)) - airCount;
 
             // Late game we want a spore protecting ovies from stray valks/wraiths

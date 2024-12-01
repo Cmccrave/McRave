@@ -18,16 +18,16 @@ namespace McRave::Workers {
             // Transfer counts depending on if we think it's safe or not or if we need emergency sunkens
             auto desiredTransfer = 1;
             if (Players::ZvT()) {
-                if (Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyOpener() == "BBS")
+                if (Spy::getEnemyOpener() == T_8Rax || Spy::getEnemyOpener() == T_BBS)
                     desiredTransfer = 1;
-                if (Units::getImmThreat() > 0.0f || Spy::getEnemyTransition() == "WorkerRush" || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
+                if (Units::getImmThreat() > 0.0f || Spy::getEnemyTransition() == U_WorkerRush || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
                     desiredTransfer = 0;
             }
 
             if (Players::ZvP()) {
-                if (Spy::getEnemyOpener() == "9/9")
+                if (Spy::getEnemyOpener() == P_9_9)
                     desiredTransfer = 2;
-                if (Spy::getEnemyOpener() == "Proxy9/9")
+                if (Spy::getEnemyOpener() == P_Proxy_9_9)
                     desiredTransfer = 2;
                 if (Units::getImmThreat() > 0.0f)
                     desiredTransfer = 0;

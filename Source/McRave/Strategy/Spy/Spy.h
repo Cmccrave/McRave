@@ -1,5 +1,6 @@
 #pragma once
 #include <BWAPI.h>
+#include "Defs.h"
 
 namespace McRave::Spy {
 
@@ -12,8 +13,8 @@ namespace McRave::Spy {
         bool loggedLikely = false;
         bool loggedConfirmed = false;
         int framesTrue = 0;
-        int framesRequired = 12;
-        int framesLikely = 12;
+        int framesRequired = 24;
+        int framesLikely = 24;
         std::string name = "Unknown";
         Time timeConfirmed = Time(999, 00);
 

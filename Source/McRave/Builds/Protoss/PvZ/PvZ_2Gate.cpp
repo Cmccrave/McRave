@@ -31,24 +31,7 @@ namespace McRave::BuildOrder::Protoss {
         protossUnitPump[Protoss_Dragoon] = com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
     }
 
-    void PvZ_2G_Expand()
-    {
-        inOpening =                                 s < 90;
-        inTransition =                              vis(Protoss_Nexus) >= 2;
-        wallNat =                                   vis(Protoss_Nexus) >= 2;
-
-        // Buildings
-        buildQueue[Protoss_Nexus] =                 1 + (s >= 42);
-        buildQueue[Protoss_Forge] =                 s >= 62;
-        buildQueue[Protoss_Cybernetics_Core] =      total(Protoss_Photon_Cannon) >= 2;
-
-        // Pumping
-        protossUnitPump[Protoss_Probe] = true;
-        protossUnitPump[Protoss_Zealot] = com(Protoss_Gateway) > 0 && total(Protoss_Zealot) < 5;
-        protossUnitPump[Protoss_Dragoon] = com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
-    }
-
-    void PvZ_2G_Main()
+    void PvZ_2G_10_12()
     {
         // "https://liquipedia.net/starcraft/2_Gate_(vs._Protoss)" - 10/12
         wallNat =                                       vis(Protoss_Nexus) >= 2;
@@ -71,15 +54,13 @@ namespace McRave::BuildOrder::Protoss {
     void PvZ_2G()
     {
         // Openers
-        if (currentOpener == "Main")
-            PvZ_2G_Main();
+        if (currentOpener == P_10_12)
+            PvZ_2G_10_12();
 
         // Transitions
         if (transitionReady) {
-            if (currentTransition == "4Gate")
+            if (currentTransition == P_4Gate)
                 PvZ_2G_4Gate();
-            if (currentTransition == "Expand")
-                PvZ_2G_Expand();
         }
     }
 }

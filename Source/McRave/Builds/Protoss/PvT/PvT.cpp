@@ -14,7 +14,7 @@ namespace McRave::BuildOrder::Protoss {
     void defaultPvT() {
         inOpening =                                     true;
         inBookSupply =                                  vis(Protoss_Pylon) < 2;
-        wallNat =                                       com(Protoss_Pylon) >= 6 || currentOpener == "Natural";
+        wallNat =                                       com(Protoss_Pylon) >= 6;
         wallMain =                                      false;
         scout =                                         vis(Protoss_Cybernetics_Core) > 0;
         wantNatural =                                   true;
@@ -30,9 +30,9 @@ namespace McRave::BuildOrder::Protoss {
     }
 
     int zealotsNeeded_PvT() {
-        if (currentOpener == "NZCore")
+        if (currentOpener == P_NZCore)
             return 0;
-        if (currentOpener == "ZCore")
+        if (currentOpener == P_ZCore)
             return 1;
         return 0;
     }
@@ -43,11 +43,11 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvT();
 
         // Builds
-        if (currentBuild == "1GateCore")
+        if (currentBuild == P_1GateCore)
             PvT_1GC();
-        if (currentBuild == "2Gate")
+        if (currentBuild == P_2Gate)
             PvT_2G();
-        if (currentBuild == "2Base")
+        if (currentBuild == P_2Base)
             PvT_2B();
     }
 }

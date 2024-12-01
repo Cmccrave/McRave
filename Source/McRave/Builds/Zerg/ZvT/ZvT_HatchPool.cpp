@@ -29,7 +29,7 @@ namespace McRave::BuildOrder::Zerg {
     void ZvT_HP()
     {
         // Openers
-        if (currentOpener == "12Hatch")
+        if (currentOpener == Z_12Hatch)
             ZvT_HP_12Hatch();
     }
 }

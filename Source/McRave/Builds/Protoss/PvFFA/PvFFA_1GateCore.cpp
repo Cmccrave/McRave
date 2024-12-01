@@ -52,12 +52,12 @@ namespace McRave::BuildOrder::Protoss {
     void PvFFA_1GC()
     {
         // Openers
-        if (currentOpener == "ZCore")
+        if (currentOpener == P_ZCore)
             PvFFA_1GC_ZCore();
 
         // Transitions
         if (transitionReady) {
-            if (currentTransition == "3Gate")
+            if (currentTransition == P_3Gate)
                 PvFFA_1GC_3Gate();
         }
     }

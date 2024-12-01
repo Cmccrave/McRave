@@ -303,11 +303,11 @@ namespace McRave::Terrain {
             //    }
             //}
 
-            auto const findCorrectAngle = [&](auto station) {
+            auto const findCorrectAngle = [&](const auto station) {
                 auto chokeAngle = BWEB::Map::getAngle(make_pair(Position(station.getChokepoint()->Pos(station.getChokepoint()->end1)), Position(station.getChokepoint()->Pos(station.getChokepoint()->end2))));
                 auto chokeCenter = Position(station.getChokepoint()->Center()) + Position(4, 4);
-                auto p1 = chokeCenter + Position(cos(chokeAngle + M_PI_D2) * 96.0, sin(chokeAngle + M_PI_D2) * 96.0);
-                auto p2 = chokeCenter - Position(cos(chokeAngle + M_PI_D2) * 96.0, sin(chokeAngle + M_PI_D2) * 96.0);
+                auto p1 = chokeCenter + Position(int(cos(chokeAngle + M_PI_D2) * 96.0), int(sin(chokeAngle + M_PI_D2) * 96.0));
+                auto p2 = chokeCenter - Position(int(cos(chokeAngle + M_PI_D2) * 96.0), int(sin(chokeAngle + M_PI_D2) * 96.0));
 
                 if (Terrain::inArea(station.getBase()->GetArea(), p1)) {
                     chokeCenters[station.getChokepoint()] = chokeCenter;

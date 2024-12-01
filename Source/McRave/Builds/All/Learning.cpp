@@ -24,7 +24,7 @@ namespace McRave::Learning {
         {
             // Protoss wall requirements
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                if (Players::PvZ() && component == "FFE") {
+                if (Players::PvZ() && component == P_FFE) {
                     if (Terrain::isPocketNatural())
                         return Walls::getMainWall();
                     return Walls::getNaturalWall();
@@ -34,7 +34,7 @@ namespace McRave::Learning {
 
             // Zerg wall requirements
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                if (Players::ZvP() && component == "2HatchMuta") {
+                if (Players::ZvP() && component == Z_2HatchMuta) {
                     return !Terrain::isPocketNatural();
                 }
                 return true;
@@ -51,37 +51,37 @@ namespace McRave::Learning {
             // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (Players::PvP())
-                    BuildOrder::setLearnedBuild("1GateCore", "ZCore", "Robo");
+                    BuildOrder::setLearnedBuild(P_1GateCore, P_ZCore, P_Robo);
                 else if (Players::PvZ())
-                    BuildOrder::setLearnedBuild("2Gate", "Main", "4Gate");
+                    BuildOrder::setLearnedBuild(P_2Gate, P_10_12, P_4Gate);
                 else if (Players::PvT())
-                    BuildOrder::setLearnedBuild("2Base", "21Nexus", "Obs");
+                    BuildOrder::setLearnedBuild(P_2Base, P_21Nexus, P_Obs);
                 else if (Players::PvFFA() || Players::PvTVB())
-                    BuildOrder::setLearnedBuild("1GateCore", "ZCore", "3Gate");
+                    BuildOrder::setLearnedBuild(P_1GateCore, P_ZCore, P_3Gate);
                 else
-                    BuildOrder::setLearnedBuild("2Gate", "Main", "Robo");
+                    BuildOrder::setLearnedBuild(P_2Gate, P_10_12, P_Robo);
             }
 
             // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 if (Players::ZvZ())
-                    BuildOrder::setLearnedBuild("PoolLair", "9Pool", "1HatchMuta");
+                    BuildOrder::setLearnedBuild(Z_PoolLair, Z_9Pool, Z_1HatchMuta);
                 else if (Players::ZvT())
-                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "2HatchMuta");
+                    BuildOrder::setLearnedBuild(Z_HatchPool, Z_12Hatch, Z_2HatchMuta);
                 else if (Players::ZvP())
-                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchMuta");
+                    BuildOrder::setLearnedBuild(Z_PoolHatch, Z_Overpool, Z_2HatchMuta);
                 else if (Players::ZvFFA() || Players::ZvTVB())
-                    BuildOrder::setLearnedBuild("HatchPool", "10Hatch", "3HatchMuta");
+                    BuildOrder::setLearnedBuild(Z_HatchPool, Z_10Hatch, Z_3HatchMuta);
                 else
-                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchSpeedling");
+                    BuildOrder::setLearnedBuild(Z_PoolHatch, Z_Overpool, Z_2HatchMuta);
             }
 
             // Terran
             if (Broodwar->self()->getRace() == Races::Terran) {
                 if (Players::TvZ())
-                    BuildOrder::setLearnedBuild("2Rax", "11/13", "Academy");
+                    BuildOrder::setLearnedBuild(T_2Rax, T_11_13, T_Academy);
                 else
-                    BuildOrder::setLearnedBuild("RaxFact", "2FactFE", "5Fact");
+                    BuildOrder::setLearnedBuild(T_RaxFact, T_2FactFE, T_5Fact);
             }
         }
 
@@ -212,27 +212,27 @@ namespace McRave::Learning {
             // Testing builds if needed
             if (false) {
                 if (Players::PvZ()) {
-                    BuildOrder::setLearnedBuild("FFE", "Forge", "NeoBisu");
+                    BuildOrder::setLearnedBuild(P_FFE, P_Forge, P_NeoBisu);
                     return;
                 }
                 if (Players::PvP()) {
-                    BuildOrder::setLearnedBuild("1GateCore", "ZCore", "DT");
+                    BuildOrder::setLearnedBuild(P_1GateCore, P_ZCore, P_DT);
                     return;
                 }
                 if (Players::PvT()) {
-                    BuildOrder::setLearnedBuild("2Base", "21Nexus", "Obs");
+                    BuildOrder::setLearnedBuild(P_2Base, P_21Nexus, P_Obs);
                     return;
                 }
                 if (Players::ZvZ()) {
-                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "2HatchMuta");
+                    BuildOrder::setLearnedBuild(Z_PoolHatch, Z_Overpool, Z_2HatchMuta);
                     return;
                 }
                 if (Players::ZvT()) {
-                    BuildOrder::setLearnedBuild("HatchPool", "12Hatch", "2HatchMuta");
+                    BuildOrder::setLearnedBuild(Z_HatchPool, Z_12Hatch, Z_2HatchMuta);
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild("PoolHatch", "Overpool", "3HatchHydra");
+                    BuildOrder::setLearnedBuild(Z_PoolHatch, Z_Overpool, Z_3HatchHydra);
                     return;
                 }
             }
@@ -240,54 +240,54 @@ namespace McRave::Learning {
 
         void protossBuildMaps()
         {
-            Build OneGateCore("1GateCore");
-            Build TwoGate("2Gate");
-            Build TwoBase("2Base");
-            Build FFE("FFE");
+            Build OneGateCore(P_1GateCore);
+            Build TwoGate(P_2Gate);
+            Build TwoBase(P_2Base);
+            Build FFE(P_FFE);
 
             // PvT
             if (Players::PvT()) {
-                OneGateCore.setOpeners({ "NZCore", "ZCore" });
-                OneGateCore.setTransitions({ "DT" });
+                OneGateCore.setOpeners({ P_NZCore, P_ZCore });
+                OneGateCore.setTransitions({ P_DT });
 
-                TwoGate.setOpeners({ "Main" });
-                TwoGate.setTransitions({ "DT" });
+                TwoGate.setOpeners({ P_10_12 });
+                TwoGate.setTransitions({ P_DT });
 
-                TwoBase.setOpeners({ "12Nexus", "20Nexus", "21Nexus" });
-                TwoBase.setTransitions({ "Obs", "Carrier", "ReaverCarrier" });
+                TwoBase.setOpeners({ P_12Nexus, P_20Nexus, P_21Nexus });
+                TwoBase.setTransitions({ P_Obs, P_Carrier, P_ReaverCarrier });
 
                 myBuilds ={ OneGateCore, TwoGate, TwoBase };
             }
 
             // PvP
             if (Players::PvP()) {
-                OneGateCore.setOpeners({ "ZCore" });
-                OneGateCore.setTransitions({ "DT", "Robo", "4Gate", "3Gate" });
+                OneGateCore.setOpeners({ P_ZCore });
+                OneGateCore.setTransitions({ P_DT, P_Robo, P_4Gate, P_3Gate });
 
-                TwoGate.setOpeners({ "Main" });
-                TwoGate.setTransitions({ "DT", "Robo" });
+                TwoGate.setOpeners({ P_10_12 });
+                TwoGate.setTransitions({ P_DT, P_Robo });
 
                 myBuilds ={ OneGateCore, TwoGate };
             }
 
             // PvZ
             if (Players::PvZ()) {
-                TwoGate.setOpeners({ "Main" });
-                TwoGate.setTransitions({ "4Gate" });
+                TwoGate.setOpeners({ P_10_12 });
+                TwoGate.setTransitions({ P_4Gate });
 
-                FFE.setOpeners({ "Forge" });
-                FFE.setTransitions({ "NeoBisu", "2Stargate", "5GateGoon" });
+                FFE.setOpeners({ P_Forge });
+                FFE.setTransitions({ P_NeoBisu, P_2Stargate, P_5GateGoon });
 
                 myBuilds ={ TwoGate, FFE };
             }
 
             // PvR
             if (Players::PvR()) {
-                OneGateCore.setOpeners({ "2Zealot" });
-                OneGateCore.setTransitions({ "Robo", "3Gate" });
+                OneGateCore.setOpeners({ P_ZZCore });
+                OneGateCore.setTransitions({ P_Robo, P_3Gate });
 
-                TwoGate.setOpeners({ "Main" });
-                TwoGate.setTransitions({ "Robo" });
+                TwoGate.setOpeners({ P_10_12 });
+                TwoGate.setTransitions({ P_Robo });
 
                 myBuilds ={ OneGateCore, TwoGate };
             }
@@ -295,46 +295,46 @@ namespace McRave::Learning {
 
         void zergBuildMaps()
         {
-            Build PoolHatch("PoolHatch");
-            Build HatchPool("HatchPool");
-            Build PoolLair("PoolLair");
+            Build PoolHatch(Z_PoolHatch);
+            Build HatchPool(Z_HatchPool);
+            Build PoolLair(Z_PoolLair);
 
             if (Players::ZvP()) {
-                PoolHatch.setOpeners({ "Overpool" });
-                PoolHatch.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra" });
+                PoolHatch.setOpeners({ Z_Overpool });
+                PoolHatch.setTransitions({ Z_2HatchMuta, Z_3HatchMuta, Z_3HatchHydra, Z_4HatchHydra, Z_6HatchHydra });
 
-                HatchPool.setOpeners({ /*"10Hatch",*/ "12Hatch" });
-                HatchPool.setTransitions({ "2HatchMuta", "3HatchMuta", "3HatchHydra", "4HatchHydra", "6HatchHydra" });
+                HatchPool.setOpeners({ /*Z_10Hatch,*/ Z_12Hatch });
+                HatchPool.setTransitions({ Z_2HatchMuta, Z_3HatchMuta, Z_3HatchHydra, Z_4HatchHydra, Z_6HatchHydra });
 
                 myBuilds ={ PoolHatch, HatchPool };
             }
 
             if (Players::ZvT()) {
-                PoolHatch.setOpeners({ "Overpool", "12Pool" });
-                PoolHatch.setTransitions({ "2HatchMuta", "3HatchMuta" });
+                PoolHatch.setOpeners({ Z_Overpool, "12Pool" });
+                PoolHatch.setTransitions({ Z_2HatchMuta, Z_3HatchMuta });
 
-                HatchPool.setOpeners({ "12Hatch" });
-                HatchPool.setTransitions({ "2HatchMuta", "3HatchMuta" });
+                HatchPool.setOpeners({ Z_12Hatch });
+                HatchPool.setTransitions({ Z_2HatchMuta, Z_3HatchMuta });
 
                 PoolLair.setOpeners({ "4Pool" });
-                PoolLair.setTransitions({ "1HatchLurker" });
+                PoolLair.setTransitions({ Z_1HatchLurker });
 
                 myBuilds ={ PoolHatch, HatchPool/*, PoolLair*/ };
             }
 
             if (Players::ZvZ()) {
                 PoolHatch.setOpeners({ "12Pool" });
-                PoolHatch.setTransitions({ "2HatchMuta"/*, "2HatchHydra"*/ });
+                PoolHatch.setTransitions({ Z_2HatchMuta/*, Z_2HatchHydra*/ });
 
-                PoolLair.setOpeners({ "9Pool" });
-                PoolLair.setTransitions({ "1HatchMuta" });
+                PoolLair.setOpeners({ Z_9Pool });
+                PoolLair.setTransitions({ Z_1HatchMuta });
 
                 myBuilds ={ PoolHatch, PoolLair };
             }
 
             if (Players::ZvR()) {
-                PoolHatch.setOpeners({ "Overpool" });
-                PoolHatch.setTransitions({ "2HatchMuta" });
+                PoolHatch.setOpeners({ Z_Overpool });
+                PoolHatch.setTransitions({ Z_2HatchMuta });
 
                 myBuilds ={ PoolHatch };
             }
@@ -342,26 +342,26 @@ namespace McRave::Learning {
 
         void terranBuildMaps()
         {
-            Build TwoRax("2Rax");
-            Build RaxFact("RaxFact");
+            Build TwoRax(T_2Rax);
+            Build RaxFact(T_RaxFact);
 
             if (Players::TvP()) {
-                RaxFact.setOpeners({ "1FactFE", "2FactFE" });
-                RaxFact.setTransitions({ "5Fact" });
+                RaxFact.setOpeners({ "1FactFE", T_2FactFE });
+                RaxFact.setTransitions({ T_5Fact });
 
                 myBuilds ={ RaxFact };
             }
 
             if (Players::TvT()) {
                 RaxFact.setOpeners({ "1FactFE" });
-                RaxFact.setTransitions({ "5Fact" });
+                RaxFact.setTransitions({ T_5Fact });
 
                 myBuilds ={ RaxFact };
             }
 
             if (Players::TvZ()) {
-                TwoRax.setOpeners({ "11/13" });
-                TwoRax.setTransitions({ "Academy" });
+                TwoRax.setOpeners({ T_11_13 });
+                TwoRax.setTransitions({ T_Academy });
 
                 myBuilds ={ TwoRax };
             }

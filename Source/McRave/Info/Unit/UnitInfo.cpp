@@ -516,7 +516,7 @@ namespace McRave
                     const auto closerToMyNat = closestNat && closestNat == Terrain::getMyNatural();
                     const auto farFromHome = position.getDistance(closestMain->getBase()->Center()) > 960.0 && position.getDistance(closestNat->getBase()->Center()) > 960.0;
 
-                    const auto timedOrKnown = Util::getTime() < Time(4, 00) || Spy::getEnemyBuild() == "CannonRush" || Spy::getEnemyOpener() == "8Rax" || Spy::getEnemyTransition() == "WorkerRush";
+                    const auto timedOrKnown = Util::getTime() < Time(4, 00) || Spy::getEnemyBuild() == P_CannonRush || Spy::getEnemyOpener() == T_8Rax || Spy::getEnemyTransition() == U_WorkerRush;
 
                     // Workers are proxy if they're close enough to our bases and considered suspicious
                     if (getType().isWorker()) {
@@ -708,7 +708,7 @@ namespace McRave
         // Time to deccel/accel - reasonably confirmed
         auto celcelFrames = 0;
         if (isFlying() || isHovering()) {
-            auto velocityVector = getPosition() + Position(32.0 * unit()->getVelocityX(), 32.0 * unit()->getVelocityY()); // You think I care it's a Position?
+            auto velocityVector = getPosition() + Position(int(32.0 * unit()->getVelocityX()), int(32.0 * unit()->getVelocityY())); // You think I care it's a Position?
             auto velocityDirection = BWEB::Map::getAngle(getPosition(), velocityVector);
             auto directionDiff = (M_PI - fabs(fmod(fabs(angle - velocityDirection), 2 * M_PI) - M_PI));
             auto allowableAngle = 0.279253; // Mutas (TODO)

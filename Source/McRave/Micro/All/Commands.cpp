@@ -47,7 +47,7 @@ namespace McRave::Command {
 
         double altitude(UnitInfo& unit, WalkPosition w)
         {
-            return unit.isFlying() ? Util::log10(10.0 + mapBWEM.GetMiniTile(w).Altitude()) : 1.0;
+            return unit.isFlying() ? Util::log10(10 + mapBWEM.GetMiniTile(w).Altitude()) : 1.0;
         }
 
         Position findViablePosition(UnitInfo& unit, Position pstart, function<double(WalkPosition)> score)

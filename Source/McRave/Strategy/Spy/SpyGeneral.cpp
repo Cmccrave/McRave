@@ -164,7 +164,7 @@ namespace McRave::Spy::General {
         {
             // Rush builds are immediately aggresive builds
             auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self, Races::None) >= 70 : Players::getSupply(PlayerState::Self, Races::None) >= 90;
-            theSpy.rush.possible = !supplySafe && (Spy::getEnemyTransition() == "MarineRush" || Spy::getEnemyTransition() == "ZealotRush" || Spy::getEnemyTransition() == "LingRush" || Spy::getEnemyTransition() == "WorkerRush");
+            theSpy.rush.possible = !supplySafe && (Spy::getEnemyTransition() == T_Rush || Spy::getEnemyTransition() == P_Rush || Spy::getEnemyTransition() == Z_Rush || Spy::getEnemyTransition() == U_WorkerRush);
             if (supplySafe)
                 theSpy.rush.possible = false;
         }
@@ -173,7 +173,7 @@ namespace McRave::Spy::General {
         {
             // Pressure builds are delayed aggresive builds
             auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self, Races::None) >= 80 : Players::getSupply(PlayerState::Self, Races::None) >= 120;
-            theSpy.pressure.possible = !supplySafe && (Spy::getEnemyTransition() == "4Gate" || Spy::getEnemyTransition() == "2HatchSpeedling" || Spy::getEnemyTransition() == "3HatchSpeedling" || Spy::getEnemyTransition() == "Sparks" || Spy::getEnemyTransition() == "2Fact" || Spy::getEnemyTransition() == "Academy");
+            theSpy.pressure.possible = !supplySafe && (Spy::getEnemyTransition() == P_4Gate || Spy::getEnemyTransition() == Z_2HatchSpeedling || Spy::getEnemyTransition() == Z_3HatchSpeedling || Spy::getEnemyTransition() == T_Sparks || Spy::getEnemyTransition() == T_2FactVulture || Spy::getEnemyTransition() == T_Academy);
             if (supplySafe)
                 theSpy.pressure.possible = false;
         }
@@ -184,7 +184,7 @@ namespace McRave::Spy::General {
             theSpy.invis.possible = (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) >= 1 || (Players::getTotalCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) >= 1 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0) || Players::getTotalCount(PlayerState::Enemy, Protoss_Templar_Archives) >= 1)
                 || (Players::getTotalCount(PlayerState::Enemy, Terran_Ghost) >= 1 || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 4)
                 || (Players::getTotalCount(PlayerState::Enemy, Zerg_Lurker) >= 1 || (Players::getTotalCount(PlayerState::Enemy, Zerg_Lair) >= 1 && Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) >= 1))
-                || (Spy::getEnemyTransition() == "1HatchLurker" || Spy::getEnemyTransition() == "2HatchLurker" || Spy::getEnemyTransition() == "DT"  || Spy::getEnemyTransition() == "2PortWraith");
+                || (Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_2HatchLurker || Spy::getEnemyTransition() == P_DT  || Spy::getEnemyTransition() == T_2PortWraith);
 
             // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss) {
@@ -233,8 +233,8 @@ namespace McRave::Spy::General {
         {
             // Greedy detection
             if (!Terrain::isPocketNatural() && Util::getTime() > Time(3, 30)) {
-                theSpy.greedy.possible = (Players::ZvP() && Spy::getEnemyBuild() == "FFE" && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(7, 00))
-                    || (Players::ZvP() && Spy::getEnemyBuild() == "1GateCore" && theSpy.expand.likely && Util::getTime() < Time(5, 15))
+                theSpy.greedy.possible = (Players::ZvP() && Spy::getEnemyBuild() == P_FFE && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(7, 00))
+                    || (Players::ZvP() && Spy::getEnemyBuild() == P_1GateCore && theSpy.expand.likely && Util::getTime() < Time(5, 15))
                     || (Players::ZvT() && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(10, 00));
             }
             if (Util::getTime() > Time(10, 00))

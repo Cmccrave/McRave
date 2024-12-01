@@ -640,7 +640,7 @@ namespace McRave::Planning {
             };
 
             // Check if any Nexus needs a Pylon for defense placement
-            if (com(Protoss_Pylon) >= (Players::vT() ? 5 : 3) || Spy::getEnemyTransition() == "2HatchMuta" || Spy::getEnemyTransition() == "3HatchMuta") {
+            if (com(Protoss_Pylon) >= (Players::vT() ? 5 : 3) || Spy::getEnemyTransition() == Z_2HatchMuta || Spy::getEnemyTransition() == Z_3HatchMuta) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
                     placement = stationNeedsPylon(station);
                     if (placement.isValid())
@@ -671,7 +671,7 @@ namespace McRave::Planning {
             }
 
             // Check if we are being busted, add an extra pylon to the defenses
-            if ((Spy::getEnemyTransition() == "2HatchHydra" || Spy::getEnemyTransition() == "3HatchHydra") && Walls::getNaturalWall() && BuildOrder::isWallNat()) {
+            if ((Spy::getEnemyTransition() == Z_2HatchHydra || Spy::getEnemyTransition() == Z_3HatchHydra) && Walls::getNaturalWall() && BuildOrder::isWallNat()) {
                 int cnt = 0;
                 TilePosition sum(0, 0);
                 TilePosition center(0, 0);

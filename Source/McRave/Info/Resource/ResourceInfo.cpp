@@ -35,7 +35,7 @@ namespace McRave {
         threatened = false;
         for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
 
-            if (enemy->getType().isWorker() && (Spy::getEnemyTransition() != "WorkerRush" || Util::getTime() > Time(3, 00)))
+            if (enemy->getType().isWorker() && (Spy::getEnemyTransition() != U_WorkerRush || Util::getTime() > Time(3, 00)))
                 continue;
 
             if (!enemy->hasTarget() || !enemy->getTarget().lock()->getType().isWorker()

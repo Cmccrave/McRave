@@ -36,7 +36,7 @@ namespace McRave::BuildOrder::Protoss {
         return (Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) > 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) <= 2)
             || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) < 3
             || Spy::enemyInvis()
-            || Spy::getEnemyTransition() == "DT";
+            || Spy::getEnemyTransition() == P_DT;
     }
 
     void PvP()
@@ -44,9 +44,9 @@ namespace McRave::BuildOrder::Protoss {
         defaultPvP();
 
         // Builds
-        if (currentBuild == "2Gate")
+        if (currentBuild == P_2Gate)
             PvP_2G();
-        if (currentBuild == "1GateCore")
+        if (currentBuild == P_1GateCore)
             PvP_1GC();
     }
 }

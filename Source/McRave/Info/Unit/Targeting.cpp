@@ -30,7 +30,7 @@ namespace McRave::Targets {
 
         bool allowWorkerTarget(UnitInfo& unit, UnitInfo& target) {
             if (unit.getType().isWorker()) {
-                return Spy::getEnemyTransition() == "WorkerRush"
+                return Spy::getEnemyTransition() == U_WorkerRush
                     || target.hasAttackedRecently()
                     || target.hasRepairedRecently()
                     || target.isThreatening()
@@ -38,7 +38,7 @@ namespace McRave::Targets {
             }
 
             // Rushes gotta not chase workers in our base
-            if (BuildOrder::isRush() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()) && Spy::getEnemyTransition() != "WorkerRush")
+            if (BuildOrder::isRush() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()) && Spy::getEnemyTransition() != U_WorkerRush)
                 return false;
 
             if (Util::getTime() < Time(8, 00)) {
@@ -51,7 +51,7 @@ namespace McRave::Targets {
                     || target.isThreatening()
                     || BuildOrder::isHideTech()
                     || (target.getUnitsTargetingThis().empty() && !Players::ZvZ())
-                    || Spy::getEnemyTransition() == "WorkerRush"
+                    || Spy::getEnemyTransition() == U_WorkerRush
                     || Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
             }
             return int(target.getUnitsTargetingThis().size()) <= 4 || unit.isLightAir();
@@ -87,7 +87,7 @@ namespace McRave::Targets {
             if (Players::ZvP()) {
 
                 // Clean Zealots up vs rushes
-                if (Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == "ZealotRush")
+                if (Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == P_Rush)
                     return Priority::Major;
 
                 // If our build is hitting a timing, kill workers
@@ -204,7 +204,7 @@ namespace McRave::Targets {
                 if (target.isProxy() && target.getType().isWorker() && target.unit()->exists() && !BuildOrder::isRush()) {
                     if (target.unit()->isConstructing())
                         return Priority::Critical;
-                    else if (!Spy::enemyRush() && Spy::getEnemyBuild() != "2Gate")
+                    else if (!Spy::enemyRush() && Spy::getEnemyBuild() != P_2Gate)
                         return Priority::Major;
                 }
 

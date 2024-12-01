@@ -84,12 +84,12 @@ namespace McRave::Roles {
             });
 
             // If trying to FFE, pull based on Cannon/Zealot numbers, or lack of scouting information
-            if (BuildOrder::getCurrentBuild() == "FFE") {
-                if (Spy::getEnemyOpener() == "4Pool" && visibleDefenders >= 1) {
+            if (BuildOrder::getCurrentBuild() == P_FFE) {
+                if (Spy::getEnemyOpener() == Z_4Pool && visibleDefenders >= 1) {
                     auto pos = cannon ? cannon->getPosition() : Position(Terrain::getNaturalChoke()->Center());
                     forceCombatWorker(8 - 2 * completedDefenders, pos, LocalState::None, GlobalState::Retreat);
                 }
-                else if (Spy::enemyRush() && Spy::getEnemyOpener() == "9Pool" && Util::getTime() > Time(3, 15) && completedDefenders < 3)
+                else if (Spy::enemyRush() && Spy::getEnemyOpener() == Z_9Pool && Util::getTime() > Time(3, 15) && completedDefenders < 3)
                     forceCombatWorker(3, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
                 else if (!Terrain::getEnemyStartingPosition().isValid() && Spy::getEnemyBuild() == "Unknown" && completedDefenders < 1 && visibleDefenders > 0)
                     forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
@@ -149,7 +149,7 @@ namespace McRave::Roles {
                 sixLings = true;
 
             // Worker rush - pull 3 unless they all in
-            if (Spy::getEnemyTransition() == "WorkerRush" && Units::getImmThreat() > 0.0f) {
+            if (Spy::getEnemyTransition() == U_WorkerRush && Units::getImmThreat() > 0.0f) {
                 if (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
                     return;
 
@@ -167,9 +167,9 @@ namespace McRave::Roles {
 
             // ZvZ
             if (Players::ZvZ() && Util::getTime() < Time(6, 00) && !Spy::enemyTurtle() && !Spy::enemyFastExpand()) {
-                if ((Spy::getEnemyOpener() == "9Pool" || Spy::getEnemyOpener() == "Overpool" || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling))
+                if ((Spy::getEnemyOpener() == Z_9Pool || Spy::getEnemyOpener() == Z_Overpool || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling))
                     && Util::getTime() > Time(2, 45) && Util::getTime() < Time(3, 45)
-                    && BuildOrder::getCurrentOpener() == "12Pool" && total(Zerg_Zergling) < 20 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
+                    && BuildOrder::getCurrentOpener() == Z_12Pool && total(Zerg_Zergling) < 20 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
                     forceCombatWorker(2, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
             }
 
@@ -177,9 +177,9 @@ namespace McRave::Roles {
             if (Players::ZvP() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && Util::getTime() < Time(6, 00)) {
 
                 // Gateway or Cannon in territory, 4 drones
-                if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 6)
+                if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 && Spy::getEnemyBuild() == P_CannonRush && com(Zerg_Zergling) <= 6)
                     forceCombatWorker(4, proxyDangerousBuilding->getPosition());
-                else if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0 && Spy::getEnemyBuild() == "2Gate" && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0)
+                else if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0 && Spy::getEnemyBuild() == P_2Gate && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0)
                     forceCombatWorker(6, proxyDangerousBuilding->getPosition());
 
                 // Probe actively building dangerous proxy, 2 drones
@@ -187,9 +187,9 @@ namespace McRave::Roles {
                     forceCombatWorker(2, proxyBuildingWorker->getPosition());
 
                 // Proxy building, 1 drone
-                else if (proxyBuilding && Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
+                else if (proxyBuilding && Spy::getEnemyBuild() == P_CannonRush && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(1, proxyBuilding->getPosition());
-                else if (Spy::getEnemyBuild() == "CannonRush" && com(Zerg_Zergling) <= 2)
+                else if (Spy::getEnemyBuild() == P_CannonRush && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
 
                 // TODO: Check if we need this for cannon rush bots

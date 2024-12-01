@@ -27,7 +27,7 @@ namespace McRave::BuildOrder::Zerg {
     void ZvZ_PL()
     {
         // Openers
-        if (currentOpener == "9Pool")
+        if (currentOpener == Z_9Pool)
             ZvZ_PL_9Pool();
     }
 }

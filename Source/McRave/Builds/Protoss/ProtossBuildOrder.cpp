@@ -92,7 +92,7 @@ namespace McRave::BuildOrder::Protoss
         void queueExpansions()
         {
             // Against FFE add a Nexus
-            if (Spy::getEnemyBuild() == "FFE" && Broodwar->getFrameCount() < 15000) {
+            if (Spy::getEnemyBuild() == P_FFE && Broodwar->getFrameCount() < 15000) {
                 auto cannonCount = Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon);
                 wantNatural = true;
 

@@ -116,21 +116,21 @@ namespace McRave::BuildOrder::Protoss {
     {
         // Reactions
         if (!inTransition) {
-            if (Spy::getEnemyTransition() == "2HatchMuta" || Spy::getEnemyTransition() == "3HatchMuta")
-                currentTransition = "2Stargate";
+            if (Spy::getEnemyTransition() == Z_2HatchMuta || Spy::getEnemyTransition() == Z_3HatchMuta)
+                currentTransition = P_2Stargate;
         }
 
         // Openers
-        if (currentOpener == "Forge")
+        if (currentOpener == P_Forge)
             PvZ_FFE_Forge();
 
         // Transitions
         if (transitionReady) {
-            if (currentTransition == "2Stargate")
+            if (currentTransition == P_2Stargate)
                 PvZ_2Stargate();
-            if (currentTransition == "5GateGoon")
+            if (currentTransition == P_5GateGoon)
                 PvZ_5GateGoon();
-            if (currentTransition == "NeoBisu")
+            if (currentTransition == P_NeoBisu)
                 PvZ_NeoBisu();
         }
     }

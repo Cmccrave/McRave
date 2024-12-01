@@ -58,7 +58,7 @@ namespace McRave::BuildOrder::Protoss {
         desiredDetection =                          Protoss_Forge;
 
         // Buildings
-        if (Spy::getEnemyBuild() == "2Gate") {
+        if (Spy::getEnemyBuild() == P_2Gate) {
             unitLimits[Protoss_Zealot] =            s < 60 ? 4 : 0;
             gasLimit =                              vis(Protoss_Dragoon) > 0 ? 3 : 1;
             buildQueue[Protoss_Shield_Battery] =    enemyMoreZealots() && vis(Protoss_Zealot) >= 2 && vis(Protoss_Pylon) >= 2;
@@ -164,50 +164,50 @@ namespace McRave::BuildOrder::Protoss {
         if (!inTransition) {
 
             // If enemy is 2gate, switch to some form of 2gate if we haven't gone core yet
-            if (Spy::getEnemyBuild() == "2Gate" && vis(Protoss_Cybernetics_Core) == 0) {
-                currentBuild = "2Gate";
-                currentOpener = "Main";
-                currentTransition = "Robo";
+            if (Spy::getEnemyBuild() == P_2Gate && vis(Protoss_Cybernetics_Core) == 0) {
+                currentBuild = P_2Gate;
+                currentOpener = P_10_12;
+                currentTransition = P_Robo;
             }
 
             // Otherwise try to go 3gate after core
-            else if (Spy::getEnemyBuild() == "2Gate" && vis(Protoss_Cybernetics_Core) > 0)
-                currentTransition = "3Gate";
+            else if (Spy::getEnemyBuild() == P_2Gate && vis(Protoss_Cybernetics_Core) > 0)
+                currentTransition = P_3Gate;
 
             // If our 4Gate would likely kill us
-            else if (Scouts::enemyDeniedScout() && currentTransition == "4Gate")
-                currentTransition = "Robo";
+            else if (Scouts::enemyDeniedScout() && currentTransition == P_4Gate)
+                currentTransition = P_Robo;
 
             // If we didn't see enemy info by 3:30
             else if (!Scouts::gotFullScout() && Util::getTime() > Time(3, 30))
-                currentTransition = "Robo";
+                currentTransition = P_Robo;
 
             // If we're not doing Robo vs potential DT, switch
-            else if (currentTransition != "Robo" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) > 0)
-                currentTransition = "Robo";
+            else if (currentTransition != P_Robo && Players::getVisibleCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) > 0)
+                currentTransition = P_Robo;
 
             // If we see a FFE, 3Gate with an expansion
-            else if (Spy::getEnemyBuild() == "FFE")
-                currentTransition = "3Gate";
+            else if (Spy::getEnemyBuild() == P_FFE)
+                currentTransition = P_3Gate;
         }
 
         // Openers
-        if (currentOpener == "NZCore")
+        if (currentOpener == P_NZCore)
             PvP_1GC_NZCore();
-        if (currentOpener == "ZCore")
+        if (currentOpener == P_ZCore)
             PvP_1GC_ZCore();
-        if (currentOpener == "2Zealot")
+        if (currentOpener == P_ZZCore)
             PvP_1GC_ZZCore();
 
         // Transitions
         if (transitionReady) {
-            if (currentTransition == "Robo")
+            if (currentTransition == P_Robo)
                 PvP_1GC_Robo();
-            if (currentTransition == "3Gate")
+            if (currentTransition == P_3Gate)
                 PvP_1GC_3Gate();
-            if (currentTransition == "4Gate")
+            if (currentTransition == P_4Gate)
                 PvP_1GC_4Gate();
-            if (currentTransition == "DT")
+            if (currentTransition == P_DT)
                 PvP_1GC_DT();
         }
     }

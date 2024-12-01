@@ -130,5 +130,5 @@ namespace McRave::BuildOrder {
     std::string getCurrentOpener();
     std::string getCurrentTransition();
 
-    void setLearnedBuild(std::string, std::string, std::string);
+    void setLearnedBuild(std::string_view, std::string_view, std::string_view);
 }

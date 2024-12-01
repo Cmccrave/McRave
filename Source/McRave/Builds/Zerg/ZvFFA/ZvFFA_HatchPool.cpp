@@ -60,12 +60,12 @@ namespace McRave::BuildOrder::Zerg {
     void ZvFFA_HP()
     {
         // Openers
-        if (currentOpener == "10Hatch")
+        if (currentOpener == Z_10Hatch)
             ZvFFA_HP_10Hatch();
 
         // Transitions
         if (transitionReady) {
-            if (currentTransition == "3HatchMuta")
+            if (currentTransition == Z_3HatchMuta)
                 ZvFFA_HP_3HatchMuta();
         }
     }

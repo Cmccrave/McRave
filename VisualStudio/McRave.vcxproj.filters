@@ -531,6 +531,9 @@
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitMath.h">
       <Filter>McRave\Info\Unit</Filter>
     </ClInclude>
+    <ClInclude Include="..\Source\McRave\Strategy\Spy\Defs.h">
+      <Filter>McRave\Strategy\Spy</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="BWEM">

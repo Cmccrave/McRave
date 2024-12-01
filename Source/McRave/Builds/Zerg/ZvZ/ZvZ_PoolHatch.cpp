@@ -48,9 +48,9 @@ namespace McRave::BuildOrder::Zerg {
     void ZvZ_PH()
     {
         // Openers
-        if (currentOpener == "Overpool")
+        if (currentOpener == Z_Overpool)
             ZvZ_PH_Overpool();
-        if (currentOpener == "12Pool")
+        if (currentOpener == Z_12Pool)
             ZvZ_PH_12Pool();
     }
 }

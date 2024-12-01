@@ -89,9 +89,9 @@ namespace McRave::Combat {
             // When we don't want to defend our natural
             if (Players::ZvT() && Util::getTime() < Time(8, 00) && (Spy::enemyRush() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0))
                 defendNatural = false;
-            if (Players::ZvP() && Spy::enemyProxy() && Spy::getEnemyBuild() == "2Gate" && (!Stations::isCompleted(Terrain::getMyNatural()) || (vis(Zerg_Zergling) < 12 && Units::getImmThreat() < 0.1f && Util::getTime() < Time(5, 00))))
+            if (Players::ZvP() && Spy::enemyProxy() && Spy::getEnemyBuild() == P_2Gate && (!Stations::isCompleted(Terrain::getMyNatural()) || (vis(Zerg_Zergling) < 12 && Units::getImmThreat() < 0.1f && Util::getTime() < Time(5, 00))))
                 defendNatural = false;
-            if (Players::ZvZ() && BuildOrder::getCurrentBuild() != "PoolLair" && (Spy::getEnemyOpener() == "Unknown" || Spy::enemyRush()))
+            if (Players::ZvZ() && BuildOrder::getCurrentBuild() != Z_PoolLair && (Spy::getEnemyOpener() == "Unknown" || Spy::enemyRush()))
                 defendNatural = false;
 
             // Natural defending position
@@ -191,7 +191,7 @@ namespace McRave::Combat {
             }
 
             // ZvP is less likely to have cannons setup at the natural if not FFE
-            if (Players::ZvP() && Spy::enemyFastExpand() && Spy::getEnemyBuild() != "FFE" && Terrain::getEnemyNatural() && Util::getTime() < Time(8, 00)) {
+            if (Players::ZvP() && Spy::enemyFastExpand() && Spy::getEnemyBuild() != P_FFE && Terrain::getEnemyNatural() && Util::getTime() < Time(8, 00)) {
                 harassPosition = Terrain::getEnemyNatural()->getResourceCentroid();
                 return;
             }

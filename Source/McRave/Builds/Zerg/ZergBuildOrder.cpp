@@ -91,15 +91,15 @@ namespace McRave::BuildOrder::Zerg {
 
             // Prepare evo chamber just in case and not a hydra build
             if (focusUnit != Zerg_Hydralisk && focusUnit != Zerg_Lurker) {
-                if (Players::ZvT() && !Spy::enemyFastExpand() && (Spy::getEnemyBuild() == "RaxFact" || Spy::enemyWalled()) && Util::getTime() > Time(4, 30)) {
+                if (Players::ZvT() && !Spy::enemyFastExpand() && (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled()) && Util::getTime() > Time(4, 30)) {
                     needSpores = true;
                     wallNat = true;
                 }
-                if (Players::ZvP() && !Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown" && !Spy::enemyFastExpand() && ((Spy::getEnemyBuild() == "2Gate" && Util::getTime() > Time(4, 45)) || (Spy::getEnemyBuild() == "1GateCore" && Util::getTime() > Time(4, 15)))) {
+                if (Players::ZvP() && !Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown" && !Spy::enemyFastExpand() && ((Spy::getEnemyBuild() == P_2Gate && Util::getTime() > Time(4, 45)) || (Spy::getEnemyBuild() == P_1GateCore && Util::getTime() > Time(4, 15)))) {
                     needSpores = true;
                     wallNat = false;
                 }
-                if (Players::ZvZ() && !Spy::enemyFastExpand() && Spy::getEnemyOpener() != "4Pool" && !Spy::enemyTurtle() && Spy::getEnemyOpener() != "7Pool" && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00)) {
+                if (Players::ZvZ() && !Spy::enemyFastExpand() && Spy::getEnemyOpener() != Z_4Pool && !Spy::enemyTurtle() && Spy::getEnemyOpener() != Z_7Pool && Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00)) {
                     needSpores = true;
                     wallNat = true;
                 }
@@ -297,11 +297,11 @@ namespace McRave::BuildOrder::Zerg {
             //if (!Players::ZvZ() && Workers::getMineralWorkers() <= 5 && Util::getTime() < Time(5, 00))
             //    gasLimit = 0;
 
-            if (!Players::ZvZ() && Spy::getEnemyTransition() == "WorkerRush" && Util::getTime() < Time(3, 00))
+            if (!Players::ZvZ() && Spy::getEnemyTransition() == U_WorkerRush && Util::getTime() < Time(3, 00))
                 gasLimit = 0;
 
             // If we have to pull everything we have
-            if (Players::ZvZ() && Spy::getEnemyOpener() == "4Pool" && currentOpener == "12Pool" && total(Zerg_Zergling) < 18)
+            if (Players::ZvZ() && Spy::getEnemyOpener() == Z_4Pool && currentOpener == Z_12Pool && total(Zerg_Zergling) < 18)
                 gasLimit = 0;
         }
 
@@ -314,7 +314,7 @@ namespace McRave::BuildOrder::Zerg {
                     auto minRemaining       = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                     auto dropGasRush        = !Players::ZvZ() && Spy::enemyRush();
                     auto dropGasLarva       = !Players::ZvZ() && vis(Zerg_Larva) >= hatchCount() && unitReservations.empty();
-                    auto dropGasDefenses    = needSunks && (Players::ZvZ() || Spy::enemyProxy() || Spy::getEnemyOpener() == "9/9" || Spy::getEnemyOpener() == "8Rax");
+                    auto dropGasDefenses    = needSunks && (Players::ZvZ() || Spy::enemyProxy() || Spy::getEnemyOpener() == P_9_9 || Spy::getEnemyOpener() == T_8Rax);
 
 
                     auto gasPer = (vis(Zerg_Spire) > 0) ? 20 : 13;
@@ -342,7 +342,7 @@ namespace McRave::BuildOrder::Zerg {
             using namespace UpgradeTypes;
 
             // Overlord speed can be done inside openings
-            const auto queueOvieSpeed = (Players::ZvT() && Spy::getEnemyTransition() == "2PortWraith" && Util::getTime() > Time(6, 00))
+            const auto queueOvieSpeed = (Players::ZvT() && Spy::getEnemyTransition() == T_2PortWraith && Util::getTime() > Time(6, 00))
                 || (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 140 && total(Zerg_Hydralisk) > 0)
                 || (Players::ZvP() && Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0)
                 || (Spy::enemyInvis() && (BuildOrder::isFocusUnit(Zerg_Hydralisk) || BuildOrder::isFocusUnit(Zerg_Ultralisk)))
@@ -536,9 +536,9 @@ namespace McRave::BuildOrder::Zerg {
         // TODO: Team melee / Team FFA support
         if (Broodwar->getGameType() == GameTypes::Team_Free_For_All || Broodwar->getGameType() == GameTypes::Team_Melee) {
             buildQueue[Zerg_Hatchery] = Players::getSupply(PlayerState::Self, Races::None) >= 30;
-            currentBuild = "HatchPool";
-            currentOpener = "10Hatch";
-            currentTransition = "3HatchMuta";
+            currentBuild = Z_HatchPool;
+            currentOpener = Z_10Hatch;
+            currentTransition = Z_3HatchMuta;
             ZvFFA();
             return;
         }
@@ -607,7 +607,7 @@ namespace McRave::BuildOrder::Zerg {
         vsMech = ((Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) + Players::getTotalCount(PlayerState::Enemy, Terran_Goliath)
             + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode))
             > (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) + Players::getTotalCount(PlayerState::Enemy, Terran_Firebat) + Players::getTotalCount(PlayerState::Enemy, Terran_Medic)))
-            || Spy::getEnemyBuild() == "RaxFact";
+            || Spy::getEnemyBuild() == T_RaxFact;
 
         // Queue up defenses
         needSunks = false;
@@ -676,20 +676,56 @@ namespace McRave::BuildOrder::Zerg {
 
             // ZvP
             if (Players::ZvP() || Players::ZvTVB() || Players::ZvFFA()) {
-                priorityOrder ={
-                    {Zerg_Drone, 30},
-                    {Zerg_Defiler, 2},
-                    {Zerg_Lurker, 2},
-                    {Zerg_Hydralisk, 32}, 
-                
-                    {Zerg_Drone, 45},
-                    {Zerg_Hydralisk, 64},
-                    {Zerg_Mutalisk, 9},
-                
-                    {Zerg_Drone, 60},
-                    {Zerg_Hydralisk, 100},
-                    {Zerg_Mutalisk, 60}
-                };
+
+                if (unitOrder == mutaling) {
+                    priorityOrder ={
+                        { Zerg_Drone, 30 },
+                        { Zerg_Mutalisk, 24 },
+
+                        { Zerg_Drone, 45 },
+                        { Zerg_Mutalisk, 36 },
+
+                        { Zerg_Drone, 60 },
+                        { Zerg_Mutalisk, 48 },
+
+                        { Zerg_Mutalisk, 100 },
+                    };
+                }
+
+                else if (unitOrder == hydralurk) {
+                    priorityOrder ={
+                        { Zerg_Drone, 30 },
+                        { Zerg_Hydralisk, 24 },
+                        { Zerg_Lurker, 2 },
+
+                        { Zerg_Drone, 44 },
+                        { Zerg_Hydralisk, 48 },
+                        { Zerg_Lurker, 4 },
+
+                        { Zerg_Drone, 60 },
+                        { Zerg_Hydralisk, 96 },
+                        { Zerg_Lurker, 8 },
+
+                        { Zerg_Hydralisk, 200 },
+                    };
+                }
+
+                else {
+                    priorityOrder ={
+                        {Zerg_Drone, 30},
+                        {Zerg_Hydralisk, 32},
+                        {Zerg_Defiler, 2},
+                        {Zerg_Lurker, 2},
+
+                        {Zerg_Drone, 45},
+                        {Zerg_Hydralisk, 64},
+                        {Zerg_Mutalisk, 9},
+
+                        {Zerg_Drone, 60},
+                        {Zerg_Hydralisk, 100},
+                        {Zerg_Mutalisk, 60}
+                    };
+                }
             }
 
             // ZvT
@@ -738,7 +774,7 @@ namespace McRave::BuildOrder::Zerg {
 
                 // Queue if affordable, break otherwise to prevent spending gas on other units
                 if (availGas >= type.gasPrice())
-                    armyComposition[type] = 1.00;                
+                    armyComposition[type] = 1.00;
                 break;
             }
         }

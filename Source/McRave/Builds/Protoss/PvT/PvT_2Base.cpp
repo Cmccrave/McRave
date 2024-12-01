@@ -161,31 +161,29 @@ namespace McRave::BuildOrder::Protoss {
     {
         // Reactions
         if (!inTransition) {
-            if (currentBuild == "2Base") {
-                if (Spy::enemyFastExpand() || Spy::getEnemyTransition() == "SiegeExpand")
-                    currentTransition = "ReaverCarrier";
-                else if (Terrain::getEnemyStartingPosition().isValid() && !Spy::enemyFastExpand() && currentTransition == "DoubleExpand")
-                    currentTransition = "Obs";
+            if (currentBuild == P_2Base) {
+                if (Spy::enemyFastExpand() || Spy::getEnemyTransition() == T_SiegeExpand)
+                    currentTransition = P_ReaverCarrier;
                 else if (Spy::enemyPressure())
-                    currentTransition = "Obs";
+                    currentTransition = P_Obs;
             }
         }
 
         // Openers
-        if (currentOpener == "12Nexus")
+        if (currentOpener == P_12Nexus)
             PvT_2B_12Nexus();
-        if (currentOpener == "20Nexus")
+        if (currentOpener == P_20Nexus)
             PvT_2B_20Nexus();
-        if (currentOpener == "21Nexus")
+        if (currentOpener == P_21Nexus)
             PvT_2B_21Nexus();
 
         // Transitions
         if (transitionReady) {
-            if (currentTransition == "Obs")
+            if (currentTransition == P_Obs)
                 PvT_2B_Obs();
-            if (currentTransition == "Carrier")
+            if (currentTransition == P_Carrier)
                 PvT_2B_Carrier();
-            if (currentTransition == "ReaverCarrier")
+            if (currentTransition == P_ReaverCarrier)
                 PvT_2B_ReaverCarrier();
         }
     }

@@ -121,7 +121,7 @@ namespace McRave::Producing {
 
                 // Strategic checks
                 if (Players::ZvP() && Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::Self) {
-                    auto time = (Spy::getEnemyBuild() != "FFE") ? Time(4, 00) : Time(6, 00);
+                    auto time = (Spy::getEnemyBuild() != P_FFE) ? Time(4, 00) : Time(6, 00);
                     if (bestType == Zerg_Overlord && !station->isNatural() && Util::getTime() > time && Players::getTotalCount(PlayerState::Self, Zerg_Mutalisk) == 0 && Players::getTotalCount(PlayerState::Self, Zerg_Scourge) == 0)
                         return false;
                 }

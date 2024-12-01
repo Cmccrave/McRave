@@ -16,7 +16,7 @@ namespace McRave::BuildOrder::Protoss {
         inTransition =                                  total(Protoss_Citadel_of_Adun) > 0;
         inOpening =                                     total(Protoss_Dark_Templar) < 4;
 
-        gasLimit =                                      Spy::getEnemyBuild() == "2Rax" && total(Protoss_Gateway) < 2 ? 0 : 3;
+        gasLimit =                                      Spy::getEnemyBuild() == T_2Rax && total(Protoss_Gateway) < 2 ? 0 : 3;
         focusUnit =                                     Protoss_Dark_Templar;
         hideTech =                                      true;
 
@@ -57,23 +57,6 @@ namespace McRave::BuildOrder::Protoss {
         protossUnitPump[Protoss_Shuttle] =              com(Protoss_Robotics_Facility) > 0 && vis(Protoss_Reaver) > vis(Protoss_Shuttle) * 2;
     }
 
-    void PvT_2G_Expand()
-    {
-        inTransition =                                  true;
-        inOpening =                                     total(Protoss_Nexus) < 2;
-
-        // Buildings
-        buildQueue[Protoss_Nexus] =                     1 + (s >= 50);
-
-        // Upgrades
-        upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
-
-        // Composition
-        protossUnitPump[Protoss_Probe] =                true;
-        protossUnitPump[Protoss_Zealot] =               com(Protoss_Gateway) > 0 && zealotsNeeded_PvT() > total(Protoss_Zealot);
-        protossUnitPump[Protoss_Dragoon] =              com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
-    }
-
     void PvT_2G_1015()
     {
         // "https://liquipedia.net/starcraft/10/15_Gates_(vs._Terran)"
@@ -95,24 +78,22 @@ namespace McRave::BuildOrder::Protoss {
     {
         // Reactions
         if (!inTransition) {
-            if (currentBuild == "2Gate") {
+            if (currentBuild == P_2Gate) {
                 if (Spy::enemyFastExpand())
-                    currentTransition = "DT";
+                    currentTransition = P_DT;
             }
         }
 
         // Builds
-        if (currentBuild == "2Gate")
+        if (currentBuild == P_2Gate)
             PvT_2G_1015();
 
         // Transitions
         if (transitionReady) {
-            if (currentTransition == "Robo")
+            if (currentTransition == P_Robo)
                 PvT_2G_Robo();
-            if (currentTransition == "DT")
+            if (currentTransition == P_DT)
                 PvT_2G_DT();
-            if (currentTransition == "Expand")
-                PvT_2G_Expand();
         }
     }
 }

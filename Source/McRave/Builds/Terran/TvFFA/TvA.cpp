@@ -13,7 +13,7 @@ namespace McRave::BuildOrder::Terran
 {
     void TvA()
     {
-        if (currentTransition == "2Fact") {
+        if (currentTransition == T_2FactVulture) {
             inOpening = s < 70;
             inBookSupply = vis(Terran_Supply_Depot) < 0;
             scout = s >= 20 && vis(Terran_Supply_Depot) > 0;

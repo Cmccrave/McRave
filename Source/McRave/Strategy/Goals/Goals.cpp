@@ -115,10 +115,10 @@ namespace McRave::Goals {
 
             // ZvP ling runby
             if (Players::ZvP()) {
-                auto enemyOneBase = Spy::getEnemyBuild() == "2Gate" || Spy::getEnemyBuild() == "1GateCore";
-                auto backstabTiming = (Spy::getEnemyBuild() == "2Gate") ? Time(5, 00) : Time(4, 00);
+                auto enemyOneBase = Spy::getEnemyBuild() == P_2Gate || Spy::getEnemyBuild() == P_1GateCore;
+                auto backstabTiming = (Spy::getEnemyBuild() == P_2Gate) ? Time(5, 00) : Time(4, 00);
                 auto backstabEasy = !Terrain::isPocketNatural() && enemyOneBase && Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0
-                    && Spy::getEnemyTransition() != "Speedlot" && Spy::getEnemyTransition() != "ZealotRush" && Spy::getEnemyTransition() != "Unknown";
+                    && Spy::getEnemyTransition() != P_Speedlot && Spy::getEnemyTransition() != P_Rush && Spy::getEnemyTransition() != "Unknown";
 
                 if (backstabEasy && Util::getTime() > backstabTiming) {
                     if (Util::getTime() < Time(4, 00) && vis(Zerg_Sunken_Colony) > 0 && total(Zerg_Zergling) >= 12)
@@ -126,9 +126,9 @@ namespace McRave::Goals {
                     if (Util::getTime() < Time(5, 00) && vis(Zerg_Sunken_Colony) >= 4)
                         assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
                 }
-                if (Spy::getEnemyOpener() == "Proxy9/9" && Util::getTime() < Time(4, 00) && com(Zerg_Sunken_Colony) > 0)
+                if (Spy::getEnemyOpener() == P_Proxy_9_9 && Util::getTime() < Time(4, 00) && com(Zerg_Sunken_Colony) > 0)
                     assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
-                if (Spy::getEnemyOpener() == "Horror9/9" && Util::getTime() < Time(4, 00) && com(Zerg_Sunken_Colony) > 0)
+                if (Spy::getEnemyOpener() == P_Horror_9_9 && Util::getTime() < Time(4, 00) && com(Zerg_Sunken_Colony) > 0)
                     assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
             }
 

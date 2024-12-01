@@ -32,18 +32,18 @@ namespace McRave::Learning {
             return nullptr;
         }
 
-        void setOpeners(std::vector<std::string> newOpeners) {
+        void setOpeners(std::vector<std::string_view> newOpeners) {
             for (auto &opener : newOpeners)
-                openers.push_back(BuildComponent(opener));
+                openers.push_back(BuildComponent(static_cast<std::string>(opener)));
         }
 
-        void setTransitions(std::vector<std::string> newTransitions) {
+        void setTransitions(std::vector<std::string_view> newTransitions) {
             for (auto &transition : newTransitions)
-                transitions.push_back(BuildComponent(transition));
+                transitions.push_back(BuildComponent(static_cast<std::string>(transition)));
         }
 
-        Build(std::string _name) {
-            name = _name;
+        Build(std::string_view _name) {
+            name = static_cast<std::string>(_name);
         }
     };
 
