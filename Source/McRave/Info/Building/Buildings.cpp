@@ -156,7 +156,7 @@ namespace McRave::Buildings {
             }
 
             // Look for the closest possible non worker enemy
-            if (plannedType == Zerg_Sunken_Colony && Spy::getEnemyBuild() != P_CannonRush && Spy::getEnemyTransition() != U_WorkerRush) {
+            if (morphType == Zerg_Sunken_Colony && Spy::getEnemyBuild() != P_CannonRush && Spy::getEnemyTransition() != U_WorkerRush) {
                 auto closestThreat = Util::getClosestUnit(building.getPosition(), PlayerState::Enemy, [&](auto &u) {
                     return Units::inBoundUnit(*u);
                 });

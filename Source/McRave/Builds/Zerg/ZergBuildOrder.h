@@ -5,9 +5,15 @@ namespace McRave::BuildOrder::Zerg {
     inline int reserveLarva = 0;
     inline std::map<BWAPI::UnitType, bool> zergUnitPump;
 
+    // ZvP
     inline const vector<UnitType> mutaling ={ Zerg_Mutalisk, Zerg_Zergling };
     inline const vector<UnitType> hydralurk ={ Zerg_Hydralisk, Zerg_Lurker, Zerg_Mutalisk };
     inline const vector<UnitType> mutalurk ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker };
+
+    // ZvT
+    inline const vector<UnitType> mutalingdefiler ={ Zerg_Mutalisk, Zerg_Zergling, Zerg_Defiler };
+    inline const vector<UnitType> ultraling ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Zergling, Zerg_Defiler };
+    inline const vector<UnitType> defilerling ={ Zerg_Mutalisk, Zerg_Defiler, Zerg_Zergling, Zerg_Ultralisk };
 
     void opener();
     void tech();

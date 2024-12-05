@@ -147,6 +147,9 @@ namespace McRave::Spy {
     }
     namespace Terran {
         void updateTerran(StrategySpy&);
+
+        bool enemyMech();
+        bool enemyBio();
     }
     namespace Zerg {
         void updateZerg(StrategySpy&);

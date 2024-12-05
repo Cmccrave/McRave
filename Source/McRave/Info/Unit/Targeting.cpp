@@ -13,6 +13,7 @@ namespace McRave::Targets {
         map<UnitInfo*, int> meleeSpotsAvailable;
 
         double maxPriority;
+        int earliest;
 
         enum class Priority {
             Ignore, Trivial, Minor, Normal, Major, Critical
@@ -65,7 +66,7 @@ namespace McRave::Targets {
             }
 
             if (target.getType() == Terran_Vulture && !target.getUnitsTargetingThis().empty() && !target.isThreatening() && target.getSpeed() > unit.getSpeed() && !unit.isWithinRange(target))
-                return Priority::Ignore;            
+                return Priority::Ignore;
 
             const auto targetSize = max(target.getType().width(), target.getType().height());
             const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->getType() == Zerg_Zergling && u.lock()->isWithinRange(target); });
@@ -185,7 +186,12 @@ namespace McRave::Targets {
             if (unit.getRole() == Role::Combat) {
 
                 // Ignore if we need to runby
-                if (unit.attemptingRunby() && Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) < 8) {
+                if (unit.attemptingRunby() && Players::getDeadCount(PlayerState::Enemy, Broodwar->enemy()->getRace().getWorker()) < 8) {
+                    if (Players::ZvZ()) {
+                        if (!target.getType().isWorker())
+                            return Priority::Ignore;
+                        return Priority::Critical;
+                    }
                     if (target.getType().isBuilding() && !target.canAttackGround() && target.getUnitsInRangeOfThis().empty() && unit.getHealth() < unit.getType().maxHitPoints())
                         return Priority::Critical;
                     if (target.getType() != Terran_Marine && !target.hasAttackedRecently() && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
@@ -210,12 +216,15 @@ namespace McRave::Targets {
 
                 // Proxy building
                 if (target.isProxy() && target.getType().isBuilding() && Spy::enemyProxy() && unit.getType() != Zerg_Mutalisk) {
+                    Visuals::drawCircle(target.getPosition(), 5, Colors::Yellow);
                     if ((target.unit()->exists() && target.unit()->getBuildUnit()) || (target.getType().getRace() == Races::Terran && !target.isCompleted()))
                         return Priority::Minor;
+                    else if (target.getType() == Protoss_Photon_Cannon && target.frameCompletesWhen() <= earliest)
+                        return Priority::Critical;
                     else if (proxyTargeting.find(target.getType()) != proxyTargeting.end() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) == 0 && Players::getCompleteCount(PlayerState::Enemy, Protoss_Zealot) == 0)
-                        return Priority::Critical;
+                        return Priority::Major;
                     else if (target.canAttackGround())
-                        return Priority::Critical;
+                        return Priority::Major;
                     else
                         return Priority::Ignore;
                 }
@@ -660,10 +669,13 @@ namespace McRave::Targets {
             auto &myStrength = Players::getStrength(PlayerState::Self);
 
             maxPriority = 1.0;
+            earliest = 999999;
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo& unit = *u;
                 if (unit.getPriority() > maxPriority)
                     maxPriority = unit.getPriority();
+                if (unit.getType() == Protoss_Photon_Cannon && unit.frameCompletesWhen() < earliest)
+                    earliest = unit.frameCompletesWhen();
             }
 
             enemyHasGround = true;

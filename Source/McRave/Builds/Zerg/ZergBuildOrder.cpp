@@ -20,7 +20,6 @@ namespace McRave::BuildOrder::Zerg {
         bool needSunks = false;
         bool needHatch = false;
 
-        bool vsMech = false;
         string nodeName = "[Zerg]: ";
 
         bool logFlags[10];
@@ -335,6 +334,11 @@ namespace McRave::BuildOrder::Zerg {
             // Drop extractors if we don't want gas right now
             if (gasLimit == 0)
                 buildQueue[Zerg_Extractor] = 0;
+
+            if (Players::ZvZ()) {
+                if (Spy::enemyPressure() && vis(Zerg_Drone) < 12 && vis(Zerg_Larva) > 0 && com(Zerg_Spire) == 0)
+                    gasLimit = 0;
+            }
         }
 
         void queueUpgrades()
@@ -397,6 +401,11 @@ namespace McRave::BuildOrder::Zerg {
         void queueResearch()
         {
             using namespace TechTypes;
+
+            // Sometimes burrow can stop enemy all-ins that aim to kill drones
+            if (Spy::getEnemyTransition() == P_Speedlot)
+                techQueue[Burrowing] = true;
+
             if (inOpening)
                 return;
 
@@ -568,22 +577,12 @@ namespace McRave::BuildOrder::Zerg {
 
             // ZvT
             if (Players::ZvT()) {
-                if (vsMech) {
-                    unitOrder ={ Zerg_Mutalisk, Zerg_Zergling, Zerg_Defiler };
-                    techOffset = 2;
-                }
-                else {
-                    unitOrder ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Defiler };
-                    techOffset = 1;
-                }
+                techOffset = 1 + Spy::Terran::enemyMech();
             }
 
             // ZvZ
             if (Players::ZvZ()) {
-                if (focusUnit == Zerg_Hydralisk)
-                    unitOrder ={ Zerg_Hydralisk };
-                else
-                    unitOrder ={ Zerg_Mutalisk };
+                techOffset = 0;
             }
 
             // ZvFFA
@@ -604,11 +603,6 @@ namespace McRave::BuildOrder::Zerg {
 
     void situational()
     {
-        vsMech = ((Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) + Players::getTotalCount(PlayerState::Enemy, Terran_Goliath)
-            + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode))
-            > (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) + Players::getTotalCount(PlayerState::Enemy, Terran_Firebat) + Players::getTotalCount(PlayerState::Enemy, Terran_Medic)))
-            || Spy::getEnemyBuild() == T_RaxFact;
-
         // Queue up defenses
         needSunks = false;
         needSpores = false;
@@ -677,81 +671,56 @@ namespace McRave::BuildOrder::Zerg {
             // ZvP
             if (Players::ZvP() || Players::ZvTVB() || Players::ZvFFA()) {
 
+                // Higher muta count, no hive tech
                 if (unitOrder == mutaling) {
                     priorityOrder ={
-                        { Zerg_Drone, 30 },
-                        { Zerg_Mutalisk, 24 },
-
-                        { Zerg_Drone, 45 },
-                        { Zerg_Mutalisk, 36 },
-
-                        { Zerg_Drone, 60 },
-                        { Zerg_Mutalisk, 48 },
-
-                        { Zerg_Mutalisk, 100 },
+                        { Zerg_Drone, 30 }, { Zerg_Mutalisk, 24 },
+                        { Zerg_Drone, 45 }, { Zerg_Mutalisk, 36 },
+                        { Zerg_Drone, 60 }, { Zerg_Mutalisk, 48 },
+                                            { Zerg_Mutalisk, 100 },
                     };
                 }
 
+                // No mutas, purely ground muscle
                 else if (unitOrder == hydralurk) {
                     priorityOrder ={
-                        { Zerg_Drone, 30 },
-                        { Zerg_Hydralisk, 24 },
-                        { Zerg_Lurker, 2 },
-
-                        { Zerg_Drone, 44 },
-                        { Zerg_Hydralisk, 48 },
-                        { Zerg_Lurker, 4 },
-
-                        { Zerg_Drone, 60 },
-                        { Zerg_Hydralisk, 96 },
-                        { Zerg_Lurker, 8 },
-
-                        { Zerg_Hydralisk, 200 },
+                        { Zerg_Drone, 30 }, { Zerg_Hydralisk, 24 }, { Zerg_Lurker, 2 },
+                        { Zerg_Drone, 44 }, { Zerg_Hydralisk, 48 }, { Zerg_Lurker, 4 },
+                        { Zerg_Drone, 60 }, { Zerg_Hydralisk, 96 }, { Zerg_Lurker, 8 },
+                                            { Zerg_Hydralisk, 200 },
                     };
                 }
 
+                // Mix of both
                 else {
                     priorityOrder ={
-                        {Zerg_Drone, 30},
-                        {Zerg_Hydralisk, 32},
-                        {Zerg_Defiler, 2},
-                        {Zerg_Lurker, 2},
-
-                        {Zerg_Drone, 45},
-                        {Zerg_Hydralisk, 64},
-                        {Zerg_Mutalisk, 9},
-
-                        {Zerg_Drone, 60},
-                        {Zerg_Hydralisk, 100},
-                        {Zerg_Mutalisk, 60}
+                        {Zerg_Drone, 30}, {Zerg_Hydralisk, 32}, {Zerg_Defiler, 2}, {Zerg_Lurker, 2}, {Zerg_Mutalisk, 0},
+                        {Zerg_Drone, 45}, {Zerg_Hydralisk, 64}, {Zerg_Defiler, 2}, {Zerg_Lurker, 2}, {Zerg_Mutalisk, 9},
+                        {Zerg_Drone, 60}, {Zerg_Hydralisk, 96}, {Zerg_Defiler, 2}, {Zerg_Lurker, 2}, {Zerg_Mutalisk, 60}
                     };
                 }
             }
 
             // ZvT
             if (Players::ZvT()) {
-                priorityOrder ={
-                    {Zerg_Drone, 25},
-                    {Zerg_Defiler, 1},
-                    {Zerg_Lurker, 2},
-                    {Zerg_Ultralisk, 4},
-                    {Zerg_Hydralisk, 12},
-                    {Zerg_Mutalisk, 12},
 
-                    {Zerg_Drone, 40},
-                    {Zerg_Defiler, 2},
-                    {Zerg_Lurker, 4},
-                    {Zerg_Ultralisk, 8},
-                    {Zerg_Hydralisk, 24},
-                    {Zerg_Mutalisk, 30},
+                // Higher muta count, hive tech is just defilers
+                if (unitOrder == mutalingdefiler) {
+                    priorityOrder ={
+                        { Zerg_Drone, 30 }, { Zerg_Mutalisk, 24 }, { Zerg_Defiler, 1 },
+                        { Zerg_Drone, 45 }, { Zerg_Mutalisk, 36 }, { Zerg_Defiler, 2 },
+                        { Zerg_Drone, 60 }, { Zerg_Mutalisk, 48 },
+                    };
+                }
 
-                    {Zerg_Drone, 50},
-                    {Zerg_Defiler, 4},
-                    {Zerg_Lurker, 8},
-                    {Zerg_Ultralisk, 12},
-                    {Zerg_Hydralisk, 64},
-                    {Zerg_Mutalisk, 48},
-                };
+                // Keep a consistent muta count, get ultras and defilers eventually
+                else if (unitOrder == ultraling || unitOrder == defilerling) {
+                    priorityOrder ={
+                        { Zerg_Drone, 30 }, { Zerg_Mutalisk, 12 }, {Zerg_Ultralisk, 4},  { Zerg_Defiler, 1 },
+                        { Zerg_Drone, 45 }, { Zerg_Mutalisk, 12 }, {Zerg_Ultralisk, 8},  { Zerg_Defiler, 2 },
+                        { Zerg_Drone, 60 }, { Zerg_Mutalisk, 12 }, {Zerg_Ultralisk, 12}, { Zerg_Defiler, 2 },
+                    };
+                }
             }
 
             // ZvZ

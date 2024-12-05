@@ -149,14 +149,9 @@ namespace McRave::Roles {
                 sixLings = true;
 
             // Worker rush - pull 3 unless they all in
-            if (Spy::getEnemyTransition() == U_WorkerRush && Units::getImmThreat() > 0.0f) {
+            if (Spy::getEnemyTransition() == U_WorkerRush) {
                 if (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
                     return;
-
-
-                if (Players::ZvT() && com(Zerg_Spawning_Pool) == 0) {
-                    forceCombatWorker(3, Position(Terrain::getMainPosition()), LocalState::Attack, GlobalState::Attack);
-                }
 
                 if (Players::ZvP() && sixLings && com(Zerg_Sunken_Colony) == 0 && Combat::isDefendNatural()) {
                     auto cnt = 3 + Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot);
@@ -166,11 +161,16 @@ namespace McRave::Roles {
             }
 
             // ZvZ
-            if (Players::ZvZ() && Util::getTime() < Time(6, 00) && !Spy::enemyTurtle() && !Spy::enemyFastExpand()) {
-                if ((Spy::getEnemyOpener() == Z_9Pool || Spy::getEnemyOpener() == Z_Overpool || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling))
-                    && Util::getTime() > Time(2, 45) && Util::getTime() < Time(3, 45)
-                    && BuildOrder::getCurrentOpener() == Z_12Pool && total(Zerg_Zergling) < 20 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
-                    forceCombatWorker(2, Position(Terrain::getNaturalChoke()->Center()), LocalState::None, GlobalState::Retreat);
+            if (Players::ZvZ() && Util::getTime() < Time(6, 00) && !Spy::enemyTurtle() && !Spy::enemyFastExpand() && Combat::State::isStaticRetreat(Zerg_Zergling)) {
+
+                //auto lState = Units::getImmThreat() > 0.0f ? LocalState::Attack : LocalState::None;
+
+                if (Combat::isDefendNatural()) {
+                    if ((Spy::getEnemyOpener() == Z_9Pool || Spy::getEnemyOpener() == Z_Overpool || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling))
+                        && Util::getTime() > Time(2, 45) && Util::getTime() < Time(3, 30)
+                        && BuildOrder::getCurrentOpener() == Z_12Pool && total(Zerg_Zergling) < 20 && int(Stations::getStations(PlayerState::Self).size()) >= 2)
+                        forceCombatWorker(2, Terrain::getNaturalPosition(), LocalState::None, GlobalState::Retreat);
+                }
             }
 
             // ZvP
@@ -227,26 +227,25 @@ namespace McRave::Roles {
                 else if (proxyWorker)
                     location = proxyWorker->getPosition();
 
-                // Bunker being built, 3 drones per marine and 3 extra for the bunker
-                if (proxyDangerousBuilding && !proxyDangerousBuilding->isCompleted() && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8)
-                    forceCombatWorker(count, location);
+                if (BuildOrder::takeNatural()) {
 
-                // Proxy, 3 drones per marine
-                else if (proxyCombatUnit && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8)
-                    forceCombatWorker(count, location);
+                    // Bunker being built, 3 drones per marine and 3 extra for the bunker
+                    if (proxyDangerousBuilding && !proxyDangerousBuilding->isCompleted() && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8)
+                        forceCombatWorker(count, location);
 
-                // We know it's likely a proxy, watch the natural for now
-                else if (Spy::enemyPossibleProxy() && Util::getTime() < Time(2, 00))
-                    forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
+                    // Proxy, 3 drones per marine
+                    else if (proxyCombatUnit && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8)
+                        forceCombatWorker(count, location);
 
-                // We haven't got out hatchery down yet
-                else if (vis(Zerg_Hatchery) < 2 && BuildOrder::takeNatural() && proxyWorker && selfBuildingWorker && (Terrain::inArea(Terrain::getNaturalArea(), proxyWorker->getPosition()) || proxyWorker->hasAttackedRecently() || proxyWorker->isThreatening()))
-                    forceCombatWorker(1, proxyWorker->getPosition());
+                    // We know it's likely a proxy, watch the natural for now
+                    else if (Spy::enemyPossibleProxy() && Util::getTime() < Time(2, 00))
+                        forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
+
+                    // We haven't got our hatchery down yet
+                    else if (vis(Zerg_Hatchery) < 2 && proxyWorker && selfBuildingWorker && (Terrain::inArea(Terrain::getNaturalArea(), proxyWorker->getPosition()) || proxyWorker->hasAttackedRecently() || proxyWorker->isThreatening()))
+                        forceCombatWorker(1, proxyWorker->getPosition());
+                }
             }
-
-            // Misc
-            //if (Spy::getWorkersNearUs() > 2 && com(Zerg_Zergling) < Spy::getWorkersNearUs() && Util::getTime() < Time(6, 00) && Units::getImmThreat() > 0.0f)
-            //    forceCombatWorker(Spy::getWorkersNearUs() + 2, Position(Terrain::getMainChoke()->Center()), LocalState::Attack, GlobalState::Attack);
         }
 
         void updateForcedRoles()

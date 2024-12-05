@@ -166,7 +166,9 @@ namespace McRave::Combat::Navigation {
                 start = Terrain::getEnemyNatural()->getBase()->Center();
 
             const auto threat = [&](const TilePosition &t) {
-                return 1.0 + (Grids::getGroundThreat(Position(t) + Position(16, 16), PlayerState::Enemy) * 1000.0);
+                if (Position(t).getDistance(unit.getPosition()) < 96.0)
+                    return 1.0;
+                return 1.0 + (Grids::getGroundThreat(Position(t) + Position(16, 16), PlayerState::Enemy) * 500.0);
             };
 
             const auto walkable = [&](const TilePosition &t) {

@@ -25,9 +25,9 @@ namespace McRave::Workers {
             }
 
             if (Players::ZvP()) {
-                if (Spy::getEnemyOpener() == P_9_9)
+                if (Spy::getEnemyOpener() == P_9_9 && com(Zerg_Zergling) >= 6)
                     desiredTransfer = 2;
-                if (Spy::getEnemyOpener() == P_Proxy_9_9)
+                if (Spy::getEnemyOpener() == P_Proxy_9_9 && com(Zerg_Zergling) >= 6)
                     desiredTransfer = 2;
                 if (Units::getImmThreat() > 0.0f)
                     desiredTransfer = 0;
@@ -104,7 +104,9 @@ namespace McRave::Workers {
             for (auto &station : Stations::getStations(PlayerState::Self)) {
 
                 // If unit is close, it must be safe
-                if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(unit.getTilePosition()) == station->getBase()->GetArea())
+                if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0
+                    || mapBWEM.GetArea(unit.getTilePosition()) == station->getBase()->GetArea()
+                    || Util::getTime() < Time(3, 30))
                     safeStations.push_back(station);
 
                 else {
@@ -199,6 +201,7 @@ namespace McRave::Workers {
 
                 const auto resourceWalkable = [&](const TilePosition &tile) {
                     return (unit.hasResource() && !unit.getBuildPosition().isValid() && tile.x >= resourceTile.x && tile.x < resourceTile.x + resourceType.tileWidth() && tile.y >= resourceTile.y && tile.y < resourceTile.y + resourceType.tileHeight())
+                        || (unit.getBuildPosition().isValid() && BWEB::Map::isUsed(tile) == Resource_Vespene_Geyser)
                         || newPath.unitWalkable(tile);
                 };
                 newPath.generateJPS(resourceWalkable);
@@ -215,6 +218,7 @@ namespace McRave::Workers {
                 if (newDestination.isValid())
                     unit.setNavigation(newDestination);
             }
+
             //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
             //Visuals::drawPath(unit.getDestinationPath());
         }
@@ -258,7 +262,7 @@ namespace McRave::Workers {
             // Get some information of the workers current assignment
             const auto isGasunit =          unit.hasResource() && unit.getResource().lock()->getType().isRefinery();
             const auto isMineralunit =      unit.hasResource() && unit.getResource().lock()->getType().isMineralField();
-            const auto threatened =         unit.hasResource() && unit.getResource().lock()->isThreatened() && (unit.getHealth() < unit.getType().maxHitPoints() || Spy::enemyPressure() || Spy::enemyRush());
+            const auto threatened =         unit.hasResource() && unit.getResource().lock()->isThreatened() && (unit.getHealth() < unit.getType().maxHitPoints() || Spy::enemyPressure() || Spy::enemyRush() || Players::ZvZ());
             const auto excessAssigned =     isResourceFlooded(unit);
             const auto transferStation =    getTransferStation(unit);
 
@@ -320,12 +324,12 @@ namespace McRave::Workers {
                 for (int i = 1; i <= 2; i++) {
                     for (auto &r : Resources::getMyMinerals()) {
                         auto &resource = *r;
-                        auto allowedGatherCount = threatened ? 50 : i;
+                        auto allowedGatherCount = (resource.safe) ? 50 : i;
 
                         if (!resourceReady(resource, allowedGatherCount)
                             || (!transferStation && find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end())
                             || (transferStation && resource.getStation() != transferStation)
-                            || (resource.isThreatened() && !threatened))
+                            || (resource.isThreatened()))
                             continue;
 
                         auto stationDist = unit.getPosition().getDistance(resource.getStation()->getBase()->Center());

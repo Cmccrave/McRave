@@ -39,7 +39,7 @@ namespace McRave::BuildOrder::Zerg {
 
     int inboundUnits_ZvT()
     {
-        static map<UnitType, double> trackables ={ {Terran_Marine, 1.0}, {Terran_Medic, 1.0}, {Terran_Firebat, 1.0} };
+        static map<UnitType, double> trackables ={ {Terran_Marine, 1.0}, {Terran_Medic, 2.0}, {Terran_Firebat, 2.0}, {Terran_Vulture, 2.0}, {Terran_Goliath, 2.0} };
 
         // Economic estimate (have information on army, they aren't close):
         // For each unit, assume it arrives with enough time for us to create defenders
@@ -99,6 +99,9 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyTransition() == U_WorkerRush)
             initialValue = 24;
 
+        // Always need at least 2 zerglings for scouting/denying scouts
+        if (vis(Zerg_Zergling) == 0)
+            return 2;
         if (total(Zerg_Zergling) < initialValue)
             return initialValue;
 
@@ -120,6 +123,9 @@ namespace McRave::BuildOrder::Zerg {
 
         focusUnit =                                     Zerg_Lurker;
         pressure =                                      com(Zerg_Hydralisk_Den) > 0;
+
+        // Order
+        unitOrder ={};
 
         // Buildings
         buildQueue[Zerg_Hatchery] =                     1;
@@ -151,6 +157,11 @@ namespace McRave::BuildOrder::Zerg {
         reserveLarva =                                  6;
 
         auto thirdHatch = (com(Zerg_Spire) == 0 && s >= 50 && vis(Zerg_Drone) >= 22) || (com(Zerg_Spire) == 1 && total(Zerg_Mutalisk) >= 6 && vis(Zerg_Drone) >= 22);
+
+        // Order
+        unitOrder = ultraling;
+        if (Spy::Terran::enemyMech())
+            unitOrder = mutalingdefiler;
 
         // Buildings
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch;
@@ -197,6 +208,11 @@ namespace McRave::BuildOrder::Zerg {
         auto fourthHatch = (Spy::getEnemyBuild() == T_RaxFact || !Spy::enemyFastExpand()) ? com(Zerg_Mutalisk) > 0 : (vis(Zerg_Spire) > 0 && s >= 66);
 
         auto secondGas = Spy::enemyFastExpand() ? (s >= 44 && vis(Zerg_Drone) >= 20) : (com(Zerg_Lair) > 0);
+
+        // Order
+        unitOrder = ultraling;
+        if (Spy::Terran::enemyMech())
+            unitOrder = mutalingdefiler;
 
         // Buildings
         buildQueue[Zerg_Hatchery] =                     2 + thirdHatch + fourthHatch;

@@ -326,7 +326,7 @@ namespace McRave::Util {
             return here;
         const auto directionVector = target - here;
         const auto currentDist = target.getDistance(here);
-        return here + Position(int(directionVector.x * dist / currentDist), int(directionVector.y * dist / currentDist));
+        return here + Position(int(round(directionVector.x * dist / currentDist)), int(round(directionVector.y * dist / currentDist)));
     }
 
     Time getTime()

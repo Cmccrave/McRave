@@ -133,6 +133,49 @@ namespace McRave::Resources {
             gasSat = gassers >= maxGas;
             halfGasSat = gassers >= gasCount;
         }
+
+        void updateDrilling()
+        {
+            static Time drillTime = Time(0, -05);
+            static bool drillFar = true;
+            // TODO: Drill per station
+
+            // Latch in drill choice every 4 seconds
+            if (Util::getTime() - drillTime < Time(0, 04))
+                return;
+
+            bool threat = false;
+            for (auto &mineral : myMinerals) {
+                mineral->safe = false;
+                if (mineral->getResourceState() == ResourceState::Mineable && mineral->isThreatened()) {
+                    threat = true;
+                }
+            }
+
+            // If there's a threat, find a new drill mineral
+            if (threat) {
+                auto distBest = drillFar ? 0.0 : DBL_MAX;
+                ResourceInfo * ptr = nullptr;
+                for (auto &mineral : myMinerals) {
+                    auto dist = mineral->getPosition().getDistance(Position(Terrain::getMainChoke()->Center()));
+                    auto better = mineral->getResourceState() == ResourceState::Mineable && ((dist < distBest && !drillFar) || (dist > distBest && drillFar));
+                    if (better) {
+                        distBest = dist;
+                        ptr = &*mineral;
+                    }
+                }
+
+                if (ptr) {
+                    drillFar = !drillFar;
+                    ptr->safe = true;
+                    drillTime = Util::getTime();
+                }
+            }
+
+            // Reset to far if no threat
+            if (!threat)
+                drillFar = false;
+        }
     }
 
     void recheckSaturation()
@@ -160,6 +203,7 @@ namespace McRave::Resources {
     {
         Visuals::startPerfTest();
         updateResources();
+        updateDrilling();
         Visuals::endPerfTest("Resources");
     }
 

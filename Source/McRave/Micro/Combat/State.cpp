@@ -79,18 +79,21 @@ namespace McRave::Combat::State {
                     }
                 }
                 if (Players::ZvZ()) {
-                    const auto enemyLingVomit = (Spy::getEnemyTransition() == Z_2HatchSpeedling || Spy::getEnemyTransition() == Z_3HatchSpeedling) && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) < 9;
+                    const auto enemyLingVomit = ((Spy::getEnemyTransition() == Z_2HatchSpeedling && Util::getTime() > Time(4, 00)) || Spy::getEnemyTransition() == Z_3HatchSpeedling) && Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) < 9;
                     const auto avoidDiceRoll = (Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 15) && !Terrain::getEnemyStartingPosition().isValid())
                         || (BuildOrder::getCurrentOpener() == Z_12Pool)
                         || (BuildOrder::getCurrentOpener() == Z_12Hatch);
                     const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(3, 15);
                     const auto enemyHatchAdvatange = (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair))
-                    > (Players::getVisibleCount(PlayerState::Self, Zerg_Hatchery) + Players::getVisibleCount(PlayerState::Self, Zerg_Lair));
+                    > (Players::getVisibleCount(PlayerState::Self, Zerg_Hatchery) + Players::getVisibleCount(PlayerState::Self, Zerg_Lair)) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 10;
 
-                    const auto lingAdvantage = Players::getVisibleCount(PlayerState::Self, Zerg_Zergling) * 2 > Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) * 3;
+                    const auto lingAdvantage = Players::getVisibleCount(PlayerState::Self, Zerg_Zergling) * 2 > Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) * 3 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 6;
                     const auto expansionAdvantage = Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && !Spy::enemyTurtle() && !Spy::enemyFortress();
+                    
+                    // "well they shouldn't be able to do that"
+                    const auto justFuckingKillThem = Spy::getEnemyTransition() == Z_1HatchLurker;
 
-                    if (!lingAdvantage) {
+                    if (!lingAdvantage && !justFuckingKillThem) {
 
                         // 1hm early
                         if (BuildOrder::getCurrentTransition() == Z_1HatchMuta && Util::getTime() < Time(7, 00)) {
@@ -232,7 +235,7 @@ namespace McRave::Combat::State {
                 if (BuildOrder::isRush() && unit.getHealth() < 20 && !target.getType().isBuilding())
                     return true;
             }
-            const auto hurtLingVsWorker = (unit.getType() == Zerg_Zergling && unit.getHealth() <= 15 && target.getType().isWorker() && Util::getTime() < Time(6, 00));
+            const auto hurtLingVsWorker = (unit.getType() == Zerg_Zergling && unit.getHealth() <= 15 && target.getType().isWorker() && Util::getTime() < Time(6, 00) && !Players::ZvZ());
 
             if (slowZealotVsVulture || sparseCorsairVsScourge || lowShieldFlyer || oomMedic || hurtLingVsWorker)
                 return true;

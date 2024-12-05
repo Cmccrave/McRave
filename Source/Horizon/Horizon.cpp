@@ -83,7 +83,7 @@ namespace McRave::Horizon {
         const auto timePad = Util::getTime().minutes / 6;
         const auto unitToEngage = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
 
-        const auto extendDuration = unit.isLightAir() ? 0.0 : 5.0;
+        const auto extendDuration = (unit.isLightAir() || Players::ZvZ()) ? 1.0 : 5.0;
         const auto simulationTime = unitToEngage + extendDuration + addPrepTime(unit) - rangeDisplacement;
         const auto targetDisplacement = 0.0;// unitToEngage * unitTarget->getSpeed() * 24.0;
         map<Player, SimStrength> simStrengthPerPlayer;
@@ -149,9 +149,9 @@ namespace McRave::Horizon {
 
             // If the unit doesn't affect this simulation
             if ((self.getSpeed() <= 0.0 && self.getEngDist() > -16.0)
-                || (unit.hasTarget() && self.hasTarget() && self.getEngagePosition().getDistance(unitTarget->getPosition()) > reach * 2)
+                || (self.getEngagePosition().getDistance(unitTarget->getPosition()) > reach * 2)
                 || (self.getGlobalState() == GlobalState::Retreat)
-                || (Combat::State::isStaticRetreat(self.getType()) && !self.attemptingRunby() && !Terrain::inTerritory(PlayerState::Self, self.getPosition())))
+                || (Combat::State::isStaticRetreat(self.getType()) && !self.attemptingRunby() && !unitTarget->isThreatening()))
                 continue;
 
             // Add their values to the simulation

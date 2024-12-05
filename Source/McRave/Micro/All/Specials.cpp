@@ -101,39 +101,6 @@ namespace McRave::Command
         if (!unit.getType().isWorker())
             return false;
 
-        if (unit.getDestination().isValid() && !unit.isBurrowed()) {
-
-            // See if there's a way to resource walk closer to the destination
-            if (unit.getPosition().getDistance(unit.getDestination()) > 480.0) {
-                auto closestDist = DBL_MAX;
-                const auto destDist = BWEB::Map::getGroundDistance(unit.getPosition(), unit.getDestination());
-                ResourceInfo * closestResource = nullptr;
-
-                const auto checkCloserToDestination = [&](auto resource) {
-                    const auto dist = BWEB::Map::getGroundDistance(resource->getPosition(), unit.getDestination());
-                    if (dist < closestDist && dist < destDist - 320.0) {
-                        closestDist = dist;
-                        closestResource = resource;
-                        return true;
-                    }
-                    return false;
-                };
-
-                for (auto &m : Resources::getMyMinerals()) {
-                    auto mineral = &*m;
-                    if (mineral->unit()->exists())
-                        checkCloserToDestination(mineral);
-                }
-
-                if (closestResource) {
-                    unit.unit()->gather(closestResource->unit());
-                    unit.commandText = "MineralWalkA";
-                    unit.commandFrame = Broodwar->getFrameCount();
-                    return true;
-                }
-            }
-        }
-
         // If unit has a resource and wants to gather but a unit is close by, mineral walk past it
         if (unit.hasResource()) {
             auto resource = unit.getResource().lock();
@@ -141,12 +108,12 @@ namespace McRave::Command
 
             if (unit.getDestination() == resource->getPosition() && boxDist >= 128.0) {
                 auto closestUnit = Util::getClosestUnit(unit.getPosition(), PlayerState::None, [&](auto &u) {
-                    return u->isCompleted() && *u != unit && !u->getType().isBuilding() && !u->isFlying() && u->getPosition().getDistance(unit.getPosition()) < 64.0;
+                    return u->isCompleted() && *u != unit && !u->getType().isWorker() && !u->getType().isBuilding() && !u->isFlying() && u->getPosition().getDistance(unit.getPosition()) < 64.0;
                 });
 
                 if (closestUnit) {
                     unit.unit()->gather(resource->unit());
-                    unit.commandText = "MineralWalkB";
+                    unit.commandText = "MineralWalk";
                     unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }

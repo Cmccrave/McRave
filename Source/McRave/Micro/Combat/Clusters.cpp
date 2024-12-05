@@ -178,7 +178,7 @@ namespace McRave::Combat::Clusters {
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.retreatNavigation = cluster.retreatPosition;
             const auto retreat = Util::findPointOnPath(cluster.retreatPath, [&](Position p) {
-                return p.getDistance(cluster.avgPosition) >= dist;
+                return p.getDistance(cluster.avgPosition) >= dist && p.getDistance(cluster.marchNavigation) >= 32.0;
             });
             if (retreat.isValid())
                 cluster.retreatNavigation = retreat;
@@ -203,8 +203,8 @@ namespace McRave::Combat::Clusters {
 
                     // Now take the center and try to shift it perpendicular towards lower altitude
                     while (newNav.isValid() && mapBWEM.GetMiniTile(WalkPosition(newNav)).Altitude() < desiredAltitude) {
-                        auto p1 = Util::clipPosition(newNav - Position(-size * int(cos(perpAngle)), size * int(sin(perpAngle))));
-                        auto p2 = Util::clipPosition(newNav + Position(-size * int(cos(perpAngle)), size * int(sin(perpAngle))));
+                        auto p1 = Util::clipPosition(newNav - Position(int(-size * cos(perpAngle)), int(size * sin(perpAngle))));
+                        auto p2 = Util::clipPosition(newNav + Position(int(-size * cos(perpAngle)), int(size * sin(perpAngle))));
                         auto altitude1 = mapBWEM.GetMiniTile(WalkPosition(p1)).Altitude();
                         auto altitude2 = mapBWEM.GetMiniTile(WalkPosition(p2)).Altitude();
 
@@ -267,9 +267,9 @@ namespace McRave::Combat::Clusters {
                         else
                             cluster.shape = Shape::Line;
 
-                        // HACK: Flip to a better shape
-                        if (Terrain::inArea(Terrain::getMainArea(), cluster.avgPosition) && cluster.state == LocalState::Hold && Terrain::isFlatRamp())
-                            cluster.shape = Shape::Concave;
+                        //// HACK: Flip to a better shape
+                        //if (Terrain::inArea(Terrain::getMainArea(), cluster.avgPosition) && cluster.state == LocalState::Hold && Terrain::isFlatRamp())
+                        //    cluster.shape = Shape::Concave;
                     }
                 }
             }

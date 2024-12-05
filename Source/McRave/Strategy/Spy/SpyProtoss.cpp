@@ -272,7 +272,7 @@ namespace McRave::Spy::Protoss {
 
             // Speedlot
             else if ((completesBy(1, Protoss_Citadel_of_Adun, Time(5, 30)) && completesBy(2, Protoss_Gateway, Time(5, 45)))
-                || (Util::getTime() < Time(8, 30) && completesBy(1, UpgradeTypes::Leg_Enhancements, Time(7, 00)) && completesBy(1, UpgradeTypes::Protoss_Ground_Weapons, Time(7, 45))))
+                || (Util::getTime() < Time(8, 30) && completesBy(1, UpgradeTypes::Leg_Enhancements, Time(7, 00))))
                 theSpy.transition.name = P_Speedlot;
 
             // Sairlot

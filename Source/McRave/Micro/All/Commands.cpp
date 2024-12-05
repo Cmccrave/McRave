@@ -188,8 +188,10 @@ namespace McRave::Command {
                     return Util::rectangleIntersect(topLeft, botRight, target.getPosition());
                 }
 
-                if (target.isThreatening() && (unit.getUnitsTargetingThis().empty() || unit.isHealthy()) && unit.isWithinRange(target) && unit.isWithinGatherRange() && (Players::ZvZ() || target.getType().isWorker() || Spy::enemyRush()))
-                    return true;
+                if (auto resource = unit.getResource().lock()) {                    
+                    if (unit.isWithinRange(target) && Util::boxDistance(unit.getType(), unit.getPosition(), Resource_Mineral_Field, resource->getPosition()) <= 16.0)
+                        return true;
+                }
             }
 
             // Defenders will attack when in range

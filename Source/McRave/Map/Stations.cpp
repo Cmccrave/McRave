@@ -312,7 +312,7 @@ namespace McRave::Stations
             }
 
             if (BuildOrder::getCurrentBuild() == Z_PoolLair) {
-                if (station->isMain() && vis(Zerg_Drone) >= 8) {
+                if (station->isMain()) {
 
                     // 4 Pool
                     if (Spy::getEnemyOpener() == Z_4Pool)
@@ -322,16 +322,16 @@ namespace McRave::Stations
                     if (Util::getTime() < Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && vis(Zerg_Spire) > 0)
                         return 4 - groundCount;
 
+                    // Speedling all-in
+                    if (Spy::getEnemyTransition() == Z_2HatchSpeedling)
+                        //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 30)));
+                        return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(3, 00)) + (vis(Zerg_Spire) * 2) - groundCount;
+
                     if (total(Zerg_Mutalisk) >= 4) {
 
                         // 12 Pool
                         if (Spy::getEnemyOpener() == Z_12Pool && Spy::getEnemyTransition() != Z_1HatchMuta)
                             //desiredDefenses = max(desiredDefenses, int(Util::getTime() > Time(4, 00)));
-                            return 2 - groundCount;
-
-                        // Speedling all-in
-                        if (Spy::getEnemyTransition() == Z_2HatchSpeedling && vis(Zerg_Spire) > 0)
-                            //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 30)));
                             return 2 - groundCount;
 
                         // +1Ling

@@ -133,9 +133,14 @@ namespace McRave::Goals {
             }
 
             // ZvZ ling runby
-            if (Players::ZvZ()) {
-                if (Spy::enemyTurtle() && Util::getTime() > Time(4, 00) && Upgrading::haveOrUpgrading(UpgradeTypes::Metabolic_Boost, 1))
+            static bool runbyOnce = true;
+            if (Players::ZvZ() && runbyOnce) {
+                if ((Spy::enemyPressure() && Spy::Zerg::enemySlowerSpeed() && Upgrading::haveOrUpgrading(UpgradeTypes::Metabolic_Boost, 1))
+                    || (Spy::enemyTurtle() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) < 10 && Util::getTime() > Time(4, 00) && Upgrading::haveOrUpgrading(UpgradeTypes::Metabolic_Boost, 1))) {
                     assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
+
+                    runbyOnce = false;
+                }
             }
 
             // ZvT ling runby
@@ -392,7 +397,7 @@ namespace McRave::Goals {
             }
 
             // Always leave 2 lings at home in ZvZ
-            if (!Combat::State::isStaticRetreat(Zerg_Zergling) && Players::ZvZ() && int(stations.size()) >= 2 && !Spy::enemyRush())
+            if (!Combat::State::isStaticRetreat(Zerg_Zergling) && Players::ZvZ() && int(stations.size()) >= 2 && !Spy::enemyRush() && Util::getTime() > Time(4, 00))
                 assignNumberToGoal(Terrain::getMyNatural()->getResourceCentroid(), Zerg_Zergling, 2, GoalType::Defend);
 
             // Attack enemy expansions with a small force

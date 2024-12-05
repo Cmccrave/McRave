@@ -31,19 +31,22 @@ namespace McRave {
 
     void ResourceInfo::updateThreatened()
     {
-        // Determine if this resource is threatened based on a substantial threat nearby
         threatened = false;
-        for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
+        if (safe && station->isMain())
+            return;
 
+        // Determine if this resource is threatened based on a substantial threat nearby
+        for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
             if (enemy->getType().isWorker() && (Spy::getEnemyTransition() != U_WorkerRush || Util::getTime() > Time(3, 00)))
                 continue;
 
-            if (!enemy->hasTarget() || !enemy->getTarget().lock()->getType().isWorker()
+            if (!enemy->hasTarget() || (!Players::ZvZ() && !enemy->getTarget().lock()->getType().isWorker())
                 || !enemy->isCompleted() || !enemy->canAttackGround())
                 continue;
 
-            const auto inRangeOfResource = enemy->getPosition().getDistance(position) < max(160.0, enemy->getGroundRange());
-            threatened = inRangeOfResource;
+            const auto inRangeOfResource = enemy->getPosition().getDistance(position) < max(200.0, enemy->getGroundReach());
+            if (inRangeOfResource)
+                threatened = true;
         }
 
         // Sometimes we need to just not mine minerals that would just lose workers

@@ -310,20 +310,20 @@ namespace McRave::Learning {
             }
 
             if (Players::ZvT()) {
-                PoolHatch.setOpeners({ Z_Overpool, "12Pool" });
+                PoolHatch.setOpeners({ Z_Overpool, Z_12Pool });
                 PoolHatch.setTransitions({ Z_2HatchMuta, Z_3HatchMuta });
 
                 HatchPool.setOpeners({ Z_12Hatch });
                 HatchPool.setTransitions({ Z_2HatchMuta, Z_3HatchMuta });
 
-                PoolLair.setOpeners({ "4Pool" });
+                PoolLair.setOpeners({ Z_4Pool });
                 PoolLair.setTransitions({ Z_1HatchLurker });
 
                 myBuilds ={ PoolHatch, HatchPool/*, PoolLair*/ };
             }
 
             if (Players::ZvZ()) {
-                PoolHatch.setOpeners({ "12Pool" });
+                PoolHatch.setOpeners({ Z_12Pool });
                 PoolHatch.setTransitions({ Z_2HatchMuta/*, Z_2HatchHydra*/ });
 
                 PoolLair.setOpeners({ Z_9Pool });
@@ -346,14 +346,14 @@ namespace McRave::Learning {
             Build RaxFact(T_RaxFact);
 
             if (Players::TvP()) {
-                RaxFact.setOpeners({ "1FactFE", T_2FactFE });
+                RaxFact.setOpeners({ T_1FactFE, T_2FactFE });
                 RaxFact.setTransitions({ T_5Fact });
 
                 myBuilds ={ RaxFact };
             }
 
             if (Players::TvT()) {
-                RaxFact.setOpeners({ "1FactFE" });
+                RaxFact.setOpeners({ T_1FactFE });
                 RaxFact.setTransitions({ T_5Fact });
 
                 myBuilds ={ RaxFact };
@@ -476,7 +476,7 @@ namespace McRave::Learning {
         mapLearning         = false;
         myRaceChar          ={ *Broodwar->self()->getRace().c_str() };
         enemyRaceChar       ={ *Broodwar->enemy()->getRace().c_str() };
-        version             = "BASIL_2024_1";
+        version             = "BASIL_2024_2";
         noStats             = " 0 0 ";
         learningExtension   = myRaceChar + "v" + enemyRaceChar + "_" + Broodwar->enemy()->getName() + "_" + version + " Learning.txt";
         gameInfoExtension   = myRaceChar + "v" + enemyRaceChar + "_" + Broodwar->enemy()->getName() + "_" + version + " Info.txt";

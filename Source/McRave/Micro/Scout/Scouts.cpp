@@ -277,7 +277,7 @@ namespace McRave::Scouts {
 
                     // Zergling
                     main.desiredTypeCounts[Zerg_Zergling] = (!Terrain::foundEnemy() && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost))
-                        || (!Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0);
+                        || (!Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) <= 10);
                     if (BuildOrder::isRush() || Spy::enemyRush() || Spy::enemyPressure() || Spy::enemyTurtle() || Spy::enemyFortress())
                         main.desiredTypeCounts[Zerg_Zergling] = 0;
 
@@ -412,9 +412,8 @@ namespace McRave::Scouts {
 
                     safe.desiredTypeCounts[Zerg_Overlord] = 1;
                     if (total(Zerg_Mutalisk) >= 6
-                        || Players::ZvP()
-                        || (Players::ZvT() && Spy::enemyFastExpand())
-                        || (!Players::ZvZ() && Stations::getStations(PlayerState::Enemy).size() >= 2)
+                        || (Players::ZvP() && Util::getTime() > Time(7, 00))
+                        || (Players::ZvT() && Util::getTime() > Time(7, 00))
                         || (Players::ZvZ() && Util::getTime() > Time(5, 00)))
                         safe.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
@@ -434,9 +433,9 @@ namespace McRave::Scouts {
 
             // No threat at home, we should use a ling to scout the enemy
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                auto time = Time(1, 00);
-                if (Spy::enemyRush() || Spy::enemyProxy())
-                    time = Time(4, 00);
+                auto time = Time(2, 30);
+                if (Spy::enemyRush() || Spy::enemyProxy() || total(Zerg_Zergling) <= 2)
+                    time = Time(3, 45);
 
                 if (Util::getTime() > time) {
                     if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
@@ -579,7 +578,7 @@ namespace McRave::Scouts {
             }
 
             for (auto &[type, count] : totalDesiredScoutTypeCounts) {
-                if (scoutTypeDeaths[type] > 0 && type != Zerg_Zergling)
+                if (scoutTypeDeaths[type] > 0 && (type != Zerg_Zergling || Players::ZvZ()))
                     continue;
                 if (totalCurrentScoutTypeCounts[type] < totalDesiredScoutTypeCounts[type] && !contained)
                     assign(type);
@@ -748,10 +747,15 @@ namespace McRave::Scouts {
                 // Sometimes we need to just sacrifice a zergling to get some info based on timings
                 if (!BuildOrder::isRush() && Terrain::getEnemyStartingPosition().isValid() && unit.getType() == Zerg_Zergling) {
                     if (Players::ZvP()) {
-                        if (Spy::getEnemyBuild() == P_FFE && Util::getTime() > Time(7, 00) && sacrificeCount == 0) {
+
+                        // 3hm needs to know whether to switch to hydras or stay mutas
+                        // 6hh needs to know whether to ling flood or stay hydras
+                        if (Spy::getEnemyBuild() == P_FFE && Util::getTime() > Time(6, 00) && sacrificeCount == 0) {
                             unit.sacrifice = true;
                             sacrificeCount++;
                         }
+
+                        // 3hh needs to know whether to drone up or bust with hydras
                         if (Spy::getEnemyBuild() == P_FFE && BuildOrder::getCurrentTransition() == Z_3HatchHydra && Util::getTime() > Time(4, 30) && sacrificeCount == 0) {
                             unit.sacrifice = true;
                             sacrificeCount++;
@@ -791,11 +795,10 @@ namespace McRave::Scouts {
                     };
 
                     // Suicidal scouts don't care about threat
-                    //if (unit.isMarkedForDeath())
-                    //    newPath.generateJPS(walkable);
-                    //else
-                    //    newPath.generateAS(threat, walkable);
-                    newPath.generateAS(threat, walkable);
+                    if (unit.sacrifice)
+                        newPath.generateJPS(walkable);
+                    else
+                        newPath.generateAS(threat, walkable);
                     unit.setDestinationPath(newPath);
                 }
 

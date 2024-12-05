@@ -100,11 +100,13 @@ namespace McRave::Planning {
             auto creepFully = true;
 
             // See if it's being blocked
-            auto closestEnemy = Util::getClosestUnit(center, PlayerState::Enemy, [&](auto &u) {
-                return !u->isFlying() && !u->getType().isWorker() && !u->getType().isBuilding() && u->getType() != Terran_Vulture_Spider_Mine;
-            });
-            if (closestEnemy && Util::boxDistance(closestEnemy->getType(), closestEnemy->getPosition(), building, center) < 32.0)
-                return false;
+            if (!isDefensiveType(building)) {
+                auto closestEnemy = Util::getClosestUnit(center, PlayerState::Enemy, [&](auto &u) {
+                    return !u->isFlying() && !u->getType().isWorker() && !u->getType().isBuilding() && u->getType() != Terran_Vulture_Spider_Mine;
+                });
+                if (closestEnemy && Util::boxDistance(closestEnemy->getType(), closestEnemy->getPosition(), building, center) < 32.0)
+                    return false;
+            }
 
             // Refinery only on Geysers
             if (building.isRefinery()) {
@@ -474,10 +476,12 @@ namespace McRave::Planning {
 
                 // Place sunkens closest to the resources by default
                 auto colonies = Stations::getColonyCount(station);
-                Position desiredCenter = station->getResourceCentroid();
+                auto needGrd = Stations::needGroundDefenses(station) > colonies;
+                auto needAir = Stations::needAirDefenses(station) > colonies;
+                Position desiredCenter = (Players::ZvZ() && needGrd && station->getChokepoint()) ? Position(station->getChokepoint()->Center()) : station->getResourceCentroid();
 
                 // If pocket defense is buildable
-                if (Stations::needGroundDefenses(station) > colonies) {
+                if (needGrd) {
                     if (isPlannable(Zerg_Creep_Colony, station->getPocketDefense()) && isBuildable(Zerg_Creep_Colony, station->getPocketDefense())) {
                         placement = station->getPocketDefense();
                         return true;
@@ -485,7 +489,7 @@ namespace McRave::Planning {
                 }
 
                 // If we need defenses
-                if (Stations::needGroundDefenses(station) > colonies || Stations::needAirDefenses(station) > colonies) {
+                if (needGrd || needAir) {
                     placement = returnClosest(building, station->getDefenses(), desiredCenter);
                     if (placement.isValid())
                         return true;

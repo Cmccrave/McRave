@@ -135,7 +135,7 @@ namespace McRave::Spy::Terran {
             auto hasGols = Players::getVisibleCount(PlayerState::Enemy, Terran_Goliath) > 0;
             auto hasWraiths = Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > 0;
 
-            if (theSpy.workersPulled >= 4 && Util::getTime() < Time(4, 00))
+            if (theSpy.workersPulled >= 5 && Util::getTime() < Time(4, 00))
                 theSpy.transition.name = U_WorkerRush;
 
             // PvT
@@ -221,5 +221,18 @@ namespace McRave::Spy::Terran {
                     enemyTerranTransitions(player, theSpy);
             }
         }
+    }
+
+    bool enemyMech()
+    {
+        return ((Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) + Players::getTotalCount(PlayerState::Enemy, Terran_Goliath)
+            + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode))
+                    > (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) + Players::getTotalCount(PlayerState::Enemy, Terran_Firebat) + Players::getTotalCount(PlayerState::Enemy, Terran_Medic)))
+            || Spy::getEnemyBuild() == T_RaxFact;
+    }
+
+    bool enemyBio()
+    {
+        return false; // TODO
     }
 }

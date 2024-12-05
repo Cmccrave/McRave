@@ -54,7 +54,9 @@ namespace McRave::BuildOrder::Zerg {
                 initialValue = 12;
             else if (Spy::getEnemyTransition() == Z_1HatchMuta)
                 initialValue = 30;
-            else if (Spy::getEnemyTransition() == Z_2HatchMuta || Spy::getEnemyTransition() == Z_3HatchSpeedling || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
+            else if (Spy::getEnemyTransition() == Z_2HatchSpeedling || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 2)
+                initialValue = 24;
+            else if (Spy::getEnemyTransition() == Z_2HatchMuta || Spy::getEnemyTransition() == Z_3HatchSpeedling)
                 initialValue = 18;
         }
 
@@ -120,7 +122,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Build
         buildQueue[Zerg_Lair] =                         (!speedFirst || lingSpeed()) && gas(100) && vis(Zerg_Zergling) >= 6 && vis(Zerg_Drone) >= 8;
-        buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 7;
+        buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 9;
         buildQueue[Zerg_Hatchery] =                     1 + secondHatch;
 
         // Upgrades
@@ -146,6 +148,8 @@ namespace McRave::BuildOrder::Zerg {
                 gasLimit = 2;
             else if (lingSpeed() && !atPercent(Zerg_Lair, 0.7))
                 gasLimit = 1;
+            else if (vis(Zerg_Drone) < 8 && com(Zerg_Spire) == 0)
+                gasLimit = 0;
         }
     }
 
@@ -160,7 +164,7 @@ namespace McRave::BuildOrder::Zerg {
         auto speedFirst = !Spy::enemyTurtle();
 
         // Build
-        buildQueue[Zerg_Extractor] =                    (s >= 24 && Util::getTime() > Time(1, 45)) + (vis(Zerg_Drone) >= 16);
+        buildQueue[Zerg_Extractor] =                    (s >= 22 && Util::getTime() > Time(1, 45)) + (vis(Zerg_Drone) >= 16 && vis(Zerg_Spire) > 0);
         buildQueue[Zerg_Lair] =                         (!speedFirst || lingSpeed()) && gas(100) && vis(Zerg_Drone) >= 8 && (vis(Zerg_Larva) == 0 || vis(Zerg_Drone) >= 14);
         buildQueue[Zerg_Spire] =                        lingSpeed() && atPercent(Zerg_Lair, 0.95) && com(Zerg_Drone) >= 12 && vis(Zerg_Larva) <= 1;
         buildQueue[Zerg_Overlord] =                     1 + (vis(Zerg_Extractor) + Spy::enemyGasSteal() >= 1) + (s >= 32) + (s >= 46);

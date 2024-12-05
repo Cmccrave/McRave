@@ -370,9 +370,18 @@ namespace McRave
         const auto attackedWorkers = hasAttackedRecently() && Terrain::inTerritory(PlayerState::Self, target.getPosition()) && (target.getRole() == Role::Worker || target.getRole() == Role::Support);
         const auto attackedBuildings = hasAttackedRecently() && target.getType().isBuilding();
 
+        auto nearResources = [&]() {
+            auto closestMineral = Resources::getClosestMineral(position, [&](auto &r) {
+                return r->getResourceState() == ResourceState::Mineable;
+            });
+            if (closestMineral && closestMineral->getPosition().getDistance(position) < max(200.0, getGroundRange()))
+                return true;
+            return false;
+        };
+
         // Check if enemy is generally in our territory
         auto nearTerritory = [&]() {
-            if (isFlying())
+            if (isFlying() && !isTransport())
                 return false;
 
             if ((Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural() && Combat::holdAtChoke())
@@ -457,6 +466,7 @@ namespace McRave
         // Unit
         else
             threateningThisFrame = attackedWorkers
+            || nearResources()
             || nearTerritory()
             || nearFragileBuilding()
             || nearBuildPosition()

@@ -32,6 +32,8 @@ namespace McRave
             tilePosition = newResource->getTilePosition();
         }
 
+        bool safe{ false };
+
         void updateThreatened();
         void updateWorkerCap();
         void updatePocketStatus();

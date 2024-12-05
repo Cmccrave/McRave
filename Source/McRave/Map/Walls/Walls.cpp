@@ -288,22 +288,8 @@ namespace McRave::Walls {
                         - Spy::enemyProxy();
                 }
 
-                // Unknown + NoExpand + NoTech
-                if (noExpandOrTech) {
-                    return (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(4, 15))
-                        + (Util::getTime() > Time(4, 45))
-                        + (Util::getTime() > Time(5, 15));
-                }
-
-                // Unknown + Expand + NoTech
-                if (noTech && Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown") {
-                    return (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(4, 30))
-                        + (Util::getTime() > Time(7, 00))
-                        + (Util::getTime() > Time(7, 30))
-                        - Spy::enemyProxy();
-                }
+                if (Util::getTime() < Time(6, 00))
+                    return (Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) / 2) + (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) / 2);
             }
 
             // FFE transitions
@@ -333,7 +319,7 @@ namespace McRave::Walls {
             return 0;
         }
 
-        int ZvP_Defenses(const BWEB::Wall& wall) 
+        int ZvP_Defenses(const BWEB::Wall& wall)
         {
             // Determine how much we have traded
             auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot)
@@ -412,9 +398,9 @@ namespace McRave::Walls {
             // RaxFact
             if (Spy::getEnemyBuild() == T_RaxFact) {
                 if (Spy::getEnemyTransition() == T_2FactVulture || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
-                    return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45));
+                    return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(3, 45));
                 if (Spy::enemyWalled())
-                    return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45));
+                    return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(3, 45));
                 if (Spy::getEnemyOpener() == T_8Rax)
                     return (Util::getTime() > Time(4, 30));
             }
@@ -425,11 +411,11 @@ namespace McRave::Walls {
 
             // Enemy not expanding, probably something scary coming
             if (!Spy::enemyFastExpand() && !Spy::enemyRush())
-                return (Util::getTime() > Time(3, 45))
+                return (Util::getTime() > Time(3, 15))
                 + (Util::getTime() > Time(4, 30))
                 + (Util::getTime() > Time(5, 00));
 
-            return (Util::getTime() > Time(3, 25));
+            return (Util::getTime() > Time(3, 15));
         }
 
         int ZvT_Transition(const BWEB::Wall& wall)
@@ -444,7 +430,7 @@ namespace McRave::Walls {
             auto noExpandOrTech = noExpand && noTech;
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto firstHatchNeeded = !threeHatch || BuildOrder::getCurrentOpener() == Z_12Hatch;
- 
+
             if (Spy::getEnemyTransition() == U_WorkerRush) {
                 return 0;
             }
@@ -495,6 +481,11 @@ namespace McRave::Walls {
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto expected = max(ZvT_Opener(wall), ZvT_Transition(wall));
             auto reduction = (unitsKilled / 8) + buildingsKilled;
+
+            // 3h builds make roughly half as many
+            if (threeHatch && expected > 1 && Spy::getEnemyBuild() != P_FFE) {
+                expected = int(floor(double(expected) / 2.0));
+            }
 
             // Non natural walls are limited to 1 total
             if (!wall.getStation()->isNatural() && expected > 0) {
