@@ -362,7 +362,7 @@ namespace McRave::Combat::Clusters {
 
     bool canDecimate(UnitInfo& unit, UnitInfo& target, int cnt)
     {
-        if (target.isHidden())
+        if (target.isHidden() || target.movedFlag)
             return false;
 
         // Create an offset that increases over time to prevent low muta counts engaging large numbers
@@ -404,7 +404,7 @@ namespace McRave::Combat::Clusters {
 
             auto &enemy = *e.lock();
             if (enemy.canAttackAir() && !enemy.isStale()) {
-                if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 160.0) {
+                if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 160.0 || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 160.0) {
                     if (enemy.getType().isBuilding())
                         countDefensesInRange += 0.5;
                     else

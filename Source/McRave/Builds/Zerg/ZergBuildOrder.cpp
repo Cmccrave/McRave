@@ -234,15 +234,15 @@ namespace McRave::BuildOrder::Zerg {
                         hatchPerBase = 3.0;
                 }
 
-                // ZvT: Get 3 gas bases first
+                // ZvT: Get 4 gas bases first
                 if (Players::ZvT()) {
                     if (int(Stations::getStations(PlayerState::Self).size()) >= 4)
-                        hatchPerBase = 2.25;
+                        hatchPerBase = 3.0;
                 }
 
                 // Check if we are maxed on production
                 auto desiredProduction = int(round(hatchPerBase * double(Stations::getStations(PlayerState::Self).size())));
-                productionSat = hatchCount() >= min(6, desiredProduction);
+                productionSat = hatchCount() >= min(7, desiredProduction);
 
                 // Queue production if we need it
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
@@ -250,9 +250,10 @@ namespace McRave::BuildOrder::Zerg {
                 const auto waitForMinerals = 300 + (150 * incompleteHatch);
 
                 const auto resourceSat = (availableMinerals >= waitForMinerals && Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && !productionSat && vis(Zerg_Larva) <= 3);
+                const auto excessResources = (availableMinerals >= waitForMinerals * 2 && !productionSat && vis(Zerg_Larva) <= 3);
                 const auto larvaBankrupt = (availableMinerals >= waitForMinerals && (vis(Zerg_Larva) + (3 * incompleteHatch)) < min(3, hatchCount()) && !productionSat);
 
-                rampDesired = resourceSat || larvaBankrupt;
+                rampDesired = resourceSat || excessResources || larvaBankrupt;
                 buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + rampDesired);
             }
 

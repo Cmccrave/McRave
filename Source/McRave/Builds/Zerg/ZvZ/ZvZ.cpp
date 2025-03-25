@@ -137,7 +137,7 @@ namespace McRave::BuildOrder::Zerg {
         // Reactions
         if (Spy::enemyTurtle() && Spy::getEnemyTransition() != Z_2HatchHydra) {
             wantNatural = true;
-            zergUnitPump[Zerg_Zergling] = false;
+            zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling);
             zergUnitPump[Zerg_Drone] = vis(Zerg_Drone) < 16;
         }
 

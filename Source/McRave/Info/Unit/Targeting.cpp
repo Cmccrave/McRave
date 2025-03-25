@@ -16,7 +16,7 @@ namespace McRave::Targets {
         int earliest;
 
         enum class Priority {
-            Ignore, Trivial, Minor, Normal, Major, Critical
+            None, Ignore, Trivial, Minor, Normal, Major, Critical
         };
 
         bool enemyHasGround;
@@ -58,6 +58,21 @@ namespace McRave::Targets {
             return int(target.getUnitsTargetingThis().size()) <= 4 || unit.isLightAir();
         }
 
+        // P
+        Priority dtPriority(UnitInfo& unit, UnitInfo& target)
+        {
+            if (target.getSpeed() > unit.getSpeed() && !unit.isWithinRange(target) && !target.isThreatening())
+                return Priority::Ignore;
+
+            // Add bonus for a DT to kill important counters
+            if (unit.isWithinReach(target) && !Actions::overlapsDetection(target.unit(), target.getPosition(), PlayerState::Enemy)
+                && (target.getType().isWorker() || target.isSiegeTank() || target.getType().isDetector() || target.getType() == Protoss_Observatory || target.getType() == Protoss_Robotics_Facility ))
+                return Priority::Critical;
+
+            return Priority::Normal;
+        }
+
+        // Z
         Priority zerglingPriority(UnitInfo& unit, UnitInfo& target)
         {
             if (Util::getTime() < Time(5, 00)) {
@@ -125,6 +140,9 @@ namespace McRave::Targets {
                 return Priority::Major;
             }
 
+            if (unit.isWithinRange(target) && !target.getType().isBuilding())
+                return Priority::Major;
+
             return Priority::Normal;
         }
 
@@ -147,6 +165,8 @@ namespace McRave::Targets {
                 return Priority::Ignore;
             return Priority::Normal;
         }
+
+
 
 
 
@@ -203,7 +223,9 @@ namespace McRave::Targets {
                 }
 
                 // Generic trivial
-                if (!targetMatters)
+                if (!targetMatters
+                    || (target.getType() == Zerg_Egg)
+                    || (target.getType() == Zerg_Larva))
                     return Priority::Trivial;
 
                 // Proxy worker
@@ -249,7 +271,7 @@ namespace McRave::Targets {
                     || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target)))           // Don't target flyers that we can't reach)
                     return Priority::Ignore;
 
-                // Kill workers and cannons if we're in the same area in enemy territory
+                // Handle workers and cannons if we're in the same area in enemy territory
                 if (unit.isMelee() && unit.isWithinReach(target) && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) && Terrain::inArea(mapBWEM.GetArea(target.getWalkPosition()), unit.getPosition())) {
                     if (target.getType().isWorker())
                         return Priority::Major;
@@ -257,7 +279,7 @@ namespace McRave::Targets {
                         return Priority::Critical;
                 }
 
-                // Kill photon cannons when in range
+                // Handle photon cannons when in range
                 if (!unit.isMelee() && unit.isWithinRange(target)) {
                     if (target.getType() == Protoss_Photon_Cannon && target.hasAttackedRecently())
                         return Priority::Critical;
@@ -265,20 +287,22 @@ namespace McRave::Targets {
                         return Priority::Major;
                 }
 
-                // Zergling
-                if (unit.getType() == Zerg_Zergling) {
-                    return zerglingPriority(unit, target);
+                // Handle turrets and repairs
+                if (target.getType() == Terran_Missile_Turret) {
+                    if (target.hasRepairedRecently())
+                        return Priority::Trivial;
                 }
 
-                // Mutalisk
-                if (unit.getType() == Zerg_Mutalisk) {
-                    return mutaliskPriority(unit, target);
+                // Handle detector sniping
+                if (target.getType().isDetector() || target.getType() == Terran_Comsat_Station) {
+                    if (unit.isWithinRange(target) && !target.isHidden() && (vis(Zerg_Lurker) > 0 || vis(Protoss_Dark_Templar) > 0))
+                        return Priority::Major;
                 }
 
-                // Scourge
-                if (unit.getType() == Zerg_Scourge) {
-                    return scourgePriority(unit, target);
-                }
+                // Z
+                if (unit.getType() == Zerg_Zergling)    return zerglingPriority(unit, target);
+                if (unit.getType() == Zerg_Mutalisk)    return mutaliskPriority(unit, target);
+                if (unit.getType() == Zerg_Scourge)     return scourgePriority(unit, target);
 
                 // Defiler
                 if (unit.getType() == Zerg_Defiler) {
@@ -302,8 +326,7 @@ namespace McRave::Targets {
 
                 // Dark Templar
                 if (unit.getType() == Protoss_Dark_Templar) {
-                    if (target.getType() == Terran_Vulture && !unit.isWithinRange(target))                                                                                  // Avoid vultures if not in range already
-                        return Priority::Ignore;
+                    return dtPriority(unit, target);
                 }
 
                 // Ghost
@@ -348,31 +371,6 @@ namespace McRave::Targets {
                 reach = range + (unit.getSpeed() * 16.0) + double(unit.getType().width() / 2) + 64.0;
             }
 
-            const auto bonusScore = [&]() {
-
-                // Add bonus for Observers that are vulnerable
-                if (target.getType() == Protoss_Observer && !target.isHidden())
-                    return 20.0;
-
-                // Add penalty for a Terran building that's being constructed
-                if (target.getType().isBuilding() && target.unit()->exists() && target.getType().getRace() == Races::Terran && !target.isCompleted() && !target.isThreatening() && !target.unit()->getBuildUnit())
-                    return 0.1;
-
-                // Add penalty for a Terran building that has been repaired recently
-                if (target.getType().isBuilding() && target.hasRepairedRecently())
-                    return 0.1;
-
-                // Add bonus for a building warping in
-                if (Util::getTime() > Time(8, 00) && target.unit()->exists() && !target.unit()->isCompleted() && (target.getType() == Protoss_Photon_Cannon || (target.getType() == Terran_Missile_Turret && !target.unit()->getBuildUnit())))
-                    return 25.0;
-
-                // Add bonus for a DT to kill important counters
-                if (unit.getType() == Protoss_Dark_Templar && unit.isWithinReach(target) && !Actions::overlapsDetection(target.unit(), target.getPosition(), PlayerState::Enemy)
-                    && (target.getType().isWorker() || target.isSiegeTank() || target.getType().isDetector() || target.getType() == Protoss_Observatory || target.getType() == Protoss_Robotics_Facility))
-                    return 20.0;
-                return 1.0;
-            };
-
             const auto healthScore = [&]() {
                 if ((range > 32.0 || unit.isWithinRange(target)) && target.isCompleted())
                     return 1.0 + (0.1 * (1.0 - target.getPercentTotal()));
@@ -395,10 +393,6 @@ namespace McRave::Targets {
             };
 
             const auto priorityScore = [&]() {
-                //if (!target.getType().isWorker() && !target.isThreatening() && ((!target.canAttackAir() && unit.isFlying()) || (!target.canAttackGround() && !unit.isFlying())))
-                //    return target.getPriority() / 4.0;
-                //if (target.getType().isWorker() && !Spy::enemyProxy() && !Spy::enemyPossibleProxy() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()))
-                //    return target.getPriority() / 10.0;
                 return target.getPriority() / maxPriority;
             };
 
@@ -419,7 +413,7 @@ namespace McRave::Targets {
                 return 1.0;
             };
 
-            const auto targetScore = healthScore() * focusScore() * priorityScore() * bonusScore();
+            const auto targetScore = healthScore() * focusScore() * priorityScore();
 
             // Detector targeting (distance to nearest ally added)
             if ((target.isBurrowed() || target.cloaked) && ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == Terran_Comsat_Station)) {

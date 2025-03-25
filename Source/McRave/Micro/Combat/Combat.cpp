@@ -151,7 +151,7 @@ namespace McRave::Combat {
             if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure()) {
 
                 const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return (Util::getTime() < Time(8, 00) && Units::inBoundUnit(*u, 15)) || u->isThreatening();
+                    return (Util::getTime() < Time(8, 00) && Units::inBoundUnit(*u, 15) && !u->getType() == Terran_Vulture) || u->isThreatening();
                 });
 
                 if (closest) {

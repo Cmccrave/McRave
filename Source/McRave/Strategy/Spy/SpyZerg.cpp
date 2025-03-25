@@ -58,7 +58,7 @@ namespace McRave::Spy::Zerg {
         {
             // Hatch timing
             // 9Hatch
-            if (Players::getCompleteCount(PlayerState::Enemy, Zerg_Hatchery) > 1) {
+            if (Players::getCompleteCount(PlayerState::Enemy, Zerg_Hatchery) > 0) {
                 auto cnt = 1 + (Terrain::getEnemyMain() && Stations::isBaseExplored(Terrain::getEnemyMain()));
                 if (completesBy(cnt, Zerg_Hatchery, Time(2, 35)))
                     theSpy.opener.name = Z_9Hatch;
@@ -74,7 +74,7 @@ namespace McRave::Spy::Zerg {
 
             // Pool timing
             // 4Pool
-            else if (Players::getCompleteCount(PlayerState::Enemy, Zerg_Spawning_Pool) == 0) {
+            else if (Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) == 0 && Players::getCompleteCount(PlayerState::Enemy, Zerg_Spawning_Pool) == 0) {
                 if (completesBy(1, Zerg_Spawning_Pool, Time(1, 40)))
                     theSpy.opener.name = Z_4Pool;
 
@@ -98,44 +98,46 @@ namespace McRave::Spy::Zerg {
 
             // Ling timings
             // 4Pool
-            else if (arrivesBy(1, Zerg_Zergling, Time(2, 40))
-                || arrivesBy(8, Zerg_Zergling, Time(3, 00))
-                || completesBy(1, Zerg_Zergling, Time(2, 05)))
-                theSpy.opener.name = Z_4Pool;
+            else if (Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > 0) {
+                if (arrivesBy(1, Zerg_Zergling, Time(2, 40))
+                    || arrivesBy(8, Zerg_Zergling, Time(3, 00))
+                    || completesBy(1, Zerg_Zergling, Time(2, 05)))
+                    theSpy.opener.name = Z_4Pool;
 
-            // 7Pool
-            else if (arrivesBy(1, Zerg_Zergling, Time(2, 45))
-                || completesBy(1, Zerg_Zergling, Time(2, 15)))
-                theSpy.opener.name = Z_7Pool;
+                // 7Pool
+                else if (arrivesBy(1, Zerg_Zergling, Time(2, 45))
+                    || completesBy(1, Zerg_Zergling, Time(2, 15)))
+                    theSpy.opener.name = Z_7Pool;
 
-            // 9Pool
-            else if (arrivesBy(1, Zerg_Zergling, Time(2, 55))
-                || arrivesBy(8, Zerg_Zergling, Time(3, 15))
-                || completesBy(1, Zerg_Zergling, Time(2, 25))
-                || completesBy(8, Zerg_Zergling, Time(3, 00))
-                || completesBy(10, Zerg_Zergling, Time(3, 20))
-                || completesBy(12, Zerg_Zergling, Time(3, 30))
-                || completesBy(14, Zerg_Zergling, Time(3, 40))
-                || arrivesBy(16, Zerg_Zergling, Time(4, 20)))
-                theSpy.opener.name = Z_9Pool;
+                // 9Pool
+                else if (arrivesBy(1, Zerg_Zergling, Time(2, 55))
+                    || arrivesBy(8, Zerg_Zergling, Time(3, 15))
+                    || completesBy(1, Zerg_Zergling, Time(2, 25))
+                    || completesBy(8, Zerg_Zergling, Time(3, 00))
+                    || completesBy(10, Zerg_Zergling, Time(3, 20))
+                    || completesBy(12, Zerg_Zergling, Time(3, 30))
+                    || completesBy(14, Zerg_Zergling, Time(3, 40))
+                    || arrivesBy(16, Zerg_Zergling, Time(4, 20)))
+                    theSpy.opener.name = Z_9Pool;
 
-            // Overpool
-            else if (arrivesBy(1, Zerg_Zergling, Time(3, 05))
-                || arrivesBy(8, Zerg_Zergling, Time(3, 20))
-                || completesBy(1, Zerg_Zergling, Time(2, 40)))
-                theSpy.opener.name = Z_Overpool;
+                // Overpool
+                else if (arrivesBy(1, Zerg_Zergling, Time(3, 05))
+                    || arrivesBy(8, Zerg_Zergling, Time(3, 20))
+                    || completesBy(1, Zerg_Zergling, Time(2, 40)))
+                    theSpy.opener.name = Z_Overpool;
 
-            // 12Pool
-            else if (arrivesBy(1, Zerg_Zergling, Time(3, 30))
-                || arrivesBy(8, Zerg_Zergling, Time(3, 35))
-                || completesBy(1, Zerg_Zergling, Time(3, 00)))
-                theSpy.opener.name = Z_12Pool;
+                // 12Pool
+                else if (arrivesBy(1, Zerg_Zergling, Time(3, 30))
+                    || arrivesBy(8, Zerg_Zergling, Time(3, 35))
+                    || completesBy(1, Zerg_Zergling, Time(3, 00)))
+                    theSpy.opener.name = Z_12Pool;
 
-            // 12Hatch
-            else if (completesBy(6, Zerg_Zergling, Time(3, 15))
-                || arrivesBy(6, Zerg_Zergling, Time(4, 00))
-                || arrivesBy(10, Zerg_Zergling, Time(4, 20)))
-                theSpy.opener.name = Z_12Hatch;
+                // 12Hatch
+                else if (completesBy(6, Zerg_Zergling, Time(3, 15))
+                    || arrivesBy(6, Zerg_Zergling, Time(4, 00))
+                    || arrivesBy(10, Zerg_Zergling, Time(4, 20)))
+                    theSpy.opener.name = Z_12Hatch;
+            }
 
         }
 

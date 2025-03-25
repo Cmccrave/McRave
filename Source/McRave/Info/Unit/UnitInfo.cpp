@@ -182,7 +182,7 @@ namespace McRave
                 || unit()->isStartingAttack())
                 lastAttackFrame         = Broodwar->getFrameCount();
 
-            // Enemy attack frame (check weapon cooldown instead of animation
+            // Enemy attack frame (check weapon cooldown instead of animation)
             if (player->isEnemy(Broodwar->self())) {
                 if ((getType() != Protoss_Reaver && canAttackGround() && unit()->getGroundWeaponCooldown() >= type.groundWeapon().damageCooldown() - 1)
                     || (getType() != Protoss_Reaver && canAttackAir() && unit()->getAirWeaponCooldown() >= type.airWeapon().damageCooldown() - 1))
