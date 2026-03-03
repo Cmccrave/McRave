@@ -48,10 +48,10 @@ namespace McRave::Util {
             float f;
             uint32_t i;
         } u;
-        u.f = x;
-        u.i = 0x7EF311C3 - u.i;
+        u.f     = x;
+        u.i     = 0x7EF311C3 - u.i;
         float r = u.f;
-        r = r * (2.0f - x * r);
+        r       = r * (2.0f - x * r);
         return r;
     }
 

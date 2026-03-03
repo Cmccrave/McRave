@@ -195,6 +195,8 @@ namespace McRave::Command {
                     return false;
                 if (unit.isMelee() && unit.isWithinReach(target) && unit.getLocalState() == LocalState::Attack)
                     return true;
+                if (unit.isLightAir() && !unit.isWithinAngle(target) && unit.getPosition().getDistance(target.getPosition()) > 48.0)
+                    return false;
                 return unit.isWithinRange(target) && unit.getLocalState() == LocalState::Attack;
             }
 
@@ -273,9 +275,8 @@ namespace McRave::Command {
         auto sim        = unit.hasSimTarget() ? unit.getSimTarget().lock()->getPosition() : Positions::Invalid;
         auto current    = unit.isFlying() ? Grids::getAirThreat(unit.getPosition(), PlayerState::Enemy) : Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy);
         auto harassing  = unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Combat::getHarassPosition() && unit.attemptingHarass() && unit.getLocalState() == LocalState::None;
-        auto regrouping = unit.attemptingRegroup();
 
-        const auto safeMovement = regrouping || (unit.getRole() == Role::Worker && !atHome);
+        const auto safeMovement = (unit.getRole() == Role::Worker && !atHome);
 
         const auto scoreFunction = [&](WalkPosition w) {
             const auto p = Position(w) + Position(4, 4);

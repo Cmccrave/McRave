@@ -732,7 +732,7 @@ namespace McRave::BuildOrder::Zerg {
                 // Higher muta count, hive tech is just defilers
                 if (unitOrder == mutalingdefiler) {
                     priorityOrder = {
-                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 16}, {Zerg_Defiler, 1}, {Zerg_Drone, 45}, {Zerg_Mutalisk, 16}, {Zerg_Defiler, 2}, {Zerg_Drone, 60}, {Zerg_Mutalisk, 48},
+                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 16}, {Zerg_Defiler, 1}, {Zerg_Drone, 45}, {Zerg_Mutalisk, 24}, {Zerg_Defiler, 2}, {Zerg_Drone, 60}, {Zerg_Mutalisk, 48},
                     };
                 }
 

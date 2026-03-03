@@ -14,7 +14,6 @@ namespace BWEB {
 
         struct Node {
             TilePosition tile{-1, -1};
-            TilePosition dir;
             int f = 0;
             bool operator>(const Node &rhs) const { return f > rhs.f; }
         };

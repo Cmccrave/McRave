@@ -692,13 +692,7 @@ namespace McRave {
         }
 
         // Always important
-        auto lagFrames = Broodwar->getLatencyFrames();
-
-        // Broodwar->drawTextMap(getPosition(), "%d", cooldown);
-        // Broodwar->drawTextMap(getPosition() + Position(0, 16), "%d", turnFrames);
-        // Broodwar->drawTextMap(getPosition() + Position(0, 32), "%d", arrivalFrames);
-        // Broodwar->drawTextMap(getPosition() + Position(0, 48), "%d", celcelFrames);
-
+        auto lagFrames           = Broodwar->getRemainingLatencyFrames();
         auto anticipatedCooldown = turnFrames + arrivalFrames + celcelFrames + lagFrames;
         auto cooldownReady       = cooldown <= anticipatedCooldown;
         return cooldownReady;
@@ -756,6 +750,9 @@ namespace McRave {
         auto dps    = otherUnit.isFlying() ? Math::calcAirDPS(*this) : Math::calcGroundDPS(*this);
         auto weapon = otherUnit.isFlying() ? type.airWeapon() : type.groundWeapon();
         auto size   = otherUnit.getType().size();
+
+        if (isStimmed())
+            dps *= 2.0;
 
         if (type == DamageTypes::Explosive) {
             if (size == UnitSizeTypes::Small)

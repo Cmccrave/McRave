@@ -2,28 +2,21 @@
 Language: Cpp
 BasedOnStyle: LLVM
 
-# --- BRACKET & LINE BREAKS ---
-# Stroustrup puts opening brackets on the same line.
-BreakBeforeBraces: Stroustrup
+AccessModifierOffset: -4
+AlignConsecutiveAssignments: true
 AllowShortFunctionsOnASingleLine: All
+AlwaysBreakTemplateDeclarations: false
+BinPackParameters: true
+BreakBeforeBraces: Stroustrup
 ColumnLimit: 200
-
-PenaltyBreakBeforeFirstCallParameter: 1000
-PenaltyBreakAssignment: 1000
-
-# --- INDENTATION ---
+IndentCaseLabels: true
 IndentWidth: 4
+NamespaceIndentation: All
+PenaltyBreakAssignment: 1000
+PenaltyBreakBeforeFirstCallParameter: 1000
+SpaceBeforeParens: ControlStatements
 TabWidth: 4
 UseTab: Never
-NamespaceIndentation: All
-IndentCaseLabels: true
-# Ensures public/private are flush with the class keyword
-AccessModifierOffset: -4
-
-# --- SPACING ---
-# Standard spacing: if (condition) vs function()
-SpaceBeforeParens: ControlStatements
-AlignConsecutiveAssignments: true
 
 # --- HEADER SORTING ---
 SortIncludes: true
