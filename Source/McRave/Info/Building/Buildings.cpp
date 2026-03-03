@@ -1,5 +1,20 @@
-#include "Main/McRave.h"
+#include "Buildings.h"
+
+#include "BWEB.h"
+#include "Builds/All/BuildOrder.h"
+#include "Info/Unit/UnitInfo.h"
+#include "Info/Unit/Units.h"
+#include "Macro/Planning/Pylons.h"
+#include "Macro/Producing/Producing.h"
 #include "Main/Events.h"
+#include "Main/Helpers.h"
+#include "Main/Time.h"
+#include "Main/Util.h"
+#include "Map/Stations.h"
+#include "Map/Terrain.h"
+#include "Map/Walls/Walls.h"
+#include "Strategy/Spy/Spy.h"
+#include "Strategy/Zones/Zones.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -7,35 +22,36 @@ using namespace UnitTypes;
 
 namespace McRave::Buildings {
     namespace {
-        map <UnitType, int> morphedThisFrame;
+        map<UnitType, int> morphedThisFrame;
         set<Position> larvaPositions;
         set<TilePosition> unpoweredPositions;
 
-        bool willDieToAttacks(UnitInfo& building) {
+        bool willDieToAttacks(UnitInfo &building)
+        {
             auto possibleDamage = 0;
             for (auto &a : building.getUnitsTargetingThis()) {
                 if (auto attacker = a.lock()) {
                     if (attacker->isWithinRange(building))
-                        possibleDamage+= int(attacker->getGroundDamage());
+                        possibleDamage += int(attacker->getGroundDamage());
                 }
             }
 
             return possibleDamage > building.getHealth() + building.getShields();
         };
 
-        void updateInformation(UnitInfo& building)
+        void updateInformation(UnitInfo &building)
         {
             // If a building is unpowered, get a pylon placement ready
             if (building.getType().requiresPsi() && !Pylons::hasPowerSoon(building.getTilePosition(), building.getType()))
                 unpoweredPositions.insert(building.getTilePosition());
 
             if (Util::getTime() > Time(6, 00)) {
-                auto range = int(max({ building.getGroundRange(), building.getAirRange(), double(building.getType().sightRange()) }));
+                auto range = int(max({building.getGroundRange(), building.getAirRange(), double(building.getType().sightRange())}));
                 Zones::addZone(building.getPosition(), ZoneType::Defend, 1, range);
             }
         }
 
-        void updateLarvaEncroachment(UnitInfo& building)
+        void updateLarvaEncroachment(UnitInfo &building)
         {
             // Updates a list of larva positions that can block planning
             if (building.getType() == Zerg_Larva && !Producing::larvaTrickRequired(building)) {
@@ -46,7 +62,7 @@ namespace McRave::Buildings {
                 larvaPositions.insert(building.getPosition());
         }
 
-        void cancel(UnitInfo& building)
+        void cancel(UnitInfo &building)
         {
             auto isStation = BWEB::Stations::getClosestStation(building.getTilePosition())->getBase()->Location() == building.getTilePosition();
 
@@ -73,13 +89,13 @@ namespace McRave::Buildings {
                 building.unit()->cancelConstruction();
             }
 
-            auto mainHatch = building.getType() == Zerg_Hatchery && isStation && Terrain::getMyMain() && building.getTilePosition() == Terrain::getMyMain()->getBase()->Location();
+            auto mainHatch    = building.getType() == Zerg_Hatchery && isStation && Terrain::getMyMain() && building.getTilePosition() == Terrain::getMyMain()->getBase()->Location();
             auto naturalHatch = building.getType() == Zerg_Hatchery && isStation && Terrain::getMyNatural() && building.getTilePosition() == Terrain::getMyNatural()->getBase()->Location();
-            auto thirdHatch = !mainHatch && !naturalHatch && isStation;
+            auto thirdHatch   = !mainHatch && !naturalHatch && isStation;
 
             auto cancelTiming = (naturalHatch && !BuildOrder::takeNatural() && Util::getTime() < Time(4, 00)) || (thirdHatch && !BuildOrder::takeThird() && Util::getTime() < Time(4, 00));
-            auto cancelLow = building.getHealth() < 50;
-            auto cancelLate = building.frameCompletesWhen() - Broodwar->getFrameCount() < 50;
+            auto cancelLow    = building.getHealth() < 50;
+            auto cancelLate   = building.frameCompletesWhen() - Broodwar->getFrameCount() < 50;
 
             // Cancelling natural hatchery if we're being horror 2gated
             if (naturalHatch && cancelTiming && cancelLow && Spy::getEnemyOpener() == P_Horror_9_9) {
@@ -102,24 +118,23 @@ namespace McRave::Buildings {
 
             // Cancelling colonies we don't need now
             if (building.getType() == Zerg_Creep_Colony) {
-
             }
         }
 
-        void morph(UnitInfo& building)
+        void morph(UnitInfo &building)
         {
-            auto needLarvaSpending = vis(Zerg_Larva) > 3 && Broodwar->self()->supplyUsed() < Broodwar->self()->supplyTotal() && BuildOrder::getUnitReservation(Zerg_Mutalisk) == 0 && Util::getTime() < Time(4, 30) && com(Zerg_Sunken_Colony) > 2;
-            auto morphType = UnitTypes::None;
-            auto station = BWEB::Stations::getClosestStation(building.getTilePosition());
-            auto wall = BWEB::Walls::getClosestWall(building.getPosition());
+            auto needLarvaSpending = vis(Zerg_Larva) > 3 && Broodwar->self()->supplyUsed() < Broodwar->self()->supplyTotal() && BuildOrder::getUnitReservation(Zerg_Mutalisk) == 0 &&
+                                     Util::getTime() < Time(4, 30) && com(Zerg_Sunken_Colony) > 2;
+            auto morphType   = UnitTypes::None;
+            auto station     = BWEB::Stations::getClosestStation(building.getTilePosition());
+            auto wall        = BWEB::Walls::getClosestWall(building.getPosition());
             auto plannedType = Planning::whatPlannedHere(building.getTilePosition());
 
             // Lair morphing
-            if (building.getType() == Zerg_Hatchery && station && station->isMain() && !willDieToAttacks(building) && BuildOrder::buildCount(Zerg_Lair) > vis(Zerg_Lair) + vis(Zerg_Hive) + morphedThisFrame[Zerg_Lair] + morphedThisFrame[Zerg_Hive]) {
-                if ((Util::getTime() >= Time(2, 31) && BuildOrder::getCurrentTransition().find("1Hatch") != string::npos)
-                    || (Util::getTime() >= Time(3, 02) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos)
-                    || Util::getTime() >= Time(3, 31)
-                    || Players::ZvZ())
+            if (building.getType() == Zerg_Hatchery && station && station->isMain() && !willDieToAttacks(building) &&
+                BuildOrder::buildCount(Zerg_Lair) > vis(Zerg_Lair) + vis(Zerg_Hive) + morphedThisFrame[Zerg_Lair] + morphedThisFrame[Zerg_Hive]) {
+                if ((Util::getTime() >= Time(2, 31) && BuildOrder::getCurrentTransition().find("1Hatch") != string::npos) ||
+                    (Util::getTime() >= Time(3, 02) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos) || Util::getTime() >= Time(3, 31) || Players::ZvZ())
                     morphType = Zerg_Lair;
             }
 
@@ -133,7 +148,7 @@ namespace McRave::Buildings {
 
             // Sunken / Spore morphing
             else if (building.getType() == Zerg_Creep_Colony && !willDieToAttacks(building) && !needLarvaSpending) {
-                auto wallDefense = wall && wall->getDefenses().find(building.getTilePosition()) != wall->getDefenses().end();
+                auto wallDefense    = wall && wall->getDefenses().find(building.getTilePosition()) != wall->getDefenses().end();
                 auto stationDefense = station && (station->getDefenses().find(building.getTilePosition()) != station->getDefenses().end() || building.getTilePosition() == station->getPocketDefense());
 
                 // If we planned already
@@ -157,9 +172,7 @@ namespace McRave::Buildings {
 
             // Look for the closest possible non worker enemy
             if (morphType == Zerg_Sunken_Colony && Spy::getEnemyBuild() != P_CannonRush && Spy::getEnemyTransition() != U_WorkerRush) {
-                auto closestThreat = Util::getClosestUnit(building.getPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return Units::inBoundUnit(*u);
-                });
+                auto closestThreat = Util::getClosestUnit(building.getPosition(), PlayerState::Enemy, [&](auto &u) { return Units::inBoundUnit(*u) && !u->getType().isWorker(); });
                 if (!closestThreat)
                     return;
             }
@@ -171,26 +184,39 @@ namespace McRave::Buildings {
             }
         }
 
-        void reBuild(UnitInfo& building)
+        void reBuild(UnitInfo &building)
         {
             // Terran building needs new scv
             if (building.getType().getRace() == Races::Terran && !building.unit()->isCompleted() && !building.unit()->getBuildUnit()) {
-                auto builder = Util::getClosestUnit(building.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u->getType().isWorker() && u->getBuildType() == None;
-                });
+                auto builder = Util::getClosestUnit(building.getPosition(), PlayerState::Self, [&](auto &u) { return u->getType().isWorker() && u->getBuildType() == None; });
 
                 if (builder)
                     builder->unit()->rightClick(building.unit());
             }
+
+            // Nydus networks need to build an exit
+            if (building.getType() == Zerg_Nydus_Canal) {
+                if (!building.unit()->getNydusExit()) {
+                    auto destinationHatch = Util::getFurthestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Hatchery; });
+                    if (destinationHatch) {
+                        auto closestStation = Stations::getClosestStationAir(destinationHatch->getPosition(), PlayerState::Self);
+                        if (closestStation) {
+                            for (auto &defense : closestStation->getDefenses()) {
+                                building.unit()->build(Zerg_Nydus_Canal, defense);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        void updateCommands(UnitInfo& building)
+        void updateCommands(UnitInfo &building)
         {
             morph(building);
             cancel(building);
             reBuild(building);
         }
-    }
+    } // namespace
 
     void onFrame()
     {
@@ -211,6 +237,6 @@ namespace McRave::Buildings {
         }
     }
 
-    set<TilePosition>& getUnpoweredPositions() { return unpoweredPositions; }
-    set<Position>& getLarvaPositions() { return larvaPositions; }
-}
+    set<TilePosition> &getUnpoweredPositions() { return unpoweredPositions; }
+    set<Position> &getLarvaPositions() { return larvaPositions; }
+} // namespace McRave::Buildings

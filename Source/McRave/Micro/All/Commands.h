@@ -1,5 +1,5 @@
 #pragma once
-#include <BWAPI.h>
+#include "Main/Common.h"
 
 namespace McRave::Command {
 
@@ -9,6 +9,7 @@ namespace McRave::Command {
     bool defend(UnitInfo&);
     bool kite(UnitInfo&);
     bool attack(UnitInfo&);
+    bool poke(UnitInfo&);
     bool explore(UnitInfo&);
     bool escort(UnitInfo&);
     bool special(UnitInfo&);

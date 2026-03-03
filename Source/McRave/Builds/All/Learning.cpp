@@ -1,7 +1,13 @@
-#include "Main/McRave.h"
-#include "BuildOrder.h"
+#include "Learning.h"
+
 #include <fstream>
 #include <iomanip>
+
+#include "BuildOrder.h"
+#include "Info/Player/Players.h"
+#include "Map/Terrain.h"
+#include "Map/Walls/Walls.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -87,7 +93,7 @@ namespace McRave::Learning {
 
         void getBestBuild()
         {
-            int totalWins = 0;
+            int totalWins  = 0;
             int totalLoses = 0;
             int totalGames = 0;
             auto enemyRace = Broodwar->enemy()->getRace();
@@ -101,7 +107,7 @@ namespace McRave::Learning {
                 stringstream sscopy;
                 sscopy << ss.str();
 
-                Build * currentBuild = nullptr;
+                Build *currentBuild = nullptr;
                 while (!sscopy.eof()) {
                     sscopy >> token;
 
@@ -112,26 +118,27 @@ namespace McRave::Learning {
                     }
 
                     // Build winrate
-                    auto itr = find_if(myBuilds.begin(), myBuilds.end(), [&](const auto& u) { return u.name == token; });
+                    auto itr = find_if(myBuilds.begin(), myBuilds.end(), [&](const auto &u) { return u.name == token; });
                     if (itr != myBuilds.end()) {
                         currentBuild = &*itr;
                         sscopy >> itr->w >> itr->l;
                     }
                     else if (currentBuild && currentBuild->getComponent(token))
                         sscopy >> currentBuild->getComponent(token)->w >> currentBuild->getComponent(token)->l;
-
                 }
             };
             auto randomness = max(1, 10 - totalGames);
 
-            const auto calculateUCB = [&](int w, int l, bool debug = false) {
-                auto UCB = (w + l) > 0 ? (double(w) / double(w + l)) + pow(2.0 * log((double)totalGames) / double(w + l), 0.1) : 2.0;
+            const auto calculateUCB = [&](std::string name, int w, int l, bool logCalc = false) {
+                auto UCB       = (w + l) > 0 ? (double(w) / double(w + l)) + pow(2.0 * log((double)totalGames) / double(w + l), 0.1) : 2.0;
                 auto randomVal = double(rand() % randomness);
-                if (debug) {
-                    Util::debug("UCB1: " + to_string(UCB));
-                    Util::debug("RND: " + to_string(randomVal));
+                auto finalVal  = (UCB * 25.0) + randomVal + 0.5;
+                if (logCalc) {
+                    Util::debug("[Learning]: %s Learning value: %.2f (%d - %d)", name.c_str(), finalVal, w, l);
+                    Util::debug("[Learning]: UCB1 value: %.2f", UCB);
+                    Util::debug("[Learning]: rand value: %.2f", randomVal);
                 }
-                return (UCB * 25.0) + randomVal + 0.5;
+                return finalVal;
             };
 
             // Attempt to read a file from the read directory first, then write directory
@@ -160,13 +167,12 @@ namespace McRave::Learning {
 
             // Calculate UCB1 values - sort by descending value
             for (auto &build : myBuilds) {
-                build.ucb1 = calculateUCB(build.w, build.l);
+                build.ucb1 = calculateUCB(build.name, build.w, build.l);
                 for (auto &opener : build.openers)
-                    opener.ucb1 = calculateUCB(opener.w, opener.l);
+                    opener.ucb1 = calculateUCB(opener.name, opener.w, opener.l);
                 for (auto &transition : build.transitions) {
-                    transition.ucb1 = calculateUCB(transition.w, transition.l, true);
-                    Util::debug("[Learning]: " + transition.name + " UCB1 value is " + to_string(transition.ucb1) + "(" + to_string(transition.w) + ", " + to_string(transition.l) + ")");
-                }                
+                    transition.ucb1 = calculateUCB(transition.name, transition.w, transition.l, true);                    
+                }
 
                 sort(build.openers.begin(), build.openers.end(), [&](const auto &left, const auto &right) { return left.ucb1 < right.ucb1; });
                 sort(build.transitions.begin(), build.transitions.end(), [&](const auto &left, const auto &right) { return left.ucb1 < right.ucb1; });
@@ -174,8 +180,8 @@ namespace McRave::Learning {
             sort(myBuilds.begin(), myBuilds.end(), [&](const auto &left, const auto &right) { return left.ucb1 < right.ucb1; });
 
             // Pick the best build that is allowed
-            auto bestBuildUCB1 = 0.0;
-            auto bestOpenerUCB1 = 0.0;
+            auto bestBuildUCB1      = 0.0;
+            auto bestOpenerUCB1     = 0.0;
             auto bestTransitionUCB1 = 0.0;
             for (auto &build : myBuilds) {
                 if (build.ucb1 < bestBuildUCB1)
@@ -183,8 +189,8 @@ namespace McRave::Learning {
                 if (!isComponentPossible(build.name))
                     continue;
 
-                bestBuildUCB1 = build.ucb1;
-                bestOpenerUCB1 = 0.0;
+                bestBuildUCB1      = build.ucb1;
+                bestOpenerUCB1     = 0.0;
                 bestTransitionUCB1 = 0.0;
 
                 for (auto &opener : build.openers) {
@@ -192,7 +198,7 @@ namespace McRave::Learning {
                         continue;
                     if (!isComponentPossible(opener.name))
                         continue;
-                    bestOpenerUCB1 = opener.ucb1;
+                    bestOpenerUCB1     = opener.ucb1;
                     bestTransitionUCB1 = 0.0;
 
                     for (auto &transition : build.transitions) {
@@ -247,49 +253,49 @@ namespace McRave::Learning {
 
             // PvT
             if (Players::PvT()) {
-                OneGateCore.setOpeners({ P_NZCore, P_ZCore });
-                OneGateCore.setTransitions({ P_DT });
+                OneGateCore.setOpeners({P_NZCore, P_ZCore});
+                OneGateCore.setTransitions({P_DT});
 
-                TwoGate.setOpeners({ P_10_12 });
-                TwoGate.setTransitions({ P_DT });
+                TwoGate.setOpeners({P_10_12});
+                TwoGate.setTransitions({P_DT});
 
-                TwoBase.setOpeners({ P_12Nexus, P_20Nexus, P_21Nexus });
-                TwoBase.setTransitions({ P_Obs, P_Carrier, P_ReaverCarrier });
+                TwoBase.setOpeners({P_12Nexus, P_20Nexus, P_21Nexus});
+                TwoBase.setTransitions({P_Obs, P_Carrier, P_ReaverCarrier});
 
-                myBuilds ={ OneGateCore, TwoGate, TwoBase };
+                myBuilds = {OneGateCore, TwoGate, TwoBase};
             }
 
             // PvP
             if (Players::PvP()) {
-                OneGateCore.setOpeners({ P_ZCore });
-                OneGateCore.setTransitions({ P_DT, P_Robo, P_4Gate, P_3Gate });
+                OneGateCore.setOpeners({P_ZCore});
+                OneGateCore.setTransitions({P_DT, P_Robo, P_4Gate, P_3Gate});
 
-                TwoGate.setOpeners({ P_10_12 });
-                TwoGate.setTransitions({ P_DT, P_Robo });
+                TwoGate.setOpeners({P_10_12});
+                TwoGate.setTransitions({P_DT, P_Robo});
 
-                myBuilds ={ OneGateCore, TwoGate };
+                myBuilds = {OneGateCore, TwoGate};
             }
 
             // PvZ
             if (Players::PvZ()) {
-                TwoGate.setOpeners({ P_10_12 });
-                TwoGate.setTransitions({ P_4Gate });
+                TwoGate.setOpeners({P_10_12});
+                TwoGate.setTransitions({P_4Gate});
 
-                FFE.setOpeners({ P_Forge });
-                FFE.setTransitions({ P_NeoBisu, P_2Stargate, P_5GateGoon });
+                FFE.setOpeners({P_Forge});
+                FFE.setTransitions({P_NeoBisu, P_2Stargate, P_5GateGoon});
 
-                myBuilds ={ TwoGate, FFE };
+                myBuilds = {TwoGate, FFE};
             }
 
             // PvR
             if (Players::PvR()) {
-                OneGateCore.setOpeners({ P_ZZCore });
-                OneGateCore.setTransitions({ P_Robo, P_3Gate });
+                OneGateCore.setOpeners({P_ZZCore});
+                OneGateCore.setTransitions({P_Robo, P_3Gate});
 
-                TwoGate.setOpeners({ P_10_12 });
-                TwoGate.setTransitions({ P_Robo });
+                TwoGate.setOpeners({P_10_12});
+                TwoGate.setTransitions({P_Robo});
 
-                myBuilds ={ OneGateCore, TwoGate };
+                myBuilds = {OneGateCore, TwoGate};
             }
         }
 
@@ -300,43 +306,43 @@ namespace McRave::Learning {
             Build PoolLair(Z_PoolLair);
 
             if (Players::ZvP()) {
-                PoolHatch.setOpeners({ Z_Overpool });
-                PoolHatch.setTransitions({ Z_2HatchMuta, Z_3HatchMuta, Z_3HatchHydra, Z_4HatchHydra, Z_6HatchHydra });
+                PoolHatch.setOpeners({Z_Overpool});
+                PoolHatch.setTransitions({Z_2HatchMuta, Z_3HatchMuta, Z_3HatchHydra, Z_4HatchHydra, Z_6HatchHydra});
 
-                HatchPool.setOpeners({ /*Z_10Hatch,*/ Z_12Hatch });
-                HatchPool.setTransitions({ Z_2HatchMuta, Z_3HatchMuta, Z_3HatchHydra, Z_4HatchHydra, Z_6HatchHydra });
+                HatchPool.setOpeners({/*Z_10Hatch,*/ Z_12Hatch});
+                HatchPool.setTransitions({Z_2HatchMuta, Z_3HatchMuta, Z_3HatchHydra, Z_4HatchHydra, Z_6HatchHydra});
 
-                myBuilds ={ PoolHatch, HatchPool };
+                myBuilds = {PoolHatch, HatchPool};
             }
 
             if (Players::ZvT()) {
-                PoolHatch.setOpeners({ Z_Overpool, Z_12Pool });
-                PoolHatch.setTransitions({ Z_2HatchMuta, Z_3HatchMuta });
+                PoolHatch.setOpeners({Z_Overpool, Z_12Pool});
+                PoolHatch.setTransitions({Z_2HatchMuta, Z_3HatchMuta});
 
-                HatchPool.setOpeners({ Z_12Hatch });
-                HatchPool.setTransitions({ Z_2HatchMuta, Z_3HatchMuta });
+                HatchPool.setOpeners({Z_12Hatch});
+                HatchPool.setTransitions({Z_2HatchMuta, Z_3HatchMuta});
 
-                PoolLair.setOpeners({ Z_4Pool });
-                PoolLair.setTransitions({ Z_1HatchLurker });
+                PoolLair.setOpeners({Z_4Pool});
+                PoolLair.setTransitions({Z_1HatchLurker});
 
-                myBuilds ={ PoolHatch, HatchPool/*, PoolLair*/ };
+                myBuilds = {PoolHatch, HatchPool /*, PoolLair*/};
             }
 
             if (Players::ZvZ()) {
-                PoolHatch.setOpeners({ Z_12Pool });
-                PoolHatch.setTransitions({ Z_2HatchMuta/*, Z_2HatchHydra*/ });
+                PoolHatch.setOpeners({Z_12Pool});
+                PoolHatch.setTransitions({Z_2HatchMuta /*, Z_2HatchHydra*/});
 
-                PoolLair.setOpeners({ Z_9Pool });
-                PoolLair.setTransitions({ Z_1HatchMuta });
+                PoolLair.setOpeners({Z_9Pool});
+                PoolLair.setTransitions({Z_1HatchMuta});
 
-                myBuilds ={ PoolHatch, PoolLair };
+                myBuilds = {PoolHatch, PoolLair};
             }
 
             if (Players::ZvR()) {
-                PoolHatch.setOpeners({ Z_Overpool });
-                PoolHatch.setTransitions({ Z_2HatchMuta });
+                PoolHatch.setOpeners({Z_Overpool});
+                PoolHatch.setTransitions({Z_2HatchMuta});
 
-                myBuilds ={ PoolHatch };
+                myBuilds = {PoolHatch};
             }
         }
 
@@ -346,24 +352,24 @@ namespace McRave::Learning {
             Build RaxFact(T_RaxFact);
 
             if (Players::TvP()) {
-                RaxFact.setOpeners({ T_1FactFE, T_2FactFE });
-                RaxFact.setTransitions({ T_5Fact });
+                RaxFact.setOpeners({T_1FactFE, T_2FactFE});
+                RaxFact.setTransitions({T_5Fact});
 
-                myBuilds ={ RaxFact };
+                myBuilds = {RaxFact};
             }
 
             if (Players::TvT()) {
-                RaxFact.setOpeners({ T_1FactFE });
-                RaxFact.setTransitions({ T_5Fact });
+                RaxFact.setOpeners({T_1FactFE});
+                RaxFact.setTransitions({T_5Fact});
 
-                myBuilds ={ RaxFact };
+                myBuilds = {RaxFact};
             }
 
             if (Players::TvZ()) {
-                TwoRax.setOpeners({ T_11_13 });
-                TwoRax.setTransitions({ T_Academy });
+                TwoRax.setOpeners({T_11_13});
+                TwoRax.setTransitions({T_Academy});
 
-                myBuilds ={ TwoRax };
+                myBuilds = {TwoRax};
             }
         }
 
@@ -376,9 +382,9 @@ namespace McRave::Learning {
             if (Broodwar->self()->getRace() == Races::Terran)
                 terranBuildMaps();
         }
-    }
+    } // namespace
 
-    vector<Build>& getBuilds() { return myBuilds; }
+    vector<Build> &getBuilds() { return myBuilds; }
 
     void onEnd(bool isWinner)
     {
@@ -421,16 +427,10 @@ namespace McRave::Learning {
         ofstream gameLog("bwapi-data/write/" + gameInfoExtension, std::ios_base::app);
 
         // Who won on what map in how long
-        gameLog << (isWinner ? "Won" : "Lost") << ","
-            << mapName << ","
-            << std::setfill('0') << Util::getTime().minutes << ":" << std::setw(2) << Util::getTime().seconds << ",";
+        gameLog << (isWinner ? "Won" : "Lost") << "," << mapName << "," << std::setfill('0') << Util::getTime().minutes << ":" << std::setw(2) << Util::getTime().seconds << ",";
 
         // What strategies were used/detected
-        gameLog
-            << Spy::getEnemyBuild() << ","
-            << Spy::getEnemyOpener() << ","
-            << Spy::getEnemyTransition() << ","
-            << currentBuild << "," << currentOpener << "," << currentTransition << ",";
+        gameLog << Spy::getEnemyBuild() << "," << Spy::getEnemyOpener() << "," << Spy::getEnemyTransition() << "," << currentBuild << "," << currentOpener << "," << currentTransition << ",";
 
         // When did we detect the enemy strategy
         gameLog << std::setfill('0') << Spy::getEnemyBuildTime().minutes << ":" << std::setw(2) << Spy::getEnemyBuildTime().seconds << ",";
@@ -473,17 +473,17 @@ namespace McRave::Learning {
         Util::debug("[Learning]: New game on " + mapName);
 
         // File extension including our race initial;
-        mapLearning         = false;
-        myRaceChar          ={ *Broodwar->self()->getRace().c_str() };
-        enemyRaceChar       ={ *Broodwar->enemy()->getRace().c_str() };
-        version             = "BASIL_2024_2";
-        noStats             = " 0 0 ";
-        learningExtension   = myRaceChar + "v" + enemyRaceChar + "_" + Broodwar->enemy()->getName() + "_" + version + " Learning.txt";
-        gameInfoExtension   = myRaceChar + "v" + enemyRaceChar + "_" + Broodwar->enemy()->getName() + "_" + version + " Info.txt";
+        mapLearning       = false;
+        myRaceChar        = {*Broodwar->self()->getRace().c_str()};
+        enemyRaceChar     = {*Broodwar->enemy()->getRace().c_str()};
+        version           = "BASIL_2024_2";
+        noStats           = " 0 0 ";
+        learningExtension = myRaceChar + "v" + enemyRaceChar + "_" + Broodwar->enemy()->getName() + "_" + version + " Learning.txt";
+        gameInfoExtension = myRaceChar + "v" + enemyRaceChar + "_" + Broodwar->enemy()->getName() + "_" + version + " Info.txt";
 
         createBuildMaps();
         getDefaultBuild();
         getBestBuild();
         getPermanentBuild();
     }
-}
+} // namespace McRave::Learning

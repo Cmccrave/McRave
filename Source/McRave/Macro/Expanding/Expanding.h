@@ -1,5 +1,6 @@
 #pragma once
-#include "Main/McRave.h"
+#include "Main/Common.h"
+#include "BWEB.h"
 
 namespace McRave::Expansion {
 

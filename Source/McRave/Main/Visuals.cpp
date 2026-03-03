@@ -1,6 +1,18 @@
-#include "Main/McRave.h"
+#include "Visuals.h"
+
 #include <chrono>
 #include <windows.h>
+
+#include "Builds/All/BuildOrder.h"
+#include "Builds/All/Learning.h"
+#include "Info/Player/Players.h"
+#include "Info/Resource/Resources.h"
+#include "Info/Unit/Units.h"
+#include "Macro/Planning/Planning.h"
+#include "Macro/Producing/Producing.h"
+#include "Macro/Upgrading/Upgrading.h"
+#include "Map/Stations.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -10,19 +22,20 @@ namespace McRave::Visuals {
     namespace {
         chrono::steady_clock::time_point start;
         int screenOffset = 0;
-        bool drawStuff = true;
+        bool drawStuff   = true;
 
         // Yoinked from https://github.com/dgant/PurpleWave/blob/master/src/Debugging/Visualizations/Rendering/DrawMap.scala#L126
         struct TextBox {
             vector<string> textLines;
             Position position;
-            Color color = Colors::Black;
+            Color color   = Colors::Black;
             int textColor = Text::White;
-            Color border = Colors::White;
+            Color border  = Colors::White;
 
-            TextBox(vector<string> t, Position p) {
+            TextBox(vector<string> t, Position p)
+            {
                 textLines = t;
-                position = p;
+                position  = p;
 
                 auto maxWidth = 0;
                 for (auto &s : textLines) {
@@ -31,14 +44,14 @@ namespace McRave::Visuals {
                         maxWidth = len;
                 }
 
-                auto horizontalMargin = 2;
+                auto horizontalMargin   = 2;
                 auto estimatedTextWidth = (11 * maxWidth) / 2;
-                auto boxWidth = estimatedTextWidth + ((estimatedTextWidth > 0) ? 2 * horizontalMargin : 0);
-                auto boxHeight = 11 * textLines.size();
-                auto textX = position.x - boxWidth / 2;
-                auto textY = position.y - boxHeight / 2;
-                auto boxX = textX - horizontalMargin;
-                auto boxY = textY;
+                auto boxWidth           = estimatedTextWidth + ((estimatedTextWidth > 0) ? 2 * horizontalMargin : 0);
+                auto boxHeight          = 11 * textLines.size();
+                auto textX              = position.x - boxWidth / 2;
+                auto textY              = position.y - boxHeight / 2;
+                auto boxX               = textX - horizontalMargin;
+                auto boxY               = textY;
 
                 auto boxTL = Position(boxX, boxY);
                 auto boxBR = Position(boxX + boxWidth, boxY + boxHeight);
@@ -61,13 +74,12 @@ namespace McRave::Visuals {
             double current = 0.0;
             double average = 0.0;
             double maximum = 0.0;
-            string name = "";
+            string name    = "";
 
-            FrameTest(string _name) {
-                name = _name;
-            }
+            FrameTest(string _name) { name = _name; }
 
-            void update(double dur) {
+            void update(double dur)
+            {
                 average = average * 0.99 + dur * 0.01;
                 current = dur;
                 maximum = max(maximum, dur);
@@ -75,24 +87,24 @@ namespace McRave::Visuals {
         };
         vector<FrameTest> frameTests;
 
-        bool commands = false;
-        bool targets = false;
-        bool builds = true;
-        bool bweb = false;
-        bool strengths = false;
-        bool orders = false;
-        bool states = false;
-        bool resources = false;
-        bool timers = false;
-        bool scores = true;
-        bool roles = false;
-        bool stations = false;
+        bool commands    = false;
+        bool targets     = false;
+        bool builds      = true;
+        bool bweb        = false;
+        bool strengths   = false;
+        bool orders      = false;
+        bool states      = false;
+        bool resources   = false;
+        bool timers      = false;
+        bool scores      = true;
+        bool roles       = false;
+        bool stations    = false;
         bool gameFocused = false;
-        bool bo_switch = false;
+        bool bo_switch   = false;
 
         Diagnostic currentDiagnostic = Diagnostic::None;
 
-        void drawStates(UnitInfo& unit)
+        void drawStates(UnitInfo &unit)
         {
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
             width += -32;
@@ -111,13 +123,12 @@ namespace McRave::Visuals {
                 auto color = unit.getSimState() == SimState::Win ? Text::Green : Text::Red;
                 Broodwar->drawTextMap(unit.getPosition() + Position(-width, 8), "S: %c%.2f", color, unit.getSimValue());
             }
-
         }
 
         void drawInformation()
         {
             // BWAPIs green text doesn't point to the right color so this will be seen occasionally
-            int color = Broodwar->self()->getColor();
+            int color     = Broodwar->self()->getColor();
             int textColor = color == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
 
             // Reset the screenOffset for the performance tests
@@ -131,7 +142,8 @@ namespace McRave::Visuals {
 
             // Builds
             if (builds) {
-                Broodwar->drawTextScreen(432, 16, "%c%s: %c%s %s", Text::White, BuildOrder::getCurrentBuild().c_str(), Text::Grey, BuildOrder::getCurrentOpener().c_str(), BuildOrder::getCurrentTransition().c_str());
+                Broodwar->drawTextScreen(432, 16, "%c%s: %c%s %s", Text::White, BuildOrder::getCurrentBuild().c_str(), Text::Grey, BuildOrder::getCurrentOpener().c_str(),
+                                         BuildOrder::getCurrentTransition().c_str());
                 Broodwar->drawTextScreen(432, 26, "%c%s: %c%s %s", Text::White, Spy::getEnemyBuild().c_str(), Text::Grey, Spy::getEnemyOpener().c_str(), Spy::getEnemyTransition().c_str());
                 Broodwar->drawTextScreen(160, 0, "%cExpanding", BuildOrder::shouldExpand() ? Text::White : Text::Grey);
                 Broodwar->drawTextScreen(160, 10, "%cRamping", BuildOrder::shouldRamp() ? Text::White : Text::Grey);
@@ -142,7 +154,7 @@ namespace McRave::Visuals {
             if (scores) {
                 int offset = 0;
                 for (auto &type : UnitTypes::allUnitTypes()) {
-                    auto raceLen = int(std::strlen(type.getRace().c_str())) + 1;
+                    auto raceLen  = int(std::strlen(type.getRace().c_str())) + 1;
                     auto shortStr = type.toString();
                     shortStr.erase(0, raceLen);
                     auto typeColor = BuildOrder::isUnitUnlocked(type) ? Text::White : Text::Grey;
@@ -150,7 +162,8 @@ namespace McRave::Visuals {
                         typeColor = Text::Cyan;
 
                     if ((total(type) > 0 && !type.isBuilding()) || BuildOrder::getCompositionPercentage(type) > 0.00) {
-                        Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d  %.2f [%d]", typeColor, shortStr.c_str(), vis(type), total(type), BuildOrder::getCompositionPercentage(type), BuildOrder::isUnitUnlocked(type));
+                        Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d  %.2f [%d]", typeColor, shortStr.c_str(), vis(type), total(type), BuildOrder::getCompositionPercentage(type),
+                                                 BuildOrder::isUnitUnlocked(type));
                         offset += 10;
                     }
                 }
@@ -236,7 +249,6 @@ namespace McRave::Visuals {
                 TextBox box(text, Broodwar->getScreenPosition() + Position(150, 200));
             }
 
-
             // BWEB
             if (bweb) {
                 BWEB::Map::draw();
@@ -248,7 +260,7 @@ namespace McRave::Visuals {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
 
-                int color = unit.getPlayer()->getColor();
+                int color     = unit.getPlayer()->getColor();
                 int textColor = color == 185 ? textColor = Text::DarkGreen : unit.getPlayer()->getTextColor();
 
                 if (unit.unit()->isLoaded())
@@ -276,18 +288,19 @@ namespace McRave::Visuals {
 
                 if (commands) {
                     if (unit.commandText != "") {
-                        const auto color = Text::White;
+                        const auto color  = Text::White;
                         const auto height = unit.getType().height() / 2;
-                        const auto pText = unit.getPosition() + Position(-4 * int(unit.commandText.length() / 2), height);
+                        const auto pText  = unit.getPosition() + Position(-4 * int(unit.commandText.length() / 2), height);
                         Broodwar->drawTextMap(pText, "%c%s", color, unit.commandText.c_str());
+                        drawLine(unit.getPosition(), unit.getCommandPosition(), color);
                     }
                 }
 
                 if (orders) {
                     int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
                     if (unit.getRole() == Role::Production && (unit.getType() == UnitTypes::Zerg_Egg || (unit.unit()->isTraining() && !unit.unit()->getTrainingQueue().empty()))) {
-                        auto trainType = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType().c_str() : unit.unit()->getTrainingQueue().front().c_str();
-                        auto trainOrder =  unit.getType() == UnitTypes::Zerg_Egg ? "Morphing" : "Training";
+                        auto trainType  = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType().c_str() : unit.unit()->getTrainingQueue().front().c_str();
+                        auto trainOrder = unit.getType() == UnitTypes::Zerg_Egg ? "Morphing" : "Training";
                         Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, trainOrder);
                         Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, trainType);
                     }
@@ -313,7 +326,7 @@ namespace McRave::Visuals {
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo &unit = *u;
 
-                int color = unit.getPlayer()->getColor();
+                int color     = unit.getPlayer()->getColor();
                 int textColor = color == 185 ? textColor = Text::DarkGreen : unit.getPlayer()->getTextColor();
 
                 if (targets) {
@@ -350,22 +363,22 @@ namespace McRave::Visuals {
         {
             if (gameFocused) {
                 static BWAPI::Key lastKeyState = BWAPI::Key(0);
-                static int localSpeed = 0;
-                auto mb_back = BWAPI::Key(5);
-                auto mb_forward = BWAPI::Key(6);
+                static int localSpeed          = 0;
+                auto mb_back                   = BWAPI::Key(5);
+                auto mb_forward                = BWAPI::Key(6);
 
                 // Back mouse button pressed
                 if (Broodwar->getKeyState(mb_back) && lastKeyState == BWAPI::Key(0)) {
                     lastKeyState = mb_back;
-                    localSpeed = min(100, localSpeed + 10);
+                    localSpeed   = min(100, localSpeed + 10);
                     Broodwar->setLocalSpeed(localSpeed);
                     Broodwar << "Set gamespeed to " << localSpeed << endl;
                 }
 
-                // Back mouse button pressed
+                // Forward mouse button pressed
                 if (Broodwar->getKeyState(mb_forward) && lastKeyState == BWAPI::Key(0)) {
                     lastKeyState = mb_forward;
-                    localSpeed = max(0, localSpeed - 10);
+                    localSpeed   = max(0, localSpeed - 10);
                     Broodwar->setLocalSpeed(localSpeed);
                     Broodwar << "Set gamespeed to " << localSpeed << endl;
                 }
@@ -380,17 +393,14 @@ namespace McRave::Visuals {
             // Thanks random cpp forum user
             char wnd_title[256];
             string str_title;
-            HWND hwnd=GetForegroundWindow();
+            HWND hwnd = GetForegroundWindow();
             GetWindowText(hwnd, wnd_title, sizeof(wnd_title));
-            str_title = string(wnd_title);
+            str_title   = string(wnd_title);
             gameFocused = (str_title == "Brood War");
         }
-    }
+    } // namespace
 
-    void centerCameraOn(Position here)
-    {
-        Broodwar->setScreenPosition(here - Position(320, 180));
-    }
+    void centerCameraOn(Position here) { Broodwar->setScreenPosition(here - Position(320, 180)); }
 
     void onFrame()
     {
@@ -404,7 +414,7 @@ namespace McRave::Visuals {
 
     void endPerfTest(string function)
     {
-        double dur = std::chrono::duration <double, std::milli>(std::chrono::high_resolution_clock::now() - start).count();
+        double dur = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - start).count();
         bool found = false;
         for (auto &test : frameTests) {
             if (test.name == function) {
@@ -417,10 +427,7 @@ namespace McRave::Visuals {
             frameTests.push_back(FrameTest(function));
     }
 
-    void startPerfTest()
-    {
-        start = chrono::high_resolution_clock::now();
-    }
+    void startPerfTest() { start = chrono::high_resolution_clock::now(); }
 
     void onSendText(string text)
     {
@@ -439,22 +446,34 @@ namespace McRave::Visuals {
             }
         }
 
-        if (text == "/commands")             commands = !commands;
-        else if (text == "/targets")         targets = !targets;
-        else if (text == "/states")          states = !states;
-        else if (text == "/strengths")       strengths = !strengths;
-        else if (text == "/builds")          builds = !builds;
-        else if (text == "/bweb")            bweb = !bweb;
-        else if (text == "/orders")          orders = !orders;
-        else if (text == "/resources")       resources = !resources;
-        else if (text == "/timers")          timers = !timers;
-        else if (text == "/roles")           roles = !roles;
-        else if (text == "/bo")              bo_switch = !bo_switch;
-        else                                 Broodwar->sendText("%s", text.c_str());
+        if (text == "/commands")
+            commands = !commands;
+        else if (text == "/targets")
+            targets = !targets;
+        else if (text == "/states")
+            states = !states;
+        else if (text == "/strengths")
+            strengths = !strengths;
+        else if (text == "/builds")
+            builds = !builds;
+        else if (text == "/bweb")
+            bweb = !bweb;
+        else if (text == "/orders")
+            orders = !orders;
+        else if (text == "/resources")
+            resources = !resources;
+        else if (text == "/timers")
+            timers = !timers;
+        else if (text == "/roles")
+            roles = !roles;
+        else if (text == "/bo")
+            bo_switch = !bo_switch;
+        else
+            Broodwar->sendText("%s", text.c_str());
         return;
     }
 
-    void drawPath(BWEB::Path& path)
+    void drawPath(BWEB::Path &path)
     {
         if (drawStuff) {
             int color = Broodwar->self()->getColor();
@@ -472,10 +491,7 @@ namespace McRave::Visuals {
         }
     }
 
-    void drawDiagnostic(Diagnostic diagnostic, Position p)
-    {
-
-    }
+    void drawDiagnostic(Diagnostic diagnostic, Position p) {}
 
     void drawTextBox(Position here, vector<string> text)
     {
@@ -484,72 +500,61 @@ namespace McRave::Visuals {
         }
     }
 
-    void drawDebugText(std::string s, double d) {
+    void drawDebugText(std::string s, double d)
+    {
         if (drawStuff) {
             Broodwar->drawTextScreen(Position(0, 50 + screenOffset), "%s: %.2f", s.c_str(), d);
             screenOffset += 10;
         }
     }
 
-    void drawDebugText(std::string s, int i) {
+    void drawDebugText(std::string s, int i)
+    {
         if (drawStuff) {
             Broodwar->drawTextScreen(Position(0, 50 + screenOffset), "%s: %d", s.c_str(), i);
             screenOffset += 10;
         }
     }
 
-    void drawBox(Position here, Position there, Color color, bool solid) {
+    void drawBox(Position here, Position there, Color color, bool solid)
+    {
         if (drawStuff) {
-            here = Util::clipPosition(here);
+            here  = Util::clipPosition(here);
             there = Util::clipPosition(there);
             Broodwar->drawBoxMap(here, there, color, solid);
         }
     }
 
-    void drawBox(WalkPosition here, Color color, bool solid) {
-        drawBox(Position(here), Position(here + WalkPosition(1,1)), color, solid);
-    }
-    void drawBox(WalkPosition here, WalkPosition there, Color color, bool solid) {
-        drawBox(Position(here), Position(there), color, solid);
-    }
+    void drawBox(WalkPosition here, Color color, bool solid) { drawBox(Position(here), Position(here + WalkPosition(1, 1)), color, solid); }
+    void drawBox(WalkPosition here, WalkPosition there, Color color, bool solid) { drawBox(Position(here), Position(there), color, solid); }
 
-    void drawBox(TilePosition here, Color color, bool solid) {
-        drawBox(Position(here), Position(here + TilePosition(1,1)), color, solid);
-    }
-    void drawBox(TilePosition here, TilePosition there, Color color, bool solid) {
-        drawBox(Position(here), Position(there), color, solid);
-    }
+    void drawBox(TilePosition here, Color color, bool solid) { drawBox(Position(here), Position(here + TilePosition(1, 1)), color, solid); }
+    void drawBox(TilePosition here, TilePosition there, Color color, bool solid) { drawBox(Position(here), Position(there), color, solid); }
 
-    void drawCircle(Position here, int radius, Color color, bool solid) {
+    void drawCircle(Position here, int radius, Color color, bool solid)
+    {
         if (drawStuff) {
             here = Util::clipPosition(here);
             Broodwar->drawCircleMap(here, radius, color, solid);
         }
     }
-    void drawCircle(WalkPosition here, int radius, Color color, bool solid) {
-        drawCircle(Position(here), radius, color, solid);
-    }
-    void drawCircle(TilePosition here, int radius, Color color, bool solid) {
-        drawCircle(Position(here), radius, color, solid);
-    }
+    void drawCircle(WalkPosition here, int radius, Color color, bool solid) { drawCircle(Position(here), radius, color, solid); }
+    void drawCircle(TilePosition here, int radius, Color color, bool solid) { drawCircle(Position(here), radius, color, solid); }
 
-    void drawLine(const BWEM::ChokePoint * choke, Color color)
+    void drawLine(const BWEM::ChokePoint *choke, Color color)
     {
         if (drawStuff) {
             Broodwar->drawLineMap(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2)), color);
         }
     }
-    void drawLine(Position here, Position there, Color color) {
+    void drawLine(Position here, Position there, Color color)
+    {
         if (drawStuff) {
-            here = Util::clipPosition(here);
+            here  = Util::clipPosition(here);
             there = Util::clipPosition(there);
             Broodwar->drawLineMap(here, there, color);
         }
     }
-    void drawLine(WalkPosition here, WalkPosition there, Color color) {
-        drawLine(Position(here), Position(there), color);
-    }
-    void drawLine(TilePosition here, TilePosition there, Color color) {
-        drawLine(Position(here), Position(there), color);
-    }
-}
+    void drawLine(WalkPosition here, WalkPosition there, Color color) { drawLine(Position(here), Position(there), color); }
+    void drawLine(TilePosition here, TilePosition there, Color color) { drawLine(Position(here), Position(there), color); }
+} // namespace McRave::Visuals

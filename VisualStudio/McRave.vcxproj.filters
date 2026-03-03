@@ -534,6 +534,18 @@
     <ClInclude Include="..\Source\McRave\Strategy\Spy\Defs.h">
       <Filter>McRave\Strategy\Spy</Filter>
     </ClInclude>
+    <ClInclude Include="..\Source\McRave\Main\Helpers.h">
+      <Filter>McRave\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Main\Time.h">
+      <Filter>McRave\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Main\Common.h">
+      <Filter>McRave\Main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Info\Unit\UnitFrames.h">
+      <Filter>McRave\Info\Unit</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="BWEM">
@@ -680,5 +692,8 @@
     <Filter Include="McRave\Builds\Terran\TvP">
       <UniqueIdentifier>{166561e7-c028-4604-9361-2273838157f6}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Source\.clang-format" />
   </ItemGroup>
 </Project>

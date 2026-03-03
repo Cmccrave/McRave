@@ -1,4 +1,9 @@
-#include "Main/McRave.h"
+#include "ResourceInfo.h"
+
+#include "Info/Player/Players.h"
+#include "Info/Unit/UnitInfo.h"
+#include "Info/Unit/Units.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -6,7 +11,7 @@ using namespace UnitTypes;
 
 namespace McRave {
 
-    static vector<TilePosition> directions ={ {-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 1}, {2, -1}, {2, 0}, {2, 1} };
+    static vector<TilePosition> directions = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 1}, {2, -1}, {2, 0}, {2, 1}};
 
     void ResourceInfo::updatePocketStatus()
     {
@@ -16,7 +21,7 @@ namespace McRave {
         // Determine if this resource is a pocket resource, useful to deter choosing a building worker (they get stuck)
         vector<TilePosition> pocketTiles;
         for (auto &dir : directions) {
-            auto tile = tilePosition + dir;
+            auto tile   = tilePosition + dir;
             auto center = Position(tile) + Position(16, 16);
 
             // If the build type is empty or somehow a resource depot is here (FPM possibility)
@@ -40,8 +45,7 @@ namespace McRave {
             if (enemy->getType().isWorker() && (Spy::getEnemyTransition() != U_WorkerRush || Util::getTime() > Time(3, 00)))
                 continue;
 
-            if (!enemy->hasTarget() || (!Players::ZvZ() && !enemy->getTarget().lock()->getType().isWorker())
-                || !enemy->isCompleted() || !enemy->canAttackGround())
+            if (!enemy->hasTarget() || (!Players::ZvZ() && !enemy->getTarget().lock()->getType().isWorker()) || !enemy->isCompleted() || !enemy->canAttackGround())
                 continue;
 
             const auto inRangeOfResource = enemy->getPosition().getDistance(position) < max(200.0, enemy->getGroundReach());
@@ -69,7 +73,7 @@ namespace McRave {
                 if (targeter->unit()->isCarryingGas() || targeter->unit()->isCarryingMinerals())
                     framesPerTrips[t]++;
                 else if (Util::boxDistance(type, position, targeter->getType(), targeter->getPosition()) < 16.0)
-                    framesPerTrips[t]=0;
+                    framesPerTrips[t] = 0;
 
                 if (!type.isMineralField() && framesPerTrips[t] > 52)
                     workerCap = 4;
@@ -82,10 +86,10 @@ namespace McRave {
     void ResourceInfo::updateResource()
     {
         if (thisUnit->exists()) {
-            type                = thisUnit->getType();
-            remainingResources  = thisUnit->getResources();
-            position            = thisUnit->getPosition();
-            tilePosition        = thisUnit->getTilePosition();
+            type               = thisUnit->getType();
+            remainingResources = thisUnit->getResources();
+            position           = thisUnit->getPosition();
+            tilePosition       = thisUnit->getTilePosition();
         }
 
         updatePocketStatus();
@@ -93,23 +97,25 @@ namespace McRave {
         updateWorkerCap();
     }
 
-    void ResourceInfo::addTargetedBy(std::weak_ptr<UnitInfo> unit) {
+    void ResourceInfo::addTargetedBy(std::weak_ptr<UnitInfo> unit)
+    {
         targetedBy.push_back(unit);
         framesPerTrips.emplace(unit, 0);
     }
 
-    void ResourceInfo::removeTargetedBy(std::weak_ptr<UnitInfo> unit) {
+    void ResourceInfo::removeTargetedBy(std::weak_ptr<UnitInfo> unit)
+    {
         for (auto itr = targetedBy.begin(); itr != targetedBy.end(); itr++) {
-            if (*itr == unit) {
+            if (*itr->lock() == unit.lock()) {
                 targetedBy.erase(itr);
                 break;
             }
         }
         for (auto itr = framesPerTrips.begin(); itr != framesPerTrips.end(); itr++) {
-            if (itr->first == unit) {
+            if (itr->first.lock() == unit.lock()) {
                 framesPerTrips.erase(itr);
                 break;
             }
         }
     }
-}
+} // namespace McRave

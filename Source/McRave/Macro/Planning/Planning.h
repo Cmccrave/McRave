@@ -1,5 +1,6 @@
 #pragma once
-#include "Main/McRave.h"
+#include "BWEB.h"
+#include "Main/Common.h"
 
 namespace McRave::Planning {
 
@@ -14,10 +15,10 @@ namespace McRave::Planning {
     bool isWallType(BWAPI::UnitType);
 
     BWAPI::UnitType whatPlannedHere(BWAPI::TilePosition);
-    bool overlapsPlan(UnitInfo&, BWAPI::Position);
+    bool overlapsPlan(UnitInfo &, BWAPI::Position);
 
-    std::map<BWAPI::TilePosition, BWAPI::UnitType>& getPlannedBuildings();
+    std::map<BWAPI::TilePosition, BWAPI::UnitType> &getPlannedBuildings();
     int getPlannedMineral();
     int getPlannedGas();
-    const BWEB::Station * getCurrentExpansion();
-};
+    const BWEB::Station *getCurrentExpansion();
+}; // namespace McRave::Planning

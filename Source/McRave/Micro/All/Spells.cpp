@@ -1,4 +1,4 @@
-#include "Main/McRave.h"
+#include "Main/Common.h"
 
 using namespace BWAPI;
 using namespace std;

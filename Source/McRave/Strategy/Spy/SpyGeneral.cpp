@@ -1,4 +1,9 @@
-#include "Main\McRave.h"
+#include "Info/Player/PlayerInfo.h"
+#include "Info/Player/Players.h"
+#include "Info/Unit/UnitInfo.h"
+#include "Map/Stations.h"
+#include "Map/Terrain.h"
+#include "Spy.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -10,21 +15,19 @@ namespace McRave::Spy::General {
         map<Unit, UnitType> unitsStored; // A bit hacky way to say if we've stored a unit
         string nodeName = "[Spy]: ";
 
-        void enemyUnitTimings(PlayerInfo& player, StrategySpy& theSpy)
+        void enemyUnitTimings(PlayerInfo &player, StrategySpy &theSpy)
         {
             for (auto &u : player.getUnits()) {
-                UnitInfo &unit =*u;
+                UnitInfo &unit = *u;
 
                 // Don't track these
-                if (unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva || unit.getType() == Zerg_Lurker_Egg
-                    || unit.getType() == Zerg_Creep_Colony
-                    || !unit.unit()->exists())
+                if (unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva || unit.getType() == Zerg_Lurker_Egg || unit.getType() == Zerg_Creep_Colony || !unit.unit()->exists())
                     continue;
 
                 // If unit type is changing now, remove it from the timings
-                if ((unit.getType() == Zerg_Lair || unit.getType() == Zerg_Hive
-                    || unit.getType() == Zerg_Greater_Spire
-                    || unit.getType() == Zerg_Sunken_Colony || unit.getType() == Zerg_Spore_Colony) && !unit.isCompleted()) {
+                if ((unit.getType() == Zerg_Lair || unit.getType() == Zerg_Hive || unit.getType() == Zerg_Greater_Spire || unit.getType() == Zerg_Sunken_Colony ||
+                     unit.getType() == Zerg_Spore_Colony) &&
+                    !unit.isCompleted()) {
                     unitsStored.erase(unit.unit());
                     continue;
                 }
@@ -37,7 +40,7 @@ namespace McRave::Spy::General {
                 // If not tracked, store timing metrics
                 if (unitsStored.find(unit.unit()) == unitsStored.end()) {
                     unitsStored[unit.unit()] = unit.getType();
-                    auto &ut = theSpy.unitTimings[unit.getType()];
+                    auto &ut                 = theSpy.unitTimings[unit.getType()];
                     ut.countStartedWhen.push_back(unit.timeStartedWhen());
                     ut.countCompletedWhen.push_back(unit.timeCompletesWhen());
                     ut.countArrivesWhen.push_back(unit.timeArrivesWhen());
@@ -62,7 +65,7 @@ namespace McRave::Spy::General {
             }
         }
 
-        void enemyUpgradeTimings(PlayerInfo& player, StrategySpy& theSpy) 
+        void enemyUpgradeTimings(PlayerInfo &player, StrategySpy &theSpy)
         {
             // TODO: More than 1 upgrade level
             for (auto &upgrade : UpgradeTypes::allUpgradeTypes()) {
@@ -70,24 +73,24 @@ namespace McRave::Spy::General {
                 if (player.hasUpgrade(upgrade) && theSpy.upgradeTimings[upgrade].firstCompletedWhen.isUnknown()) {
                     ut.firstCompletedWhen = Util::getTime();
                     ut.countCompletedWhen.push_back(Util::getTime());
-                    Util::debug(nodeName + string(upgrade.c_str()) +  " completes at " + Util::getTime().toString());
+                    Util::debug(nodeName + string(upgrade.c_str()) + " completes at " + Util::getTime().toString());
                 }
             }
         }
 
-        void checkEnemyUnits(PlayerInfo& player, StrategySpy& theSpy)
+        void checkEnemyUnits(PlayerInfo &player, StrategySpy &theSpy)
         {
             // Monitor for a wall
             if (Players::vT() && Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(5, 00)) {
                 auto pathPoint = Terrain::getEnemyStartingPosition();
-                auto closest = DBL_MAX;
+                auto closest   = DBL_MAX;
 
                 for (int x = Terrain::getEnemyStartingTilePosition().x - 2; x < Terrain::getEnemyStartingTilePosition().x + 5; x++) {
                     for (int y = Terrain::getEnemyStartingTilePosition().y - 2; y < Terrain::getEnemyStartingTilePosition().y + 5; y++) {
                         auto center = Position(TilePosition(x, y)) + Position(16, 16);
-                        auto dist = center.getDistance(Terrain::getEnemyStartingPosition());
+                        auto dist   = center.getDistance(Terrain::getEnemyStartingPosition());
                         if (dist < closest && BWEB::Map::isUsed(TilePosition(x, y)) == UnitTypes::None) {
-                            closest = dist;
+                            closest   = dist;
                             pathPoint = center;
                         }
                     }
@@ -99,10 +102,10 @@ namespace McRave::Spy::General {
                     theSpy.wall.possible = true;
             }
 
-            theSpy.workersPulled = 0;
+            theSpy.workersPulled   = 0;
             theSpy.productionCount = (player.getCurrentRace() == Races::Zerg ? 1 : 0); // Starting hatcheries always exist
             for (auto &u : player.getUnits()) {
-                UnitInfo &unit =*u;
+                UnitInfo &unit = *u;
 
                 // Monitor for worker pulls
                 if (unit.getType().isWorker() && unit.getPosition().isValid() && !unit.movedFlag) {
@@ -112,7 +115,8 @@ namespace McRave::Spy::General {
                         if (closestMain == Terrain::getMyMain())
                             myMain = true;
                     }
-                    if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) || unit.isProxy() || myMain || (Terrain::getEnemyStartingPosition().isValid() && !Terrain::inTerritory(PlayerState::Enemy, unit.getPosition())))
+                    if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) || unit.isProxy() || myMain ||
+                        (Terrain::getEnemyStartingPosition().isValid() && !Terrain::inTerritory(PlayerState::Enemy, unit.getPosition())))
                         theSpy.workersPulled++;
                 }
 
@@ -156,35 +160,41 @@ namespace McRave::Spy::General {
 
                 // Monitor for invis units
                 if (unit.isHidden())
-                    theSpy.invis.possible = true;                
+                    theSpy.invis.possible = true;
             }
         }
 
-        void checkEnemyRush(PlayerInfo& player, StrategySpy& theSpy)
+        void checkEnemyRush(PlayerInfo &player, StrategySpy &theSpy)
         {
             // Rush builds are immediately aggresive builds
-            auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self, Races::None) >= 70 : Players::getSupply(PlayerState::Self, Races::None) >= 90;
-            theSpy.rush.possible = !supplySafe && (Spy::getEnemyTransition() == T_Rush || Spy::getEnemyTransition() == P_Rush || Spy::getEnemyTransition() == Z_Rush || Spy::getEnemyTransition() == U_WorkerRush);
+            auto supplySafe      = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self, Races::None) >= 70 : Players::getSupply(PlayerState::Self, Races::None) >= 90;
+            theSpy.rush.possible = !supplySafe &&
+                                   (Spy::getEnemyTransition() == T_Rush || Spy::getEnemyTransition() == P_Rush || Spy::getEnemyTransition() == Z_Rush || Spy::getEnemyTransition() == U_WorkerRush);
             if (supplySafe)
                 theSpy.rush.possible = false;
         }
 
-        void checkEnemyPressure(PlayerInfo& player, StrategySpy& theSpy)
+        void checkEnemyPressure(PlayerInfo &player, StrategySpy &theSpy)
         {
             // Pressure builds are delayed aggresive builds
             auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self, Races::None) >= 80 : Players::getSupply(PlayerState::Self, Races::None) >= 120;
-            theSpy.pressure.possible = !supplySafe && (Spy::getEnemyTransition() == P_4Gate || Spy::getEnemyTransition() == Z_2HatchSpeedling || Spy::getEnemyTransition() == Z_3HatchSpeedling || Spy::getEnemyTransition() == T_Sparks || Spy::getEnemyTransition() == T_2FactVulture || Spy::getEnemyTransition() == T_Academy);
+            theSpy.pressure.possible = !supplySafe && (Spy::getEnemyTransition() == P_4Gate || Spy::getEnemyTransition() == Z_2HatchSpeedling || Spy::getEnemyTransition() == Z_3HatchSpeedling ||
+                                                       Spy::getEnemyTransition() == T_Sparks || Spy::getEnemyTransition() == T_2FactVulture || Spy::getEnemyTransition() == T_Academy);
             if (supplySafe)
                 theSpy.pressure.possible = false;
         }
 
-        void checkEnemyInvis(PlayerInfo& player, StrategySpy& theSpy)
+        void checkEnemyInvis(PlayerInfo &player, StrategySpy &theSpy)
         {
             // DTs, Vultures, Lurkers
-            theSpy.invis.possible = (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) >= 1 || (Players::getTotalCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) >= 1 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0) || Players::getTotalCount(PlayerState::Enemy, Protoss_Templar_Archives) >= 1)
-                || (Players::getTotalCount(PlayerState::Enemy, Terran_Ghost) >= 1 || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 4)
-                || (Players::getTotalCount(PlayerState::Enemy, Zerg_Lurker) >= 1 || (Players::getTotalCount(PlayerState::Enemy, Zerg_Lair) >= 1 && Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) >= 1))
-                || (Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_2HatchLurker || Spy::getEnemyTransition() == P_DT  || Spy::getEnemyTransition() == T_2PortWraith);
+            theSpy.invis.possible = (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) >= 1 ||
+                                     (Players::getTotalCount(PlayerState::Enemy, Protoss_Citadel_of_Adun) >= 1 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0) ||
+                                     Players::getTotalCount(PlayerState::Enemy, Protoss_Templar_Archives) >= 1) ||
+                                    (Players::getTotalCount(PlayerState::Enemy, Terran_Ghost) >= 1 || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) >= 4) ||
+                                    (Players::getTotalCount(PlayerState::Enemy, Zerg_Lurker) >= 1 ||
+                                     (Players::getTotalCount(PlayerState::Enemy, Zerg_Lair) >= 1 && Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) >= 1)) ||
+                                    (Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_2HatchLurker || Spy::getEnemyTransition() == P_DT ||
+                                     Spy::getEnemyTransition() == T_2PortWraith);
 
             // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss) {
@@ -207,13 +217,11 @@ namespace McRave::Spy::General {
             }
         }
 
-        void checkEnemyEarly(PlayerInfo& player, StrategySpy& theSpy)
+        void checkEnemyEarly(PlayerInfo &player, StrategySpy &theSpy)
         {
             // If we have seen an enemy worker before we've scouted the enemy, follow it
             if ((Players::getVisibleCount(PlayerState::Enemy, Protoss_Probe) > 0 || Players::getVisibleCount(PlayerState::Enemy, Terran_SCV) > 0) && Util::getTime() < Time(2, 00)) {
-                auto enemyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return u->getType().isWorker() && u->isProxy();
-                });
+                auto enemyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy(); });
                 if (enemyWorker)
                     theSpy.early.possible = true;
             }
@@ -221,7 +229,7 @@ namespace McRave::Spy::General {
                 theSpy.early.possible = false;
         }
 
-        void checkEnemyProxy(PlayerInfo& player, StrategySpy& theSpy)
+        void checkEnemyProxy(PlayerInfo &player, StrategySpy &theSpy)
         {
             // Proxy builds are built closer to me than the enemy
             auto supplySafe = Broodwar->self()->getRace() == Races::Zerg ? Players::getSupply(PlayerState::Self, Races::None) >= 40 : Players::getSupply(PlayerState::Self, Races::None) >= 80;
@@ -229,20 +237,20 @@ namespace McRave::Spy::General {
                 theSpy.proxy.possible = false;
         }
 
-        void checkEnemyGreedy(PlayerInfo& player, StrategySpy& theSpy)
+        void checkEnemyGreedy(PlayerInfo &player, StrategySpy &theSpy)
         {
             // Greedy detection
             if (!Terrain::isPocketNatural() && Util::getTime() > Time(3, 30)) {
-                theSpy.greedy.possible = (Players::ZvP() && Spy::getEnemyBuild() == P_FFE && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(7, 00))
-                    || (Players::ZvP() && Spy::getEnemyBuild() == P_1GateCore && theSpy.expand.likely && Util::getTime() < Time(5, 15))
-                    || (Players::ZvT() && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(10, 00));
+                theSpy.greedy.possible = (Players::ZvP() && Spy::getEnemyBuild() == P_FFE && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(7, 00)) ||
+                                         (Players::ZvP() && Spy::getEnemyBuild() == P_1GateCore && theSpy.expand.likely && Util::getTime() < Time(5, 15)) ||
+                                         (Players::ZvT() && int(Stations::getStations(PlayerState::Enemy).size()) >= 3 && Util::getTime() < Time(10, 00));
             }
             if (Util::getTime() > Time(10, 00))
                 theSpy.greedy.possible = false;
         }
-    }
+    } // namespace
 
-    void updateGeneral(StrategySpy& theSpy)
+    void updateGeneral(StrategySpy &theSpy)
     {
         // Update enemy general strategy
         for (auto &p : Players::getPlayers()) {
@@ -263,4 +271,4 @@ namespace McRave::Spy::General {
             }
         }
     }
-}
+} // namespace McRave::Spy::General

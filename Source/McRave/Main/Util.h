@@ -1,9 +1,11 @@
 #pragma once
-#include <BWAPI.h>
+#include "Common.h"
+#include "Info/Unit/UnitInfo.h"
+#include "Info/Unit/Units.h"
 
 namespace McRave::Util {
 
-    const BWEM::ChokePoint * getClosestChokepoint(BWAPI::Position);
+    const BWEM::ChokePoint *getClosestChokepoint(BWAPI::Position);
 
     int getCastRadius(BWAPI::TechType);
     double getCastLimit(BWAPI::TechType);
@@ -17,18 +19,18 @@ namespace McRave::Util {
 
     bool findTerrainWalkable(BWAPI::Position here, BWAPI::UnitType type);
 
-    bool findWalkable(BWAPI::Position, BWAPI::UnitType, BWAPI::Position&, bool visual = false);
-    bool findWalkable(UnitInfo&, BWAPI::Position&, bool visual = false);
+    bool findWalkable(BWAPI::Position, BWAPI::UnitType, BWAPI::Position &, bool visual = false);
+    bool findWalkable(UnitInfo &, BWAPI::Position &, bool visual = false);
 
     BWAPI::Position shiftTowards(BWAPI::Position here, BWAPI::Position target, double dist);
     BWAPI::Position projectLine(std::pair<BWAPI::Position, BWAPI::Position> line, BWAPI::Position here);
     BWAPI::Position clipLine(BWAPI::Position, BWAPI::Position);
     BWAPI::Position clipPosition(BWAPI::Position);
 
-    BWAPI::Position getPathPoint(UnitInfo&, BWAPI::Position);
+    BWAPI::Position getPathPoint(UnitInfo &, BWAPI::Position);
 
-    std::vector<BWAPI::WalkPosition>& getWalkCircle(int);
-    std::vector<BWAPI::TilePosition>& getTileCircle(int);
+    std::vector<BWAPI::WalkPosition> &getWalkCircle(int);
+    std::vector<BWAPI::TilePosition> &getTileCircle(int);
 
     Time getTime();
 
@@ -37,20 +39,42 @@ namespace McRave::Util {
 
     double log10(int);
 
-    /// Log a thing
-    static void debug(std::string& stuff)
+    void debug(const std::string, ...);
+    void debug(const char *, ...);
+
+    inline float fastReciprocal(float x)
     {
-        auto frameString = "[" + std::to_string(BWAPI::Broodwar->getFrameCount()) + "]";
-        std::ofstream writeFile;
-        writeFile.open("bwapi-data/write/McRave_Debug_Log.txt", std::ios::app);
-        writeFile << Util::getTime().toString() << frameString << stuff << std::endl;
+        union {
+            float f;
+            uint32_t i;
+        } u;
+        u.f = x;
+        u.i = 0x7EF311C3 - u.i;
+        float r = u.f;
+        r = r * (2.0f - x * r);
+        return r;
     }
 
-    template<typename F>
-    UnitInfo* getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
-        auto distBest = DBL_MAX;
-        auto &units = Units::getUnits(player);
-        UnitInfo* best = nullptr;
+    // Similar to BWAPI getApproxDistance
+    inline int fastDistance(int x1, int y1, int x2, int y2)
+    {
+        unsigned int min = abs((int)(x1 - x2));
+        unsigned int max = abs((int)(y1 - y2));
+        if (max < min)
+            std::swap(min, max);
+
+        if (min < (max >> 2))
+            return max;
+
+        unsigned int minCalc = (3 * min) >> 3;
+        return (minCalc >> 5) + minCalc + max - (max >> 4) - (max >> 6);
+    }
+
+    template <typename F> UnitInfo *getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred)
+    {
+        auto distBest  = DBL_MAX;
+        auto &units    = Units::getUnits(player);
+        UnitInfo *best = nullptr;
 
         for (auto &u : units) {
             if (!pred(u))
@@ -58,18 +82,18 @@ namespace McRave::Util {
 
             auto dist = here.getDistance(u->getPosition());
             if (dist < distBest) {
-                best = &*u;
+                best     = &*u;
                 distBest = dist;
             }
         }
         return best;
     }
 
-    template<typename F>
-    UnitInfo* getFurthestUnit(BWAPI::Position here, PlayerState player, F &&pred) {
-        auto distBest = 0.0;
-        auto &units = Units::getUnits(player);
-        UnitInfo* best = nullptr;
+    template <typename F> UnitInfo *getFurthestUnit(BWAPI::Position here, PlayerState player, F &&pred)
+    {
+        auto distBest  = 0.0;
+        auto &units    = Units::getUnits(player);
+        UnitInfo *best = nullptr;
 
         for (auto &u : units) {
             if (!pred(u))
@@ -77,18 +101,18 @@ namespace McRave::Util {
 
             auto dist = here.getDistance(u->getPosition());
             if (dist > distBest) {
-                best = &*u;
+                best     = &*u;
                 distBest = dist;
             }
         }
         return best;
     }
 
-    template<typename F>
-    UnitInfo* getClosestUnitGround(BWAPI::Position here, PlayerState player, F &&pred) {
-        auto distBest = DBL_MAX;
-        auto &units = Units::getUnits(player);
-        UnitInfo* best = nullptr;
+    template <typename F> UnitInfo *getClosestUnitGround(BWAPI::Position here, PlayerState player, F &&pred)
+    {
+        auto distBest  = DBL_MAX;
+        auto &units    = Units::getUnits(player);
+        UnitInfo *best = nullptr;
 
         for (auto &u : units) {
             if (!pred(u))
@@ -96,18 +120,18 @@ namespace McRave::Util {
 
             auto dist = BWEB::Map::getGroundDistance(here, u->getPosition());
             if (dist < distBest) {
-                best = &*u;
+                best     = &*u;
                 distBest = dist;
             }
         }
         return best;
     }
 
-    template<typename F>
-    UnitInfo* getFurthestUnitGround(BWAPI::Position here, PlayerState player, F &&pred) {
-        auto distBest = 0.0;
-        auto &units = Units::getUnits(player);
-        UnitInfo* best = nullptr;
+    template <typename F> UnitInfo *getFurthestUnitGround(BWAPI::Position here, PlayerState player, F &&pred)
+    {
+        auto distBest  = 0.0;
+        auto &units    = Units::getUnits(player);
+        UnitInfo *best = nullptr;
 
         for (auto &u : units) {
             if (!pred(u))
@@ -115,15 +139,15 @@ namespace McRave::Util {
 
             auto dist = BWEB::Map::getGroundDistance(here, u->getPosition());
             if (dist > distBest) {
-                best = &*u;
+                best     = &*u;
                 distBest = dist;
             }
         }
         return best;
     }
 
-    template<typename F>
-    void testPointOnPath(BWEB::Path& path, F &&pred) {
+    template <typename F> void testPointOnPath(BWEB::Path &path, F &&pred)
+    {
         BWAPI::TilePosition last = BWAPI::TilePositions::Invalid;
 
         // For each TilePosition on the path
@@ -148,8 +172,8 @@ namespace McRave::Util {
         }
     }
 
-    template<typename F>
-    void testAllPointOnPath(BWEB::Path& path, F &&pred) {
+    template <typename F> void testAllPointOnPath(BWEB::Path &path, F &&pred)
+    {
         BWAPI::TilePosition last = BWAPI::TilePositions::Invalid;
 
         // For each TilePosition on the path
@@ -173,8 +197,8 @@ namespace McRave::Util {
         }
     }
 
-    template<typename F>
-    BWAPI::Position findPointOnPath(BWEB::Path& path, F &&pred) {
+    template <typename F> BWAPI::Position findPointOnPath(BWEB::Path &path, F &&pred)
+    {
         BWAPI::TilePosition last = BWAPI::TilePositions::Invalid;
 
         // For each TilePosition on the path
@@ -200,8 +224,8 @@ namespace McRave::Util {
         return Positions::Invalid;
     }
 
-    template<typename F>
-    std::vector<BWAPI::Position> findAllPointOnPath(BWEB::Path& path, F &&pred) {
+    template <typename F> std::vector<BWAPI::Position> findAllPointOnPath(BWEB::Path &path, F &&pred)
+    {
         BWAPI::TilePosition last = BWAPI::TilePositions::Invalid;
         std::vector<BWAPI::Position> returnVector;
 
@@ -229,4 +253,4 @@ namespace McRave::Util {
     }
 
     std::pair<double, BWAPI::Position> findPointOnCircle(BWAPI::Position source, BWAPI::Position target, double radius, std::function<double(BWAPI::Position)> calc);
-}
+} // namespace McRave::Util

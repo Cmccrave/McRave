@@ -1,4 +1,8 @@
-#include "Main/McRave.h"
+#include "Combat.h"
+#include "Info/Player/Players.h"
+#include "Info/Unit/Units.h"
+#include "Map/Grids.h"
+#include "Map/Terrain.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -14,7 +18,7 @@ namespace McRave::Combat::Clusters {
         vector<ClusterNode> clusterNodes;
         vector<weak_ptr<UnitInfo>> previousCommanders;
 
-        vector<Color> bwColors ={ Colors::Red, Colors::Orange, Colors::Yellow, Colors::Green, Colors::Blue, Colors::Purple, Colors::Black, Colors::Grey, Colors::White };
+        vector<Color> bwColors = {Colors::Red, Colors::Orange, Colors::Yellow, Colors::Green, Colors::Blue, Colors::Purple, Colors::Black, Colors::Grey, Colors::White};
 
         void createNodes()
         {
@@ -33,16 +37,14 @@ namespace McRave::Combat::Clusters {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
 
-                if (unit.getRole() != Role::Combat
-                    || unit.unit()->isLoaded()
-                    || unit.getType() == Protoss_Interceptor)
+                if (unit.getRole() != Role::Combat || unit.unit()->isLoaded() || unit.getType() == Protoss_Interceptor)
                     continue;
 
                 unit.setCommander(nullptr);
 
                 ClusterNode newNode;
                 newNode.position = unit.getPosition();
-                newNode.unit = &*u;
+                newNode.unit     = &*u;
                 clusterNodes.push_back(newNode);
             }
         }
@@ -50,15 +52,15 @@ namespace McRave::Combat::Clusters {
         bool generateCluster(ClusterNode &root, int id, int minsize, int maxsize)
         {
             auto matching = [&](auto &parent, auto &child) {
-                auto matchedGoal = (parent.unit->getGoal() == child.unit->getGoal());
-                auto matchedType = (parent.unit->isFlying() == child.unit->isFlying() && parent.unit->isMelee() == child.unit->isMelee());
-                auto matchedStrat = (parent.unit->getGlobalState() == child.unit->getGlobalState());
-                auto matchedDistance = child.position.getDistance(root.position) < 160.0
-                    || child.position.getDistance(parent.position) < 96.0
-                    || (child.position.getDistance(parent.unit->retreatPos) < 128.0 && parent.position.getDistance(parent.unit->retreatPos) < 128.0)
-                    || (child.position.getDistance(parent.unit->marchPos) < 128.0 && parent.position.getDistance(parent.unit->marchPos) < 128.0)
-                    || (parent.unit->isLightAir() && child.unit->isLightAir());
-                auto matchedTarget = (parent.unit->hasTarget() && child.unit->hasTarget() && parent.unit->getTarget().lock()->isFlying() == child.unit->getTarget().lock()->isFlying()) || (!parent.unit->hasTarget() && !child.unit->hasTarget());
+                auto matchedGoal     = (parent.unit->getGoal() == child.unit->getGoal());
+                auto matchedType     = (parent.unit->isFlying() == child.unit->isFlying() && parent.unit->isMelee() == child.unit->isMelee());
+                auto matchedStrat    = (parent.unit->getGlobalState() == child.unit->getGlobalState());
+                auto matchedDistance = child.position.getDistance(root.position) < 160.0 || child.position.getDistance(parent.position) < 96.0 ||
+                                       (child.position.getDistance(parent.unit->retreatPos) < 128.0 && parent.position.getDistance(parent.unit->retreatPos) < 128.0) ||
+                                       (child.position.getDistance(parent.unit->marchPos) < 128.0 && parent.position.getDistance(parent.unit->marchPos) < 128.0) ||
+                                       (parent.unit->isLightAir() && child.unit->isLightAir());
+                auto matchedTarget = (parent.unit->hasTarget() && child.unit->hasTarget() && parent.unit->getTarget().lock()->isFlying() == child.unit->getTarget().lock()->isFlying()) ||
+                                     (!parent.unit->hasTarget() && !child.unit->hasTarget());
                 return matchedType && matchedStrat && matchedDistance && matchedGoal && matchedTarget;
             };
 
@@ -69,7 +71,7 @@ namespace McRave::Combat::Clusters {
                 }
             };
 
-            std::queue<ClusterNode*> nodeQueue;
+            std::queue<ClusterNode *> nodeQueue;
             getNeighbors(root, nodeQueue);
 
             // If we didn't find enough neighbors, no cluster generates
@@ -78,7 +80,7 @@ namespace McRave::Combat::Clusters {
 
             // Create cluster
             Cluster newCluster;
-            root.id = id;
+            root.id          = id;
             newCluster.color = bwColors.at(id % 8);
             newCluster.units.push_back(root.unit);
 
@@ -110,14 +112,12 @@ namespace McRave::Combat::Clusters {
             }
         }
 
-        void getCommander(Cluster& cluster)
+        void getCommander(Cluster &cluster)
         {
             // Check if a commander previously existed within a similar cluster
-            auto closestPreviousCommander = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
-                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker()
-                    && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end()
-                    && find(previousCommanders.begin(), previousCommanders.end(), u) != previousCommanders.end()
-                    && !u->isTargetedBySuicide();
+            auto closestPreviousCommander = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
+                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() &&
+                       find(previousCommanders.begin(), previousCommanders.end(), u) != previousCommanders.end() && !u->isTargetedBySuicide();
             });
             if (closestPreviousCommander) {
                 cluster.commander = closestPreviousCommander->weak_from_this();
@@ -126,11 +126,9 @@ namespace McRave::Combat::Clusters {
             }
 
             // Check if a commander is already engaged in combat
-            auto closestCommanderFighting = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
-                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker()
-                    && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end()
-                    && !u->isTargetedBySuicide()
-                    && u->getLocalState() != LocalState::None;
+            auto closestCommanderFighting = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
+                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() &&
+                       !u->isTargetedBySuicide() && u->getLocalState() != LocalState::None;
             });
             if (closestCommanderFighting) {
                 cluster.commander = closestCommanderFighting->weak_from_this();
@@ -140,13 +138,12 @@ namespace McRave::Combat::Clusters {
 
             // Get closest unit to centroid
             auto closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
-                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && !u->targetsFriendly()
-                    && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && !u->isTargetedBySuicide();
+                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && !u->targetsFriendly() &&
+                       find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && !u->isTargetedBySuicide();
             });
             if (!closestToCentroid) {
-                closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
-                    return !u->targetsFriendly() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end();
-                });
+                closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self,
+                                                         [&](auto &u) { return !u->targetsFriendly() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end(); });
             }
             if (closestToCentroid) {
                 cluster.commander = closestToCentroid->weak_from_this();
@@ -154,32 +151,28 @@ namespace McRave::Combat::Clusters {
             }
         }
 
-        void pathCluster(Cluster& cluster, double dist)
+        void pathCluster(Cluster &cluster, double dist)
         {
-            auto commander = cluster.commander.lock();
+            auto commander      = cluster.commander.lock();
             auto marchPathPoint = Util::getPathPoint(*commander, cluster.marchPosition);
             BWEB::Path newMarchPath(cluster.avgPosition, marchPathPoint, commander->getType());
-            newMarchPath.generateJPS([&](const TilePosition &t) { return newMarchPath.unitWalkable(t);  });
+            newMarchPath.generateJPS([&](const TilePosition &t) { return newMarchPath.unitWalkable(t); });
             cluster.marchPath = newMarchPath;
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.marchNavigation = cluster.marchPosition;
-            const auto march = Util::findPointOnPath(cluster.marchPath, [&](Position p) {
-                return p.getDistance(cluster.avgPosition) >= dist;
-            });
+            const auto march        = Util::findPointOnPath(cluster.marchPath, [&](Position p) { return p.getDistance(cluster.avgPosition) >= dist; });
             if (march.isValid())
                 cluster.marchNavigation = march;
 
             auto retreatPathPoint = Util::getPathPoint(*commander, cluster.retreatPosition);
             BWEB::Path newRetreatPath(cluster.avgPosition, retreatPathPoint, commander->getType());
-            newRetreatPath.generateJPS([&](const TilePosition &t) { return newRetreatPath.unitWalkable(t);  });
+            newRetreatPath.generateJPS([&](const TilePosition &t) { return newRetreatPath.unitWalkable(t); });
             cluster.retreatPath = newRetreatPath;
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.retreatNavigation = cluster.retreatPosition;
-            const auto retreat = Util::findPointOnPath(cluster.retreatPath, [&](Position p) {
-                return p.getDistance(cluster.avgPosition) >= dist && p.getDistance(cluster.marchNavigation) >= 32.0;
-            });
+            const auto retreat = Util::findPointOnPath(cluster.retreatPath, [&](Position p) { return p.getDistance(cluster.avgPosition) >= dist && p.getDistance(cluster.marchNavigation) >= 32.0; });
             if (retreat.isValid())
                 cluster.retreatNavigation = retreat;
 
@@ -196,37 +189,37 @@ namespace McRave::Combat::Clusters {
                 const auto desiredAltitude = (int(cluster.units.size()) * 32);
 
                 const auto newNavigations = [&](Position navigation) {
-                    auto perpAngle = BWEB::Map::getAngle(make_pair(navigation, cluster.avgPosition)) + 1.57;
-                    auto size = 32;
-                    auto newNav = navigation;
+                    auto perpAngle       = BWEB::Map::getAngle(make_pair(navigation, cluster.avgPosition)) + 1.57;
+                    auto size            = 32;
+                    auto newNav          = navigation;
                     auto currentAltitude = 0;
 
                     // Now take the center and try to shift it perpendicular towards lower altitude
                     while (newNav.isValid() && mapBWEM.GetMiniTile(WalkPosition(newNav)).Altitude() < desiredAltitude) {
-                        auto p1 = Util::clipPosition(newNav - Position(int(-size * cos(perpAngle)), int(size * sin(perpAngle))));
-                        auto p2 = Util::clipPosition(newNav + Position(int(-size * cos(perpAngle)), int(size * sin(perpAngle))));
+                        auto p1        = Util::clipPosition(newNav - Position(int(-size * cos(perpAngle)), int(size * sin(perpAngle))));
+                        auto p2        = Util::clipPosition(newNav + Position(int(-size * cos(perpAngle)), int(size * sin(perpAngle))));
                         auto altitude1 = mapBWEM.GetMiniTile(WalkPosition(p1)).Altitude();
                         auto altitude2 = mapBWEM.GetMiniTile(WalkPosition(p2)).Altitude();
 
                         if (altitude1 > altitude2 && altitude1 > currentAltitude) {
-                            newNav = p1;
-                            size = 32;
+                            newNav          = p1;
+                            size            = 32;
                             currentAltitude = altitude1;
                         }
                         else if (altitude2 > currentAltitude) {
-                            newNav = p2;
-                            size = 32;
+                            newNav          = p2;
+                            size            = 32;
                             currentAltitude = altitude2;
                         }
                         else if (altitude1 == 0 && altitude2 == 0)
-                            size+=32;
+                            size += 32;
                         else
                             break;
                     }
                     return newNav;
                 };
 
-                cluster.marchNavigation = newNavigations(cluster.marchNavigation);
+                cluster.marchNavigation   = newNavigations(cluster.marchNavigation);
                 cluster.retreatNavigation = newNavigations(cluster.retreatNavigation);
             }
         }
@@ -235,17 +228,17 @@ namespace McRave::Combat::Clusters {
         {
             for (auto &cluster : clusters) {
                 if (auto commander = cluster.commander.lock()) {
-                    auto count = int(cluster.units.size());
+                    auto count  = int(cluster.units.size());
                     auto atHome = Terrain::inTerritory(PlayerState::Self, cluster.avgPosition);
 
                     // Calculate rough spacing of the clustered units for formation
                     auto fattestDimension = 0;
-                    auto type = UnitTypes::None;
+                    auto type             = UnitTypes::None;
                     for (auto &unit : cluster.units) {
                         auto maxDimType = max(unit->getType().width(), unit->getType().height());
                         if (maxDimType > fattestDimension) {
                             fattestDimension = maxDimType;
-                            type = unit->getType();
+                            type             = unit->getType();
                         }
                     }
                     cluster.spacing = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0));
@@ -268,7 +261,7 @@ namespace McRave::Combat::Clusters {
                             cluster.shape = Shape::Line;
 
                         //// HACK: Flip to a better shape
-                        //if (Terrain::inArea(Terrain::getMainArea(), cluster.avgPosition) && cluster.state == LocalState::Hold && Terrain::isFlatRamp())
+                        // if (Terrain::inArea(Terrain::getMainArea(), cluster.avgPosition) && cluster.state == LocalState::Hold && Terrain::isFlatRamp())
                         //    cluster.shape = Shape::Concave;
                     }
                 }
@@ -282,7 +275,7 @@ namespace McRave::Combat::Clusters {
 
                 // Find a centroid
                 auto avgPosition = Position(0, 0);
-                auto cnt = 0;
+                auto cnt         = 0;
                 for (auto &unit : cluster.units) {
                     avgPosition += unit->getPosition();
                     cnt++;
@@ -301,8 +294,8 @@ namespace McRave::Combat::Clusters {
         {
             for (auto &cluster : clusters) {
                 if (auto commander = cluster.commander.lock()) {
-                    auto atHome = Terrain::inTerritory(PlayerState::Self, cluster.avgPosition);
-                    cluster.marchPosition = commander->marchPos;
+                    auto atHome             = Terrain::inTerritory(PlayerState::Self, cluster.avgPosition);
+                    cluster.marchPosition   = commander->marchPos;
                     cluster.retreatPosition = commander->retreatPos;
 
                     // Determine how commands are sent out
@@ -342,10 +335,10 @@ namespace McRave::Combat::Clusters {
                 Visuals::drawCircle(cluster.retreatNavigation, 6, Colors::Red);
                 Visuals::drawLine(cluster.retreatNavigation, cluster.retreatPosition, Colors::Red);
 
-                //Broodwar->drawTextMap(cluster.marchNavigation, "%d", mapBWEM.GetMiniTile(WalkPosition(cluster.marchNavigation)).Altitude());
+                // Broodwar->drawTextMap(cluster.marchNavigation, "%d", mapBWEM.GetMiniTile(WalkPosition(cluster.marchNavigation)).Altitude());
             }
         }
-    }
+    } // namespace
 
     void onFrame()
     {
@@ -355,23 +348,15 @@ namespace McRave::Combat::Clusters {
         shapeClusters();
         finishClusters();
         fixNavigations();
-        //drawClusters();
+        // drawClusters();
     }
 
-    vector<Cluster>& getClusters() { return clusters; }
+    vector<Cluster> &getClusters() { return clusters; }
 
-    bool canDecimate(UnitInfo& unit, UnitInfo& target, int cnt)
+    bool canDecimate(UnitInfo &unit, UnitInfo &target, int cnt)
     {
-        if (target.isHidden() || target.movedFlag)
+        if (target.isHidden() || target.movedFlag || target.isToken())
             return false;
-
-        // Create an offset that increases over time to prevent low muta counts engaging large numbers
-        auto minutesPastPressure = clamp(Util::getTime().minutes - 7, 0, 3);
-        auto offset = Grids::getAirThreat(target.getPosition(), PlayerState::Enemy) > 0.0f ? minutesPastPressure : 0.0f;
-
-        // Remove the offset if we're in range already, or they're in range of us
-        if (unit.isWithinRange(target) || target.isWithinRange(unit))
-            offset = 0;
 
         // Only allow certain types for cnt > 1
         if (cnt > 1) {
@@ -383,9 +368,7 @@ namespace McRave::Combat::Clusters {
         // Check if this unit could load into a bunker
         if (Util::getTime() < Time(10, 00) && (target.getType() == Terran_Marine || target.getType() == Terran_SCV || target.getType() == Terran_Firebat)) {
             if (Players::getVisibleCount(PlayerState::Enemy, Terran_Bunker) > 0) {
-                auto closestBunker = Util::getClosestUnit(target.getPosition(), PlayerState::Enemy, [&](auto &b) {
-                    return b->getType() == Terran_Bunker;
-                });
+                auto closestBunker = Util::getClosestUnit(target.getPosition(), PlayerState::Enemy, [&](auto &b) { return b->getType() == Terran_Bunker; });
                 if (closestBunker && closestBunker->getPosition().getDistance(target.getPosition()) < 200.0) {
                     return false;
                 }
@@ -393,39 +376,38 @@ namespace McRave::Combat::Clusters {
         }
 
         // TODO: Use cluster size instead with count of units in range
-        auto multiplier = 9.0 - target.data.armor;
-        auto damageEstimate = (Grids::getAirDensity(unit.getPosition(), PlayerState::Self) - offset) * multiplier;
+        auto multiplier     = 9.0 - target.getArmor();
+        auto clusterSize    = Grids::getAirDensity(unit.getPosition(), PlayerState::Self);
+        if (clusterSize < 5)
+            return false;
+        auto damageEstimate = Grids::getAirDensity(unit.getPosition(), PlayerState::Self) * multiplier;
 
         // Calculate the risk
-        auto countDefensesInRange = 0.0;
+        auto dpsInRange = 0.0;
         for (auto &e : target.getUnitsInReachOfThis()) {
             if (e.expired())
                 continue;
 
             auto &enemy = *e.lock();
-            if (enemy.canAttackAir() && !enemy.isStale()) {
-                if (enemy.getPosition().getDistance(target.getPosition()) < enemy.getAirRange() + 160.0 || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 160.0) {
-                    if (enemy.getType().isBuilding())
-                        countDefensesInRange += 0.5;
-                    else
-                        countDefensesInRange += 0.2;
+            if (enemy.canAttackAir() && (!enemy.isStale() || enemy.getType().isBuilding())) {
+                if (enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 64.0
+                    || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 64.0 ||
+                    enemy.getPosition().getDistance(enemy.getPosition()) < enemy.getAirRange() + 64.0) {
+                    dpsInRange += enemy.getDpsAgainst(unit);
                 }
             }
         }
 
-        // Try to avoid hitting non air hitters under active defense
-        if (!target.canAttackAir())
-            countDefensesInRange *= 2.0;
-
         // One shotting units for free / two shotting important units
-        auto easilyKilled = (target.unit()->exists() && damageEstimate >= (target.getHealth() + target.getShields()) * cnt) || (!target.unit()->exists() && damageEstimate >= (target.getType().maxHitPoints() + target.getType().maxShields()) * cnt);
+        auto easilyKilled = (target.unit()->exists() && damageEstimate * cnt >= (target.getHealth() + target.getShields())) ||
+                            (!target.unit()->exists() && damageEstimate * cnt >= (target.getType().maxHitPoints() + target.getType().maxShields()));
+
         if (easilyKilled) {
-            if ((countDefensesInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker())
-                || (countDefensesInRange <= 2.0 && Util::getTime() < Time(8, 00))
-                || (countDefensesInRange <= 2.5 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))
-                || (countDefensesInRange <= 3.0 && Util::getTime() > Time(12, 00)))
+            if ((dpsInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker()) || (dpsInRange <= 6.0 && Util::getTime() < Time(8, 00)) ||
+                (dpsInRange <= 8.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00)) || (dpsInRange <= 10.0 && Util::getTime() > Time(12, 00) && Util::getTime() < Time(16, 00)) ||
+                (dpsInRange <= 12.0 && Util::getTime() > Time(16, 00)) || unit.isWithinRange(target))
                 return true;
         }
         return false;
     }
-}
+} // namespace McRave::Combat::Clusters

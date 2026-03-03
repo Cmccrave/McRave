@@ -1,4 +1,6 @@
-#include "Main/McRave.h"
+#include "Builds/Terran/TerranBuildOrder.h"
+#include "Main/Common.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -6,8 +8,6 @@ using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
 using namespace UpgradeTypes;
 using namespace TechTypes;
-
-#include "../TerranBuildOrder.h"
 
 namespace McRave::BuildOrder::Terran
 {

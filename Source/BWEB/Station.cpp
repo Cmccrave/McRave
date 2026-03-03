@@ -469,8 +469,11 @@ namespace BWEB {
 
     void Station::findDefenses()
     {
-        vector<TilePosition> basePlacements ={ {-2, -2}, {-2, 1}, {2, -2} };
+        vector<TilePosition> basePlacements ={ {-2, -2}, {-2, 1}, {1, -2} };
         auto here = base->Location();
+        if (isNatural()) {
+            basePlacements = {{-2, -2}, {-2, 1}, {1, -2}};
+        }
 
         // Generate defenses
         defenseArrangement = int(round(defenseAngle / 0.785)) % 4;
@@ -486,7 +489,7 @@ namespace BWEB {
         }
 
         // If geyser is above, as it should be, add in a defense to left/right
-        if (base->Geysers().size() == 1) {
+        if (base->Geysers().size() == 1 && !isNatural()) {
             auto geyser = base->Geysers().front();
             auto tile = geyser->TopLeft();
             if ((tile.y < base->Location().y - 3) || tile.y > base->Location().y + 5) {

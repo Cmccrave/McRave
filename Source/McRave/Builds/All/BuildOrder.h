@@ -2,6 +2,8 @@
 #include <BWAPI.h>
 #include <sstream>
 #include <set>
+#include "Micro/Combat/Combat.h"
+#include "Main/Helpers.h"
 
 namespace McRave::BuildOrder {
 

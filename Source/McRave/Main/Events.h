@@ -1,10 +1,14 @@
 #pragma once
-#include "Main/McRave.h"
+#include "BWEB.h"
+#include "Info/Player/Players.h"
+#include "Info/Resource/Resources.h"
+#include "Macro/Planning/Planning.h"
+#include "Main/Common.h"
+#include "Map/Stations.h"
 
 // Information from: https://docs.google.com/document/d/1p7Rw4v56blhf5bzhSnFVfgrKviyrapDFHh9J4FNUXM0
 
-namespace McRave::Events
-{
+namespace McRave::Events {
     inline void onUnitDiscover(BWAPI::Unit unit)
     {
         BWEB::Map::onUnitDiscover(unit);
@@ -55,7 +59,6 @@ namespace McRave::Events
         if (unit->getType().isResourceContainer())
             Resources::storeResource(unit);
 
-
         Players::morphUnit(unit);
     }
 
@@ -78,7 +81,7 @@ namespace McRave::Events
         }
     }
 
-    inline void onUnitLift(UnitInfo& unit)
+    inline void onUnitLift(UnitInfo &unit)
     {
         BWEB::Map::removeUsed(unit.getLastTile(), unit.getType().tileWidth(), unit.getType().tileHeight());
 
@@ -86,7 +89,7 @@ namespace McRave::Events
             Stations::removeStation(unit.unit());
     }
 
-    inline void onUnitLand(UnitInfo& unit)
+    inline void onUnitLand(UnitInfo &unit)
     {
         BWEB::Map::addUsed(unit.getTilePosition(), unit.getType());
 
@@ -94,13 +97,14 @@ namespace McRave::Events
             Stations::storeStation(unit.unit());
     }
 
-    inline void onUnitDisappear(UnitInfo& unit)
+    inline void onUnitDisappear(UnitInfo &unit)
     {
         bool notVisibleFully = false;
         for (int x = unit.getTilePosition().x - 2; x <= unit.getTilePosition().x + 2; x++) {
             for (int y = unit.getTilePosition().y - 2; y <= unit.getTilePosition().y + 2; y++) {
                 BWAPI::TilePosition t(x, y);
-                if (t.isValid() && BWEB::Map::isWalkable(t, BWAPI::UnitTypes::Protoss_Dragoon) && BWAPI::Broodwar->getGroundHeight(t) == BWAPI::Broodwar->getGroundHeight(unit.getTilePosition()) && !BWAPI::Broodwar->isVisible(t)) {
+                if (t.isValid() && BWEB::Map::isWalkable(t, BWAPI::UnitTypes::Protoss_Dragoon) && BWAPI::Broodwar->getGroundHeight(t) == BWAPI::Broodwar->getGroundHeight(unit.getTilePosition()) &&
+                    !BWAPI::Broodwar->isVisible(t)) {
                     notVisibleFully = true;
                     break;
                 }
@@ -108,17 +112,17 @@ namespace McRave::Events
         }
 
         if (!notVisibleFully) {
-            unit.movedFlag = true;
+            unit.movedFlag    = true;
             auto closestEnemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
                 return *u != unit && !u->getType().isWorker() && !u->getType().isBuilding() && !u->isFlying() && !BWAPI::Broodwar->isVisible(u->getTilePosition());
             });
-            closestEnemy ? unit.setAssumedLocation(closestEnemy->getPosition(), closestEnemy->getWalkPosition(), closestEnemy->getTilePosition()) :
-                           unit.setAssumedLocation(BWAPI::Positions::Invalid, BWAPI::WalkPositions::Invalid, BWAPI::TilePositions::Invalid);
+            closestEnemy ? unit.setAssumedLocation(closestEnemy->getPosition(), closestEnemy->getWalkPosition(), closestEnemy->getTilePosition())
+                         : unit.setAssumedLocation(BWAPI::Positions::Invalid, BWAPI::WalkPositions::Invalid, BWAPI::TilePositions::Invalid);
         }
     }
 
     /// https://github.com/bwapi/bwapi/issues/853
-    inline void onUnitCancelBecauseBWAPISucks(UnitInfo& unit)
+    inline void onUnitCancelBecauseBWAPISucks(UnitInfo &unit)
     {
         // Cleanup canceled morphed buildings
         BWEB::Map::removeUsed(unit.getTilePosition(), unit.getType().tileWidth(), unit.getType().tileHeight());
@@ -128,4 +132,4 @@ namespace McRave::Events
         if (unit.getPlayer() == BWAPI::Broodwar->self())
             unit.setRole(Role::Worker);
     }
-}
+} // namespace McRave::Events

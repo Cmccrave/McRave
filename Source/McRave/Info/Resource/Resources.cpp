@@ -1,4 +1,10 @@
-#include "Main/McRave.h"
+#include "Resources.h"
+
+#include "Main/Common.h"
+#include "Info/Resource/ResourceInfo.h"
+#include "Info/Unit/UnitInfo.h"
+#include "Map/Terrain.h"
+#include "Map/Stations.h"
 
 using namespace BWAPI;
 using namespace std;

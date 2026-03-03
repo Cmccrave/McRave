@@ -1,5 +1,5 @@
 #pragma once
-#include "Main/McRave.h"
+#include "Main/Common.h"
 
 namespace McRave::Roles {
 

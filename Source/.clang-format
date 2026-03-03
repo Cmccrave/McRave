@@ -1,0 +1,40 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+
+# --- BRACKET & LINE BREAKS ---
+# Stroustrup puts opening brackets on the same line.
+BreakBeforeBraces: Stroustrup
+AllowShortFunctionsOnASingleLine: All
+ColumnLimit: 200
+
+PenaltyBreakBeforeFirstCallParameter: 1000
+PenaltyBreakAssignment: 1000
+
+# --- INDENTATION ---
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+NamespaceIndentation: All
+IndentCaseLabels: true
+# Ensures public/private are flush with the class keyword
+AccessModifierOffset: -4
+
+# --- SPACING ---
+# Standard spacing: if (condition) vs function()
+SpaceBeforeParens: ControlStatements
+AlignConsecutiveAssignments: true
+
+# --- HEADER SORTING ---
+SortIncludes: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  # BWAPI Headers first
+  - Regex: '^<BWAPI'
+    Priority: 1
+  # System Headers (Anything with < >)
+  - Regex: '^<'
+    Priority: 2
+  # Project Headers (Anything with " ")
+  - Regex: '^"'
+    Priority: 3

@@ -1,4 +1,11 @@
-#include "Main/McRave.h"
+#include "Upgrading.h"
+
+#include "Builds/All/BuildOrder.h"
+#include "Info/Unit/Units.h"
+#include "Macro/Planning/Planning.h"
+#include "Macro/Producing/Producing.h"
+#include "Macro/Researching/Researching.h"
+#include "Micro/Worker/Workers.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -7,24 +14,24 @@ using namespace UnitTypes;
 namespace McRave::Upgrading {
 
     namespace {
-        map <Unit, UpgradeType> idleUpgrade;
+        map<Unit, UpgradeType> idleUpgrade;
         int reservedMineral, reservedGas;
         int lastUpgradeFrame = -999;
 
         void reset()
         {
             reservedMineral = 0;
-            reservedGas = 0;
+            reservedGas     = 0;
         }
 
         bool isAffordable(UpgradeType upgrade)
         {
-            auto mineralCost        = upgrade.mineralPrice() + (upgrade.mineralPriceFactor() * Broodwar->self()->getUpgradeLevel(upgrade));
-            auto gasCost            = upgrade.gasPrice() + (upgrade.gasPriceFactor() * Broodwar->self()->getUpgradeLevel(upgrade));
+            auto mineralCost = upgrade.mineralPrice() + (upgrade.mineralPriceFactor() * Broodwar->self()->getUpgradeLevel(upgrade));
+            auto gasCost     = upgrade.gasPrice() + (upgrade.gasPriceFactor() * Broodwar->self()->getUpgradeLevel(upgrade));
 
             // Plan buildings before we upgrade
-            auto mineralReserve     = Planning::getPlannedMineral();
-            auto gasReserve         = Planning::getPlannedGas();
+            auto mineralReserve = Planning::getPlannedMineral();
+            auto gasReserve     = Planning::getPlannedGas();
 
             return Broodwar->self()->minerals() >= (mineralCost + mineralReserve) && Broodwar->self()->gas() >= (gasCost + gasReserve);
         }
@@ -41,7 +48,8 @@ namespace McRave::Upgrading {
 
             // Armor/Weapon upgrades
             if (upgrade.maxRepeats() >= 3) {
-                if (upgrade.getRace() == Races::Zerg && ((Broodwar->self()->getUpgradeLevel(upgrade) == 1 && com(Zerg_Lair) == 0 && com(Zerg_Hive) == 0) || (Broodwar->self()->getUpgradeLevel(upgrade) == 2 && com(Zerg_Hive) == 0)))
+                if (upgrade.getRace() == Races::Zerg &&
+                    ((Broodwar->self()->getUpgradeLevel(upgrade) == 1 && com(Zerg_Lair) == 0 && com(Zerg_Hive) == 0) || (Broodwar->self()->getUpgradeLevel(upgrade) == 2 && com(Zerg_Hive) == 0)))
                     return false;
                 if (upgrade.getRace() == Races::Protoss && Broodwar->self()->getUpgradeLevel(upgrade) >= 1 && com(Protoss_Templar_Archives) == 0)
                     return false;
@@ -67,7 +75,7 @@ namespace McRave::Upgrading {
             return false;
         }
 
-        bool upgrade(UnitInfo& building)
+        bool upgrade(UnitInfo &building)
         {
             // Clear idle checks
             auto idleItr = idleUpgrade.find(building.unit());
@@ -86,7 +94,8 @@ namespace McRave::Upgrading {
                         lastUpgradeFrame = Broodwar->getFrameCount();
                         return true;
                     }
-                    else if ((Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= upgrade.mineralPrice()) && (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= upgrade.gasPrice())) {
+                    else if ((Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= upgrade.mineralPrice()) &&
+                             (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= upgrade.gasPrice())) {
                         idleUpgrade[building.unit()] = upgrade;
                         reservedMineral += upgrade.mineralPrice();
                         reservedGas += upgrade.gasPrice();
@@ -113,20 +122,14 @@ namespace McRave::Upgrading {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &building = *u;
 
-                if (!building.unit()
-                    || building.getRole() != Role::Production
-                    || !building.isCompleted()
-                    || building.getRemainingTrainFrames() > 0
-                    || Upgrading::upgradedThisFrame()
-                    || Researching::researchedThisFrame()
-                    || Producing::producedThisFrame()
-                    || building.getType() == Zerg_Larva)
+                if (!building.unit() || building.getRole() != Role::Production || !building.isCompleted() || building.getRemainingTrainFrames() > 0 || Upgrading::upgradedThisFrame() ||
+                    Researching::researchedThisFrame() || Producing::producedThisFrame() || building.getType() == Zerg_Larva)
                     continue;
 
                 upgrade(building);
             }
         }
-    }
+    } // namespace
 
     void onFrame()
     {
@@ -137,15 +140,14 @@ namespace McRave::Upgrading {
         Visuals::endPerfTest("Upgrading");
     }
 
-    bool upgradedThisFrame() {
-        return lastUpgradeFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4;
-    }
+    bool upgradedThisFrame() { return lastUpgradeFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4; }
 
-    bool haveOrUpgrading(UpgradeType upgrade, int level) {
+    bool haveOrUpgrading(UpgradeType upgrade, int level)
+    {
         return ((Broodwar->self()->isUpgrading(upgrade) && Broodwar->self()->getUpgradeLevel(upgrade) == level - 1) || Broodwar->self()->getUpgradeLevel(upgrade) >= level);
     }
 
     int getReservedMineral() { return reservedMineral; }
     int getReservedGas() { return reservedGas; }
     bool hasIdleUpgrades() { return !idleUpgrade.empty(); }
-}
+} // namespace McRave::Upgrading

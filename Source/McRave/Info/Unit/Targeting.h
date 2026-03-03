@@ -1,5 +1,5 @@
 #pragma once
-#include <BWAPI.h>
+#include "Main/Common.h"
 
 namespace McRave::Targets {
 

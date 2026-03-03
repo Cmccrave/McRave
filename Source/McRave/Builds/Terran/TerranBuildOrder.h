@@ -1,4 +1,6 @@
 #pragma once
+#include "Main/Common.h"
+#include "Builds/All/BuildOrder.h"
 
 namespace McRave::BuildOrder::Terran {
     inline BWAPI::UnitType rampType = BWAPI::UnitTypes::Terran_Barracks;

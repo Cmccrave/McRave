@@ -1,6 +1,5 @@
 #pragma once
-#include <BWAPI.h>
-#include <set>
+#include "Main/Common.h"
 
 namespace McRave
 {

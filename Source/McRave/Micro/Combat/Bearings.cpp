@@ -1,4 +1,8 @@
-#include "Main/McRave.h"
+#include "Combat.h"
+
+#include "Map/Stations.h"
+#include "Map/Terrain.h"
+#include "Info/Unit/Units.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -91,9 +95,6 @@ namespace McRave::Combat::Bearings {
         else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
             if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Defend) {
                 unit.setDestination(unit.getGoal());
-            }
-            else if (unit.attemptingRegroup()) {
-                unit.setDestination(unit.getCommander().lock()->getPosition());
             }
             else if (retreat && unit.isFlying()) {
                 unit.setDestination(retreat->getBase()->Center());

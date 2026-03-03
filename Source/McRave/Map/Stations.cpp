@@ -1,26 +1,38 @@
-#include "Main/McRave.h"
+#include "Stations.h"
+
+#include "BWEB.h"
+#include "Builds/All/BuildOrder.h"
+#include "Info/Resource/Resources.h"
+#include "Info/Unit/UnitInfo.h"
+#include "Info/Unit/Units.h"
+#include "Macro/Planning/Planning.h"
+#include "Macro/Planning/Pylons.h"
+#include "Main/Common.h"
+#include "Map/Grids.h"
+#include "Map/Terrain.h"
+#include "Map/Walls/Walls.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 
-namespace McRave::Stations
-{
+namespace McRave::Stations {
     namespace {
-        map<const BWEB::Station * const, PlayerState> stations;
+        map<const BWEB::Station *const, PlayerState> stations;
         vector<const BWEB::Station *> selfStations;
         vector<const BWEB::Station *> enemyStations;
         vector<const BWEB::Station *> allyStations;
 
-
-        map<const BWEB::Station * const, Position> defendPositions;
-        multimap<double, const BWEB::Station * const> stationsBySaturation;
-        multimap<double, const BWEB::Station * const> stationsByProduction;
-        map<const BWEB::Station * const, int> airDefenseCount, groundDefenseCount, remainingMinerals, remainingGas, initialMinerals, initialGas;
+        map<const BWEB::Station *const, Position> defendPositions;
+        multimap<double, const BWEB::Station *const> stationsBySaturation;
+        multimap<double, const BWEB::Station *const> stationsByProduction;
+        map<const BWEB::Station *const, int> airDefenseCount, groundDefenseCount, remainingMinerals, remainingGas, initialMinerals, initialGas;
         int miningStations = 0, gasingStations = 0;
-        map<const BWEB::Station * const, map<const BWEB::Station *, BWEB::Path>> stationNetwork;
+        map<const BWEB::Station *const, map<const BWEB::Station *, BWEB::Path>> stationNetwork;
 
-        void updateSaturation() {
+        void updateSaturation()
+        {
 
             // Sort stations by saturation and current larva count
             remainingMinerals.clear();
@@ -30,24 +42,24 @@ namespace McRave::Stations
 
             // Update self stations
             for (auto &station : getStations(PlayerState::Self)) {
-                auto workerCount = 0;
-                auto resourceCount = 0;
-                remainingGas[station] = 0;
+                auto workerCount           = 0;
+                auto resourceCount         = 0;
+                remainingGas[station]      = 0;
                 remainingMinerals[station] = 0;
                 for (auto &mineral : Resources::getMyMinerals()) {
                     if (mineral->getStation() == station && !mineral->isThreatened()) {
                         resourceCount++;
-                        remainingMinerals[station]+=mineral->getRemainingResources();
-                        mineralsLeftTotal+=mineral->getRemainingResources();
-                        workerCount+=mineral->targetedByWhat().size();
+                        remainingMinerals[station] += mineral->getRemainingResources();
+                        mineralsLeftTotal += mineral->getRemainingResources();
+                        workerCount += mineral->targetedByWhat().size();
                     }
                 }
                 for (auto &gas : Resources::getMyGas()) {
                     if (gas->getStation() == station && !gas->isThreatened()) {
                         resourceCount++;
-                        remainingGas[station]+=gas->getRemainingResources();
-                        gasLeftTotal+=gas->getRemainingResources();
-                        workerCount+=gas->targetedByWhat().size();
+                        remainingGas[station] += gas->getRemainingResources();
+                        gasLeftTotal += gas->getRemainingResources();
+                        workerCount += gas->targetedByWhat().size();
                     }
                 }
 
@@ -58,15 +70,15 @@ namespace McRave::Stations
 
             // Update neutral stations
             for (auto &station : getStations(PlayerState::None)) {
-                remainingGas[station] = 0;
+                remainingGas[station]      = 0;
                 remainingMinerals[station] = 0;
                 for (auto &mineral : Resources::getMyMinerals()) {
                     if (mineral->getStation() == station)
-                        remainingMinerals[station]+=mineral->getRemainingResources();
+                        remainingMinerals[station] += mineral->getRemainingResources();
                 }
                 for (auto &gas : Resources::getMyGas()) {
                     if (gas->getStation() == station)
-                        remainingGas[station]+=gas->getRemainingResources();
+                        remainingGas[station] += gas->getRemainingResources();
                 }
             }
 
@@ -83,11 +95,10 @@ namespace McRave::Stations
                 auto production = getStationSaturation(station);
                 for (auto &unit : Units::getUnits(PlayerState::Self)) {
                     if (Planning::isProductionType(unit->getType())) {
-                        auto closestStation = getClosestStationAir(unit->getPosition(), PlayerState::Self, [&](auto station) {
-                            return station->isMain() || Broodwar->self()->getRace() == Races::Zerg;
-                        });
+                        auto closestStation = getClosestStationAir(unit->getPosition(), PlayerState::Self,
+                                                                   [&](auto station) { return station->isMain() || Broodwar->self()->getRace() == Races::Zerg; });
                         if (closestStation == station)
-                            production+=1.0;
+                            production += 1.0;
                     }
                 }
 
@@ -95,19 +106,20 @@ namespace McRave::Stations
             }
         }
 
-        void updateStationDefenses() {
-
+        void updateStationDefenses()
+        {
             // Calculate defense counts
             airDefenseCount.clear();
             groundDefenseCount.clear();
-            vector<PlayerState> states ={ PlayerState::Enemy, PlayerState::Self };
+            vector<PlayerState> states = {PlayerState::Enemy, PlayerState::Self};
 
             for (auto &state : states) {
                 for (auto &u : Units::getUnits(state)) {
                     auto &unit = *u;
                     if (unit.getType().isBuilding() && (unit.canAttackAir() || unit.canAttackGround())) {
                         auto closestStation = getClosestStationAir(unit.getPosition(), state);
-                        if (closestStation && (unit.getPosition().getDistance(closestStation->getBase()->Center()) < 256.0 || closestStation->getDefenses().find(unit.getTilePosition()) != closestStation->getDefenses().end())) {
+                        if (closestStation && (unit.getPosition().getDistance(closestStation->getBase()->Center()) < 256.0 ||
+                                               closestStation->getDefenses().find(unit.getTilePosition()) != closestStation->getDefenses().end())) {
                             if (unit.canAttackAir())
                                 airDefenseCount[closestStation]++;
                             if (unit.canAttackGround())
@@ -121,27 +133,27 @@ namespace McRave::Stations
         void updateDefendPositions()
         {
             for (auto &station : BWEB::Stations::getStations()) {
-                auto defendPosition = station.getBase()->Center();
-                const BWEM::ChokePoint * defendChoke = nullptr;
+                auto defendPosition                 = station.getBase()->Center();
+                const BWEM::ChokePoint *defendChoke = nullptr;
                 if (defendPositions.find(&station) != defendPositions.end())
                     continue;
 
                 // One choke, one defend position
                 if (station.getChokepoint()) {
                     defendPosition = Position(station.getChokepoint()->Center());
-                    defendChoke = station.getChokepoint();
+                    defendChoke    = station.getChokepoint();
                 }
 
                 // Find chokepoint that is closest to enemy reinforcements
                 else if (Terrain::getEnemyStartingPosition().isValid()) {
-                    auto distBest = DBL_MAX;
+                    auto distBest      = DBL_MAX;
                     auto defendTowards = Terrain::getEnemyNatural() ? Terrain::getEnemyNatural()->getBase()->Center() : Terrain::getEnemyMain()->getBase()->Center();
                     for (auto &choke : station.getBase()->GetArea()->ChokePoints()) {
                         auto dist = BWEB::Map::getGroundDistance(Position(choke->Center()), defendTowards);
                         if (dist < distBest) {
-                            distBest = dist;
+                            distBest       = dist;
                             defendPosition = Position(choke->Center());
-                            defendChoke = choke;
+                            defendChoke    = choke;
                         }
                     }
                 }
@@ -152,7 +164,7 @@ namespace McRave::Stations
                 auto pathTowards = Terrain::getEnemyStartingPosition().isValid() ? Terrain::getEnemyStartingPosition() : mapBWEM.Center();
                 if (station.getBase()->GetArea()->ChokePoints().size() >= 3) {
                     defendPosition = Position(0, 0);
-                    int count = 0;
+                    int count      = 0;
 
                     for (auto &choke : station.getBase()->GetArea()->ChokePoints()) {
                         if (defendChoke && choke->GetAreas() != defendChoke->GetAreas())
@@ -170,8 +182,8 @@ namespace McRave::Stations
                 }
 
                 // If defend position isn't walkable, move it towards the closest base
-                //vector<WalkPosition> directions ={ {-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1} };
-                //while (Grids::getMobility(defendPosition) <= 2) {
+                // vector<WalkPosition> directions ={ {-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1} };
+                // while (Grids::getMobility(defendPosition) <= 2) {
                 //    auto best = DBL_MAX;
                 //    auto start = WalkPosition(defendPosition);
 
@@ -188,7 +200,7 @@ namespace McRave::Stations
             }
         }
 
-        int PvPgroundDef(const BWEB::Station * const station)
+        int PvPgroundDef(const BWEB::Station *const station)
         {
             auto groundCount = getGroundDefenseCount(station);
 
@@ -205,7 +217,7 @@ namespace McRave::Stations
             return 0;
         }
 
-        int PvTgroundDef(const BWEB::Station * const station)
+        int PvTgroundDef(const BWEB::Station *const station)
         {
             if (station->isMain()) {
             }
@@ -216,7 +228,7 @@ namespace McRave::Stations
             return 0;
         }
 
-        int PvZgroundDef(const BWEB::Station * const station)
+        int PvZgroundDef(const BWEB::Station *const station)
         {
             auto groundCount = getGroundDefenseCount(station);
 
@@ -233,7 +245,7 @@ namespace McRave::Stations
             return 0;
         }
 
-        int ZvPgroundDef(const BWEB::Station * const station)
+        int ZvPgroundDef(const BWEB::Station *const station)
         {
             auto groundCount = getGroundDefenseCount(station);
 
@@ -243,7 +255,7 @@ namespace McRave::Stations
                     return (Util::getTime() > Time(2, 00)) + (Util::getTime() > Time(2, 20)) - groundCount;
 
                 //// Add 1 sunks if we opened greedy against proxy gates
-                //if (Spy::getEnemyOpener() == "Proxy9/9" && BuildOrder::getCurrentBuild() == Z_HatchPool)
+                // if (Spy::getEnemyOpener() == "Proxy9/9" && BuildOrder::getCurrentBuild() == Z_HatchPool)
                 //    return (Util::getTime() > Time(3, 30)) - groundCount;
 
                 // Add a sunk in main if we lost the natural, maybe it holds to get a win
@@ -255,7 +267,7 @@ namespace McRave::Stations
             return 0;
         }
 
-        int ZvTgroundDef(const BWEB::Station * const station)
+        int ZvTgroundDef(const BWEB::Station *const station)
         {
             auto groundCount = getGroundDefenseCount(station);
 
@@ -263,22 +275,22 @@ namespace McRave::Stations
                 if (Players::getTotalCount(PlayerState::Enemy, Terran_Dropship) > 0)
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
                 if (Players::ZvT() && Spy::getEnemyTransition() == U_WorkerRush)
-                    return 2 - groundCount;
+                    return 1 - groundCount;
                 if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(7, 00))
                     return 1 - groundCount;
             }
             return 0;
         }
 
-        int ZvZgroundDef(const BWEB::Station * const station)
+        int ZvZgroundDef(const BWEB::Station *const station)
         {
-            auto groundCount = getGroundDefenseCount(station);
+            auto groundCount     = getGroundDefenseCount(station);
             auto desiredDefenses = 0;
 
             // If enemy adds defenses, we can start to cut defenses too
             if (Util::getTime() > Time(4, 00))
-                groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Creep_Colony)
-                + Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
+                groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Creep_Colony) +
+                               Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
 
             if (station->isMain()) {
                 if (!Spy::enemyRush() && getStations(PlayerState::Self).size() > 1)
@@ -324,33 +336,31 @@ namespace McRave::Stations
 
                     // Speedling all-in
                     if (Spy::getEnemyTransition() == Z_2HatchSpeedling)
-                        //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 30)));
+                        // desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4,
+                        // 30)));
                         return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(3, 00)) + (vis(Zerg_Spire) * 2) - groundCount;
 
                     if (total(Zerg_Mutalisk) >= 4) {
 
                         // 12 Pool
                         if (Spy::getEnemyOpener() == Z_12Pool && Spy::getEnemyTransition() != Z_1HatchMuta)
-                            //desiredDefenses = max(desiredDefenses, int(Util::getTime() > Time(4, 00)));
+                            // desiredDefenses = max(desiredDefenses, int(Util::getTime() > Time(4, 00)));
                             return 2 - groundCount;
 
                         // +1Ling
                         if (Spy::getEnemyTransition() == Z_UpgradeLing)
-                            //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(4, 45)));
+                            // desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(4, 45)));
                             return 2 - groundCount;
 
                         // 2 Hatch
                         if (Spy::getEnemyBuild() == Z_PoolHatch)
-                            //desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(4, 45)));
+                            // desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(4, 45)));
                             return 2 - groundCount;
 
                         // Unknown
-                        if ((!Terrain::foundEnemy() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 24)
-                            || Spy::enemyFastExpand()
-                            || Spy::getEnemyBuild() == Z_HatchPool
-                            || Spy::getEnemyTransition() == Z_2HatchMuta
-                            || (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling)))
-                            //desiredDefenses = max(desiredDefenses, 1);
+                        if ((!Terrain::foundEnemy() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 24) || Spy::enemyFastExpand() || Spy::getEnemyBuild() == Z_HatchPool ||
+                            Spy::getEnemyTransition() == Z_2HatchMuta || (Util::getTime() > Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > 4 * vis(Zerg_Zergling)))
+                            // desiredDefenses = max(desiredDefenses, 1);
                             return 1 - groundCount;
                     }
                 }
@@ -358,7 +368,7 @@ namespace McRave::Stations
             return desiredDefenses - groundCount;
         }
 
-        int ZvFFAgroundDef(const BWEB::Station * const station)
+        int ZvFFAgroundDef(const BWEB::Station *const station)
         {
             auto groundCount = getGroundDefenseCount(station);
 
@@ -367,7 +377,7 @@ namespace McRave::Stations
             return 0;
         }
 
-        int TvZgroundDef(const BWEB::Station * const station)
+        int TvZgroundDef(const BWEB::Station *const station)
         {
             auto groundCount = getGroundDefenseCount(station);
 
@@ -384,12 +394,8 @@ namespace McRave::Stations
             enemyStations.clear();
             allyStations.clear();
             for (auto &station : BWEB::Stations::getStations()) {
-                const auto closestSelf = Util::getClosestUnit(station.getBase()->Center(), PlayerState::Self, [&](auto &u) {
-                    return u->getType().isResourceDepot();
-                });
-                const auto closestEnemy = Util::getClosestUnit(station.getBase()->Center(), PlayerState::Self, [&](auto &u) {
-                    return u->getType().isResourceDepot();
-                });
+                const auto closestSelf  = Util::getClosestUnit(station.getBase()->Center(), PlayerState::Self, [&](auto &u) { return u->getType().isResourceDepot(); });
+                const auto closestEnemy = Util::getClosestUnit(station.getBase()->Center(), PlayerState::Self, [&](auto &u) { return u->getType().isResourceDepot(); });
 
                 if (closestSelf && closestSelf->getPosition().getDistance(station.getBase()->Center()) < 96.0) {
                     selfStations.push_back(&station);
@@ -399,11 +405,12 @@ namespace McRave::Stations
                 }
             }
         }
-    }
+    } // namespace
 
-    void onFrame() {
+    void onFrame()
+    {
         Visuals::startPerfTest();
-        //updateOwners();
+        // updateOwners();
         updateSaturation();
         updateProduction();
         updateStationDefenses();
@@ -411,7 +418,8 @@ namespace McRave::Stations
         Visuals::endPerfTest("Stations");
     }
 
-    void onStart() {
+    void onStart()
+    {
         for (auto &station : BWEB::Stations::getStations()) {
             for (auto &mineral : station.getBase()->Minerals())
                 initialMinerals[&station] += mineral->InitialAmount();
@@ -435,13 +443,10 @@ namespace McRave::Stations
 
     void storeStation(BWAPI::Point<int> here, PlayerState player)
     {
-        auto station = BWEB::Stations::getClosestStation(TilePosition(here));
+        auto station    = BWEB::Stations::getClosestStation(TilePosition(here));
         auto stationptr = stations.find(station);
 
-        if (!station
-            || here.getDistance(station->getBase()->Center()) > 96.0
-            || stationptr == stations.end()
-            || stationptr->second != PlayerState::None)
+        if (!station || here.getDistance(station->getBase()->Center()) > 96.0 || stationptr == stations.end() || stationptr->second != PlayerState::None)
             return;
 
         // Store station and set resource states if we own this station
@@ -470,19 +475,14 @@ namespace McRave::Stations
     }
 
     // TODO: Eventually remove this
-    void storeStation(Unit unit) {
-        storeStation(unit->getPosition(), Players::getPlayerState(unit));
-    }
+    void storeStation(Unit unit) { storeStation(unit->getPosition(), Players::getPlayerState(unit)); }
 
     void removeStation(BWAPI::Point<int> here, PlayerState player)
     {
-        auto station = BWEB::Stations::getClosestStation(TilePosition(here));
+        auto station    = BWEB::Stations::getClosestStation(TilePosition(here));
         auto stationptr = stations.find(station);
 
-        if (!station
-            || here.getDistance(station->getBase()->Center()) > 96.0
-            || stationptr == stations.end()
-            || stationptr->second == PlayerState::None)
+        if (!station || here.getDistance(station->getBase()->Center()) > 96.0 || stationptr == stations.end() || stationptr->second == PlayerState::None)
             return;
 
         // Remove workers from any resources on this station
@@ -510,15 +510,14 @@ namespace McRave::Stations
         Terrain::removeTerritory(player, station);
     }
 
-    void removeStation(Unit unit) {
-        removeStation(unit->getPosition(), Players::getPlayerState(unit));
-    }
+    void removeStation(Unit unit) { removeStation(unit->getPosition(), Players::getPlayerState(unit)); }
 
-    int getColonyCount(const BWEB::Station *  const station)
+    int getColonyCount(const BWEB::Station *const station)
     {
-        auto colonies = 0;
-        auto wallNeeds = station->getChokepoint() && BWEB::Walls::getWall(station->getChokepoint()) && (Walls::needGroundDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0 || Walls::needAirDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0);
-        for (auto& tile : station->getDefenses()) {
+        auto colonies  = 0;
+        auto wallNeeds = station->getChokepoint() && BWEB::Walls::getWall(station->getChokepoint()) &&
+                         (Walls::needGroundDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0 || Walls::needAirDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0);
+        for (auto &tile : station->getDefenses()) {
             if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony)
                 colonies++;
         }
@@ -527,11 +526,10 @@ namespace McRave::Stations
         return colonies;
     }
 
-    int needGroundDefenses(const BWEB::Station * const station) {
+    int needGroundDefenses(const BWEB::Station *const station)
+    {
 
-        if (BuildOrder::isRush()
-            || BuildOrder::isPressure()
-            || Spy::getEnemyTransition() == P_Carrier)
+        if (BuildOrder::isRush() || BuildOrder::isPressure() || Spy::getEnemyTransition() == P_Carrier)
             return 0;
 
         // We don't want to pull workers to build things if none are nearby
@@ -555,22 +553,20 @@ namespace McRave::Stations
         return 0;
     }
 
-    int needAirDefenses(const BWEB::Station * const station) {
+    int needAirDefenses(const BWEB::Station *const station)
+    {
 
         // We don't want to pull workers to build things if none are nearby
         if (getSaturationRatio(station) == 0.0 && getColonyCount(station) == 0)
             return 0;
 
-        auto airCount = getAirDefenseCount(station);
-        const auto enemyAir = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0
-            || (Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 && Util::getTime() > Time(4, 45));
+        auto airCount       = getAirDefenseCount(station);
+        const auto enemyAir = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0 ||
+                              Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0 ||
+                              Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 ||
+                              (Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 && Util::getTime() > Time(4, 45));
 
-        auto mutaBuild = BuildOrder::getCurrentTransition().find("Muta") != string::npos;
+        auto mutaBuild  = BuildOrder::getCurrentTransition().find("Muta") != string::npos;
         auto hydraBuild = BuildOrder::getCurrentTransition().find("Hydra") != string::npos;
 
         if (Players::ZvP()) {
@@ -599,7 +595,8 @@ namespace McRave::Stations
                 return (Util::getTime() > Time(9, 00)) - airCount;
 
             // Corsair DT exist
-            if (!Combat::State::isStaticRetreat(Zerg_Hydralisk) && !station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0)
+            if (!Combat::State::isStaticRetreat(Zerg_Hydralisk) && !station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 &&
+                Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0)
                 return (Util::getTime() > Time(9, 00)) - airCount;
         }
 
@@ -610,7 +607,8 @@ namespace McRave::Stations
                 return (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(6, 15)) - airCount;
 
             // We have more bases
-            if (Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 && Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() && com(Zerg_Extractor) >= 2)
+            if (Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 && Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() &&
+                com(Zerg_Extractor) >= 2)
                 return (Util::getTime() > Time(6, 15)) - airCount;
         }
 
@@ -625,7 +623,8 @@ namespace McRave::Stations
                 return (Util::getTime() > Time(5, 30)) - airCount;
 
             // Late game we want a spore protecting ovies from stray valks/wraiths
-            if (Stations::getStations(PlayerState::Self).size() >= 3 && (Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) >= 4 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) >= 8))
+            if (Stations::getStations(PlayerState::Self).size() >= 3 &&
+                (Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) >= 4 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) >= 8))
                 return 1 - airCount;
         }
 
@@ -639,7 +638,8 @@ namespace McRave::Stations
         return 0;
     }
 
-    bool needPower(const BWEB::Station * const station) {
+    bool needPower(const BWEB::Station *const station)
+    {
         auto count = 0;
         for (auto &defense : station->getDefenses()) {
             if (Pylons::hasPowerSoon(defense, UnitTypes::Protoss_Photon_Cannon))
@@ -648,12 +648,14 @@ namespace McRave::Stations
         return count < 2;
     }
 
-    bool isBaseExplored(const BWEB::Station * const station) {
+    bool isBaseExplored(const BWEB::Station *const station)
+    {
         auto botRight = station->getBase()->Location() + TilePosition(3, 2);
         return (Broodwar->isExplored(station->getBase()->Location()) && Broodwar->isExplored(botRight));
     }
 
-    bool isGeyserExplored(const BWEB::Station * const station) {
+    bool isGeyserExplored(const BWEB::Station *const station)
+    {
         for (auto &geyser : Resources::getMyGas()) {
             if (!Broodwar->isExplored(geyser->getTilePosition()) || !Broodwar->isExplored(geyser->getTilePosition() + TilePosition(3, 1)))
                 return false;
@@ -661,16 +663,14 @@ namespace McRave::Stations
         return true;
     }
 
-    bool isCompleted(const BWEB::Station * const station)
+    bool isCompleted(const BWEB::Station *const station)
     {
         // TODO: This is really slow
-        const auto base = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) {
-            return u->getType().isResourceDepot();
-        });
+        const auto base = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) { return u->getType().isResourceDepot(); });
         return base && base->unit()->isCompleted();
     }
 
-    bool isBlocked(const BWEB::Station * const station)
+    bool isBlocked(const BWEB::Station *const station)
     {
         auto stationptr = stations.find(station);
         if (stationptr != stations.end() && stationptr->second != PlayerState::None) {
@@ -689,12 +689,13 @@ namespace McRave::Stations
         return false;
     }
 
-    int lastVisible(const BWEB::Station * const station) {
+    int lastVisible(const BWEB::Station *const station)
+    {
         auto botRight = station->getBase()->Location() + TilePosition(4, 3);
         return min(Grids::getLastVisibleFrame(station->getBase()->Location()), Grids::getLastVisibleFrame(botRight));
     }
 
-    double getSaturationRatio(const BWEB::Station * const station)
+    double getSaturationRatio(const BWEB::Station *const station)
     {
         for (auto &[r, s] : stationsBySaturation) {
             if (s == station)
@@ -703,7 +704,7 @@ namespace McRave::Stations
         return 0.0;
     }
 
-    PlayerState ownedBy(const BWEB::Station * const station)
+    PlayerState ownedBy(const BWEB::Station *const station)
     {
         auto stationptr = stations.find(station);
         if (stationptr != stations.end())
@@ -711,17 +712,16 @@ namespace McRave::Stations
         return PlayerState::None;
     }
 
-    const BWEB::Station * const getClosestRetreatStation(UnitInfo& unit)
+    const BWEB::Station *const getClosestRetreatStation(UnitInfo &unit)
     {
         const auto closerThanSim = [&](auto &defendPosition) {
             if (!unit.hasSimTarget())
                 return true;
-            auto sim = unit.getSimTarget().lock();
+            auto sim         = unit.getSimTarget().lock();
             auto eitherFlyer = (sim->isFlying() || unit.isFlying());
 
-            return !unit.hasSimTarget()
-                || eitherFlyer
-                || BWEB::Map::getGroundDistance(unit.getPosition(), defendPosition) < BWEB::Map::getGroundDistance(unit.getSimTarget().lock()->getPosition(), defendPosition);
+            return !unit.hasSimTarget() || eitherFlyer ||
+                   BWEB::Map::getGroundDistance(unit.getPosition(), defendPosition) < BWEB::Map::getGroundDistance(unit.getSimTarget().lock()->getPosition(), defendPosition);
         };
 
         const auto alreadyInArea = [&](auto station) {
@@ -760,30 +760,29 @@ namespace McRave::Stations
                 return Combat::isDefendNatural() ? Terrain::getMyNatural() : Terrain::getMyMain();
         }
 
-        auto distBest = DBL_MAX;
+        auto distBest    = DBL_MAX;
         auto bestStation = Terrain::getMyMain();
         for (auto &station : getStations(PlayerState::Self)) {
             auto defendPosition = station->getBase()->Center();
-            auto distDefend = defendPosition.getDistance(here);
-            auto distCenter = station->getBase()->Center().getDistance(here);
+            auto distDefend     = defendPosition.getDistance(here);
+            auto distCenter     = station->getBase()->Center().getDistance(here);
 
             if (distDefend < distBest && !ownForwardBase(station)) {
                 bestStation = station;
-                distBest = distDefend;
+                distBest    = distDefend;
             }
         }
         return bestStation;
     }
 
-    std::vector<const BWEB::Station *> getStations(PlayerState player) {
-        return getStations(player, [](auto) {
-            return true;
-        });
+    std::vector<const BWEB::Station *> getStations(PlayerState player)
+    {
+        return getStations(player, [](auto) { return true; });
     }
 
-    template<typename F>
-    std::vector<const BWEB::Station *> getStations(PlayerState player, F &&pred) {
-        vector<const BWEB::Station*> returnVector;
+    template <typename F> std::vector<const BWEB::Station *> getStations(PlayerState player, F &&pred)
+    {
+        vector<const BWEB::Station *> returnVector;
         for (auto &[station, stationPlayer] : stations) {
             if (stationPlayer == player && pred(station))
                 returnVector.push_back(station);
@@ -791,7 +790,8 @@ namespace McRave::Stations
         return returnVector;
     }
 
-    double getStationSaturation(const BWEB::Station * station) {
+    double getStationSaturation(const BWEB::Station *station)
+    {
         for (auto &[saturation, s] : stationsBySaturation) {
             if (s == station)
                 return saturation;
@@ -799,7 +799,7 @@ namespace McRave::Stations
         return 0.0;
     }
 
-    BWEB::Path getPathBetween(const BWEB::Station * station1, const BWEB::Station * station2)
+    BWEB::Path getPathBetween(const BWEB::Station *station1, const BWEB::Station *station2)
     {
         auto station1ptr = stationNetwork.find(station1);
         if (station1ptr != stationNetwork.end()) {
@@ -810,25 +810,26 @@ namespace McRave::Stations
         return {};
     }
 
-    std::map<const BWEB::Station *, BWEB::Path>& getStationNetwork(const BWEB::Station * station)
+    std::map<const BWEB::Station *, BWEB::Path> &getStationNetwork(const BWEB::Station *station)
     {
         auto stationptr = stationNetwork.find(station);
         return stationptr->second;
     }
 
-    Position getDefendPosition(const BWEB::Station * const station) {
+    Position getDefendPosition(const BWEB::Station *const station)
+    {
         if (defendPositions.find(station) != defendPositions.end())
             return defendPositions[station];
         return Positions::Invalid;
     }
-    multimap<double, const BWEB::Station * const>& getStationsBySaturation() { return stationsBySaturation; }
-    multimap<double, const BWEB::Station * const>& getStationsByProduction() { return stationsByProduction; }
+    multimap<double, const BWEB::Station *const> &getStationsBySaturation() { return stationsBySaturation; }
+    multimap<double, const BWEB::Station *const> &getStationsByProduction() { return stationsByProduction; }
     int getGasingStationsCount() { return gasingStations; }
     int getMiningStationsCount() { return miningStations; }
-    int getGroundDefenseCount(const BWEB::Station * const station) { return groundDefenseCount[station]; }
-    int getAirDefenseCount(const BWEB::Station * const station) { return airDefenseCount[station]; }
-    int getMineralsRemaining(const BWEB::Station * const station) { return remainingMinerals[station]; }
-    int getGasRemaining(const BWEB::Station * const station) { return remainingGas[station]; }
-    int getMineralsInitial(const BWEB::Station * const station) { return initialMinerals[station]; }
-    int getGasInitial(const BWEB::Station * const station) { return initialGas[station]; }
-}
+    int getGroundDefenseCount(const BWEB::Station *const station) { return groundDefenseCount[station]; }
+    int getAirDefenseCount(const BWEB::Station *const station) { return airDefenseCount[station]; }
+    int getMineralsRemaining(const BWEB::Station *const station) { return remainingMinerals[station]; }
+    int getGasRemaining(const BWEB::Station *const station) { return remainingGas[station]; }
+    int getMineralsInitial(const BWEB::Station *const station) { return initialMinerals[station]; }
+    int getGasInitial(const BWEB::Station *const station) { return initialGas[station]; }
+} // namespace McRave::Stations

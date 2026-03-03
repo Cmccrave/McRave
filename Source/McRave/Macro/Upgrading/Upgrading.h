@@ -1,8 +1,7 @@
 #pragma once
-#include <BWAPI.h>
+#include "Main/Common.h"
 
-namespace McRave::Upgrading
-{
+namespace McRave::Upgrading {
     bool haveOrUpgrading(BWAPI::UpgradeType, int);
     bool upgradedThisFrame();
     void onFrame();
@@ -10,4 +9,4 @@ namespace McRave::Upgrading
     int getReservedMineral();
     int getReservedGas();
     bool hasIdleUpgrades();
-}
+} // namespace McRave::Upgrading

@@ -1,18 +1,23 @@
-#include "Main/McRave.h"
 #include "BuildOrder.h"
+
 #include <fstream>
+
+#include "Builds/Protoss/ProtossBuildOrder.h"
+#include "Builds/Terran//TerranBuildOrder.h"
+#include "Builds/Zerg/ZergBuildOrder.h"
+#include "Info/Player/Players.h"
+#include "Info/Resource/Resources.h"
+#include "Main/Common.h"
+#include "Main/Visuals.h"
+#include "Map/Terrain.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace std;
 using namespace BWAPI;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
 
-#include "Builds/Zerg/ZergBuildOrder.h"
-#include "Builds/Protoss/ProtossBuildOrder.h"
-#include "Builds/Terran//TerranBuildOrder.h"
-
-namespace McRave::BuildOrder
-{
+namespace McRave::BuildOrder {
     namespace {
 
         string nodeName = "[BuildOrder]: ";
@@ -51,7 +56,7 @@ namespace McRave::BuildOrder
                 Zerg::unlocks();
             }
         }
-    }
+    } // namespace
 
     int getGasQueued()
     {
@@ -89,31 +94,27 @@ namespace McRave::BuildOrder
         return minQueued;
     }
 
-    bool atPercent(UnitType t, double percent) {
+    bool atPercent(UnitType t, double percent)
+    {
         if (com(t) > 0)
             return true;
 
         // Estimate how long until a building finishes based on how far it is from the nearest worker
-        auto closestBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
-            return u->getType() == t;
-        });
-        auto closestWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
-            return u->getType() == Broodwar->self()->getRace().getWorker();
-        });
+        auto closestBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == t; });
+        auto closestWorker   = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == Broodwar->self()->getRace().getWorker(); });
 
         if (closestBuilding && closestWorker)
             return double(t.buildTime() - closestBuilding->unit()->getRemainingBuildTime()) / double(t.buildTime()) >= percent;
         return false;
     }
 
-    bool atPercent(TechType t, double percent) {
+    bool atPercent(TechType t, double percent)
+    {
         if (Broodwar->self()->hasResearched(t))
             return true;
 
         // Estimate how long until a building finishes based on how far it is from the nearest worker
-        auto closestBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
-            return u->getType() == t.whatResearches() && u->unit()->isResearching();
-        });
+        auto closestBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == t.whatResearches() && u->unit()->isResearching(); });
         return closestBuilding != nullptr;
     }
 
@@ -132,16 +133,12 @@ namespace McRave::BuildOrder
                 return total(type) > 0 && Players::hasResearched(PlayerState::Self, TechTypes::Consume);
 
             // When timing attack finishes
-            if (type == Protoss_Dark_Templar || type == Zerg_Ultralisk)
+            if (type == Protoss_Dark_Templar)
                 return total(type) >= 4;
             if (type == Zerg_Mutalisk || type == Zerg_Hydralisk)
                 return total(type) >= 6;
-            if (type == Zerg_Lurker) {
-                auto vsMech = Spy::getEnemyTransition() == T_2FactVulture
-                    || Spy::getEnemyTransition() == T_1FactTanks
-                    || Spy::getEnemyTransition() == T_5FactGoliath;
-                return Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) || vsMech;
-            }
+            if (type == Zerg_Lurker)
+                return Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect) || Spy::Terran::enemyMech();
 
             // Default to any completion
             if (total(type) == 0)
@@ -166,7 +163,8 @@ namespace McRave::BuildOrder
         return 0;
     }
 
-    bool unlockReady(UnitType type) {
+    bool unlockReady(UnitType type)
+    {
 
         // P
         if (type == Protoss_Probe)
@@ -275,7 +273,7 @@ namespace McRave::BuildOrder
         vector<UnitType> checkedAlready;
 
         // Add any buildable requisite buildings to make this unit
-        std::function<void(UnitType)>addBuildableRequisites = [&](auto &type) {
+        std::function<void(UnitType)> addBuildableRequisites = [&](auto &type) {
             for (auto &[parent, _] : type.requiredUnits()) {
                 if (parent == Zerg_Larva || parent.isWorker())
                     continue;
@@ -308,9 +306,10 @@ namespace McRave::BuildOrder
         }
     }
 
-    void setLearnedBuild(string_view newBuild, string_view newOpener, string_view newTransition) {
-        currentBuild = newBuild;
-        currentOpener = newOpener;
+    void setLearnedBuild(string_view newBuild, string_view newOpener, string_view newTransition)
+    {
+        currentBuild      = newBuild;
+        currentOpener     = newOpener;
         currentTransition = newTransition;
     }
 
@@ -331,33 +330,27 @@ namespace McRave::BuildOrder
     // bool isFocusTech
     // bool isFocusUpgrade
 
-    map<UnitType, int>& getBuildQueue() { return buildQueue; }
-    map<UpgradeType, int>& getUpgradeQueue() { return upgradeQueue; }
-    map<TechType, int>& getTechQueue() { return techQueue; }
+    map<UnitType, int> &getBuildQueue() { return buildQueue; }
+    map<UpgradeType, int> &getUpgradeQueue() { return upgradeQueue; }
+    map<TechType, int> &getTechQueue() { return techQueue; }
     map<UnitType, double> getArmyComposition() { return armyComposition; }
 
-    set<UnitType>& getUnlockedList() { return  unlockedType; }
+    set<UnitType> &getUnlockedList() { return unlockedType; }
     int gasWorkerLimit() { return gasLimit; }
-    int getUnitReservation(UnitType type) {
+    int getUnitReservation(UnitType type)
+    {
         if (unitReservations.find(type) == unitReservations.end())
             return 0;
         return unitReservations[type];
     }
 
-    bool isAllIn() {
-        return activeAllin.isActive();
-    }
+    bool isAllIn() { return activeAllin.isActive(); }
 
-    bool isPreparingAllIn() {
-        return activeAllin.isPreparing();
-    }
+    bool isPreparingAllIn() { return activeAllin.isPreparing(); }
 
     bool isUnitUnlocked(UnitType unit) { return unlockedType.find(unit) != unlockedType.end(); }
 
-
-    int gasMax() {
-        return Resources::getGasCount() * 3;
-    }
+    int gasMax() { return Resources::getGasCount() * 3; }
 
     bool isOpener() { return inOpening; }
     bool takeNatural() { return wantNatural; }
@@ -378,4 +371,4 @@ namespace McRave::BuildOrder
     string getCurrentBuild() { return currentBuild; }
     string getCurrentOpener() { return currentOpener; }
     string getCurrentTransition() { return currentTransition; }
-}
+} // namespace McRave::BuildOrder

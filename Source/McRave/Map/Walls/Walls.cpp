@@ -1,4 +1,13 @@
-#include "Main/McRave.h"
+#include "Walls.h"
+
+#include "BWEB.h"
+#include "Builds/All/BuildOrder.h"
+#include "Info/Player/Players.h"
+#include "Info/Unit/Units.h"
+#include "Main/Common.h"
+#include "Map/Stations.h"
+#include "Map/Terrain.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -8,23 +17,23 @@ using namespace UnitTypes;
 namespace McRave::Walls {
 
     namespace {
-        const BWEB::Wall * mainWall = nullptr;
-        const BWEB::Wall * naturalWall = nullptr;
+        const BWEB::Wall *mainWall    = nullptr;
+        const BWEB::Wall *naturalWall = nullptr;
         vector<vector<UnitType>> naturaltestingOrder;
         vector<vector<UnitType>> thirdTestingOrder;
         vector<UnitType> defenses;
         bool tight;
         bool openWall;
-        UnitType tightType = None;
+        UnitType tightType   = None;
         bool wantTerranWalls = false;
 
-        void generateWall(const BWEB::Station * const station, const BWEM::ChokePoint* choke)
+        void generateWall(const BWEB::Station *const station, const BWEM::ChokePoint *choke)
         {
             auto area = station->getBase()->GetArea();
 
             // HACK: Zerg walls in the main are just necessary on pocket natural maps, we don't want extra buildings
             if (Broodwar->self()->getRace() == Races::Zerg && area == Terrain::getMainArea()) {
-                vector<UnitType> hatch ={ Zerg_Hatchery };
+                vector<UnitType> hatch = {Zerg_Hatchery};
                 BWEB::Walls::createWall(hatch, area, choke, tightType, defenses, openWall, true);
                 return;
             }
@@ -32,16 +41,8 @@ namespace McRave::Walls {
             auto &list = station->isNatural() ? naturaltestingOrder : thirdTestingOrder;
 
             for (auto &buildings : list) {
-                string types = "";
-                for (auto &building : buildings)
-                    types += building.c_str() + string(", ");
-
                 if (!BWEB::Walls::getWall(choke)) {
-                    Util::debug(string("[Walls]: Generating wall: ") + types);
                     BWEB::Walls::createWall(buildings, area, choke, tightType, defenses, openWall, tight);
-                    if (!BWEB::Walls::getWall(choke)) {
-                        Util::debug(string("[Walls]: Wall failed"));
-                    }
                 }
             }
         }
@@ -58,48 +59,42 @@ namespace McRave::Walls {
 
             // Protoss wall parameters
             if (Broodwar->self()->getRace() == Races::Protoss) {
-                defenses ={ Protoss_Photon_Cannon };
+                defenses = {Protoss_Photon_Cannon};
                 if (Players::vZ()) {
-                    tight = false;
-                    naturaltestingOrder ={ { Protoss_Gateway, Protoss_Forge, Protoss_Pylon } };
+                    tight               = false;
+                    naturaltestingOrder = {{Protoss_Gateway, Protoss_Forge, Protoss_Pylon}};
                 }
                 else {
-                    tight = false;
-                    naturaltestingOrder ={ { Protoss_Forge, Protoss_Pylon, Protoss_Pylon, Protoss_Pylon } };
+                    tight               = false;
+                    naturaltestingOrder = {{Protoss_Forge, Protoss_Pylon, Protoss_Pylon, Protoss_Pylon}};
                 }
             }
 
             // Terran wall parameters
             if (Broodwar->self()->getRace() == Races::Terran) {
-                tight = false;
-                defenses ={ Terran_Missile_Turret };
-                thirdTestingOrder ={ { Terran_Supply_Depot, Terran_Supply_Depot, Terran_Supply_Depot, Terran_Supply_Depot },
-                                     { Terran_Supply_Depot, Terran_Supply_Depot, Terran_Supply_Depot },
-                                     { Terran_Supply_Depot, Terran_Supply_Depot }
-                };
+                tight             = false;
+                defenses          = {Terran_Missile_Turret};
+                thirdTestingOrder = {{Terran_Supply_Depot, Terran_Supply_Depot, Terran_Supply_Depot, Terran_Supply_Depot},
+                                     {Terran_Supply_Depot, Terran_Supply_Depot, Terran_Supply_Depot},
+                                     {Terran_Supply_Depot, Terran_Supply_Depot}};
 
-                naturaltestingOrder ={ { Terran_Barracks, Terran_Supply_Depot } };
+                naturaltestingOrder = {{Terran_Barracks, Terran_Supply_Depot}};
             }
 
             // Zerg wall parameters
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                tight = false;
-                defenses ={ Zerg_Sunken_Colony };
+                tight    = false;
+                defenses = {Zerg_Sunken_Colony};
 
                 if (Players::ZvT()) {
-                    naturaltestingOrder ={ { Zerg_Evolution_Chamber, Zerg_Spire },
-                                           { Zerg_Evolution_Chamber },
-                                           { Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
-                                           { Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
-                                           {}
-                    };
+                    naturaltestingOrder = {{Zerg_Evolution_Chamber, Zerg_Spire},
+                                           {Zerg_Evolution_Chamber},
+                                           {Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
+                                           {Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
+                                           {}};
                 }
                 else {
-                    naturaltestingOrder ={ { Zerg_Evolution_Chamber, Zerg_Hatchery },
-                                           { Zerg_Hatchery, Zerg_Evolution_Chamber},
-                                           { Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
-                                           {}
-                    };
+                    naturaltestingOrder = {{Zerg_Evolution_Chamber, Zerg_Hatchery}, {Zerg_Hatchery, Zerg_Evolution_Chamber}, {Zerg_Evolution_Chamber, Zerg_Evolution_Chamber}, {}};
                 }
                 thirdTestingOrder = naturaltestingOrder;
             }
@@ -123,11 +118,11 @@ namespace McRave::Walls {
             }
 
             naturalWall = BWEB::Walls::getWall(Terrain::getNaturalChoke());
-            mainWall = BWEB::Walls::getWall(Terrain::getMainChoke());
+            mainWall    = BWEB::Walls::getWall(Terrain::getMainChoke());
         }
 
         // PvP
-        int PvP_Defenses(const BWEB::Wall& wall)
+        int PvP_Defenses(const BWEB::Wall &wall)
         {
             if (BuildOrder::getCurrentTransition() == P_DT)
                 return 3;
@@ -135,7 +130,7 @@ namespace McRave::Walls {
         }
 
         // PvZ
-        int PvZ_Opener(const BWEB::Wall& wall)
+        int PvZ_Opener(const BWEB::Wall &wall)
         {
             if (Spy::getEnemyOpener() == Z_4Pool)
                 return 2 + (Players::getSupply(PlayerState::Self, Races::Protoss) >= 24);
@@ -144,13 +139,10 @@ namespace McRave::Walls {
             return total(Protoss_Gateway) > 0;
         }
 
-        int PvZ_Transition(const BWEB::Wall& wall)
+        int PvZ_Transition(const BWEB::Wall &wall)
         {
-            auto cannonCount = 0
-                + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 6)
-                + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 12)
-                + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 24)
-                + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk) / 2);
+            auto cannonCount = 0 + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 6) + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 12) +
+                               (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 24) + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk) / 2);
 
             if (Spy::getEnemyTransition() == Z_2HatchHydra)
                 return 5;
@@ -163,14 +155,13 @@ namespace McRave::Walls {
             return cannonCount;
         }
 
-        int PvZ_Defenses(const BWEB::Wall& wall)
+        int PvZ_Defenses(const BWEB::Wall &wall)
         {
             // Determine how much we have traded
-            auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Zerg_Hydralisk) / 2
-                + Players::getDeadCount(PlayerState::Enemy, Zerg_Zergling) / 4;
+            auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Zerg_Hydralisk) / 2 + Players::getDeadCount(PlayerState::Enemy, Zerg_Zergling) / 4;
 
-            auto minimum = 0;
-            auto expected = max(PvZ_Opener(wall), PvZ_Transition(wall));
+            auto minimum   = 0;
+            auto expected  = max(PvZ_Opener(wall), PvZ_Transition(wall));
             auto reduction = max(0, unitsKilled / 8);
 
             if (expected > 0)
@@ -180,32 +171,23 @@ namespace McRave::Walls {
         }
 
         // ZvP
-        int ZvP_Opener(const BWEB::Wall& wall)
+        int ZvP_Opener(const BWEB::Wall &wall)
         {
             // 1GateCore
             if (Spy::getEnemyBuild() == P_1GateCore || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
-                return (Util::getTime() > Time(3, 45))
-                    + (Util::getTime() > Time(4, 30));
+                return (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 30));
             }
 
             // 2Gate
             if (Spy::getEnemyBuild() == P_2Gate) {
                 if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
-                    return (Util::getTime() > Time(3, 15))
-                    + (Util::getTime() > Time(4, 10))
-                    + (Util::getTime() > Time(4, 30));
+                    return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 10)) + (Util::getTime() > Time(4, 30));
                 if (Spy::getEnemyOpener() == P_10_15)
-                    return (Util::getTime() > Time(3, 15))
-                    + (Util::getTime() > Time(4, 10))
-                    + (Util::getTime() > Time(5, 00));
+                    return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 10)) + (Util::getTime() > Time(5, 00));
                 if (Spy::getEnemyOpener() == P_10_12 || Spy::getEnemyOpener() == "Unknown")
-                    return 1
-                    + (Util::getTime() > Time(4, 00))
-                    + (Util::getTime() > Time(4, 45));
+                    return 1 + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 45));
                 if (Spy::getEnemyOpener() == P_9_9)
-                    return 1
-                    + (BuildOrder::getCurrentOpener() == Z_12Hatch)
-                    + (Util::getTime() > Time(4, 30));
+                    return 1 + (BuildOrder::getCurrentOpener() == Z_12Hatch) + (Util::getTime() > Time(4, 30));
                 if (Spy::getEnemyOpener() == P_Proxy_9_9)
                     return 2;
                 if (Spy::getEnemyOpener() == P_Horror_9_9)
@@ -223,16 +205,13 @@ namespace McRave::Walls {
             return Util::getTime() > Time(3, 45);
         }
 
-        int ZvP_Transition(const BWEB::Wall& wall)
+        int ZvP_Transition(const BWEB::Wall &wall)
         {
             // See if they expanded or got some tech at a reasonable point for 1 base play
             auto noExpand = !Spy::enemyFastExpand();
-            auto noTech = (Spy::getEnemyTransition() == "Unknown" || Spy::getEnemyTransition() == P_Rush)
-                && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0
-                && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) == 0
-                && Players::getTotalCount(PlayerState::Enemy, Protoss_High_Templar) == 0
-                && Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) == 0
-                && Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) == 0;
+            auto noTech   = (Spy::getEnemyTransition() == "Unknown" || Spy::getEnemyTransition() == P_Rush) && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 &&
+                          Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_High_Templar) == 0 &&
+                          Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Archon) == 0;
             auto noExpandOrTech = noExpand && noTech;
 
             // 1 base transitions
@@ -240,52 +219,29 @@ namespace McRave::Walls {
 
                 // 4Gate
                 if (Spy::getEnemyTransition() == P_4Gate) {
-                    return (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(4, 30))
-                        + (Util::getTime() > Time(5, 00))
-                        + (Util::getTime() > Time(5, 15))
-                        + (Util::getTime() > Time(5, 30))
-                        + (Util::getTime() > Time(6, 00))
-                        + (Util::getTime() > Time(7, 00))
-                        + (Util::getTime() > Time(8, 00));
+                    return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 15)) +
+                           (Util::getTime() > Time(5, 30)) + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(7, 00)) + (Util::getTime() > Time(8, 00));
                 }
 
                 // DT
                 if (Spy::getEnemyTransition() == P_DT) {
-                    return (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(4, 45))
-                        + (Util::getTime() > Time(4, 45))
-                        + (Util::getTime() > Time(5, 30));
+                    return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 30));
                 }
 
                 // Corsair
                 if (Spy::getEnemyTransition() == P_Corsair) {
-                    return (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(4, 15))
-                        + (Util::getTime() > Time(5, 15))
-                        + (Util::getTime() > Time(7, 00));
+                    return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(7, 00));
                 }
 
                 // Speedlot
                 if (Spy::getEnemyTransition() == P_Speedlot) {
-                    return (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(4, 15))
-                        + (Util::getTime() > Time(4, 45))
-                        + (Util::getTime() > Time(5, 15));
+                    return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 15));
                 }
 
                 // Zealot flood
                 if (Spy::getEnemyTransition() == P_Rush) {
-                    return (Util::getTime() > Time(3, 40))
-                        + (Util::getTime() > Time(4, 00))
-                        + (Util::getTime() > Time(4, 20))
-                        + (Util::getTime() > Time(4, 40))
-                        + (Util::getTime() > Time(5, 00))
-                        + (Util::getTime() > Time(5, 20))
-                        + (Util::getTime() > Time(5, 40))
-                        + (Util::getTime() > Time(6, 00))
-                        - Spy::enemyProxy();
+                    return (Util::getTime() > Time(3, 40)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 20)) + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 00)) +
+                           (Util::getTime() > Time(5, 20)) + (Util::getTime() > Time(5, 40)) + (Util::getTime() > Time(6, 00)) - Spy::enemyProxy();
                 }
 
                 if (Util::getTime() < Time(6, 00))
@@ -295,17 +251,13 @@ namespace McRave::Walls {
             // FFE transitions
             if (Spy::getEnemyBuild() == P_FFE) {
                 if (Spy::getEnemyTransition() == P_5GateGoon)
-                    return  (Util::getTime() > Time(6, 00))
-                    + (Util::getTime() > Time(6, 30))
-                    + (Util::getTime() > Time(8, 00));
+                    return (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 30)) + (Util::getTime() > Time(8, 00));
 
                 if (Spy::getEnemyTransition() == P_CorsairGoon)
                     return (Util::getTime() > Time(7, 00));
 
                 if (Spy::getEnemyTransition() == P_Speedlot)
-                    return (Util::getTime() > Time(6, 00))
-                    + (Util::getTime() > Time(6, 20))
-                    + (Util::getTime() > Time(6, 40));
+                    return (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 20)) + (Util::getTime() > Time(6, 40));
 
                 if (Spy::getEnemyTransition() == P_Sairlot)
                     return 2 * (Util::getTime() > Time(6, 50));
@@ -319,18 +271,17 @@ namespace McRave::Walls {
             return 0;
         }
 
-        int ZvP_Defenses(const BWEB::Wall& wall)
+        int ZvP_Defenses(const BWEB::Wall &wall)
         {
             // Determine how much we have traded
-            auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot)
-                + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);
+            auto unitsKilled     = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot) + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);
             auto buildingsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Gateway);
 
-            auto mutaBuild = BuildOrder::getCurrentTransition().find("Muta") != string::npos;
+            auto mutaBuild  = BuildOrder::getCurrentTransition().find("Muta") != string::npos;
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
-            auto expected = max(ZvP_Opener(wall), ZvP_Transition(wall));
-            auto reduction = (unitsKilled / 8) + buildingsKilled;
-            auto minimum = int(expected > 0);
+            auto expected   = max(ZvP_Opener(wall), ZvP_Transition(wall));
+            auto reduction  = (unitsKilled / 8) + buildingsKilled;
+            auto minimum    = int(expected > 0);
 
             // 3h builds make roughly half as many
             if (threeHatch && expected > 1 && Spy::getEnemyBuild() != P_FFE) {
@@ -340,16 +291,15 @@ namespace McRave::Walls {
             // Non natural walls are limited to 1 total
             if (!wall.getStation()->isNatural() && expected > 0 && Spy::getEnemyBuild() != P_FFE) {
                 expected = 1;
-                minimum = 1;
+                minimum  = 1;
             }
 
             // Make minimum sunkens if criteria fulfilled
             if (expected > 0)
                 minimum = 1;
             if (Spy::getEnemyBuild() != P_FFE) {
-                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0
-                    || Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Singularity_Charge, 1)
-                    || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4)
+                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 || Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Singularity_Charge, 1) ||
+                    Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4)
                     minimum = 2;
                 if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0)
                     expected--;
@@ -363,7 +313,7 @@ namespace McRave::Walls {
         }
 
         // ZvT
-        int ZvT_Opener(const BWEB::Wall& wall)
+        int ZvT_Opener(const BWEB::Wall &wall)
         {
             // Proxy
             if (Spy::enemyProxy())
@@ -373,8 +323,7 @@ namespace McRave::Walls {
             if (Spy::getEnemyBuild() == T_2Rax) {
 
                 if (Spy::enemyRush() || Spy::getEnemyOpener() == T_BBS)
-                    return (Util::getTime() > Time(2, 50))
-                    + (Util::getTime() > Time(4, 30));
+                    return (Util::getTime() > Time(2, 50)) + (Util::getTime() > Time(4, 30));
 
                 if (Spy::getEnemyOpener() == T_11_13)
                     return (Util::getTime() > Time(3, 30));
@@ -383,9 +332,7 @@ namespace McRave::Walls {
                     return (Util::getTime() > Time(4, 00));
 
                 if (!Spy::enemyFastExpand())
-                    return (Util::getTime() > Time(3, 15))
-                    + (Util::getTime() > Time(4, 00))
-                    + (Util::getTime() > Time(4, 45));
+                    return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 45));
             }
 
             // RaxCC
@@ -397,12 +344,13 @@ namespace McRave::Walls {
 
             // RaxFact
             if (Spy::getEnemyBuild() == T_RaxFact) {
-                if (Spy::getEnemyTransition() == T_2FactVulture || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
-                    return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(3, 45));
-                if (Spy::enemyWalled())
-                    return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(3, 45));
+                if (Spy::getEnemyTransition() == T_2FactVulture || Spy::enemyWalled())
+                    return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 30));
                 if (Spy::getEnemyOpener() == T_8Rax)
                     return (Util::getTime() > Time(4, 30));
+                if (Spy::enemyFastExpand())
+                    return (Util::getTime() > Time(3, 15));
+                return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(5, 00));
             }
 
             // Enemy walled, which delays any push they have
@@ -411,24 +359,20 @@ namespace McRave::Walls {
 
             // Enemy not expanding, probably something scary coming
             if (!Spy::enemyFastExpand() && !Spy::enemyRush())
-                return (Util::getTime() > Time(3, 15))
-                + (Util::getTime() > Time(4, 30))
-                + (Util::getTime() > Time(5, 00));
+                return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00));
 
             return (Util::getTime() > Time(3, 15));
         }
 
-        int ZvT_Transition(const BWEB::Wall& wall)
+        int ZvT_Transition(const BWEB::Wall &wall)
         {
             // See if they expanded or got some tech at a reasonable point for 1 base play
             auto noExpand = !Spy::enemyFastExpand();
-            auto noTech = Spy::getEnemyTransition() == "Unknown"
-                && Players::getTotalCount(PlayerState::Enemy, Terran_Science_Vessel) == 0
-                && Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) == 0
-                && Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) == 0
-                && Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode) == 0;
-            auto noExpandOrTech = noExpand && noTech;
-            auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
+            auto noTech   = Spy::getEnemyTransition() == "Unknown" && Players::getTotalCount(PlayerState::Enemy, Terran_Science_Vessel) == 0 &&
+                          Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) == 0 && Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) == 0 &&
+                          Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode) == 0;
+            auto noExpandOrTech   = noExpand && noTech;
+            auto threeHatch       = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto firstHatchNeeded = !threeHatch || BuildOrder::getCurrentOpener() == Z_12Hatch;
 
             if (Spy::getEnemyTransition() == U_WorkerRush) {
@@ -439,13 +383,10 @@ namespace McRave::Walls {
 
                 // Upwards of 5 sunkens vs marine flood
                 if (Spy::getEnemyTransition() == T_Rush)
-                    return 2
-                    + (Util::getTime() > Time(4, 20))
-                    + (Util::getTime() > Time(4, 40))
-                    + (Util::getTime() > Time(5, 00));
+                    return 2 + (Util::getTime() > Time(4, 20)) + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 00));
 
                 // Need 3 sunkens to defend against ~5:00 timing
-                if (Spy::getEnemyTransition() == T_Academy || !Spy::enemyFastExpand())
+                if (Spy::getEnemyTransition() == T_Academy)
                     return 3 * (Util::getTime() > Time(4, 30));
             }
 
@@ -453,9 +394,7 @@ namespace McRave::Walls {
 
                 // Need 3 sunkens to defend against 7:30 timing
                 if (Spy::getEnemyTransition() == T_3FactGoliath)
-                    return 1
-                    + (Util::getTime() > Time(6, 00))
-                    + (Util::getTime() > Time(6, 30));
+                    return 1 + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 30));
 
                 // Need 1 sunken to defend vulture threat
                 if (Spy::getEnemyTransition() == T_2PortWraith)
@@ -466,32 +405,34 @@ namespace McRave::Walls {
                     return 2 * (Util::getTime() > Time(6, 00));
             }
 
+            if (Spy::getEnemyBuild() == T_RaxCC) {
+                if (Spy::getEnemyTransition() == T_1FactTanks || !BuildOrder::isFocusUnit(Zerg_Lurker))
+                    return (Util::getTime() > Time(7, 45)) + (Util::getTime() > Time(8, 15)) + (Util::getTime() > Time(8, 45)) + (Util::getTime() > Time(9, 15));
+            }
+
+            if (!Spy::enemyFastExpand())
+                return 2 * (Util::getTime() > Time(4, 30));
+
             return 0;
         }
 
-        int ZvT_Defenses(const BWEB::Wall& wall)
+        int ZvT_Defenses(const BWEB::Wall &wall)
         {
             // Determine how much we have traded
-            auto unitsKilled = Players::getDeadCount(PlayerState::Enemy, Terran_Marine)
-                + Players::getDeadCount(PlayerState::Enemy, Terran_Firebat)
-                + Players::getDeadCount(PlayerState::Enemy, Terran_Medic);
+            auto bioKilled = Players::getDeadCount(PlayerState::Enemy, Terran_Marine) + Players::getDeadCount(PlayerState::Enemy, Terran_Firebat) +
+                             Players::getDeadCount(PlayerState::Enemy, Terran_Medic);
+            auto mechKilled      = Players::getDeadCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getDeadCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode);
             auto buildingsKilled = Players::getDeadCount(PlayerState::Enemy, Terran_Barracks);
 
             auto minimum = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 ? 1 : 0;
 
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
-            auto expected = max(ZvT_Opener(wall), ZvT_Transition(wall));
-            auto reduction = (unitsKilled / 8) + buildingsKilled;
+            auto expected   = max(ZvT_Opener(wall), ZvT_Transition(wall));
+            auto reduction  = (bioKilled / 16) + (mechKilled / 2) + buildingsKilled;
 
-            // 3h builds make roughly half as many
-            if (threeHatch && expected > 1 && Spy::getEnemyBuild() != P_FFE) {
-                expected = int(floor(double(expected) / 2.0));
-            }
-
-            // Non natural walls are limited to 1 total
-            if (!wall.getStation()->isNatural() && expected > 0) {
-                expected = 1;
-                minimum = 1;
+            // 3h builds make some less
+            if (threeHatch && expected > 1) {
+                expected = int(floor(double(expected) / 1.5));
             }
 
             if (expected > 0)
@@ -501,7 +442,8 @@ namespace McRave::Walls {
         }
 
         // ZvZ
-        int ZvZ_Defenses(const BWEB::Wall& wall) {
+        int ZvZ_Defenses(const BWEB::Wall &wall)
+        {
             // 3 Hatch
             if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 || Spy::getEnemyTransition() == Z_3HatchSpeedling)
                 return 1 + (Util::getTime() > Time(4, 15));
@@ -513,12 +455,8 @@ namespace McRave::Walls {
         }
 
         // ZvFFA
-        int ZvFFA_Defenses(const BWEB::Wall& wall) {
-            return 1
-                + (Util::getTime() > Time(5, 20))
-                + (Util::getTime() > Time(5, 40));
-        }
-    }
+        int ZvFFA_Defenses(const BWEB::Wall &wall) { return 1 + (Util::getTime() > Time(5, 20)) + (Util::getTime() > Time(5, 40)); }
+    } // namespace
 
     void onStart()
     {
@@ -545,17 +483,17 @@ namespace McRave::Walls {
         }
     }
 
-    int getColonyCount(const BWEB::Wall *  const wall)
+    int getColonyCount(const BWEB::Wall *const wall)
     {
         auto colonies = 0;
-        for (auto& tile : wall->getDefenses()) {
+        for (auto &tile : wall->getDefenses()) {
             if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony)
                 colonies++;
         }
         return colonies;
     }
 
-    int needGroundDefenses(const BWEB::Wall& wall)
+    int needGroundDefenses(const BWEB::Wall &wall)
     {
         auto groundCount = wall.getGroundDefenseCount();
         if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) || BuildOrder::isAllIn())
@@ -571,8 +509,8 @@ namespace McRave::Walls {
 
         // (ZvZ) If enemy adds defenses, we can start to cut defenses too
         if (Players::ZvZ() && Util::getTime() > Time(4, 00))
-            groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Creep_Colony)
-            + Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
+            groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Creep_Colony) +
+                           Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
 
         // (ZvP) If they expanded, we can skip a sunk after a delay
         if (Players::ZvP() && Spy::enemyFastExpand() && Spy::getEnemyBuild() != P_FFE && Util::getTime() > Time(4, 30)) {
@@ -581,20 +519,16 @@ namespace McRave::Walls {
                 groundCount++;
         }
 
-        // (Zv) Can't build defensives early until closest hatch almost completes 
+        // (Zv) Can't build defensives early until closest hatch almost completes
         if (Broodwar->self()->getRace() == Races::Zerg && Util::getTime() < Time(3, 30)) {
-            auto nearestHatch = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Self, [&](auto &u) {
-                return u->getType().isResourceDepot();
-            });
+            auto nearestHatch = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Self, [&](auto &u) { return u->getType().isResourceDepot(); });
             if (nearestHatch && nearestHatch->frameCompletesWhen() > Broodwar->getFrameCount() + 200)
                 return 0;
         }
 
         // If they're only at home and not proxying units, don't make any defenses
         if (!Spy::enemyProxy() && (groundCount >= 1 || getColonyCount(&wall) >= 1)) {
-            auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) {
-                return Units::inBoundUnit(*u);
-            });
+            auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) { return Units::inBoundUnit(*u) && !u->getType().isWorker(); });
             if (!closestUnit)
                 return 0;
         }
@@ -611,6 +545,8 @@ namespace McRave::Walls {
 
         // Zerg
         if (Broodwar->self()->getRace() == Races::Zerg) {
+            if (Stations::ownedBy(wall.getStation()) != PlayerState::Self)
+                return 0;
             if (Players::ZvP())
                 return ZvP_Defenses(wall) - groundCount;
             if (Players::ZvT())
@@ -623,16 +559,13 @@ namespace McRave::Walls {
         return 0;
     }
 
-    int needAirDefenses(const BWEB::Wall& wall)
+    int needAirDefenses(const BWEB::Wall &wall)
     {
-        auto airCount = wall.getAirDefenseCount();
-        const auto enemyAir = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0
-            || (Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 && Util::getTime() > Time(4, 45));
+        auto airCount       = wall.getAirDefenseCount();
+        const auto enemyAir = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0 ||
+                              Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0 ||
+                              Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 ||
+                              (Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 && Util::getTime() > Time(4, 45));
 
         if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
             return 0;
@@ -651,6 +584,6 @@ namespace McRave::Walls {
         return 0;
     }
 
-    const BWEB::Wall * const getMainWall() { return mainWall; }
-    const BWEB::Wall * const getNaturalWall() { return naturalWall; }
-}
+    const BWEB::Wall *const getMainWall() { return mainWall; }
+    const BWEB::Wall *const getNaturalWall() { return naturalWall; }
+} // namespace McRave::Walls

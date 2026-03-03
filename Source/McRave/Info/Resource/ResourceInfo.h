@@ -1,11 +1,9 @@
 #pragma once
-#include <BWAPI.h>
 #include "BWEB.h"
+#include "Main/Common.h"
 
-namespace McRave
-{
-    class ResourceInfo : public std::enable_shared_from_this<ResourceInfo>
-    {
+namespace McRave {
+    class ResourceInfo : public std::enable_shared_from_this<ResourceInfo> {
     private:
         int remainingResources, initialResources, workerCap;
         bool threatened, pocket;
@@ -13,26 +11,28 @@ namespace McRave
         BWAPI::UnitType type;
         BWAPI::Position position;
         BWAPI::TilePosition tilePosition;
-        const BWEB::Station * station;
+        const BWEB::Station *station;
         ResourceState rState;
         std::map<std::weak_ptr<UnitInfo>, int> framesPerTrips;
         std::vector<std::weak_ptr<UnitInfo>> targetedBy;
         std::set<BWAPI::Position> returnOrderPositions;
         std::set<BWAPI::Position> gatherOrderPositions;
+
     public:
-        ResourceInfo(BWAPI::Unit newResource) {
+        ResourceInfo(BWAPI::Unit newResource)
+        {
             thisUnit = newResource;
 
-            station = nullptr;
+            station            = nullptr;
             remainingResources = 0;
-            initialResources = newResource->getInitialResources();
-            rState = ResourceState::None;
-            type = newResource->getType();
-            position = newResource->getPosition();
-            tilePosition = newResource->getTilePosition();
+            initialResources   = newResource->getInitialResources();
+            rState             = ResourceState::None;
+            type               = newResource->getType();
+            position           = newResource->getPosition();
+            tilePosition       = newResource->getTilePosition();
         }
 
-        bool safe{ false };
+        bool safe{false};
 
         void updateThreatened();
         void updateWorkerCap();
@@ -41,13 +41,13 @@ namespace McRave
         void addTargetedBy(std::weak_ptr<UnitInfo>);
         void removeTargetedBy(std::weak_ptr<UnitInfo>);
 
-        // 
+        //
         bool isThreatened() { return threatened; }
         bool isBoulder() { return type.isMineralField() && initialResources <= 50; }
         bool isPocket() { return pocket; }
         bool hasStation() { return station != nullptr; }
-        const BWEB::Station * getStation() { return station; }
-        void setStation(const BWEB::Station* newStation) { station = newStation; }
+        const BWEB::Station *getStation() { return station; }
+        void setStation(const BWEB::Station *newStation) { station = newStation; }
         int getGathererCount() { return int(targetedBy.size()); }
         int getRemainingResources() { return remainingResources; }
         int getWorkerCap() { return workerCap; }
@@ -56,11 +56,11 @@ namespace McRave
         BWAPI::UnitType getType() { return type; }
         BWAPI::Position getPosition() { return position; }
         BWAPI::TilePosition getTilePosition() { return tilePosition; }
-        std::vector<std::weak_ptr<UnitInfo>>& targetedByWhat() { return targetedBy; }
-        std::set<BWAPI::Position>& getReturnOrderPositions() { return returnOrderPositions; }
-        std::set<BWAPI::Position>& getGatherOrderPositions() { return gatherOrderPositions; }
+        std::vector<std::weak_ptr<UnitInfo>> &targetedByWhat() { return targetedBy; }
+        std::set<BWAPI::Position> &getReturnOrderPositions() { return returnOrderPositions; }
+        std::set<BWAPI::Position> &getGatherOrderPositions() { return gatherOrderPositions; }
 
-        // 
+        //
         void setRemainingResources(int newInt) { remainingResources = newInt; }
         void setResourceState(ResourceState newState) { rState = newState; }
         void setUnit(BWAPI::Unit newUnit) { thisUnit = newUnit; }
@@ -68,13 +68,9 @@ namespace McRave
         void setPosition(BWAPI::Position newPosition) { position = newPosition; }
         void setTilePosition(BWAPI::TilePosition newTilePosition) { tilePosition = newTilePosition; }
 
-        // 
-        bool operator== (ResourceInfo& p) {
-            return thisUnit == p.unit();
-        }
+        //
+        bool operator==(ResourceInfo &p) { return thisUnit == p.unit(); }
 
-        bool operator< (ResourceInfo& p) {
-            return thisUnit < p.unit();
-        }
+        bool operator<(ResourceInfo &p) { return thisUnit < p.unit(); }
     };
-}
+} // namespace McRave

@@ -1,4 +1,6 @@
 #pragma once
+#include "Main/Common.h"
+#include "Builds/All/BuildOrder.h"
 
 namespace McRave::BuildOrder::Protoss {
     inline std::map<BWAPI::UnitType, bool> protossUnitPump;

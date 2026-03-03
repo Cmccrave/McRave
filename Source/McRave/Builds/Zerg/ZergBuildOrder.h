@@ -1,4 +1,6 @@
 #pragma once
+#include "Builds/All/BuildOrder.h"
+#include "Main/Common.h"
 
 namespace McRave::BuildOrder::Zerg {
 
@@ -6,14 +8,14 @@ namespace McRave::BuildOrder::Zerg {
     inline std::map<BWAPI::UnitType, bool> zergUnitPump;
 
     // ZvP
-    inline const vector<UnitType> mutaling ={ Zerg_Mutalisk, Zerg_Zergling };
-    inline const vector<UnitType> hydralurk ={ Zerg_Hydralisk, Zerg_Lurker, Zerg_Mutalisk };
-    inline const vector<UnitType> mutalurk ={ Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker };
+    inline const std::vector<BWAPI::UnitType> mutaling  = {BWAPI::UnitTypes::Zerg_Mutalisk, BWAPI::UnitTypes::Zerg_Zergling};
+    inline const std::vector<BWAPI::UnitType> hydralurk = {BWAPI::UnitTypes::Zerg_Hydralisk, BWAPI::UnitTypes::Zerg_Lurker, BWAPI::UnitTypes::Zerg_Mutalisk};
+    inline const std::vector<BWAPI::UnitType> mutalurk  = {BWAPI::UnitTypes::Zerg_Mutalisk, BWAPI::UnitTypes::Zerg_Hydralisk, BWAPI::UnitTypes::Zerg_Lurker};
 
     // ZvT
-    inline const vector<UnitType> mutalingdefiler ={ Zerg_Mutalisk, Zerg_Zergling, Zerg_Defiler };
-    inline const vector<UnitType> ultraling ={ Zerg_Mutalisk, Zerg_Ultralisk, Zerg_Zergling, Zerg_Defiler };
-    inline const vector<UnitType> defilerling ={ Zerg_Mutalisk, Zerg_Defiler, Zerg_Zergling, Zerg_Ultralisk };
+    inline const std::vector<BWAPI::UnitType> mutalingdefiler = {BWAPI::UnitTypes::Zerg_Mutalisk, BWAPI::UnitTypes::Zerg_Zergling, BWAPI::UnitTypes::Zerg_Defiler};
+    inline const std::vector<BWAPI::UnitType> ultraling       = {BWAPI::UnitTypes::Zerg_Mutalisk, BWAPI::UnitTypes::Zerg_Ultralisk, BWAPI::UnitTypes::Zerg_Zergling, BWAPI::UnitTypes::Zerg_Defiler};
+    inline const std::vector<BWAPI::UnitType> defilerling     = {BWAPI::UnitTypes::Zerg_Mutalisk, BWAPI::UnitTypes::Zerg_Defiler, BWAPI::UnitTypes::Zerg_Zergling, BWAPI::UnitTypes::Zerg_Ultralisk};
 
     void opener();
     void tech();
@@ -55,4 +57,4 @@ namespace McRave::BuildOrder::Zerg {
     void ZvP();
     void ZvZ();
     void ZvFFA();
-}
+} // namespace McRave::BuildOrder::Zerg

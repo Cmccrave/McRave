@@ -1,4 +1,6 @@
-#include "Main/McRave.h"
+#include "Builds/Zerg/ZergBuildOrder.h"
+#include "Main/Common.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace std;
 using namespace BWAPI;

@@ -1,4 +1,12 @@
-#include "Main/McRave.h"
+#include "UnitMath.h"
+
+#include "Info/Player/Players.h"
+#include "Info/Unit/UnitInfo.h"
+#include "Info/Unit/Units.h"
+#include "Main/Common.h"
+#include "Map/Grids.h"
+#include "Map/Terrain.h"
+#include "Strategy/Spy/Spy.h"
 
 // All calculations involved here can be found here:
 // https://docs.google.com/spreadsheets/d/15_2BlFi27EguWciAGbWKCxLLacCnh9QFl1zSkc799Xo
@@ -9,7 +17,7 @@ using namespace UnitTypes;
 
 namespace McRave::Math {
 
-    double maxGroundStrength(UnitInfo& unit)
+    double calcMaxGroundStrength(UnitInfo &unit)
     {
         if (unit.getType() == Protoss_Scarab || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva)
             return 0.0;
@@ -27,21 +35,21 @@ namespace McRave::Math {
             return cnt;
         }
 
-        const auto dps = groundDPS(unit);
-        const auto surv = survivability(unit);
-        const auto eff = grdEffectiveness(unit);
+        const auto dps   = calcGroundDPS(unit);
+        const auto surv  = calcSurvivability(unit);
+        const auto eff   = calcGrdEffectiveness(unit);
         const auto range = log(unit.getGroundRange() / 4.0 + 16.0);
         return dps * range * surv * eff;
     }
 
-    double visibleGroundStrength(UnitInfo& unit)
+    double calcVisibleGroundStrength(UnitInfo &unit)
     {
         if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
             return 0.0;
         return unit.getPercentTotal() * unit.getMaxGroundStrength();
     }
 
-    double maxAirStrength(UnitInfo& unit)
+    double calcMaxAirStrength(UnitInfo &unit)
     {
         // Carrier is based on interceptor count
         if (unit.getType() == Protoss_Carrier) {
@@ -56,28 +64,28 @@ namespace McRave::Math {
             return cnt;
         }
 
-        const auto dps = airDPS(unit);
-        const auto surv = survivability(unit);
-        const auto eff = airEffectiveness(unit);
+        const auto dps   = calcAirDPS(unit);
+        const auto surv  = calcSurvivability(unit);
+        const auto eff   = calcAirEffectiveness(unit);
         const auto range = log(unit.getAirRange() / 4.0 + 16.0);
         return dps * range * surv * eff;
     }
 
-    double visibleAirStrength(UnitInfo& unit)
+    double calcVisibleAirStrength(UnitInfo &unit)
     {
         if (unit.unit()->isMaelstrommed() || unit.unit()->isStasised())
             return 0.0;
         return unit.getPercentTotal() * unit.getMaxAirStrength();
     }
 
-    double priority(UnitInfo& unit)
+    double calcPriority(UnitInfo &unit)
     {
         // According to sheet linked above, these are the maximum values for normalizing
         const auto maxGrdDps = 2.083;
         const auto maxAirDps = 1.875;
-        const auto maxCost = 69.589;
-        const auto maxSurv = 128.311;
-        auto bonus = 1.0;
+        const auto maxCost   = 69.589;
+        const auto maxSurv   = 128.311;
+        auto bonus           = 1.0;
 
         if (unit.isMarkedForDeath())
             return 5.0;
@@ -103,14 +111,14 @@ namespace McRave::Math {
             }
         }
 
-        auto ff = (unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding()) ? 0.0 : 0.125;
-        auto dps = ff + max(groundDPS(unit) / maxGrdDps, airDPS(unit) / maxAirDps);
-        auto cost = relativeCost(unit) / maxCost;
-        auto surv = survivability(unit) / maxSurv;
+        auto ff   = (unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding()) ? 0.0 : 0.125;
+        auto dps  = ff + max(calcGroundDPS(unit) / maxGrdDps, calcAirDPS(unit) / maxAirDps);
+        auto cost = calcRelativeCost(unit) / maxCost;
+        auto surv = calcSurvivability(unit) / maxSurv;
         return clamp(bonus * (dps * cost / surv), 0.001, 9999.99);
     }
 
-    double relativeCost(UnitInfo& unit)
+    double calcRelativeCost(UnitInfo &unit)
     {
         double mineral, gas;
 
@@ -128,23 +136,32 @@ namespace McRave::Math {
         return max(log((mineral * 0.33) + (gas * 0.66)) * supply, 5.00);
     }
 
-    double groundDPS(UnitInfo& unit)
+    double calcSplashModifier(UnitInfo &unit)
     {
-        const auto splash = splashModifier(unit);
-        const auto damage = unit.getGroundDamage();
-        const auto cooldown = groundCooldown(unit);
+        if (unit.getType() == Terran_Firebat)
+            return 1.25;
+        if (unit.isSiegeTank() || unit.getType() == Protoss_High_Templar || unit.getType() == Zerg_Lurker || unit.getType() == Terran_Valkyrie)
+            return 2.00;
+        return 1.00;
+    }
+
+    double calcGroundDPS(UnitInfo &unit)
+    {
+        auto splash   = calcSplashModifier(unit);
+        auto damage   = unit.getGroundDamage();
+        auto cooldown = calcGroundCooldown(unit);
         return (damage > 0.1 && cooldown > 0.0) ? splash * damage / cooldown : 0.0;
     }
 
-    double airDPS(UnitInfo& unit)
+    double calcAirDPS(UnitInfo &unit)
     {
-        const auto splash = splashModifier(unit);
-        const auto damage = unit.getAirDamage();
-        const auto cooldown = airCooldown(unit);
+        auto splash   = calcSplashModifier(unit);
+        auto damage   = unit.getAirDamage();
+        auto cooldown = calcAirCooldown(unit);
         return (damage > 0.1 && cooldown > 0.0) ? splash * damage / cooldown : 0.0;
     }
 
-    double groundCooldown(UnitInfo& unit)
+    double calcGroundCooldown(UnitInfo &unit)
     {
         if (unit.getType() == Terran_Medic)
             return 1.0;
@@ -165,7 +182,7 @@ namespace McRave::Math {
         return unit.getType().groundWeapon().damageCooldown();
     }
 
-    double airCooldown(UnitInfo& unit)
+    double calcAirCooldown(UnitInfo &unit)
     {
         if (unit.getType() == Terran_Medic)
             return 1.0;
@@ -184,16 +201,7 @@ namespace McRave::Math {
         return unit.getType().airWeapon().damageCooldown();
     }
 
-    double splashModifier(UnitInfo& unit)
-    {
-        if (unit.getType() == Terran_Firebat)
-            return 1.25;
-        if (unit.isSiegeTank() || unit.getType() == Protoss_High_Templar || unit.getType() == Zerg_Lurker || unit.getType() == Terran_Valkyrie)
-            return 2.00;
-        return 1.00;
-    }
-
-    double grdEffectiveness(UnitInfo& unit)
+    double calcGrdEffectiveness(UnitInfo &unit)
     {
         if (unit.getType().groundWeapon().damageType() != DamageTypes::Concussive && unit.getType().groundWeapon().damageType() != DamageTypes::Explosive)
             return 1.0;
@@ -203,7 +211,7 @@ namespace McRave::Math {
         return ratio;
     }
 
-    double airEffectiveness(UnitInfo& unit)
+    double calcAirEffectiveness(UnitInfo &unit)
     {
         if (unit.getType().airWeapon().damageType() != DamageTypes::Concussive && unit.getType().airWeapon().damageType() != DamageTypes::Explosive)
             return 1.0;
@@ -213,11 +221,11 @@ namespace McRave::Math {
         return ratio;
     }
 
-    double survivability(UnitInfo& unit)
+    double calcSurvivability(UnitInfo &unit)
     {
         const auto armor = [&]() {
-            auto baseArmor = double(unit.getType().armor()) / 10.0;
-            auto upgrades = double(unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade())) / 10.0;
+            auto baseArmor    = double(unit.getType().armor()) / 10.0;
+            auto upgrades     = double(unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade())) / 10.0;
             auto miscUpgrades = double((unit.getType() == Zerg_Ultralisk) * 2 * unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Chitinous_Plating)) / 10.0;
             return (1.0 + baseArmor + upgrades + miscUpgrades);
         };
@@ -229,18 +237,17 @@ namespace McRave::Math {
             return (unit.getSpeed() + avgUnitSpeed) / avgUnitSpeed;
         };
 
-        const auto health = [&]() {
-            return (double(unit.getType().maxHitPoints() + unit.getType().maxShields())) / 50.0;
-        };
+        const auto health = [&]() { return (double(unit.getType().maxHitPoints() + unit.getType().maxShields())) / 50.0; };
 
         return log(speed() * armor() * health());
     }
 
-    double groundRange(UnitInfo& unit)
+    double calcGroundRange(UnitInfo &unit)
     {
         if (unit.getType() == Protoss_Dragoon && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Singularity_Charge))
             return 192.0;
-        if ((unit.getType() == Terran_Marine && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::U_238_Shells)) || (unit.getType() == Zerg_Hydralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Grooved_Spines)))
+        if ((unit.getType() == Terran_Marine && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::U_238_Shells)) ||
+            (unit.getType() == Zerg_Hydralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Grooved_Spines)))
             return 160.0;
         if (unit.getType() == Protoss_High_Templar || unit.getType() == Zerg_Defiler)
             return 288.0;
@@ -266,11 +273,12 @@ namespace McRave::Math {
         return double(unit.getType().groundWeapon().maxRange());
     }
 
-    double airRange(UnitInfo& unit)
+    double calcAirRange(UnitInfo &unit)
     {
         if (unit.getType() == Protoss_Dragoon && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Singularity_Charge))
             return 192.0;
-        if ((unit.getType() == Terran_Marine && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::U_238_Shells)) || (unit.getType() == Zerg_Hydralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Grooved_Spines)))
+        if ((unit.getType() == Terran_Marine && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::U_238_Shells)) ||
+            (unit.getType() == Zerg_Hydralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Grooved_Spines)))
             return 160.0;
         if (unit.getType() == Terran_Goliath && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Charon_Boosters))
             return 256.0;
@@ -286,26 +294,20 @@ namespace McRave::Math {
         return double(unit.getType().airWeapon().maxRange());
     }
 
-    double groundReach(UnitInfo& unit)
-    {
-        return unit.getGroundRange() + (unit.getSpeed() * 16.0) + double(unit.getType().width() / 2) + 64.0;
-    }
+    double calcGroundReach(UnitInfo &unit) { return unit.getGroundRange() + (unit.getSpeed() * 16.0) + double(unit.getType().width() / 2) + 64.0; }
 
-    double airReach(UnitInfo& unit)
-    {
-        return unit.getAirRange() + (unit.getSpeed() * 16.0) + double(unit.getType().width() / 2) + 64.0;
-    }
+    double calcAirReach(UnitInfo &unit) { return unit.getAirRange() + (unit.getSpeed() * 16.0) + double(unit.getType().width() / 2) + 64.0; }
 
-    double groundDamage(UnitInfo& unit)
+    double calcGroundDamage(UnitInfo &unit)
     {
         // Assume medics damage at about the rate they heal
         if (unit.getType() == Terran_Medic)
             return 0.5;
 
         auto attackCount = double(max(unit.getType().groundWeapon().damageFactor(), unit.getType().maxGroundHits()));
-        auto upLevel = unit.getPlayer()->getUpgradeLevel(unit.getType().groundWeapon().upgradeType());
+        auto upLevel     = unit.getPlayer()->getUpgradeLevel(unit.getType().groundWeapon().upgradeType());
 
-        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
+        auto state     = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
         auto reduction = Units::getDamageReductionGrd(state);
 
         auto dmgPerHit = double(unit.getType().groundWeapon().damageAmount() + (unit.getType().groundWeapon().damageBonus() * upLevel));
@@ -319,7 +321,7 @@ namespace McRave::Math {
         // TODO: Check for bio damage upgrade
         if (unit.getType() == Terran_Bunker) {
             attackCount = 4;
-            dmgPerHit = 6;
+            dmgPerHit   = 6;
         }
         if (unit.getType() == Protoss_High_Templar)
             return 112.0;
@@ -327,16 +329,16 @@ namespace McRave::Math {
         return attackCount * (dmgPerHit - reduction);
     }
 
-    double airDamage(UnitInfo& unit)
+    double calcAirDamage(UnitInfo &unit)
     {
         // Assume medics damage at about the rate they heal
         if (unit.getType() == Terran_Medic)
             return 0.5;
 
         auto attackCount = double(max(unit.getType().airWeapon().damageFactor(), unit.getType().maxAirHits()));
-        auto upLevel = unit.getPlayer()->getUpgradeLevel(unit.getType().airWeapon().upgradeType());
+        auto upLevel     = unit.getPlayer()->getUpgradeLevel(unit.getType().airWeapon().upgradeType());
 
-        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
+        auto state     = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
         auto reduction = Units::getDamageReductionAir(state);
 
         auto dmgPerHit = double(unit.getType().airWeapon().damageAmount() + (unit.getType().airWeapon().damageBonus() * upLevel));
@@ -344,18 +346,24 @@ namespace McRave::Math {
         // TODO: Check for bio damage upgrade
         if (unit.getType() == Terran_Bunker) {
             attackCount = 4;
-            dmgPerHit = 6;
-        }        
+            dmgPerHit   = 6;
+        }
         if (unit.getType() == Protoss_High_Templar)
             return 112.0;
         return attackCount * (dmgPerHit - reduction);
     }
 
-    double moveSpeed(UnitInfo& unit)
+    double calcMoveSpeed(UnitInfo &unit)
     {
         double speed = unit.getType().topSpeed();
 
-        if ((unit.getType() == Zerg_Zergling && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost)) || (unit.getType() == Zerg_Hydralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Muscular_Augments)) || (unit.getType() == Zerg_Ultralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Anabolic_Synthesis)) || (unit.getType() == Protoss_Shuttle && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Gravitic_Drive)) || (unit.getType() == Protoss_Observer && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Gravitic_Boosters)) || (unit.getType() == Protoss_Zealot && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements)) || (unit.getType() == Terran_Vulture && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters)))
+        if ((unit.getType() == Zerg_Zergling && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Metabolic_Boost)) ||
+            (unit.getType() == Zerg_Hydralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Muscular_Augments)) ||
+            (unit.getType() == Zerg_Ultralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Anabolic_Synthesis)) ||
+            (unit.getType() == Protoss_Shuttle && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Gravitic_Drive)) ||
+            (unit.getType() == Protoss_Observer && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Gravitic_Boosters)) ||
+            (unit.getType() == Protoss_Zealot && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements)) ||
+            (unit.getType() == Terran_Vulture && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Ion_Thrusters)))
             return speed * 1.5;
         if (unit.getType() == Zerg_Overlord && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace))
             return speed * 4.01;
@@ -368,7 +376,7 @@ namespace McRave::Math {
         return speed;
     }
 
-    double simRadius(UnitInfo& unit)
+    double calcSimRadius(UnitInfo &unit)
     {
         if (unit.getPlayer()->isEnemy(Broodwar->self()))
             return 0.0;
@@ -376,53 +384,38 @@ namespace McRave::Math {
         if (unit.isLightAir()) {
             if (Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0)
                 return 320.0;
-            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Zerg_Scourge) > 0)
+            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0 ||
+                Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 ||
+                Players::getTotalCount(PlayerState::Enemy, Zerg_Scourge) > 0)
                 return 288.0;
-            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0)
+            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0 ||
+                Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) > 0 ||
+                Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0)
                 return 256.0;
-            if (Players::getTotalCount(PlayerState::Enemy, Terran_Ghost) > 0
-                || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
+            if (Players::getTotalCount(PlayerState::Enemy, Terran_Ghost) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
                 return 224.0;
             return 160.0;
         }
 
-        if (Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Terran_Battlecruiser) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Zerg_Guardian) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Zerg_Defiler) > 0)
+        if (Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode) > 0 ||
+            Players::getTotalCount(PlayerState::Enemy, Terran_Battlecruiser) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0 ||
+            Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0 ||
+            Players::getTotalCount(PlayerState::Enemy, Zerg_Guardian) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Defiler) > 0)
             return 540.0 + Players::getSupply(PlayerState::Self, Races::None);
-        if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Zerg_Lurker) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0
-            || Players::getTotalCount(PlayerState::Enemy, Zerg_Sunken_Colony) > 0)
+        if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) > 0 ||
+            Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0 ||
+            Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0 ||
+            Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 ||
+            Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 ||
+            Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0 ||
+            Players::getTotalCount(PlayerState::Enemy, Zerg_Lurker) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 ||
+            Players::getTotalCount(PlayerState::Enemy, Zerg_Sunken_Colony) > 0)
             return 400.0 + Players::getSupply(PlayerState::Self, Races::None);
         return 320.0 + Players::getSupply(PlayerState::Self, Races::None);
     }
 
-    int stopAnimationFrames(UnitType unitType) {
+    int stopAnimationFrames(UnitType unitType)
+    {
         // Attack animation frames below
         if (unitType == Protoss_Dragoon)
             return 5;
@@ -450,4 +443,34 @@ namespace McRave::Math {
             return 200;
         return type.gasPrice();
     }
-}
+} // namespace McRave::Math
+
+namespace McRave {
+
+    void UnitData::updateUnitData(UnitInfo &unit)
+    {
+        health        = unit.unit()->getHitPoints() > 0 ? unit.unit()->getHitPoints() : (health == 0 ? unit.getType().maxHitPoints() : health);
+        armor         = unit.getType().armor() + unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade());
+        shields       = unit.getShields() > 0 ? unit.getShields() : (shields == 0 ? unit.getType().maxShields() : shields);
+        shieldArmor   = unit.getPlayer()->getUpgradeLevel(BWAPI::UpgradeTypes::Protoss_Plasma_Shields);
+        energy        = unit.unit()->getEnergy();
+        percentHealth = unit.getType().maxHitPoints() > 0 ? double(health) / double(unit.getType().maxHitPoints()) : 0.0;
+        percentShield = unit.getType().maxShields() > 0 ? double(shields) / double(unit.getType().maxShields()) : 0.0;
+        percentTotal  = unit.getType().maxHitPoints() + unit.getType().maxShields() > 0 ? double(health + shields) / double(unit.getType().maxHitPoints() + unit.getType().maxShields()) : 0.0;
+        walkWidth     = int(ceil(double(unit.getType().width()) / 8.0));
+        walkHeight    = int(ceil(double(unit.getType().height()) / 8.0));
+
+        groundRange           = Math::calcGroundRange(unit);
+        groundDamage          = Math::calcGroundDamage(unit);
+        groundReach           = Math::calcGroundReach(unit);
+        airRange              = Math::calcAirRange(unit);
+        airReach              = Math::calcAirReach(unit);
+        airDamage             = Math::calcAirDamage(unit);
+        speed                 = Math::calcMoveSpeed(unit);
+        visibleGroundStrength = Math::calcVisibleGroundStrength(unit);
+        maxGroundStrength     = Math::calcMaxGroundStrength(unit);
+        visibleAirStrength    = Math::calcVisibleAirStrength(unit);
+        maxAirStrength        = Math::calcMaxAirStrength(unit);
+        priority              = Math::calcPriority(unit);
+    }
+} // namespace McRave

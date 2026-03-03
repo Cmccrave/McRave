@@ -1,14 +1,22 @@
-#include "Main/McRave.h"
+#include "ProtossBuildOrder.h"
+
+#include "Main/Common.h"
+#include "Strategy/Spy/Spy.h"
+#include "Map/Walls/Walls.h"
+#include "Map/Stations.h"
+#include "Info/Resource/Resources.h"
+#include "Map/Terrain.h"
+#include "Macro/Upgrading/Upgrading.h"
+#include "Macro/Researching/Researching.h"
+#include "Info/Player/Players.h"
+#include "Macro/Planning/Planning.h"
 
 using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
 
-#include "Builds/Protoss/ProtossBuildOrder.h"
-
-namespace McRave::BuildOrder::Protoss
-{
+namespace McRave::BuildOrder::Protoss {
     namespace {
         bool againstRandom = false;
 
@@ -113,10 +121,11 @@ namespace McRave::BuildOrder::Protoss
             // If we're not in our opener
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                expandDesired = (focusUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Protoss_Nexus) >= 3) && (techSat || com(Protoss_Nexus) >= 3) && productionSat)
-                    || (availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated()))
-                    || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2)
-                    || (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1);
+                expandDesired = (focusUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Protoss_Nexus) >= 3) && (techSat || com(Protoss_Nexus) >= 3) &&
+                                 productionSat) ||
+                                (availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated())) ||
+                                (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2) ||
+                                (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1);
 
                 buildQueue[Protoss_Nexus] = com(Protoss_Nexus) + expandDesired;
             }
@@ -136,8 +145,8 @@ namespace McRave::BuildOrder::Protoss
                 rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || Stations::getGasingStationsCount() >= 3)) || availableMinerals >= 300);
 
                 if (rampDesired) {
-                    auto gateCount = min({ maxGates, int(round(Stations::getGasingStationsCount() * gatesPerBase)), vis(Protoss_Gateway) + 1 });
-                    auto stargateCount = min({ 4, int(isFocusUnit(Protoss_Carrier) || isFocusUnit(Protoss_Scout)) * Stations::getGasingStationsCount(), vis(Protoss_Stargate) + 1 });
+                    auto gateCount = min({maxGates, int(round(Stations::getGasingStationsCount() * gatesPerBase)), vis(Protoss_Gateway) + 1});
+                    auto stargateCount = min({4, int(isFocusUnit(Protoss_Carrier) || isFocusUnit(Protoss_Scout)) * Stations::getGasingStationsCount(), vis(Protoss_Stargate) + 1});
                     buildQueue[Protoss_Gateway] = gateCount;
                     buildQueue[Protoss_Stargate] = stargateCount;
                 }
@@ -155,10 +164,7 @@ namespace McRave::BuildOrder::Protoss
                 gasLimit = INT_MAX;
         }
 
-        void removeExcessGas()
-        {
-
-        }
+        void removeExcessGas() {}
 
         void queueUpgrades()
         {
@@ -189,7 +195,8 @@ namespace McRave::BuildOrder::Protoss
             upgradeQueue[Scarab_Damage] = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
 
             // Ground unit upgrades
-            auto upgradingGrdWeapon = (Broodwar->self()->getUpgradeLevel(Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Ground_Armor)) || Broodwar->self()->isUpgrading(Protoss_Ground_Weapons);
+            auto upgradingGrdWeapon = (Broodwar->self()->getUpgradeLevel(Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Ground_Armor)) ||
+                                      Broodwar->self()->isUpgrading(Protoss_Ground_Weapons);
             upgradeQueue[Protoss_Ground_Weapons] = int(Stations::getStations(PlayerState::Self).size()) >= 2;
             upgradeQueue[Protoss_Ground_Armor] = upgradingGrdWeapon;
             upgradeQueue[Protoss_Plasma_Shields] = Upgrading::haveOrUpgrading(Protoss_Ground_Weapons, 3) && Upgrading::haveOrUpgrading(Protoss_Ground_Armor, 3);
@@ -200,7 +207,8 @@ namespace McRave::BuildOrder::Protoss
             upgradeQueue[Protoss_Plasma_Shields] *= 3;
 
             // Air unit upgrades
-            auto upgradingAirAttack = (Broodwar->self()->getUpgradeLevel(Protoss_Air_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Air_Armor)) || Broodwar->self()->isUpgrading(Protoss_Air_Weapons);
+            auto upgradingAirAttack = (Broodwar->self()->getUpgradeLevel(Protoss_Air_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Air_Armor)) ||
+                                      Broodwar->self()->isUpgrading(Protoss_Air_Weapons);
             auto PvZAirAttack = Players::PvZ() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0;
             auto PvTAirAttack = Players::PvT() && Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0;
             auto PvPAirAttack = false;
@@ -225,11 +233,9 @@ namespace McRave::BuildOrder::Protoss
             techQueue[Stasis_Field] = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Khaydarin_Core) > 0;
             techQueue[Disruption_Web] = vis(Protoss_Corsair) >= 10;
         }
-    }
+    } // namespace
 
-    bool goonRange() {
-        return Upgrading::haveOrUpgrading(UpgradeTypes::Singularity_Charge, 1);
-    }
+    bool goonRange() { return Upgrading::haveOrUpgrading(UpgradeTypes::Singularity_Charge, 1); }
 
     void opener()
     {
@@ -257,40 +263,40 @@ namespace McRave::BuildOrder::Protoss
         if (Players::PvP()) {
             techOffset = 1;
             if (focusUnit == Protoss_Dark_Templar)
-                unitOrder ={ Protoss_High_Templar, Protoss_Observer };
+                unitOrder = {Protoss_High_Templar, Protoss_Observer};
             else
-                unitOrder ={ Protoss_Reaver, Protoss_High_Templar };
+                unitOrder = {Protoss_Reaver, Protoss_High_Templar};
         }
 
         // PvZ
         if (Players::PvZ()) {
             techOffset = 1;
             if (focusUnit == Protoss_Reaver)
-                unitOrder ={ Protoss_Corsair, Protoss_High_Templar };
+                unitOrder = {Protoss_Corsair, Protoss_High_Templar};
             else if (focusUnit == Protoss_Corsair)
-                unitOrder ={ Protoss_High_Templar, Protoss_Reaver };
+                unitOrder = {Protoss_High_Templar, Protoss_Reaver};
             else if (focusUnit == Protoss_High_Templar)
-                unitOrder ={ Protoss_Corsair, Protoss_Reaver };
+                unitOrder = {Protoss_Corsair, Protoss_Reaver};
             else if (focusUnit == Protoss_Scout)
-                unitOrder ={ Protoss_Scout };
+                unitOrder = {Protoss_Scout};
             else
-                unitOrder ={ Protoss_Corsair, Protoss_Observer, Protoss_High_Templar };
+                unitOrder = {Protoss_Corsair, Protoss_Observer, Protoss_High_Templar};
         }
 
         // PvT
         if (Players::PvT()) {
             techOffset = 1;
             if (focusUnit == Protoss_Dark_Templar)
-                unitOrder ={ Protoss_Arbiter, Protoss_Observer, Protoss_High_Templar };
+                unitOrder = {Protoss_Arbiter, Protoss_Observer, Protoss_High_Templar};
             else if (focusUnit == Protoss_Carrier)
-                unitOrder ={ Protoss_Observer, Protoss_High_Templar };
+                unitOrder = {Protoss_Observer, Protoss_High_Templar};
             else
-                unitOrder ={ Protoss_Observer, Protoss_Arbiter, Protoss_High_Templar };
+                unitOrder = {Protoss_Observer, Protoss_Arbiter, Protoss_High_Templar};
         }
 
         // PvFFA
         if (Players::PvFFA()) {
-            unitOrder ={ Protoss_Observer, Protoss_Reaver, Protoss_Carrier };
+            unitOrder = {Protoss_Observer, Protoss_Reaver, Protoss_Carrier};
         }
 
         const auto endOfTech = !unitOrder.empty() && isFocusUnit(unitOrder.back());
@@ -349,11 +355,11 @@ namespace McRave::BuildOrder::Protoss
     {
         // PvP
         // Remove zealot if no speed
-        // 
+        //
 
         // PvZ
         // Remove dragoons if no range
-        // 
+        //
 
         // PvT
         // Remove zealot if no speed
@@ -363,9 +369,8 @@ namespace McRave::BuildOrder::Protoss
         auto availGas = Broodwar->self()->gas() - (Upgrading::getReservedGas() + Researching::getReservedGas() + Planning::getPlannedGas());
 
         const auto buildingAvailable = [&](auto &type) {
-            auto building = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getType() == type.whatBuilds().first && u->isCompleted() && u->unit()->isPowered() && u->getRemainingTrainFrames() < 10;
-            });
+            auto building = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self,
+                                                 [&](auto &u) { return u->getType() == type.whatBuilds().first && u->isCompleted() && u->unit()->isPowered() && u->getRemainingTrainFrames() < 10; });
             return building;
         };
 
@@ -373,12 +378,10 @@ namespace McRave::BuildOrder::Protoss
             if (protossUnitPump[Protoss_Probe])
                 armyComposition[Protoss_Probe] = 1.00;
 
-            const auto buildings ={ Protoss_Gateway, Protoss_Robotics_Facility, Protoss_Stargate };
+            const auto buildings = {Protoss_Gateway, Protoss_Robotics_Facility, Protoss_Stargate};
             for (auto &building : buildings) {
-                vector<UnitType> sortedByGas ={ building.buildsWhat().begin(), building.buildsWhat().end() };
-                sort(sortedByGas.begin(), sortedByGas.end(), [&](auto &lhs, auto &rhs) {
-                    return lhs.gasPrice() >= rhs.gasPrice();
-                });
+                vector<UnitType> sortedByGas = {building.buildsWhat().begin(), building.buildsWhat().end()};
+                sort(sortedByGas.begin(), sortedByGas.end(), [&](auto &lhs, auto &rhs) { return lhs.gasPrice() >= rhs.gasPrice(); });
 
                 for (auto &type : sortedByGas) {
                     if (!protossUnitPump[type] || availGas < type.gasPrice() || !buildingAvailable(type))
@@ -390,62 +393,48 @@ namespace McRave::BuildOrder::Protoss
             }
         }
 
-
         if (!inOpening) {
             static vector<pair<UnitType, int>> priorityOrder;
 
             // PvP
             if (Players::PvP() || Players::PvTVB() || Players::PvFFA()) {
-                priorityOrder ={
-                    {Protoss_Probe, 60}, 
-                    
-                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1},
-                    {Protoss_Dragoon, 12}, {Protoss_Zealot, 2},
-                    {Protoss_Dragoon, 24}, {Protoss_Zealot, 4}, {Protoss_High_Templar, 2},
-                    {Protoss_Dragoon, 36}, {Protoss_Zealot, 12}, {Protoss_High_Templar, 4},
-                    {Protoss_Dragoon, 64},
+                priorityOrder = {
+                    {Protoss_Probe, 60},
 
-                    {Protoss_Observer, 1}, {Protoss_Reaver, 1}, {Protoss_Shuttle, 1},
-                    {Protoss_Reaver, 4}, {Protoss_Shuttle, 2},
-                    {Protoss_Reaver, 8}, {Protoss_Shuttle, 4},
+                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1}, {Protoss_Dragoon, 12},     {Protoss_Zealot, 2},   {Protoss_Dragoon, 24}, {Protoss_Zealot, 4}, {Protoss_High_Templar, 2},
+                    {Protoss_Dragoon, 36},     {Protoss_Zealot, 12},      {Protoss_High_Templar, 4}, {Protoss_Dragoon, 64},
+
+                    {Protoss_Observer, 1},     {Protoss_Reaver, 1},       {Protoss_Shuttle, 1},      {Protoss_Reaver, 4},   {Protoss_Shuttle, 2},  {Protoss_Reaver, 8}, {Protoss_Shuttle, 4},
                 };
             }
 
             // PvT
             if (Players::PvT()) {
-                priorityOrder ={
+                priorityOrder = {
                     {Protoss_Probe, 60},
 
-                    {Protoss_Carrier, 12}, {Protoss_Arbiter, 4},
+                    {Protoss_Carrier, 12},     {Protoss_Arbiter, 4},
 
-                    {Protoss_Observer, 1}, {Protoss_Reaver, 1}, {Protoss_Shuttle, 1},
-                    {Protoss_Observer, 2}, {Protoss_Reaver, 4}, {Protoss_Shuttle, 2},
-                    {Protoss_Observer, 3}, {Protoss_Reaver, 8}, {Protoss_Shuttle, 4},
+                    {Protoss_Observer, 1},     {Protoss_Reaver, 1},       {Protoss_Shuttle, 1},  {Protoss_Observer, 2},     {Protoss_Reaver, 4},   {Protoss_Shuttle, 2},
+                    {Protoss_Observer, 3},     {Protoss_Reaver, 8},       {Protoss_Shuttle, 4},
 
-                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1},
-                    {Protoss_Dragoon, 12}, {Protoss_Zealot, 2},
-                    {Protoss_Dragoon, 24}, {Protoss_Zealot, 4}, {Protoss_High_Templar, 2},
-                    {Protoss_Dragoon, 36}, {Protoss_Zealot, 12}, {Protoss_High_Templar, 4},
-                    {Protoss_Dragoon, 64},
+                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1}, {Protoss_Dragoon, 12}, {Protoss_Zealot, 2},       {Protoss_Dragoon, 24}, {Protoss_Zealot, 4},
+                    {Protoss_High_Templar, 2}, {Protoss_Dragoon, 36},     {Protoss_Zealot, 12},  {Protoss_High_Templar, 4}, {Protoss_Dragoon, 64},
                 };
             }
 
             // PvZ
             if (Players::PvZ()) {
-                priorityOrder ={
+                priorityOrder = {
                     {Protoss_Probe, 60},
 
                     {Protoss_Corsair, 12},
 
-                    {Protoss_Observer, 1}, {Protoss_Reaver, 1}, {Protoss_Shuttle, 1},
-                    {Protoss_Observer, 2}, {Protoss_Reaver, 4}, {Protoss_Shuttle, 2},
-                    {Protoss_Observer, 3}, {Protoss_Reaver, 8}, {Protoss_Shuttle, 4},
+                    {Protoss_Observer, 1},     {Protoss_Reaver, 1},       {Protoss_Shuttle, 1},  {Protoss_Observer, 2},     {Protoss_Reaver, 4},
+                    {Protoss_Shuttle, 2},      {Protoss_Observer, 3},     {Protoss_Reaver, 8},   {Protoss_Shuttle, 4},
 
-                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1},
-                    {Protoss_Zealot, 12}, {Protoss_Dragoon, 2},
-                    {Protoss_Zealot, 24}, {Protoss_Dragoon, 4}, {Protoss_High_Templar, 3},
-                    {Protoss_Dragoon, 36}, {Protoss_High_Templar, 6},
-                    {Protoss_Dragoon, 64},
+                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1}, {Protoss_Zealot, 12},  {Protoss_Dragoon, 2},      {Protoss_Zealot, 24},
+                    {Protoss_Dragoon, 4},      {Protoss_High_Templar, 3}, {Protoss_Dragoon, 36}, {Protoss_High_Templar, 6}, {Protoss_Dragoon, 64},
                 };
             }
 
@@ -495,4 +484,4 @@ namespace McRave::BuildOrder::Protoss
                 unlockedType.insert(type);
         }
     }
-}
+} // namespace McRave::BuildOrder::Protoss

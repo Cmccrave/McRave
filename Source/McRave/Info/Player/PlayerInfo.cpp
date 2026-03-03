@@ -1,4 +1,5 @@
-#include "Main/McRave.h"
+#include "PlayerInfo.h"
+#include "Info/Unit/UnitInfo.h"
 
 using namespace std;
 using namespace BWAPI;

@@ -1,7 +1,6 @@
 #pragma once
-#include <BWAPI.h>
+#include "Main/Common.h"
 #include <sstream>
-#include <set>
 
 namespace McRave::Learning {
     struct BuildComponent {

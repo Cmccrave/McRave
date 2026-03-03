@@ -1,10 +1,11 @@
-#include "Main/McRave.h"
+#include "Pylons.h"
+
+#include "Info/Unit/Units.h"
 
 using namespace BWAPI;
 using namespace std;
 
-namespace McRave::Pylons
-{
+namespace McRave::Pylons {
     namespace {
         map<TilePosition, int> smallLocations, mediumLocations, largeLocations;
         map<UnitSizeType, int> poweredPositions;
@@ -34,7 +35,7 @@ namespace McRave::Pylons
                         }
                         else if (y == 1 || y == 8) {
                             if (x >= 2 && x <= 13) {
-                                smallLocations[tile] = max(smallLocations[tile], count);
+                                smallLocations[tile]  = max(smallLocations[tile], count);
                                 mediumLocations[tile] = max(mediumLocations[tile], count);
                             }
                             if (x >= 1 && x <= 12)
@@ -42,7 +43,7 @@ namespace McRave::Pylons
                         }
                         else if (y == 2 || y == 7) {
                             if (x >= 1 && x <= 14) {
-                                smallLocations[tile] = max(smallLocations[tile], count);
+                                smallLocations[tile]  = max(smallLocations[tile], count);
                                 mediumLocations[tile] = max(mediumLocations[tile], count);
                             }
                             if (x <= 13)
@@ -54,11 +55,11 @@ namespace McRave::Pylons
                             if (x <= 15)
                                 mediumLocations[tile] = max(mediumLocations[tile], count);
                             if (x <= 14)
-                                largeLocations[tile] = max(largeLocations[tile], count);                            
+                                largeLocations[tile] = max(largeLocations[tile], count);
                         }
                         else if (y == 9) {
                             if (x >= 5 && x <= 10) {
-                                smallLocations[tile] = max(smallLocations[tile], count);
+                                smallLocations[tile]  = max(smallLocations[tile], count);
                                 mediumLocations[tile] = max(mediumLocations[tile], count);
                             }
                             if (x >= 4 && x <= 9)
@@ -88,7 +89,7 @@ namespace McRave::Pylons
                 }
             }
         }
-    }
+    } // namespace
 
     void onFrame()
     {
@@ -118,7 +119,8 @@ namespace McRave::Pylons
         return false;
     }
 
-    int countPoweredPositions(UnitType building) {
+    int countPoweredPositions(UnitType building)
+    {
         if (building.tileWidth() == 2)
             return poweredPositions[UnitSizeTypes::Small];
         if (building.tileWidth() == 3)
@@ -127,4 +129,4 @@ namespace McRave::Pylons
             return poweredPositions[UnitSizeTypes::Large];
         return 0;
     }
-}
+} // namespace McRave::Pylons

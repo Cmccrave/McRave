@@ -1,4 +1,6 @@
-#include "Main/McRave.h"
+#include "Main/Common.h"
+#include "Builds/Protoss/ProtossBuildOrder.h"
+#include "Strategy/Spy/Defs.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -7,7 +9,6 @@ using namespace McRave::BuildOrder::All;
 using namespace UpgradeTypes;
 using namespace TechTypes;
 
-#include "../ProtossBuildOrder.h"
 
 namespace McRave::BuildOrder::Protoss {
 

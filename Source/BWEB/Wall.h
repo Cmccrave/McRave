@@ -25,6 +25,9 @@ namespace BWEB {
         int defenseArrangement;
         TilePosition wallOffset = TilePosition(0,0);
 
+        bool flipHorizontal = false;
+        bool flipVertical   = false;
+
         void initialize();
         void addPieces();
         void addDefenses();

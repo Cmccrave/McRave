@@ -1,5 +1,13 @@
-#include "Main/McRave.h"
+#include "Units.h"
+
+#include "Info/Player/PlayerInfo.h"
+#include "Main/Common.h"
 #include "Main/Events.h"
+#include "Map/Grids.h"
+#include "Map/Terrain.h"
+#include "Strategy/Actions/Actions.h"
+#include "Strategy/Spy/Spy.h"
+#include "Micro/Scout/Scouts.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -30,11 +38,11 @@ namespace McRave::Units {
         Position enemyArmyCenter;
 
         // This is hacky
-        vector<UnitInfo*> commandQueue;
+        vector<UnitInfo *> commandQueue;
 
         void updateEnemies()
         {
-            enemyArmyCenter = Position(0, 0);
+            enemyArmyCenter     = Position(0, 0);
             auto enemyArmyCount = 0;
 
             for (auto &p : Players::getPlayers()) {
@@ -54,7 +62,9 @@ namespace McRave::Units {
                     unit.update();
 
                     // Must see a 3x3 grid of Tiles to set a unit to invalid position
-                    if (!unit.unit()->exists() && Broodwar->isVisible(TilePosition(unit.getPosition())) && (!unit.isBurrowed() || Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Self) || (unit.getPosition().isValid() && Grids::getGroundDensity(unit.getPosition(), PlayerState::Self) > 0)))
+                    if (!unit.unit()->exists() && Broodwar->isVisible(TilePosition(unit.getPosition())) &&
+                        (!unit.isBurrowed() || Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Self) ||
+                         (unit.getPosition().isValid() && Grids::getGroundDensity(unit.getPosition(), PlayerState::Self) > 0)))
                         Events::onUnitDisappear(unit);
 
                     // If a unit is threatening our position
@@ -70,17 +80,14 @@ namespace McRave::Units {
                         enemyArmyCount++;
                     }
 
-                    //Broodwar->drawTextMap(unit.getPosition(), "%.2f", unit.getPriority());
+                    // Broodwar->drawTextMap(unit.getPosition(), "%.2f", unit.getPriority());
                 }
             }
 
             enemyArmyCenter /= enemyArmyCount;
         }
 
-        void updateAllies()
-        {
-
-        }
+        void updateAllies() {}
 
         void updateSelf()
         {
@@ -94,13 +101,12 @@ namespace McRave::Units {
                 for (auto &u : player.getUnits()) {
                     UnitInfo &unit = *u;
                     unit.update();
-                    auto validRole = unit.getRole() == Role::Combat || unit.getRole() == Role::Defender
-                        || unit.getRole() == Role::Scout || unit.getRole() == Role::Support || unit.getRole() == Role::Transport
-                        || unit.getRole() == Role::Worker;
+                    auto validRole = unit.getRole() == Role::Combat || unit.getRole() == Role::Defender || unit.getRole() == Role::Scout || unit.getRole() == Role::Support ||
+                                     unit.getRole() == Role::Transport || unit.getRole() == Role::Worker;
 
-                    auto frames = unit.isLightAir() ? 2 : 9;
-                    auto newCommandFrame = (Broodwar->getFrameCount() - unit.commandFrame > frames)
-                        || (unit.getRole() != Role::Combat && unit.getRole() != Role::Scout && Util::getTime() < Time(4, 00));
+                    auto frames          = unit.isLightAir() ? 2 : 9;
+                    auto newCommandFrame = (Broodwar->getFrameCount() - unit.commandFrame > frames) ||
+                                           (unit.getRole() != Role::Combat && unit.getRole() != Role::Scout && Util::getTime() < Time(4, 00));
 
                     if (newCommandFrame && validRole)
                         commandQueue.push_back(&unit);
@@ -108,9 +114,7 @@ namespace McRave::Units {
             }
 
             // Sort command queue
-            sort(commandQueue.begin(), commandQueue.end(), [&](auto &u1, auto &u2) {
-                return u1->commandFrame < u2->commandFrame;
-            });
+            sort(commandQueue.begin(), commandQueue.end(), [&](auto &u1, auto &u2) { return u1->commandFrame < u2->commandFrame; });
         }
 
         void updateNeutrals()
@@ -149,8 +153,8 @@ namespace McRave::Units {
             grdDamageRatios.clear();
             airDamageRatios.clear();
 
-            const auto addToRatios = [&](auto &ratios, auto& unit) {
-                auto hp = double(unit.getType().maxHitPoints());
+            const auto addToRatios = [&](auto &ratios, auto &unit) {
+                auto hp     = double(unit.getType().maxHitPoints());
                 auto shield = double(unit.getType().maxShields());
                 if (unit.getType().size() == UnitSizeTypes::Small) {
                     ratios.ratio[DamageTypes::Explosive] += (hp + shield) / (hp * 2.0 + shield);
@@ -167,7 +171,7 @@ namespace McRave::Units {
                     ratios.ratio[DamageTypes::Concussive] += (hp + shield) / (hp * 4.0 + shield);
                 }
 
-                ratios.armor += unit.data.armor;
+                ratios.armor += unit.getArmor();
             };
 
             for (auto &p : Players::getPlayers()) {
@@ -178,7 +182,7 @@ namespace McRave::Units {
 
                         myUnits.insert(u);
                         noneUnits.insert(u);
-                        auto canAttack = (unit.canAttackGround() || unit.canAttackAir());
+                        auto canAttack     = (unit.canAttackGround() || unit.canAttackAir());
                         auto attackingUnit = (unit.getType().isBuilding() && canAttack) || (!unit.getType().isBuilding() && !unit.getType().isWorker() && canAttack);
                         if (attackingUnit) {
                             unit.getType().isFlyer() ? allyAirSizes[unit.getType().size()]++ : allyGrdSizes[unit.getType().size()]++;
@@ -188,7 +192,6 @@ namespace McRave::Units {
                             addToRatios(ratios, unit);
                         }
                     }
-
                 }
                 if (player.isEnemy()) {
                     for (auto &u : player.getUnits()) {
@@ -196,7 +199,7 @@ namespace McRave::Units {
 
                         enemyUnits.insert(u);
                         noneUnits.insert(u);
-                        auto canAttack = (unit.canAttackGround() || unit.canAttackAir());
+                        auto canAttack     = (unit.canAttackGround() || unit.canAttackAir());
                         auto attackingUnit = (unit.getType().isBuilding() && canAttack) || (!unit.getType().isBuilding() && !unit.getType().isWorker() && canAttack);
                         if (attackingUnit) {
                             unit.getType().isFlyer() ? enemyAirSizes[unit.getType().size()]++ : enemyGrdSizes[unit.getType().size()]++;
@@ -234,7 +237,7 @@ namespace McRave::Units {
             updateNeutrals();
             updateSelf();
         }
-    }
+    } // namespace
 
     void onFrame()
     {
@@ -255,51 +258,50 @@ namespace McRave::Units {
         return nullptr;
     }
 
-    set<shared_ptr<UnitInfo>>& getUnits(PlayerState state)
+    set<shared_ptr<UnitInfo>> &getUnits(PlayerState state)
     {
         switch (state) {
 
-        case PlayerState::Ally:
-            return allyUnits;
-        case PlayerState::Enemy:
-            return enemyUnits;
-        case PlayerState::Neutral:
-            return neutralUnits;
-        case PlayerState::Self:
-            return myUnits;
-        case PlayerState::None:
-            return noneUnits;
+            case PlayerState::Ally:
+                return allyUnits;
+            case PlayerState::Enemy:
+                return enemyUnits;
+            case PlayerState::Neutral:
+                return neutralUnits;
+            case PlayerState::Self:
+                return myUnits;
+            case PlayerState::None:
+                return noneUnits;
         }
         Broodwar << "Returning all unit set, not intended?" << endl;
         return noneUnits;
     }
 
-    double getDamageRatioGrd(PlayerState state, DamageType type) {
+    double getDamageRatioGrd(PlayerState state, DamageType type)
+    {
         if (type == DamageTypes::Normal || grdDamageRatios[state].count == 0)
             return 1.0;
         return grdDamageRatios[state].ratio[type];
     }
-    double getDamageRatioAir(PlayerState state, DamageType type) {
+    double getDamageRatioAir(PlayerState state, DamageType type)
+    {
         if (type == DamageTypes::Normal || airDamageRatios[state].count == 0)
             return 1.0;
         return airDamageRatios[state].ratio[type];
     }
 
-    double getDamageReductionGrd(PlayerState state) {
-        return grdDamageRatios[state].armor;
-    }
-    double getDamageReductionAir(PlayerState state) {
-        return airDamageRatios[state].armor;
-    }
+    double getDamageReductionGrd(PlayerState state) { return grdDamageRatios[state].armor; }
+    double getDamageReductionAir(PlayerState state) { return airDamageRatios[state].armor; }
 
-    map<UnitSizeType, int>& getAllyGrdSizes() { return allyGrdSizes; }
-    map<UnitSizeType, int>& getEnemyGrdSizes() { return enemyGrdSizes; }
-    map<UnitSizeType, int>& getAllyAirSizes() { return allyAirSizes; }
-    map<UnitSizeType, int>& getEnemyAirSizes() { return enemyAirSizes; }
+    map<UnitSizeType, int> &getAllyGrdSizes() { return allyGrdSizes; }
+    map<UnitSizeType, int> &getEnemyGrdSizes() { return enemyGrdSizes; }
+    map<UnitSizeType, int> &getAllyAirSizes() { return allyAirSizes; }
+    map<UnitSizeType, int> &getEnemyAirSizes() { return enemyAirSizes; }
     Position getEnemyArmyCenter() { return enemyArmyCenter; }
     double getImmThreat() { return immThreat; }
 
-    bool inBoundUnit(UnitInfo& unit, int seconds) {
+    bool inBoundUnit(UnitInfo &unit, int seconds)
+    {
         if (unit.movedFlag || unit.getType().isBuilding() || unit.getType().isWorker())
             return false;
 
@@ -311,18 +313,17 @@ namespace McRave::Units {
             return inbound;
 
         const auto notInNatural = !Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), unit.getPosition());
-        const auto notInMain = !Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), unit.getPosition());
+        const auto notInMain    = !Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), unit.getPosition());
 
         return (Spy::enemyFastExpand() && notInNatural && notInMain) || (!Spy::enemyFastExpand() && notInMain);
     }
 
-    bool commandAllowed(UnitInfo& unit) {
-        auto idx = find_if(commandQueue.begin(), commandQueue.end(), [&](auto &u) {
-            return u == &unit;
-        });
-        auto allowed = idx != commandQueue.end() && idx - commandQueue.begin() < 60;
+    bool commandAllowed(UnitInfo &unit)
+    {
+        auto idx     = find_if(commandQueue.begin(), commandQueue.end(), [&](auto &u) { return u == &unit; });
+        auto allowed = idx != commandQueue.end() && idx - commandQueue.begin() < (255 / Broodwar->getLatency());
         if (allowed)
             unit.commandFrame = Broodwar->getFrameCount();
         return allowed;
     }
-}
+} // namespace McRave::Units

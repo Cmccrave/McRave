@@ -1,5 +1,5 @@
 #pragma once
-#include <BWAPI.h>
+#include "Main/Common.h"
 #include "Defs.h"
 
 namespace McRave::Spy {

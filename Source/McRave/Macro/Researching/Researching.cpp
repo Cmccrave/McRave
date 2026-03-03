@@ -1,4 +1,11 @@
-#include "Main/McRave.h"
+#include "Researching.h"
+
+#include "Builds/All/BuildOrder.h"
+#include "Info/Unit/Units.h"
+#include "Macro/Planning/Planning.h"
+#include "Macro/Producing/Producing.h"
+#include "Macro/Upgrading/Upgrading.h"
+#include "Micro/Worker/Workers.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -7,24 +14,24 @@ using namespace UnitTypes;
 namespace McRave::Researching {
 
     namespace {
-        map <Unit, TechType> idleResearch;
+        map<Unit, TechType> idleResearch;
         int reservedMineral, reservedGas;
         int lastResearchFrame = -999;
 
         void reset()
         {
             reservedMineral = 0;
-            reservedGas = 0;
+            reservedGas     = 0;
         }
 
         bool isAffordable(TechType tech)
         {
-            auto mineralCost        = tech.mineralPrice();
-            auto gasCost            = tech.gasPrice();
+            auto mineralCost = tech.mineralPrice();
+            auto gasCost     = tech.gasPrice();
 
             // Plan buildings and upgrades before we research
-            auto mineralReserve     = Planning::getPlannedMineral() + Upgrading::getReservedMineral();
-            auto gasReserve         = Planning::getPlannedGas() + Upgrading::getReservedGas();
+            auto mineralReserve = Planning::getPlannedMineral() + Upgrading::getReservedMineral();
+            auto gasReserve     = Planning::getPlannedGas() + Upgrading::getReservedGas();
 
             return Broodwar->self()->minerals() >= (mineralCost + mineralReserve) && Broodwar->self()->gas() >= (gasCost + gasReserve);
         }
@@ -57,7 +64,7 @@ namespace McRave::Researching {
             return false;
         }
 
-        bool research(UnitInfo& building)
+        bool research(UnitInfo &building)
         {
             // Clear idle checks
             auto idleItr = idleResearch.find(building.unit());
@@ -75,7 +82,8 @@ namespace McRave::Researching {
                         lastResearchFrame = Broodwar->getFrameCount();
                         return true;
                     }
-                    else if ((Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= research.mineralPrice()) && (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= research.gasPrice())) {
+                    else if ((Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= research.mineralPrice()) &&
+                             (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= research.gasPrice())) {
                         idleResearch[building.unit()] = research;
                         reservedMineral += research.mineralPrice();
                         reservedGas += research.gasPrice();
@@ -102,20 +110,14 @@ namespace McRave::Researching {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &building = *u;
 
-                if (!building.unit()
-                    || building.getRole() != Role::Production
-                    || !building.isCompleted()
-                    || building.getRemainingTrainFrames() > 0
-                    || Upgrading::upgradedThisFrame()
-                    || Researching::researchedThisFrame()
-                    || Producing::producedThisFrame()
-                    || building.getType() == Zerg_Larva)
+                if (!building.unit() || building.getRole() != Role::Production || !building.isCompleted() || building.getRemainingTrainFrames() > 0 || Upgrading::upgradedThisFrame() ||
+                    Researching::researchedThisFrame() || Producing::producedThisFrame() || building.getType() == Zerg_Larva)
                     continue;
 
                 research(building);
             }
         }
-    }
+    } // namespace
 
     void onFrame()
     {
@@ -126,15 +128,11 @@ namespace McRave::Researching {
         Visuals::endPerfTest("Upgrading");
     }
 
-    bool researchedThisFrame() {
-        return lastResearchFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4;
-    }
+    bool researchedThisFrame() { return lastResearchFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4; }
 
-    bool haveOrResearching(TechType tech) {
-        return Broodwar->self()->isResearching(tech) || Broodwar->self()->hasResearched(tech);
-    }
+    bool haveOrResearching(TechType tech) { return Broodwar->self()->isResearching(tech) || Broodwar->self()->hasResearched(tech); }
 
     int getReservedMineral() { return reservedMineral; }
     int getReservedGas() { return reservedGas; }
     bool hasIdleResearch() { return !idleResearch.empty(); }
-}
+} // namespace McRave::Researching

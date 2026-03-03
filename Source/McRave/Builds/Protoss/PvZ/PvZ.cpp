@@ -1,11 +1,11 @@
-#include "Main/McRave.h"
+#include "Builds/Protoss/ProtossBuildOrder.h"
+#include "Main/Common.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace std;
 using namespace BWAPI;
 using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
-
-#include "../ProtossBuildOrder.h"
 
 namespace McRave::BuildOrder::Protoss {
 

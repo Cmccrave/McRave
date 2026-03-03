@@ -1,20 +1,28 @@
-#include "Main/McRave.h"
+#include "Players.h"
+
+#include "Info/Unit/UnitInfo.h"
+#include "Info/Unit/Units.h"
+#include "Main/Common.h"
+#include "Map/Stations.h"
+#include "Micro/Scout/Scouts.h"
+#include "Micro/Transport/Transports.h"
+#include "Micro/Worker/Workers.h"
+#include "PlayerInfo.h"
 
 using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
 
-namespace McRave::Players
-{
+namespace McRave::Players {
     namespace {
-        map <Player, PlayerInfo> thePlayers;
-        map <Race, int> raceCount;
-        map <PlayerState, map<UnitType, int>> allVisibleTypeCounts;
-        map <PlayerState, map<UnitType, int>> allCompleteTypeCounts;
-        map <PlayerState, map<UnitType, int>> allTotalTypeCounts;
-        map <PlayerState, Strength> allPlayerStrengths;
+        map<Player, PlayerInfo>              thePlayers;
+        map<Race, int>                       raceCount;
+        map<PlayerState, map<UnitType, int>> allVisibleTypeCounts;
+        map<PlayerState, map<UnitType, int>> allCompleteTypeCounts;
+        map<PlayerState, map<UnitType, int>> allTotalTypeCounts;
+        map<PlayerState, Strength>           allPlayerStrengths;
 
-        void update(PlayerInfo& player)
+        void update(PlayerInfo &player)
         {
             // Add up the number of each race - HACK: Don't add self for now
             player.update();
@@ -22,14 +30,14 @@ namespace McRave::Players
                 raceCount[player.getCurrentRace()]++;
 
             for (auto &[type, cnt] : player.getVisibleTypeCounts())
-                allVisibleTypeCounts[player.getPlayerState()][type]+=cnt;
+                allVisibleTypeCounts[player.getPlayerState()][type] += cnt;
             for (auto &[type, cnt] : player.getCompleteTypeCounts())
-                allCompleteTypeCounts[player.getPlayerState()][type]+=cnt;
+                allCompleteTypeCounts[player.getPlayerState()][type] += cnt;
             for (auto &[type, cnt] : player.getTotalTypeCounts())
-                allTotalTypeCounts[player.getPlayerState()][type]+=cnt;
+                allTotalTypeCounts[player.getPlayerState()][type] += cnt;
             allPlayerStrengths[player.getPlayerState()] += player.getStrength();
         }
-    }
+    } // namespace
 
     void onStart()
     {
@@ -62,7 +70,7 @@ namespace McRave::Players
     void storeUnit(Unit bwUnit)
     {
         auto player = getPlayerInfo(bwUnit->getPlayer());
-        auto info = make_shared<UnitInfo>(bwUnit);
+        auto info   = make_shared<UnitInfo>(bwUnit);
 
         // Unit already exists, no need to store
         if (Units::getUnitInfo(bwUnit))
@@ -123,9 +131,9 @@ namespace McRave::Players
         if (bwUnit->getType().isRefinery()) {
             removeUnit(bwUnit);
             storeUnit(bwUnit);
-            BWEB::Map::addUsed(bwUnit->getTilePosition(), bwUnit->getType());   // Storing doesn't seem to re-add the used tiles right now
+            BWEB::Map::addUsed(bwUnit->getTilePosition(), bwUnit->getType()); // Storing doesn't seem to re-add the used tiles right now
             if (p->isSelf())
-                p->getTotalTypeCounts()[Zerg_Drone]--;    // And it seems sometimes we add an additional drone count
+                p->getTotalTypeCounts()[Zerg_Drone]--; // And it seems sometimes we add an additional drone count
         }
 
         // Morphing into a Hatchery
@@ -171,7 +179,8 @@ namespace McRave::Players
             }
 
             // When an existing building morphs - use the whatBuilds due to onUnitMorph occuring 1 frame after
-            if (info->getType() == Zerg_Sunken_Colony || info->getType() == Zerg_Spore_Colony || info->getType() == Zerg_Lair || info->getType() == Zerg_Hive || info->getType() == Zerg_Greater_Spire) {
+            if (info->getType() == Zerg_Sunken_Colony || info->getType() == Zerg_Spore_Colony || info->getType() == Zerg_Lair || info->getType() == Zerg_Hive ||
+                info->getType() == Zerg_Greater_Spire) {
                 counts[bwUnit->getType()] += 1;
                 counts[bwUnit->getType().whatBuilds().first] -= 1;
             }
@@ -185,7 +194,7 @@ namespace McRave::Players
     {
         // Finds how many of a UnitType this PlayerState currently has completed
         auto &list = allCompleteTypeCounts[state];
-        auto itr = list.find(type);
+        auto  itr  = list.find(type);
         if (itr != list.end())
             return itr->second;
         return 0;
@@ -195,7 +204,7 @@ namespace McRave::Players
     {
         // Finds how many of a UnitType this PlayerState currently has visible
         auto &list = allVisibleTypeCounts[state];
-        auto itr = list.find(type);
+        auto  itr  = list.find(type);
         if (itr != list.end())
             return itr->second;
         return 0;
@@ -205,7 +214,7 @@ namespace McRave::Players
     {
         // Finds how many of a UnitType the PlayerState total has ever had
         auto &list = allTotalTypeCounts[state];
-        auto itr = list.find(type);
+        auto  itr  = list.find(type);
         if (itr != list.end())
             return itr->second;
         return 0;
@@ -219,16 +228,13 @@ namespace McRave::Players
 
     bool hasDetection(PlayerState state)
     {
-        return getTotalCount(state, Protoss_Observer) > 0
-            || getTotalCount(state, Protoss_Photon_Cannon) > 0
-            || getTotalCount(state, Terran_Science_Vessel) > 0
-            || getTotalCount(state, Terran_Missile_Turret) > 0
-            || getTotalCount(state, Zerg_Overlord) > 0;
+        return getTotalCount(state, Protoss_Observer) > 0 || getTotalCount(state, Protoss_Photon_Cannon) > 0 || getTotalCount(state, Terran_Science_Vessel) > 0 ||
+               getTotalCount(state, Terran_Missile_Turret) > 0 || getTotalCount(state, Zerg_Overlord) > 0;
     }
 
     bool hasResearched(PlayerState state, TechType type)
     {
-        for (auto&[_, player] : thePlayers) {
+        for (auto &[_, player] : thePlayers) {
             if (player.getPlayerState() == state && player.hasTech(type))
                 return true;
         }
@@ -237,7 +243,7 @@ namespace McRave::Players
 
     bool hasUpgraded(PlayerState state, UpgradeType type, int level)
     {
-        for (auto&[_, player] : thePlayers) {
+        for (auto &[_, player] : thePlayers) {
             if (player.getPlayerState() == state && player.hasUpgrade(type, level))
                 return true;
         }
@@ -264,7 +270,7 @@ namespace McRave::Players
         return combined;
     }
 
-    PlayerInfo * getPlayerInfo(Player player)
+    PlayerInfo *getPlayerInfo(Player player)
     {
         for (auto &[p, info] : thePlayers) {
             if (p == player)
@@ -273,7 +279,8 @@ namespace McRave::Players
         return nullptr;
     }
 
-    PlayerState getPlayerState(Unit unit) {
+    PlayerState getPlayerState(Unit unit)
+    {
         auto state = PlayerState::None;
         if (unit->getPlayer() == Broodwar->self())
             state = PlayerState::Self;
@@ -287,11 +294,13 @@ namespace McRave::Players
     }
 
     Strength getStrength(PlayerState state) { return allPlayerStrengths[state]; }
-    map <Player, PlayerInfo>& getPlayers() { return thePlayers; }
+
+    map<Player, PlayerInfo> &getPlayers() { return thePlayers; }
+
     bool vP() { return (thePlayers.size() == 3 && raceCount[Races::Protoss] > 0); }
     bool vT() { return (thePlayers.size() == 3 && raceCount[Races::Terran] > 0); }
     bool vZ() { return (thePlayers.size() == 3 && raceCount[Races::Zerg] > 0); }
     bool vR() { return (thePlayers.size() == 3 && raceCount[Races::Unknown] > 0); }
     bool vFFA() { return thePlayers.size() > 3 && (Broodwar->getGameType() == GameTypes::Free_For_All || Broodwar->getGameType() == GameTypes::Melee); }
     bool vTVB() { return thePlayers.size() > 3 && Broodwar->getGameType() == GameTypes::Top_vs_Bottom; }
-}
+} // namespace McRave::Players

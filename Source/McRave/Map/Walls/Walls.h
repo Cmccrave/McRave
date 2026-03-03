@@ -1,15 +1,15 @@
 #pragma once
-#include <BWAPI.h>
+#include "BWEB.h"
 
 namespace McRave::Walls {
 
     void onStart();
     void onFrame();
 
-    int getColonyCount(const BWEB::Wall * const);
-    
-    int needGroundDefenses(const BWEB::Wall&);
-    int needAirDefenses(const BWEB::Wall&);
-    const BWEB::Wall * const getMainWall();
-    const BWEB::Wall * const getNaturalWall();
-}
+    int getColonyCount(const BWEB::Wall *const);
+
+    int needGroundDefenses(const BWEB::Wall &);
+    int needAirDefenses(const BWEB::Wall &);
+    const BWEB::Wall *const getMainWall();
+    const BWEB::Wall *const getNaturalWall();
+} // namespace McRave::Walls

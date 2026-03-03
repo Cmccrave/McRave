@@ -20,3 +20,4 @@ VisualStudio/Debug/*
 *.lib
 *.pdb
 McRave Compiling.txt
+*.vspx

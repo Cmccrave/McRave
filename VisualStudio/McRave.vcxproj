@@ -160,6 +160,7 @@
     <ClInclude Include="..\Source\McRave\Info\Roles.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\Pathing.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\Targeting.h" />
+    <ClInclude Include="..\Source\McRave\Info\Unit\UnitFrames.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitInfo.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitMath.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\Units.h" />
@@ -169,9 +170,12 @@
     <ClInclude Include="..\Source\McRave\Macro\Producing\Producing.h" />
     <ClInclude Include="..\Source\McRave\Macro\Researching\Researching.h" />
     <ClInclude Include="..\Source\McRave\Macro\Upgrading\Upgrading.h" />
+    <ClInclude Include="..\Source\McRave\Main\Common.h" />
     <ClInclude Include="..\Source\McRave\Main\Events.h" />
     <ClInclude Include="..\Source\McRave\Main\Header.h" />
+    <ClInclude Include="..\Source\McRave\Main\Helpers.h" />
     <ClInclude Include="..\Source\McRave\Main\McRave.h" />
+    <ClInclude Include="..\Source\McRave\Main\Time.h" />
     <ClInclude Include="..\Source\McRave\Main\Util.h" />
     <ClInclude Include="..\Source\McRave\Main\Visuals.h" />
     <ClInclude Include="..\Source\McRave\Map\Grids.h" />
@@ -190,6 +194,9 @@
     <ClInclude Include="..\Source\McRave\Strategy\Spy\Defs.h" />
     <ClInclude Include="..\Source\McRave\Strategy\Spy\Spy.h" />
     <ClInclude Include="..\Source\McRave\Strategy\Zones\Zones.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Source\.clang-format" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2E63AE74-758A-4607-9DE4-D28E814A6E13}</ProjectGuid>
@@ -269,7 +276,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;$(ProjectDir)../Source/BWEB;$(ProjectDir)../Source/BWEM;$(ProjectDir)../Source/Horizon;$(ProjectDir)../Source/McRave;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NOMINMAX;WIN32;NDEBUG;_WINDOWS;_USRDLL;EXAMPLEAIMODULE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>

@@ -1,5 +1,7 @@
 #pragma once
-#include <BWAPI.h>
+#include "Main/Common.h"
+#include "BWEB.h"
+#include "bwem.h"
 
 namespace McRave::Terrain {
 

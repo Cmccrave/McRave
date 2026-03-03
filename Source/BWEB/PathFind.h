@@ -54,9 +54,6 @@ namespace BWEB
         /// <summary> Creates a path from the source to the target using JPS with your provided walkable function. </summary>
         void generateJPS(std::function <bool(const BWAPI::TilePosition&)>);
 
-        /// <summary> Creates a path from the source to the target using BFS with your provided walkable functions. </summary>
-        void generateBFS(std::function <bool(const BWAPI::TilePosition&)> w);
-
         /// <summary> Creates a path from the source to the target using A* with your provided heuristic and walkable functions. </summary>
         void generateAS(std::function <double(const BWAPI::TilePosition&)> h, std::function <bool(const BWAPI::TilePosition&)> w);
         void generateAS_h(std::function <double(const BWAPI::TilePosition&)> h) {

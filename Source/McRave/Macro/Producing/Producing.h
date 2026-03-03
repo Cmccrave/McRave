@@ -1,8 +1,7 @@
 #pragma once
-#include <BWAPI.h>
+#include "Main/Common.h"
 
-namespace McRave::Producing
-{
+namespace McRave::Producing {
     int getReservedMineral();
     int getReservedGas();
     double scoreUnit(BWAPI::UnitType);
@@ -10,6 +9,6 @@ namespace McRave::Producing
     void onFrame();
     bool producedThisFrame();
 
-    bool larvaTrickRequired(UnitInfo& unit);
-    bool larvaTrickOptional(UnitInfo& unit);
-}
+    bool larvaTrickRequired(UnitInfo &unit);
+    bool larvaTrickOptional(UnitInfo &unit);
+} // namespace McRave::Producing

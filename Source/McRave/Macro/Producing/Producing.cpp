@@ -1,4 +1,15 @@
-#include "Main/McRave.h"
+#include "Producing.h"
+
+#include "Builds/All/BuildOrder.h"
+#include "Info/Player/Players.h"
+#include "Info/Unit/Units.h"
+#include "Macro/Planning/Planning.h"
+#include "Macro/Researching/Researching.h"
+#include "Macro/Upgrading/Upgrading.h"
+#include "Map/Stations.h"
+#include "Map/Terrain.h"
+#include "Micro/Worker/Workers.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -7,7 +18,7 @@ using namespace UnitTypes;
 namespace McRave::Producing {
 
     namespace {
-        map <Unit, UnitType> idleProduction;
+        map<Unit, UnitType> idleProduction;
         int reservedMineral, reservedGas;
         int lastProduceFrame = -999;
         int availMin, availGas;
@@ -19,8 +30,8 @@ namespace McRave::Producing {
         {
             idleProduction.clear();
             reservedMineral = 0;
-            reservedGas = 0;
-            scoreThisFrame = "";
+            reservedGas     = 0;
+            scoreThisFrame  = "";
         }
 
         bool isAffordable(UnitType unit)
@@ -28,11 +39,11 @@ namespace McRave::Producing {
             if (unit == Zerg_Overlord)
                 return Broodwar->self()->minerals() >= unit.mineralPrice() + Planning::getPlannedMineral();
 
-            auto availSupply            = Players::getSupply(PlayerState::Self, unit.getRace());
+            auto availSupply = Players::getSupply(PlayerState::Self, unit.getRace());
 
-            auto mineralAffordable      = unit.mineralPrice() == 0 || (availMin >= unit.mineralPrice());
-            auto gasAffordable          = unit.gasPrice() == 0 || (availGas >= unit.gasPrice());
-            auto supplyAffordable       = unit.supplyRequired() == 0 || (availSupply + unit.supplyRequired() <= Broodwar->self()->supplyTotal());
+            auto mineralAffordable = unit.mineralPrice() == 0 || (availMin >= unit.mineralPrice());
+            auto gasAffordable     = unit.gasPrice() == 0 || (availGas >= unit.gasPrice());
+            auto supplyAffordable  = unit.supplyRequired() == 0 || (availSupply + unit.supplyRequired() <= Broodwar->self()->supplyTotal());
 
             return mineralAffordable && gasAffordable && supplyAffordable;
         }
@@ -47,13 +58,13 @@ namespace McRave::Producing {
 
         bool isSuitable(UnitType unit)
         {
-            // 
+            //
             if (!BuildOrder::isUnitUnlocked(unit))
                 return false;
             return true;
         }
 
-        bool addon(UnitInfo& building, UnitType type)
+        bool addon(UnitInfo &building, UnitType type)
         {
             for (auto &unit : building.getType().buildsWhat()) {
                 if (unit.isAddon() && BuildOrder::buildCount(unit) > vis(unit)) {
@@ -64,7 +75,7 @@ namespace McRave::Producing {
             return false;
         }
 
-        bool produce(UnitInfo& building, UnitType type)
+        bool produce(UnitInfo &building, UnitType type)
         {
             if (type == None)
                 return false;
@@ -80,7 +91,8 @@ namespace McRave::Producing {
             }
 
             // Else if this is a tech unit, add it to idle production
-            else if (BuildOrder::isFocusUnit(type) && (Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= type.mineralPrice()) && (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= type.gasPrice())) {
+            else if (BuildOrder::isFocusUnit(type) && (Workers::getMineralWorkers() > 0 || Broodwar->self()->minerals() >= type.mineralPrice()) &&
+                     (Workers::getGasWorkers() > 0 || Broodwar->self()->gas() >= type.gasPrice())) {
                 idleProduction[building.unit()] = type;
                 availMin -= type.mineralPrice();
                 availGas -= type.gasPrice();
@@ -103,26 +115,22 @@ namespace McRave::Producing {
         void updateLarva()
         {
             // Find the best UnitType
-            auto best = 0.0;
+            auto best         = 0.0;
             UnitType bestType = None;
 
             // Rules for choosing a valid larva
-            auto validLarva = [&](UnitInfo &larva, double saturation, const BWEB::Station * station) {
-                if (!larva.unit()
-                    || larva.getType() != Zerg_Larva
-                    || larva.getRole() != Role::Production
-                    || (larva.isProxy() && bestType != Zerg_Hydralisk && BuildOrder::getCurrentTransition().find("Lurker") != string::npos)
-                    || (!larva.isProxy() && BuildOrder::isProxy() && bestType == Zerg_Hydralisk)
-                    || !larva.unit()->getHatchery()
-                    || !larva.unit()->isCompleted()
-                    || lastProduceFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4
-                    || (Planning::overlapsPlan(larva, larva.getPosition()) && Util::getTime() > Time(4, 00)))
+            auto validLarva = [&](UnitInfo &larva, double saturation, const BWEB::Station *station) {
+                if (!larva.unit() || larva.getType() != Zerg_Larva || larva.getRole() != Role::Production ||
+                    (larva.isProxy() && bestType != Zerg_Hydralisk && BuildOrder::getCurrentTransition().find("Lurker") != string::npos) ||
+                    (!larva.isProxy() && BuildOrder::isProxy() && bestType == Zerg_Hydralisk) || !larva.unit()->getHatchery() || !larva.unit()->isCompleted() ||
+                    lastProduceFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4 || (Planning::overlapsPlan(larva, larva.getPosition()) && Util::getTime() > Time(4, 00)))
                     return false;
 
                 // Strategic checks
                 if (Players::ZvP() && Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::Self) {
                     auto time = (Spy::getEnemyBuild() != P_FFE) ? Time(4, 00) : Time(6, 00);
-                    if (bestType == Zerg_Overlord && !station->isNatural() && Util::getTime() > time && Players::getTotalCount(PlayerState::Self, Zerg_Mutalisk) == 0 && Players::getTotalCount(PlayerState::Self, Zerg_Scourge) == 0)
+                    if (bestType == Zerg_Overlord && !station->isNatural() && Util::getTime() > time && Players::getTotalCount(PlayerState::Self, Zerg_Mutalisk) == 0 &&
+                        Players::getTotalCount(PlayerState::Self, Zerg_Scourge) == 0)
                         return false;
                 }
 
@@ -132,8 +140,7 @@ namespace McRave::Producing {
 
             // Find the best type to train right now
             for (auto &type : Zerg_Larva.buildsWhat()) {
-                if (!isCreateable(nullptr, type)
-                    || !isSuitable(type))
+                if (!isCreateable(nullptr, type) || !isSuitable(type))
                     continue;
 
                 const auto value = scoreUnit(type);
@@ -141,7 +148,7 @@ namespace McRave::Producing {
                     scoreThisFrame += "{" + string(type.c_str()) + ", " + to_string(value) + "}, ";
 
                 if (value >= best) {
-                    best = value;
+                    best     = value;
                     bestType = type;
                 }
             }
@@ -158,7 +165,7 @@ namespace McRave::Producing {
                 auto totalLarva = Players::getTotalCount(PlayerState::Self, Zerg_Larva);
 
                 // Try to just use the larvas immediately, queue first
-                if (larvaCount >= 3)
+                if (larvaCount >= 2)
                     saturation = 0.01;
 
                 // Try not to queue drones at high saturation
@@ -189,27 +196,20 @@ namespace McRave::Producing {
             UnitType bestType = None;
 
             // TODO: Pass the addon type we want instead of it implicitly looking
-            const auto commands ={ addon, produce };
+            const auto commands = {addon, produce};
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &building = *u;
 
-                if (!building.unit()
-                    || building.getRole() != Role::Production
-                    || !building.unit()->isCompleted()
-                    || building.getRemainingTrainFrames() >= Broodwar->getLatencyFrames() + 1
-                    || lastProduceFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4
-                    || Upgrading::upgradedThisFrame()
-                    || Researching::researchedThisFrame()
-                    || Producing::producedThisFrame()
-                    || building.getType() == Zerg_Larva)
+                if (!building.unit() || building.getRole() != Role::Production || !building.unit()->isCompleted() || building.getRemainingTrainFrames() >= Broodwar->getLatencyFrames() + 1 ||
+                    lastProduceFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4 || Upgrading::upgradedThisFrame() || Researching::researchedThisFrame() ||
+                    Producing::producedThisFrame() || building.getType() == Zerg_Larva)
                     continue;
 
                 // Look through each UnitType this can train
                 auto best = 0.0;
                 for (auto &type : building.getType().buildsWhat()) {
 
-                    if (!isCreateable(building.unit(), type)
-                        || !isSuitable(type))
+                    if (!isCreateable(building.unit(), type) || !isSuitable(type))
                         continue;
 
                     const auto value = scoreUnit(type);
@@ -217,7 +217,7 @@ namespace McRave::Producing {
                         scoreThisFrame += "{" + string(type.c_str()) + ", " + to_string(value) + "}, ";
 
                     if (value > best) {
-                        best = value;
+                        best     = value;
                         bestType = type;
                     }
                 }
@@ -229,7 +229,7 @@ namespace McRave::Producing {
                 }
             }
         }
-    }
+    } // namespace
 
     void onFrame()
     {
@@ -241,9 +241,7 @@ namespace McRave::Producing {
         Visuals::endPerfTest("Production");
     }
 
-    bool producedThisFrame() {
-        return lastProduceFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4;
-    }
+    bool producedThisFrame() { return lastProduceFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4; }
 
     double scoreUnit(UnitType type)
     {
@@ -255,20 +253,18 @@ namespace McRave::Producing {
         }
 
         // Check if we are saving larva but not for this type
-        if (BuildOrder::getUnitReservation(type) == 0 && (BuildOrder::getUnitReservation(Zerg_Scourge) > 0 || BuildOrder::getUnitReservation(Zerg_Mutalisk) > 0 || BuildOrder::getUnitReservation(Zerg_Hydralisk) > 0)) {
-            auto larvaMinCost = (Zerg_Mutalisk.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Mutalisk))
-                + (Zerg_Hydralisk.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Hydralisk))
-                + (Zerg_Scourge.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Scourge));
+        if (BuildOrder::getUnitReservation(type) == 0 &&
+            (BuildOrder::getUnitReservation(Zerg_Scourge) > 0 || BuildOrder::getUnitReservation(Zerg_Mutalisk) > 0 || BuildOrder::getUnitReservation(Zerg_Hydralisk) > 0)) {
+            auto larvaMinCost = (Zerg_Mutalisk.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Mutalisk)) + (Zerg_Hydralisk.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Hydralisk)) +
+                                (Zerg_Scourge.mineralPrice() * BuildOrder::getUnitReservation(Zerg_Scourge));
 
-            auto larvaGasCost = (Zerg_Mutalisk.gasPrice() * BuildOrder::getUnitReservation(Zerg_Mutalisk))
-                + (Zerg_Hydralisk.gasPrice() * BuildOrder::getUnitReservation(Zerg_Hydralisk))
-                + (Zerg_Scourge.gasPrice() * BuildOrder::getUnitReservation(Zerg_Scourge));
+            auto larvaGasCost = (Zerg_Mutalisk.gasPrice() * BuildOrder::getUnitReservation(Zerg_Mutalisk)) + (Zerg_Hydralisk.gasPrice() * BuildOrder::getUnitReservation(Zerg_Hydralisk)) +
+                                (Zerg_Scourge.gasPrice() * BuildOrder::getUnitReservation(Zerg_Scourge));
 
             auto larvaRequirements = BuildOrder::getUnitReservation(Zerg_Mutalisk) + BuildOrder::getUnitReservation(Zerg_Hydralisk) + BuildOrder::getUnitReservation(Zerg_Scourge);
 
-            if ((type != Zerg_Overlord && vis(Zerg_Larva) <= larvaRequirements)
-                || (type.mineralPrice() > 0 && Broodwar->self()->minerals() - type.mineralPrice() < larvaMinCost)
-                || (type.gasPrice() > 0 && Broodwar->self()->gas() - type.gasPrice() < larvaGasCost))
+            if ((type != Zerg_Overlord && vis(Zerg_Larva) <= larvaRequirements) || (type.mineralPrice() > 0 && Broodwar->self()->minerals() - type.mineralPrice() < larvaMinCost) ||
+                (type.gasPrice() > 0 && Broodwar->self()->gas() - type.gasPrice() < larvaGasCost))
                 return -1.0;
         }
 
@@ -281,7 +277,7 @@ namespace McRave::Producing {
 
         // Get the cost of making this type
         auto typeMineralCost = Math::realisticMineralCost(type);
-        auto typeGasCost = Math::realisticGasCost(type);
+        auto typeGasCost     = Math::realisticGasCost(type);
         for (auto &secondType : type.buildsWhat()) {
             if (!secondType.isBuilding()) {
                 trainedCount += vis(secondType);
@@ -290,33 +286,34 @@ namespace McRave::Producing {
             }
         }
 
-        auto minCostScore = (Broodwar->self()->minerals() == 0 || typeMineralCost == 0) ? 1.0 : max(1.0, double(availMin * 2 - typeMineralCost - reservedMineral)) / double(Broodwar->self()->minerals());
+        auto minCostScore = (Broodwar->self()->minerals() == 0 || typeMineralCost == 0) ? 1.0
+                                                                                        : max(1.0, double(availMin * 2 - typeMineralCost - reservedMineral)) / double(Broodwar->self()->minerals());
         auto gasCostScore = (Broodwar->self()->gas() == 0 || typeGasCost == 0) ? 1.0 : max(1.0, double(availGas * 2 - typeGasCost - reservedGas)) / double(Broodwar->self()->gas());
 
         // Can't make them if we aren't mining and can't afford
-        if ((Workers::getGasWorkers() == 0 && typeGasCost > 0 && Broodwar->self()->gas() < typeGasCost)
-            || (Workers::getMineralWorkers() == 0 && typeMineralCost > 0 && Broodwar->self()->minerals() < typeMineralCost))
+        if ((Workers::getGasWorkers() == 0 && typeGasCost > 0 && Broodwar->self()->gas() < typeGasCost) ||
+            (Workers::getMineralWorkers() == 0 && typeMineralCost > 0 && Broodwar->self()->minerals() < typeMineralCost))
             return -1.0;
 
         // If we can't even afford 50% of the gas cost, then we shouldn't bother
-        if ((typeGasCost > 0 && double(Broodwar->self()->gas()) / double(typeGasCost) < 0.5)
-            || (typeGasCost > 0 && availGas < 0))
+        if ((typeGasCost > 0 && double(Broodwar->self()->gas()) / double(typeGasCost) < 0.5) || (typeGasCost > 0 && availGas < 0))
             return -1.0;
 
-        const auto percentage = BuildOrder::getCompositionPercentage(type);
+        const auto percentage    = BuildOrder::getCompositionPercentage(type);
         const auto resourceScore = gasCostScore * minCostScore;
         const auto strategyScore = 100.0 * percentage / double(max(1, trainedCount));
         return resourceScore + strategyScore;
     }
 
-    bool larvaTrickRequired(UnitInfo& larva) {
+    bool larvaTrickRequired(UnitInfo &larva)
+    {
         if (larva.getType() == Zerg_Larva && larva.unit()->getHatchery() && larva.getRemainingTrainFrames() <= 0) {
             auto closestStation = Stations::getClosestStationAir(larva.unit()->getHatchery()->getPosition(), PlayerState::Self);
             if (!closestStation)
                 return false;
 
             auto mustMoveToLeft = Planning::overlapsPlan(larva, larva.getPosition());
-            auto canMove = (larva.getPosition().y - 16.0 > larva.unit()->getHatchery()->getPosition().y || larva.getPosition().x + 24 > larva.unit()->getHatchery()->getPosition().x);
+            auto canMove        = (larva.getPosition().y - 16.0 > larva.unit()->getHatchery()->getPosition().y || larva.getPosition().x + 24 > larva.unit()->getHatchery()->getPosition().x);
             if (canMove && mustMoveToLeft) {
                 if (larva.unit()->getLastCommand().getType() != UnitCommandTypes::Stop)
                     larva.unit()->stop();
@@ -326,13 +323,15 @@ namespace McRave::Producing {
         return false;
     };
 
-    bool larvaTrickOptional(UnitInfo& larva) {
+    bool larvaTrickOptional(UnitInfo &larva)
+    {
         if (larva.getType() == Zerg_Larva && larva.unit()->getHatchery() && larva.getRemainingTrainFrames() <= 0) {
             auto closestStation = Stations::getClosestStationAir(larva.unit()->getHatchery()->getPosition(), PlayerState::Self);
             if (!closestStation)
                 return false;
 
-            auto tryMoveToLeft = closestStation->getResourceCentroid().y + 64.0 < closestStation->getBase()->Center().y || closestStation->getResourceCentroid().x < closestStation->getBase()->Center().x;
+            auto tryMoveToLeft = closestStation->getResourceCentroid().y + 64.0 < closestStation->getBase()->Center().y ||
+                                 closestStation->getResourceCentroid().x < closestStation->getBase()->Center().x;
             auto canMove = (larva.getPosition().y - 16.0 > larva.unit()->getHatchery()->getPosition().y || larva.getPosition().x + 24 > larva.unit()->getHatchery()->getPosition().x);
             if (canMove && tryMoveToLeft) {
                 if (larva.unit()->getLastCommand().getType() != UnitCommandTypes::Stop)
@@ -346,4 +345,4 @@ namespace McRave::Producing {
     int getReservedMineral() { return reservedMineral; }
     int getReservedGas() { return reservedGas; }
     bool hasIdleProduction() { return int(idleProduction.size()) > 0; }
-}
+} // namespace McRave::Producing

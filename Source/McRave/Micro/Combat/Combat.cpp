@@ -1,4 +1,12 @@
-#include "Main/McRave.h"
+#include "Combat.h"
+
+#include "Builds/All/BuildOrder.h"
+#include "Info/Player/Players.h"
+#include "Info/Unit/Units.h"
+#include "Map/Grids.h"
+#include "Map/Stations.h"
+#include "Map/Terrain.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -10,11 +18,11 @@ namespace McRave::Combat {
     namespace {
 
         // Defending
-        bool holdChoke = false;
-        bool defendNatural = false;
-        const ChokePoint * defendChoke = nullptr;
-        const Area * defendArea = nullptr;
-        Position defendPosition = Positions::Invalid;
+        bool holdChoke                = false;
+        bool defendNatural            = false;
+        const ChokePoint *defendChoke = nullptr;
+        const Area *defendArea        = nullptr;
+        Position defendPosition       = Positions::Invalid;
 
         // Harassing
         Position harassPosition = Positions::Invalid;
@@ -26,13 +34,13 @@ namespace McRave::Combat {
         {
             // Choose a default attack position, in FFA we choose closest enemy station to us that isn't ours
             auto distBest = Players::vFFA() ? DBL_MAX : 0.0;
-            auto posBest = Positions::Invalid;
+            auto posBest  = Positions::Invalid;
             if (Players::vFFA()) {
                 for (auto &station : Stations::getStations(PlayerState::Enemy)) {
                     auto dist = station->getBase()->Center().getDistance(Terrain::getMainPosition());
                     if (dist < distBest) {
                         distBest = dist;
-                        posBest = station->getBase()->Center();
+                        posBest  = station->getBase()->Center();
                     }
                 }
             }
@@ -43,17 +51,15 @@ namespace McRave::Combat {
 
             // Attack furthest enemy station from enemy main, closest enemy station to us in FFA
             attackPosition = Terrain::getEnemyStartingPosition();
-            posBest = Positions::Invalid;
+            posBest        = Positions::Invalid;
 
             auto goClosest = Players::vFFA() || BuildOrder::isAllIn();
-            distBest = goClosest ? DBL_MAX : 0.0;
+            distBest       = goClosest ? DBL_MAX : 0.0;
 
             for (auto &station : Stations::getStations(PlayerState::Enemy)) {
                 auto dist = Terrain::getEnemyStartingPosition().getDistance(station->getBase()->Center());
 
-                if ((!goClosest && dist < distBest)
-                    || (goClosest && dist > distBest)
-                    || BWEB::Map::isUsed(station->getBase()->Location()) == UnitTypes::None)
+                if ((!goClosest && dist < distBest) || (goClosest && dist > distBest) || BWEB::Map::isUsed(station->getBase()->Location()) == UnitTypes::None)
                     continue;
 
                 const auto stationWalkable = [&](const TilePosition &t) {
@@ -66,7 +72,7 @@ namespace McRave::Combat {
 
                 if (path.isReachable()) {
                     distBest = dist;
-                    posBest = station->getResourceCentroid();
+                    posBest  = station->getResourceCentroid();
                 }
             }
             attackPosition = posBest;
@@ -79,11 +85,9 @@ namespace McRave::Combat {
             // When we want to defend our natural
             defendNatural = false;
             if (Terrain::getMyNatural() && Terrain::getNaturalChoke() && !Terrain::isPocketNatural() && !Stations::isBlocked(Terrain::getMyNatural())) {
-                defendNatural = (BuildOrder::takeNatural() && !Players::ZvZ())
-                    || (Broodwar->self()->getRace() != Races::Zerg && BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural()))
-                    || Stations::getStations(PlayerState::Self).size() >= 2
-                    || (!Players::PvZ() && Players::getSupply(PlayerState::Self, Races::Protoss) > 140)
-                    || (Broodwar->self()->getRace() != Races::Zerg && Terrain::isReverseRamp());
+                defendNatural = (BuildOrder::takeNatural() && !Players::ZvZ()) || (Broodwar->self()->getRace() != Races::Zerg && BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural())) ||
+                                Stations::getStations(PlayerState::Self).size() >= 2 || (!Players::PvZ() && Players::getSupply(PlayerState::Self, Races::Protoss) > 140) ||
+                                (Broodwar->self()->getRace() != Races::Zerg && Terrain::isReverseRamp());
             }
 
             // When we don't want to defend our natural
@@ -93,10 +97,9 @@ namespace McRave::Combat {
             // ZvP
             if (Players::ZvP()) {
                 if (Spy::enemyProxy() && Spy::getEnemyBuild() == P_2Gate) {
-                    auto naturalHatch = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Self, [&](auto &u) {
-                        return u->getType() == Zerg_Hatchery;
-                    });
-                    if ((naturalHatch && naturalHatch->getUnitsTargetingThis().empty() && !Stations::isCompleted(Terrain::getMyNatural())) || (vis(Zerg_Zergling) < 6 && Units::getImmThreat() < 0.1f && Util::getTime() < Time(5, 00)))
+                    auto naturalHatch = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Hatchery; });
+                    if ((naturalHatch && naturalHatch->getUnitsTargetingThis().empty() && !Stations::isCompleted(Terrain::getMyNatural())) ||
+                        (vis(Zerg_Zergling) < 6 && Units::getImmThreat() < 0.1f && Util::getTime() < Time(5, 00)))
                         defendNatural = false;
                 }
             }
@@ -107,8 +110,8 @@ namespace McRave::Combat {
                 if (com(Zerg_Zergling) >= 6)
                     sixLings = true;
 
-                defendNatural = Stations::getStations(PlayerState::Self).size() >= 2;
-                auto delayNaturalDefending = Util::getTime() < Time(3, 20) && (Spy::getEnemyOpener() == "Unknown" || !sixLings);                
+                defendNatural              = Stations::getStations(PlayerState::Self).size() >= 2;
+                auto delayNaturalDefending = Util::getTime() < Time(3, 20) && (Spy::getEnemyOpener() == "Unknown" || !sixLings);
 
                 if (BuildOrder::getCurrentBuild() != Z_PoolLair && (delayNaturalDefending || Spy::enemyRush()))
                     defendNatural = false;
@@ -116,16 +119,16 @@ namespace McRave::Combat {
 
             // Natural defending position
             if (defendNatural) {
-                defendChoke = Terrain::getNaturalChoke();
-                defendArea = Terrain::getNaturalArea();
+                defendChoke    = Terrain::getNaturalChoke();
+                defendArea     = Terrain::getNaturalArea();
                 defendPosition = Stations::getDefendPosition(Terrain::getMyNatural());
             }
 
             // Main defending position
             else if (Terrain::getMainChoke()) {
-                defendChoke = Terrain::getMainChoke();
-                defendArea = Terrain::getMainArea();
-                defendPosition =  Stations::getDefendPosition(Terrain::getMyMain());
+                defendChoke    = Terrain::getMainChoke();
+                defendArea     = Terrain::getMainArea();
+                defendPosition = Stations::getDefendPosition(Terrain::getMyMain());
             }
         }
 
@@ -134,13 +137,11 @@ namespace McRave::Combat {
             auto oldHarass = harassPosition;
             if (!Terrain::getEnemyMain())
                 return;
-            harassPosition = Positions::Invalid;
+            harassPosition                         = Positions::Invalid;
             vector<const BWEB::Station *> stations = Stations::getStations(PlayerState::Enemy);
 
             const auto commanderInRange = [&](Position here) {
-                auto commander = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
-                    return u->getType() == Zerg_Mutalisk;
-                });
+                auto commander = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Mutalisk; });
                 return commander && commander->getPosition().getDistance(here) < 160.0;
             };
             const auto stationNotVisitedRecently = [&](auto &station) {
@@ -151,7 +152,7 @@ namespace McRave::Combat {
             if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure()) {
 
                 const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return (Util::getTime() < Time(8, 00) && Units::inBoundUnit(*u, 15) && !u->getType() == Terran_Vulture) || u->isThreatening();
+                    return (Util::getTime() < Time(8, 00) && Units::inBoundUnit(*u, 15) && !u->getType().isWorker() && !u->getType() == Terran_Vulture) || u->isThreatening();
                 });
 
                 if (closest) {
@@ -162,9 +163,8 @@ namespace McRave::Combat {
 
             // Adds the next closest ground station
             const auto nextStation = [&]() {
-                auto station = Stations::getClosestStationGround(Terrain::getEnemyNatural()->getBase()->Center(), PlayerState::None, [&](auto &s) {
-                    return find(stations.begin(), stations.end(), s) == stations.end();
-                });
+                auto station = Stations::getClosestStationGround(Terrain::getEnemyNatural()->getBase()->Center(), PlayerState::None,
+                                                                 [&](auto &s) { return find(stations.begin(), stations.end(), s) == stations.end(); });
                 if (station)
                     stations.push_back(station);
             };
@@ -187,7 +187,7 @@ namespace McRave::Combat {
             }
 
             // ZvT main is easier to harass in the immediate
-            if (Players::ZvT() && Util::getTime() < Time(8, 00) && Terrain::getEnemyMain()) {
+            if (Players::ZvT() && Util::getTime() < Time(9, 00) && Terrain::getEnemyMain()) {
                 harassPosition = Terrain::getEnemyMain()->getResourceCentroid();
                 return;
             }
@@ -205,9 +205,9 @@ namespace McRave::Combat {
             }
 
             // At a certain point we need to ensure they aren't mass expanding - check closest 2 if not visible in last 2 minutes
-            auto extrasToCheck = (Stations::getStations(PlayerState::Enemy).size() <= 2 && Util::getTime() > Time(10, 00))
-                + (Stations::getStations(PlayerState::Enemy).size() <= 3 && Util::getTime() > Time(15, 00))
-                + (Terrain::isIslandMap() && Stations::getStations(PlayerState::Enemy).size() < 2 && Util::getTime() > Time(10, 00));
+            auto extrasToCheck = (Stations::getStations(PlayerState::Enemy).size() <= 2 && Util::getTime() > Time(10, 00)) +
+                                 (Stations::getStations(PlayerState::Enemy).size() <= 3 && Util::getTime() > Time(15, 00)) +
+                                 (Terrain::isIslandMap() && Stations::getStations(PlayerState::Enemy).size() < 2 && Util::getTime() > Time(10, 00));
 
             for (int x = 0; x < extrasToCheck; x++)
                 nextStation();
@@ -217,7 +217,7 @@ namespace McRave::Combat {
             for (auto &station : stations) {
                 auto score = double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(station->getResourceCentroid())));
                 if (score > best) {
-                    best = score;
+                    best           = score;
                     harassPosition = station->getResourceCentroid();
                 }
             }
@@ -227,13 +227,8 @@ namespace McRave::Combat {
         {
             // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss && Players::getSupply(PlayerState::Self, Races::None) > 40) {
-                holdChoke = BuildOrder::takeNatural()
-                    || vis(Protoss_Dragoon) > 0
-                    || com(Protoss_Shield_Battery) > 0
-                    || BuildOrder::isWallNat()
-                    || (BuildOrder::isHideTech() && !Spy::enemyRush())
-                    || Players::getSupply(PlayerState::Self, Races::None) > 60
-                    || Players::vT();
+                holdChoke = BuildOrder::takeNatural() || vis(Protoss_Dragoon) > 0 || com(Protoss_Shield_Battery) > 0 || BuildOrder::isWallNat() || (BuildOrder::isHideTech() && !Spy::enemyRush()) ||
+                            Players::getSupply(PlayerState::Self, Races::None) > 60 || Players::vT();
             }
 
             // Terran
@@ -272,9 +267,10 @@ namespace McRave::Combat {
                 }
             }
         }
-    }
+    } // namespace
 
-    void onFrame() {
+    void onFrame()
+    {
         Visuals::startPerfTest();
         findAttackPosition();
         findDefendPosition();
@@ -290,18 +286,16 @@ namespace McRave::Combat {
         Visuals::endPerfTest("Combat");
     }
 
-    void onStart() {
-
-    }
+    void onStart() {}
 
     Position getAttackPosition() { return attackPosition; }
     Position getDefendPosition() { return defendPosition; }
     Position getHarassPosition() { return harassPosition; }
 
-    const ChokePoint * getDefendChoke() { return defendChoke; }
-    const Area * getDefendArea() { return defendArea; }
-    const BWEB::Station * getDefendStation() { return defendNatural ? Terrain::getMyNatural() : Terrain::getMyMain(); }
+    const ChokePoint *getDefendChoke() { return defendChoke; }
+    const Area *getDefendArea() { return defendArea; }
+    const BWEB::Station *getDefendStation() { return defendNatural ? Terrain::getMyNatural() : Terrain::getMyMain(); }
     bool isDefendNatural() { return defendNatural; }
 
     bool holdAtChoke() { return holdChoke; }
-}
+} // namespace McRave::Combat

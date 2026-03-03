@@ -1,4 +1,10 @@
-#include "Main/McRave.h"
+#include "Builds/All/BuildOrder.h"
+#include "Combat.h"
+#include "Horizon.h"
+#include "Info/Player/Players.h"
+#include "Info/Unit/Units.h"
+#include "Map/Stations.h"
+#include "Map/Terrain.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -7,12 +13,12 @@ using namespace UnitTypes;
 namespace McRave::Combat::Simulation {
 
     namespace {
-        bool ignoreSim = false;
+        bool ignoreSim       = false;
         double minWinPercent = 0.6;
         double maxWinPercent = 1.2;
-    }
+    } // namespace
 
-    void updateSimulation(UnitInfo& unit)
+    void updateSimulation(UnitInfo &unit)
     {
         Horizon::simulate(unit);
 
@@ -40,10 +46,10 @@ namespace McRave::Combat::Simulation {
         auto belowGrdtoAirLimit = false;
         auto belowAirtoAirLimit = false;
         auto belowAirtoGrdLimit = false;
-        auto &unitTarget = unit.getTarget().lock();
-        auto selfEngaged = false;
-        auto enemyEngaged = false;
-        auto allyEngaged = false;
+        auto &unitTarget        = unit.getTarget().lock();
+        auto selfEngaged        = false;
+        auto enemyEngaged       = false;
+        auto allyEngaged        = false;
 
         // If above/below thresholds, it's a sim win/loss
         if (unit.getSimValue() >= maxWinPercent)
@@ -63,7 +69,7 @@ namespace McRave::Combat::Simulation {
         }
     }
 
-    void updateThresholds(UnitInfo& unit)
+    void updateThresholds(UnitInfo &unit)
     {
         // P
         if (Players::PvP()) {
@@ -108,7 +114,7 @@ namespace McRave::Combat::Simulation {
         }
     }
 
-    void updateIncentives(UnitInfo& unit)
+    void updateIncentives(UnitInfo &unit)
     {
         // Can't have incentives without a target for now
         if (!unit.hasTarget())
@@ -117,7 +123,7 @@ namespace McRave::Combat::Simulation {
 
         // Adjust winrates if we have static defense that would make the fight easier and we're at home
         if (!unit.isFlying()) {
-            const auto defendStation = Stations::getClosestStationAir(unit.retreatPos, PlayerState::Self);
+            const auto defendStation    = Stations::getClosestStationAir(unit.retreatPos, PlayerState::Self);
             const auto furthestDefender = Util::getFurthestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
                 return u->getType().isBuilding() && u->canAttackGround() && u->isCompleted() && Terrain::inArea(defendStation->getBase()->GetArea(), u->getPosition());
             });
@@ -130,8 +136,8 @@ namespace McRave::Combat::Simulation {
 
         // Adjust winrates if we are all-in
         if (BuildOrder::isAllIn() && !Combat::State::isStaticRetreat(unit.getType()) && Util::getTime() < Time(8, 00)) {
-            minWinPercent -= 0.20;
-            maxWinPercent -= 0.10;
+            minWinPercent -= 0.25;
+            maxWinPercent += 0.25;
         }
 
         // Override if target is threatening
@@ -163,4 +169,4 @@ namespace McRave::Combat::Simulation {
             }
         }
     }
-}
+} // namespace McRave::Combat::Simulation

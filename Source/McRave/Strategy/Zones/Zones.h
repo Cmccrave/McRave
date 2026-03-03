@@ -1,5 +1,5 @@
 #pragma once
-#include <BWAPI.h>
+#include "Main/Common.h"
 
 enum class ZoneType {
     None, Engage, Retreat, Defend
