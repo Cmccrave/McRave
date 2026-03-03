@@ -204,7 +204,7 @@ namespace McRave::Spy::Zerg {
     void enemyZergMisc(PlayerInfo &player, StrategySpy &theSpy)
     {
         // Turtle detection
-        if (completesBy(1, Zerg_Sunken_Colony, Time(3, 00)) || completesBy(2, Zerg_Sunken_Colony, Time(4, 00)) || completesBy(3, Zerg_Sunken_Colony, Time(5, 30)))
+        if (completesBy(2, Zerg_Sunken_Colony, Time(4, 00)) || completesBy(3, Zerg_Sunken_Colony, Time(5, 30)))
             theSpy.turtle.possible = true;
         if (Players::ZvZ() && Spy::enemyFastExpand() && completesBy(15, Zerg_Drone, Time(3, 15)))
             theSpy.turtle.possible = true;
