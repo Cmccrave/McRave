@@ -1,4 +1,5 @@
 #include "Actions.h"
+
 #include "Info/Unit/Units.h"
 
 using namespace BWAPI;
@@ -16,21 +17,21 @@ namespace McRave::Actions {
             // TODO
             if (draw) {
                 for (auto &action : neutralActions) {
-                    auto topLeft = action.pos - Position(48, 48);
-                    auto botRight = action.pos + Position(48, 48);
-                    vector<string> text ={ "Neutral", action.type.c_str(), action.tech.c_str(), action.unit ? to_string(action.unit->getID()) : "no source" };
+                    auto topLeft        = action.pos - Position(48, 48);
+                    auto botRight       = action.pos + Position(48, 48);
+                    vector<string> text = {"Neutral", action.type.c_str(), action.tech.c_str(), action.source ? to_string(action.source->getID()) : "no source"};
                     Visuals::drawTextBox(action.pos, text);
                 }
                 for (auto &action : enemyActions) {
-                    auto topLeft = action.pos - Position(48, 48);
-                    auto botRight = action.pos + Position(48, 48);
-                    vector<string> text ={ "Enemy", action.type.c_str(), action.tech.c_str(), action.unit ? to_string(action.unit->getID()) : "no source" };
+                    auto topLeft        = action.pos - Position(48, 48);
+                    auto botRight       = action.pos + Position(48, 48);
+                    vector<string> text = {"Enemy", action.type.c_str(), action.tech.c_str(), action.source ? to_string(action.source->getID()) : "no source"};
                     Visuals::drawTextBox(action.pos, text);
                 }
                 for (auto &action : myActions) {
-                    auto topLeft = action.pos - Position(48, 48);
-                    auto botRight = action.pos + Position(48, 48);
-                    vector<string> text ={ "Self", action.type.c_str(), action.tech.c_str(), action.unit ? to_string(action.unit->getID()) : "no source" };
+                    auto topLeft        = action.pos - Position(48, 48);
+                    auto botRight       = action.pos + Position(48, 48);
+                    vector<string> text = {"Self", action.type.c_str(), action.tech.c_str(), action.source ? to_string(action.source->getID()) : "no source"};
                     Visuals::drawTextBox(action.pos, text);
                 }
             }
@@ -45,27 +46,22 @@ namespace McRave::Actions {
             enemyActions.clear();
 
             const auto trackable = [&](TechType type) {
-                return type == TechTypes::Dark_Swarm
-                    || type == TechTypes::Disruption_Web
-                    || type == TechTypes::EMP_Shockwave
-                    || type == TechTypes::Ensnare
-                    || type == TechTypes::Irradiate
-                    || type == TechTypes::Maelstrom
-                    || type == TechTypes::Nuclear_Strike
-                    || type == TechTypes::Plague
-                    || type == TechTypes::Psionic_Storm;
+                return type == TechTypes::Dark_Swarm || type == TechTypes::Disruption_Web || type == TechTypes::EMP_Shockwave || type == TechTypes::Ensnare || type == TechTypes::Irradiate ||
+                       type == TechTypes::Maelstrom || type == TechTypes::Nuclear_Strike || type == TechTypes::Plague || type == TechTypes::Psionic_Storm || type == TechTypes::Spawn_Broodlings;
             };
 
             const auto whatTech = [&](Order order) {
                 switch (order) {
-                case Orders::CastEMPShockwave:
-                    return TechTypes::EMP_Shockwave;
-                case Orders::CastDarkSwarm:
-                    return TechTypes::Dark_Swarm;
-                case Orders::CastDisruptionWeb:
-                    return TechTypes::Disruption_Web;
-                case Orders::CastPsionicStorm:
-                    return TechTypes::Psionic_Storm;
+                    case Orders::CastEMPShockwave:
+                        return TechTypes::EMP_Shockwave;
+                    case Orders::CastDarkSwarm:
+                        return TechTypes::Dark_Swarm;
+                    case Orders::CastDisruptionWeb:
+                        return TechTypes::Disruption_Web;
+                    case Orders::CastPsionicStorm:
+                        return TechTypes::Psionic_Storm;
+                    case Orders::CastSpawnBroodlings:
+                        return TechTypes::Spawn_Broodlings;
                 }
                 return TechTypes::None;
             };
@@ -73,10 +69,20 @@ namespace McRave::Actions {
             // Check bullet based abilities, store as neutral PlayerState as it affects both sides
             for (auto &b : Broodwar->getBullets()) {
                 if (b && b->exists()) {
+
+                    // Area based bullets
                     if (b->getType() == BulletTypes::EMP_Missile)
                         addAction(nullptr, b->getTargetPosition(), TechTypes::EMP_Shockwave, PlayerState::Neutral, Util::getCastRadius(TechTypes::EMP_Shockwave));
                     if (b->getType() == BulletTypes::Psionic_Storm)
                         addAction(nullptr, b->getPosition(), TechTypes::Psionic_Storm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Psionic_Storm));
+
+                    // Target based bullets
+                    if (b->getType() == BulletTypes::Queen_Spell_Carrier) {
+                        addAction(nullptr, b->getTarget(), TechTypes::Spawn_Broodlings, PlayerState::Neutral);
+                    }
+                    if (b->getType() == BulletTypes::Longbolt_Missile && b->getSource() && b->getSource()->getType() == Terran_Ghost) {
+                        addAction(nullptr, b->getTarget(), TechTypes::Lockdown, PlayerState::Neutral);
+                    }
                 }
             }
 
@@ -149,9 +155,9 @@ namespace McRave::Actions {
             }
         }
 
-        bool boxOverlap(Action& action, vector<Position>& checkPositions, int distance)
+        bool boxOverlap(Action &action, vector<Position> &checkPositions, int distance)
         {
-            auto topLeft = action.pos - BWAPI::Position(distance, distance);
+            auto topLeft  = action.pos - BWAPI::Position(distance, distance);
             auto botRight = action.pos + BWAPI::Position(distance, distance);
 
             // Bounding box of current Action
@@ -162,7 +168,7 @@ namespace McRave::Actions {
             return false;
         }
 
-        bool circleOverlap(Action& action, vector<Position>& checkPositions, int distance)
+        bool circleOverlap(Action &action, vector<Position> &checkPositions, int distance)
         {
             // Rough circle of current Action
             for (auto &position : checkPositions) {
@@ -171,9 +177,9 @@ namespace McRave::Actions {
             }
             return false;
         }
-    }
+    } // namespace
 
-    bool isInDanger(UnitInfo& unit, Position here)
+    bool isInDanger(UnitInfo &unit, Position here)
     {
         const int hW = int(ceil(unit.getType().width() / 2));
         const int hH = int(ceil(unit.getType().height() / 2));
@@ -181,14 +187,10 @@ namespace McRave::Actions {
         if (here == Positions::Invalid)
             here = unit.getPosition();
 
-        vector<Position> checkPositions ={
-            {here + Position(-hW, -hH)},
-            {here + Position(hW, -hH)},
-            {here + Position(-hW, hH)},
-            {here + Position(hW, hH)} };
+        vector<Position> checkPositions = {{here + Position(-hW, -hH)}, {here + Position(hW, -hH)}, {here + Position(-hW, hH)}, {here + Position(hW, hH)}};
 
         // Check that we're not in danger of Storm, DWEB, EMP
-        const auto checkDangers = [&](vector<Action>& actions) {
+        const auto checkDangers = [&](vector<Action> &actions) {
             for (auto &command : actions) {
 
                 if (!unit.isFlying() && (command.type == UnitTypes::Protoss_Scarab || command.type == UnitTypes::Terran_Vulture_Spider_Mine)) {
@@ -197,15 +199,13 @@ namespace McRave::Actions {
                 }
 
                 // Made these bigger to help kiting
-                if (command.tech == TechTypes::Psionic_Storm
-                    || command.tech == TechTypes::Disruption_Web) {
+                if (command.tech == TechTypes::Psionic_Storm || command.tech == TechTypes::Disruption_Web) {
 
                     if (boxOverlap(command, checkPositions, 60))
                         return true;
                 }
 
-                if (command.tech == TechTypes::Stasis_Field
-                    || command.tech == TechTypes::EMP_Shockwave) {
+                if (command.tech == TechTypes::Stasis_Field || command.tech == TechTypes::EMP_Shockwave) {
 
                     if (boxOverlap(command, checkPositions, 48))
                         return true;
@@ -224,7 +224,7 @@ namespace McRave::Actions {
 
     bool overlapsDetection(Unit unit, Position here, PlayerState player)
     {
-        vector<Action>* actions = getActions(player);
+        vector<Action> *actions = getActions(player);
 
         if (!actions)
             return false;
@@ -235,7 +235,7 @@ namespace McRave::Actions {
                 if (action.pos.getDistance(here) < 420.0)
                     return true;
             }
-            else if (action.unit != unit && action.type.isDetector()) {
+            else if (action.source != unit && action.type.isDetector()) {
                 double range = action.type.isBuilding() ? 224.0 : action.type.sightRange();
                 if (action.pos.getDistance(here) < range)
                     return true;
@@ -246,15 +246,15 @@ namespace McRave::Actions {
 
     bool overlapsActions(Unit unit, Position here, UnitType type, PlayerState player, int distance)
     {
-        vector<Action>* actions = getActions(player);
-        vector<Position> checkPositions ={ {here} };
+        vector<Action> *actions         = getActions(player);
+        vector<Position> checkPositions = {{here}};
 
         if (!actions)
             return false;
 
         // Check outgoing UnitType Actions for this PlayerState
         for (auto &action : *actions) {
-            if (action.unit == unit || (type != None && type != action.type))
+            if (action.source == unit || (type != None && type != action.type))
                 continue;
             if (circleOverlap(action, checkPositions, distance))
                 return true;
@@ -264,7 +264,7 @@ namespace McRave::Actions {
 
     bool overlapsActions(Unit unit, Position here, TechType type, PlayerState player, int distance)
     {
-        vector<Action>* actions = getActions(player);
+        vector<Action> *actions = getActions(player);
 
         if (!actions)
             return false;
@@ -272,15 +272,11 @@ namespace McRave::Actions {
         const auto hD = distance / 2;
 
         // Grab all positions we want to check
-        vector<Position> checkPositions ={
-            {here + Position(-hD, -hD)},
-            {here + Position(hD, -hD)},
-            {here + Position(-hD, hD)},
-            {here + Position(hD, hD)} };
+        vector<Position> checkPositions = {{here + Position(-hD, -hD)}, {here + Position(hD, -hD)}, {here + Position(-hD, hD)}, {here + Position(hD, hD)}};
 
         // Check outgoing TechType Actions for this PlayerState
         for (auto &action : *actions) {
-            if (action.tech != type)
+            if (action.tech != type || action.source == unit)
                 continue;
 
             if (action.tech == TechTypes::Stasis_Field || action.tech == TechTypes::EMP_Shockwave || action.tech == TechTypes::Dark_Swarm) {
@@ -293,6 +289,20 @@ namespace McRave::Actions {
         return false;
     }
 
+    // All targeted actions are neutral
+    bool overlapsActions(Unit source, Unit target, TechType type)
+    {
+        if (auto actions = getActions(PlayerState::Neutral)) {
+            for (auto &action : *actions) {
+                if (action.tech != type || action.source == source)
+                    continue;
+                if (action.target == target && action.tech == type)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     void onFrame()
     {
         Visuals::startPerfTest();
@@ -301,7 +311,8 @@ namespace McRave::Actions {
         Visuals::endPerfTest("Actions");
     }
 
-    vector <Action>* getActions(PlayerState player) {
+    vector<Action> *getActions(PlayerState player)
+    {
         if (player == PlayerState::Enemy)
             return &enemyActions;
         if (player == PlayerState::Self)
@@ -312,4 +323,4 @@ namespace McRave::Actions {
             return &neutralActions;
         return nullptr;
     }
-}
+} // namespace McRave::Actions

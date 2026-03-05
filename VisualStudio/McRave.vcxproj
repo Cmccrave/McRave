@@ -160,7 +160,9 @@
     <ClInclude Include="..\Source\McRave\Info\Roles.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\Pathing.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\Targeting.h" />
+    <ClInclude Include="..\Source\McRave\Info\Unit\UnitData.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitFrames.h" />
+    <ClInclude Include="..\Source\McRave\Info\Unit\UnitHelpers.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitInfo.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitMath.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\Units.h" />

@@ -126,7 +126,7 @@ namespace McRave::Support {
                         auto position = commander->getPosition();
                         if (commander->getSimState() == SimState::Win && commander->hasTarget()) {
                             auto &commanderTarget = commander->getTarget().lock();
-                            if ((commanderTarget->cloaked || commanderTarget->isBurrowed()) && commander->isWithinReach(*commanderTarget))
+                            if ((commanderTarget->isCloaked() || commanderTarget->isBurrowed()) && commander->isWithinReach(*commanderTarget))
                                 position = commanderTarget->getPosition();
                         }
                         unit.setDestination(position);
@@ -143,7 +143,7 @@ namespace McRave::Support {
         {
             auto enemyAir = Spy::getEnemyTransition() == P_Corsair || Spy::getEnemyTransition() == T_2PortWraith || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
 
-            auto followArmyPossible = unit.isHealthy() && (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) &&
+            auto followArmyPossible = unit.isHealthy() && unit.getType() != Zerg_Queen && (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) &&
                                       any_of(types.begin(), types.end(), [&](auto &t) { return com(t) >= 6; });
 
             // Set goal as destination

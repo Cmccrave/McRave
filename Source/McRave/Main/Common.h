@@ -8,6 +8,8 @@
 
 #include "bwem.h"
 
+using namespace BWAPI;
+
 namespace McRave {
     class Strength;
     class UnitInfo;
@@ -28,7 +30,7 @@ namespace McRave {
     enum class PlayerState { None, Self, Ally, Enemy, Neutral, All };
     // clang-format on
 
-    inline double log8Lookup[2048] = {};
+    inline double log8Lookup[2048]    = {};
     inline double invLog8Lookup[2048] = {};
 } // namespace McRave
 

@@ -279,7 +279,7 @@ namespace McRave::Roles {
                 if (unit.getRole() == Role::None) {
                     if (unit.getType().isWorker())
                         unit.setRole(Role::Worker);
-                    else if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == Protoss_Arbiter || unit.getType() == Terran_Comsat_Station)
+                    else if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == Protoss_Arbiter || unit.getType() == Zerg_Queen || unit.getType() == Terran_Comsat_Station)
                         unit.setRole(Role::Support);
                     else if ((unit.getType().isBuilding() && !unit.canAttackGround() && !unit.canAttackAir() && unit.getType() != Zerg_Creep_Colony) || unit.getType() == Zerg_Larva ||
                              unit.getType() == Zerg_Egg)

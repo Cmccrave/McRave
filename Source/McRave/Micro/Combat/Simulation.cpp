@@ -31,9 +31,9 @@ namespace McRave::Combat::Simulation {
         }
 
         // If we have excessive resources, ignore our simulation and engage
-        if (!ignoreSim && Broodwar->self()->minerals() >= 2000 && Broodwar->self()->gas() >= 2000 && Players::getSupply(PlayerState::Self, Races::None) >= 380)
+        if (!ignoreSim && Broodwar->self()->minerals() >= 4000 && Broodwar->self()->gas() >= 4000 && Players::getSupply(PlayerState::Self, Races::None) >= 380)
             ignoreSim = true;
-        if (ignoreSim && (Broodwar->self()->minerals() <= 500 || Broodwar->self()->gas() <= 500 || Players::getSupply(PlayerState::Self, Races::None) <= 240))
+        if (ignoreSim && (Broodwar->self()->minerals() <= 1000 || Broodwar->self()->gas() <= 1000 || Players::getSupply(PlayerState::Self, Races::None) <= 240))
             ignoreSim = false;
 
         if (ignoreSim) {
@@ -136,8 +136,8 @@ namespace McRave::Combat::Simulation {
 
         // Adjust winrates if we are all-in
         if (BuildOrder::isAllIn() && !Combat::State::isStaticRetreat(unit.getType()) && Util::getTime() < Time(8, 00)) {
-            minWinPercent -= 0.25;
-            maxWinPercent += 0.25;
+            minWinPercent -= 0.10;
+            maxWinPercent += 0.10;
         }
 
         // Override if target is threatening

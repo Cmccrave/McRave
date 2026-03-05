@@ -80,9 +80,9 @@ namespace McRave::Combat::Bearings {
                 unit.setDestination(unit.getSurroundPosition());
                 // Broodwar->drawTextMap(unit.getPosition(), "a_surround");
             }
-            else if (!unit.isFlying() && unit.getEngagePosition().isValid()) {
+            else if (!unit.isLightAir() && unit.getEngagePosition().isValid()) {
                 unit.setDestination(unit.getEngagePosition());
-                // Broodwar->drawTextMap(unit.getPosition(), "a_engage");
+                //Broodwar->drawTextMap(unit.getPosition(), "a_engage");
             }
             else if (unit.hasTarget()) {
                 unit.setDestination(unit.getTarget().lock()->getPosition());

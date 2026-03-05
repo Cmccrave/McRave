@@ -84,20 +84,16 @@ void McRaveModule::onFrame()
     // if (Util::getTime() > Time(29, 59))
     //    Broodwar->leaveGame();
 
-    // auto mousePos = WalkPosition(Broodwar->getScreenPosition() + Broodwar->getMousePosition());
-    // auto grid = Grids::getAirThreat(mousePos, PlayerState::Enemy);
-    // Broodwar << grid << endl;
-
     // Update game state
     Util::onFrame();
 
     // Update ingame information
     Players::onFrame();
     Units::onFrame();
+    Grids::onFrame();
     Roles::onFrame();
     Targets::onFrame();
     Pathing::onFrame();
-    Grids::onFrame();
     Pylons::onFrame();
 
     // Update relevant map information and strategy

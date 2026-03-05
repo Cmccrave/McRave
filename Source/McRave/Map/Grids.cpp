@@ -1,5 +1,6 @@
 #include "Grids.h"
 
+#include "Info/Unit/UnitInfo.h"
 #include "Info/Unit/Units.h"
 #include "Main/Common.h"
 #include "Micro/Scout/Scouts.h"
@@ -18,7 +19,7 @@ namespace McRave::Grids {
             int airDensity, groundDensity;
             int fullCollision; // TODO: Can we remove this? Use vertical + horizontal instead
             int horizontalCollision, verticalCollision;
-            int visible;
+            int visible = -100;
             int mobility;
             int lastUpdateFrame = 0;
             void wipe()
@@ -36,6 +37,7 @@ namespace McRave::Grids {
         Grid selfGrid[1048576];
         Grid neutralGrid[1048576];
         bool resetGrid[1048576];
+        int currentGridFrame = 0;
 
         constexpr int gridWalkScale = 1024;
         constexpr int gridTileScale = 256;
@@ -60,34 +62,40 @@ namespace McRave::Grids {
             WalkPosition BL = WalkPosition(botLeft);
             WalkPosition BR = WalkPosition(botRight);
 
-            if (topLeftMod.y > 0) {
+            if (topLeft.isValid() && topLeftMod.y > 0) {
                 for (auto x = TL.x; x <= TR.x; x++) {
-                    const auto i              = gridWalkScale * TL.y + x;
-                    grid[i].verticalCollision = topLeftMod.y;
+                    auto &index             = grid[gridWalkScale * TL.y + x];
+                    index.verticalCollision = topLeftMod.y;
+                    index.lastUpdateFrame   = currentGridFrame;
                 }
             }
-            if (botRightMod.y > 0) {
+            if (botRight.isValid() && botRightMod.y > 0) {
                 for (auto x = BL.x; x <= BR.x; x++) {
-                    const auto i              = gridWalkScale * BL.y + x;
-                    grid[i].verticalCollision = 8 - botRightMod.y;
+                    auto &index             = grid[gridWalkScale * BL.y + x];
+                    index.verticalCollision = 8 - botRightMod.y;
+                    index.lastUpdateFrame   = currentGridFrame;
                 }
             }
 
-            if (topLeftMod.x > 0) {
+            if (topLeft.isValid() && topLeftMod.x > 0) {
                 for (auto y = TL.y; y <= BL.y; y++) {
-                    const auto i                = gridWalkScale * y + TL.x;
-                    grid[i].horizontalCollision = topLeftMod.x;
+                    auto &index               = grid[gridWalkScale * y + TL.x];
+                    index.horizontalCollision = topLeftMod.x;
+                    index.lastUpdateFrame     = currentGridFrame;
                 }
             }
-            if (botRightMod.x > 0) {
+            if (botRight.isValid() && botRightMod.x > 0) {
                 for (auto y = TR.y; y <= BR.y; y++) {
-                    const auto i                = gridWalkScale * y + TR.x;
-                    grid[i].horizontalCollision = 8 - botRightMod.x;
+                    auto &index               = grid[gridWalkScale * y + TR.x];
+                    index.horizontalCollision = 8 - botRightMod.x;
+                    index.lastUpdateFrame     = currentGridFrame;
                 }
             }
             for (int x = TL.x; x <= BR.x; x++) {
                 for (int y = TL.y; y <= BR.y; y++) {
-                    grid[gridWalkScale * y + x].fullCollision++;
+                    auto &index = grid[gridWalkScale * y + x];
+                    index.fullCollision++;
+                    index.lastUpdateFrame = currentGridFrame;
                 }
             }
         }
@@ -113,22 +121,18 @@ namespace McRave::Grids {
             const auto allowGround     = unit.getPlayer() != Broodwar->self() && unit.getPlayer() != Broodwar->neutral() && unit.canAttackGround();
             const auto allowAir        = unit.getPlayer() != Broodwar->self() && unit.getPlayer() != Broodwar->neutral() && unit.canAttackAir();
 
-            if (allowCollision)
-                addCollision(unit);
-
             if (radius > 0 && (!unit.getType().isBuilding() || unit.canAttackAir() || unit.canAttackGround())) {
                 radius += 2;
-                auto frame = Broodwar->getFrameCount();
                 for (auto &w : Util::getWalkCircle(radius)) {
                     auto walk = center + w;
                     if (!walk.isValid())
                         continue;
 
                     auto &index     = grid[gridWalkScale * walk.y + walk.x];
-                    const auto dist = Util::fastDistance(x1, y1, (walk.x * 8) + 4, (walk.y * 8) + 4);
-                    if (index.lastUpdateFrame != frame) {
+                    const auto dist = Util::fastDistance(x1, y1, (walk.x * 8) + 4, (walk.y * 8) + 4) + 8;
+                    if (index.lastUpdateFrame != currentGridFrame) {
                         index.wipe();
-                        index.lastUpdateFrame = frame;
+                        index.lastUpdateFrame = currentGridFrame;
                     }
 
                     // Cluster
@@ -138,13 +142,18 @@ namespace McRave::Grids {
 
                     // Threat
                     if (allowGround) {
-                        index.groundThreat += float(unit.getVisibleGroundStrength() * invLog8Lookup[dist / 8]);
+                        const auto rangeDiff = 0.015625 * (dist - unit.getGroundRange()); // This is just 1/64 so it decays over 2 tiles
+                        index.groundThreat += (dist <= unit.getGroundRange() ? float(unit.getVisibleGroundStrength()) : float(unit.getVisibleGroundStrength() * rangeDiff));
                     }
                     if (allowAir) {
-                        index.airThreat += float(unit.getVisibleAirStrength() * invLog8Lookup[dist / 8]);
+                        const auto rangeDiff = 0.015625 * (dist - unit.getAirRange()); // This is just 1/64 so it decays over 2 tiles
+                        index.airThreat += (dist <= unit.getAirRange() ? float(unit.getVisibleAirStrength()) : float(unit.getVisibleAirStrength() * rangeDiff));
                     }
                 }
             }
+
+            if (allowCollision)
+                addCollision(unit);
         }
 
         void updateGrids()
@@ -176,14 +185,14 @@ namespace McRave::Grids {
             }
         }
 
-        void updateVisibility(int frame)
+        void updateVisibility()
         {
             // TODO: Enemy visibility
             for (int x = 0; x < 256; x++) {
                 for (int y = 0; y < 256; y++) {
                     TilePosition t(x, y);
                     if (t.isValid() && Broodwar->isVisible(t))
-                        selfGrid[gridTileScale * y + x].visible = frame;
+                        selfGrid[gridTileScale * y + x].visible = currentGridFrame;
                 }
             }
         }
@@ -291,16 +300,21 @@ namespace McRave::Grids {
 
     void onFrame()
     {
+        currentGridFrame = Broodwar->getFrameCount();
         updateGrids();
-        updateVisibility(Broodwar->getFrameCount());
+        updateVisibility();
         // createChokeDirections();
+
+        //auto mousePos = WalkPosition(Broodwar->getScreenPosition() + Broodwar->getMousePosition());
+        //auto grid     = Grids::getAirThreat(mousePos, PlayerState::Enemy);
+        //Broodwar << grid << endl;
     }
 
     void onStart()
     {
         initializeLogTable();
         initializeMobility();
-        updateVisibility(-9999);
+        updateVisibility();
     }
 
     template <typename T> T getGridValue(const Grid *gridArray, int x, int y, T Grid::*member)
@@ -308,7 +322,7 @@ namespace McRave::Grids {
         const auto &index = gridArray[gridWalkScale * y + x];
 
         // If the data is from a previous frame, it's effectively 0
-        if (index.lastUpdateFrame != Broodwar->getFrameCount()) {
+        if (index.lastUpdateFrame != currentGridFrame) {
             return {};
         }
         return index.*member;

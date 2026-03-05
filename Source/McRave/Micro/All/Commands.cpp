@@ -24,7 +24,7 @@ namespace McRave::Command {
         {
             if (unit.isFlying()) {
                 if (unit.hasCommander() && (unit.isTargetedBySplash() || unit.isTargetedBySuicide())) {
-                    return 1.0 + Position(w).getDistance(unit.getCommander().lock()->getPosition());
+                    return 1.0 + max(0.0, Position(w).getDistance(unit.getCommander().lock()->getPosition()) - 64.0);
                 }
             }
             return 1.0;
@@ -51,7 +51,7 @@ namespace McRave::Command {
                 if (!Actions::overlapsDetection(unit.unit(), p, PlayerState::Enemy))
                     return 0.01;
             }
-            return max(0.01f, unit.isFlying() ? (Grids::getAirThreat(w, PlayerState::Enemy) - unit.getThreatAtUnit()) : (Grids::getGroundThreat(w, PlayerState::Enemy) - unit.getThreatAtUnit()));
+            return max(0.01f, unit.isFlying() ? (Grids::getAirThreat(w, PlayerState::Enemy)) : (Grids::getGroundThreat(w, PlayerState::Enemy)));
         }
 
         double altitude(UnitInfo &unit, WalkPosition w) { return unit.isFlying() ? Util::log10(10 + mapBWEM.GetMiniTile(w).Altitude()) : 1.0; }
@@ -165,12 +165,12 @@ namespace McRave::Command {
 
     bool poke(UnitInfo &unit)
     {
-        //if (!unit.isLightAir() || unit.hasCommander())
+        // if (!unit.isLightAir() || unit.hasCommander())
         //    return false;
 
-        //auto closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) { return u->unit()->exists() && !u->isHidden(); });
+        // auto closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) { return u->unit()->exists() && !u->isHidden(); });
 
-        //if (closest && unit.isWithinAngle(*closest) && unit.isWithinRange(*closest)) {
+        // if (closest && unit.isWithinAngle(*closest) && unit.isWithinRange(*closest)) {
         //    unit.setCommand(Attack_Unit, *closest);
         //    unit.commandText = "Poke";
         //    Util::debug("Poke tested");
@@ -271,12 +271,12 @@ namespace McRave::Command {
 
     bool move(UnitInfo &unit)
     {
-        auto atHome     = Terrain::inTerritory(PlayerState::Self, unit.getPosition());
-        auto sim        = unit.hasSimTarget() ? unit.getSimTarget().lock()->getPosition() : Positions::Invalid;
-        auto current    = unit.isFlying() ? Grids::getAirThreat(unit.getPosition(), PlayerState::Enemy) : Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy);
-        auto harassing  = unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Combat::getHarassPosition() && unit.attemptingHarass() && unit.getLocalState() == LocalState::None;
+        auto atHome    = Terrain::inTerritory(PlayerState::Self, unit.getPosition());
+        auto sim       = unit.hasSimTarget() ? unit.getSimTarget().lock()->getPosition() : Positions::Invalid;
+        auto current   = unit.isFlying() ? Grids::getAirThreat(unit.getPosition(), PlayerState::Enemy) : Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy);
+        auto harassing = unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Combat::getHarassPosition() && unit.attemptingHarass() && unit.getLocalState() == LocalState::None;
 
-        const auto safeMovement = (unit.getRole() == Role::Worker && !atHome);
+        const auto safeMovement = (unit.getRole() == Role::Worker && !atHome) || (unit.getType() == Zerg_Queen);
 
         const auto scoreFunction = [&](WalkPosition w) {
             const auto p = Position(w) + Position(4, 4);
@@ -291,13 +291,13 @@ namespace McRave::Command {
 
         auto shouldMove = [&]() {
             // Impossible to move
-            if (unit.isBurrowed() || unit.stunned || unit.getSpeed() == 0.0)
+            if (unit.isBurrowed() || unit.isStunned() || unit.getSpeed() == 0.0)
                 return false;
 
             // Special case: Mutalisks want to maintain attack angle to maintain speed
             if (unit.hasTarget()) {
                 auto &target = *unit.getTarget().lock();
-                if (unit.getType() == Zerg_Mutalisk && unit.canStartAttack() && !unit.isWithinAngle(target))
+                if (unit.getType() == Zerg_Mutalisk && unit.canStartAttack() && !unit.isWithinAngle(target) && unit.getPosition().getDistance(target.getPosition()) > 48.0)
                     return true;
             }
 
@@ -409,13 +409,13 @@ namespace McRave::Command {
             if (kiteTowards.isValid())
                 score = (mobility(unit, w) * grouping(unit, w)) / (w.getDistance(WalkPosition(kiteTowards)) * (threat(unit, w)) * altitude(unit, w));
             else
-                score = (mobility(unit, w) * grouping(unit, w) * w.getDistance(target.getWalkPosition())) / ((threat(unit, w)) * altitude(unit, w));
+                score = (mobility(unit, w) * grouping(unit, w)) / ((threat(unit, w)) * altitude(unit, w));
             return score;
         };
 
         const auto canKite = [&]() {
             // Special Case: Carriers
-            if (unit.getType() == UnitTypes::Protoss_Carrier) {
+            if (unit.getType() == Protoss_Carrier) {
                 auto leashRange = 320;
                 for (auto &interceptor : unit.unit()->getInterceptors()) {
                     if (interceptor->getOrder() != Orders::InterceptorAttack && interceptor->getShields() == interceptor->getType().maxShields() &&
@@ -427,17 +427,20 @@ namespace McRave::Command {
                 return false;
             }
 
-            // Special Case: High Templars
-            if (unit.getType() == UnitTypes::Protoss_High_Templar)
-                return !unit.canStartCast(TechTypes::Psionic_Storm, target.getPosition());
-
-            // Special Case: Defilers
-            if (unit.getType() == UnitTypes::Zerg_Defiler) {
-                if (target.getPlayer() == Broodwar->self())
-                    return false;
-                else
-                    return !unit.canStartCast(TechTypes::Dark_Swarm, target.getPosition()) && !unit.canStartCast(TechTypes::Plague, target.getPosition()) &&
-                           unit.getPosition().getDistance(target.getPosition()) <= 400.0;
+            // Special Case: Casters
+            if (unit.getPosition().getDistance(target.getPosition()) <= 400.0) {
+                if (unit.getType() == Protoss_High_Templar)
+                    return !unit.canStartCast(TechTypes::Psionic_Storm, target.getPosition());
+                if (unit.getType() == Zerg_Queen) {
+                    return !unit.canStartCast(TechTypes::Spawn_Broodlings, target.getPosition());
+                }
+                if (unit.getType() == Zerg_Defiler) {
+                    if (target.getPlayer() == Broodwar->self())
+                        return false;
+                    else
+                        return !unit.canStartCast(TechTypes::Dark_Swarm, target.getPosition()) && !unit.canStartCast(TechTypes::Plague, target.getPosition()) &&
+                               unit.getPosition().getDistance(target.getPosition()) <= 400.0;
+                }
             }
 
             if (unit.getSpeed() <= 0.0 || unit.getType() == Zerg_Lurker)
@@ -531,6 +534,9 @@ namespace McRave::Command {
 
             // If we found a valid position, move to it
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
+
+            //Broodwar << threat(unit, (WalkPosition)bestPosition) << endl;
+
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
                 unit.commandText = "Kite";

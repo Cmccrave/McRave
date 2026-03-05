@@ -8,69 +8,26 @@
 #include "Info/Unit/UnitMath.h"
 #include "Main/Common.h"
 #include "Main/Helpers.h"
+#include "UnitData.h"
+#include "UnitHelpers.h"
 #include "UnitMath.h"
 
 namespace McRave {
 
-    class UnitData {
-    protected:
-        double visibleGroundStrength = 0.0;
-        double visibleAirStrength    = 0.0;
-        double maxGroundStrength     = 0.0;
-        double maxAirStrength        = 0.0;
-        double percentHealth         = 0.0;
-        double percentShield         = 0.0;
-        double percentTotal          = 0.0;
-        double groundRange           = 0.0;
-        double groundReach           = 0.0;
-        double groundDamage          = 0.0;
-        double airRange              = 0.0;
-        double airReach              = 0.0;
-        double airDamage             = 0.0;
-        double speed                 = 0.0;
-        double priority              = 0.0;
+    class UnitInfo : public std::enable_shared_from_this<UnitInfo>, //
+                     public UnitFrames,                             //
+                     public UnitData,                               //
+                     public UnitHelpers                             //
+    {
 
-        int shields     = 0;
-        int health      = 0;
-        int armor       = 0;
-        int shieldArmor = 0;
-        int energy      = 0;
-        int walkWidth   = 0;
-        int walkHeight  = 0;
-
-    public:
-        double getPercentTotal() { return percentTotal; }
-        double getVisibleGroundStrength() { return visibleGroundStrength; }
-        double getMaxGroundStrength() { return maxGroundStrength; }
-        double getVisibleAirStrength() { return visibleAirStrength; }
-        double getMaxAirStrength() { return maxAirStrength; }
-        double getGroundRange() { return groundRange; }
-        double getGroundReach() { return groundReach; }
-        double getGroundDamage() { return groundDamage; }
-        double getAirRange() { return airRange; }
-        double getAirReach() { return airReach; }
-        double getAirDamage() { return airDamage; }
-        double getSpeed() { return speed; }
-        double getPriority() { return priority; }
-
-        int getArmor() { return armor; }
-        int getShields() { return shields; }
-        int getHealth() { return health; }
-        int getEnergy() { return energy; }
-        int getWalkWidth() { return walkWidth; }
-        int getWalkHeight() { return walkHeight; }
-
-        void updateUnitData(UnitInfo &unit);
-    };
-
-    class UnitInfo : public std::enable_shared_from_this<UnitInfo>, public UnitFrames, public UnitData {
         double engageDist    = 0.0;
         double simValue      = 0.0;
         double engageRadius  = 0.0;
         double retreatRadius = 0.0;
         double currentSpeed  = 0.0;
-        float threat         = 0.0f;
 
+        bool cloaked           = false;
+        bool stunned           = false;
         bool proxy             = false;
         bool completed         = false;
         bool burrowed          = false;
@@ -95,37 +52,37 @@ namespace McRave {
         std::vector<std::weak_ptr<UnitInfo>> unitsTargetingThis;
         std::vector<std::weak_ptr<UnitInfo>> unitsInReachOfThis;
         std::vector<std::weak_ptr<UnitInfo>> unitsInRangeOfThis;
-        TransportState tState        = TransportState::None;
-        LocalState lState            = LocalState::None;
-        GlobalState gState           = GlobalState::None;
-        SimState sState              = SimState::None;
-        Role role                    = Role::None;
-        GoalType gType               = GoalType::None;
-        BWAPI::Player player         = nullptr;
-        BWAPI::Unit bwUnit           = nullptr;
-        BWAPI::UnitType type         = BWAPI::UnitTypes::None;
-        BWAPI::UnitType buildingType = BWAPI::UnitTypes::None;
+        TransportState tState = TransportState::None;
+        LocalState lState     = LocalState::None;
+        GlobalState gState    = GlobalState::None;
+        SimState sState       = SimState::None;
+        Role role             = Role::None;
+        GoalType gType        = GoalType::None;
+        Player player         = nullptr;
+        Unit bwUnit           = nullptr;
+        UnitType type         = UnitTypes::None;
+        UnitType buildingType = UnitTypes::None;
 
-        BWAPI::Position position           = BWAPI::Positions::Invalid;
-        BWAPI::Position engagePosition     = BWAPI::Positions::Invalid;
-        BWAPI::Position destination        = BWAPI::Positions::Invalid;
-        BWAPI::Position formation          = BWAPI::Positions::Invalid;
-        BWAPI::Position navigation         = BWAPI::Positions::Invalid;
-        BWAPI::Position lastPos            = BWAPI::Positions::Invalid;
-        BWAPI::Position goal               = BWAPI::Positions::Invalid;
-        BWAPI::Position commandPosition    = BWAPI::Positions::Invalid;
-        BWAPI::Position surroundPosition   = BWAPI::Positions::Invalid;
-        BWAPI::Position interceptPosition  = BWAPI::Positions::Invalid;
-        BWAPI::WalkPosition walkPosition   = BWAPI::WalkPositions::Invalid;
-        BWAPI::WalkPosition lastWalk       = BWAPI::WalkPositions::Invalid;
-        BWAPI::TilePosition tilePosition   = BWAPI::TilePositions::Invalid;
-        BWAPI::TilePosition buildPosition  = BWAPI::TilePositions::Invalid;
-        BWAPI::TilePosition lastTile       = BWAPI::TilePositions::Invalid;
-        BWAPI::UnitCommandType commandType = BWAPI::UnitCommandTypes::None;
+        Position position           = Positions::Invalid;
+        Position engagePosition     = Positions::Invalid;
+        Position destination        = Positions::Invalid;
+        Position formation          = Positions::Invalid;
+        Position navigation         = Positions::Invalid;
+        Position lastPos            = Positions::Invalid;
+        Position goal               = Positions::Invalid;
+        Position commandPosition    = Positions::Invalid;
+        Position surroundPosition   = Positions::Invalid;
+        Position interceptPosition  = Positions::Invalid;
+        WalkPosition walkPosition   = WalkPositions::Invalid;
+        WalkPosition lastWalk       = WalkPositions::Invalid;
+        TilePosition tilePosition   = TilePositions::Invalid;
+        TilePosition buildPosition  = TilePositions::Invalid;
+        TilePosition lastTile       = TilePositions::Invalid;
+        UnitCommandType commandType = UnitCommandTypes::None;
 
-        std::map<int, BWAPI::Position> positionHistory;
-        std::map<int, BWAPI::UnitCommandType> commandHistory;
-        std::map<int, std::pair<BWAPI::Order, BWAPI::Position>> orderHistory;
+        std::map<int, Position> positionHistory;
+        std::map<int, UnitCommandType> commandHistory;
+        std::map<int, std::pair<Order, Position>> orderHistory;
         BWEB::Path destinationPath;
         void updateHistory();
         void updateStatistics();
@@ -139,15 +96,13 @@ namespace McRave {
     public:
         UnitInfo();
 
-        UnitInfo(BWAPI::Unit u) { bwUnit = u; }
+        UnitInfo(Unit u) { bwUnit = u; }
 
         void update();
 
         // HACK: Hacky stuff that was added quickly for testing
         bool movedFlag = false;
         bool saveUnit  = false;
-        bool stunned   = false;
-        bool cloaked   = false;
         bool inDanger  = false;
         bool sacrifice = false;
 
@@ -160,52 +115,42 @@ namespace McRave {
         bool isValid() { return unit() && unit()->exists(); }
         bool isAvailable() { return !unit()->isLockedDown() && !unit()->isMaelstrommed() && !unit()->isStasised() && unit()->isCompleted(); }
 
-        BWAPI::Position retreatPos = BWAPI::Positions::Invalid;
-        BWAPI::Position marchPos   = BWAPI::Positions::Invalid;
+        Position retreatPos = Positions::Invalid;
+        Position marchPos   = Positions::Invalid;
 
         bool hasResource() { return !resource.expired(); }
         bool hasTransport() { return !transport.expired(); }
         bool hasTarget() { return !target_.expired(); }
         bool hasCommander() { return !commander.expired(); }
         bool hasSimTarget() { return !simTarget.expired(); }
-        bool hasSamePath(BWAPI::Position source, BWAPI::Position target)
-        {
-            return destinationPath.getSource() == BWAPI::TilePosition(source) && destinationPath.getTarget() == BWAPI::TilePosition(target);
-        }
-        bool targetsFriendly();
 
-        bool isSuicidal()
-        {
-            return type == BWAPI::UnitTypes::Protoss_Scarab || type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || type == BWAPI::UnitTypes::Zerg_Scourge ||
-                   type == BWAPI::UnitTypes::Zerg_Infested_Terran;
-        }
+        bool hasSamePath(Position source, Position target) { return destinationPath.getSource() == TilePosition(source) && destinationPath.getTarget() == TilePosition(target); }
+        bool targetsFriendly() { return (type == UnitTypes::Terran_Medic && getEnergy() > 0) || type == UnitTypes::Terran_Science_Vessel || (type == UnitTypes::Zerg_Defiler && getEnergy() < 100); }
+
+        bool isSuicidal() { return type == UnitTypes::Protoss_Scarab || type == UnitTypes::Terran_Vulture_Spider_Mine || type == UnitTypes::Zerg_Scourge || type == UnitTypes::Zerg_Infested_Terran; }
         bool isSplasher()
         {
-            return type == BWAPI::UnitTypes::Protoss_Reaver || type == BWAPI::UnitTypes::Protoss_High_Templar || type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine ||
-                   type == BWAPI::UnitTypes::Protoss_Archon || type == BWAPI::UnitTypes::Protoss_Corsair || type == BWAPI::UnitTypes::Terran_Valkyrie || type == BWAPI::UnitTypes::Zerg_Devourer;
+            return type == UnitTypes::Protoss_Reaver || type == UnitTypes::Protoss_High_Templar || type == UnitTypes::Terran_Vulture_Spider_Mine || type == UnitTypes::Protoss_Archon ||
+                   type == UnitTypes::Protoss_Corsair || type == UnitTypes::Terran_Valkyrie || type == UnitTypes::Zerg_Devourer;
         }
-        bool isLightAir()
-        {
-            return type == BWAPI::UnitTypes::Protoss_Corsair || type == BWAPI::UnitTypes::Protoss_Scout || type == BWAPI::UnitTypes::Zerg_Mutalisk || type == BWAPI::UnitTypes::Terran_Wraith;
-        }
-        bool isToken() { return type == BWAPI::UnitTypes::Terran_Vulture_Spider_Mine || type == BWAPI::UnitTypes::Protoss_Scarab || type == BWAPI::UnitTypes::Protoss_Interceptor; }
-        bool isCapitalShip() { return type == BWAPI::UnitTypes::Protoss_Carrier || type == BWAPI::UnitTypes::Terran_Battlecruiser || type == BWAPI::UnitTypes::Zerg_Guardian; }
-        bool isHovering() { return type.isWorker() || type == BWAPI::UnitTypes::Protoss_Archon || type == BWAPI::UnitTypes::Protoss_Dark_Archon || type == BWAPI::UnitTypes::Terran_Vulture; }
-        bool isTransport() { return type == BWAPI::UnitTypes::Protoss_Shuttle || type == BWAPI::UnitTypes::Terran_Dropship || type == BWAPI::UnitTypes::Zerg_Overlord; }
+        bool isLightAir() { return type == UnitTypes::Protoss_Corsair || type == UnitTypes::Protoss_Scout || type == UnitTypes::Zerg_Mutalisk || type == UnitTypes::Terran_Wraith; }
+        bool isToken() { return type == UnitTypes::Terran_Vulture_Spider_Mine || type == UnitTypes::Protoss_Scarab || type == UnitTypes::Protoss_Interceptor; }
+        bool isCapitalShip() { return type == UnitTypes::Protoss_Carrier || type == UnitTypes::Terran_Battlecruiser || type == UnitTypes::Zerg_Guardian; }
+        bool isHovering() { return type.isWorker() || type == UnitTypes::Protoss_Archon || type == UnitTypes::Protoss_Dark_Archon || type == UnitTypes::Terran_Vulture; }
+        bool isTransport() { return type == UnitTypes::Protoss_Shuttle || type == UnitTypes::Terran_Dropship || type == UnitTypes::Zerg_Overlord; }
         bool isSpellcaster()
         {
-            return type == BWAPI::UnitTypes::Protoss_High_Templar || type == BWAPI::UnitTypes::Protoss_Dark_Archon || type == BWAPI::UnitTypes::Terran_Medic ||
-                   type == BWAPI::UnitTypes::Terran_Science_Vessel || type == BWAPI::UnitTypes::Zerg_Defiler;
+            return type == UnitTypes::Protoss_High_Templar || type == UnitTypes::Protoss_Dark_Archon || type == UnitTypes::Terran_Medic || type == UnitTypes::Terran_Science_Vessel ||
+                   type == UnitTypes::Zerg_Defiler;
         }
-        bool isSiegeTank() { return type == BWAPI::UnitTypes::Terran_Siege_Tank_Siege_Mode || type == BWAPI::UnitTypes::Terran_Siege_Tank_Tank_Mode; }
-        bool isCompleted() { return completed; }
-        bool isMelee() { return groundDamage > 0.0 && groundRange < 64.0; }
-        bool isInvincible() { return invincible; }
+        bool isSiegeTank() { return type == UnitTypes::Terran_Siege_Tank_Siege_Mode || type == UnitTypes::Terran_Siege_Tank_Tank_Mode; }
+
         bool isCommandable();
 
         bool canMirrorCommander(UnitInfo &otherUnit)
         {
-            return gState != GlobalState::Retreat && !isNearSuicide() && !isTargetedBySplash() && !attemptingRegroup() && (getType() == otherUnit.getType() || lState != LocalState::Attack);
+            return gState != GlobalState::Retreat && !unit()->isIrradiated() && !isNearSuicide() && !isTargetedBySplash() && !attemptingRegroup() &&
+                   (getType() == otherUnit.getType() || lState != LocalState::Attack);
         }
 
         bool isHealthy();
@@ -217,7 +162,8 @@ namespace McRave {
         bool isWithinBuildRange();
         bool isWithinGatherRange();
         bool canStartAttack();
-        bool canStartCast(BWAPI::TechType, BWAPI::Position);
+        bool canStartCast(TechType, Position);
+        bool canStartCast(TechType, UnitInfo &);
         bool canStartGather();
         bool canAttackGround();
         bool canAttackAir();
@@ -225,14 +171,14 @@ namespace McRave {
         double getDpsAgainst(UnitInfo &);
 
         // General commands that verify we aren't spamming the same command and sticking the unit
-        void setCommand(BWAPI::UnitCommandType, BWAPI::Position);
-        void setCommand(BWAPI::UnitCommandType, UnitInfo &);
-        void setCommand(BWAPI::UnitCommandType);
-        void setCommand(BWAPI::TechType, BWAPI::Position);
-        void setCommand(BWAPI::TechType, UnitInfo &);
-        void setCommand(BWAPI::TechType);
-        BWAPI::Position getCommandPosition() { return commandPosition; }
-        BWAPI::UnitCommandType getCommandType() { return commandType; }
+        void setCommand(UnitCommandType, Position);
+        void setCommand(UnitCommandType, UnitInfo &);
+        void setCommand(UnitCommandType);
+        void setCommand(TechType, Position);
+        void setCommand(TechType, UnitInfo &);
+        void setCommand(TechType);
+        Position getCommandPosition() { return commandPosition; }
+        UnitCommandType getCommandType() { return commandType; }
 
         // Debug text
         std::string commandText;
@@ -246,9 +192,9 @@ namespace McRave {
         std::vector<std::weak_ptr<UnitInfo>> &getUnitsTargetingThis() { return unitsTargetingThis; }
         std::vector<std::weak_ptr<UnitInfo>> &getUnitsInReachOfThis() { return unitsInReachOfThis; }
         std::vector<std::weak_ptr<UnitInfo>> &getUnitsInRangeOfThis() { return unitsInRangeOfThis; }
-        std::map<int, BWAPI::Position> &getPositionHistory() { return positionHistory; }
-        std::map<int, BWAPI::UnitCommandType> &getCommandHistory() { return commandHistory; }
-        std::map<int, std::pair<BWAPI::Order, BWAPI::Position>> &getOrderHistory() { return orderHistory; }
+        std::map<int, Position> &getPositionHistory() { return positionHistory; }
+        std::map<int, UnitCommandType> &getCommandHistory() { return commandHistory; }
+        std::map<int, std::pair<Order, Position>> &getOrderHistory() { return orderHistory; }
 
         TransportState getTransportState() { return tState; }
         SimState getSimState() { return sState; }
@@ -263,22 +209,22 @@ namespace McRave {
 
         Role getRole() { return role; }
         GoalType getGoalType() { return gType; }
-        BWAPI::Unit &unit() { return bwUnit; }
-        BWAPI::UnitType getType() { return type; }
-        BWAPI::UnitType getBuildType() { return buildingType; }
-        BWAPI::Player getPlayer() { return player; }
-        BWAPI::Position getPosition() { return position; }
-        BWAPI::Position getEngagePosition() { return engagePosition; }
-        BWAPI::Position getDestination() { return destination; }
-        BWAPI::Position getFormation() { return formation; }
-        BWAPI::Position getNavigation() { return navigation; }
-        BWAPI::Position getGoal() { return goal; }
-        BWAPI::Position getInterceptPosition() { return interceptPosition; }
-        BWAPI::Position getSurroundPosition() { return surroundPosition; }
-        BWAPI::WalkPosition getWalkPosition() { return walkPosition; }
-        BWAPI::TilePosition getTilePosition() { return tilePosition; }
-        BWAPI::TilePosition getBuildPosition() { return buildPosition; }
-        BWAPI::TilePosition getLastTile() { return lastTile; }
+        Unit &unit() { return bwUnit; }
+        UnitType getType() { return type; }
+        UnitType getBuildType() { return buildingType; }
+        Player getPlayer() { return player; }
+        Position getPosition() { return position; }
+        Position getEngagePosition() { return engagePosition; }
+        Position getDestination() { return destination; }
+        Position getFormation() { return formation; }
+        Position getNavigation() { return navigation; }
+        Position getGoal() { return goal; }
+        Position getInterceptPosition() { return interceptPosition; }
+        Position getSurroundPosition() { return surroundPosition; }
+        WalkPosition getWalkPosition() { return walkPosition; }
+        TilePosition getTilePosition() { return tilePosition; }
+        TilePosition getBuildPosition() { return buildPosition; }
+        TilePosition getLastTile() { return lastTile; }
         BWEB::Path &getDestinationPath() { return destinationPath; }
 
         double getCurrentSpeed() { return currentSpeed; }
@@ -286,14 +232,17 @@ namespace McRave {
         double getSimValue() { return simValue; }
         double getEngageRadius() { return engageRadius; }
         double getRetreatRadius() { return retreatRadius; }
-        float getThreatAtUnit() { return threat; }
 
         bool isMarkedForDeath() { return markedForDeath; }
         bool isProxy() { return proxy; }
         bool isBurrowed() { return burrowed; }
         bool isFlying() { return flying; }
         bool isThreatening() { return threatening; }
+        bool isStunned() { return stunned; }
         bool isHidden() { return hidden; }
+        bool isCloaked() { return cloaked; }
+        bool isCompleted() { return completed; }
+        bool isInvincible() { return invincible; }
         bool isNearSplash() { return nearSplash; }
         bool isNearSuicide() { return nearSuicide; }
         bool isNearHidden() { return nearHidden; }
@@ -301,7 +250,7 @@ namespace McRave {
         bool isTargetedBySuicide() { return targetedBySuicide; }
         bool isTargetedByHidden() { return targetedByHidden; }
 
-        void setAssumedLocation(BWAPI::Position p, BWAPI::WalkPosition w, BWAPI::TilePosition t)
+        void setAssumedLocation(Position p, WalkPosition w, TilePosition t)
         {
             position     = p;
             walkPosition = w;
@@ -321,20 +270,20 @@ namespace McRave {
         void setSimTarget(UnitInfo *unit) { unit ? simTarget = unit->weak_from_this() : simTarget.reset(); }
         void setRole(Role newRole) { role = newRole; }
         void setGoalType(GoalType newGoalType) { gType = newGoalType; }
-        void setBuildingType(BWAPI::UnitType newType) { buildingType = newType; }
-        void setEngagePosition(BWAPI::Position newPosition) { engagePosition = newPosition; }
-        void setDestination(BWAPI::Position newPosition) { destination = newPosition; }
-        void setFormation(BWAPI::Position newPosition) { formation = newPosition; }
-        void setNavigation(BWAPI::Position newPosition) { navigation = newPosition; }
-        void setGoal(BWAPI::Position newPosition) { goal = newPosition; }
-        void setBuildPosition(BWAPI::TilePosition newPosition) { buildPosition = newPosition; }
+        void setBuildingType(UnitType newType) { buildingType = newType; }
+        void setEngagePosition(Position newPosition) { engagePosition = newPosition; }
+        void setDestination(Position newPosition) { destination = newPosition; }
+        void setFormation(Position newPosition) { formation = newPosition; }
+        void setNavigation(Position newPosition) { navigation = newPosition; }
+        void setGoal(Position newPosition) { goal = newPosition; }
+        void setBuildPosition(TilePosition newPosition) { buildPosition = newPosition; }
         void setDestinationPath(BWEB::Path &newPath) { destinationPath = newPath; }
 
-        void setInterceptPosition(BWAPI::Position p) { interceptPosition = p; }
-        void setSurroundPosition(BWAPI::Position p) { surroundPosition = p; }
+        void setInterceptPosition(Position p) { interceptPosition = p; }
+        void setSurroundPosition(Position p) { surroundPosition = p; }
 
-        void circle(BWAPI::Color color);
-        void box(BWAPI::Color color);
+        void circle(Color color);
+        void box(Color color);
 
         bool operator==(const UnitInfo &other) const { return bwUnit == other.bwUnit; }
 

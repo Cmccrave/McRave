@@ -104,9 +104,12 @@ namespace McRave::Units {
                     auto validRole = unit.getRole() == Role::Combat || unit.getRole() == Role::Defender || unit.getRole() == Role::Scout || unit.getRole() == Role::Support ||
                                      unit.getRole() == Role::Transport || unit.getRole() == Role::Worker;
 
-                    auto frames          = unit.isLightAir() ? 2 : 9;
+                    auto frames          = unit.isLightAir() ? 2 : 6;
                     auto newCommandFrame = (Broodwar->getFrameCount() - unit.commandFrame > frames) ||
                                            (unit.getRole() != Role::Combat && unit.getRole() != Role::Scout && Util::getTime() < Time(4, 00));
+
+                    if (unit.getType() == Zerg_Overlord)
+                        frames = 12;
 
                     if (newCommandFrame && validRole)
                         commandQueue.push_back(&unit);
@@ -321,7 +324,7 @@ namespace McRave::Units {
     bool commandAllowed(UnitInfo &unit)
     {
         auto idx     = find_if(commandQueue.begin(), commandQueue.end(), [&](auto &u) { return u == &unit; });
-        auto allowed = idx != commandQueue.end() && idx - commandQueue.begin() < (255 / Broodwar->getLatency());
+        auto allowed = idx != commandQueue.end() && idx - commandQueue.begin() < 64;
         if (allowed)
             unit.commandFrame = Broodwar->getFrameCount();
         return allowed;

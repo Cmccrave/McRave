@@ -187,7 +187,7 @@ namespace McRave::Combat {
             }
 
             // ZvT main is easier to harass in the immediate
-            if (Players::ZvT() && Util::getTime() < Time(9, 00) && Terrain::getEnemyMain()) {
+            if (Players::ZvT() && Util::getTime() < Time(10, 00) && Terrain::getEnemyMain()) {
                 harassPosition = Terrain::getEnemyMain()->getResourceCentroid();
                 return;
             }

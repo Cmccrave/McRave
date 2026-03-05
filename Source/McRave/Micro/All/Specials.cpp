@@ -385,25 +385,27 @@ namespace McRave::Command {
                     unit.setCommand(Yamato_Gun, target);
                     unit.commandText = "Yamato";
                 }
-                Actions::addAction(unit.unit(), target.getPosition(), Yamato_Gun, PlayerState::Self);
+                Actions::addAction(unit.unit(), target.getPosition(), Yamato_Gun, PlayerState::Neutral);
                 return true;
             }
         }
 
-        // Ghost - Nuke
+        // Ghost - Nuke / Lockdown
         else if (unit.getType() == Terran_Ghost) {
 
             if (com(Terran_Nuclear_Missile) > 0 && unit.unit()->isCloaked() && unit.getPosition().getDistance(target.getPosition()) > 200) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech_Position || unit.unit()->getLastCommand().getTargetPosition() != target.getPosition()) {
                     unit.setCommand(Nuclear_Strike, target.getPosition());
                     unit.commandText = "Nuke";
-                    Actions::addAction(unit.unit(), target.getPosition(), Nuclear_Strike, PlayerState::Self, Util::getCastRadius(Nuclear_Strike));
+                    Actions::addAction(unit.unit(), target.getPosition(), Nuclear_Strike, PlayerState::Neutral, Util::getCastRadius(Nuclear_Strike));
                     return true;
                 }
             }
+
+            // Move to actions
             if (unit.unit()->getOrder() == Orders::NukePaint || unit.unit()->getOrder() == Orders::NukeTrack || unit.unit()->getOrder() == Orders::CastNuclearStrike) {
                 unit.commandText = "Nuke";
-                Actions::addAction(unit.unit(), unit.unit()->getOrderTargetPosition(), Nuclear_Strike, PlayerState::Self, Util::getCastRadius(Nuclear_Strike));
+                Actions::addAction(unit.unit(), unit.unit()->getOrderTargetPosition(), Nuclear_Strike, PlayerState::Neutral, Util::getCastRadius(Nuclear_Strike));
                 return true;
             }
         }
@@ -498,6 +500,24 @@ namespace McRave::Command {
                 return true;
             }
         }
+
+        // Queen - Broodlings / Ensnare
+        else if (unit.getType() == Zerg_Queen) {
+            if (unit.canStartCast(Spawn_Broodlings, target)) {
+                unit.setCommand(Spawn_Broodlings, target);
+                unit.commandText = "Broodlings";
+                Actions::addAction(unit.unit(), target.unit(), Spawn_Broodlings, PlayerState::Neutral);
+                return true;
+            }
+
+            if (unit.canStartCast(Ensnare, target.getPosition())) {
+                unit.setCommand(Ensnare, target.getPosition());
+                unit.commandText = "Ensnare";
+                Actions::addAction(unit.unit(), target.getPosition(), Ensnare, PlayerState::Neutral);
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -523,7 +543,7 @@ namespace McRave::Command {
                 // Try to find a friendly templar who is low energy and is threatened
                 auto templar = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                     return *u != unit && u->getType() == Protoss_High_Templar && u->unit()->isCompleted() &&
-                           (wantArchons || (u->getEnergy() < 75 && Grids::getGroundThreat(u->getWalkPosition(), PlayerState::Enemy) > 0.0));
+                           (wantArchons || (u->getEnergy() < 75 && Grids::getGroundThreat(u->getPosition(), PlayerState::Enemy) > 0.0));
                 });
 
                 if (templar) {
@@ -609,8 +629,9 @@ namespace McRave::Command {
         // TODO: Check if we have a building to place first?
         if ((unit.unit()->isCarryingMinerals() || unit.unit()->isCarryingGas())) {
             if (unit.framesHoldingResource() >= 24 && (unit.unit()->isIdle() || (unit.unit()->getOrder() != Orders::ReturnMinerals && unit.unit()->getOrder() != Orders::ReturnGas)) &&
-                unit.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo)
+                unit.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo) {
                 unit.unit()->returnCargo();
+            }
             unit.commandText  = "Return";
             unit.commandFrame = Broodwar->getFrameCount();
             return true;
@@ -679,7 +700,7 @@ namespace McRave::Command {
 
         // If build position is fully visible and unit is close to it, start building as soon as possible
         if (fullyVisible && canAfford && unit.isWithinBuildRange()) {
-            if (unit.unit()->getLastCommandFrame() < Broodwar->getFrameCount() - 8)
+            if (unit.unit()->getLastCommandFrame() < Broodwar->getFrameCount() - 10)
                 unit.unit()->build(unit.getBuildType(), unit.getBuildPosition());
             unit.commandText  = "Build";
             unit.commandFrame = Broodwar->getFrameCount();
@@ -702,13 +723,24 @@ namespace McRave::Command {
         auto closestChokepoint    = Util::getClosestChokepoint(unit.getPosition());
         auto nearNonBlockingChoke = closestChokepoint && !closestChokepoint->Blocked() && unit.getPosition().getDistance(Position(closestChokepoint->Center())) < 160.0;
         auto boxDist              = Util::boxDistance(unit.getType(), unit.getPosition(), resource->getType(), resource->getPosition());
+        auto allowOptimisations   = Players::getSupply(PlayerState::Self, Races::None) <= 200;
 
         const auto canGather = [&](ResourceInfo *resource) {
-            if (unit.unit()->getTarget() == resource->unit() && unit.unit()->getLastCommand().getType() == UnitCommandTypes::Gather)
-                return false;
+            if (allowOptimisations) {
+                // Force mineral lock
+                if (unit.unit()->getTarget() == resource->unit() && unit.unit()->getLastCommand().getType() == UnitCommandTypes::Gather)
+                    return false;
 
-            if (boxDist > 0 && unit.unit()->getOrder() == Orders::MoveToMinerals && resource->getGatherOrderPositions().find(unit.getPosition()) != resource->getGatherOrderPositions().end())
-                return true;
+                if (boxDist > 0 && unit.unit()->getOrder() == Orders::MoveToMinerals && resource->getGatherOrderPositions().find(unit.getPosition()) != resource->getGatherOrderPositions().end())
+                    return true;
+            }
+            else {
+                // Don't try to mineral lock
+                if (unit.unit()->getTarget(); auto info = Resources::getResourceInfo(unit.unit()->getTarget())) {
+                    if (unit.hasResource() && info->getStation() == unit.getResource().lock()->getStation())
+                        return false;
+                }
+            }
             if (Util::getTime() < Time(4, 00))
                 return true;
             if (Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) > 0.0f)

@@ -81,7 +81,7 @@ namespace McRave::Combat::State {
                     const auto speedVultures = Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters, 1);
                     const auto defendSunkens = com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0 && !speedLing;
                     const auto vulturesExist = Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0;
-                    const auto vultureThreat = com(Zerg_Defiler) == 0 && Util::getTime() < Time(16, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy() && !Spy::enemyProxy() &&
+                    const auto vultureThreat = Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy() && !Spy::enemyProxy() &&
                                                (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled());
                     if (!counterAttack) {
                         if (speedVultures || !speedLing || total(Zerg_Mutalisk) < 12) {
@@ -201,9 +201,13 @@ namespace McRave::Combat::State {
         auto &target = *unit.getTarget().lock();
 
         if (unit.getType() == Zerg_Mutalisk) {
-            if (Clusters::canDecimate(unit, target, 1) || Clusters::canDecimate(unit, target, 2))
+            if (Clusters::canDecimate(unit, target))
                 return true;
         }
+
+        // Broodlings always attack
+        if (unit.getType() == Zerg_Broodling)
+            return true;
 
         // Lings are glass cannons and should engage if anything is hitting it
         if (unit.getType() == Zerg_Zergling && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Adrenal_Glands)) {
@@ -334,8 +338,10 @@ namespace McRave::Combat::State {
             // Try to save zerglings in ZvZ
             const auto zerglingSaving = Players::ZvZ() && unit.getType() == Zerg_Zergling && !unit.isWithinRange(target) && unit.getHealth() <= 10;
 
+            const auto queenSaving = unit.getType() == Zerg_Queen && unit.getEnergy() < TechTypes::Spawn_Broodlings.energyCost();
+
             // Save the units
-            if (mutaSavingRequired || scoutSavingRequired /*|| zerglingSaving*/)
+            if (mutaSavingRequired || scoutSavingRequired || queenSaving /*|| zerglingSaving*/)
                 unit.saveUnit = true;
             if (unit.saveUnit) {
                 if (unit.getType() == Zerg_Mutalisk && unit.getHealth() >= 100)
@@ -345,6 +351,8 @@ namespace McRave::Combat::State {
                 if (unit.getType() == Zerg_Zergling && unit.getHealth() >= 30)
                     unit.saveUnit = false;
                 if (unit.getGoal().isValid())
+                    unit.saveUnit = false;
+                if (unit.getType() == Zerg_Queen && unit.getEnergy() >= TechTypes::Spawn_Broodlings.energyCost())
                     unit.saveUnit = false;
             }
         }

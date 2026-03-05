@@ -2,6 +2,8 @@
 #include "Info/Player/Players.h"
 #include "Info/Unit/UnitInfo.h"
 #include "Info/Unit/Units.h"
+#include "Macro/Researching/Researching.h"
+#include "Macro/Upgrading/Upgrading.h"
 #include "Main/Common.h"
 #include "Map/Terrain.h"
 #include "Strategy/Spy/Spy.h"
@@ -92,10 +94,8 @@ namespace McRave::BuildOrder::Zerg {
         // RaxFact
         if (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled() || Spy::getEnemyBuild() == "Unknown") {
             initialValue = 2;
-            if (Spy::getEnemyOpener() == T_1FactFE || Util::getTime() > Time(3, 45))
+            if (Spy::getEnemyOpener() == T_1FactFE || Spy::getEnemyOpener() == T_2FactFE || Util::getTime() > Time(3, 45))
                 initialValue = 6;
-            if (Spy::getEnemyOpener() == T_2FactFE)
-                initialValue = 10;
         }
 
         // TODO: Fix T spy
@@ -167,6 +167,8 @@ namespace McRave::BuildOrder::Zerg {
         unitOrder = mutalingdefiler;
         if (Spy::Terran::enemyBio())
             unitOrder = ultraling;
+        if (Spy::Terran::enemyMech())
+            unitOrder = mutalingqueen;
 
         // Buildings
         buildQueue[Zerg_Hatchery]  = 2 + thirdHatch;
@@ -214,10 +216,15 @@ namespace McRave::BuildOrder::Zerg {
 
         auto secondGas = Spy::enemyFastExpand() ? (vis(Zerg_Drone) >= 21) : (com(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 21);
 
+        if (Spy::getEnemyBuild() == T_RaxFact)
+            wantThird = true;
+
         // Order
         unitOrder = mutalingdefiler;
-         if (Spy::Terran::enemyBio())
+        if (Spy::Terran::enemyBio())
             unitOrder = ultraling;
+        if (Spy::Terran::enemyMech())
+            unitOrder = mutalingqueen;
 
         // Buildings
         buildQueue[Zerg_Hatchery]  = 2 + thirdHatch + fourthHatch;

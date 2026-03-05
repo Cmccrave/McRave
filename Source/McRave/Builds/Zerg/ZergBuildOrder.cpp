@@ -217,8 +217,9 @@ namespace McRave::BuildOrder::Zerg {
                 const auto waitForMinerals = 100 + (300 * incompleteHatch);
                 const auto resourceSat     = (availableMinerals >= waitForMinerals || vis(Zerg_Larva) <= Stations::getStations(PlayerState::Self).size()) && Resources::isHalfMineralSaturated() &&
                                          Resources::isGasSaturated();
+                const auto excessResources = (availableMinerals >= waitForMinerals * 2 && vis(Zerg_Larva) <= 3);
 
-                expandDesired = (resourceSat && techSat && productionSat) ||
+                expandDesired = (resourceSat && techSat && productionSat && Stations::getMiningStationsCount() <= 5) || (excessResources && productionSat) ||
                                 (Players::ZvZ() && Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0 &&
                                  Stations::getStations(PlayerState::Self).size() < Stations::getStations(PlayerState::Enemy).size() && availableMinerals > waitForMinerals && availableGas < 150) ||
                                 (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2) ||
@@ -226,16 +227,6 @@ namespace McRave::BuildOrder::Zerg {
                                 (!Players::ZvZ() && Stations::getMiningStationsCount() < 2 && Util::getTime() > Time(12, 00));
 
                 buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + expandDesired);
-
-                // Testing this
-                if (rampDesired && productionSat) {
-                    static bool loggedOnce = false;
-                    if (!loggedOnce)
-                        Util::debug(nodeName + "Expanding instead of ramping.");
-                    loggedOnce    = true;
-                    rampDesired   = false;
-                    expandDesired = true;
-                }
 
                 if (expandDesired && int(Stations::getStations(PlayerState::Self).size()) <= 1)
                     wantNatural = true;
@@ -250,7 +241,7 @@ namespace McRave::BuildOrder::Zerg {
             if (!inOpening) {
 
                 // Calculate hatcheries per base
-                //double hatchPerBase = 1.0;
+                // double hatchPerBase = 1.0;
                 map<int, int> hatchPerBase;
 
                 // ZvZ: Get 2 gas bases first
@@ -261,7 +252,7 @@ namespace McRave::BuildOrder::Zerg {
                     hatchPerBase = {{1, 1}, {2, 3}, {3, 5}, {4, 6}};
                 }
                 if (Players::ZvT()) {
-                    hatchPerBase = {{1, 1}, {2, 3}, {3, 5}, {4, 8}};
+                    hatchPerBase = {{1, 1}, {2, 3}, {3, 4}, {4, 8}};
                 }
 
                 // Check if we are maxed on production
@@ -271,7 +262,7 @@ namespace McRave::BuildOrder::Zerg {
                 if (isFocusUnit(Zerg_Zergling))
                     desiredProduction *= 1.5;
 
-                productionSat          = hatchCount() >= min(7, desiredProduction);
+                productionSat = hatchCount() >= min(7, desiredProduction);
 
                 // Queue production if we need it
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
@@ -280,7 +271,7 @@ namespace McRave::BuildOrder::Zerg {
 
                 const auto resourceSat     = (availableMinerals >= waitForMinerals && Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && !productionSat && vis(Zerg_Larva) <= 3);
                 const auto excessResources = (availableMinerals >= waitForMinerals * 2 && !productionSat && vis(Zerg_Larva) <= 3);
-                const auto larvaBankrupt   = (availableMinerals >= waitForMinerals && (vis(Zerg_Larva) + (3 * incompleteHatch)) < min(3, hatchCount()) && !productionSat);
+                const auto larvaBankrupt   = (availableMinerals >= waitForMinerals && (vis(Zerg_Larva) + (incompleteHatch)) < min(3, hatchCount()) && !productionSat);
 
                 rampDesired               = resourceSat || excessResources || larvaBankrupt;
                 buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + rampDesired);
@@ -401,7 +392,7 @@ namespace McRave::BuildOrder::Zerg {
 
             // Other upgrades
             upgradeQueue[Chitinous_Plating] = Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 20 || Broodwar->self()->getUpgradeLevel(Anabolic_Synthesis) > 0;
-            upgradeQueue[Adrenal_Glands]    = Broodwar->self()->getUpgradeLevel(Metabolic_Boost) > 0;
+            upgradeQueue[Adrenal_Glands]    = com(Zerg_Hive) > 0 && vis(Zerg_Zergling) >= 36 && Broodwar->self()->getUpgradeLevel(Metabolic_Boost) > 0;
 
             // Ground unit upgrades
             auto upgradingGrdArmor = (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Melee_Attacks)) || Broodwar->self()->isUpgrading(Zerg_Carapace);
@@ -442,11 +433,12 @@ namespace McRave::BuildOrder::Zerg {
             if (inOpening)
                 return;
 
-            techQueue[Lurker_Aspect] = BuildOrder::isFocusUnit(Zerg_Lurker) && (!BuildOrder::isFocusUnit(Zerg_Hydralisk) || (Upgrading::haveOrUpgrading(UpgradeTypes::Grooved_Spines, 1) &&
+            techQueue[Lurker_Aspect]    = BuildOrder::isFocusUnit(Zerg_Lurker) && (!BuildOrder::isFocusUnit(Zerg_Hydralisk) || (Upgrading::haveOrUpgrading(UpgradeTypes::Grooved_Spines, 1) &&
                                                                                                                              Upgrading::haveOrUpgrading(UpgradeTypes::Muscular_Augments, 1)));
-            techQueue[Burrowing]     = Stations::getStations(PlayerState::Self).size() >= 3 && Players::getSupply(PlayerState::Self, Races::Zerg) > 140;
-            techQueue[Consume]       = true;
-            techQueue[Plague]        = Broodwar->self()->hasResearched(Consume);
+            techQueue[Burrowing]        = Stations::getStations(PlayerState::Self).size() >= 3 && Players::getSupply(PlayerState::Self, Races::Zerg) > 140;
+            techQueue[Consume]          = true;
+            techQueue[Plague]           = Broodwar->self()->hasResearched(Consume);
+            techQueue[Spawn_Broodlings] = BuildOrder::isFocusUnit(Zerg_Queen) && vis(Zerg_Queen) >= 5;
         }
 
         void queueAllin()
@@ -670,6 +662,7 @@ namespace McRave::BuildOrder::Zerg {
     {
         armyComposition.clear();
         auto availGas = Broodwar->self()->gas() - (Upgrading::getReservedGas() + Researching::getReservedGas() + Planning::getPlannedGas());
+        auto droneCap = 60;
 
         if (inOpening) {
 
@@ -681,6 +674,8 @@ namespace McRave::BuildOrder::Zerg {
                 armyComposition[Zerg_Lurker] = 1.00;
 
             // Larva based
+            else if (zergUnitPump[Zerg_Queen] && availGas >= 100)
+                armyComposition[Zerg_Queen] = 1.00;
             else if (zergUnitPump[Zerg_Defiler] && availGas >= 150)
                 armyComposition[Zerg_Defiler] = 1.00;
             else if (zergUnitPump[Zerg_Ultralisk] && availGas >= 200)
@@ -707,15 +702,20 @@ namespace McRave::BuildOrder::Zerg {
                 // Higher muta count, no hive tech
                 if (unitOrder == mutaling) {
                     priorityOrder = {
-                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 24}, {Zerg_Drone, 45}, {Zerg_Mutalisk, 36}, {Zerg_Drone, 60}, {Zerg_Mutalisk, 48}, {Zerg_Mutalisk, 100},
+                        {Zerg_Drone, 30},     {Zerg_Mutalisk, 24}, //
+                        {Zerg_Drone, 45},     {Zerg_Mutalisk, 36}, //
+                        {Zerg_Drone, 60},     {Zerg_Mutalisk, 48}, //
+                        {Zerg_Mutalisk, 100},
                     };
                 }
 
                 // No mutas, purely ground muscle
                 else if (unitOrder == hydralurk) {
                     priorityOrder = {
-                        {Zerg_Drone, 30}, {Zerg_Hydralisk, 24}, {Zerg_Lurker, 2},     {Zerg_Drone, 44}, {Zerg_Hydralisk, 48},
-                        {Zerg_Lurker, 4}, {Zerg_Drone, 60},     {Zerg_Hydralisk, 96}, {Zerg_Lurker, 8}, {Zerg_Hydralisk, 200},
+                        {Zerg_Drone, 30},      {Zerg_Hydralisk, 24}, {Zerg_Lurker, 2}, //
+                        {Zerg_Drone, 44},      {Zerg_Hydralisk, 48}, {Zerg_Lurker, 4}, //
+                        {Zerg_Drone, 60},      {Zerg_Hydralisk, 96}, {Zerg_Lurker, 8}, //
+                        {Zerg_Hydralisk, 200},
                     };
                 }
 
@@ -732,7 +732,9 @@ namespace McRave::BuildOrder::Zerg {
                 // Higher muta count, hive tech is just defilers
                 if (unitOrder == mutalingdefiler) {
                     priorityOrder = {
-                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 16}, {Zerg_Defiler, 1}, {Zerg_Drone, 45}, {Zerg_Mutalisk, 24}, {Zerg_Defiler, 2}, {Zerg_Drone, 60}, {Zerg_Mutalisk, 48},
+                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 16}, {Zerg_Defiler, 1}, //
+                        {Zerg_Drone, 45}, {Zerg_Mutalisk, 24}, {Zerg_Defiler, 2}, //
+                        {Zerg_Drone, 60}, {Zerg_Mutalisk, 48},
                     };
                 }
 
@@ -746,6 +748,14 @@ namespace McRave::BuildOrder::Zerg {
                         priorityOrder = {{Zerg_Drone, 30},  {Zerg_Ultralisk, 4}, {Zerg_Defiler, 1},    {Zerg_Drone, 45},  {Zerg_Ultralisk, 8},
                                          {Zerg_Defiler, 2}, {Zerg_Drone, 60},    {Zerg_Ultralisk, 12}, {Zerg_Defiler, 2}, {Zerg_Mutalisk, 16}};
                     }
+                }
+
+                else if (unitOrder == mutalingqueen) {
+                    priorityOrder = {
+                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 16}, {Zerg_Queen, 6},  //
+                        {Zerg_Drone, 45}, {Zerg_Mutalisk, 24}, {Zerg_Queen, 12}, //
+                        {Zerg_Drone, 60}, {Zerg_Mutalisk, 48},
+                    };
                 }
             }
 
@@ -775,7 +785,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Pump lings or drones if nothing else to do
         if (availGas <= 0 || armyComposition.empty()) {
-            if (zergUnitPump[Zerg_Zergling] || vis(Zerg_Drone) >= 45 || Resources::isMineralSaturated()) {
+            if (zergUnitPump[Zerg_Zergling] || vis(Zerg_Drone) >= droneCap || (Resources::isMineralSaturated() && Resources::isGasSaturated())) {
                 armyComposition[Zerg_Zergling] = 1.0;
                 armyComposition[Zerg_Drone]    = 0.0;
             }

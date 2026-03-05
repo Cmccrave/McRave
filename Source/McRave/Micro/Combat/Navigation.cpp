@@ -49,7 +49,7 @@ namespace McRave::Combat::Navigation {
         auto newPathAllowed = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.retreatPos)) ||
                               mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.retreatPos)));
         const auto retreat = [&](const TilePosition &t) {
-            const auto threat = Grids::getAirThreat(t, PlayerState::Enemy) * 100000.0;
+            const auto threat = Grids::getAirThreat(t, PlayerState::Enemy) * 1000.0;
             return threat;
         };
 
@@ -68,7 +68,7 @@ namespace McRave::Combat::Navigation {
 
             if (newPathAllowed && !unit.hasSamePath(unit.getPosition(), cmder->getPosition())) {
                 const auto regroup = [&](const TilePosition &t) {
-                    const auto threat = Grids::getAirThreat(t, PlayerState::Enemy) * 100000.0;
+                    const auto threat = Grids::getAirThreat(t, PlayerState::Enemy) * 1000.0;
                     return threat;
                 };
                 BWEB::Path newPath(unit.getPosition(), cmder->getPosition(), unit.getType());
@@ -91,10 +91,7 @@ namespace McRave::Combat::Navigation {
             auto attacking  = unit.getLocalState() == LocalState::Attack;
             auto harassing  = unit.attemptingHarass();
 
-            if (attacking) {
-                getFlyingPath(unit);
-            }
-            else if (regrouping) {
+            if (regrouping) {
                 getFlyingRegroupPath(unit);
             }
             else if (retreating) {
@@ -104,6 +101,9 @@ namespace McRave::Combat::Navigation {
             else if (harassing) {
                 // unit.circle(Colors::Green);
                 unit.setDestinationPath(flyerHarassPath);
+            }
+            else {
+                getFlyingPath(unit);
             }
 
             return;

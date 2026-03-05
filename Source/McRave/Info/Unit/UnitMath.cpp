@@ -1,3 +1,4 @@
+
 #include "UnitMath.h"
 
 #include "Info/Player/Players.h"
@@ -249,7 +250,7 @@ namespace McRave::Math {
         if ((unit.getType() == Terran_Marine && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::U_238_Shells)) ||
             (unit.getType() == Zerg_Hydralisk && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Grooved_Spines)))
             return 160.0;
-        if (unit.getType() == Protoss_High_Templar || unit.getType() == Zerg_Defiler)
+        if (unit.getType() == Protoss_High_Templar || unit.getType() == Zerg_Defiler || unit.getType() == Zerg_Queen)
             return 288.0;
         if (unit.getType() == Protoss_Carrier)
             return 256.0;
@@ -282,7 +283,7 @@ namespace McRave::Math {
             return 160.0;
         if (unit.getType() == Terran_Goliath && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Charon_Boosters))
             return 256.0;
-        if (unit.getType() == Protoss_High_Templar || unit.getType() == Zerg_Defiler)
+        if (unit.getType() == Protoss_High_Templar || unit.getType() == Zerg_Defiler || unit.getType() == Zerg_Queen)
             return 288.0;
         if (unit.getType() == Protoss_Carrier)
             return 256;

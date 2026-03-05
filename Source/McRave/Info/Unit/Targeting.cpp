@@ -94,6 +94,22 @@ namespace McRave::Targets {
             return Priority::Normal;
         }
 
+        Priority queenPriority(UnitInfo &unit, UnitInfo &target)
+        {
+            for (auto &t : target.getUnitsTargetingThis()) {
+                if (auto &targeter = t.lock()) {
+                    if (targeter->getType() == Zerg_Queen)
+                        return Priority::Ignore;
+                }
+            }
+
+            if (target.isSiegeTank() && unit.isWithinRange(target))
+                return Priority::Critical;
+            if (target.getType() == Terran_Goliath)
+                return Priority::Major;
+            return Priority::Ignore;
+        }
+
         Priority mutaliskPriority(UnitInfo &unit, UnitInfo &target)
         {
             auto anythingTime     = Util::getTime() > (Players::ZvZ() ? Time(7, 00) : Time(10, 00));
@@ -123,6 +139,12 @@ namespace McRave::Targets {
                     if (target.isThreatening() && unit.isWithinEngage(target))
                         return Priority::Critical;
                 }
+
+                // Handle turrets and repairs
+                if (target.getType() == Terran_Missile_Turret) {
+                    if (target.hasRepairedRecently() && !Combat::Clusters::canDecimate(unit, target))
+                        return Priority::Trivial;
+                }
             }
 
             if (Players::ZvZ()) {
@@ -138,7 +160,7 @@ namespace McRave::Targets {
             }
 
             // One/two shot is high priority to hit
-            if (unit.isWithinReach(target) && (Combat::Clusters::canDecimate(unit, target, 2) || Combat::Clusters::canDecimate(unit, target, 1) || target.isSplasher()))
+            if (unit.isWithinReach(target) && (Combat::Clusters::canDecimate(unit, target) || target.isSplasher()))
                 return Priority::Critical;
 
             // If a building is unprotected
@@ -172,7 +194,8 @@ namespace McRave::Targets {
             return Priority::Normal;
         }
 
-        Priority defilerPriority(UnitInfo &unit, UnitInfo &target) {
+        Priority defilerPriority(UnitInfo &unit, UnitInfo &target)
+        {
             if (unit.getType() == Zerg_Defiler) {
                 if (target.getType().isBuilding() || target.getType().isWorker() || target.isToken() || target.isFlying() || (unit.targetsFriendly() && target.getType() != Zerg_Zergling) ||
                     (unit.targetsFriendly() && target.getRole() != Role::Combat))
@@ -301,27 +324,11 @@ namespace McRave::Targets {
                         return Priority::Major;
                 }
 
-                // Handle turrets and repairs
-                if (target.getType() == Terran_Missile_Turret) {
-                    if (target.hasRepairedRecently())
-                        return Priority::Trivial;
-                }
-
                 // Handle detector sniping
                 if (target.getType().isDetector() || target.getType() == Terran_Comsat_Station) {
                     if (unit.isWithinRange(target) && !target.isHidden() && (vis(Zerg_Lurker) > 0 || vis(Protoss_Dark_Templar) > 0))
                         return Priority::Major;
                 }
-
-                // Z
-                if (unit.getType() == Zerg_Zergling)
-                    return zerglingPriority(unit, target);
-                if (unit.getType() == Zerg_Mutalisk)
-                    return mutaliskPriority(unit, target);
-                if (unit.getType() == Zerg_Scourge)
-                    return scourgePriority(unit, target);
-                if (unit.getType() == Zerg_Defiler)
-                    return defilerPriority(unit, target);
 
                 // Zealot
                 if (unit.getType() == Protoss_Zealot) {
@@ -352,6 +359,19 @@ namespace McRave::Targets {
                     return Priority::Ignore;
                 }
             }
+
+            // Z
+            if (unit.getType() == Zerg_Zergling)
+                return zerglingPriority(unit, target);
+            if (unit.getType() == Zerg_Mutalisk)
+                return mutaliskPriority(unit, target);
+            if (unit.getType() == Zerg_Scourge)
+                return scourgePriority(unit, target);
+            if (unit.getType() == Zerg_Defiler)
+                return defilerPriority(unit, target);
+            if (unit.getType() == Zerg_Queen)
+                return queenPriority(unit, target);
+
             return Priority::Minor;
         }
 
@@ -382,7 +402,7 @@ namespace McRave::Targets {
 
             const auto focusScore = [&]() {
                 if (unit.isLightAir() || Players::ZvZ())
-                    return 1.0;                
+                    return 1.0;
                 else if (unit.getType().isWorker() && target.getType().isWorker() && Spy::getEnemyTransition() == U_WorkerRush && int(target.getUnitsTargetingThis().size()) < 6) {
                     return (1.0 + (1.0 * double(target.getUnitsTargetingThis().size())));
                 }
@@ -399,28 +419,12 @@ namespace McRave::Targets {
             };
 
             const auto priorityScore = [&]() { return target.getPriority() / maxPriority; };
-
-            const auto effectiveness = [&]() {
-                auto weapon = target.isFlying() ? unit.getType().airWeapon() : unit.getType().groundWeapon();
-                if (weapon.damageType() == DamageTypes::Explosive) {
-                    if (target.getType().size() == UnitSizeTypes::Small)
-                        return 0.5;
-                    if (target.getType().size() == UnitSizeTypes::Medium)
-                        return 0.75;
-                }
-                else if (weapon.damageType() == DamageTypes::Concussive) {
-                    if (target.getType().size() == UnitSizeTypes::Medium)
-                        return 0.5;
-                    if (target.getType().size() == UnitSizeTypes::Large)
-                        return 0.25;
-                }
-                return 1.0;
-            };
+            const auto effectiveness = [&]() { return unit.getDpsAgainst(target); };
 
             const auto targetScore = healthScore() * focusScore() * priorityScore();
 
             // Detector targeting (distance to nearest ally added)
-            if ((target.isBurrowed() || target.cloaked) && ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == Terran_Comsat_Station)) {
+            if ((target.isBurrowed() || target.isCloaked()) && ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == Terran_Comsat_Station)) {
                 auto closest = Util::getClosestUnit(target.getPosition(), PlayerState::Self,
                                                     [&](auto &u) { return *u != unit && u->getRole() == Role::Combat && target.getType().isFlyer() ? u->getAirRange() > 0 : u->getGroundRange() > 0; });
 
@@ -447,7 +451,7 @@ namespace McRave::Targets {
                 return 1.0 / dist;
 
             // Proximity targeting (targetScore not used)
-            else if (unit.getType() == Protoss_Reaver || unit.isMelee() || unit.isLightAir()) {
+            else if (unit.getType() == Protoss_Reaver || unit.getType() == Zerg_Queen || unit.isMelee() || unit.isLightAir()) {
                 if (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir())
                     return 0.1 / dist;
                 return 1.0 / dist;
@@ -501,7 +505,7 @@ namespace McRave::Targets {
             };
 
             const auto isValidTarget = [&](auto &target) {
-                if (!target.unit() || (unit.targetsFriendly() && !target.isCompleted()) || target.isInvincible() || unit == target || !target.getWalkPosition().isValid())
+                if (!target.unit() || (unit.targetsFriendly() && !target.isCompleted()) || target.isInvincible() || unit == target || !target.getPosition().isValid())
                     return false;
                 return true;
             };
@@ -509,6 +513,7 @@ namespace McRave::Targets {
             auto scoreBest    = 0.0;
             auto priorityBest = Priority::Ignore;
 
+            int i = 0;
             for (auto &t : Units::getUnits(pState)) {
                 UnitInfo &target = *t;
 
@@ -585,7 +590,7 @@ namespace McRave::Targets {
             }
 
             // Add this unit to the targeted by vector
-            if (unit.hasTarget() && unit.getRole() == Role::Combat)
+            if (unit.hasTarget() && (unit.getRole() == Role::Combat || unit.getRole() == Role::Support))
                 unit.getTarget().lock()->getUnitsTargetingThis().push_back(unit.weak_from_this());
         }
 

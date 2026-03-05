@@ -27,18 +27,6 @@ namespace McRave {
 
         static map<Color, int> colorWidth = {{Colors::Red, -3}, {Colors::Orange, -2}, {Colors::Yellow, -1}, {Colors::Green, 0}, {Colors::Blue, 1}, {Colors::Purple, 2}};
 
-        WalkPosition calcWalkPosition(UnitInfo *unit)
-        {
-            auto walkWidth  = unit->getType().isBuilding() ? unit->getType().tileWidth() * 4 : unit->getWalkWidth();
-            auto walkHeight = unit->getType().isBuilding() ? unit->getType().tileHeight() * 4 : unit->getWalkHeight();
-
-            if (!unit->getType().isBuilding())
-                return WalkPosition(unit->getPosition()) - WalkPosition(walkWidth / 2, walkHeight / 2);
-            else
-                return WalkPosition(unit->getTilePosition());
-            return WalkPositions::None;
-        }
-
         Position getOvershootPosition(UnitInfo *unit, Position here)
         {
             if (unit->getType() == Zerg_Overlord)
@@ -133,8 +121,8 @@ namespace McRave {
 
             // Points
             position          = unit()->getPosition();
-            tilePosition      = t.isBuilding() ? unit()->getTilePosition() : TilePosition(unit()->getPosition());
-            walkPosition      = calcWalkPosition(this);
+            tilePosition      = t.isBuilding() ? unit()->getTilePosition() : TilePosition(position);
+            walkPosition      = t.isBuilding() ? WalkPosition(tilePosition) : WalkPosition(position);
             destination       = Positions::Invalid;
             retreatPos        = Positions::Invalid;
             marchPos          = Positions::Invalid;
@@ -153,7 +141,6 @@ namespace McRave {
             // McRave Stats
             engageRadius  = Math::calcSimRadius(*this) + 160.0;
             retreatRadius = Math::calcSimRadius(*this) + 64.0;
-            threat        = isFlying() ? Grids::getAirThreat(getPosition(), PlayerState::Enemy) : Grids::getGroundThreat(getPosition(), PlayerState::Enemy);
 
             // States
             lState = LocalState::None;
@@ -223,7 +210,7 @@ namespace McRave {
             if (closestSplasher && closestSplasher->isWithinReach(*this))
                 nearSplash = true;
 
-            targetedBySplash = any_of(unitsTargetingThis.begin(), unitsTargetingThis.end(), [&](auto &t) { return !t.expired() && t.lock()->isSplasher(); });
+            targetedBySplash = any_of(unitsTargetingThis.begin(), unitsTargetingThis.end(), [&](auto &t) { return !t.expired() && t.lock()->isSplasher() && t.lock()->isWithinRange(*this); });
         }
 
         // Check if this unit is close to / targeted by a suicidal unit
@@ -238,7 +225,10 @@ namespace McRave {
                     nearSuicide = true;
             }
 
-            targetedBySuicide = any_of(unitsTargetingThis.begin(), unitsTargetingThis.end(), [&](auto &t) { return !t.expired() && t.lock()->isSuicidal(); });
+            targetedBySuicide = any_of(unitsTargetingThis.begin(), unitsTargetingThis.end(), [&](auto &t) {
+                return !t.expired() && t.lock()->isSuicidal() && t.lock()->isWithinReach(*this);
+                ;
+            });
         }
 
         // Check if this unit is close to a hidden unit
@@ -596,14 +586,21 @@ namespace McRave {
 
     void UnitInfo::setCommand(TechType tech, Position here)
     {
+        if (commandType == UnitCommandTypes::Use_Tech_Position && commandPosition == here)
+            return;
+
         if (isCommandable()) {
             commandPosition = here;
+            commandType     = UnitCommandTypes::Use_Tech_Position;
             unit()->useTech(tech, here);
         }
     }
 
     void UnitInfo::setCommand(TechType tech, UnitInfo &target)
     {
+        if (commandType == UnitCommandTypes::Use_Tech_Unit && unit()->getLastCommand().getTarget() == target.unit())
+            return;
+
         if (isCommandable()) {
             commandPosition = target.getPosition();
             unit()->useTech(tech, target.unit());
@@ -612,6 +609,9 @@ namespace McRave {
 
     void UnitInfo::setCommand(TechType tech)
     {
+        if (commandType == UnitCommandTypes::Use_Tech)
+            return;
+
         if (isCommandable()) {
             commandPosition = getPosition();
             unit()->useTech(tech);
@@ -728,6 +728,22 @@ namespace McRave {
         if (ground + air >= Util::getCastLimit(tech) || (getType() == Protoss_High_Templar && hasTarget() && getTarget().lock()->isHidden()))
             return true;
         return false;
+    }
+
+    bool UnitInfo::canStartCast(TechType tech, UnitInfo &otherUnit)
+    {
+        // Not researched or overlaps our own cast
+        if (!getPlayer()->hasResearched(tech) || Actions::overlapsActions(unit(), otherUnit.unit(), tech))
+            return false;
+
+        auto energyNeeded     = tech.energyCost() - energy;
+        auto framesToEnergize = 17.856 * energyNeeded;
+        auto spellReady       = energy >= tech.energyCost();
+        auto spellWillBeReady = framesToEnergize <= getEngDist() / (hasTransport() ? getTransport().lock()->getSpeed() : getSpeed());
+
+        if (!spellReady && !spellWillBeReady)
+            return false;
+        return true;
     }
 
     bool UnitInfo::canAttackGround()
@@ -918,12 +934,6 @@ namespace McRave {
             return position.getDistance(cmder->getPosition()) > 96.0;
         }
         return false;
-    }
-
-    bool UnitInfo::targetsFriendly()
-    {
-        return (type == BWAPI::UnitTypes::Terran_Medic && getEnergy() > 0) || type == BWAPI::UnitTypes::Terran_Science_Vessel ||
-               (type == BWAPI::UnitTypes::Zerg_Defiler && getEnergy() < 100 && Players::getCompleteCount(PlayerState::Self, BWAPI::UnitTypes::Zerg_Zergling) > 0);
     }
 
     void UnitInfo::setResource(ResourceInfo *unit) { unit ? resource = unit->weak_from_this() : resource.reset(); }

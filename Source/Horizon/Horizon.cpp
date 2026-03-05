@@ -21,7 +21,7 @@ namespace McRave::Horizon {
         bool addToSim(UnitInfo &u)
         {
             if (!u.unit() || (u.getType().isWorker() && Util::getTime() > Time(6, 00) && ((u.unit()->exists() && u.unit()->getOrder() != Orders::AttackUnit) || !u.hasAttackedRecently())) ||
-                (u.stunned) || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0) ||
+                (u.isStunned()) || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0) ||
                 (u.getRole() != Role::None && u.getRole() != Role::Combat && u.getRole() != Role::Defender) || (u.getRole() == Role::Combat && u.getGlobalState() == GlobalState::Retreat) ||
                 !u.hasTarget())
                 return false;

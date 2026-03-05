@@ -42,7 +42,7 @@ namespace McRave {
 
         // Determine if this resource is threatened based on a substantial threat nearby
         for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
-            if (enemy->getType().isWorker() && (Spy::getEnemyTransition() != U_WorkerRush || Util::getTime() > Time(3, 00)))
+            if (enemy->getType().isWorker())
                 continue;
 
             if (!enemy->hasTarget() || (!Players::ZvZ() && !enemy->getTarget().lock()->getType().isWorker()) || !enemy->isCompleted() || !enemy->canAttackGround())

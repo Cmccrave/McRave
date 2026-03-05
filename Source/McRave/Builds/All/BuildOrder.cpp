@@ -165,7 +165,6 @@ namespace McRave::BuildOrder {
 
     bool unlockReady(UnitType type)
     {
-
         // P
         if (type == Protoss_Probe)
             return true;
@@ -223,6 +222,8 @@ namespace McRave::BuildOrder {
             return com(Zerg_Hydralisk_Den) > 0;
         if (type == Zerg_Lurker)
             return com(Zerg_Hydralisk_Den) > 0 && com(Zerg_Lair) > 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
+        if (type == Zerg_Queen)
+            return com(Zerg_Queens_Nest);
         if (type == Zerg_Ultralisk)
             return com(Zerg_Ultralisk_Cavern) > 0;
         if (type == Zerg_Defiler)

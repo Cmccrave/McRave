@@ -219,7 +219,7 @@ namespace McRave::Scouts {
                     // Drone
                     if (Spy::getEnemyOpener() == T_8Rax || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 ||
                         Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Factory) > 0 ||
-                        (Terrain::getEnemyStartingPosition().isValid() && com(Zerg_Zergling) > 0) || Spy::getEnemyTransition() == U_WorkerRush || Util::getTime() > Time(4, 00))
+                        (Terrain::getEnemyStartingPosition().isValid() && unexploredNaturals.empty() && Util::getTime() > Time(3, 30)) || Spy::getEnemyTransition() == U_WorkerRush || Util::getTime() > Time(4, 00))
                         main.desiredTypeCounts[Zerg_Drone] = 0;
 
                     // Overlord

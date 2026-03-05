@@ -243,8 +243,7 @@ namespace McRave::Goals {
 
                     if (closestBuilder && !closestBuilder->isWithinBuildRange()) {
                         for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
-                            auto assignEscorter = unit->getPosition().getDistance(closestBuilder->getPosition()) < 640.0 ||
-                                                  unit->getType() == Terran_Vulture;
+                            auto assignEscorter = unit->getPosition().getDistance(closestBuilder->getPosition()) < 960.0;
                             if (!unit->isSuicidal() && assignEscorter)
                                 assignNumberToGoal(unit->getPosition(), type, perEnemy, GoalType::Escort);
                         }

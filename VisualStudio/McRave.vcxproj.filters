@@ -546,6 +546,12 @@
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitFrames.h">
       <Filter>McRave\Info\Unit</Filter>
     </ClInclude>
+    <ClInclude Include="..\Source\McRave\Info\Unit\UnitData.h">
+      <Filter>McRave\Info\Unit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Info\Unit\UnitHelpers.h">
+      <Filter>McRave\Info\Unit</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="BWEM">

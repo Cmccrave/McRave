@@ -7,7 +7,7 @@ namespace BWEB {
 
     void Block::draw()
     {
-        int color = Broodwar->self()->getColor();
+        int color     = Broodwar->self()->getColor();
         int textColor = color == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
 
         // Draw boxes around each feature
@@ -30,10 +30,9 @@ namespace BWEB {
 
         Broodwar->drawTextMap(Position(tile), "%d, %d", w, h);
     }
-}
+} // namespace BWEB
 
-namespace BWEB::Blocks
-{
+namespace BWEB::Blocks {
 
     namespace {
         vector<Block> allBlocks;
@@ -55,7 +54,7 @@ namespace BWEB::Blocks
         };
 
         // TODO: Use piece per station instead
-        map<const BWEM::Area * const, PieceCount> piecePerArea;
+        map<const BWEM::Area *const, PieceCount> piecePerArea;
 
         int countPieces(vector<Piece> pieces, Piece type)
         {
@@ -66,9 +65,10 @@ namespace BWEB::Blocks
             }
             return count;
         }
-    }    
+    } // namespace
 
-    bool validTile(TilePosition &t, Station station) {
+    bool validTile(TilePosition &t, Station station)
+    {
         const auto &area = Map::mapBWEM.GetArea(t);
         if (!area)
             return false;
@@ -86,10 +86,11 @@ namespace BWEB::Blocks
         return (tileAbove.isValid() && Map::mapBWEM.GetArea(tileAbove) && Map::mapBWEM.GetArea(tileAbove) == station.getBase()->GetArea());
     }
 
-    vector<TilePosition> wherePieces(TilePosition tile, vector<Piece> pieces) {
+    vector<TilePosition> wherePieces(TilePosition tile, vector<Piece> pieces)
+    {
         vector<TilePosition> pieceLayout;
         auto rowHeight = 0;
-        auto rowWidth = 0;
+        auto rowWidth  = 0;
         int w = 0, h = 0;
         auto here = tile;
         for (auto &p : pieces) {
@@ -126,9 +127,9 @@ namespace BWEB::Blocks
             if (p == Piece::Row) {
                 w = std::max(w, rowWidth);
                 h += rowHeight;
-                rowWidth = 0;
+                rowWidth  = 0;
                 rowHeight = 0;
-                here = tile + TilePosition(0, h);
+                here      = tile + TilePosition(0, h);
             }
             if (p == Piece::Space) {
                 here += TilePosition(1, 0);
@@ -147,15 +148,15 @@ namespace BWEB::Blocks
         if (Broodwar->self()->getRace() == Races::Zerg) {
             if (height == 2) {
                 if (width == 2)
-                    pieces ={ Piece::Small };
+                    pieces = {Piece::Small};
                 if (width == 3)
-                    pieces ={ Piece::Medium };
+                    pieces = {Piece::Medium};
                 if (width == 4)
-                    pieces ={ Piece::Wide };
+                    pieces = {Piece::Wide};
             }
             else if (height == 3) {
                 if (width == 4)
-                    pieces ={ Piece::Large };
+                    pieces = {Piece::Large};
             }
         }
 
@@ -163,37 +164,37 @@ namespace BWEB::Blocks
         if (Broodwar->self()->getRace() == Races::Protoss) {
             if (height == 2) {
                 if (width == 2)
-                    pieces ={ Piece::Small };
+                    pieces = {Piece::Small};
                 if (width == 5)
-                    pieces ={ Piece::Small, Piece::Medium };
+                    pieces = {Piece::Small, Piece::Medium};
             }
             else if (height == 4) {
                 if (width == 5)
-                    pieces ={ Piece::Small, Piece::Medium, Piece::Row, Piece::Small, Piece::Medium };
+                    pieces = {Piece::Small, Piece::Medium, Piece::Row, Piece::Small, Piece::Medium};
             }
             else if (height == 5) {
                 if (width == 4)
-                    pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Small };
+                    pieces = {Piece::Large, Piece::Row, Piece::Small, Piece::Small};
                 if (width == 8) {
-                    pieces ={ Piece::Small, Piece::Medium, Piece::Medium, Piece::Row, Piece::Large, Piece::Large };
+                    pieces = {Piece::Small, Piece::Medium, Piece::Medium, Piece::Row, Piece::Large, Piece::Large};
                 }
                 if (width == 16) {
-                    pieces ={ Piece::Small, Piece::Medium, Piece::Medium, Piece::Small, Piece::Medium, Piece::Medium, Piece::Row, Piece::Large, Piece::Large, Piece::Large, Piece::Large };
+                    pieces = {Piece::Small, Piece::Medium, Piece::Medium, Piece::Small, Piece::Medium, Piece::Medium, Piece::Row, Piece::Large, Piece::Large, Piece::Large, Piece::Large};
                 }
             }
             else if (height == 6) {
                 if (width == 10)
-                    pieces ={ Piece::Large, Piece::Addon, Piece::Large, Piece::Row, Piece::Large, Piece::Small, Piece::Large };
+                    pieces = {Piece::Large, Piece::Addon, Piece::Large, Piece::Row, Piece::Large, Piece::Small, Piece::Large};
                 if (width == 18)
-                    pieces ={ Piece::Large, Piece::Large, Piece::Addon, Piece::Large, Piece::Large, Piece::Row, Piece::Large, Piece::Large, Piece::Small, Piece::Large, Piece::Large };
+                    pieces = {Piece::Large, Piece::Large, Piece::Addon, Piece::Large, Piece::Large, Piece::Row, Piece::Large, Piece::Large, Piece::Small, Piece::Large, Piece::Large};
             }
             else if (height == 8) {
                 if (width == 5)
-                    pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Medium, Piece::Row, Piece::Large };
+                    pieces = {Piece::Large, Piece::Row, Piece::Small, Piece::Medium, Piece::Row, Piece::Large};
                 if (width == 4)
-                    pieces ={ Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Row, Piece::Large };
+                    pieces = {Piece::Large, Piece::Row, Piece::Small, Piece::Small, Piece::Row, Piece::Large};
                 if (width == 8)
-                    pieces ={ Piece::Large, Piece::Large, Piece::Row, Piece::Space, Piece::Space, Piece::Small, Piece::Small, Piece::Space, Piece::Space, Piece::Row, Piece::Large, Piece::Large };
+                    pieces = {Piece::Large, Piece::Large, Piece::Row, Piece::Space, Piece::Space, Piece::Small, Piece::Small, Piece::Space, Piece::Space, Piece::Row, Piece::Large, Piece::Large};
             }
         }
 
@@ -201,26 +202,26 @@ namespace BWEB::Blocks
         if (Broodwar->self()->getRace() == Races::Terran) {
             if (height == 2) {
                 if (width == 3)
-                    pieces ={ Piece::Medium };
+                    pieces = {Piece::Medium};
             }
             else if (height == 3) {
                 if (width == 6)
-                    pieces ={ Piece::Large, Piece::Addon };
+                    pieces = {Piece::Large, Piece::Addon};
             }
             else if (height == 6) {
                 if (width == 6)
-                    pieces ={ Piece::Large, Piece::Addon, Piece::Row, Piece::Large, Piece::Addon };
+                    pieces = {Piece::Large, Piece::Addon, Piece::Row, Piece::Large, Piece::Addon};
                 if (width == 10)
-                    pieces ={ Piece::Large, Piece::Large, Piece::Addon, Piece::Row, Piece::Large, Piece::Large, Piece::Addon };
+                    pieces = {Piece::Large, Piece::Large, Piece::Addon, Piece::Row, Piece::Large, Piece::Large, Piece::Addon};
             }
         }
         return pieces;
     }
 
-    multimap<TilePosition, Piece> generatePieceLayout(vector<Piece> pieces, vector <TilePosition> layout)
+    multimap<TilePosition, Piece> generatePieceLayout(vector<Piece> pieces, vector<TilePosition> layout)
     {
         multimap<TilePosition, Piece> pieceLayout;
-        auto pieceItr = pieces.begin();
+        auto pieceItr  = pieces.begin();
         auto layoutItr = layout.begin();
         while (pieceItr != pieces.end() && layoutItr != layout.end()) {
             if (*pieceItr == Piece::Row || *pieceItr == Piece::Space) {
@@ -234,23 +235,21 @@ namespace BWEB::Blocks
         return pieceLayout;
     }
 
-    bool canAddBlock(const TilePosition here, const int width, const int height, multimap<TilePosition, Piece>& pieces, BlockType type)
+    bool canAddBlock(const TilePosition here, const int width, const int height, multimap<TilePosition, Piece> &pieces, BlockType type)
     {
         const auto blockWalkable = [&](const TilePosition &t) {
             return (t.x < here.x || t.x > here.x + width || t.y < here.y || t.y > here.y + height) && !blockGrid[t.x][t.y] && !BWEB::Map::isReserved(t);
         };
 
-        const auto blockExists = [&](const TilePosition &t) {
-            return blockGrid[t.x][t.y + 3];
-        };
+        const auto blockExists = [&](const TilePosition &t) { return blockGrid[t.x][t.y + 3]; };
 
         const auto productionReachable = [&](TilePosition start) {
             if (!Map::mapBWEM.GetArea(here))
                 return false;
             for (auto &choke : Map::mapBWEM.GetArea(here)->ChokePoints()) {
-                auto path = BWEB::Path(start + TilePosition(0, 3), TilePosition(choke->Center()), UnitTypes::Protoss_Dragoon, false, false);
+                auto path    = BWEB::Path(start + TilePosition(0, 3), TilePosition(choke->Center()), UnitTypes::Protoss_Dragoon, false, false);
                 auto maxDist = path.getSource().getDistance(path.getTarget());
-                auto maxDim = max(width, height);
+                auto maxDim  = max(width, height);
                 path.generateJPS([&](const TilePosition &t) { return path.terrainWalkable(t) && blockWalkable(t) && t.getDistance(path.getTarget()) < maxDist + 5; });
                 Pathfinding::clearCacheFully();
                 if (!path.isReachable())
@@ -282,7 +281,7 @@ namespace BWEB::Blocks
         return true;
     }
 
-    void createBlock(TilePosition here, multimap<TilePosition, Piece>& pieceLayout, int width, int height, BlockType type)
+    void createBlock(TilePosition here, multimap<TilePosition, Piece> &pieceLayout, int width, int height, BlockType type)
     {
         Block newBlock(here, pieceLayout, width, height, type);
         const auto &area = Map::mapBWEM.GetArea(here);
@@ -301,7 +300,7 @@ namespace BWEB::Blocks
             }
             if (piece == Piece::Large) {
                 auto tile = (Broodwar->self()->getRace() != Races::Zerg) ? (placement - TilePosition(1, 1)) : placement;
-                auto ff = (Broodwar->self()->getRace() != Races::Zerg) ? 2 : 0;
+                auto ff   = (Broodwar->self()->getRace() != Races::Zerg) ? 2 : 0;
                 BWEB::Map::addReserve(tile, 4 + ff, 3 + ff);
             }
             if (piece == Piece::Wide) {
@@ -309,7 +308,7 @@ namespace BWEB::Blocks
             }
             if (piece == Piece::Addon) {
                 auto tile = (placement - TilePosition(1, 1));
-                auto ff = 2;
+                auto ff   = 2;
                 BWEB::Map::addReserve(tile, 2 + ff, 2 + ff);
             }
         }
@@ -337,17 +336,14 @@ namespace BWEB::Blocks
         }
     }
 
-    template<typename T, typename C>
-    bool findBlock(Position start, BlockType type, int width, int height, vector<TilePosition> searchTiles, T conditions, C callback)
+    template <typename T, typename C> bool findBlock(Position start, BlockType type, int width, int height, vector<TilePosition> searchTiles, T conditions, C callback)
     {
         const auto race = Broodwar->self()->getRace();
-        auto tileStart = TilePosition(start);
+        auto tileStart  = TilePosition(start);
 
         const auto creepOnCorners = [&](TilePosition here, int width, int height) {
-            return Broodwar->hasCreep(here)
-                && Broodwar->hasCreep(here + TilePosition(width - 1, 0))
-                && Broodwar->hasCreep(here + TilePosition(0, height - 1))
-                && Broodwar->hasCreep(here + TilePosition(width - 1, height - 1));
+            return Broodwar->hasCreep(here) && Broodwar->hasCreep(here + TilePosition(width - 1, 0)) && Broodwar->hasCreep(here + TilePosition(0, height - 1)) &&
+                   Broodwar->hasCreep(here + TilePosition(width - 1, height - 1));
         };
 
         for (int w = width; w > 1; w--) {
@@ -378,23 +374,21 @@ namespace BWEB::Blocks
 
     void findStartBlocks()
     {
-        const auto race = Broodwar->self()->getRace();
-        const auto firstStart = Stations::getStartingMain()->getBase()->Center();
+        const auto race        = Broodwar->self()->getRace();
+        const auto firstStart  = Stations::getStartingMain()->getBase()->Center();
         const auto secondStart = (Position(Stations::getStartingMain()->getChokepoint()->Center()) + Stations::getStartingMain()->getBase()->Center()) / 2;
-        const auto &area = Stations::getStartingMain()->getBase()->GetArea();
+        const auto &area       = Stations::getStartingMain()->getBase()->GetArea();
 
         const auto startOk = [&](TilePosition tile, const std::vector<BWEB::Piece> pieces) {
-            const auto smallCount = countPieces(pieces, Piece::Small);
+            const auto smallCount  = countPieces(pieces, Piece::Small);
             const auto mediumCount = countPieces(pieces, Piece::Medium);
-            const auto largeCount = countPieces(pieces, Piece::Large);
-            const auto wideCount = countPieces(pieces, Piece::Wide);
+            const auto largeCount  = countPieces(pieces, Piece::Large);
+            const auto wideCount   = countPieces(pieces, Piece::Wide);
 
             // Zerg needs 5 medium, 1 small, 1 wide
             if (race == Races::Zerg) {
-                if ((mediumCount + smallCount + wideCount) != 1
-                    || (piecePerArea[area].pieces[Piece::Small] >= 1 && smallCount > 0)
-                    || (piecePerArea[area].pieces[Piece::Medium] >= 5 && mediumCount > 0)
-                    || (piecePerArea[area].pieces[Piece::Wide] >= 1 && wideCount > 0))
+                if ((mediumCount + smallCount + wideCount) != 1 || (piecePerArea[area].pieces[Piece::Small] >= 1 && smallCount > 0) ||
+                    (piecePerArea[area].pieces[Piece::Medium] >= 5 && mediumCount > 0) || (piecePerArea[area].pieces[Piece::Wide] >= 1 && wideCount > 0))
                     return false;
             }
 
@@ -412,24 +406,28 @@ namespace BWEB::Blocks
             return true;
         };
 
-        const auto successCallback = [&](TilePosition tile) {
-            return;
-        };
+        const auto defOk = [&](TilePosition tile, const std::vector<BWEB::Piece> pieces) { return true; };
+        const auto successCallback = [&](TilePosition tile) { return; };
 
         // Sort available tiles by distance to starting main
         vector<TilePosition> tilesDistStart = availableTiles;
-        auto startingMain = Stations::getStartingMain()->getBase()->Location();
-        sort(tilesDistStart.begin(), tilesDistStart.end(), [&](auto& p1, auto& p2) {            
-            return p1.getDistance(startingMain) < p2.getDistance(startingMain);
-        });
+        vector<TilePosition> tilesDistChoke = availableTiles;
+        auto startingMainTile               = Stations::getStartingMain()->getBase()->Location();
+        auto startingMainChokeTile          = TilePosition(Stations::getStartingMain()->getChokepoint()->Center());
+
+        sort(tilesDistStart.begin(), tilesDistStart.end(), [&](auto &p1, auto &p2) { return p1.getDistance(startingMainTile) < p2.getDistance(startingMainTile); });
+        sort(tilesDistChoke.begin(), tilesDistChoke.end(), [&](auto &p1, auto &p2) { return p1.getDistance(startingMainChokeTile) < p2.getDistance(startingMainChokeTile); });
 
         // P needs 2 start blocks
         // T needs 1 block
         // Z will repeat finding a block until it fails
         if (race == Races::Zerg)
-            while (findBlock(firstStart, BlockType::Start, 4, 3, tilesDistStart, startOk, successCallback));
-        else if (race == Races::Terran)
+            while (findBlock(firstStart, BlockType::Start, 4, 3, tilesDistStart, startOk, successCallback))
+                ;
+        else if (race == Races::Terran) {
+            findBlock(secondStart, BlockType::Defensive, 3, 2, tilesDistChoke, defOk, successCallback);
             findBlock(secondStart, BlockType::Start, 10, 6, tilesDistStart, startOk, successCallback);
+        }
         else {
             findBlock(firstStart, BlockType::Start, 8, 5, tilesDistStart, startOk, successCallback);
             findBlock(secondStart, BlockType::Start, 8, 5, tilesDistStart, startOk, successCallback);
@@ -441,41 +439,36 @@ namespace BWEB::Blocks
         const auto race = Broodwar->self()->getRace();
 
         const auto productionOk = [&](TilePosition tile, const std::vector<BWEB::Piece> pieces) {
-            const auto smallCount = countPieces(pieces, Piece::Small);
+            const auto smallCount  = countPieces(pieces, Piece::Small);
             const auto mediumCount = countPieces(pieces, Piece::Medium);
-            const auto largeCount = countPieces(pieces, Piece::Large);
-            const auto wideCount = countPieces(pieces, Piece::Wide);
+            const auto largeCount  = countPieces(pieces, Piece::Large);
+            const auto wideCount   = countPieces(pieces, Piece::Wide);
 
             const auto &area = Map::mapBWEM.GetArea(tile);
 
             // Protoss caps large pieces in the main at 16 if we don't have necessary medium pieces
             if (race == Races::Protoss) {
-                if ((largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 16 && piecePerArea[area].pieces[Piece::Medium] < 8)
-                    || (mediumCount > 0 && piecePerArea[area].pieces[Piece::Medium] >= 9)
-                    || (smallCount > 0 && mediumCount == 0 && largeCount == 0)
-                    || (largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 12))
+                if ((largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 16 && piecePerArea[area].pieces[Piece::Medium] < 8) ||
+                    (mediumCount > 0 && piecePerArea[area].pieces[Piece::Medium] >= 9) || (smallCount > 0 && mediumCount == 0 && largeCount == 0) ||
+                    (largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 12))
                     return false;
             }
 
             // Zerg production placement is just solo hatcheries
             if (race == Races::Zerg) {
-                if ((mediumCount + smallCount + wideCount > 0)
-                    || (piecePerArea[area].pieces[Piece::Large] + largeCount >= 6))
+                if ((mediumCount + smallCount + wideCount > 0) || (piecePerArea[area].pieces[Piece::Large] + largeCount >= 6))
                     return false;
             }
 
             // Terran only need about 20 depot spots and 12 production spots
             if (race == Races::Terran) {
-                if (mediumCount > 0
-                    || (largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 12))
+                if (mediumCount > 0 || (largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 12))
                     return false;
             }
             return true;
         };
 
-        const auto successCallback = [&](TilePosition tile) {
-            return;
-        };
+        const auto successCallback = [&](TilePosition tile) { return; };
 
         // Sort available tiles by distance to closest main
         for (auto &station : Stations::getStations()) {
@@ -492,19 +485,18 @@ namespace BWEB::Blocks
                     desiredCenter /= 2;
                 }
 
-                sort(tilesDistMain.begin(), tilesDistMain.end(), [&](auto& p1, auto& p2) {
-                    return p1.getDistance(desiredCenter) < p2.getDistance(desiredCenter);
-                });
+                sort(tilesDistMain.begin(), tilesDistMain.end(), [&](auto &p1, auto &p2) { return p1.getDistance(desiredCenter) < p2.getDistance(desiredCenter); });
 
-                while (findBlock(station.getBase()->Center(), BlockType::Production, 20, 20, tilesDistMain, productionOk, successCallback));
+                while (findBlock(station.getBase()->Center(), BlockType::Production, 20, 20, tilesDistMain, productionOk, successCallback))
+                    ;
             }
         }
     }
 
     void findSupplyBlocks()
     {
-        auto firstSupplyTile = TilePositions::Invalid;
-        const auto race = Broodwar->self()->getRace();
+        auto firstSupplyTile   = TilePositions::Invalid;
+        const auto race        = Broodwar->self()->getRace();
         const auto supplyWidth = (race == Races::Protoss) ? 2 : 3;
 
         // Zerg supply is overlords
@@ -537,12 +529,12 @@ namespace BWEB::Blocks
                 }
 
                 auto desiredCenter = TilePosition(station.getChokepoint()->Center());
-                auto centerTile = TilePosition(Map::mapBWEM.Center());
-                sort(tilesDistMain.begin(), tilesDistMain.end(), [&](auto& p1, auto& p2) {
-                    return p1.getDistance(desiredCenter) + p1.getDistance(centerTile) > p2.getDistance(desiredCenter) + p2.getDistance(centerTile);
-                });
+                auto centerTile    = TilePosition(Map::mapBWEM.Center());
+                sort(tilesDistMain.begin(), tilesDistMain.end(),
+                     [&](auto &p1, auto &p2) { return p1.getDistance(desiredCenter) + p1.getDistance(centerTile) > p2.getDistance(desiredCenter) + p2.getDistance(centerTile); });
 
-                while (findBlock(station.getBase()->Center(), BlockType::Supply, supplyWidth, 2, tilesDistMain, supplyOk, successCallback));
+                while (findBlock(station.getBase()->Center(), BlockType::Supply, supplyWidth, 2, tilesDistMain, supplyOk, successCallback))
+                    ;
             }
         }
     }
@@ -569,7 +561,8 @@ namespace BWEB::Blocks
     {
         for (auto it = allBlocks.begin(); it != allBlocks.end(); ++it) {
             auto &block = *it;
-            if (here.x >= block.getTilePosition().x && here.x < block.getTilePosition().x + block.width() && here.y >= block.getTilePosition().y && here.y < block.getTilePosition().y + block.height()) {
+            if (here.x >= block.getTilePosition().x && here.x < block.getTilePosition().x + block.width() && here.y >= block.getTilePosition().y &&
+                here.y < block.getTilePosition().y + block.height()) {
                 allBlocks.erase(it);
                 return;
             }
@@ -595,23 +588,21 @@ namespace BWEB::Blocks
             block.draw();
     }
 
-    vector<Block>& getBlocks() {
-        return allBlocks;
-    }
+    vector<Block> &getBlocks() { return allBlocks; }
 
-    Block * getClosestBlock(TilePosition here)
+    Block *getClosestBlock(TilePosition here)
     {
-        auto distBest = DBL_MAX;
-        Block * bestBlock = nullptr;
+        auto distBest    = DBL_MAX;
+        Block *bestBlock = nullptr;
         for (auto &block : allBlocks) {
             const auto tile = block.getTilePosition() + TilePosition(block.width() / 2, block.height() / 2);
             const auto dist = here.getDistance(tile);
 
             if (dist < distBest) {
-                distBest = dist;
+                distBest  = dist;
                 bestBlock = &block;
             }
         }
         return bestBlock;
     }
-}
+} // namespace BWEB::Blocks

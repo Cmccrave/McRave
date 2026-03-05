@@ -52,6 +52,9 @@ namespace McRave::Combat::Clusters {
         bool generateCluster(ClusterNode &root, int id, int minsize, int maxsize)
         {
             auto matching = [&](auto &parent, auto &child) {
+                if (child.unit->getType() == Zerg_Queen)
+                    return false;
+
                 auto matchedGoal     = (parent.unit->getGoal() == child.unit->getGoal());
                 auto matchedType     = (parent.unit->isFlying() == child.unit->isFlying() && parent.unit->isMelee() == child.unit->isMelee());
                 auto matchedStrat    = (parent.unit->getGlobalState() == child.unit->getGlobalState());
@@ -156,7 +159,7 @@ namespace McRave::Combat::Clusters {
             auto commander      = cluster.commander.lock();
             auto marchPathPoint = Util::getPathPoint(*commander, cluster.marchPosition);
             BWEB::Path newMarchPath(cluster.avgPosition, marchPathPoint, commander->getType());
-            newMarchPath.generateJPS([&](const TilePosition &t) { return newMarchPath.unitWalkable(t); });
+            newMarchPath.generateJPS([&](const TilePosition &t) { return commander->isFlying() || newMarchPath.unitWalkable(t); });
             cluster.marchPath = newMarchPath;
 
             // If path is reachable, find a point n pixels away to set as new destination;
@@ -167,7 +170,7 @@ namespace McRave::Combat::Clusters {
 
             auto retreatPathPoint = Util::getPathPoint(*commander, cluster.retreatPosition);
             BWEB::Path newRetreatPath(cluster.avgPosition, retreatPathPoint, commander->getType());
-            newRetreatPath.generateJPS([&](const TilePosition &t) { return newRetreatPath.unitWalkable(t); });
+            newRetreatPath.generateJPS([&](const TilePosition &t) { return commander->isFlying() || newRetreatPath.unitWalkable(t); });
             cluster.retreatPath = newRetreatPath;
 
             // If path is reachable, find a point n pixels away to set as new destination;
@@ -353,17 +356,17 @@ namespace McRave::Combat::Clusters {
 
     vector<Cluster> &getClusters() { return clusters; }
 
-    bool canDecimate(UnitInfo &unit, UnitInfo &target, int cnt)
+    bool canDecimate(UnitInfo &unit, UnitInfo &target)
     {
         if (target.isHidden() || target.movedFlag || target.isToken())
             return false;
 
         // Only allow certain types for cnt > 1
-        if (cnt > 1) {
-            auto twoShotAcceptable = target.getType() == Terran_Goliath || target.isSiegeTank() || target.getType() == Protoss_Dragoon || target.getType().isBuilding();
-            if (!twoShotAcceptable)
-                return false;
-        }
+        auto cnt = 1;
+        if (target.getType() == Terran_Goliath || target.getType() == Protoss_Dragoon || target.getType() == Terran_Science_Vessel)
+            cnt = 2;
+        if (target.isSiegeTank() || target.getType().isBuilding())
+            cnt = 3;
 
         // Check if this unit could load into a bunker
         if (Util::getTime() < Time(10, 00) && (target.getType() == Terran_Marine || target.getType() == Terran_SCV || target.getType() == Terran_Firebat)) {
@@ -376,11 +379,14 @@ namespace McRave::Combat::Clusters {
         }
 
         // TODO: Use cluster size instead with count of units in range
-        auto multiplier     = 9.0 - target.getArmor();
-        auto clusterSize    = Grids::getAirDensity(unit.getPosition(), PlayerState::Self);
+        auto multiplier  = unit.getGroundDamage() - target.getArmor();
+        auto clusterSize = Grids::getAirDensity(unit.getPosition(), PlayerState::Self);
         if (clusterSize < 5)
             return false;
-        auto damageEstimate = Grids::getAirDensity(unit.getPosition(), PlayerState::Self) * multiplier;
+
+        // Estimate damage, padded by expected losses before we land an attack
+        clusterSize -= (Util::getTime() > Time(10, 00)) + (Util::getTime() > Time(12, 00)) + (Util::getTime() > Time(14, 00));
+        auto damageEstimate = clusterSize * multiplier;
 
         // Calculate the risk
         auto dpsInRange = 0.0;
@@ -390,8 +396,7 @@ namespace McRave::Combat::Clusters {
 
             auto &enemy = *e.lock();
             if (enemy.canAttackAir() && (!enemy.isStale() || enemy.getType().isBuilding())) {
-                if (enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 64.0
-                    || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 64.0 ||
+                if (enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 64.0 || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 64.0 ||
                     enemy.getPosition().getDistance(enemy.getPosition()) < enemy.getAirRange() + 64.0) {
                     dpsInRange += enemy.getDpsAgainst(unit);
                 }
@@ -403,9 +408,15 @@ namespace McRave::Combat::Clusters {
                             (!target.unit()->exists() && damageEstimate * cnt >= (target.getType().maxHitPoints() + target.getType().maxShields()));
 
         if (easilyKilled) {
-            if ((dpsInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker()) || (dpsInRange <= 6.0 && Util::getTime() < Time(8, 00)) ||
-                (dpsInRange <= 8.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00)) || (dpsInRange <= 10.0 && Util::getTime() > Time(12, 00) && Util::getTime() < Time(16, 00)) ||
-                (dpsInRange <= 12.0 && Util::getTime() > Time(16, 00)) || unit.isWithinRange(target))
+            if ((dpsInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker())                      //
+                || (dpsInRange <= 5.0 && Util::getTime() < Time(8, 00))                                    //
+                || (dpsInRange <= 6.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))  //
+                || (dpsInRange <= 7.0 && Util::getTime() > Time(12, 00) && Util::getTime() < Time(16, 00)) //
+                || (dpsInRange <= 8.0 && Util::getTime() > Time(16, 00)))                                  //
+                return true;
+
+            // If already in range and haven't attack recently, it's fine to swing once, this helps for recalculations done once in range
+            if (unit.isWithinRange(target) && !unit.hasAttackedRecently())
                 return true;
         }
         return false;
