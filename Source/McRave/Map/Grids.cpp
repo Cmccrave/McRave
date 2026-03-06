@@ -42,6 +42,9 @@ namespace McRave::Grids {
         constexpr int gridWalkScale = 1024;
         constexpr int gridTileScale = 256;
 
+        int mapWalkWidth = 0;
+        int mapWalkHeight = 0;
+
         void addCollision(UnitInfo &unit)
         {
             // Pixel rectangle (make any even size units an extra WalkPosition)
@@ -142,11 +145,11 @@ namespace McRave::Grids {
 
                     // Threat
                     if (allowGround) {
-                        const auto rangeDiff = 0.015625 * (dist - unit.getGroundRange()); // This is just 1/64 so it decays over 2 tiles
+                        const auto rangeDiff = 0.015625 * max(1.0, dist - unit.getGroundRange()); // This is just 1/64 so it decays over 2 tiles
                         index.groundThreat += (dist <= unit.getGroundRange() ? float(unit.getVisibleGroundStrength()) : float(unit.getVisibleGroundStrength() * rangeDiff));
                     }
                     if (allowAir) {
-                        const auto rangeDiff = 0.015625 * (dist - unit.getAirRange()); // This is just 1/64 so it decays over 2 tiles
+                        const auto rangeDiff = 0.015625 * max(1.0, dist - unit.getAirRange()); // This is just 1/64 so it decays over 2 tiles
                         index.airThreat += (dist <= unit.getAirRange() ? float(unit.getVisibleAirStrength()) : float(unit.getVisibleAirStrength() * rangeDiff));
                     }
                 }
@@ -242,6 +245,9 @@ namespace McRave::Grids {
 
         void initializeLogTable()
         {
+            mapWalkWidth  = Broodwar->mapWidth() * 4;
+            mapWalkHeight = Broodwar->mapHeight() * 4;
+
             for (int i = 1; i < 2048; i++) {
                 log8Lookup[i]    = log(8 * i + 8);
                 invLog8Lookup[i] = 1.0f / log8Lookup[i];
@@ -306,7 +312,7 @@ namespace McRave::Grids {
         // createChokeDirections();
 
         //auto mousePos = WalkPosition(Broodwar->getScreenPosition() + Broodwar->getMousePosition());
-        //auto grid     = Grids::getAirThreat(mousePos, PlayerState::Enemy);
+        //auto grid     = Grids::getGroundThreat(mousePos, PlayerState::Enemy);
         //Broodwar << grid << endl;
     }
 
@@ -319,6 +325,9 @@ namespace McRave::Grids {
 
     template <typename T> T getGridValue(const Grid *gridArray, int x, int y, T Grid::*member)
     {
+        if (x < 0 || y < 0 || x > mapWalkWidth || y > mapWalkHeight) {
+            return {};
+        }
         const auto &index = gridArray[gridWalkScale * y + x];
 
         // If the data is from a previous frame, it's effectively 0

@@ -553,7 +553,6 @@ namespace McRave::BuildOrder::Zerg {
             // 3HatchSpeedling
             if (activeAllin.name == "3HatchSpeedling") {
                 gasLimit                                    = lingSpeed() ? 0 : capGas(100);
-                wantThird                                   = true;
                 buildQueue[Zerg_Extractor]                  = (vis(Zerg_Spawning_Pool) > 0);
                 upgradeQueue[UpgradeTypes::Metabolic_Boost] = gas(100);
             }

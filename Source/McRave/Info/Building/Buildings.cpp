@@ -23,7 +23,7 @@ using namespace UnitTypes;
 namespace McRave::Buildings {
     namespace {
         map<UnitType, int> morphedThisFrame;
-        set<Position> larvaPositions;
+        set<Position> larvaPositions, eggPositions;
         set<TilePosition> unpoweredPositions;
 
         bool willDieToAttacks(UnitInfo &building)
@@ -59,7 +59,7 @@ namespace McRave::Buildings {
                     larvaPositions.insert(pos);
             }
             if (building.getType() == Zerg_Egg || building.getType() == Zerg_Lurker_Egg)
-                larvaPositions.insert(building.getPosition());
+                eggPositions.insert(building.getPosition());
         }
 
         void cancel(UnitInfo &building)
@@ -222,6 +222,7 @@ namespace McRave::Buildings {
     {
         // Reset counters
         larvaPositions.clear();
+        eggPositions.clear();
         morphedThisFrame.clear();
         unpoweredPositions.clear();
 
@@ -239,4 +240,5 @@ namespace McRave::Buildings {
 
     set<TilePosition> &getUnpoweredPositions() { return unpoweredPositions; }
     set<Position> &getLarvaPositions() { return larvaPositions; }
+    set<Position> &getEggPositions() { return eggPositions; }
 } // namespace McRave::Buildings

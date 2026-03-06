@@ -25,7 +25,7 @@ namespace McRave::Spy::Protoss {
 
             // CannonRush
             if (unit.getType() == Protoss_Forge && Scouts::gotFullScout() && Terrain::getEnemyStartingPosition().isValid() &&
-                unit.getPosition().getDistance(Terrain::getEnemyStartingPosition()) < 200.0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0 &&
+                unit.getPosition().getDistance(Terrain::getEnemyStartingPosition()) < 320.0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0 &&
                 Players::getVisibleCount(PlayerState::Enemy, Protoss_Nexus) <= 1) {
                 theSpy.build.name     = P_CannonRush;
                 theSpy.proxy.possible = true;
@@ -177,6 +177,19 @@ namespace McRave::Spy::Protoss {
             else if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 2)
                 theSpy.opener.name = P_ZZCore;
         }
+
+        if (theSpy.build.name == P_CannonRush) {
+            auto closestBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType() == Protoss_Pylon || u->getType() == Protoss_Forge; });
+
+            if (closestBuilding) {
+                if (Terrain::inArea(Terrain::getMainArea(), closestBuilding->getPosition()))
+                    theSpy.opener.name = P_Main;
+                else if (Terrain::inArea(Terrain::getNaturalArea(), closestBuilding->getPosition()))
+                    theSpy.opener.name = P_Natural;
+                else
+                    theSpy.opener.name = P_Contain;
+            }
+        }
     }
 
     void enemyProtossTransitions(PlayerInfo &player, StrategySpy &theSpy)
@@ -255,10 +268,12 @@ namespace McRave::Spy::Protoss {
         if (Players::ZvP() && theSpy.build.name == P_FFE) {
 
             // 5GateGoon
-            if ((Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 &&
-                 Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) == 0) ||
-                (completesBy(1, UpgradeTypes::Singularity_Charge, Time(7, 00)) && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 &&
-                 Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) == 0))
+            auto noStargateTech = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) == 0 &&
+                                  Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) == 0 &&
+                                  Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) == 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Fleet_Beacon) == 0 &&
+                                  Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter_Tribunal) == 0;
+
+            if (noStargateTech && (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 || completesBy(1, UpgradeTypes::Singularity_Charge, Time(7, 00))))
                 theSpy.transition.name = P_5GateGoon;
 
             // NeoBisu
@@ -300,7 +315,7 @@ namespace McRave::Spy::Protoss {
     void enemyProtossMisc(PlayerInfo &player, StrategySpy &theSpy)
     {
         // Turtle detection
-        if (!Spy::enemyFastExpand()) {
+        if (!theSpy.expand.likely && theSpy.build.name != P_CannonRush) {
             if (completesBy(2, Protoss_Photon_Cannon, Time(3, 30)) || completesBy(3, Protoss_Photon_Cannon, Time(3, 45)))
                 theSpy.turtle.possible = true;
         }

@@ -22,7 +22,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Overlord]      = 1 + (s >= 18) + (s >= 30);
 
         // Pumping
-        zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < (12 - vis(Zerg_Hatchery));
+        zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < 11;
         zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvP();
     }
 

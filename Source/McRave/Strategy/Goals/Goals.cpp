@@ -376,7 +376,8 @@ namespace McRave::Goals {
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
 
             // Clear out base early game
-            if (Util::getTime() < Time(4, 00) && !BuildOrder::isRush() && !Spy::enemyProxy() && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() &&
+            auto proxyNeedsScouting = !Spy::enemyProxy() || Spy::getEnemyBuild() == P_CannonRush;
+            if (Util::getTime() < Time(4, 00) && !BuildOrder::isRush() && proxyNeedsScouting && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() &&
                 Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
                 auto oldestTile = Terrain::getOldestPosition(Terrain::getMainArea());
 

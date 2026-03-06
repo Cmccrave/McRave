@@ -22,9 +22,6 @@ namespace McRave::Combat::State {
 
         const auto unlockedOrVis = [&](auto &t) { return vis(t) > 0 || BuildOrder::isUnitUnlocked(t); };
 
-        if (Units::getImmThreat() > 0.0 || Broodwar->getGameType() == BWAPI::GameTypes::Use_Map_Settings)
-            return;
-
         // Hydralisks
         if (!BuildOrder::isPressure() && (unlockedOrVis(Zerg_Hydralisk) || BuildOrder::getCurrentTransition() == Z_4HatchHydra || BuildOrder::getCurrentTransition() == Z_6HatchHydra)) {
             const auto hydraSpeed   = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments);
@@ -84,9 +81,8 @@ namespace McRave::Combat::State {
                     const auto vultureThreat = Util::getTime() < Time(12, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy() && !Spy::enemyProxy() &&
                                                (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled());
                     if (!counterAttack) {
-                        if (speedVultures || !speedLing || total(Zerg_Mutalisk) < 12) {
-                            if (defendSunkens || vulturesExist || vultureThreat)
-                                staticRetreatTypes.push_back(Zerg_Zergling);
+                        if (vulturesExist) {
+                            staticRetreatTypes.push_back(Zerg_Zergling);
                         }
                     }
                 }
@@ -209,11 +205,11 @@ namespace McRave::Combat::State {
         if (unit.getType() == Zerg_Broodling)
             return true;
 
-        // Lings are glass cannons and should engage if anything is hitting it
-        if (unit.getType() == Zerg_Zergling && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Adrenal_Glands)) {
-            if (target.isWithinRange(unit) && (target.getType() == Terran_Goliath || target.isSiegeTank() || target.getType() == Protoss_Dragoon))
-                return true;
-        }
+        //// Lings are glass cannons and should engage if anything is hitting it
+        //if (unit.getType() == Zerg_Zergling && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Adrenal_Glands)) {
+        //    if (target.isWithinRange(unit) && (target.getType() == Terran_Goliath || target.isSiegeTank() || target.getType() == Protoss_Dragoon))
+        //        return true;
+        //}
 
         // Melee should engage under dark swarm always
         if (unit.isMelee() && !target.isMelee() &&
@@ -427,7 +423,7 @@ namespace McRave::Combat::State {
             unit.setGlobalState(GlobalState::Retreat);
             unit.setLocalState(LocalState::Retreat);
         }
-        else if (isStaticRetreat(unit.getType()) && !unit.attemptingRunby())
+        else if (isStaticRetreat(unit.getType()) && !unit.attemptingRunby() && Units::getImmThreat() <= 0.0f)
             unit.setGlobalState(GlobalState::Retreat);
         else
             unit.setGlobalState(GlobalState::Attack);

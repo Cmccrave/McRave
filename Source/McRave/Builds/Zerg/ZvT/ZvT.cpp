@@ -164,9 +164,7 @@ namespace McRave::BuildOrder::Zerg {
         auto thirdHatch = (com(Zerg_Spire) == 0 && s >= 48 && vis(Zerg_Drone) >= 20) || (com(Zerg_Spire) == 1 && total(Zerg_Mutalisk) >= 6 && vis(Zerg_Drone) >= 20);
 
         // Order
-        unitOrder = mutalingdefiler;
-        if (Spy::Terran::enemyBio())
-            unitOrder = ultraling;
+        unitOrder = ultraling;
         if (Spy::Terran::enemyMech())
             unitOrder = mutalingqueen;
 
@@ -220,9 +218,7 @@ namespace McRave::BuildOrder::Zerg {
             wantThird = true;
 
         // Order
-        unitOrder = mutalingdefiler;
-        if (Spy::Terran::enemyBio())
-            unitOrder = ultraling;
+        unitOrder = ultraling;
         if (Spy::Terran::enemyMech())
             unitOrder = mutalingqueen;
 

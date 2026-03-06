@@ -532,8 +532,6 @@ namespace McRave::BuildOrder::Zerg {
         if (!inTransition) {
             if (Spy::enemyProxy())
                 currentTransition = Z_3HatchMuta;
-            if (Spy::getEnemyBuild() == P_CannonRush)
-                activeAllinType = AllinType::Z_3HatchSpeedling;
 
             if (Spy::getEnemyBuild() == P_1GateCore && (currentTransition == Z_6HatchHydra || currentTransition == Z_3HatchHydra))
                 currentTransition = Z_4HatchHydra;

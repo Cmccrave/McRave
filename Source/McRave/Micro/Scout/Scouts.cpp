@@ -784,11 +784,10 @@ namespace McRave::Scouts {
                                   mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)));
 
             if (newPathAllowed && !unit.hasSamePath(unit.getPosition(), pathPoint)) {
-                Visuals::drawLine(unit.getPosition(), pathPoint, Colors::Orange);
 
                 BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
 
-                const auto threat   = [&](const TilePosition &t) { return 1.0 + (Grids::getGroundThreat(Position(t) + Position(16, 16), PlayerState::Enemy) * 1000.0); };
+                const auto threat   = [&](const TilePosition &t) { return Grids::getGroundThreat(t, PlayerState::Enemy) * 1000.0; };
                 const auto walkable = [&](const TilePosition &t) { return newPath.unitWalkable(t); };
 
                 // Suicidal scouts don't care about threat
@@ -798,6 +797,8 @@ namespace McRave::Scouts {
                     newPath.generateAS(threat, walkable);
                 unit.setDestinationPath(newPath);
             }
+            Visuals::drawPath(unit.getDestinationPath());
+            Visuals::drawLine(unit.getPosition(), pathPoint, Colors::Orange);
         }
 
         void updateNavigation(UnitInfo &unit)

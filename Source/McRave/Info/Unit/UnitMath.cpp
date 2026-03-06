@@ -419,7 +419,7 @@ namespace McRave::Math {
     {
         // Attack animation frames below
         if (unitType == Protoss_Dragoon)
-            return 5;
+            return 7;
         if (unitType == Zerg_Devourer)
             return 7;
         return 0;

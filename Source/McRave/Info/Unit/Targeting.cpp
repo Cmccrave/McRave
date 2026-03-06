@@ -39,8 +39,16 @@ namespace McRave::Targets {
 
         bool allowWorkerTarget(UnitInfo &unit, UnitInfo &target)
         {
+            auto combatTargeters = 0;
+            for (auto &t : target.getUnitsTargetingThis()) {
+                if (auto &targeter = t.lock()) {
+                    if (targeter->getRole() == Role::Combat)
+                        combatTargeters++;
+                }
+            }
+
             if (unit.getType().isWorker()) {
-                return Spy::getEnemyTransition() == U_WorkerRush || target.hasAttackedRecently() || target.hasRepairedRecently() || target.isThreatening() || target.getUnitsTargetingThis().empty();
+                return Spy::getEnemyTransition() == U_WorkerRush || target.hasAttackedRecently() || target.hasRepairedRecently() || target.isThreatening() || combatTargeters == 0;
             }
 
             // Rushes gotta not chase workers in our base
@@ -48,11 +56,11 @@ namespace McRave::Targets {
                 return false;
 
             if (Util::getTime() > Time(8, 00)) {
-                return unit.isLightAir() || int(target.getUnitsTargetingThis().size()) <= 4;
+                return unit.isLightAir() || combatTargeters <= 4;
             }
 
             auto allowed = unit.getType().isWorker() || unit.isWithinRange(target) || unit.attemptingRunby() || unit.isLightAir() || target.isThreatening() || BuildOrder::isHideTech() ||
-                           (target.getUnitsTargetingThis().empty() && !Players::ZvZ()) || Spy::getEnemyTransition() == U_WorkerRush || Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
+                           (combatTargeters == 0 && !Players::ZvZ()) || Spy::getEnemyTransition() == U_WorkerRush || Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
 
             if (Util::getTime() < Time(5, 00)) {
                 return allowed || target.hasAttackedRecently() || target.hasRepairedRecently();

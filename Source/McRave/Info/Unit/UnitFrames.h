@@ -32,7 +32,7 @@ namespace McRave {
 
         bool changedStateRecently() { return BWAPI::Broodwar->getFrameCount() - lastStateChangeFrame < 60; }
 
-        bool isStale() { return BWAPI::Broodwar->getFrameCount() - lastVisibleFrame > 240; }
+        bool isStale() { return BWAPI::Broodwar->getFrameCount() - lastVisibleFrame > 480; }
         bool isStimmed() { return BWAPI::Broodwar->getFrameCount() - lastStimFrame < 300; }
         bool isStuck() { return BWAPI::Broodwar->getFrameCount() - lastMoveFrame > 48; }
 

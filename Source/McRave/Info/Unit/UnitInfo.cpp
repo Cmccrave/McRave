@@ -654,7 +654,7 @@ namespace McRave {
         // Last attack frame - confirmed
         auto weaponCooldown          = (getType() == Protoss_Reaver) ? 60 : (target.getType().isFlyer() ? getType().airWeapon().damageCooldown() : getType().groundWeapon().damageCooldown());
         const auto framesSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
-        auto cooldown                = weaponCooldown - framesSinceAttack;
+        const auto cooldown = (getType() == Protoss_Reaver) ? weaponCooldown - framesSinceAttack : (target.getType().isFlyer() ? unit()->getAirWeaponCooldown() : unit()->getGroundWeaponCooldown());
 
         auto angle       = BWEB::Map::getAngle(getPosition(), target.getPosition());
         auto facingAngle = 6.18 - unit()->getAngle(); // Reverse direction to counter clockwise, as it should be
@@ -876,7 +876,7 @@ namespace McRave {
     {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         const auto frameSinceAttack = Broodwar->getFrameCount() - getLastAttackFrame();
-        const auto cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getLatencyFrames();
+        const auto cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
 
         // Allows skipping the command but still printing the result to screen
         return !cancelAttackRisk;

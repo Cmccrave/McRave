@@ -561,7 +561,7 @@ namespace McRave::Command {
         else if (unit.getType() == Zerg_Hydralisk && Broodwar->self()->hasResearched(Lurker_Aspect)) {
             const auto wantLurkers = (vis(Zerg_Lurker) + vis(Zerg_Lurker_Egg)) / BuildOrder::getCompositionPercentage(Zerg_Lurker) <
                                      vis(Zerg_Hydralisk) / BuildOrder::getCompositionPercentage(Zerg_Hydralisk);
-            const auto onlyLurkers = BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00 ||
+            const auto onlyLurkers = (BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00 && vis(Zerg_Lurker_Egg) < 4) ||
                                      (Players::ZvT() && BuildOrder::getCompositionPercentage(Zerg_Lurker) == 0.0 && BuildOrder::getCompositionPercentage(Zerg_Hydralisk) == 0.0);
 
             if ((wantLurkers || onlyLurkers)) {

@@ -73,7 +73,7 @@ namespace McRave::Planning {
             return false;
         }
 
-        bool overlapsLarvaHistory(UnitType building, TilePosition here)
+        bool overlapsLarva(UnitType building, TilePosition here)
         {
             auto center = Position(here) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
             for (auto &pos : Buildings::getLarvaPositions()) {
@@ -81,6 +81,16 @@ namespace McRave::Planning {
                     continue;
                 if (Util::boxDistance(Zerg_Larva, pos, building, center) <= 0)
                     return true;
+            }
+            return false;
+        }
+
+        bool overlapsEggs(UnitType building, TilePosition here)
+        {
+            auto center = Position(here) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
+            for (auto &pos : Buildings::getEggPositions()) {
+                if (!pos.isValid())
+                    continue;
                 if (Util::boxDistance(Zerg_Egg, pos, building, center) <= 0)
                     return true;
             }
@@ -177,7 +187,9 @@ namespace McRave::Planning {
                 if (!purelyClosest && !Pylons::hasPowerNow(placement, building))
                     current = current * 32.0;
 
-                if (!ignoreLarva && overlapsLarvaHistory(building, placement))
+                if (!ignoreLarva && overlapsLarva(building, placement))
+                    continue;
+                if (overlapsEggs(building, placement))
                     continue;
 
                 if (!isPathable(building, placement))
@@ -523,7 +535,7 @@ namespace McRave::Planning {
                     // Try to place in adjacent rows as existing defenses
                     if (!desiredRowOrder.empty()) {
                         for (auto i : desiredRowOrder) {
-                            placement = returnClosest(building, wall.getDefenses(i), desiredCenter, Util::getTime() < Time(4, 00));
+                            placement = returnClosest(building, wall.getDefenses(i), desiredCenter, false, Util::getTime() < Time(4, 00));
                             if (placement.isValid()) {
                                 plannedGround.insert(placement);
                                 return true;

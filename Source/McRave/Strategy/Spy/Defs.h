@@ -39,6 +39,10 @@ const std::string_view P_12Nexus = "12Nexus";
 const std::string_view P_20Nexus = "20Nexus";
 const std::string_view P_21Nexus = "21Nexus";
 
+const std::string_view P_Main = "Main";
+const std::string_view P_Natural = "Natural";
+const std::string_view P_Contain = "Contain";
+
 // T Openers
 const std::string_view T_BBS = "BBS";
 const std::string_view T_11_13 = "11/13";

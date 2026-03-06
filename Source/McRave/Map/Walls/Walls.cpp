@@ -191,7 +191,7 @@ namespace McRave::Walls {
                 if (Spy::getEnemyOpener() == P_Proxy_9_9)
                     return 2;
                 if (Spy::getEnemyOpener() == P_Horror_9_9)
-                    return 0;
+                    return 1;
             }
 
             // FFE
@@ -199,6 +199,11 @@ namespace McRave::Walls {
                 if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2)
                     return 2;
                 return Util::getTime() > Time(5, 00);
+            }
+
+            // CannonRush
+            if (Spy::getEnemyBuild() == P_CannonRush) {
+                return 1;
             }
 
             // Always make one that is a safety measure vs unknown builds
@@ -284,7 +289,7 @@ namespace McRave::Walls {
             auto minimum    = int(expected > 0);
 
             // 3h builds make roughly half as many
-            if (threeHatch && expected > 1 && Spy::getEnemyBuild() != P_FFE) {
+            if (threeHatch && expected > 1 && Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_CannonRush) {
                 expected = int(floor(double(expected) / 2.0));
             }
 
@@ -297,7 +302,7 @@ namespace McRave::Walls {
             // Make minimum sunkens if criteria fulfilled
             if (expected > 0)
                 minimum = 1;
-            if (Spy::getEnemyBuild() != P_FFE) {
+            if (Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_CannonRush) {
                 if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 || Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Singularity_Charge, 1) ||
                     Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4)
                     minimum = 2;

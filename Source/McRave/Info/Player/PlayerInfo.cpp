@@ -41,12 +41,14 @@ namespace McRave
 
         for (auto &u : units) {
             auto &unit = *u;
-            auto type = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType() : unit.getType();
+            auto isEgg = (unit.getType() == Zerg_Egg || unit.getType() == Zerg_Lurker_Egg);
+            auto type  = isEgg ? unit.unit()->getBuildType() : unit.getType();
 
             /// BWAPI issue #850
-            if (type == UnitTypes::None && actualEggType.find(unit.unit()) != actualEggType.end())
+            if (type == None && actualEggType.find(unit.unit()) != actualEggType.end())
                 type = actualEggType[unit.unit()];
-            if (unit.getType() == UnitTypes::Zerg_Egg && unit.unit()->getBuildType() != UnitTypes::None) {
+
+            if (isEgg && unit.unit()->getBuildType() != None) {
                 actualEggType[unit.unit()] = unit.unit()->getBuildType();
                 type = unit.unit()->getBuildType();
             }
@@ -61,7 +63,7 @@ namespace McRave
 
             // Counts
             int eggOffset = int(isSelf() && !unit.isCompleted() && (type == Zerg_Zergling || type == Zerg_Scourge));
-            if (type != UnitTypes::None && type.isValid()) {
+            if (type != None && type.isValid()) {
                 visibleTypeCounts[type] += 1 + eggOffset;
                 if (unit.isCompleted())
                     completeTypeCounts[type] += 1;

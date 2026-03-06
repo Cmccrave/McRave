@@ -70,7 +70,7 @@ namespace McRave::Pathing {
                     return u->hasTarget() && find(allowedTypes.begin(), allowedTypes.end(), u->getType()) != allowedTypes.end() && u->getRole() == Role::Combat && *u->getTarget().lock() == unit;
                 });
                 if (furthestTargeter) {
-                    auto furthestFramesToArrive = (clamp(furthestTargeter->getPosition().getDistance(unit.getPosition()) / furthestTargeter->getSpeed(), 0.0, 48.0));
+                    auto furthestFramesToArrive = (clamp(furthestTargeter->getPosition().getDistance(unit.getPosition()) / furthestTargeter->getSpeed(), 0.0, 24.0));
 
                     // Figure out how to trap the unit
                     auto trapTowards = unit.getPosition() + Position(int(unit.unit()->getVelocityX() * furthestFramesToArrive), int(unit.unit()->getVelocityY() * furthestFramesToArrive));

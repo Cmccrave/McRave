@@ -17,12 +17,19 @@ namespace McRave::Roles {
     namespace {
         map<Role, int> myRoles;
         map<Role, int> forcedRoles;
-        set<UnitInfo *> oldCombatWorkers;
         set<UnitType> proxyTargeting = {Protoss_Pylon, Protoss_Photon_Cannon, Terran_Barracks, Terran_Bunker, Zerg_Sunken_Colony};
 
         void forceCombatWorker(int count, Position here, LocalState lState = LocalState::Attack, GlobalState gState = GlobalState::Attack)
         {
             auto needed = count - forcedRoles[Role::Combat];
+
+            // Update where
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &unit = *u;
+                if (unit.getType().isWorker() && unit.getRole() == Role::Combat)
+                    unit.setDestination(here);
+            }
+
             if (needed <= 0)
                 return;
 
@@ -49,13 +56,12 @@ namespace McRave::Roles {
 
             // Only pull the closest worker
             for (int i = 0; i < needed; i++) {
-                auto closestWorker = Util::getClosestUnit(here, PlayerState::Self, [&](auto &unit) {
+                auto closestWorker = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &unit) {
                     if (invalid(unit)) {
-                        oldCombatWorkers.erase(&*unit);
                         return false;
                     }
 
-                    if ((unit->getRole() != Role::Worker) || (!oldCombatWorkers.empty() && oldCombatWorkers.find(&*unit) == oldCombatWorkers.end()))
+                    if (unit->getRole() != Role::Worker)
                         return false;
                     return true;
                 });
@@ -71,8 +77,6 @@ namespace McRave::Roles {
 
                     if (closestWorker->hasResource())
                         Workers::removeUnit(*closestWorker);
-                    if (oldCombatWorkers.find(closestWorker) != oldCombatWorkers.end())
-                        oldCombatWorkers.erase(closestWorker);
                 }
             }
         }
@@ -144,6 +148,9 @@ namespace McRave::Roles {
             auto selfBuildingWorker     = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self,
                                                            [&](auto &u) { return u->getType().isWorker() && u->getBuildType() == Zerg_Hatchery && Broodwar->self()->minerals() >= 200; });
 
+            auto proxyCombatWorker   = proxyWorker && proxyWorker->hasAttackedRecently();
+            auto unknownMainLocation = Position(Terrain::getOldestPosition(Terrain::getMainArea()));
+
             static bool sixLings = false;
             if (com(Zerg_Zergling) >= 6)
                 sixLings = true;
@@ -157,8 +164,8 @@ namespace McRave::Roles {
                     auto cnt = 3 + Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot);
                     forceCombatWorker(5, Position(Terrain::getNaturalPosition()), LocalState::Attack, GlobalState::Retreat);
                 }
-                if (Players::ZvT() && com(Zerg_Sunken_Colony) == 0 && Units::getImmThreat() > 0.0) {
-                    forceCombatWorker(Spy::getWorkersPulled() + 1, Terrain::getMainPosition());
+                if (Players::ZvT() && com(Zerg_Sunken_Colony) == 0 && proxyCombatWorker) {
+                    forceCombatWorker(Spy::getWorkersPulled() + 1, Terrain::getMainPosition(), LocalState::Attack, GlobalState::Retreat);
                 }
 
                 return;
@@ -183,8 +190,7 @@ namespace McRave::Roles {
                 // Gateway or Cannon in territory, 4 drones
                 if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 && Spy::getEnemyBuild() == P_CannonRush && com(Zerg_Zergling) <= 6)
                     forceCombatWorker(4, proxyDangerousBuilding->getPosition());
-                else if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0 && Spy::getEnemyBuild() == P_2Gate &&
-                         Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0)
+                else if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0 && Spy::getEnemyBuild() == P_2Gate)
                     forceCombatWorker(6, proxyDangerousBuilding->getPosition());
 
                 // Probe actively building dangerous proxy, 2 drones
@@ -192,28 +198,22 @@ namespace McRave::Roles {
                     forceCombatWorker(2, proxyBuildingWorker->getPosition());
 
                 // Proxy building, 1 drone
-                else if (proxyBuilding && Spy::getEnemyBuild() == P_CannonRush && com(Zerg_Zergling) <= 2)
+                else if (proxyBuilding && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(1, proxyBuilding->getPosition());
+
+                // Proxy worker, 1 drone
+                else if (Spy::enemyPossibleProxy() && proxyWorker && proxyWorker->unit()->exists() && com(Zerg_Zergling) <= 2)
+                    forceCombatWorker(1, proxyWorker->getPosition());
+                else if (Spy::enemyPossibleProxy() && proxyWorker && com(Zerg_Zergling) <= 2)
+                    forceCombatWorker(1, unknownMainLocation);
+                else if (Spy::enemyPossibleProxy() && com(Zerg_Zergling) <= 2)
+                    forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
+
                 else if (Spy::getEnemyBuild() == P_CannonRush && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
 
-                // TODO: Check if we need this for cannon rush bots
-                // We changed how `proxy` flag is determined, check for no zealots/marines/zerglings
-
-                //// Probe arrived early, 1 drone
-                // else if (proxyWorker && Util::getTime() < Time(3, 00) && vis(Zerg_Spawning_Pool) == 0)
-                //    forceCombatWorker(1, proxyWorker->getPosition());
-
-                //// We know it's likely a proxy, watch the natural for now
-                // else if (Spy::enemyPossibleProxy() && Util::getTime() < Time(2, 00)) {
-                //    if (proxyWorker)
-                //        forceCombatWorker(1, proxyWorker->getPosition());
-                //    else
-                //        forceCombatWorker(1, Position(Terrain::getNaturalChoke()->Center()), LocalState::Retreat, GlobalState::Retreat);
-                //}
-
                 // We haven't got our hatchery down yet
-                else if (vis(Zerg_Hatchery) < 2 && BuildOrder::takeNatural() && proxyWorker && selfBuildingWorker &&
+                else if (vis(Zerg_Hatchery) < 2 && BuildOrder::takeNatural() && proxyWorker && proxyWorker->unit()->exists() && selfBuildingWorker &&
                          (Terrain::inArea(Terrain::getNaturalArea(), proxyWorker->getPosition()) || proxyWorker->hasAttackedRecently() || proxyWorker->isThreatening()))
                     forceCombatWorker(1, proxyWorker->getPosition());
             }
@@ -279,7 +279,8 @@ namespace McRave::Roles {
                 if (unit.getRole() == Role::None) {
                     if (unit.getType().isWorker())
                         unit.setRole(Role::Worker);
-                    else if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == Protoss_Arbiter || unit.getType() == Zerg_Queen || unit.getType() == Terran_Comsat_Station)
+                    else if ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == Protoss_Arbiter || unit.getType() == Zerg_Queen ||
+                             unit.getType() == Terran_Comsat_Station)
                         unit.setRole(Role::Support);
                     else if ((unit.getType().isBuilding() && !unit.canAttackGround() && !unit.canAttackAir() && unit.getType() != Zerg_Creep_Colony) || unit.getType() == Zerg_Larva ||
                              unit.getType() == Zerg_Egg)
@@ -309,7 +310,6 @@ namespace McRave::Roles {
                 // Check if a worker was forced to fight
                 if (unit.getType().isWorker() && unit.getRole() == Role::Combat) {
                     unit.setRole(Role::Worker);
-                    oldCombatWorkers.insert(&unit);
                 }
 
                 // Check for desired floating buildings

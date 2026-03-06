@@ -51,13 +51,20 @@ namespace McRave::Command {
                 if (!Actions::overlapsDetection(unit.unit(), p, PlayerState::Enemy))
                     return 0.01;
             }
-            return max(0.01f, unit.isFlying() ? (Grids::getAirThreat(w, PlayerState::Enemy)) : (Grids::getGroundThreat(w, PlayerState::Enemy)));
+            return max(0.01f, unit.isFlying() ? (Grids::getAirThreat(w, PlayerState::Enemy) * Grids::getAirThreat(w, PlayerState::Enemy)) : (Grids::getGroundThreat(w, PlayerState::Enemy)));
         }
 
-        double altitude(UnitInfo &unit, WalkPosition w) { return unit.isFlying() ? Util::log10(10 + mapBWEM.GetMiniTile(w).Altitude()) : 1.0; }
+        double altitude(UnitInfo &unit, WalkPosition w)
+        {
+            return 1.0;
+            //unit.isFlying() ? Util::log10(1 + mapBWEM.GetMiniTile(w).Altitude()) : 1.0;
+        }
 
         Position findViablePosition(UnitInfo &unit, Position pstart, function<double(WalkPosition)> score)
         {
+            auto nearestEdge = Terrain::getClosestMapEdge(unit.getPosition());
+            auto nearestCorner = Terrain::getClosestMapCorner(unit.getPosition());
+
             // Check if this is a viable position for movement
             const auto viablePosition = [&](Position &p) {
                 if (!unit.getType().isFlyer()) {
@@ -75,8 +82,8 @@ namespace McRave::Command {
                 auto current = score(w);
 
                 if (unit.isLightAir()) {
-                    auto edgePush   = clamp(Terrain::getClosestMapEdge(unit.getPosition()).getDistance(p) / 160.0, 0.01, 5.00);
-                    auto cornerPush = clamp(Terrain::getClosestMapCorner(unit.getPosition()).getDistance(p) / 320.0, 0.01, 5.00);
+                    auto edgePush   = clamp(nearestEdge.getDistance(p) / 96.0, 1.0, 5.00);
+                    auto cornerPush = clamp(nearestCorner.getDistance(p) / 160.0, 1.0, 5.00);
                     current         = current * cornerPush * edgePush;
                 }
 
@@ -154,12 +161,16 @@ namespace McRave::Command {
             }
         }
 
-        //// Specal case: Holding a chokepoint, don't move
-        // if (Players::ZvZ() && Combat::holdAtChoke() && Combat::State::isStaticRetreat(unit.getType()) && unit.getPosition().getDistance(unit.getFormation()) <= 2) {
-        //    unit.setCommand(Hold_Position);
-        //    unit.commandText = "HoldPosition";
-        //    return true;
-        //}
+        // Block vulture runby
+        else if (unit.getType() == Zerg_Zergling && Combat::State::isStaticRetreat(Zerg_Zergling) && unit.getPosition().getDistance(unit.getFormation()) < 16.0) {
+            if (unit.hasTarget(); auto target = unit.getTarget().lock()) {
+                if (target->getType() == Terran_Vulture && target->isThreatening() && !target->hasAttackedRecently() && !unit.isWithinRange(*target)) {
+                    unit.setCommand(Hold_Position);
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 
@@ -535,7 +546,7 @@ namespace McRave::Command {
             // If we found a valid position, move to it
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
 
-            //Broodwar << threat(unit, (WalkPosition)bestPosition) << endl;
+            // Broodwar << threat(unit, (WalkPosition)bestPosition) << endl;
 
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);

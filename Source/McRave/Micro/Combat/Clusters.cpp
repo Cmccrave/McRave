@@ -363,9 +363,9 @@ namespace McRave::Combat::Clusters {
 
         // Only allow certain types for cnt > 1
         auto cnt = 1;
-        if (target.getType() == Terran_Goliath || target.getType() == Protoss_Dragoon || target.getType() == Terran_Science_Vessel)
+        if (target.getType() == Terran_Goliath || target.getType() == Protoss_Dragoon || target.getType() == Terran_Science_Vessel || target.getType().isBuilding())
             cnt = 2;
-        if (target.isSiegeTank() || target.getType().isBuilding())
+        if (target.isSiegeTank())
             cnt = 3;
 
         // Check if this unit could load into a bunker

@@ -7,5 +7,6 @@ namespace McRave::Buildings {
 
     std::set<BWAPI::TilePosition>& getUnpoweredPositions();
     std::set<BWAPI::Position>& getLarvaPositions();
+    std::set<BWAPI::Position>& getEggPositions();
     bool isValidDefense(BWAPI::TilePosition);
 };
