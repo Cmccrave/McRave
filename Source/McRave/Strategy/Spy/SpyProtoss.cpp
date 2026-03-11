@@ -103,7 +103,7 @@ namespace McRave::Spy::Protoss {
         }
 
         // 1GateCore - fallback when they're playing something terrible that makes no sense
-        if (Util::getTime() > Time(5, 00))
+        if (Util::getTime() > Time(5, 00) && !theSpy.proxy.likely)
             theSpy.build.name = P_1GateCore;
     }
 

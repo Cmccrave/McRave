@@ -297,7 +297,6 @@ namespace McRave::Combat::Clusters {
         {
             for (auto &cluster : clusters) {
                 if (auto commander = cluster.commander.lock()) {
-                    auto atHome             = Terrain::inTerritory(PlayerState::Self, cluster.avgPosition);
                     cluster.marchPosition   = commander->marchPos;
                     cluster.retreatPosition = commander->retreatPos;
 

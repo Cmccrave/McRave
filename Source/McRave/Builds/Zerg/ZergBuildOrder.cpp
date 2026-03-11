@@ -368,16 +368,26 @@ namespace McRave::BuildOrder::Zerg {
             using namespace UpgradeTypes;
 
             // Overlord speed can be done inside openings
-            const auto queueOvieSpeed = (Players::ZvT() && Spy::getEnemyTransition() == T_2PortWraith && Util::getTime() > Time(6, 00)) ||
-                                        (Players::ZvP() && Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 140 &&
-                                         total(Zerg_Hydralisk) > 0) ||
-                                        (Players::ZvP() && Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0) ||
-                                        (Spy::enemyInvis() && (BuildOrder::isFocusUnit(Zerg_Hydralisk) || BuildOrder::isFocusUnit(Zerg_Ultralisk))) ||
-                                        (!Players::ZvZ() && Players::getSupply(PlayerState::Self, Races::Zerg) >= 200);
+            auto zvpOvieSpeed = Players::ZvP() &&                                                                                                                                  //
+                                ((Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 140 && total(Zerg_Hydralisk) > 0) //
+                                 || (Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0)                                                                              //
+                                 || (Util::getTime() > Time(9, 00)));                                                                                                              //
+
+            auto zvtOvieSpeed = Players::ZvT() &&                                                              //
+                                (Spy::getEnemyTransition() == T_2PortWraith && Util::getTime() > Time(6, 00)); //
+
+            const auto queueOvieSpeed = zvpOvieSpeed || zvpOvieSpeed ||                                                                                //
+                                        (Spy::enemyInvis() && (BuildOrder::isFocusUnit(Zerg_Hydralisk) || BuildOrder::isFocusUnit(Zerg_Ultralisk))) || //
+                                        (!Players::ZvZ() && Players::getSupply(PlayerState::Self, Races::Zerg) >= 200);                                //
 
             // Need to do this otherwise our queue isnt empty
             if (queueOvieSpeed)
                 upgradeQueue[Pneumatized_Carapace] = 1;
+
+            // Drone burrow to avoid a targeted tech build
+            auto zvtBurrow                  = (Players::ZvT() && Spy::getEnemyBuild() == T_RaxFact && Util::getTime() > Time(4, 15) && !Spy::enemyFastExpand());
+            auto zvpBurrow                  = (Players::ZvP() && Spy::getEnemyTransition() == P_Robo && Util::getTime() > Time(5, 00) && !Spy::enemyFastExpand());
+            techQueue[TechTypes::Burrowing] = zvtBurrow || zvpBurrow;
 
             if (inOpening)
                 return;
@@ -701,8 +711,8 @@ namespace McRave::BuildOrder::Zerg {
                 // Higher muta count, no hive tech
                 if (unitOrder == mutaling) {
                     priorityOrder = {
-                        {Zerg_Drone, 30},     {Zerg_Mutalisk, 24}, //
-                        {Zerg_Drone, 45},     {Zerg_Mutalisk, 36}, //
+                        {Zerg_Drone, 30},     {Zerg_Mutalisk, 16}, //
+                        {Zerg_Drone, 45},     {Zerg_Mutalisk, 24}, //
                         {Zerg_Drone, 60},     {Zerg_Mutalisk, 48}, //
                         {Zerg_Mutalisk, 100},
                     };
@@ -779,6 +789,12 @@ namespace McRave::BuildOrder::Zerg {
                 if (availGas >= type.gasPrice())
                     armyComposition[type] = 1.00;
                 break;
+            }
+
+            // Always need 2 lings
+            if (vis(Zerg_Drone) >= 30 && vis(Zerg_Zergling) <= 2) {
+                armyComposition.clear();
+                armyComposition[Zerg_Zergling] = 1.0;
             }
         }
 

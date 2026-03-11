@@ -32,6 +32,12 @@ namespace McRave::Pathing {
                 return;
             }
 
+            // Special case: hydras have a long initial animation with a short repeated animation. Get them much further in range before attacking
+            if (unit.getType() == Zerg_Hydralisk) {
+                if (!unit.hasAttackedRecently() && !target.isMelee() && unit.getSpeed() >= target.getSpeed() && !target.isSplasher())
+                    range = 64.0;
+            }
+
             // Create an air distance calculation for engage position
             auto engagePosition = Util::shiftTowards(target.getPosition(), unit.getPosition(), min(distance, range));
             unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
@@ -62,7 +68,7 @@ namespace McRave::Pathing {
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo &unit = *u;
 
-                if (unit.isFlying() || unit.getType().isBuilding() || (unit.hasAttackedRecently()) || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()))
+                if (unit.isFlying() || unit.getType().isBuilding() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()))
                     continue;
 
                 // Get the furthest unit targeting this to offset how many frames to estimate
@@ -73,15 +79,15 @@ namespace McRave::Pathing {
                     auto furthestFramesToArrive = (clamp(furthestTargeter->getPosition().getDistance(unit.getPosition()) / furthestTargeter->getSpeed(), 0.0, 24.0));
 
                     // Figure out how to trap the unit
-                    auto trapTowards = unit.getPosition() + Position(int(unit.unit()->getVelocityX() * furthestFramesToArrive), int(unit.unit()->getVelocityY() * furthestFramesToArrive));
+                    auto trapTowards = unit.getPosition();// +Position(int(unit.unit()->getVelocityX() * furthestFramesToArrive), int(unit.unit()->getVelocityY() * furthestFramesToArrive));
                     if (unit.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, unit.getPosition())) {
-                        trapTowards += Terrain::getMainPosition();
+                        trapTowards += Position(int(unit.unit()->getVelocityX() * furthestFramesToArrive), int(unit.unit()->getVelocityY() * furthestFramesToArrive));
                         trapTowards /= 2.0;
                         // furthestFramesToArrive *= 1.15;
                     }
                     // Visuals::drawLine(unit.getPosition(), trapTowards, Colors::Purple);
 
-                    // Create surround positions in a primitive fashion
+                    // Create surround positions in a circle
                     vector<pair<Position, double>> surroundPositions;
                     double radius = max(unit.getType().width(), unit.getType().height()) * 0.8;
                     for (int i = 0; i < 8; i++) {
@@ -120,17 +126,14 @@ namespace McRave::Pathing {
                                 auto pos_angle = BWEB::Map::getAngle(pos, unit.getPosition());
 
                                 auto angleDiff = abs(ct_angle - pos_angle);
-                                closestFramesToArrive += angleDiff * 15.0;
                             }
 
                             auto correctedPos = pos + Position(int(dirx * closestFramesToArrive), int(diry * closestFramesToArrive)) +
                                                 Position(int(expandx * closestFramesToArrive), int(expandy * closestFramesToArrive));
 
-                            if (Util::findWalkable(*closestTargeter, correctedPos)) {
-                                closestTargeter->setSurroundPosition(correctedPos);
-                                Visuals::drawLine(closestTargeter->getPosition(), correctedPos, Colors::Green);
-                                Visuals::drawCircle(correctedPos, 4, Colors::Green);
-                            }
+                            closestTargeter->setSurroundPosition(correctedPos);
+                            Visuals::drawLine(closestTargeter->getPosition(), correctedPos, Colors::Green);
+                            Visuals::drawCircle(correctedPos, 4, Colors::Green);
                         }
                     }
                 }

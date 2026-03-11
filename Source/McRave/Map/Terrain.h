@@ -44,6 +44,9 @@ namespace McRave::Terrain {
     std::vector<BWAPI::Position>& getGroundCleanupPositions();
     std::vector<BWAPI::Position>& getAirCleanupPositions();
 
+    // Strategic checks
+    bool isAtHome(BWAPI::Position);
+
     // Main information
     BWAPI::Position getMainPosition();
     BWAPI::TilePosition getMainTile();

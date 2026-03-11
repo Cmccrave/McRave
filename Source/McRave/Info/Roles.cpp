@@ -157,17 +157,16 @@ namespace McRave::Roles {
 
             // Worker rush - pull 3 unless they all in
             if (Spy::getEnemyTransition() == U_WorkerRush) {
-                if (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) > 0)
+                if (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0)
                     return;
 
                 if (Players::ZvP() && sixLings && com(Zerg_Sunken_Colony) == 0 && Combat::isDefendNatural()) {
                     auto cnt = 3 + Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot);
-                    forceCombatWorker(5, Position(Terrain::getNaturalPosition()), LocalState::Attack, GlobalState::Retreat);
+                    forceCombatWorker(5, Position(Terrain::getNaturalPosition()), LocalState::None, GlobalState::None);
                 }
                 if (Players::ZvT() && com(Zerg_Sunken_Colony) == 0 && proxyCombatWorker) {
                     forceCombatWorker(Spy::getWorkersPulled() + 1, Terrain::getMainPosition(), LocalState::Attack, GlobalState::Retreat);
                 }
-
                 return;
             }
 
@@ -185,13 +184,19 @@ namespace McRave::Roles {
             }
 
             // ZvP
-            if (Players::ZvP() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 && Util::getTime() < Time(6, 00)) {
+            if (Players::ZvP() && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) == 0 && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 &&
+                Util::getTime() < Time(6, 00)) {
 
-                // Gateway or Cannon in territory, 4 drones
+                // Gateway or Cannon in territory, 6 drones
                 if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 && Spy::getEnemyBuild() == P_CannonRush && com(Zerg_Zergling) <= 6)
-                    forceCombatWorker(4, proxyDangerousBuilding->getPosition());
+                    forceCombatWorker(6, proxyDangerousBuilding->getPosition());
                 else if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0 && Spy::getEnemyBuild() == P_2Gate)
                     forceCombatWorker(6, proxyDangerousBuilding->getPosition());
+
+                // Pylon in main or natural, 3 drones
+                else if (proxyBuilding && com(Zerg_Zergling) <= 2 &&
+                         (Terrain::inArea(Terrain::getMainArea(), proxyBuilding->getPosition()) || Terrain::inArea(Terrain::getMainArea(), proxyBuilding->getPosition())))
+                    forceCombatWorker(3, proxyBuilding->getPosition());
 
                 // Probe actively building dangerous proxy, 2 drones
                 else if (proxyBuilding && proxyBuildingWorker && proxyDangerousBuilding)
@@ -220,7 +225,7 @@ namespace McRave::Roles {
 
             // ZvT
             if (Players::ZvT() && Util::getTime() < Time(3, 30)) {
-                auto count = (Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) * 2);
+                auto count = (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) * 2);
                 if (proxyDangerousBuilding)
                     count += 3;
 

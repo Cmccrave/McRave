@@ -8,9 +8,9 @@
 #include "Map/Stations.h"
 #include "Map/Terrain.h"
 #include "Map/Walls/Walls.h"
+#include "Micro/Worker/Workers.h"
 #include "Strategy/Actions/Actions.h"
 #include "Strategy/Spy/Spy.h"
-#include "Micro/Worker/Workers.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -160,6 +160,14 @@ namespace McRave::Goals {
             }
         }
 
+        void updateDropDenial()
+        {
+            auto expectDropZvP = Players::ZvP() && Spy::getEnemyBuild() == P_1GateCore && Spy::getEnemyTransition() == P_Robo && Util::getTime() < Time(6, 00);
+            if (expectDropZvP) {
+                assignNumberToGoal(Terrain::getMainPosition(), rangedType, 4, GoalType::Defend);
+            }
+        }
+
         void updateExpandDenial()
         {
             // Deny enemy expansions from being built by sending a small force ahead of time
@@ -202,7 +210,7 @@ namespace McRave::Goals {
                 }
 
                 // Protoss denies closest base
-                if (Players::PvT()) {
+                if (Players::PvT() && Util::getTime() > Time(8, 00)) {
                     for (auto &station : stationsByDistance) {
                         auto type = (Players::PvT() || Players::PvP()) ? Protoss_Dragoon : Protoss_Zealot;
                         assignNumberToGoal(station.second.getBase()->Center(), type, 2);
@@ -216,6 +224,9 @@ namespace McRave::Goals {
 
         void updateGenericGoals()
         {
+            updateDropDenial();
+            updateExpandDenial();
+
             // Send a worker early when we want to
             if (BuildOrder::isPlanEarly() && Planning::getCurrentExpansion() && !Planning::whatPlannedHere(Planning::getCurrentExpansion()->getBase()->Location()).isResourceDepot()) {
                 if (int(Stations::getStations(PlayerState::Self).size() < 2))

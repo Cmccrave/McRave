@@ -62,13 +62,14 @@ namespace McRave::Combat::State {
 
             if (!crackling && !volume && !BuildOrder::isRush() && !BuildOrder::isAllIn()) {
                 if (Players::ZvP()) {
-                    const auto killedWorkers = Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) >= 8;
-                    const auto scaryOpeners  = Spy::getEnemyBuild() != P_FFE && Util::getTime() < Time(8, 00);
-                    const auto hideCheese    = BuildOrder::isHideTech() && BuildOrder::isOpener() && !BuildOrder::isPressure();
-                    const auto defendProxy   = Spy::enemyProxy() && !speedLing && Util::getTime() < Time(5, 00) && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0;
-                    const auto defendTiming  = Spy::getEnemyBuild() == P_FFE && Util::getTime() > Time(6, 00) && Util::getTime() < Time(8, 00);
+                    const auto killWorkers  = Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) >= 8;
+                    const auto scaryOpeners = Spy::getEnemyBuild() != P_FFE && Util::getTime() < Time(8, 00);
+                    const auto hideCheese   = BuildOrder::isHideTech() && BuildOrder::isOpener() && !BuildOrder::isPressure();
+                    const auto deniedProxy  = Spy::enemyProxy() && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) > 0;
+                    const auto defendProxy  = Spy::enemyProxy() && !speedLing && Util::getTime() < Time(5, 00) && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0;
+                    const auto defendTiming = Spy::getEnemyBuild() == P_FFE && Util::getTime() > Time(6, 00) && Util::getTime() < Time(8, 00);
 
-                    if (!killedWorkers && Spy::getEnemyBuild() != P_CannonRush) {
+                    if (!killWorkers && !deniedProxy && Spy::getEnemyBuild() != P_CannonRush) {
                         if (scaryOpeners || hideCheese || defendProxy || defendTiming)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
@@ -206,7 +207,7 @@ namespace McRave::Combat::State {
             return true;
 
         //// Lings are glass cannons and should engage if anything is hitting it
-        //if (unit.getType() == Zerg_Zergling && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Adrenal_Glands)) {
+        // if (unit.getType() == Zerg_Zergling && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Adrenal_Glands)) {
         //    if (target.isWithinRange(unit) && (target.getType() == Terran_Goliath || target.isSiegeTank() || target.getType() == Protoss_Dragoon))
         //        return true;
         //}
@@ -216,6 +217,9 @@ namespace McRave::Combat::State {
             Actions::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm))) {
             return true;
         }
+
+        if (unit.isLightAir() && target.isLightAir() && Terrain::isAtHome(target.getPosition()))
+            return true;
 
         auto engageWhenInRange = (target.isSiegeTank() || target.isLightAir() || target.isTransport() || target.getType() == Protoss_Reaver || target.getType() == Protoss_High_Templar);
 
@@ -227,8 +231,8 @@ namespace McRave::Combat::State {
                 || (target.getType() == Terran_Vulture_Spider_Mine && !target.isBurrowed()) ||
                 (unit.attemptingRunby() && target.getType().isWorker() && (unit.getHealth() > 15 || Util::getTime() > Time(6, 00) || Players::ZvZ())) ||
                 (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_High_Templar && unit.canStartCast(TechTypes::Psionic_Storm, target.getPosition()) &&
-                 unit.isWithinRange(target)) ||
-                (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_Reaver && unit.canStartAttack()) && unit.isWithinRange(target));
+                 unit.isWithinRange(target))
+                || (unit.hasTransport() && !unit.unit()->isLoaded() && unit.getType() == Protoss_Reaver && unit.canStartAttack()) && unit.isWithinRange(target));
     }
 
     bool forceLocalRetreat(UnitInfo &unit)
@@ -264,7 +268,7 @@ namespace McRave::Combat::State {
         if (!unit.hasTarget())
             return false;
         auto &target      = *unit.getTarget().lock();
-        const auto atHome = Terrain::inTerritory(PlayerState::Self, target.getPosition());
+        const auto atHome = Terrain::isAtHome(target.getPosition());
 
         const auto nearEnemyStation = [&]() {
             const auto closestEnemyStation = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Enemy);
@@ -366,7 +370,7 @@ namespace McRave::Combat::State {
 
         auto &simTarget   = *unit.getSimTarget().lock();
         auto &target      = *unit.getTarget().lock();
-        const auto atHome = Terrain::inTerritory(PlayerState::Self, target.getPosition());
+        const auto atHome = Terrain::isAtHome(target.getPosition());
 
         const auto distSim = (unit.isFlying() || simTarget.isFlying() || unit.isWithinRange(simTarget) || simTarget.isWithinRange(unit) || unit.hasTransport())
                                  ? double(Util::boxDistance(unit.getType(), unit.getPosition(), simTarget.getType(), simTarget.getPosition()))
@@ -376,7 +380,7 @@ namespace McRave::Combat::State {
                                     ? double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()))
                                     : BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition());
 
-        const auto insideRetreatRadius = distSim < unit.getRetreatRadius() && !atHome && (!unit.isLightAir() || !unit.hasTarget() || !unit.getUnitsInReachOfThis().empty());
+        const auto insideRetreatRadius = distSim < unit.getRetreatRadius() && (!unit.isLightAir() || !unit.hasTarget() || !unit.getUnitsInReachOfThis().empty());
         const auto insideEngageRadius  = distTarget < unit.getEngageRadius() && (unit.getGlobalState() == GlobalState::Attack || atHome);
         const auto exploringGoal       = unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore && unit.getUnitsInReachOfThis().empty() && Util::getTime() > Time(4, 00);
 
@@ -394,15 +398,15 @@ namespace McRave::Combat::State {
         // If within local decision range, determine if Unit needs to attack or retreat
         else if (insideEngageRadius && (unit.getSimState() == SimState::Win /*|| exploringGoal*/))
             unit.setLocalState(LocalState::Attack);
-        else if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && (unit.getGlobalState() == GlobalState::Retreat || unit.getGoalType() == GoalType::Defend) && !unit.isLightAir())
+        else if (Terrain::isAtHome(unit.getPosition()) && (unit.getGlobalState() == GlobalState::Retreat || unit.getGoalType() == GoalType::Defend) && !unit.isLightAir())
             unit.setLocalState(LocalState::Hold);
-        else if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && insideEngageRadius && unit.getSimState() != SimState::Win && !unit.isLightAir())
+        else if (Terrain::isAtHome(unit.getPosition()) && insideEngageRadius && unit.getSimState() != SimState::Win && !unit.isLightAir())
             unit.setLocalState(LocalState::Hold);
         else if (insideRetreatRadius && (!unit.attemptingRunby() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition())) && unit.getSimState() == SimState::Loss)
             unit.setLocalState(LocalState::Retreat);
 
         // Respect global states for overall direction
-        else if (!Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && unit.getGlobalState() == GlobalState::Retreat)
+        else if (!Terrain::isAtHome(unit.getPosition()) && unit.getGlobalState() == GlobalState::Retreat)
             unit.setLocalState(LocalState::Retreat);
 
         // Within engage and not retreat, but not winning

@@ -375,10 +375,12 @@ namespace McRave::Util {
                     auto w = WalkPosition(x, y);
                     auto t = TilePosition(x, y);
 
-                    if (Position(w).getDistance(center) <= i * 8) {
+                    auto walkCenter = Position(w) + Position(4, 4);
+                    if (walkCenter.getApproxDistance(center) <= i * 8) {
                         walkCache.push_back(w);
                     }
-                    if (Position(t).getDistance(center) <= i * 32) {
+                    auto tileCenter = Position(t) + Position(16, 16);
+                    if (tileCenter.getApproxDistance(center) <= i * 32) {
                         tileCache.push_back(t);
                     }
                 }
@@ -421,9 +423,7 @@ namespace McRave::Util {
                 value    = calc2;
                 radrange = {radrange.second - diff, radrange.second + diff};
             }
-            // Broodwar->drawTextMap(position, "%d", i);
         }
-        // Broodwar->drawCircleMap(position, 3, Colors::Green);
         return {value, position};
     }
 

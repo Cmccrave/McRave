@@ -113,13 +113,10 @@ namespace McRave::Planning {
             auto creepFully = true;
 
             // See if it's being blocked
-            if (!isDefensiveType(building)) {
-                auto closestEnemy = Util::getClosestUnit(center, PlayerState::Enemy, [&](auto &u) {
-                    return !u->isFlying() && !u->getType().isWorker() && !u->getType().isBuilding() && u->getType() != Terran_Vulture_Spider_Mine;
-                });
-                if (closestEnemy && Util::boxDistance(closestEnemy->getType(), closestEnemy->getPosition(), building, center) < 32.0)
-                    return false;
-            }
+            auto closestEnemy = Util::getClosestUnit(center, PlayerState::Enemy,
+                                                     [&](auto &u) { return !u->isFlying() && !u->getType().isWorker() && !u->getType().isBuilding() && u->getType() != Terran_Vulture_Spider_Mine; });
+            if (closestEnemy && Util::boxDistance(closestEnemy->getType(), closestEnemy->getPosition(), building, center) <= 0.0)
+                return false;
 
             // Refinery only on Geysers
             if (building.isRefinery()) {
@@ -518,6 +515,11 @@ namespace McRave::Planning {
                 auto desiredCenter = (Position(wall.getStation()->getBase()->Center()) + Position(wall.getChokePoint()->Center())) / 2;
                 auto closestMain   = BWEB::Stations::getClosestMainStation(TilePosition(wall.getChokePoint()->Center()));
 
+                // Keep defenses together
+                if (auto closestSunk = Util::getClosestUnit(desiredCenter, PlayerState::Self, [&](auto &u) { return isDefensiveType(u->getType()); })) {
+                    desiredCenter = closestSunk->getPosition();
+                }
+
                 // How to dictate row order
                 vector<int> desiredRowOrder = {1, 2};
                 if (Players::ZvZ())
@@ -590,7 +592,7 @@ namespace McRave::Planning {
 
                 if (wall.getStation()->isMain() && !BuildOrder::isWallMain())
                     continue;
-                if (wall.getStation()->isNatural() && !BuildOrder::isWallNat())
+                if (wall.getStation()->isNatural() && (!BuildOrder::isWallNat() || building == Zerg_Evolution_Chamber))
                     continue;
                 if (!wall.getStation()->isMain() && !wall.getStation()->isNatural() && !BuildOrder::isWallThird())
                     continue;
@@ -608,7 +610,7 @@ namespace McRave::Planning {
 
             // Get closest placement
             auto desired = !Stations::getStationsBySaturation().empty() ? Stations::getStationsBySaturation().begin()->second->getBase()->Center() : Terrain::getMainPosition();
-            placement    = returnClosest(building, placements, Terrain::getMainPosition());
+            placement    = returnClosest(building, placements, Terrain::getMainPosition(), false, true);
             return placement.isValid();
         }
 

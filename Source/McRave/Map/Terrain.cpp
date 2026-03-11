@@ -444,7 +444,6 @@ namespace McRave::Terrain {
                 mainRamp.angle                        = BWEB::Map::getAngle(c1, c2);
             }
             mainRamp.center = (mainRamp.entrance + mainRamp.exit) / 2;
-            Broodwar->drawTextMap(mainRamp.entrance, "%.2f", mainRamp.angle);
 
             // 7. Fix angle based on tileset (all angles from horizontal) - ROUGH estimates:
             // Space (benzene) tileset have 40deg ramps normally, 30deg if they are flipped with SCMDraft
@@ -462,7 +461,6 @@ namespace McRave::Terrain {
                 mainRamp.angle = 4.0 * M_PI / 3.0;
             else
                 mainRamp.angle = 5.0 * M_PI / 3.0;
-            Broodwar->drawTextMap(mainRamp.entrance + Position(0, 16), "%.2f", mainRamp.angle);
         }
 
         void updateAreas()
@@ -815,6 +813,12 @@ namespace McRave::Terrain {
     bool foundEnemy() { return enemyStartingPosition.isValid() && Broodwar->isExplored(TilePosition(enemyStartingPosition)); }
     vector<Position> &getGroundCleanupPositions() { return groundCleanupPositions; }
     vector<Position> &getAirCleanupPositions() { return airCleanupPositions; }
+
+    bool isAtHome(Position here) { 
+        const auto closestStation = Stations::getClosestStationAir(here, PlayerState::Self);
+        const auto atHome         = Terrain::inTerritory(PlayerState::Self, here) && closestStation && closestStation->getBase()->Center().getDistance(here) < 640.0;
+        return atHome;
+    }
 
     // Main information
     const BWEB::Station *const getMyMain() { return BWEB::Stations::getStartingMain(); }

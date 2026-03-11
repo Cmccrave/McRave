@@ -22,9 +22,9 @@ using namespace UnitTypes;
 
 namespace McRave::Buildings {
     namespace {
-        map<UnitType, int> morphedThisFrame;
         set<Position> larvaPositions, eggPositions;
         set<TilePosition> unpoweredPositions;
+        int lastMorphFrame = -999;
 
         bool willDieToAttacks(UnitInfo &building)
         {
@@ -130,20 +130,23 @@ namespace McRave::Buildings {
             auto wall        = BWEB::Walls::getClosestWall(building.getPosition());
             auto plannedType = Planning::whatPlannedHere(building.getTilePosition());
 
+            if (lastMorphFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4)
+                return;
+
             // Lair morphing
             if (building.getType() == Zerg_Hatchery && station && station->isMain() && !willDieToAttacks(building) &&
-                BuildOrder::buildCount(Zerg_Lair) > vis(Zerg_Lair) + vis(Zerg_Hive) + morphedThisFrame[Zerg_Lair] + morphedThisFrame[Zerg_Hive]) {
+                BuildOrder::buildCount(Zerg_Lair) > vis(Zerg_Lair) + vis(Zerg_Hive)) {
                 if ((Util::getTime() >= Time(2, 31) && BuildOrder::getCurrentTransition().find("1Hatch") != string::npos) ||
                     (Util::getTime() >= Time(3, 02) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos) || Util::getTime() >= Time(3, 31) || Players::ZvZ())
                     morphType = Zerg_Lair;
             }
 
             // Hive morphing
-            else if (building.getType() == Zerg_Lair && !willDieToAttacks(building) && BuildOrder::buildCount(Zerg_Hive) > vis(Zerg_Hive) + morphedThisFrame[Zerg_Hive])
+            else if (building.getType() == Zerg_Lair && !willDieToAttacks(building) && BuildOrder::buildCount(Zerg_Hive) > vis(Zerg_Hive))
                 morphType = Zerg_Hive;
 
             // Greater Spire morphing
-            else if (building.getType() == Zerg_Spire && !willDieToAttacks(building) && BuildOrder::buildCount(Zerg_Greater_Spire) > vis(Zerg_Greater_Spire) + morphedThisFrame[Zerg_Greater_Spire])
+            else if (building.getType() == Zerg_Spire && !willDieToAttacks(building) && BuildOrder::buildCount(Zerg_Greater_Spire) > vis(Zerg_Greater_Spire))
                 morphType = Zerg_Greater_Spire;
 
             // Sunken / Spore morphing
@@ -158,15 +161,15 @@ namespace McRave::Buildings {
                     morphType = Zerg_Spore_Colony;
 
                 // If this is a Station defense
-                else if (stationDefense && Stations::needGroundDefenses(station) > morphedThisFrame[Zerg_Sunken_Colony] && com(Zerg_Spawning_Pool) > 0)
+                else if (stationDefense && Stations::needGroundDefenses(station) > 0 && com(Zerg_Spawning_Pool) > 0)
                     morphType = Zerg_Sunken_Colony;
-                else if (stationDefense && Stations::needAirDefenses(station) > morphedThisFrame[Zerg_Spore_Colony] && com(Zerg_Evolution_Chamber) > 0)
+                else if (stationDefense && Stations::needAirDefenses(station) > 0 && com(Zerg_Evolution_Chamber) > 0)
                     morphType = Zerg_Spore_Colony;
 
                 // If this is a Wall defense
-                else if (wallDefense && Walls::needAirDefenses(*wall) > morphedThisFrame[Zerg_Spore_Colony] && plannedType == Zerg_Spore_Colony && com(Zerg_Evolution_Chamber) > 0)
+                else if (wallDefense && Walls::needAirDefenses(*wall) > 0 && plannedType == Zerg_Spore_Colony && com(Zerg_Evolution_Chamber) > 0)
                     morphType = Zerg_Spore_Colony;
-                else if (wallDefense && Walls::needGroundDefenses(*wall) > morphedThisFrame[Zerg_Sunken_Colony] && plannedType == Zerg_Sunken_Colony && com(Zerg_Spawning_Pool) > 0)
+                else if (wallDefense && Walls::needGroundDefenses(*wall) > 0 && plannedType == Zerg_Sunken_Colony && com(Zerg_Spawning_Pool) > 0)
                     morphType = Zerg_Sunken_Colony;
             }
 
@@ -178,9 +181,9 @@ namespace McRave::Buildings {
             }
 
             // Morph
-            if (morphType.isValid() && building.isCompleted()) {
+            if (morphType != UnitTypes::None && building.isCompleted()) {
                 building.unit()->morph(morphType);
-                morphedThisFrame[morphType]++;
+                lastMorphFrame = Broodwar->getFrameCount();
             }
         }
 
@@ -223,7 +226,6 @@ namespace McRave::Buildings {
         // Reset counters
         larvaPositions.clear();
         eggPositions.clear();
-        morphedThisFrame.clear();
         unpoweredPositions.clear();
 
         // Update all my buildings

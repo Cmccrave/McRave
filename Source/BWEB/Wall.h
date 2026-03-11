@@ -12,6 +12,7 @@ namespace BWEB {
     class Wall
     {
         UnitType tightType;
+        TilePosition wallLocation;
         set<TilePosition> smallTiles, mediumTiles, largeTiles, openings;
         map<int, set<TilePosition>> defenses;
         vector<UnitType> rawBuildings, rawDefenses;
@@ -20,7 +21,7 @@ namespace BWEB {
         const BWEM::ChokePoint * choke = nullptr;
         const BWEM::Base * base = nullptr;
         const BWEB::Station * station = nullptr;
-        double chokeAngle;
+        double defenseAngle;
         bool valid, pylonWall, openWall, requireTight, flatRamp, angledChoke;
         int defenseArrangement;
         TilePosition wallOffset = TilePosition(0,0);
@@ -104,6 +105,9 @@ namespace BWEB {
 
         /// <summary> Returns the number of air defenses associated with this Wall. </summary>
         const int getAirDefenseCount() const;
+
+        /// <summary> Returns the defense angle of this Wall.
+        double getDefenseAngle() { return defenseAngle; }
 
         /// <summary> Draws all the features of the Wall. </summary>
         const void draw();

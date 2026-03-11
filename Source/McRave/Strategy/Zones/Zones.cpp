@@ -24,14 +24,13 @@ namespace McRave::Zones
 
         void drawZones()
         {
-            return;
             for (auto &zone : zones) {
                 if (zone.type == ZoneType::Engage)
-                    Broodwar->drawCircleMap(zone.position, zone.radius, Colors::Green);
+                    Visuals::drawCircle(zone.position, zone.radius, Colors::Green);
                 if (zone.type == ZoneType::Defend)
-                    Broodwar->drawCircleMap(zone.position, zone.radius, Colors::Blue);
+                    Visuals::drawCircle(zone.position, zone.radius, Colors::Blue);
                 if (zone.type == ZoneType::Retreat)
-                    Broodwar->drawCircleMap(zone.position, zone.radius, Colors::Red);
+                    Visuals::drawCircle(zone.position, zone.radius, Colors::Red);
             }
         }
     }
@@ -39,7 +38,7 @@ namespace McRave::Zones
     void onFrame()
     {
         updateZones();
-        drawZones();
+        //drawZones();
     }
 
     void addZone(Position position, ZoneType zone, int frames, int radius)

@@ -5,9 +5,9 @@
 #include "Main/Events.h"
 #include "Map/Grids.h"
 #include "Map/Terrain.h"
+#include "Micro/Scout/Scouts.h"
 #include "Strategy/Actions/Actions.h"
 #include "Strategy/Spy/Spy.h"
-#include "Micro/Scout/Scouts.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -80,7 +80,22 @@ namespace McRave::Units {
                         enemyArmyCount++;
                     }
 
-                    // Broodwar->drawTextMap(unit.getPosition(), "%.2f", unit.getPriority());
+                    // Enemy units are assumed targets or order targets
+                    if (unit.unit()->exists() && unit.unit()->getOrderTarget()) {
+                        auto &targetInfo = getUnitInfo(unit.unit()->getOrderTarget());
+                        if (targetInfo) {
+                            unit.setTarget(&*targetInfo);
+                            targetInfo->getUnitsTargetingThis().push_back(unit.weak_from_this());
+                        }
+                    }
+
+                    // Backup target closest self
+                    if (unit.getType() != Terran_Vulture_Spider_Mine && !unit.hasTarget()) {
+                        auto closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self,
+                                                            [&](auto &u) { return (u->isFlying() && unit.getAirDamage() > 0.0) || (!u->isFlying() && unit.getGroundDamage() > 0.0); });
+                        if (closest)
+                            unit.setTarget(&*closest);
+                    }
                 }
             }
 

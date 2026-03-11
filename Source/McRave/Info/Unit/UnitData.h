@@ -25,6 +25,7 @@ namespace McRave {
         int armor       = 0;
         int shieldArmor = 0;
         int energy      = 0;
+        int splash      = 0;
         int walkWidth   = 0;
         int walkHeight  = 0;
 
@@ -47,6 +48,7 @@ namespace McRave {
         int getShields() { return shields; }
         int getHealth() { return health; }
         int getEnergy() { return energy; }
+        int getSplashRadius() { return splash; }
         int getWalkWidth() { return walkWidth; }
         int getWalkHeight() { return walkHeight; }
 

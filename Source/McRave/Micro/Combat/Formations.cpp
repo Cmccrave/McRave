@@ -1,4 +1,5 @@
 #include "Combat.h"
+#include "Map/Grids.h"
 #include "Map/Terrain.h"
 
 using namespace BWAPI;
@@ -15,6 +16,7 @@ namespace McRave::Combat::Formations {
 
         formation.start = commander->getPosition();
         formation.angle = BWEB::Map::getAngle(cluster.marchPosition, cluster.retreatPosition);
+        formation.lState = LocalState::Hold;
 
         auto closestChoke    = Util::getClosestChokepoint(cluster.marchPosition);
         auto closestBuilding = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
@@ -52,8 +54,7 @@ namespace McRave::Combat::Formations {
         // Hold with choke, use ramp angles if provided
         else if (Combat::holdAtChoke() && closestChoke) {
 
-            // If any unit is in the wrong side of the chokepoint, shift the center back
-            // Assumes only main area is correct for now
+            // If any unit is in the wrong side of the chokepoint, shift the center back. Assumes only main area is correct for now
             auto badArea = false;
             for (auto &unit : cluster.units) {
                 if (!Terrain::inArea(Terrain::getMainArea(), unit->getPosition()) && !Combat::isDefendNatural())
@@ -86,20 +87,25 @@ namespace McRave::Combat::Formations {
 
     void marchFormation(Formation &formation, Cluster &cluster)
     {
-        auto shift       = max(160.0, formation.radius) + 32.0;
+        auto shift = max(160.0, formation.radius) + 32.0;
+        shift += max(-5, 5 - Grids::getMobility(cluster.marchNavigation)) * 16.0;
+
         formation.radius = clamp((cluster.units.size() * cluster.spacing / 1.3), 16.0, 640.0);
-        formation.start  = cluster.marchNavigation;
-        formation.center = Util::shiftTowards(cluster.avgPosition, cluster.marchNavigation, shift);
+        formation.start  = Util::shiftTowards(cluster.avgPosition, cluster.marchNavigation, shift);
+        formation.center = cluster.marchNavigation;
         formation.angle  = BWEB::Map::getAngle(cluster.marchNavigation, cluster.avgPosition);
+        formation.lState = LocalState::Attack;
     }
 
     void retreatFormation(Formation &formation, Cluster &cluster)
     {
-        auto shift       = max(160.0, formation.radius) + 32.0;
+        auto shift       = max(160.0, formation.radius) + 32.0;       
+
         formation.radius = clamp((cluster.units.size() * cluster.spacing / 1.3), 16.0, 640.0);
-        formation.start  = cluster.retreatNavigation;
-        formation.center = Util::shiftTowards(cluster.retreatNavigation, cluster.avgPosition, shift);
+        formation.start  = Util::shiftTowards(cluster.avgPosition, cluster.retreatNavigation, shift);
+        formation.center = cluster.retreatNavigation;
         formation.angle  = BWEB::Map::getAngle(cluster.avgPosition, cluster.retreatNavigation);
+        formation.lState = LocalState::Retreat;
     }
 
     void formationSetup(Formation &formation, Cluster &cluster)
@@ -122,7 +128,7 @@ namespace McRave::Combat::Formations {
         UnitInfo *closestUnit = nullptr;
         auto distBest         = DBL_MAX;
         for (auto &unit : cluster.units) {
-            auto dist = unit->getPosition().getDistance(p);
+            auto dist = min(unit->getPosition().getDistance(p), unit->getCommandPosition().getDistance(p));
             if (dist < distBest && !unit->getFormation().isValid()) {
                 distBest    = dist;
                 closestUnit = &*unit;
@@ -167,7 +173,7 @@ namespace McRave::Combat::Formations {
             auto box   = Util::typeBoundingBox(p, commander->getType());
             auto color = first ? Colors::Blue : Colors::Green;
             first      = false;
-            //Visuals::drawBox(box.first, box.second, color);
+            // Visuals::drawBox(box.first, box.second, color);
             assignmentsRemaining--;
             formation.positions.push_back(p);
         };
@@ -204,7 +210,7 @@ namespace McRave::Combat::Formations {
     void generateLinePositions(Formation &formation, Cluster &cluster)
     {
         auto commander     = cluster.commander.lock();
-        auto pixelsPerUnit = max(commander->getType().width(), commander->getType().height()) + 2;
+        auto pixelsPerUnit = max(commander->getType().width(), commander->getType().height()) + 2 + (formation.lState != LocalState::None) * 8;
         formation.radius   = max(formation.radius, 160.0);
         formation.center   = formation.start;
 

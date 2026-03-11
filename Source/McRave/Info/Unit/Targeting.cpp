@@ -264,6 +264,10 @@ namespace McRave::Targets {
                         return Priority::Ignore;
                 }
 
+                // Vulnerable important units
+                if (target.getType() == Protoss_Reaver && unit.isWithinRange(target))
+                    return Priority::Critical;
+
                 // Generic trivial
                 if (!targetMatters || (target.getType() == Zerg_Egg) || (target.getType() == Zerg_Larva))
                     return Priority::Trivial;
@@ -282,6 +286,8 @@ namespace McRave::Targets {
                     if ((target.unit()->exists() && target.unit()->getBuildUnit()) || (target.getType().getRace() == Races::Terran && !target.isCompleted()))
                         return Priority::Minor;
                     else if (target.getType() == Protoss_Photon_Cannon && target.frameCompletesWhen() <= earliest)
+                        return Priority::Critical;
+                    else if (target.getType() == Protoss_Pylon && Spy::getEnemyOpener() == P_Horror_9_9)
                         return Priority::Critical;
                     else if (proxyTargeting.find(target.getType()) != proxyTargeting.end() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 &&
                              Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) == 0 && Players::getCompleteCount(PlayerState::Enemy, Protoss_Zealot) == 0)
@@ -620,25 +626,6 @@ namespace McRave::Targets {
             if (unit.getRole() == Role::Combat || unit.getRole() == Role::Support || unit.getRole() == Role::Defender || unit.getRole() == Role::Worker || unit.getRole() == Role::Scout) {
                 getBestTarget(unit, pState);
                 getSimTarget(unit, PlayerState::Enemy);
-            }
-
-            // Enemy units are assumed targets or order targets
-            if (unit.getPlayer()->isEnemy(Broodwar->self())) {
-                if (unit.unit()->exists() && unit.unit()->getOrderTarget()) {
-                    auto &targetInfo = Units::getUnitInfo(unit.unit()->getOrderTarget());
-                    if (targetInfo) {
-                        unit.setTarget(&*targetInfo);
-                        targetInfo->getUnitsTargetingThis().push_back(unit.weak_from_this());
-                    }
-                }
-
-                // Backup target closest self
-                if (unit.getType() != Terran_Vulture_Spider_Mine && !unit.hasTarget()) {
-                    auto closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self,
-                                                        [&](auto &u) { return (u->isFlying() && unit.getAirDamage() > 0.0) || (!u->isFlying() && unit.getGroundDamage() > 0.0); });
-                    if (closest)
-                        unit.setTarget(&*closest);
-                }
             }
         }
 

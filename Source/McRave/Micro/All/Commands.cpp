@@ -57,12 +57,12 @@ namespace McRave::Command {
         double altitude(UnitInfo &unit, WalkPosition w)
         {
             return 1.0;
-            //unit.isFlying() ? Util::log10(1 + mapBWEM.GetMiniTile(w).Altitude()) : 1.0;
+            // unit.isFlying() ? Util::log10(1 + mapBWEM.GetMiniTile(w).Altitude()) : 1.0;
         }
 
         Position findViablePosition(UnitInfo &unit, Position pstart, function<double(WalkPosition)> score)
         {
-            auto nearestEdge = Terrain::getClosestMapEdge(unit.getPosition());
+            auto nearestEdge   = Terrain::getClosestMapEdge(unit.getPosition());
             auto nearestCorner = Terrain::getClosestMapCorner(unit.getPosition());
 
             // Check if this is a viable position for movement
@@ -171,6 +171,13 @@ namespace McRave::Command {
             }
         }
 
+        // Run into the reaver when targeted by it
+        else if (!unit.isFlying() && unit.isTargetedBySplash()) {
+            if (unit.hasTarget(); auto target = unit.getTarget().lock()) {
+                unit.setCommand(Move, target->getPosition());
+                return true;
+            }
+        }
         return false;
     }
 
@@ -282,7 +289,7 @@ namespace McRave::Command {
 
     bool move(UnitInfo &unit)
     {
-        auto atHome    = Terrain::inTerritory(PlayerState::Self, unit.getPosition());
+        auto atHome    = Terrain::isAtHome(unit.getPosition());
         auto sim       = unit.hasSimTarget() ? unit.getSimTarget().lock()->getPosition() : Positions::Invalid;
         auto current   = unit.isFlying() ? Grids::getAirThreat(unit.getPosition(), PlayerState::Enemy) : Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy);
         auto harassing = unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Combat::getHarassPosition() && unit.attemptingHarass() && unit.getLocalState() == LocalState::None;
@@ -358,23 +365,6 @@ namespace McRave::Command {
                 return true;
             }
 
-            // Melee sometimes struggle
-            // if (auto pTarget = unit.getTarget().lock()) {
-
-            //    auto clickToTarget = (unit.getRole() == Role::Combat && unit.canStartAttack() && unit.isMelee() && unit.isWithinReach(*pTarget) &&
-            //                          unit.getLocalState() == LocalState::Attack) ||
-            //                         !unit.getDestinationPath().isReachable();
-
-            //    // Just move to the destination
-            //    if (clickToTarget) {
-            //        auto fixedDest = unit.getDestination();
-            //        Util::findWalkable(unit, fixedDest);
-            //        unit.setCommand(Right_Click_Position, fixedDest);
-            //        unit.commandText = "Move_A";
-            //        return true;
-            //    }
-            //}
-
             // Find the best position to move to
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
             if (bestPosition.isValid()) {
@@ -414,6 +404,9 @@ namespace McRave::Command {
             auto calcPair = Util::findPointOnCircle(unit.getPosition(), target.getPosition(), maxRange, threatCalc);
             kiteTowards   = Util::shiftTowards(target.getPosition(), calcPair.second, kiteRange);
         }
+
+        // Get current distance
+        auto currentDistance = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()) / 8.0;
 
         const auto scoreFunction = [&](WalkPosition w) {
             auto score = 0.0;
@@ -468,7 +461,7 @@ namespace McRave::Command {
             if (unit.getRole() == Role::Combat || unit.getRole() == Role::Scout) {
 
                 // Special Case: early "duels"
-                if (unit.getType() == Zerg_Zergling) {
+                if (unit.getType() == Zerg_Zergling && target.unit()->exists()) {
                     const auto selfFasterSpeed = (Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost, 1) &&
                                                   !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost, 1));
                     const auto defenders       = com(Zerg_Sunken_Colony) > 0 && Combat::State::isStaticRetreat(unit.getType());
@@ -545,9 +538,7 @@ namespace McRave::Command {
 
             // If we found a valid position, move to it
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
-
-            // Broodwar << threat(unit, (WalkPosition)bestPosition) << endl;
-
+            Visuals::drawLine(unit.getPosition(), bestPosition, Colors::Purple);
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
                 unit.commandText = "Kite";

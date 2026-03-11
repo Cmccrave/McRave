@@ -90,6 +90,10 @@ namespace McRave::Combat {
                                 (Broodwar->self()->getRace() != Races::Zerg && Terrain::isReverseRamp());
             }
 
+            static bool sixLings = false;
+            if (com(Zerg_Zergling) >= 6)
+                sixLings = true;
+
             // When we don't want to defend our natural
             if (Players::ZvT() && Util::getTime() < Time(8, 00) && (Spy::enemyRush() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0))
                 defendNatural = false;
@@ -98,18 +102,15 @@ namespace McRave::Combat {
             if (Players::ZvP()) {
                 if (Spy::enemyProxy() && Spy::getEnemyBuild() == P_2Gate) {
                     auto naturalHatch = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Hatchery; });
-                    if ((naturalHatch && naturalHatch->getUnitsTargetingThis().empty() && !Stations::isCompleted(Terrain::getMyNatural())) ||
-                        (vis(Zerg_Zergling) < 6 && Units::getImmThreat() < 0.1f && Util::getTime() < Time(5, 00)))
+                    auto delayNaturalDefending = Util::getTime() < Time(3, 45) && (Spy::getEnemyBuild() == "Unknown" || !sixLings);
+
+                    if (delayNaturalDefending)
                         defendNatural = false;
                 }
             }
 
             // ZvZ
             if (Players::ZvZ()) {
-                static bool sixLings = false;
-                if (com(Zerg_Zergling) >= 6)
-                    sixLings = true;
-
                 defendNatural              = Stations::getStations(PlayerState::Self).size() >= 2;
                 auto delayNaturalDefending = Util::getTime() < Time(3, 20) && (Spy::getEnemyOpener() == "Unknown" || !sixLings);
 

@@ -444,6 +444,16 @@ namespace McRave::Math {
             return 200;
         return type.gasPrice();
     }
+
+    int calcSplashRadius(UnitInfo &unit)
+    {
+        auto highest = 0;
+        if (unit.getType().groundWeapon().isValid())
+            highest = max(unit.getType().groundWeapon().outerSplashRadius(), highest);
+        if (unit.getType().airWeapon().isValid())
+            highest = max(unit.getType().airWeapon().outerSplashRadius(), highest);
+        return highest;
+    }
 } // namespace McRave::Math
 
 namespace McRave {
@@ -472,6 +482,7 @@ namespace McRave {
         maxGroundStrength     = Math::calcMaxGroundStrength(unit);
         visibleAirStrength    = Math::calcVisibleAirStrength(unit);
         maxAirStrength        = Math::calcMaxAirStrength(unit);
+        splash                = Math::calcSplashRadius(unit);
         priority              = Math::calcPriority(unit);
     }
 } // namespace McRave

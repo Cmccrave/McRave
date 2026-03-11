@@ -325,7 +325,7 @@ namespace McRave {
         auto threateningThisFrame = false;
 
         // If the unit is close to stations, defenses or resources owned by us
-        const auto atHome  = Terrain::inTerritory(PlayerState::Self, getPosition()) && closestStation && closestStation->getBase()->Center().getDistance(getPosition()) < 640.0;
+        const auto atHome  = Terrain::isAtHome(getPosition());
         const auto atChoke = getPosition().getDistance(closestGeo) <= rangeCheck;
         const auto nearMe  = atHome || atChoke;
 
@@ -380,8 +380,7 @@ namespace McRave {
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
             auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getRole() == Role::Defender && ((u->canAttackGround() && !this->isFlying()) || (u->canAttackAir() && this->isFlying())) &&
-                       (u->isCompleted() || Util::getTime() < Time(5, 00));
+                return u->getRole() == Role::Defender && ((u->canAttackGround() && !this->isFlying()) || (u->canAttackAir() && this->isFlying())) && (u->isCompleted() || hasAttackedRecently());
             });
             return (closestDefender && closestDefender->isWithinRange(*this)) || (closestDefender && this->canAttackGround() && this->isWithinRange(*closestDefender));
         };
@@ -423,7 +422,7 @@ namespace McRave {
 
         // Worker
         else if (getType().isWorker())
-            threateningThisFrame = nearMe && (constructing || hasAttackedRecently());
+            threateningThisFrame = atHome && (constructing || hasAttackedRecently());
 
         // Unit
         else
@@ -833,6 +832,12 @@ namespace McRave {
 
     bool UnitInfo::isWithinRange(UnitInfo &otherUnit)
     {
+        // Special case: hydras have a long initial animation with a short repeated animation. Get them much further in range before attacking
+        if (getType() == Zerg_Hydralisk) {
+            if (!hasAttackedRecently() && !otherUnit.isMelee() && getSpeed() >= otherUnit.getSpeed() && !otherUnit.isSplasher())
+                return Util::boxDistance(getType(), getPosition(), otherUnit.getType(), otherUnit.getPosition()) <= 96.0;
+        }
+
         auto boxDistance = Util::boxDistance(getType(), getPosition(), otherUnit.getType(), otherUnit.getPosition());
         auto range       = max(32.0, otherUnit.getType().isFlyer() ? getAirRange() : getGroundRange());
         auto latencyDist = (Broodwar->getLatencyFrames() * getSpeed()) - (Broodwar->getLatencyFrames() * otherUnit.getSpeed());
@@ -886,18 +891,20 @@ namespace McRave {
 
     bool UnitInfo::attemptingSurround()
     {
-        if (!hasTarget() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 24.0)
+        if (!hasTarget() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 8.0)
             return false;
 
         auto &target = *getTarget().lock();
-        if (target.isThreatening() && target.getType() != Terran_Vulture)
-            return false;
-        if (!target.getType().isWorker() && Util::getTime() < Time(4, 00) && Broodwar->getGameType() != GameTypes::Use_Map_Settings)
-            return false;
+        if (Broodwar->getGameType() != GameTypes::Use_Map_Settings) {
+            if (target.isThreatening() && target.getType() != Terran_Vulture)
+                return false;
+            if (!target.getType().isWorker() && Util::getTime() < Time(4, 00))
+                return false;
+        }
 
         if (target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target.getPosition()))
             return true;
-        return position.getDistance(surroundPosition) > 24.0;
+        return position.getDistance(surroundPosition) > 8.0;
 
         // if (target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target.getPosition()))
         //    return true;

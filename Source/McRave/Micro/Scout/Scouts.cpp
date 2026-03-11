@@ -97,10 +97,10 @@ namespace McRave::Scouts {
         {
             int i = 0;
             for (auto &[scoutType, target] : scoutTargets) {
-                Broodwar->drawBoxMap(target.center - Position(64, 64), target.center + Position(64, 64), Colors::White);
+                Visuals::drawBox(target.center - Position(64, 64), target.center + Position(64, 64), Colors::White);
 
                 for (auto &p : target.positions)
-                    Broodwar->drawLineMap(p, target.center, Colors::White);
+                    Visuals::drawLine(p, target.center, Colors::White);
 
                 auto y = 62;
                 for (auto &[type, count] : target.currentTypeCounts) {
