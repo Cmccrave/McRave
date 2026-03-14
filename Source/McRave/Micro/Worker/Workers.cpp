@@ -107,21 +107,22 @@ namespace McRave::Workers {
             }
 
             // Find safe stations to mine resources from
-            auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
-            for (auto &station : Stations::getStations(PlayerState::Self)) {
+            if (auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self)) {
+                for (auto &station : Stations::getStations(PlayerState::Self)) {
 
-                // If unit is close, it must be safe
-                if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(unit.getTilePosition()) == station->getBase()->GetArea() || Util::getTime() < Time(3, 30))
-                    safeStations.push_back(station);
-
-                else {
-                    auto &path     = Stations::getPathBetween(closestStation, station);
-                    auto threatPos = Util::findPointOnPath(path, [&](auto &t) { return Grids::getGroundThreat(t, PlayerState::Enemy) > 0.0; });
-                    if (!threatPos)
+                    // If unit is close, it must be safe
+                    if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(unit.getTilePosition()) == station->getBase()->GetArea() ||
+                        Util::getTime() < Time(3, 30))
                         safeStations.push_back(station);
+
+                    else {
+                        auto &path     = Stations::getPathBetween(closestStation, station);
+                        auto threatPos = Util::findPointOnPath(path, [&](auto &t) { return Grids::getGroundThreat(t, PlayerState::Enemy) > 0.0; });
+                        if (!threatPos)
+                            safeStations.push_back(station);
+                    }
                 }
             }
-
             return safeStations;
         }
 

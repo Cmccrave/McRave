@@ -162,9 +162,16 @@ namespace McRave::Goals {
 
         void updateDropDenial()
         {
-            auto expectDropZvP = Players::ZvP() && Spy::getEnemyBuild() == P_1GateCore && Spy::getEnemyTransition() == P_Robo && Util::getTime() < Time(6, 00);
+            // ZvP will do a reaver or DT drop in main, assign units to defend main
+            auto expectDropZvP = Players::ZvP() && Spy::getEnemyBuild() == P_1GateCore &&
+                                 (Spy::getEnemyTransition() == P_Robo || Spy::getEnemyTransition() == P_DT || Spy::getEnemyTransition() == P_DTDrop);
+
             if (expectDropZvP) {
-                assignNumberToGoal(Terrain::getMainPosition(), rangedType, 4, GoalType::Defend);
+                if (Terrain::getMyMain() && Stations::getGroundDefenseCount(Terrain::getMyMain()) <= 0)
+                    assignNumberToGoal(Terrain::getMainPosition(), rangedType, 6, GoalType::Defend);
+
+                if (Terrain::getMyNatural() && Stations::getGroundDefenseCount(Terrain::getMyNatural()) <= 0)
+                    assignNumberToGoal(Terrain::getNaturalPosition(), rangedType, 6, GoalType::Defend);
             }
         }
 
@@ -418,6 +425,11 @@ namespace McRave::Goals {
             auto harassers = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) >= 2 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Shuttle) > 0;
             if (harassers && (Players::getCompleteCount(PlayerState::Self, Zerg_Spore_Colony) == 0 || !Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Pneumatized_Carapace))) {
                 assignNumberToGoal(Terrain::getNaturalPosition(), Zerg_Hydralisk, 2, GoalType::Defend);
+            }
+
+            // Always move and overlord to the main if we see a drop coming
+            if (Spy::getEnemyTransition() == P_Robo || Spy::getEnemyTransition() == P_DT) {
+                assignNumberToGoal(Terrain::getMainPosition(), Zerg_Overlord, 1, GoalType::Defend);
             }
 
             // Always leave 2 lings at home in ZvZ

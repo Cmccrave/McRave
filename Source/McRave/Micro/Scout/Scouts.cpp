@@ -200,13 +200,13 @@ namespace McRave::Scouts {
             // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
 
-                auto enemyAir = Players::getStrength(PlayerState::Enemy).groundToAir > 0.0 || Players::getStrength(PlayerState::Enemy).airToAir > 0.0 ||
-                                Players::getStrength(PlayerState::Enemy).airDefense > 0.0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 ||
+                auto enemyStrength = Players::getStrength(PlayerState::Enemy);
+                auto enemyAir = enemyStrength.groundToAir > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 ||
                                 Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0 ||
-                                Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 ||
-                                Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0 ||
-                                Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) > 0 ||
-                                (Players::ZvT() && Terrain::getEnemyStartingPosition().isValid());
+                                Players::getTotalCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) > 0 ||
+                                Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0 ||
+                                Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0 ||
+                                Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) > 0 || (Players::ZvT() && Terrain::getEnemyStartingPosition().isValid());
 
                 // Main drone scouting counts
                 main.desiredTypeCounts[Zerg_Drone] = int(BuildOrder::shouldScout()) + int(BuildOrder::shouldScout() && BuildOrder::isProxy());
@@ -219,7 +219,8 @@ namespace McRave::Scouts {
                     // Drone
                     if (Spy::getEnemyOpener() == T_8Rax || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 ||
                         Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Factory) > 0 ||
-                        (Terrain::getEnemyStartingPosition().isValid() && unexploredNaturals.empty() && Util::getTime() > Time(3, 30)) || Spy::getEnemyTransition() == U_WorkerRush || Util::getTime() > Time(4, 00))
+                        (Terrain::getEnemyStartingPosition().isValid() && unexploredNaturals.empty() && Util::getTime() > Time(3, 30)) || Spy::getEnemyTransition() == U_WorkerRush ||
+                        Util::getTime() > Time(4, 00))
                         main.desiredTypeCounts[Zerg_Drone] = 0;
 
                     // Overlord
@@ -234,9 +235,10 @@ namespace McRave::Scouts {
                 if (Players::ZvP()) {
 
                     // Drone
-                    if (Spy::getEnemyBuild() == P_2Gate || Spy::getEnemyBuild() == P_1GateCore || Spy::getEnemyBuild() == P_FFE || Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 3 ||
-                        Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0 || fullScout ||
-                        Util::getTime() > Time(3, 30))
+                    auto sawZealotTiming = (Spy::getEnemyBuild() == P_2Gate && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 3) ||
+                                           (Spy::getEnemyBuild() == P_1GateCore && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0);
+                    if (sawZealotTiming || Spy::getEnemyBuild() == P_FFE || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 ||
+                        Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0 || fullScout || Util::getTime() > Time(3, 30))
                         main.desiredTypeCounts[Zerg_Drone] = 0;
 
                     // Zergling
@@ -419,13 +421,13 @@ namespace McRave::Scouts {
         {
             if (!Terrain::getEnemyNatural() || !Terrain::getMyNatural() || BuildOrder::isRush())
                 return;
-            auto &army = scoutTargets[ScoutType::Army];
+            auto &army                            = scoutTargets[ScoutType::Army];
             army.desiredTypeCounts[Zerg_Zergling] = 0;
 
             // No threat at home, we should use a ling to scout the enemy
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 auto time = Time(2, 30);
-                if (Spy::enemyRush() || Spy::enemyProxy() || total(Zerg_Zergling) <= 2)
+                if (Spy::enemyRush() || Spy::getEnemyBuild() == P_2Gate || Spy::getEnemyBuild() == P_1GateCore || Spy::enemyProxy() || total(Zerg_Zergling) <= 2)
                     time = Time(3, 45);
                 if (Spy::getEnemyTransition() == U_WorkerRush)
                     time = Time(6, 00);
@@ -751,6 +753,14 @@ namespace McRave::Scouts {
 
                     // 3hh needs to know whether to drone up or bust with hydras
                     if (Spy::getEnemyBuild() == P_FFE && BuildOrder::getCurrentTransition() == Z_3HatchHydra && Util::getTime() > Time(4, 30) && sacrificeCount == 0) {
+                        unit.sacrifice = true;
+                        unit.setDestinationPath(BWEB::Path());
+                        sacrificeCount++;
+                        Util::debug("[Scouts] Sacrificing a scout (count: %d)", sacrificeCount);
+                    }
+
+                    // Need to try and figure out what the tech off 1 base is
+                    if (Spy::getEnemyBuild() != P_FFE && !Spy::enemyFastExpand() && Util::getTime() > Time(3, 30) && sacrificeCount == 0) {
                         unit.sacrifice = true;
                         unit.setDestinationPath(BWEB::Path());
                         sacrificeCount++;

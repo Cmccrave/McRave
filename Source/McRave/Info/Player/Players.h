@@ -67,4 +67,6 @@ namespace McRave {
 
     /// Returns the self total unit count of this UnitType
     static inline int total(BWAPI::UnitType t) { return Players::getTotalCount(PlayerState::Self, t); }
+
+    static inline int hatchCount() { return vis(BWAPI::UnitTypes::Zerg_Hatchery) + vis(BWAPI::UnitTypes::Zerg_Lair) + vis(BWAPI::UnitTypes::Zerg_Hive); }
 } // namespace McRave

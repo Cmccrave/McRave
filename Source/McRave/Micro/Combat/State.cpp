@@ -63,7 +63,7 @@ namespace McRave::Combat::State {
             if (!crackling && !volume && !BuildOrder::isRush() && !BuildOrder::isAllIn()) {
                 if (Players::ZvP()) {
                     const auto killWorkers  = Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) >= 8;
-                    const auto scaryOpeners = Spy::getEnemyBuild() != P_FFE && Util::getTime() < Time(8, 00);
+                    const auto scaryOpeners = Spy::getEnemyBuild() != P_FFE && Util::getTime() < Time(8, 00) && vis(Zerg_Sunken_Colony) > 0;
                     const auto hideCheese   = BuildOrder::isHideTech() && BuildOrder::isOpener() && !BuildOrder::isPressure();
                     const auto deniedProxy  = Spy::enemyProxy() && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) > 0;
                     const auto defendProxy  = Spy::enemyProxy() && !speedLing && Util::getTime() < Time(5, 00) && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0;
@@ -217,9 +217,6 @@ namespace McRave::Combat::State {
             Actions::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm))) {
             return true;
         }
-
-        if (unit.isLightAir() && target.isLightAir() && Terrain::isAtHome(target.getPosition()))
-            return true;
 
         auto engageWhenInRange = (target.isSiegeTank() || target.isLightAir() || target.isTransport() || target.getType() == Protoss_Reaver || target.getType() == Protoss_High_Templar);
 

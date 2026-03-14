@@ -343,8 +343,8 @@ namespace McRave {
 
         // Check if enemy is generally in our territory
         auto nearTerritory = [&]() {
-            if (isFlying() && !isTransport())
-                return false;
+            if (isFlying())
+                return atHome;
 
             if ((Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural() && Combat::holdAtChoke()) ||
                 (Terrain::inArea(Terrain::getMainArea(), position) && Combat::isDefendNatural() && !Terrain::isPocketNatural()) ||

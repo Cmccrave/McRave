@@ -113,10 +113,16 @@ namespace McRave::Planning {
             auto creepFully = true;
 
             // See if it's being blocked
-            auto closestEnemy = Util::getClosestUnit(center, PlayerState::Enemy,
-                                                     [&](auto &u) { return !u->isFlying() && !u->getType().isWorker() && !u->getType().isBuilding() && u->getType() != Terran_Vulture_Spider_Mine; });
-            if (closestEnemy && Util::boxDistance(closestEnemy->getType(), closestEnemy->getPosition(), building, center) <= 0.0)
-                return false;
+            auto haveSomeHelp = Players::getCompleteCount(PlayerState::Self, Zerg_Zergling) > 0 || Players::getCompleteCount(PlayerState::Self, Zerg_Hydralisk) > 0 ||
+                                Players::getCompleteCount(PlayerState::Self, Protoss_Zealot) > 0 || Players::getCompleteCount(PlayerState::Self, Protoss_Dragoon) > 0 ||
+                                Players::getCompleteCount(PlayerState::Self, Terran_Marine) > 0 || Players::getCompleteCount(PlayerState::Self, Terran_Vulture) > 0;
+            if (!isDefensiveType(building) || !haveSomeHelp) {
+                auto closestEnemy = Util::getClosestUnit(center, PlayerState::Enemy, [&](auto &u) {
+                    return !u->isFlying() && !u->getType().isWorker() && !u->getType().isBuilding() && u->getType() != Terran_Vulture_Spider_Mine;
+                });
+                if (closestEnemy && Util::boxDistance(closestEnemy->getType(), closestEnemy->getPosition(), building, center) <= 0.0)
+                    return false;
+            }
 
             // Refinery only on Geysers
             if (building.isRefinery()) {
@@ -358,7 +364,6 @@ namespace McRave::Planning {
         bool findResourceDepotLocation(UnitType building, TilePosition &placement)
         {
             const auto baseType       = Broodwar->self()->getRace().getResourceDepot();
-            const auto hatchCount     = vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive);
             const auto takeThirdFirst = !BuildOrder::takeNatural() && BuildOrder::takeThird() && Stations::getStations(PlayerState::Self).size() <= 2;
 
             // If we are expanding, it must be on an expansion area and be when build order requests one

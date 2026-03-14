@@ -125,7 +125,7 @@ namespace McRave::Combat::Simulation {
         if (!unit.isFlying()) {
             const auto defendStation    = Stations::getClosestStationAir(unit.retreatPos, PlayerState::Self);
             const auto furthestDefender = Util::getFurthestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getType().isBuilding() && u->canAttackGround() && u->isCompleted() && Terrain::inArea(defendStation->getBase()->GetArea(), u->getPosition());
+                return u->getType().isBuilding() && u->canAttackGround() && u->isCompleted() && defendStation && Terrain::inArea(defendStation->getBase()->GetArea(), u->getPosition());
             });
             if (furthestDefender && furthestDefender->isWithinRange(target)) {
                 minWinPercent = 0.0;

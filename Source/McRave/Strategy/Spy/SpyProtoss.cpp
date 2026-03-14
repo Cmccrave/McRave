@@ -150,7 +150,7 @@ namespace McRave::Spy::Protoss {
                 theSpy.opener.name = P_Forge;
 
             // Nexus
-            else if (completesBy(1, Protoss_Nexus, Time(3, 20)))
+            else if (completesBy(1, Protoss_Nexus, Time(3, 45)) && Spy::enemyFastExpand())
                 theSpy.opener.name = P_Nexus;
 
             // Gateway
@@ -245,16 +245,26 @@ namespace McRave::Spy::Protoss {
                      Util::getTime() < Time(5, 30)))
                     theSpy.transition.name = P_4Gate;
             }
+
+            // DT Drop
+            if (completesBy(1, Protoss_Robotics_Facility, Time(5, 00)) && completesBy(1, Protoss_Templar_Archives, Time(5, 30)))
+                theSpy.transition.name = P_DTDrop;
+
+
             if (Players::ZvP()) {
 
                 if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) == 0) {
-                    if ((!theSpy.expand.possible && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Util::getTime() < Time(6, 00)) ||
-                        (theSpy.typeUpgrading.find(Protoss_Cybernetics_Core) != theSpy.typeUpgrading.end() && Util::getTime() < Time(4, 15)) || (completesBy(1, Singularity_Charge, Time(6, 00))) ||
+                    if ((!theSpy.expand.possible && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Util::getTime() < Time(6, 00)) ||                        
                         (Spy::enemyTurtle() && completesBy(1, Singularity_Charge, Time(6, 30))) || (arrivesBy(3, Protoss_Dragoon, Time(5, 45))) || (arrivesBy(5, Protoss_Dragoon, Time(6, 05))) ||
                         (arrivesBy(9, Protoss_Dragoon, Time(6, 40))) || (arrivesBy(12, Protoss_Dragoon, Time(7, 25))) ||
                         (completesBy(4, Protoss_Gateway, Time(5, 30)) &&
                          Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) + Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) >= 1))
                         theSpy.transition.name = P_4Gate;
+                }
+
+                if ((theSpy.typeUpgrading.find(Protoss_Cybernetics_Core) != theSpy.typeUpgrading.end() && Util::getTime() < Time(4, 15)) || (completesBy(1, Singularity_Charge, Time(6, 00)))) {
+                    if (completesBy(1, Protoss_Stargate, Time(5, 00)) || completesBy(1, Protoss_Corsair, Time(5, 30)) || arrivesBy(1, Protoss_Corsair, Time(5, 50)))
+                        theSpy.transition.name = P_CorsairGoon;
                 }
             }
 

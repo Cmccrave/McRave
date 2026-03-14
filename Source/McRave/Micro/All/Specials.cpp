@@ -271,11 +271,15 @@ namespace McRave::Command {
             // Count how much damage is around the drone
             auto threatened = false;
             auto dmg        = 0;
-            auto &list      = unit.isBurrowed() ? unit.getUnitsInReachOfThis() : unit.getUnitsInRangeOfThis();
+            auto &list      = unit.getUnitsInReachOfThis();
             for (auto &t : list) {
                 if (auto targeter = t.lock()) {
                     if ((targeter->isFlying() && !airDef) || (!targeter->isFlying() && !grdDef))
-                        dmg += int(targeter->getGroundDamage()) * 2;
+                        dmg += int(targeter->getGroundDamage()) * 4;
+                    if (targeter->getType() == Protoss_Reaver || targeter->getType() == Protoss_Dark_Templar)
+                        threatened = true;
+                    if (targeter->isThreatening())
+                        threatened = true;
                 }
             }
             if (dmg >= unit.getHealth())

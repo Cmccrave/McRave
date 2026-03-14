@@ -101,7 +101,6 @@ namespace McRave::Combat {
             // ZvP
             if (Players::ZvP()) {
                 if (Spy::enemyProxy() && Spy::getEnemyBuild() == P_2Gate) {
-                    auto naturalHatch = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Hatchery; });
                     auto delayNaturalDefending = Util::getTime() < Time(3, 45) && (Spy::getEnemyBuild() == "Unknown" || !sixLings);
 
                     if (delayNaturalDefending)

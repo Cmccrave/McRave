@@ -33,7 +33,6 @@ namespace McRave::Stations {
 
         void updateSaturation()
         {
-
             // Sort stations by saturation and current larva count
             remainingMinerals.clear();
             remainingGas.clear();
@@ -97,7 +96,7 @@ namespace McRave::Stations {
                     if (Planning::isProductionType(unit->getType())) {
                         auto closestStation = getClosestStationAir(unit->getPosition(), PlayerState::Self,
                                                                    [&](auto station) { return station->isMain() || Broodwar->self()->getRace() == Races::Zerg; });
-                        if (closestStation == station)
+                        if (closestStation && closestStation == station)
                             production += 1.0;
                     }
                 }
@@ -262,6 +261,11 @@ namespace McRave::Stations {
                 if (Players::getDeadCount(PlayerState::Self, Zerg_Hatchery) > 0) {
                     if (BuildOrder::isOpener() && !BuildOrder::isWallMain() && Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::None && Util::getTime() < Time(4, 00))
                         return (Util::getTime() > Time(3, 00)) - groundCount;
+                }
+
+                // Add a sunk if we know they can drop
+                if (Spy::getEnemyTransition() == P_DTDrop || Spy::getEnemyTransition() == P_Robo) {
+                    return (Util::getTime() > Time(6, 00)) - groundCount;
                 }
             }
             return 0;
@@ -578,13 +582,19 @@ namespace McRave::Stations {
                 return (Util::getTime() > Time(6, 30)) - airCount;
             }
 
-            // Spore blocking corsair timings
+            // 1 Gate Corsair
             if (station->isNatural() && Spy::getEnemyBuild() == P_1GateCore && Spy::getEnemyTransition() == P_Corsair && !hydraBuild)
                 return (Util::getTime() > Time(4, 20)) - airCount;
+            if (station->isNatural() && Spy::getEnemyBuild() == P_1GateCore && Spy::getEnemyTransition() == P_CorsairGoon && !hydraBuild)
+                return (Util::getTime() > Time(4, 35)) - airCount;
+
+            // 2 Gate Corsair
             if (station->isNatural() && Spy::getEnemyBuild() == P_2Gate && Spy::getEnemyOpener() == P_10_15 && Spy::getEnemyTransition() == P_Corsair && !hydraBuild)
                 return (Util::getTime() > Time(4, 25)) - airCount;
             if (station->isNatural() && Spy::getEnemyBuild() == P_2Gate && Spy::getEnemyTransition() == P_Corsair && !hydraBuild)
                 return (Util::getTime() > Time(4, 45)) - airCount;
+            if (station->isNatural() && Spy::getEnemyBuild() == P_2Gate && Spy::getEnemyTransition() == P_CorsairGoon && !hydraBuild)
+                return (Util::getTime() > Time(5, 45)) - airCount;
 
             // Late spores if we're allin
             if (station->isNatural() && enemyAir && BuildOrder::isAllIn() && com(Zerg_Hydralisk) == 0 && com(Zerg_Mutalisk) == 0)

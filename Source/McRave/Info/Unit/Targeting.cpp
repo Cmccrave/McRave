@@ -93,8 +93,8 @@ namespace McRave::Targets {
             const auto targetSize     = max(target.getType().width(), target.getType().height());
             const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(),
                                                  [&](auto &u) { return u.lock()->getType() == Zerg_Zergling && u.lock()->isWithinRange(target); });
-            // if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
-            //    return Priority::Minor;
+            if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
+                return Priority::Minor;
 
             // Already in range, continue to target it if possible
             if (unit.isWithinRange(target) && !target.getType().isBuilding() && !target.getType().isWorker())
@@ -264,6 +264,9 @@ namespace McRave::Targets {
                         return Priority::Ignore;
                 }
 
+                if (target.getType().isWorker() && !allowWorkerTarget(unit, target))
+                    return Priority::Ignore;
+
                 // Vulnerable important units
                 if (target.getType() == Protoss_Reaver && unit.isWithinRange(target))
                     return Priority::Critical;
@@ -313,8 +316,7 @@ namespace McRave::Targets {
                 if (target.getType().isSpell() ||
                     (target.getType() == Terran_Vulture_Spider_Mine && int(target.getUnitsTargetingThis().size()) >= 4 && !target.isBurrowed()) // Don't over target spider mines
                     || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                             // Don't target interceptors as a flying unit
-                    || (target.getType().isWorker() && !allowWorkerTarget(unit, target)) ||
-                    (target.getType() == Protoss_Corsair && !unit.isFlying() && !target.isThreatening() && !target.hasAttackedRecently() && !unit.isWithinRange(target)) ||
+                    || (target.getType() == Protoss_Corsair && !unit.isFlying() && !target.isThreatening() && !target.hasAttackedRecently() && !unit.isWithinRange(target)) ||
                     (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) &&
                      !unit.getType().isDetector()) // Don't target if invisible and can't attack this unit or we have no detectors in PvP
                     || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) &&
@@ -428,7 +430,7 @@ namespace McRave::Targets {
                 const auto withinRangeMelee     = range <= 32.0 && boxDistance <= 64.0;
 
                 if (withinReachHigherRange || withinRangeLessRange || withinRangeMelee)
-                    return (1.0 + (0.1 * double(target.getUnitsTargetingThis().size())));
+                    return (1.0 + (0.5 * double(target.getUnitsTargetingThis().size())));
                 return 1.0;
             };
 

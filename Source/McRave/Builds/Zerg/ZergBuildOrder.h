@@ -42,7 +42,6 @@ namespace McRave::BuildOrder::Zerg {
     bool gas(int);
     bool minerals(int);
     int capGas(int);
-    int hatchCount();
 
     int lingsNeeded_ZvFFA();
     int lingsNeeded_ZvP();

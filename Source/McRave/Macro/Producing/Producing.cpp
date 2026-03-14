@@ -135,7 +135,7 @@ namespace McRave::Producing {
                 }
 
                 auto closestStation = Stations::getClosestStationAir(larva.getPosition(), PlayerState::Self);
-                return station == closestStation;
+                return closestStation && station == closestStation;
             };
 
             // Find the best type to train right now

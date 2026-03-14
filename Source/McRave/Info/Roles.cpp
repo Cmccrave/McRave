@@ -18,6 +18,7 @@ namespace McRave::Roles {
         map<Role, int> myRoles;
         map<Role, int> forcedRoles;
         set<UnitType> proxyTargeting = {Protoss_Pylon, Protoss_Photon_Cannon, Terran_Barracks, Terran_Bunker, Zerg_Sunken_Colony};
+        int lastCombatWorkerCount = 0;
 
         void forceCombatWorker(int count, Position here, LocalState lState = LocalState::Attack, GlobalState gState = GlobalState::Attack)
         {
@@ -157,12 +158,12 @@ namespace McRave::Roles {
 
             // Worker rush - pull 3 unless they all in
             if (Spy::getEnemyTransition() == U_WorkerRush) {
-                if (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0)
+                if (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0)
                     return;
 
-                if (Players::ZvP() && sixLings && com(Zerg_Sunken_Colony) == 0 && Combat::isDefendNatural()) {
+                if (Players::ZvP() && sixLings && com(Zerg_Sunken_Colony) == 0 && Combat::isDefendNatural() && proxyWorker) {
                     auto cnt = 3 + Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot);
-                    forceCombatWorker(5, Position(Terrain::getNaturalPosition()), LocalState::None, GlobalState::None);
+                    forceCombatWorker(5, Position(Terrain::getNaturalPosition()), LocalState::None, GlobalState::Retreat);
                 }
                 if (Players::ZvT() && com(Zerg_Sunken_Colony) == 0 && proxyCombatWorker) {
                     forceCombatWorker(Spy::getWorkersPulled() + 1, Terrain::getMainPosition(), LocalState::Attack, GlobalState::Retreat);
@@ -266,6 +267,11 @@ namespace McRave::Roles {
             pPullWorker();
             tPullWorker();
             zPullWorker();
+
+            if (forcedRoles[Role::Combat] != lastCombatWorkerCount) {
+                lastCombatWorkerCount = forcedRoles[Role::Combat];
+                Util::debug("[Roles]: forcing %d combat workers", lastCombatWorkerCount);
+            }
         }
 
         void updateDefaultRoles()

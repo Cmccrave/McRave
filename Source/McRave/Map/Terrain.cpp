@@ -815,8 +815,9 @@ namespace McRave::Terrain {
     vector<Position> &getAirCleanupPositions() { return airCleanupPositions; }
 
     bool isAtHome(Position here) { 
+        const auto dist           = min(640.0, 160.0 + Util::getTime().minutes * 16.0);
         const auto closestStation = Stations::getClosestStationAir(here, PlayerState::Self);
-        const auto atHome         = Terrain::inTerritory(PlayerState::Self, here) && closestStation && closestStation->getBase()->Center().getDistance(here) < 640.0;
+        const auto atHome         = Terrain::inTerritory(PlayerState::Self, here) && closestStation && closestStation->getBase()->Center().getDistance(here) < dist;
         return atHome;
     }
 

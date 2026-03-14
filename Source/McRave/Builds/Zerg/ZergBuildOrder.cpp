@@ -519,7 +519,7 @@ namespace McRave::BuildOrder::Zerg {
 
                 // Log active all-in
                 if (!logFlags[2] && activeAllin.name != "") {
-                    McRave::Util::debug("[BuildOrder] Started " + activeAllin.name + " all-in");
+                    Util::debug("[BuildOrder] Started " + activeAllin.name + " all-in");
                     logFlags[2] = true;
                 }
 
@@ -843,9 +843,7 @@ namespace McRave::BuildOrder::Zerg {
 
     bool hydraSpeed() { return Upgrading::haveOrUpgrading(UpgradeTypes::Muscular_Augments, 1); }
 
-    bool hydraRange() { return Upgrading::haveOrUpgrading(UpgradeTypes::Grooved_Spines, 1); }
-
-    int hatchCount() { return vis(Zerg_Hatchery) + vis(Zerg_Lair) + vis(Zerg_Hive); }
+    bool hydraRange() { return Upgrading::haveOrUpgrading(UpgradeTypes::Grooved_Spines, 1); }    
 
     bool gas(int amount) { return Broodwar->self()->gas() >= amount; }
 

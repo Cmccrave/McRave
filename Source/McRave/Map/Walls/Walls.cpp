@@ -175,7 +175,7 @@ namespace McRave::Walls {
         {
             // 1GateCore
             if (Spy::getEnemyBuild() == P_1GateCore || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
-                return (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 30));
+                return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 30));
             }
 
             // 2Gate
@@ -234,7 +234,7 @@ namespace McRave::Walls {
                 }
 
                 // Corsair
-                if (Spy::getEnemyTransition() == P_Corsair) {
+                if (Spy::getEnemyTransition() == P_Corsair || Spy::getEnemyTransition() == P_CorsairGoon) {
                     return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(7, 00));
                 }
 
@@ -249,7 +249,7 @@ namespace McRave::Walls {
                            (Util::getTime() > Time(5, 20)) + (Util::getTime() > Time(5, 40)) + (Util::getTime() > Time(6, 00)) - Spy::enemyProxy();
                 }
 
-                if (Util::getTime() < Time(6, 00))
+                if (Util::getTime() > Time(4, 00) && Util::getTime() < Time(6, 30))
                     return (Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) / 2) + (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) / 2);
             }
 
@@ -285,11 +285,11 @@ namespace McRave::Walls {
             auto mutaBuild  = BuildOrder::getCurrentTransition().find("Muta") != string::npos;
             auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
             auto expected   = max(ZvP_Opener(wall), ZvP_Transition(wall));
-            auto reduction  = (unitsKilled / 8) + buildingsKilled;
+            auto reduction  = (unitsKilled / 8) + buildingsKilled + (Spy::enemyFastExpand() && Spy::getEnemyBuild() != P_FFE) * 2;
             auto minimum    = int(expected > 0);
 
             // 3h builds make roughly half as many
-            if (threeHatch && expected > 1 && Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_CannonRush) {
+            if (threeHatch && expected > 1 && Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_CannonRush && hatchCount() >= 3) {
                 expected = int(floor(double(expected) / 2.0));
             }
 

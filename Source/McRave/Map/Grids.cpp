@@ -129,6 +129,9 @@ namespace McRave::Grids {
             const auto allowAir        = unit.getPlayer() != Broodwar->self() && unit.getPlayer() != Broodwar->neutral() && unit.canAttackAir();
             const auto addSplash       = unit.hasTarget() && unit.isSplasher();
 
+            const auto groundAura = max(96.0, unit.getGroundRange());
+            const auto airAura    = max(96.0, unit.getAirRange());
+
             if (addSplash) {
                 auto splashRadius = ceil(unit.getSplashRadius() / 8.0);
                 auto target = unit.getTarget().lock();
@@ -173,12 +176,12 @@ namespace McRave::Grids {
 
                     // Threat
                     if (allowGround) {
-                        const auto rangeDiff = 0.015625 * max(1.0, unit.getGroundReach() - dist); // This is just 1/64 so it decays over 2 tiles
-                        index.groundThreat += (dist <= unit.getGroundRange() ? float(unit.getVisibleGroundStrength() * Util::fastReciprocal(dist)) : float(unit.getVisibleGroundStrength() * rangeDiff));
+                        const auto rangeDiff = 0.125 * max(1.0, unit.getGroundReach() - dist); // This is just 1/8
+                        index.groundThreat += float(unit.getVisibleGroundStrength() * groundAura * Util::fastReciprocal(dist));
                     }
                     if (allowAir) {
-                        const auto rangeDiff = 0.015625 * max(1.0, unit.getAirReach() - dist); // This is just 1/64 so it decays over 2 tiles
-                        index.airThreat += (dist <= unit.getAirRange() ? float(unit.getVisibleAirStrength() * Util::fastReciprocal(dist)) : float(unit.getVisibleAirStrength() * rangeDiff));
+                        const auto rangeDiff = 0.125 * max(1.0, unit.getAirReach() - dist); // This is just 1/8
+                        index.airThreat += float(unit.getVisibleAirStrength() * airAura * Util::fastReciprocal(dist));
                     }
                 }
             }
