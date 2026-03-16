@@ -20,7 +20,6 @@ namespace McRave::Scouts {
     namespace {
 
         bool contained  = false;
-        string nodeName = "[Scout]: ";
 
         bool reachable(Position p)
         {
@@ -138,7 +137,7 @@ namespace McRave::Scouts {
 
             // Log
             if (mainScouted && !loggedFullScout) {
-                Util::debug(nodeName + "Full scout complete");
+                LOG("Full scout complete");
                 loggedFullScout = true;
             }
 
@@ -167,7 +166,7 @@ namespace McRave::Scouts {
                 auto enemyInMain = closestEnemy && mapBWEM.GetArea(closestEnemy->getTilePosition()) == closestMain->getBase()->GetArea();
 
                 if (closeToChoke && deniedFromMain) {
-                    Util::debug(string("[Scouts]: Worker scout denied."));
+                    LOG("Worker scout denied");
                     workerScoutDenied = true;
                 }
             }
@@ -251,7 +250,7 @@ namespace McRave::Scouts {
                     main.desiredTypeCounts[Zerg_Overlord] = 2;
                     if (Terrain::getEnemyStartingPosition().isValid())
                         main.desiredTypeCounts[Zerg_Overlord] = 1;
-                    if (enemyAir || Spy::enemyFastExpand())
+                    if (enemyAir || Spy::enemyFastExpand() || (Terrain::getEnemyStartingPosition().isValid() && vis(Zerg_Zergling) > 0))
                         main.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
 
@@ -748,7 +747,7 @@ namespace McRave::Scouts {
                         unit.sacrifice = true;
                         unit.setDestinationPath(BWEB::Path());
                         sacrificeCount++;
-                        Util::debug("[Scouts] Sacrificing a scout (count: %d)", sacrificeCount);
+                        LOG("Sacrificing a scout (count: %d)", sacrificeCount);
                     }
 
                     // 3hh needs to know whether to drone up or bust with hydras
@@ -756,7 +755,7 @@ namespace McRave::Scouts {
                         unit.sacrifice = true;
                         unit.setDestinationPath(BWEB::Path());
                         sacrificeCount++;
-                        Util::debug("[Scouts] Sacrificing a scout (count: %d)", sacrificeCount);
+                        LOG("Sacrificing a scout (count: %d)", sacrificeCount);
                     }
 
                     // Need to try and figure out what the tech off 1 base is
@@ -764,7 +763,7 @@ namespace McRave::Scouts {
                         unit.sacrifice = true;
                         unit.setDestinationPath(BWEB::Path());
                         sacrificeCount++;
-                        Util::debug("[Scouts] Sacrificing a scout (count: %d)", sacrificeCount);
+                        LOG("Sacrificing a scout (count: %d)", sacrificeCount);
                     }
                 }
                 if (Players::ZvT()) {
@@ -772,13 +771,13 @@ namespace McRave::Scouts {
                         unit.sacrifice = true;
                         unit.setDestinationPath(BWEB::Path());
                         sacrificeCount++;
-                        Util::debug("[Scouts] Sacrificing a scout (count: %d)", sacrificeCount);
+                        LOG("Sacrificing a scout (count: %d)", sacrificeCount);
                     }
                     if (!Spy::enemyFastExpand() && Util::getTime() > Time(4, 45) && sacrificeCount == 1) {
                         unit.sacrifice = true;
                         unit.setDestinationPath(BWEB::Path());
                         sacrificeCount++;
-                        Util::debug("[Scouts] Sacrificing a scout (count: %d)", sacrificeCount);
+                        LOG("Sacrificing a scout (count: %d)", sacrificeCount);
                     }
                 }
             }

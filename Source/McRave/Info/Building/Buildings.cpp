@@ -97,8 +97,8 @@ namespace McRave::Buildings {
             auto cancelLow    = building.getHealth() < 50;
             auto cancelLate   = building.frameCompletesWhen() - Broodwar->getFrameCount() < 50;
 
-            // Cancelling natural hatchery if we're being horror 2gated
-            if (naturalHatch && cancelTiming && cancelLow && Spy::getEnemyOpener() == P_Horror_9_9) {
+            // Cancelling natural hatchery if we're being horror 2gated or opened greedy
+            if (naturalHatch && cancelTiming && cancelLow) {
                 Events::onUnitCancelBecauseBWAPISucks(building);
                 building.unit()->cancelConstruction();
             }

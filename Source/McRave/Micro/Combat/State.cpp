@@ -52,6 +52,17 @@ namespace McRave::Combat::State {
                 if (com(Zerg_Mutalisk) < 6 && total(Zerg_Mutalisk) < 9)
                     staticRetreatTypes.push_back(Zerg_Mutalisk);
             }
+
+            // If we don't have enough for a reasonable ball, we should just go home
+            if (Util::getTime() < Time(10, 0) && (Players::ZvT() || Players::ZvP())) {
+                auto healthyCount = 0;
+                for (auto &u : Units::getUnits(PlayerState::Self)) {
+                    if (u->isLightAir() && !u->saveUnit)
+                        healthyCount++;
+                }
+                if (healthyCount < 5)
+                    staticRetreatTypes.push_back(Zerg_Mutalisk);
+            }
         }
 
         // Zerglings
@@ -395,9 +406,9 @@ namespace McRave::Combat::State {
         // If within local decision range, determine if Unit needs to attack or retreat
         else if (insideEngageRadius && (unit.getSimState() == SimState::Win /*|| exploringGoal*/))
             unit.setLocalState(LocalState::Attack);
-        else if (Terrain::isAtHome(unit.getPosition()) && (unit.getGlobalState() == GlobalState::Retreat || unit.getGoalType() == GoalType::Defend) && !unit.isLightAir())
+        else if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && (unit.getGlobalState() == GlobalState::Retreat || unit.getGoalType() == GoalType::Defend) && !unit.isLightAir())
             unit.setLocalState(LocalState::Hold);
-        else if (Terrain::isAtHome(unit.getPosition()) && insideEngageRadius && unit.getSimState() != SimState::Win && !unit.isLightAir())
+        else if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && insideEngageRadius && unit.getSimState() != SimState::Win && !unit.isLightAir())
             unit.setLocalState(LocalState::Hold);
         else if (insideRetreatRadius && (!unit.attemptingRunby() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition())) && unit.getSimState() == SimState::Loss)
             unit.setLocalState(LocalState::Retreat);

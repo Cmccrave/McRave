@@ -20,8 +20,6 @@ using namespace McRave::BuildOrder::All;
 namespace McRave::BuildOrder {
     namespace {
 
-        string nodeName = "[BuildOrder]: ";
-
         void updateBuild()
         {
             // Set s for better build readability - TODO: better build order management
@@ -238,7 +236,7 @@ namespace McRave::BuildOrder {
         // First one always gets inserted
         if (!isFocusUnit(focusUnit)) {
             focusUnits.insert(focusUnit);
-            Util::debug(nodeName + "focusing existing " + focusUnit.c_str());
+            LOG("focusing existing %s", focusUnit.c_str());
             return;
         }
 
@@ -250,7 +248,7 @@ namespace McRave::BuildOrder {
             if (!isFocusUnit(type)) {
                 getTech = false;
                 focusUnits.insert(type);
-                Util::debug(nodeName + "focusing new " + type.c_str());
+                LOG("focusing new %s", type.c_str());
                 return;
             }
         }

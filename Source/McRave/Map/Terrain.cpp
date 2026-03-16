@@ -54,8 +54,6 @@ namespace McRave::Terrain {
         map<const BWEM::ChokePoint *const, double> chokeAngles;
         map<const BWEM::ChokePoint *const, Position> chokeCenters;
 
-        string nodeName = "[Terrain]: ";
-
         void findEnemy()
         {
             // If we think we found the enemy but we were wrong
@@ -67,7 +65,7 @@ namespace McRave::Terrain {
                     enemyNatural              = nullptr;
                     enemyMain                 = nullptr;
                     Stations::removeStation(enemyStartingPosition, PlayerState::Enemy);
-                    Util::debug(nodeName + "reset enemy starting position");
+                    LOG("Reset enemy starting position");
                 }
                 else
                     return;
@@ -107,7 +105,7 @@ namespace McRave::Terrain {
                 auto closestMain = BWEB::Stations::getClosestMainStation(zealot->getTilePosition());
                 if (closestMain != Terrain::getMyMain()) {
                     inferComplete = true;
-                    Util::debug(string("[Terrain]: Inferred enemy start: ") + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
+                    LOG("Inferred enemy start: " + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
                 }
             }
 
@@ -149,7 +147,7 @@ namespace McRave::Terrain {
                         enemyStartingPosition     = Position(inferedStart) + Position(64, 48);
                         enemyStartingTilePosition = inferedStart;
                         inferComplete             = true;
-                        Util::debug(string("[Terrain]: Inferred enemy start: ") + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
+                        LOG("Inferred enemy start: " + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
                     }
                 }
             }
@@ -757,7 +755,7 @@ namespace McRave::Terrain {
             if (Terrain::getMyNatural()->getBase()->GetArea()->ChokePoints().size() <= 1)
                 pocketNatural = true;
             if (pocketNatural)
-                Util::debug(nodeName + "Pocket natural detected.");
+                LOG("Pocket natural detected");
         }
 
         mapEdges   = {{-1, 0}, {-1, Broodwar->mapHeight() * 32}, {0, -1}, {Broodwar->mapWidth() * 32, -1}};
@@ -815,7 +813,7 @@ namespace McRave::Terrain {
     vector<Position> &getAirCleanupPositions() { return airCleanupPositions; }
 
     bool isAtHome(Position here) { 
-        const auto dist           = min(640.0, 160.0 + Util::getTime().minutes * 16.0);
+        const auto dist           = min(640.0, 96.0 + Util::getTime().minutes * 16.0);
         const auto closestStation = Stations::getClosestStationAir(here, PlayerState::Self);
         const auto atHome         = Terrain::inTerritory(PlayerState::Self, here) && closestStation && closestStation->getBase()->Center().getDistance(here) < dist;
         return atHome;

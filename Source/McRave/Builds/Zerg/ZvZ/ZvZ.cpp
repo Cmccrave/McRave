@@ -17,7 +17,6 @@ namespace McRave::BuildOrder::Zerg {
 
     namespace {
         int transitionLings = 0;
-        int droningAllowed  = false;
     } // namespace
 
     int inboundUnits_ZvZ()
@@ -52,7 +51,6 @@ namespace McRave::BuildOrder::Zerg {
         auto initialValue = 10;
         if (com(Zerg_Spawning_Pool) == 0)
             return 0;
-        droningAllowed = true;
 
         auto macroHatch  = (currentBuild == Z_PoolHatch || currentBuild == Z_HatchPool) ? 1 : 0;
         auto enemyDrones = Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone);
@@ -127,7 +125,7 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit    = Zerg_Mutalisk;
         reserveLarva = 3;
 
-        auto secondHatch = (Spy::getEnemyTransition() == Z_1HatchMuta && atPercent(Zerg_Spire, 0.5)) || (Spy::enemyTurtle() && atPercent(Zerg_Spire, 0.5));
+        auto secondHatch = (Spy::getEnemyTransition() == Z_1HatchMuta && atPercent(Zerg_Spire, 0.5) && vis(Zerg_Drone) >= 12) || (Spy::enemyTurtle() && atPercent(Zerg_Spire, 0.5));
 
         auto speedFirst = !Spy::enemyTurtle();
 
@@ -140,7 +138,7 @@ namespace McRave::BuildOrder::Zerg {
         upgradeQueue[Metabolic_Boost] = (speedFirst || vis(Zerg_Lair) > 0) && (total(Zerg_Zergling) >= 6 && gas(100));
 
         // Pumping
-        zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < 12 && droningAllowed;
+        zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 12 && com(Zerg_Spawning_Pool) > 0;
         zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling) || (com(Zerg_Spire) == 1 && !gas(100)) || vis(Zerg_Drone) >= 12;
         zergUnitPump[Zerg_Scourge]  = com(Zerg_Spire) == 1 && hatchCount() >= 2 && total(Zerg_Scourge) < 6 && Spy::enemyTurtle();
         zergUnitPump[Zerg_Mutalisk] = !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
@@ -184,7 +182,7 @@ namespace McRave::BuildOrder::Zerg {
         upgradeQueue[Metabolic_Boost] = (speedFirst || vis(Zerg_Lair) > 0) && (total(Zerg_Zergling) >= 6 && gas(100));
 
         // Pumping
-        zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < 24 && droningAllowed;
+        zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 24 && com(Zerg_Spawning_Pool) > 0;
         zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling) || (com(Zerg_Spire) == 1 && !gas(100) && !Spy::enemyTurtle()) || (vis(Zerg_Drone) >= 24 && !gas(100)) ||
                                       (vis(Zerg_Drone) >= 24 && com(Zerg_Spire) == 0);
 
@@ -236,7 +234,7 @@ namespace McRave::BuildOrder::Zerg {
         upgradeQueue[UpgradeTypes::Grooved_Spines]    = vis(Zerg_Hydralisk_Den) > 0 && hydraSpeed();
 
         // Pumping
-        zergUnitPump[Zerg_Drone]     = vis(Zerg_Drone) < 20 && droningAllowed;
+        zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 20 && com(Zerg_Spawning_Pool) > 0;
         zergUnitPump[Zerg_Zergling]  = vis(Zerg_Zergling) < lingsNeeded_ZvZ();
         zergUnitPump[Zerg_Hydralisk] = Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 && com(Zerg_Hydralisk_Den) > 0 &&
                                        vis(Zerg_Hydralisk) < Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) + 6;

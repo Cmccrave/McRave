@@ -509,7 +509,7 @@ namespace McRave {
         }
 
         // Calculate completion based on build time
-        else if (!completed) {
+        else if (!completed && (completeFrame < 0 || startedFrame < 0)) {
             auto ratio    = (double(health) - (0.1 * double(type.maxHitPoints()))) / (0.9 * double(type.maxHitPoints()));
             completeFrame = Broodwar->getFrameCount() + int(std::round((1.0 - ratio) * double(type.buildTime()))) + extra;
             startedFrame  = Broodwar->getFrameCount() - int(std::round((ratio) * double(type.buildTime())));
@@ -896,7 +896,7 @@ namespace McRave {
 
         auto &target = *getTarget().lock();
         if (Broodwar->getGameType() != GameTypes::Use_Map_Settings) {
-            if (target.isThreatening() && target.getType() != Terran_Vulture)
+            if (target.isThreatening())
                 return false;
             if (!target.getType().isWorker() && Util::getTime() < Time(4, 00))
                 return false;

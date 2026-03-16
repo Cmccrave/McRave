@@ -24,7 +24,6 @@ namespace McRave::Producing {
         int availMin, availGas;
 
         string scoreThisFrame;
-        string nodeName = "[Production]: ";
 
         void reset()
         {
@@ -86,7 +85,7 @@ namespace McRave::Producing {
                 building.setRemainingTrainFrame(type.buildTime());
                 idleProduction.erase(building.unit());
                 lastProduceFrame = Broodwar->getFrameCount();
-                Util::debug(nodeName + scoreThisFrame);
+                LOG("Producing ", type.c_str(), scoreThisFrame);
                 return true;
             }
 

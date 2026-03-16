@@ -186,15 +186,15 @@ namespace McRave::Visuals {
 
                 if (overall > 10000) {
                     Broodwar << "10s DQ at: " << Util::getTime() << endl;
-                    Util::debug(string("[Timing]: 10s DQ."));
+                    LOG("10s DQ");
                 }
                 else if (overall > 1000) {
                     Broodwar << "1s DQ at: " << Util::getTime() << endl;
-                    Util::debug(string("[Timing]: 1s DQ."));
+                    LOG("1s DQ");
                 }
                 else if (overall > 55) {
                     Broodwar << "55ms DQ at: " << Util::getTime() << endl;
-                    Util::debug(string("[Timing]: 55ms DQ."));
+                    LOG("55ms DQ");
                 }
             }
 

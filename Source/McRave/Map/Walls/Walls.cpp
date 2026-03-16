@@ -196,7 +196,7 @@ namespace McRave::Walls {
 
             // FFE
             if (Spy::getEnemyBuild() == P_FFE) {
-                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2)
+                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2 || Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 6)
                     return 2;
                 return Util::getTime() > Time(5, 00);
             }
@@ -528,11 +528,12 @@ namespace McRave::Walls {
         if (Broodwar->self()->getRace() == Races::Zerg && Util::getTime() < Time(3, 30)) {
             auto nearestHatch = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Self, [&](auto &u) { return u->getType().isResourceDepot(); });
             if (nearestHatch && nearestHatch->frameCompletesWhen() > Broodwar->getFrameCount() + 200)
-                return 0;
+                return 0;            
         }
 
-        // If they're only at home and not proxying units, don't make any defenses
-        if (!Spy::enemyProxy() && (groundCount >= 1 || getColonyCount(&wall) >= 1)) {
+        // If they're only at home and not proxying units, don't make any defenses for a bit
+        auto minimumColonyNeeded = Util::getTime() > Time(6, 00) ? 2 : 1;
+        if (!Spy::enemyProxy() && (groundCount >= minimumColonyNeeded || getColonyCount(&wall) >= minimumColonyNeeded)) {
             auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) { return Units::inBoundUnit(*u) && !u->getType().isWorker(); });
             if (!closestUnit)
                 return 0;

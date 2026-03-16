@@ -164,7 +164,7 @@ namespace McRave::Command {
         // Block vulture runby
         else if (unit.getType() == Zerg_Zergling && Combat::State::isStaticRetreat(Zerg_Zergling) && unit.getPosition().getDistance(unit.getFormation()) < 16.0) {
             if (unit.hasTarget(); auto target = unit.getTarget().lock()) {
-                if (target->getType() == Terran_Vulture && target->isThreatening() && !target->hasAttackedRecently() && !unit.isWithinRange(*target)) {
+                if (target->getType() == Terran_Vulture && !target->hasAttackedRecently() && !unit.isWithinRange(*target)) {
                     unit.setCommand(Hold_Position);
                     return true;
                 }
@@ -466,9 +466,14 @@ namespace McRave::Command {
                                                   !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost, 1));
                     const auto defenders       = com(Zerg_Sunken_Colony) > 0 && Combat::State::isStaticRetreat(unit.getType());
 
-                    if (Util::getTime() < Time(4, 30) && Players::ZvP() && unit.getHealth() <= 16 && com(Zerg_Sunken_Colony) > 0)
-                        return true;
-                    if (Util::getTime() < Time(4, 30) && !target.isThreatening() && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10)
+                    if (Players::ZvP()) {
+                        if (Util::getTime() < Time(4, 30) && Players::ZvP() && unit.getHealth() <= 16 && com(Zerg_Sunken_Colony) > 0)
+                            return true;
+                        if (Util::getTime() < Time(3, 30) && Players::ZvP() && unit.getHealth() <= 16)
+                            return true;
+                    }
+
+                    if (Util::getTime() < Time(3, 30) && !target.isThreatening() && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10)
                         return true;
                 }
 

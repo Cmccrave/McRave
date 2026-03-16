@@ -80,33 +80,6 @@ namespace McRave::Util {
         }
     } // namespace
 
-    // Log a thing
-    void debug(const std::string format, ...)
-    {
-        // Get args
-        va_list args;
-        va_start(args, format);
-        static char buffer[1024];
-        vsnprintf(buffer, sizeof(buffer), format.c_str(), args);
-        va_end(args);
-
-        // Write to the file
-        writeFile << Util::getTime().toString() << "[" << BWAPI::Broodwar->getFrameCount() << "] " << buffer << "\n";
-    }
-
-    void debug(const char *format, ...)
-    {
-        // Get args
-        static char buffer[1024];
-        va_list args;
-        va_start(args, format);
-        vsnprintf(buffer, sizeof(buffer), format, args);
-        va_end(args);
-
-        // Write to the file
-        writeFile << Util::getTime().toString() << "[" << BWAPI::Broodwar->getFrameCount() << "] " << buffer << "\n";
-    }
-
     const BWEM::ChokePoint *getClosestChokepoint(Position here)
     {
         double distBest                 = DBL_MAX;
@@ -456,4 +429,9 @@ namespace McRave::Util {
     vector<WalkPosition> &getWalkCircle(int radius) { return walkCircleCache[radius]; }
 
     vector<TilePosition> &getTileCircle(int radius) { return tileCircleCache[radius]; }
+
+    void writeToLoggerImpl(const std::string &msg)
+    {
+        writeFile << msg << "\n";
+    }
 } // namespace McRave::Util

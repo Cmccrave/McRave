@@ -408,9 +408,9 @@ namespace McRave::Combat::Clusters {
 
         if (easilyKilled) {
             if ((dpsInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker())                      //
-                || (dpsInRange <= 5.0 && Util::getTime() < Time(8, 00))                                    //
+                || (dpsInRange <= 4.0 && Util::getTime() < Time(8, 00))                                    //
                 || (dpsInRange <= 6.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))  //
-                || (dpsInRange <= 7.0 && Util::getTime() > Time(12, 00) && Util::getTime() < Time(16, 00)) //
+                || (dpsInRange <= 7.5 && Util::getTime() > Time(12, 00) && Util::getTime() < Time(16, 00)) //
                 || (dpsInRange <= 8.0 && Util::getTime() > Time(16, 00)))                                  //
                 return true;
 

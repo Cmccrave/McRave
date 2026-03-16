@@ -270,7 +270,7 @@ namespace McRave::Roles {
 
             if (forcedRoles[Role::Combat] != lastCombatWorkerCount) {
                 lastCombatWorkerCount = forcedRoles[Role::Combat];
-                Util::debug("[Roles]: forcing %d combat workers", lastCombatWorkerCount);
+                LOG("forcing ", lastCombatWorkerCount, " combat workers");
             }
         }
 

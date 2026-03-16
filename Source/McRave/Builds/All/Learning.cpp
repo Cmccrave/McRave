@@ -134,9 +134,10 @@ namespace McRave::Learning {
                 auto randomVal = double(rand() % randomness);
                 auto finalVal  = (UCB * 25.0) + randomVal + 0.5;
                 if (logCalc) {
-                    Util::debug("[Learning]: %s Learning value: %.2f (%d - %d)", name.c_str(), finalVal, w, l);
-                    Util::debug("[Learning]: UCB1 value: %.2f", UCB);
-                    Util::debug("[Learning]: rand value: %.2f", randomVal);
+                    LOG(name.c_str(), " learning value: ", std::fixed, std::setprecision(2), finalVal);
+                    LOG("Win/Loss: ", w, "/", l);
+                    LOG("UCB1 value: ", std::fixed, std::setprecision(2), UCB);
+                    LOG("rand value: ", std::fixed, std::setprecision(2), randomVal);
                 }
                 return finalVal;
             };
@@ -211,6 +212,8 @@ namespace McRave::Learning {
                     }
                 }
             }
+
+            LOG("Book selected: ", BuildOrder::getCurrentBuild(), BuildOrder::getCurrentOpener(), BuildOrder::getCurrentTransition());
         }
 
         void getPermanentBuild()
@@ -470,7 +473,7 @@ namespace McRave::Learning {
             if (c == '.')
                 break;
         }
-        Util::debug("[Learning]: New game on " + mapName);
+        LOG("New game on " + mapName);
 
         // File extension including our race initial;
         mapLearning       = false;

@@ -250,7 +250,7 @@ namespace McRave::Stations {
 
             if (station->isMain()) {
                 // Add 2 sunks if we gave up the natural intentionally against horror gates
-                if (Spy::getEnemyOpener() == P_Horror_9_9)
+                if (Spy::getEnemyOpener() == P_Horror_9_9 || (Spy::getEnemyOpener() == P_Proxy_9_9 && BuildOrder::getCurrentOpener() == Z_12Hatch))
                     return (Util::getTime() > Time(2, 40)) + (Util::getTime() > Time(3, 00)) - groundCount;
 
                 //// Add 1 sunks if we opened greedy against proxy gates

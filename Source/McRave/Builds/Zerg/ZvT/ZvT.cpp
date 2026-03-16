@@ -19,7 +19,6 @@ namespace McRave::BuildOrder::Zerg {
 
     namespace {
         int transitionLings = 0;
-        int droningAllowed  = false;
     } // namespace
 
     void defaultZvT()
@@ -81,7 +80,6 @@ namespace McRave::BuildOrder::Zerg {
         auto initialValue = 2;
         if (com(Zerg_Spawning_Pool) == 0)
             return 0;
-        droningAllowed = true;
 
         // 2Rax
         if (Spy::getEnemyBuild() == T_2Rax) {
@@ -149,7 +147,7 @@ namespace McRave::BuildOrder::Zerg {
         techQueue[TechTypes::Lurker_Aspect] = com(Zerg_Hydralisk_Den) && com(Zerg_Lair);
 
         // Pumping
-        zergUnitPump[Zerg_Drone]     = vis(Zerg_Drone) < 11 && droningAllowed;
+        zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 11 && com(Zerg_Spawning_Pool) > 0;
         zergUnitPump[Zerg_Zergling]  = false;
         zergUnitPump[Zerg_Hydralisk] = com(Zerg_Hydralisk_Den) > 0;
         zergUnitPump[Zerg_Lurker]    = com(Zerg_Hydralisk) > 0 && Players::hasResearched(PlayerState::Self, TechTypes::Lurker_Aspect);
@@ -186,7 +184,7 @@ namespace McRave::BuildOrder::Zerg {
             buildQueue[Zerg_Lair] = 0;
 
         // Pumping
-        zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < 28 && droningAllowed;
+        zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 28 && com(Zerg_Spawning_Pool) > 0;
         zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvT() > vis(Zerg_Zergling);
         zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) > 0;
 
@@ -241,7 +239,7 @@ namespace McRave::BuildOrder::Zerg {
         auto firstLingPump = lingsNeeded_ZvT() > vis(Zerg_Zergling);
 
         // Pumping
-        zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < 35 && droningAllowed;
+        zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 35 && com(Zerg_Spawning_Pool) > 0;
         zergUnitPump[Zerg_Zergling] = firstLingPump;
         zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) > 0 && gas(80);
 

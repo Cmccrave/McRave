@@ -101,7 +101,11 @@ namespace McRave::Combat {
             // ZvP
             if (Players::ZvP()) {
                 if (Spy::enemyProxy() && Spy::getEnemyBuild() == P_2Gate) {
-                    auto delayNaturalDefending = Util::getTime() < Time(3, 45) && (Spy::getEnemyBuild() == "Unknown" || !sixLings);
+                    static bool tenLings       = false;
+                    if (com(Zerg_Zergling) >= 10)
+                        tenLings = true;
+
+                    auto delayNaturalDefending = Util::getTime() < Time(3, 45) && (Spy::getEnemyBuild() == "Unknown" || !tenLings);
 
                     if (delayNaturalDefending)
                         defendNatural = false;
@@ -152,7 +156,7 @@ namespace McRave::Combat {
             if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure()) {
 
                 const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return (Util::getTime() < Time(8, 00) && Units::inBoundUnit(*u, 15) && !u->getType().isWorker() && !u->getType() == Terran_Vulture) || u->isThreatening();
+                    return (Util::getTime() < Time(8, 00) && Units::inBoundUnit(*u, 15) && !u->getType().isWorker() && u->getType() != Terran_Vulture) || u->isThreatening();
                 });
 
                 if (closest) {

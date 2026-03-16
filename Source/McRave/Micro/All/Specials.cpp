@@ -268,22 +268,15 @@ namespace McRave::Command {
                     airDef = true;
             }
 
-            // Count how much damage is around the drone
+            // Determine if we need to burrow or not
             auto threatened = false;
-            auto dmg        = 0;
             auto &list      = unit.getUnitsInReachOfThis();
             for (auto &t : list) {
-                if (auto targeter = t.lock()) {
-                    if ((targeter->isFlying() && !airDef) || (!targeter->isFlying() && !grdDef))
-                        dmg += int(targeter->getGroundDamage()) * 4;
-                    if (targeter->getType() == Protoss_Reaver || targeter->getType() == Protoss_Dark_Templar)
-                        threatened = true;
-                    if (targeter->isThreatening())
-                        threatened = true;
+                if (auto enemy = t.lock()) {
+                    if (enemy->getType() == Protoss_Reaver || enemy->isThreatening())
+                        threatened = unit.isBurrowed() || (enemy->hasTarget() && enemy->getTarget().lock()->getType().isWorker());
                 }
             }
-            if (dmg >= unit.getHealth())
-                threatened = true;
 
             auto burrowUnit = !unit.getBuildPosition().isValid() && threatened;
 

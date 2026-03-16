@@ -30,10 +30,6 @@ namespace McRave::BuildOrder::Zerg {
         bool needSunks     = false;
         bool needHatch     = false;
 
-        string nodeName = "[Zerg]: ";
-
-        bool logFlags[10];
-
         void queueGasTrick()
         {
             // Executing gas trick
@@ -117,16 +113,12 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Log needing sunks
-            if (needSunks && !logFlags[0]) {
-                logFlags[0] = true;
-                Util::debug(nodeName + "Need sunkens for defense");
-            }
+            if (needSunks)
+                LOG_ONCE("Need sunkens");
 
             // Log needing spores
-            if (needSpores && !logFlags[1]) {
-                logFlags[1] = true;
-                Util::debug(nodeName + "Need spores for defense");
-            }
+            if (needSpores)
+                LOG_ONCE("Need spores");
         }
 
         void queueSupply()
@@ -214,7 +206,7 @@ namespace McRave::BuildOrder::Zerg {
                 const auto availableGas      = Broodwar->self()->gas() - BuildOrder::getGasQueued();
                 const auto incompleteHatch   = vis(Zerg_Hatchery) - com(Zerg_Hatchery);
 
-                const auto waitForMinerals = 100 + (300 * incompleteHatch);
+                const auto waitForMinerals = 200 + (200 * incompleteHatch);
                 const auto resourceSat     = (availableMinerals >= waitForMinerals || vis(Zerg_Larva) <= Stations::getStations(PlayerState::Self).size()) && Resources::isHalfMineralSaturated() &&
                                          Resources::isGasSaturated();
                 const auto excessResources = (availableMinerals >= waitForMinerals * 2 && vis(Zerg_Larva) <= 3);
@@ -232,6 +224,9 @@ namespace McRave::BuildOrder::Zerg {
                     wantNatural = true;
                 if (expandDesired && int(Stations::getStations(PlayerState::Self).size()) <= 2)
                     wantThird = true;
+
+                if (expandDesired)
+                    LOG_SLOW("Expanding to station ", int(Stations::getStations(PlayerState::Self).size() + 1));
             }
         }
 
@@ -256,8 +251,8 @@ namespace McRave::BuildOrder::Zerg {
                 }
 
                 // Check if we are maxed on production
-                auto current           = min(int(Stations::getStations(PlayerState::Self).size()), 4);
-                auto desiredProduction = hatchPerBase.at(current);
+                auto current           = clamp(int(Stations::getStations(PlayerState::Self).size()), 1, 4);
+                auto desiredProduction = hatchPerBase[current]; 
 
                 if (isFocusUnit(Zerg_Zergling))
                     desiredProduction *= 1.5;
@@ -267,7 +262,7 @@ namespace McRave::BuildOrder::Zerg {
                 // Queue production if we need it
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 const auto incompleteHatch   = vis(Zerg_Hatchery) - com(Zerg_Hatchery);
-                const auto waitForMinerals   = 300 + (150 * incompleteHatch);
+                const auto waitForMinerals   = 200 + (200 * incompleteHatch);
 
                 const auto resourceSat     = (availableMinerals >= waitForMinerals && Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && !productionSat && vis(Zerg_Larva) <= 3);
                 const auto excessResources = (availableMinerals >= waitForMinerals * 2 && !productionSat && vis(Zerg_Larva) <= 3);
@@ -292,10 +287,7 @@ namespace McRave::BuildOrder::Zerg {
             if (expandDesired && expansionDenied && hatchCount() < 5) {
                 expandDesired = false;
                 rampDesired   = true;
-                if (!logFlags[3]) {
-                    logFlags[3] = true;
-                    Util::debug(nodeName + "ramping instead due to expansion denial.");
-                }
+                LOG_SLOW("Ramping instead of expanding due to denial");
             }
         }
 
@@ -518,10 +510,8 @@ namespace McRave::BuildOrder::Zerg {
                     armyComposition[activeAllin.type] = 1.00;
 
                 // Log active all-in
-                if (!logFlags[2] && activeAllin.name != "") {
-                    Util::debug("[BuildOrder] Started " + activeAllin.name + " all-in");
-                    logFlags[2] = true;
-                }
+                if (activeAllin.name != "")
+                    LOG_ONCE("All in %s started", activeAllin.name);
 
                 // Common
                 auto lowLarvaCount = vis(Zerg_Larva) <= 2;
@@ -730,8 +720,9 @@ namespace McRave::BuildOrder::Zerg {
 
                 // Mix of both
                 else {
-                    priorityOrder = {{Zerg_Drone, 30}, {Zerg_Hydralisk, 32}, {Zerg_Defiler, 2}, {Zerg_Lurker, 2},     {Zerg_Mutalisk, 0}, {Zerg_Drone, 45}, {Zerg_Hydralisk, 64}, {Zerg_Defiler, 2},
-                                     {Zerg_Lurker, 2}, {Zerg_Mutalisk, 9},   {Zerg_Drone, 60},  {Zerg_Hydralisk, 96}, {Zerg_Defiler, 2},  {Zerg_Lurker, 2}, {Zerg_Mutalisk, 60}};
+                    priorityOrder = {{Zerg_Drone, 30}, {Zerg_Hydralisk, 32}, {Zerg_Defiler, 2}, {Zerg_Lurker, 2}, {Zerg_Mutalisk, 9},  //
+                                     {Zerg_Drone, 45}, {Zerg_Hydralisk, 64}, {Zerg_Defiler, 2}, {Zerg_Lurker, 2}, {Zerg_Mutalisk, 12}, //
+                                     {Zerg_Drone, 60}, {Zerg_Hydralisk, 96}, {Zerg_Defiler, 2}, {Zerg_Lurker, 2}, {Zerg_Mutalisk, 24}};
                 }
             }
 
@@ -843,7 +834,7 @@ namespace McRave::BuildOrder::Zerg {
 
     bool hydraSpeed() { return Upgrading::haveOrUpgrading(UpgradeTypes::Muscular_Augments, 1); }
 
-    bool hydraRange() { return Upgrading::haveOrUpgrading(UpgradeTypes::Grooved_Spines, 1); }    
+    bool hydraRange() { return Upgrading::haveOrUpgrading(UpgradeTypes::Grooved_Spines, 1); }
 
     bool gas(int amount) { return Broodwar->self()->gas() >= amount; }
 

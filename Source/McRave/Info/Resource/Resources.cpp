@@ -24,7 +24,6 @@ namespace McRave::Resources {
         int maxGas;
         int maxMin;
         string mapName, myRaceChar;
-        string nodeName = "[Resources]: ";
 
         void updateIncome(const shared_ptr<ResourceInfo>& r)
         {
@@ -234,7 +233,6 @@ namespace McRave::Resources {
         ifstream readFileA("bwapi-data/read/" + mapName + "GatherInfo" + myRaceChar + ".txt");
         if (!readFileA) {
             readFileA = ifstream("bwapi-data/write/" + mapName + "GatherInfo" + myRaceChar + ".txt");
-            Util::debug(nodeName + "using backup gather info.");
         }
 
         int x, y, cnt;

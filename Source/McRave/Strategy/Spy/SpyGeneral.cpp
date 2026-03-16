@@ -13,7 +13,6 @@ namespace McRave::Spy::General {
 
     namespace {
         map<Unit, UnitType> unitsStored; // A bit hacky way to say if we've stored a unit
-        string nodeName = "[Spy]: ";
 
         void enemyUnitTimings(PlayerInfo &player, StrategySpy &theSpy)
         {
@@ -48,10 +47,10 @@ namespace McRave::Spy::General {
                     // Debug log
                     auto count = int(ut.countStartedWhen.size());
                     if (!unit.getType().isBuilding())
-                        Util::debug(nodeName + string(unit.getType().c_str()) + " " + to_string(count) + " arrives at " + unit.timeArrivesWhen().toString());
+                        LOG(string(unit.getType().c_str()) + " " + to_string(count) + " arrives at " + unit.timeArrivesWhen().toString());
                     else {
-                        Util::debug(nodeName + string(unit.getType().c_str()) + " " + to_string(count) + " starts at " + unit.timeStartedWhen().toString());
-                        Util::debug(nodeName + string(unit.getType().c_str()) + " " + to_string(count) + " completes at " + unit.timeCompletesWhen().toString());
+                        LOG(string(unit.getType().c_str()) + " " + to_string(count) + " starts at " + unit.timeStartedWhen().toString());
+                        LOG(string(unit.getType().c_str()) + " " + to_string(count) + " completes at " + unit.timeCompletesWhen().toString());
                     }
 
                     // If this timing is sooner than arrival, start or completion, overwrite existing data
@@ -73,7 +72,7 @@ namespace McRave::Spy::General {
                 if (player.hasUpgrade(upgrade) && theSpy.upgradeTimings[upgrade].firstCompletedWhen.isUnknown()) {
                     ut.firstCompletedWhen = Util::getTime();
                     ut.countCompletedWhen.push_back(Util::getTime());
-                    Util::debug(nodeName + string(upgrade.c_str()) + " completes at " + Util::getTime().toString());
+                    LOG(string(upgrade.c_str()) + " completes at " + Util::getTime().toString());
                 }
             }
         }

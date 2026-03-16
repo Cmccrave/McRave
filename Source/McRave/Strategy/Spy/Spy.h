@@ -1,48 +1,51 @@
 #pragma once
-#include "Main/Common.h"
 #include "Defs.h"
+#include "Main/Common.h"
 
 namespace McRave::Spy {
 
     struct Strat {
-        bool possible = false;
-        bool likely = false;
-        bool confirmed = false;
-        bool changeable = false;
-        bool loggedPossible = false;
-        bool loggedLikely = false;
+        bool possible        = false;
+        bool likely          = false;
+        bool confirmed       = false;
+        bool changeable      = false;
+        bool loggedPossible  = false;
+        bool loggedLikely    = false;
         bool loggedConfirmed = false;
-        int framesTrue = 0;
-        int framesRequired = 24;
-        int framesLikely = 24;
-        std::string name = "Unknown";
-        Time timeConfirmed = Time(999, 00);
+        int framesTrue       = 0;
+        int framesRequired   = 24;
+        int framesLikely     = 24;
+        std::string name     = "Unknown";
+        Time timeConfirmed   = Time(999, 00);
 
-        void debugLog() {
+        void debugLog()
+        {
             if (possible && !loggedPossible) {
-                Util::debug("[Spy]: " + name + " possible.");
+                LOG(name + " possible.");
                 loggedPossible = true;
             }
             if (likely && !loggedLikely) {
-                Util::debug("[Spy]: " + name + " likely.");
+                LOG(name + " likely.");
                 loggedLikely = true;
             }
             if (confirmed && !loggedConfirmed) {
-                Util::debug("[Spy]: " + name + " confirmed.");
+                LOG(name + " confirmed.");
                 loggedConfirmed = true;
-                timeConfirmed = Util::getTime();
+                timeConfirmed   = Util::getTime();
             }
         }
 
-        void updateStrat() {
-            possible ? framesTrue++ : framesTrue = 0;
+        void updateStrat()
+        {
+            possible ? framesTrue++ : framesTrue    = 0;
             (framesTrue >= framesRequired) ? likely = true : possible = false;
             if ((likely && !changeable) || (framesTrue >= framesLikely))
                 confirmed = true;
         }
 
-        void updateBlueprint() {
-            possible ? framesTrue++ : framesTrue = 0;
+        void updateBlueprint()
+        {
+            possible ? framesTrue++ : framesTrue    = 0;
             (framesTrue >= framesRequired) ? likely = true : possible = false;
             if ((likely && !changeable) || (framesTrue >= framesLikely))
                 confirmed = true;
@@ -64,41 +67,42 @@ namespace McRave::Spy {
 
         Strat build, opener, transition, expand, rush, wall, proxy, early, steal, pressure, greedy, invis, allin, turtle, fortress;
         Time buildTime, openerTime, transitionTime, rushArrivalTime;
-        std::vector<Strat*> strats;
-        std::vector<Strat*> blueprints;
+        std::vector<Strat *> strats;
+        std::vector<Strat *> blueprints;
         std::map<BWAPI::UnitType, UnitTimings> unitTimings;
         std::map<BWAPI::UpgradeType, UnitTimings> upgradeTimings;
         std::map<BWAPI::TechType, UnitTimings> researchTimings; // TODO: Impl
-        int workersPulled = 0;
-        int gasMined = 0;
+        int workersPulled   = 0;
+        int gasMined        = 0;
         int productionCount = 0;
         std::set<BWAPI::UnitType> typeUpgrading; // TODO: Better impl (doesn't look at current state)
 
-        StrategySpy() {
-            strats ={ &expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &allin, &turtle, &fortress };
-            blueprints ={ &build, &opener, &transition };
-            build.framesRequired = 12;
-            build.framesLikely = 500;
-            build.changeable = true;
-            opener.framesRequired = 12;
-            opener.framesLikely = 500;
-            opener.changeable = true;
+        StrategySpy()
+        {
+            strats                    = {&expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &allin, &turtle, &fortress};
+            blueprints                = {&build, &opener, &transition};
+            build.framesRequired      = 12;
+            build.framesLikely        = 500;
+            build.changeable          = true;
+            opener.framesRequired     = 12;
+            opener.framesLikely       = 500;
+            opener.changeable         = true;
             transition.framesRequired = 12;
-            transition.framesLikely = 500;
-            transition.changeable = true;
+            transition.framesLikely   = 500;
+            transition.changeable     = true;
 
             // Attaching names to strats for logging purposes
-            expand.name = "Expand";
-            rush.name = "Rush";
-            wall.name = "Wall";
-            proxy.name = "Proxy";
-            early.name = "Early";
-            steal.name = "Steal";
+            expand.name   = "Expand";
+            rush.name     = "Rush";
+            wall.name     = "Wall";
+            proxy.name    = "Proxy";
+            early.name    = "Early";
+            steal.name    = "Steal";
             pressure.name = "Pressure";
-            greedy.name = "Greedy";
-            invis.name = "Invis";
-            allin.name = "Allin";
-            turtle.name = "Turtle";
+            greedy.name   = "Greedy";
+            invis.name    = "Invis";
+            allin.name    = "Allin";
+            turtle.name   = "Turtle";
             fortress.name = "Fortress";
         }
     };
@@ -143,16 +147,16 @@ namespace McRave::Spy {
     int getEnemyGasMined();
 
     namespace Protoss {
-        void updateProtoss(StrategySpy&);
+        void updateProtoss(StrategySpy &);
     }
     namespace Terran {
-        void updateTerran(StrategySpy&);
+        void updateTerran(StrategySpy &);
 
         bool enemyMech();
         bool enemyBio();
-    }
+    } // namespace Terran
     namespace Zerg {
-        void updateZerg(StrategySpy&);
+        void updateZerg(StrategySpy &);
 
         bool enemyFasterPool();
         bool enemyEqualPool();
@@ -160,8 +164,8 @@ namespace McRave::Spy {
 
         bool enemyFasterSpeed();
         bool enemySlowerSpeed();
-    }
+    } // namespace Zerg
     namespace General {
-        void updateGeneral(StrategySpy&);
+        void updateGeneral(StrategySpy &);
     }
-}
+} // namespace McRave::Spy

@@ -191,7 +191,10 @@ namespace McRave::Spy::Zerg {
                     theSpy.transition.name = Z_3HatchMuta;
 
                 // ZvZ
-                if (Players::ZvZ()) {
+                auto mutaTech = Players::getTotalCount(PlayerState::Enemy, Zerg_Lair) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 ||
+                                Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0;
+                if (Players::ZvZ() && mutaTech)
+                {
                     if (!theSpy.expand.likely && theSpy.productionCount == 1 && Util::getTime() > Time(5, 30))
                         theSpy.transition.name = Z_1HatchMuta;
                     else if (theSpy.expand.likely && theSpy.productionCount == 2 && Util::getTime() > Time(6, 00))

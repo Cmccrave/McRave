@@ -135,9 +135,11 @@ namespace McRave::Goals {
                     if (Util::getTime() < Time(5, 00) && vis(Zerg_Sunken_Colony) >= 4)
                         assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
                 }
-                if (Spy::getEnemyOpener() == P_Proxy_9_9 && Util::getTime() < Time(4, 00) && com(Zerg_Sunken_Colony) > 0)
-                    assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
-                if (Spy::getEnemyOpener() == P_Horror_9_9 && Util::getTime() < Time(4, 00) && com(Zerg_Sunken_Colony) > 0)
+
+                auto proxyGates    = Spy::getEnemyOpener() == P_Proxy_9_9 || Spy::getEnemyOpener() == P_Horror_9_9;
+                auto proxyBackstab = proxyGates && Util::getTime() < Time(4, 00) && (com(Zerg_Sunken_Colony) > 0 || BuildOrder::getCurrentOpener() == Z_12Hatch);
+
+                if (proxyBackstab)
                     assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
             }
 
