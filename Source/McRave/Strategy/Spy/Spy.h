@@ -71,7 +71,7 @@ namespace McRave::Spy {
         std::vector<Strat *> blueprints;
         std::map<BWAPI::UnitType, UnitTimings> unitTimings;
         std::map<BWAPI::UpgradeType, UnitTimings> upgradeTimings;
-        std::map<BWAPI::TechType, UnitTimings> researchTimings; // TODO: Impl
+        std::map<BWAPI::TechType, UnitTimings> researchTimings;
         int workersPulled   = 0;
         int gasMined        = 0;
         int productionCount = 0;

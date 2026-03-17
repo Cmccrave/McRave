@@ -278,7 +278,7 @@ namespace McRave::Stations {
             if (station->isMain()) {
                 if (Players::getTotalCount(PlayerState::Enemy, Terran_Dropship) > 0)
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
-                if (Players::ZvT() && Spy::getEnemyTransition() == U_WorkerRush)
+                if (Players::ZvT() && Spy::getEnemyBuild() != T_2Rax && Spy::getEnemyTransition() == U_WorkerRush)
                     return 1 - groundCount;
                 if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(7, 00))
                     return 1 - groundCount;
@@ -532,7 +532,6 @@ namespace McRave::Stations {
 
     int needGroundDefenses(const BWEB::Station *const station)
     {
-
         if (BuildOrder::isRush() || BuildOrder::isPressure() || Spy::getEnemyTransition() == P_Carrier)
             return 0;
 

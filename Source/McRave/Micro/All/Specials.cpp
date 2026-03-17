@@ -278,7 +278,7 @@ namespace McRave::Command {
                 }
             }
 
-            auto burrowUnit = !unit.getBuildPosition().isValid() && threatened;
+            auto burrowUnit = !unit.getBuildPosition().isValid() && threatened && !Planning::overlapsPlan(unit, unit.getPosition());
 
             // Burrow/unburrow as needed
             if (!unit.isBurrowed() && burrowUnit) {
@@ -775,38 +775,35 @@ namespace McRave::Command {
 
         // Check if we're trying to build a structure near this worker
         if (unit.hasResource()) {
-            auto station = unit.getResource().lock()->getStation();
+            auto builder = Util::getClosestUnit(unit.getResource().lock()->getPosition(), PlayerState::Self, [&](auto &u) { return *u != unit && u->getBuildType() != UnitTypes::None; });
 
-            if (station) {
-                auto builder = Util::getClosestUnit(unit.getResource().lock()->getPosition(), PlayerState::Self, [&](auto &u) { return *u != unit && u->getBuildType() != UnitTypes::None; });
+            // Builder is close and may need space opened up
+            if (builder) {
+                auto center         = Position(builder->getBuildPosition()) + Position(32, 32);
+                auto canAfford      = Broodwar->self()->minerals() >= builder->getBuildType().mineralPrice() && Broodwar->self()->gas() >= builder->getBuildType().gasPrice();
+                auto builderClose   = builder->getPosition().getDistance(center) < 64.0 && unit.getResource().lock()->getPosition().getDistance(center) < 160.0;
 
-                // Builder is close and may need space opened up
-                if (builder) {
-                    auto center       = Position(builder->getBuildPosition()) + Position(32, 32);
-                    auto canAfford    = Broodwar->self()->minerals() >= builder->getBuildType().mineralPrice() && Broodwar->self()->gas() >= builder->getBuildType().gasPrice();
-                    auto builderClose = builder->getPosition().getDistance(center) < 64.0 && unit.getResource().lock()->getPosition().getDistance(center) < 128.0;
-                    if (canAfford && builderClose) {
+                if (canAfford && builderClose) {
 
-                        // Get furthest Mineral
-                        BWEM::Mineral *furthest = nullptr;
-                        auto furthestDist       = 0.0;
-                        for (auto &resource : unit.getResource().lock()->getStation()->getBase()->Minerals()) {
-                            if (resource && resource->Unit()->exists()) {
-                                auto dist = resource->Pos().getDistance(center);
-                                if (dist > furthestDist) {
-                                    furthestDist = dist;
-                                    furthest     = resource;
-                                }
+                    // Get furthest Mineral
+                    BWEM::Mineral *furthest = nullptr;
+                    auto furthestDist       = 0.0;
+                    for (auto &resource : unit.getResource().lock()->getStation()->getBase()->Minerals()) {
+                        if (resource && resource->Unit()->exists()) {
+                            auto dist = resource->Pos().getDistance(center);
+                            if (dist > furthestDist) {
+                                furthestDist = dist;
+                                furthest     = resource;
                             }
                         }
+                    }
 
-                        // Spam gather it to move out of the way
-                        if (furthest) {
-                            unit.unit()->gather(furthest->Unit());
-                            unit.commandText  = "Gather";
-                            unit.commandFrame = Broodwar->getFrameCount();
-                            return true;
-                        }
+                    // Spam gather it to move out of the way
+                    if (furthest) {
+                        unit.unit()->gather(furthest->Unit());
+                        unit.commandText  = "Gather";
+                        unit.commandFrame = Broodwar->getFrameCount();
+                        return true;
                     }
                 }
             }

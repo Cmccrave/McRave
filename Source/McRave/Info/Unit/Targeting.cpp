@@ -411,7 +411,7 @@ namespace McRave::Targets {
             }
 
             const auto healthScore = [&]() {
-                if ((range > 32.0 || unit.isWithinRange(target)) && target.isCompleted())
+                if ((range > 32.0 || unit.isWithinRange(target) || target.isWithinRange(unit)) && target.isCompleted())
                     return 1.0 + (0.1 * (1.0 - target.getPercentTotal()));
                 return 1.0;
             };

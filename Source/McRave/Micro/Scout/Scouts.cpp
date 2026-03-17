@@ -19,7 +19,7 @@ namespace McRave::Scouts {
 
     namespace {
 
-        bool contained  = false;
+        bool contained = false;
 
         bool reachable(Position p)
         {
@@ -735,51 +735,33 @@ namespace McRave::Scouts {
 
         void updateSacrifice(UnitInfo &unit)
         {
+            if (BuildOrder::isRush() || !Terrain::getEnemyStartingPosition().isValid() || unit.getType() != Zerg_Zergling)
+                return;
+
             static auto sacrificeCount = 0;
 
+            const auto requestSacrifice = [&]() {
+                unit.sacrifice = true;
+                unit.setDestinationPath(BWEB::Path());
+                sacrificeCount++;
+                LOG("Sacrificing a scout (count: %d)", sacrificeCount);
+            };
+
             // Sometimes we need to just sacrifice a zergling to get some info based on timings
-            if (!BuildOrder::isRush() && Terrain::getEnemyStartingPosition().isValid() && unit.getType() == Zerg_Zergling) {
-                if (Players::ZvP()) {
+            if (Players::ZvP()) {
+                auto sacrificeZvP = (Spy::getEnemyBuild() == P_FFE && Util::getTime() > Time(6, 00)) +                                                        //
+                                    (Spy::getEnemyBuild() == P_FFE && BuildOrder::getCurrentTransition() == Z_3HatchHydra && Util::getTime() > Time(4, 30)) + //
+                                    (Spy::getEnemyBuild() != P_FFE && !Spy::enemyFastExpand() && Util::getTime() > Time(3, 30));                              //
 
-                    // 3hm needs to know whether to switch to hydras or stay mutas
-                    // 6hh needs to know whether to ling flood or stay hydras
-                    if (Spy::getEnemyBuild() == P_FFE && Util::getTime() > Time(6, 00) && sacrificeCount == 0) {
-                        unit.sacrifice = true;
-                        unit.setDestinationPath(BWEB::Path());
-                        sacrificeCount++;
-                        LOG("Sacrificing a scout (count: %d)", sacrificeCount);
-                    }
+                if (sacrificeZvP > sacrificeCount)
+                    requestSacrifice();
+            }
+            if (Players::ZvT()) {
+                auto sacrificeZvT = (!Terrain::foundEnemy() && Util::getTime() > Time(4, 00) && Spy::getEnemyBuild() == "Unknown") + //
+                                    (!Spy::enemyFastExpand() && Util::getTime() > Time(4, 45) && Spy::getEnemyTransition() == "Unknown");
 
-                    // 3hh needs to know whether to drone up or bust with hydras
-                    if (Spy::getEnemyBuild() == P_FFE && BuildOrder::getCurrentTransition() == Z_3HatchHydra && Util::getTime() > Time(4, 30) && sacrificeCount == 0) {
-                        unit.sacrifice = true;
-                        unit.setDestinationPath(BWEB::Path());
-                        sacrificeCount++;
-                        LOG("Sacrificing a scout (count: %d)", sacrificeCount);
-                    }
-
-                    // Need to try and figure out what the tech off 1 base is
-                    if (Spy::getEnemyBuild() != P_FFE && !Spy::enemyFastExpand() && Util::getTime() > Time(3, 30) && sacrificeCount == 0) {
-                        unit.sacrifice = true;
-                        unit.setDestinationPath(BWEB::Path());
-                        sacrificeCount++;
-                        LOG("Sacrificing a scout (count: %d)", sacrificeCount);
-                    }
-                }
-                if (Players::ZvT()) {
-                    if (!Terrain::foundEnemy() && Util::getTime() > Time(4, 00) && sacrificeCount == 0 && Spy::getEnemyBuild() == "Unknown") {
-                        unit.sacrifice = true;
-                        unit.setDestinationPath(BWEB::Path());
-                        sacrificeCount++;
-                        LOG("Sacrificing a scout (count: %d)", sacrificeCount);
-                    }
-                    if (!Spy::enemyFastExpand() && Util::getTime() > Time(4, 45) && sacrificeCount == 1) {
-                        unit.sacrifice = true;
-                        unit.setDestinationPath(BWEB::Path());
-                        sacrificeCount++;
-                        LOG("Sacrificing a scout (count: %d)", sacrificeCount);
-                    }
-                }
+                if (sacrificeZvT > sacrificeCount)
+                    requestSacrifice();
             }
         }
 
@@ -894,10 +876,10 @@ namespace McRave::Scouts {
             return;
         }
 
-        vector<const BWEB::Station *> enemyStations = {Terrain::getEnemyNatural(), Terrain::getEnemyMain()};
+        vector<const BWEB::Station *> enemyStations = {Terrain::getEnemyNatural()};
         safeDiscovered                              = true;
-        safePositions[Terrain::getEnemyNatural()]   = Positions::Invalid;
-        safePositions[Terrain::getEnemyMain()]      = Positions::Invalid;
+        safePositions[Terrain::getEnemyNatural()] = Positions::Invalid;
+        safePositions[Terrain::getEnemyMain()]    = Positions::Invalid;
 
         auto natWatch  = Stations::getDefendPosition(Terrain::getEnemyNatural());
         auto mainWatch = Stations::getDefendPosition(Terrain::getEnemyMain());
@@ -940,7 +922,7 @@ namespace McRave::Scouts {
         // Designate tiles as either safe tiles, enemy tiles, or not useful
         const auto checkAround = [&](auto station) {
             auto watch = Stations::getDefendPosition(station);
-            for (auto &t : Util::getTileCircle(20)) {
+            for (auto &t : Util::getTileCircle(25)) {
                 auto tile = t + TilePosition(watch);
                 auto pos  = Position(tile) + Position(16, 16);
 
@@ -948,7 +930,7 @@ namespace McRave::Scouts {
                     continue;
 
                 // Within range of overlord sight sort of
-                auto withinChokeSight = pos.getDistance(watch) <= 480.0;
+                auto withinChokeSight = pos.getDistance(watch) <= 600.0;
                 auto enemyArea        = tileInEnemyArea(tile);
 
                 if (enemyArea)
@@ -990,18 +972,20 @@ namespace McRave::Scouts {
                 // potentialSafePositions.insert(Position(parent + TilePosition(1, 1)));
             }
 
-            // Each potential tile needs to look for a >= height tile within 5 range zvt, 6 range zvp
+            // Each potential tile needs to look for a >= height tile within 5 range zvt, 6 range zvp, padded by a bit for safety
             auto range = Players::ZvT() ? 5 : 6;
+            auto type  = Players::ZvT() ? Terran_Marine : Protoss_Dragoon;
             for (auto &w : Util::getWalkCircle(range * 4)) {
                 auto pos  = Position(WalkPosition(parent) + w);
                 auto tile = TilePosition(pos);
 
-                if (Broodwar->getGroundHeight(tile) >= lowestHeight && pos.getDistance(expectedCenter) < range * 32 && enemyTiles.find(tile) != enemyTiles.end())
+                if (Broodwar->getGroundHeight(tile) >= lowestHeight && (Util::boxDistance(type, pos, Zerg_Overlord, expectedCenter) - 16.0) <= range * 32 && enemyTiles.find(tile) != enemyTiles.end())
                     valid = false;
             }
 
             if (valid) {
                 potentialSafePositions.insert(expectedCenter);
+                Visuals::drawBox(parent, Colors::Green);
             }
         }
 

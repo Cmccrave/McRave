@@ -766,16 +766,13 @@ namespace McRave {
         auto weapon = otherUnit.isFlying() ? type.airWeapon() : type.groundWeapon();
         auto size   = otherUnit.getType().size();
 
-        if (isStimmed())
-            dps *= 2.0;
-
-        if (type == DamageTypes::Explosive) {
+        if (weapon == DamageTypes::Explosive) {
             if (size == UnitSizeTypes::Small)
                 return 0.5 * dps;
             if (size == UnitSizeTypes::Medium)
                 return 0.75 * dps;
         }
-        if (type == DamageTypes::Concussive) {
+        if (weapon == DamageTypes::Concussive) {
             if (size == UnitSizeTypes::Medium)
                 return 0.5 * dps;
             if (size == UnitSizeTypes::Large)

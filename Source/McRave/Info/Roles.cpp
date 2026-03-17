@@ -17,7 +17,7 @@ namespace McRave::Roles {
     namespace {
         map<Role, int> myRoles;
         map<Role, int> forcedRoles;
-        set<UnitType> proxyTargeting = {Protoss_Pylon, Protoss_Photon_Cannon, Terran_Barracks, Terran_Bunker, Zerg_Sunken_Colony};
+        set<UnitType> proxyTargeting = {Protoss_Pylon, Protoss_Photon_Cannon, Terran_Barracks, Terran_Bunker, Terran_Factory, Zerg_Sunken_Colony};
         int lastCombatWorkerCount = 0;
 
         void forceCombatWorker(int count, Position here, LocalState lState = LocalState::Attack, GlobalState gState = GlobalState::Attack)
@@ -257,6 +257,10 @@ namespace McRave::Roles {
                     else if (vis(Zerg_Hatchery) < 2 && proxyWorker && selfBuildingWorker &&
                              (Terrain::inArea(Terrain::getNaturalArea(), proxyWorker->getPosition()) || proxyWorker->hasAttackedRecently() || proxyWorker->isThreatening()))
                         forceCombatWorker(1, proxyWorker->getPosition());
+
+                    // Suspiciously early and they took gas early
+                    else if (Spy::enemyPossibleProxy() && Spy::getEnemyBuild() == T_RaxFact && proxyWorker && com(Zerg_Zergling) <= 2)
+                        forceCombatWorker(1, unknownMainLocation);
                 }
             }
         }

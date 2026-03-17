@@ -388,15 +388,14 @@ namespace McRave::Combat::Clusters {
         auto damageEstimate = clusterSize * multiplier;
 
         // Calculate the risk
-        auto dpsInRange = 0.0;
+        auto dpsInRange     = 0.0;
         for (auto &e : target.getUnitsInReachOfThis()) {
             if (e.expired())
                 continue;
 
             auto &enemy = *e.lock();
             if (enemy.canAttackAir() && (!enemy.isStale() || enemy.getType().isBuilding())) {
-                if (enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 64.0 || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 64.0 ||
-                    enemy.getPosition().getDistance(enemy.getPosition()) < enemy.getAirRange() + 64.0) {
+                if (enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 64.0 || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 64.0) {
                     dpsInRange += enemy.getDpsAgainst(unit);
                 }
             }

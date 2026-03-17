@@ -1,30 +1,36 @@
 #include "PlayerInfo.h"
+
 #include "Info/Unit/UnitInfo.h"
 
 using namespace std;
 using namespace BWAPI;
 using namespace UnitTypes;
 
-namespace McRave
-{
+namespace McRave {
     namespace {
         map<Unit, UnitType> actualEggType; /// BWAPI issue #850
         int extractorsLastFrame = 0;
-    }
+    } // namespace
 
     void PlayerInfo::update()
     {
         // Store any upgrades this player has
-        for (auto &upgrade : BWAPI::UpgradeTypes::allUpgradeTypes()) {
+        for (auto &upgrade : UpgradeTypes::allUpgradeTypes()) {
             auto level = thisPlayer->getUpgradeLevel(upgrade);
             if (level > 0)
                 playerUpgrades.insert_or_assign(upgrade, level);
         }
 
-        // Store any tech this player has
-        for (auto &tech : BWAPI::TechTypes::allTechTypes()) {
+        // Store any tech this player has, enemies need to check if they have units under certain conditions
+        for (auto &tech : TechTypes::allTechTypes()) {
             if (thisPlayer->hasResearched(tech))
                 playerTechs.insert(tech);
+        }
+        for (auto &u : units) {
+            if (u->unit()->exists() && u->unit()->isStimmed())
+                playerTechs.insert(TechTypes::Stim_Packs);
+            if (u->getType() == Terran_Siege_Tank_Siege_Mode)
+                playerTechs.insert(TechTypes::Tank_Siege_Mode);
         }
 
         extractorsLastFrame = visibleTypeCounts[Zerg_Extractor];
@@ -50,7 +56,7 @@ namespace McRave
 
             if (isEgg && unit.unit()->getBuildType() != None) {
                 actualEggType[unit.unit()] = unit.unit()->getBuildType();
-                type = unit.unit()->getBuildType();
+                type                       = unit.unit()->getBuildType();
             }
 
             // Supply
@@ -70,8 +76,7 @@ namespace McRave
             }
 
             // Strength
-            if ((type.isWorker() && unit.getRole() != Role::Combat)
-                || (unit.unit()->exists() && !type.isBuilding() && !unit.unit()->isCompleted()))
+            if ((type.isWorker() && unit.getRole() != Role::Combat) || (unit.unit()->exists() && !type.isBuilding() && !unit.unit()->isCompleted()))
                 continue;
 
             if (type.isBuilding()) {
@@ -87,7 +92,7 @@ namespace McRave
                 pStrength.groundToGround += unit.getVisibleGroundStrength();
             }
         }
-        
+
         // Round up to nearest 2 (for actual Broodwar supply)
         for (auto &supply : raceSupply)
             supply.second += (supply.second % 2);
@@ -96,13 +101,13 @@ namespace McRave
         if (thisPlayer->getID() == BWAPI::Broodwar->self()->getID())
             pState = PlayerState::Self;
         else if (thisPlayer->isEnemy(BWAPI::Broodwar->self()))
-            pState = PlayerState::Enemy;        
+            pState = PlayerState::Enemy;
         else if (thisPlayer->isAlly(BWAPI::Broodwar->self()))
             pState = PlayerState::Ally;
         else
             pState = PlayerState::Neutral;
 
-        auto race = thisPlayer->isNeutral() || !alive ? BWAPI::Races::None : thisPlayer->getRace(); // BWAPI returns Zerg for neutral race
+        auto race   = thisPlayer->isNeutral() || !alive ? BWAPI::Races::None : thisPlayer->getRace(); // BWAPI returns Zerg for neutral race
         currentRace = race;
     }
-}
+} // namespace McRave

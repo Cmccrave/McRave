@@ -75,6 +75,15 @@ namespace McRave::Spy::General {
                     LOG(string(upgrade.c_str()) + " completes at " + Util::getTime().toString());
                 }
             }
+
+            for (auto &tech : TechTypes::allTechTypes()) {
+                auto &ut = theSpy.researchTimings[tech];
+                if (player.hasTech(tech) && theSpy.researchTimings[tech].firstCompletedWhen.isUnknown()) {
+                    ut.firstCompletedWhen = Util::getTime();
+                    ut.countCompletedWhen.push_back(Util::getTime());
+                    LOG(string(tech.c_str()) + " completes at " + Util::getTime().toString());
+                }
+            }
         }
 
         void checkEnemyUnits(PlayerInfo &player, StrategySpy &theSpy)

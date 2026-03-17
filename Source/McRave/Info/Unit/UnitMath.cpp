@@ -164,6 +164,8 @@ namespace McRave::Math {
 
     double calcGroundCooldown(UnitInfo &unit)
     {
+        auto playerInfo = Players::getPlayerInfo(unit.getPlayer());
+
         if (unit.getType() == Terran_Medic)
             return 1.0;
         if (unit.getType() == Terran_Bunker)
@@ -174,9 +176,9 @@ namespace McRave::Math {
             return 224.0;
         if (unit.getType() == Zerg_Infested_Terran)
             return 500.0;
-        if (unit.getType() == Zerg_Zergling && unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Adrenal_Glands))
+        if (unit.getType() == Zerg_Zergling && playerInfo->hasUpgrade(UpgradeTypes::Adrenal_Glands))
             return 6.0;
-        if (unit.getType() == Terran_Marine && unit.getPlayer()->hasResearched(TechTypes::Stim_Packs))
+        if (unit.getType() == Terran_Marine && playerInfo->hasTech(TechTypes::Stim_Packs))
             return 7.5;
         if (unit.getType() == Protoss_Interceptor)
             return 36.0;
@@ -185,6 +187,8 @@ namespace McRave::Math {
 
     double calcAirCooldown(UnitInfo &unit)
     {
+        auto playerInfo = Players::getPlayerInfo(unit.getPlayer());
+
         if (unit.getType() == Terran_Medic)
             return 1.0;
         if (unit.getType() == Terran_Bunker)
@@ -193,7 +197,7 @@ namespace McRave::Math {
             return 224.0;
         if (unit.getType() == Zerg_Scourge)
             return 110.0;
-        if (unit.getType() == Terran_Marine && unit.getPlayer()->hasResearched(TechTypes::Stim_Packs))
+        if (unit.getType() == Terran_Marine && playerInfo->hasTech(TechTypes::Stim_Packs))
             return 7.5;
         if (unit.getType() == Protoss_Interceptor)
             return 36.0;

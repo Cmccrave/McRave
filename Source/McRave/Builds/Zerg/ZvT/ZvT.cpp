@@ -30,7 +30,7 @@ namespace McRave::BuildOrder::Zerg {
         wallMain = false;
 
         wantNatural = hatchCount() >= 3 || (Spy::getEnemyTransition() != U_WorkerRush);
-        wantThird   = hatchCount() >= 3;
+        wantThird   = hatchCount() >= 3 || (Spy::getEnemyBuild() == T_RaxCC);
 
         mineralThird    = false;
         proxy           = false;
@@ -86,6 +86,8 @@ namespace McRave::BuildOrder::Zerg {
             initialValue = 6;
             if (Spy::getEnemyOpener() == T_BBS)
                 initialValue = 10;
+            if (Spy::getEnemyOpener() == T_11_13)
+                initialValue = 2;
         }
 
         // RaxCC
@@ -186,7 +188,8 @@ namespace McRave::BuildOrder::Zerg {
         // Pumping
         zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 28 && com(Zerg_Spawning_Pool) > 0;
         zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvT() > vis(Zerg_Zergling);
-        zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) > 0;
+        zergUnitPump[Zerg_Scourge]  = com(Zerg_Spire) == 1 && total(Zerg_Mutalisk) < 5 && Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > vis(Zerg_Scourge);
+        zergUnitPump[Zerg_Mutalisk] = !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) > 0;
 
         // Gas
         gasLimit = gasMax();
@@ -241,7 +244,8 @@ namespace McRave::BuildOrder::Zerg {
         // Pumping
         zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 35 && com(Zerg_Spawning_Pool) > 0;
         zergUnitPump[Zerg_Zergling] = firstLingPump;
-        zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) > 0 && gas(80);
+        zergUnitPump[Zerg_Scourge]  = com(Zerg_Spire) == 1 && total(Zerg_Mutalisk) < 5 && Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > vis(Zerg_Scourge);
+        zergUnitPump[Zerg_Mutalisk] = !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) > 0;
 
         // Gas
         gasLimit = gasMax();

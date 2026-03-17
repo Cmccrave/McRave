@@ -41,8 +41,12 @@ namespace McRave::BuildOrder::Zerg {
             }
         }
 
-        void queueWallDefenses()
+        void queueDefenses()
         {
+            needSunks                     = false;
+            needSpores                    = false;
+            buildQueue[Zerg_Creep_Colony] = vis(Zerg_Creep_Colony) + vis(Zerg_Spore_Colony) + vis(Zerg_Sunken_Colony);
+
             // Adding Wall defenses
             if ((vis(Zerg_Drone) >= 8 || Players::ZvZ()) && !isPreparingAllIn()) {
                 for (auto &[_, wall] : BWEB::Walls::getWalls()) {
@@ -71,10 +75,7 @@ namespace McRave::BuildOrder::Zerg {
                     }
                 }
             }
-        }
 
-        void queueStationDefenses()
-        {
             // Adding Station defenses
             if (vis(Zerg_Drone) >= 8 || Players::ZvZ()) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
@@ -96,7 +97,7 @@ namespace McRave::BuildOrder::Zerg {
 
             // Prepare evo chamber just in case and not a hydra build
             if (focusUnit != Zerg_Hydralisk && focusUnit != Zerg_Lurker) {
-                if (Players::ZvT() && !Spy::enemyFastExpand() && (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled()) && Util::getTime() > Time(4, 45)) {
+                if (Players::ZvT() && !Spy::enemyFastExpand() && (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled()) && Util::getTime() > Time(4, 15)) {
                     needSpores = true;
                     wallNat    = true;
                 }
@@ -110,6 +111,12 @@ namespace McRave::BuildOrder::Zerg {
                     needSpores = true;
                     wallNat    = true;
                 }
+            }
+
+            // Delay any extra hatchery early on
+            if (Util::getTime() < Time(3, 30) && hatchCount() >= 2 && needSunks && buildQueue[Zerg_Hatchery] > 2) {
+                buildQueue[Zerg_Hatchery] = min(buildQueue[Zerg_Hatchery], 2);
+                LOG_ONCE("Delaying third hatchery for sunkens");
             }
 
             // Log needing sunks
@@ -252,7 +259,7 @@ namespace McRave::BuildOrder::Zerg {
 
                 // Check if we are maxed on production
                 auto current           = clamp(int(Stations::getStations(PlayerState::Self).size()), 1, 4);
-                auto desiredProduction = hatchPerBase[current]; 
+                auto desiredProduction = hatchPerBase[current];
 
                 if (isFocusUnit(Zerg_Zergling))
                     desiredProduction *= 1.5;
@@ -627,11 +634,7 @@ namespace McRave::BuildOrder::Zerg {
     void situational()
     {
         // Queue up defenses
-        needSunks                     = false;
-        needSpores                    = false;
-        buildQueue[Zerg_Creep_Colony] = vis(Zerg_Creep_Colony) + vis(Zerg_Spore_Colony) + vis(Zerg_Sunken_Colony);
-        queueWallDefenses();
-        queueStationDefenses();
+        queueDefenses();
 
         // Queue up supply, upgrade structures
         queueSupply();

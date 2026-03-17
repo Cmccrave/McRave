@@ -236,7 +236,7 @@ namespace McRave::BuildOrder {
         // First one always gets inserted
         if (!isFocusUnit(focusUnit)) {
             focusUnits.insert(focusUnit);
-            LOG("focusing existing %s", focusUnit.c_str());
+            LOG("focusing existing ", focusUnit.c_str());
             return;
         }
 
@@ -248,7 +248,7 @@ namespace McRave::BuildOrder {
             if (!isFocusUnit(type)) {
                 getTech = false;
                 focusUnits.insert(type);
-                LOG("focusing new %s", type.c_str());
+                LOG("focusing new ", type.c_str());
                 return;
             }
         }
