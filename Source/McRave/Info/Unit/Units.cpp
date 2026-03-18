@@ -34,7 +34,7 @@ namespace McRave::Units {
         map<UnitSizeType, int> enemyGrdSizes;
         map<UnitSizeType, int> allyAirSizes;
         map<UnitSizeType, int> enemyAirSizes;
-        double immThreat;
+        bool immThreat;
         Position enemyArmyCenter;
 
         // This is hacky
@@ -70,7 +70,7 @@ namespace McRave::Units {
                     // If a unit is threatening our position
                     if (unit.isThreatening()) {
                         if (!unit.getType().isWorker())
-                            immThreat += unit.getVisibleGroundStrength();
+                            immThreat = true;
                         unit.circle(Colors::Red);
                     }
 
@@ -316,7 +316,7 @@ namespace McRave::Units {
     map<UnitSizeType, int> &getAllyAirSizes() { return allyAirSizes; }
     map<UnitSizeType, int> &getEnemyAirSizes() { return enemyAirSizes; }
     Position getEnemyArmyCenter() { return enemyArmyCenter; }
-    double getImmThreat() { return immThreat; }
+    bool enemyThreatening() { return immThreat; }
 
     bool inBoundUnit(UnitInfo &unit, int seconds)
     {

@@ -243,10 +243,7 @@ namespace McRave::BuildOrder::Zerg {
             if (!inOpening) {
 
                 // Calculate hatcheries per base
-                // double hatchPerBase = 1.0;
                 map<int, int> hatchPerBase;
-
-                // ZvZ: Get 2 gas bases first
                 if (Players::ZvZ()) {
                     hatchPerBase = {{1, 1}, {2, 4}, {3, 5}, {4, 6}};
                 }
@@ -452,12 +449,12 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueAllin()
         {
-            Allin Z_8HatchCrackling;
-            Z_8HatchCrackling.workerCount     = 36;
-            Z_8HatchCrackling.productionCount = 8;
-            Z_8HatchCrackling.typeCount       = 64;
-            Z_8HatchCrackling.type            = Zerg_Zergling;
-            Z_8HatchCrackling.name            = "8HatchCrackling";
+            Allin Z_9HatchCrackling;
+            Z_9HatchCrackling.workerCount     = 30 + (6 * vis(Zerg_Hive));
+            Z_9HatchCrackling.productionCount = 9;
+            Z_9HatchCrackling.typeCount       = 64;
+            Z_9HatchCrackling.type            = Zerg_Zergling;
+            Z_9HatchCrackling.name            = "9HatchCrackling";
 
             Allin Z_5HatchSpeedling;
             Z_5HatchSpeedling.workerCount     = 20;
@@ -476,8 +473,8 @@ namespace McRave::BuildOrder::Zerg {
             Allin Z_None;
 
             // Get allin struct
-            if (activeAllinType == AllinType::Z_8HatchCrackling)
-                activeAllin = Z_8HatchCrackling;
+            if (activeAllinType == AllinType::Z_9HatchCrackling)
+                activeAllin = Z_9HatchCrackling;
             if (activeAllinType == AllinType::Z_5HatchSpeedling)
                 activeAllin = Z_5HatchSpeedling;
             if (activeAllinType == AllinType::Z_3HatchSpeedling)
@@ -518,7 +515,7 @@ namespace McRave::BuildOrder::Zerg {
 
                 // Log active all-in
                 if (activeAllin.name != "")
-                    LOG_ONCE("All in %s started", activeAllin.name);
+                    LOG_ONCE("All in started: ", activeAllin.name);
 
                 // Common
                 auto lowLarvaCount = vis(Zerg_Larva) <= 2;
@@ -527,8 +524,8 @@ namespace McRave::BuildOrder::Zerg {
                     buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + 1);
             }
 
-            // 8HatchCrackling
-            if (activeAllin.name == "8HatchCrackling") {
+            // 9HatchCrackling
+            if (activeAllin.name == "9HatchCrackling") {
                 gasLimit = 3;
 
                 // Buildings

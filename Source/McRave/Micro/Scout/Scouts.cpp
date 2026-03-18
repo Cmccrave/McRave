@@ -735,7 +735,7 @@ namespace McRave::Scouts {
 
         void updateSacrifice(UnitInfo &unit)
         {
-            if (BuildOrder::isRush() || !Terrain::getEnemyStartingPosition().isValid() || unit.getType() != Zerg_Zergling)
+            if (BuildOrder::isRush() || Spy::enemyRush() || !Terrain::getEnemyStartingPosition().isValid() || unit.getType() != Zerg_Zergling)
                 return;
 
             static auto sacrificeCount = 0;

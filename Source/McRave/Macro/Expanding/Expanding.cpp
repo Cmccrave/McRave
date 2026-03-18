@@ -154,6 +154,14 @@ namespace McRave::Expansion {
                     }
                     auto dist = (grdParent * grdHome /** airParent * airHome*/) / (grdEnemy * airEnemy * airCenter);
 
+                    // Stations with narrower chokes are desirable
+                    auto widestChoke = 0;
+                    for (auto &choke : station.getBase()->GetArea()->ChokePoints()) {
+                        if (choke->Width() > widestChoke)
+                            widestChoke = choke->Width();
+                    }
+                    dist *= widestChoke;
+
                     // Check for a blocking neutral
                     auto blockerCost = 0.0;
                     for (auto &blocker : blockingNeutrals[&station])

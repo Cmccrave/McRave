@@ -101,14 +101,16 @@ namespace McRave::Combat {
             // ZvP
             if (Players::ZvP()) {
                 if (Spy::enemyProxy() && Spy::getEnemyBuild() == P_2Gate) {
-                    static bool tenLings       = false;
+                    static bool tenLings = false;
                     if (com(Zerg_Zergling) >= 10)
                         tenLings = true;
 
                     auto delayNaturalDefending = Util::getTime() < Time(3, 45) && (Spy::getEnemyBuild() == "Unknown" || !tenLings);
 
-                    if (delayNaturalDefending)
+                    if (delayNaturalDefending) {
+                        LOG_ONCE("Defending in main temporarily");
                         defendNatural = false;
+                    }
                 }
             }
 
@@ -139,7 +141,7 @@ namespace McRave::Combat {
         void findHarassPosition()
         {
             auto oldHarass = harassPosition;
-            if (!Terrain::getEnemyMain())
+            if (!Terrain::getEnemyMain() || (com(Zerg_Mutalisk) == 0 && com(Protoss_Corsair) == 0))
                 return;
             harassPosition                         = Positions::Invalid;
             vector<const BWEB::Station *> stations = Stations::getStations(PlayerState::Enemy);
@@ -161,6 +163,7 @@ namespace McRave::Combat {
 
                 if (closest) {
                     harassPosition = closest->getPosition();
+                    LOG_SLOW("Harassing inbound units");
                     return;
                 }
             }
@@ -193,12 +196,14 @@ namespace McRave::Combat {
             // ZvT main is easier to harass in the immediate
             if (Players::ZvT() && Util::getTime() < Time(10, 00) && Terrain::getEnemyMain()) {
                 harassPosition = Terrain::getEnemyMain()->getResourceCentroid();
+                LOG_SLOW("Harassing enemy main");
                 return;
             }
 
             // ZvP is less likely to have cannons setup at the natural if not FFE
             if (Players::ZvP() && Spy::enemyFastExpand() && Spy::getEnemyBuild() != P_FFE && Terrain::getEnemyNatural() && Util::getTime() < Time(8, 00)) {
                 harassPosition = Terrain::getEnemyNatural()->getResourceCentroid();
+                LOG_SLOW("Harassing enemy natural");
                 return;
             }
 
@@ -218,13 +223,22 @@ namespace McRave::Combat {
 
             // Harass all stations by last visited
             auto best = -1.0;
+            const BWEB::Station * harassStation = nullptr;
             for (auto &station : stations) {
                 auto score = double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(station->getResourceCentroid())));
                 if (score > best) {
                     best           = score;
                     harassPosition = station->getResourceCentroid();
+                    harassStation  = station;
                 }
             }
+
+            if (harassStation == Terrain::getEnemyMain())
+                LOG_SLOW("Harassing enemy main");
+            else if (harassStation == Terrain::getEnemyNatural())
+                LOG_SLOW("Harassing enemy natural");
+            else
+                LOG_SLOW("Harassing enemy third");
         }
 
         void checkHoldChoke()

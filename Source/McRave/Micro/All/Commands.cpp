@@ -60,6 +60,33 @@ namespace McRave::Command {
             // unit.isFlying() ? Util::log10(1 + mapBWEM.GetMiniTile(w).Altitude()) : 1.0;
         }
 
+        double tangential(UnitInfo &unit, std::shared_ptr<UnitInfo> target, WalkPosition w)
+        {
+            //auto p = Position(w) + Position(4, 4);
+
+            //auto toEnemy     = target->getPosition() - unit.getPosition();
+            //auto toCandidate = p - unit.getPosition();
+
+            //double len1 = unit.getPosition().getDistance(target->getPosition());
+            //double len2 = unit.getPosition().getDistance(p);
+
+            //if (len1 < 1.0 || len2 < 1.0)
+            //    return 0.0;
+
+            //toEnemy /= len1;
+            //toCandidate /= len2;
+
+            //double side = toEnemy.x * toCandidate.y - toEnemy.y * toCandidate.x;
+
+            //double dist          = p.getDistance(target->getPosition());
+            //double desiredRadius = 64.0;
+
+            //double radiusFactor = std::max(0.0, 1.0 - std::abs(dist - desiredRadius) / desiredRadius);
+
+            //return 0.1 * side * radiusFactor;
+            return 1.0;
+        }
+
         Position findViablePosition(UnitInfo &unit, Position pstart, function<double(WalkPosition)> score)
         {
             auto nearestEdge   = Terrain::getClosestMapEdge(unit.getPosition());
@@ -296,11 +323,16 @@ namespace McRave::Command {
 
         const auto safeMovement = (unit.getRole() == Role::Worker && !atHome) || (unit.getType() == Zerg_Queen);
 
+        auto target         = unit.hasTarget() ? unit.getTarget().lock() : nullptr;
+        const auto surround = target && unit.attemptingSurround() && unit.isWithinReach(*target);
+
         const auto scoreFunction = [&](WalkPosition w) {
             const auto p = Position(w) + Position(4, 4);
             auto score   = 0.0;
 
-            if (safeMovement)
+            if (target && surround)
+                score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w) * threat(unit, w) * tangential(unit, target, w));
+            else if (safeMovement)
                 score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w) * threat(unit, w));
             else
                 score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w));
@@ -466,12 +498,15 @@ namespace McRave::Command {
                                                   !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost, 1));
                     const auto defenders       = com(Zerg_Sunken_Colony) > 0 && Combat::State::isStaticRetreat(unit.getType());
 
-                    if (Players::ZvP()) {
+                    if (Players::ZvP() && target.getType() == Protoss_Zealot) {
                         if (Util::getTime() < Time(4, 30) && Players::ZvP() && unit.getHealth() <= 16 && com(Zerg_Sunken_Colony) > 0)
                             return true;
                         if (Util::getTime() < Time(3, 30) && Players::ZvP() && unit.getHealth() <= 16)
                             return true;
                     }
+
+                    if (unit.attemptingRunby() && unit.getHealth() < 16 && !unit.getUnitsTargetingThis().empty())
+                        return true;
 
                     if (Util::getTime() < Time(3, 30) && !target.isThreatening() && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10)
                         return true;

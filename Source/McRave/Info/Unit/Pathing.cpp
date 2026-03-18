@@ -132,8 +132,8 @@ namespace McRave::Pathing {
                                                 Position(int(expandx * closestFramesToArrive), int(expandy * closestFramesToArrive));
 
                             closestTargeter->setSurroundPosition(correctedPos);
-                            Visuals::drawLine(closestTargeter->getPosition(), correctedPos, Colors::Green);
-                            Visuals::drawCircle(correctedPos, 4, Colors::Green);
+                            //Visuals::drawLine(closestTargeter->getPosition(), correctedPos, Colors::Green);
+                            //Visuals::drawCircle(correctedPos, 4, Colors::Green);
                         }
                     }
                 }

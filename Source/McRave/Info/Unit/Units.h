@@ -10,7 +10,7 @@ namespace McRave::Units {
     std::map<BWAPI::UnitSizeType, int>& getAllyAirSizes();
     std::map<BWAPI::UnitSizeType, int>& getEnemyAirSizes();
     BWAPI::Position getEnemyArmyCenter();
-    double getImmThreat();
+    bool enemyThreatening();
     double getDamageRatioGrd(PlayerState, BWAPI::DamageType);
     double getDamageRatioAir(PlayerState, BWAPI::DamageType);
     double getDamageReductionGrd(PlayerState);

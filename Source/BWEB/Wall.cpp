@@ -24,7 +24,7 @@ namespace BWEB {
         pylonWall    = count(rawBuildings.begin(), rawBuildings.end(), BWAPI::UnitTypes::Protoss_Pylon) > 1;
         base         = !area->Bases().empty() ? &area->Bases().front() : nullptr;
         station      = Stations::getClosestStation(TilePosition(area->Top()));
-        defenseAngle   = station->getDefenseAngle();
+        defenseAngle = station->getDefenseAngle();
         wallLocation = base->Location();
 
         // Stations without chokepoints (or multiple) don't get determined on start
@@ -59,7 +59,7 @@ namespace BWEB {
                 // Wall is bypassable, need to change how it generates to defend the main as well
                 if (bypassCount >= choke->Geometry().size() / 2) {
                     bypassable          = true;
-                    defenseAngle          = BWEB::Map::getAngle(mainChokeCenter, natChokeCenter) + M_PI_D2;
+                    defenseAngle        = BWEB::Map::getAngle(mainChokeCenter, natChokeCenter) + M_PI_D2;
                     defenseArrangement  = int(round(defenseAngle / M_PI_D4)) % 4;
                     auto mainChokeTile  = TilePosition(mainChokeCenter);
                     auto baseCenterTile = TilePosition(base->Center());
@@ -132,7 +132,7 @@ namespace BWEB {
                 auto tile       = wallLocation + placement;
                 textTiles[tile] = std::to_string(i);
                 i++;
-                // testTiles[tile] = debugColor;
+                testTiles[tile] = debugColor;
                 if (BWEB::Map::isPlaceable(type, tile) && !BWEB::Map::isReserved(tile, type.tileWidth(), type.tileHeight())) {
                     insertList.insert(tile);
                     Map::addUsed(tile, type);
@@ -161,19 +161,21 @@ namespace BWEB {
         // Iteration attempts move buildings closer
         auto iteration    = 0;
         auto maxIteration = 1;
+        auto hatchOffset  = requireTight ? 6 : 0;
+
         if (station->isNatural() && Broodwar->self()->getRace() == Races::Protoss) {
             iteration    = 1;
             maxIteration = 2;
         }
 
-        // If this isn't a natural or main, allow it to start further back
+        // If this isn't a natural or main
         if (station && !station->isMain() && !station->isNatural()) {
-            iteration -= 2;
-            maxIteration = 0;
+            iteration    = 0;
+            maxIteration = 4;
+            maintainShape = true;
         }
 
         // This is ugly
-        auto hatchOffset = requireTight ? 6 : 0;
         if (station && station->isMain()) {
             iteration    = 5;
             maxIteration = 8;
@@ -367,6 +369,7 @@ namespace BWEB {
             wallPlacements[2] = {{0, 3}, {0, 4}, {0, -2}, {0, -3}};
 
             if (!station->isNatural() && !station->isMain()) {
+                wallPlacements[1].push_back({-2, 5});
                 wallPlacements[1].push_back({-2, 6});
                 wallPlacements[1].push_back({-2, -4});
             }
@@ -415,8 +418,13 @@ namespace BWEB {
         for (auto &[i, placements] : wallPlacements) {
             for (auto &placement : placements) {
                 auto tile = base->Location() + placement + wallOffset;
-                if (i == 1)
-                    tile = wallLocation + placement + wallOffset;
+
+                //testTiles[tile] = Colors::Green;
+
+                if (i == 1) {
+                    tile            = wallLocation + placement + wallOffset;
+                    //testTiles[tile] = Colors::Yellow;
+                }
 
                 if (Map::isPlaceable(defenseType, tile) && (find(required.begin(), required.end(), placement) != required.end() || !Map::isReserved(tile, 2, 2))) {
                     defenses[i].insert(tile);

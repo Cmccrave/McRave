@@ -46,6 +46,11 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvP_HP()
     {
+        // If we scout a proxy early enough, switch to pool first
+        if (Spy::getEnemyOpener() == P_Proxy_9_9 && currentOpener == Z_12Hatch && total(Zerg_Hatchery) < 2) {
+            currentOpener = Z_10Hatch;
+        }
+
         // Openers
         if (currentOpener == Z_10Hatch)
             ZvP_HP_10Hatch();

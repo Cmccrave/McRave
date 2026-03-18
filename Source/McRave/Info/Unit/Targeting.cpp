@@ -21,6 +21,7 @@ namespace McRave::Targets {
         set<UnitType> cancelPriority = {Terran_Missile_Turret, Terran_Barracks, Terran_Bunker, Terran_Factory, Terran_Starport, Terran_Armory, Terran_Bunker};
         set<UnitType> proxyTargeting = {Protoss_Pylon, Terran_Barracks, Terran_Bunker, Zerg_Sunken_Colony};
         map<UnitInfo *, int> meleeSpotsAvailable;
+        multimap<double, std::weak_ptr<UnitInfo>> sortedUnits;
 
         double maxPriority;
         int earliest;
@@ -279,7 +280,7 @@ namespace McRave::Targets {
                 if (target.isProxy() && target.getType().isWorker() && target.unit()->exists() && !BuildOrder::isRush()) {
                     if (target.unit()->isConstructing())
                         return Priority::Critical;
-                    else if (!Spy::enemyRush() && Spy::getEnemyBuild() != P_2Gate)
+                    else if (unit.isWithinReach(target) && !Spy::enemyRush() && Spy::getEnemyBuild() != P_2Gate)
                         return Priority::Major;
                 }
 
@@ -634,21 +635,24 @@ namespace McRave::Targets {
         void updateTargets()
         {
             // Sort my units by distance to closest enemy
-            multimap<double, UnitInfo &> sortedUnits;
-            for (auto &u : Units::getUnits(PlayerState::Self)) {
-                UnitInfo &unit    = *u;
-                auto closestEnemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return (u->isFlying() && unit.canAttackAir()) || (!u->isFlying() && unit.canAttackGround()) || (unit.getRole() == Role::Support);
-                });
-                if (closestEnemy) {
-                    const auto dist = unit.getPosition().getDistance(closestEnemy->getPosition());
-                    sortedUnits.emplace(dist, unit);
+            static auto lastUpdate = Time(0, 0);
+            if (Util::getTime() - lastUpdate > Time(0, 1)) {
+                sortedUnits.clear();
+                for (auto &u : Units::getUnits(PlayerState::Self)) {
+                    UnitInfo &unit    = *u;
+                    auto closestEnemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {
+                        return (u->isFlying() && unit.canAttackAir()) || (!u->isFlying() && unit.canAttackGround()) || (unit.getRole() == Role::Support);
+                    });
+                    if (closestEnemy) {
+                        const auto dist = unit.getPosition().getDistance(closestEnemy->getPosition());
+                        sortedUnits.emplace(dist, unit.weak_from_this());
+                    }
                 }
             }
 
-            for (auto &u : sortedUnits) {
-                UnitInfo &unit = u.second;
-                getTarget(unit);
+            for (auto &[_, u] : sortedUnits) {
+                if (auto ptr = u.lock())
+                    getTarget(*ptr);
             }
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo &unit = *u;

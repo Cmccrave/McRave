@@ -20,6 +20,9 @@ namespace McRave::Combat::State {
     {
         staticRetreatTypes.clear();
 
+        if (Broodwar->getGameType() == GameTypes::Use_Map_Settings)
+            return;
+
         const auto unlockedOrVis = [&](auto &t) { return vis(t) > 0 || BuildOrder::isUnitUnlocked(t); };
 
         // Hydralisks
@@ -312,7 +315,7 @@ namespace McRave::Combat::State {
         // ... Unit is fighting with a worker
         return (atHome && unit.getSimState() == SimState::Win && !Players::ZvZ()) || (atHome && freeAttacks()) ||
                (atHome && !unit.getType().isWorker() && !Spy::enemyRush() && (unit.getGroundRange() > target.getGroundRange() || target.getType().isWorker()) && !target.isHidden()) ||
-               (target.isThreatening() && !target.isHidden() && Util::getTime() < Time(6, 00)) ||
+               (target.isThreatening() && !target.isHidden()) ||
                (unit.isSuicidal() && (Terrain::inTerritory(PlayerState::Self, target.getPosition()) || target.isThreatening())) || (unit.isSuicidal() && !nearGrdToAir()) ||
                (unit.getType() == Zerg_Lurker && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy)) ||
                (unit.isHidden() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy)) ||
@@ -435,7 +438,7 @@ namespace McRave::Combat::State {
             unit.setGlobalState(GlobalState::Retreat);
             unit.setLocalState(LocalState::Retreat);
         }
-        else if (isStaticRetreat(unit.getType()) && !unit.attemptingRunby() && Units::getImmThreat() <= 0.0f)
+        else if (isStaticRetreat(unit.getType()) && !unit.attemptingRunby() && !Units::enemyThreatening())
             unit.setGlobalState(GlobalState::Retreat);
         else
             unit.setGlobalState(GlobalState::Attack);

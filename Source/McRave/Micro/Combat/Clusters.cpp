@@ -57,7 +57,7 @@ namespace McRave::Combat::Clusters {
 
                 auto matchedGoal     = (parent.unit->getGoal() == child.unit->getGoal());
                 auto matchedType     = (parent.unit->isFlying() == child.unit->isFlying() && parent.unit->isMelee() == child.unit->isMelee());
-                auto matchedStrat    = (parent.unit->getGlobalState() == child.unit->getGlobalState());
+                auto matchedStrat    = (parent.unit->getGlobalState() == child.unit->getGlobalState() && parent.unit->getDestination().getDistance(child.unit->getDestination()) < 640.0);
                 auto matchedDistance = child.position.getDistance(root.position) < 160.0 || child.position.getDistance(parent.position) < 96.0 ||
                                        (child.position.getDistance(parent.unit->retreatPos) < 128.0 && parent.position.getDistance(parent.unit->retreatPos) < 128.0) ||
                                        (child.position.getDistance(parent.unit->marchPos) < 128.0 && parent.position.getDistance(parent.unit->marchPos) < 128.0) ||

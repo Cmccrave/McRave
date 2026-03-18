@@ -120,10 +120,19 @@ namespace McRave::Combat::Navigation {
 
     void updateNavigation(UnitInfo &unit)
     {
-        unit.setNavigation(unit.getFormation().isValid() ? unit.getFormation() : unit.getDestination());
+        unit.setNavigation(unit.getDestination());
 
-        if (unit.getFormation().isValid() && !unit.attemptingRunby()) {
+        // Check if it's time to break formation
+        //if (auto target = unit.getTarget().lock()) {
+        //    if (unit.getEngagePosition().isValid() && unit.getLocalState() == LocalState::Attack && (unit.isWithinRange(*target) || target->isWithinRange(unit))) {
+        //        unit.setNavigation(unit.getEngagePosition());
+        //        return;
+        //    }
+        //}
+
+        if (unit.getFormation().isValid() && !unit.attemptingRunby() && unit.getLocalState() != LocalState::Attack) {
             unit.setNavigation(unit.getFormation());
+            Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Cyan);
             return;
         }
 

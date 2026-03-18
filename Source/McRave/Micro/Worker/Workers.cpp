@@ -29,7 +29,7 @@ namespace McRave::Workers {
             if (Players::ZvT()) {
                 if (Spy::getEnemyOpener() == T_8Rax || Spy::getEnemyOpener() == T_BBS)
                     desiredTransfer = 1;
-                if (Units::getImmThreat() > 0.0f || Spy::getEnemyTransition() == U_WorkerRush || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
+                if (Units::enemyThreatening() || Spy::getEnemyTransition() == U_WorkerRush || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
                     desiredTransfer = 0;
             }
 
@@ -38,7 +38,7 @@ namespace McRave::Workers {
                     desiredTransfer = 2;
                 if (Spy::getEnemyOpener() == P_Proxy_9_9 && com(Zerg_Zergling) >= 6)
                     desiredTransfer = 2;
-                if (Units::getImmThreat() > 0.0f)
+                if (Units::enemyThreatening())
                     desiredTransfer = 0;
             }
 
@@ -53,6 +53,10 @@ namespace McRave::Workers {
                 }
                 return nullptr;
             }
+
+            // Dont transfer against a rush
+            if (Spy::enemyRush())
+                return nullptr;
 
             // Allow some workers to transfer early on so we can make early sunks if needed
             if (Util::getTime() < Time(4, 00) && desiredTransfer > 0 && unit.isHealthy() && vis(UnitTypes::Zerg_Drone) >= 9) {

@@ -150,7 +150,7 @@ namespace McRave::Spy::Protoss {
                 theSpy.opener.name = P_Forge;
 
             // Nexus
-            else if (completesBy(1, Protoss_Nexus, Time(3, 45)) && Spy::enemyFastExpand())
+            else if (completesBy(1, Protoss_Nexus, Time(3, 30)) && Spy::enemyFastExpand())
                 theSpy.opener.name = P_Nexus;
 
             // Gateway

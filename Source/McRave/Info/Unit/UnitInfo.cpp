@@ -888,7 +888,7 @@ namespace McRave {
 
     bool UnitInfo::attemptingSurround()
     {
-        if (!hasTarget() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 8.0)
+        if (!hasTarget() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 16.0)
             return false;
 
         auto &target = *getTarget().lock();

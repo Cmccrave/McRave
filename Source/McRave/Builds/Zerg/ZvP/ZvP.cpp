@@ -26,11 +26,17 @@ namespace McRave::BuildOrder::Zerg {
         inOpening    = true;
         inBookSupply = true;
 
-        wantNatural = hatchCount() >= 3 || (Spy::getEnemyOpener() != P_Horror_9_9) || !(Spy::getEnemyOpener() == P_Proxy_9_9 && currentOpener == Z_12Hatch);
-        wantThird   = !wantNatural || (Spy::enemyFastExpand() && hatchCount() >= 4) || hatchCount() >= 5 || Spy::getEnemyBuild() == P_FFE || Spy::getEnemyBuild() == "Unknown";
+        wantNatural = true;
+        if (Spy::getEnemyOpener() == P_Horror_9_9 || (Spy::getEnemyOpener() == P_Proxy_9_9 && currentOpener == Z_12Hatch))
+            wantNatural = hatchCount() >= 3;
+
+        wantThird   = (Spy::enemyFastExpand() && hatchCount() >= 4) || hatchCount() >= 5 || Spy::getEnemyBuild() == P_FFE || Spy::getEnemyBuild() == "Unknown";
+        if (!wantNatural)
+            wantThird = false;
+
         wallNat     = wantNatural &&
                   ((Spy::getEnemyOpener() == P_Proxy_9_9 && Stations::getStations(PlayerState::Self).size() >= 2) || (Spy::getEnemyBuild() == P_FFE && hatchCount() >= 4) ||
-                   (Spy::getEnemyBuild() == P_2Gate && hatchCount() >= 2) || Spy::getEnemyTransition() == P_Rush || Spy::getEnemyTransition() == P_Speedlot || Spy::getEnemyTransition() == P_Rush);
+                   (Spy::getEnemyBuild() == P_2Gate && hatchCount() >= 2) || Spy::getEnemyTransition() == P_Speedlot || Spy::getEnemyTransition() == P_Rush);
 
         wallMain  = Terrain::isPocketNatural() && !wantThird;
         wallThird = Stations::getStations(PlayerState::Self).size() >= 3;
@@ -175,7 +181,7 @@ namespace McRave::BuildOrder::Zerg {
         reserveLarva = (Spy::getEnemyBuild() == P_FFE || Spy::enemyFastExpand()) ? 6 : 0;
         hideTech     = true;
         pressure     = (total(Zerg_Mutalisk) >= 6 && Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) < 10 && Spy::getEnemyBuild() != P_1GateCore && Spy::getEnemyBuild() != P_2Gate);
-        wantThird    = Spy::getEnemyBuild() == P_FFE;
+        wantThird    = hatchCount() >= 4;
         wallNat      = hatchCount() >= 2;
 
         // Order
@@ -195,7 +201,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Spire]     = (s >= 32 && atPercent(Zerg_Lair, 0.95) && vis(Zerg_Drone) >= 16);
 
         // Upgrades
-        upgradeQueue[Metabolic_Boost]     = vis(Zerg_Spire) > 0;
+        upgradeQueue[Metabolic_Boost]     = hatchCount() >= 3;
         upgradeQueue[Zerg_Flyer_Carapace] = total(Zerg_Mutalisk) >= 12;
 
         // Pumping
@@ -249,7 +255,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Gas timings
         auto firstGas  = (Util::getTime() > Time(2, 32)) || (s >= 40);
-        auto secondGas = (vis(Zerg_Evolution_Chamber) > 0 && vis(Zerg_Drone) >= 32) || (!wantThird && vis(Zerg_Drone) >= 28);
+        auto secondGas = (vis(Zerg_Evolution_Chamber) > 0 && vis(Zerg_Drone) >= 32) || (!wantThird && vis(Zerg_Drone) >= 28) || (mutaOpen && vis(Zerg_Drone) >= 30);
         auto thirdGas  = (mutaOpen && hatchCount() >= 5 && Util::getTime() > Time(8, 00)) || (hydraOpen && hydraDone);
 
         // Hatch timings
@@ -316,11 +322,17 @@ namespace McRave::BuildOrder::Zerg {
             if (Spy::enemyGreedy())
                 activeAllinType = AllinType::Z_5HatchSpeedling;
         }
+        if (mutaDone) {
+            if (Spy::getEnemyTransition() == P_5GateGoon)
+                activeAllinType = AllinType::Z_9HatchCrackling;
+        }
 
         // Gas
         gasLimit = gasMax();
         if (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != P_FFE && !Spy::enemyFastExpand()) {
-            if (vis(Zerg_Drone) + vis(Zerg_Extractor) < 13)
+            if (Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(3, 30))
+                gasLimit = 0;
+            else if (vis(Zerg_Drone) + vis(Zerg_Extractor) < 13)
                 gasLimit = 0;
             else if (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 16)
                 gasLimit = 1;
@@ -512,9 +524,9 @@ namespace McRave::BuildOrder::Zerg {
         // All-in
         if (Spy::getEnemyOpener() == P_Nexus)
             activeAllinType = AllinType::Z_3HatchSpeedling;
-        if (!needMinimumHydras && total(Zerg_Hydralisk) >= 12 && hatchCount() >= 5) {
+        if (!needMinimumHydras && hatchCount() >= 5) {
             if (Spy::getEnemyTransition() == P_CorsairGoon || Spy::getEnemyTransition() == P_5GateGoon)
-                activeAllinType = AllinType::Z_8HatchCrackling;
+                activeAllinType = AllinType::Z_9HatchCrackling;
         }
 
         // Gas

@@ -139,7 +139,7 @@ namespace McRave::Goals {
                 auto proxyGates    = Spy::getEnemyOpener() == P_Proxy_9_9 || Spy::getEnemyOpener() == P_Horror_9_9;
                 auto proxyBackstab = proxyGates && Util::getTime() < Time(4, 00) && (com(Zerg_Sunken_Colony) > 0 || BuildOrder::getCurrentOpener() == Z_12Hatch);
 
-                if (proxyBackstab)
+                if (proxyBackstab && !Units::enemyThreatening())
                     assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
             }
 
@@ -410,18 +410,18 @@ namespace McRave::Goals {
             auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto &s) { return s->isMain(); }));
 
             // Before Hydras have upgrades, defend vulnerable bases, put lings on defense too
-            if (Combat::State::isStaticRetreat(Zerg_Hydralisk) && !BuildOrder::isAllIn() && com(Zerg_Hydralisk_Den) > 0) {
-                auto evenSplit = (1.0 / double(stations.size() - mainStations));
+            //if (Combat::State::isStaticRetreat(Zerg_Hydralisk) && !BuildOrder::isAllIn() && com(Zerg_Hydralisk_Den) > 0) {
+            //    auto evenSplit = (1.0 / double(stations.size() - mainStations));
 
-                if (!stations.empty()) {
-                    for (auto &station : stations) {
-                        if ((station->isNatural() && Terrain::isPocketNatural()) || (station->isMain() && !Terrain::isPocketNatural()))
-                            continue;
-                        assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, evenSplit, GoalType::Defend);
-                        assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Zergling, evenSplit, GoalType::Defend);
-                    }
-                }
-            }
+            //    if (!stations.empty()) {
+            //        for (auto &station : stations) {
+            //            if ((station->isNatural() && Terrain::isPocketNatural()) || (station->isMain() && !Terrain::isPocketNatural()))
+            //                continue;
+            //            assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, evenSplit, GoalType::Defend);
+            //            assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Zergling, evenSplit, GoalType::Defend);
+            //        }
+            //    }
+            //}
 
             // Always keep 2 hydras at home to protect from sairs if we dont have a spore or dont have speed
             auto harassers = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) >= 2 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Shuttle) > 0;

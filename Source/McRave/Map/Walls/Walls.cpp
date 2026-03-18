@@ -278,6 +278,9 @@ namespace McRave::Walls {
 
         int ZvP_Defenses(const BWEB::Wall &wall)
         {
+            if (BuildOrder::getCurrentTransition() == Z_3HatchHydra)
+                return 0;
+
             // Determine how much we have traded
             auto unitsKilled     = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot) + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);
             auto buildingsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Gateway);
@@ -501,7 +504,7 @@ namespace McRave::Walls {
     int needGroundDefenses(const BWEB::Wall &wall)
     {
         auto groundCount = wall.getGroundDefenseCount();
-        if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) || BuildOrder::isAllIn())
+        if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) || BuildOrder::isAllIn() || (!Combat::isDefendNatural() && wall.getStation()->isNatural()))
             return 0;
 
         // If any defense in the wall is severely damaged, we should build 1 extra

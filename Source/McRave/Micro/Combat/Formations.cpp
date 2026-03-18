@@ -88,7 +88,7 @@ namespace McRave::Combat::Formations {
     void marchFormation(Formation &formation, Cluster &cluster)
     {
         auto shift = max(160.0, formation.radius) + 32.0;
-        shift += max(-5, 5 - Grids::getMobility(cluster.marchNavigation)) * 16.0;
+        shift += max(0, 5 - Grids::getMobility(cluster.marchNavigation)) * 16.0;
 
         formation.radius = clamp((cluster.units.size() * cluster.spacing / 1.3), 16.0, 640.0);
         formation.start  = Util::shiftTowards(cluster.avgPosition, cluster.marchNavigation, shift);

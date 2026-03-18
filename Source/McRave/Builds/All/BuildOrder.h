@@ -8,7 +8,7 @@
 namespace McRave::BuildOrder {
 
     enum class AllinType {
-        None, Z_3HatchSpeedling, Z_5HatchSpeedling, Z_8HatchCrackling
+        None, Z_3HatchSpeedling, Z_5HatchSpeedling, Z_9HatchCrackling
     };
 
     struct Allin {

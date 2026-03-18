@@ -114,7 +114,7 @@ namespace McRave::Roles {
                 UnitInfo &unit = *u;
                 if (unit.isCompleted()) {
                     auto damaged    = unit.getHealth() != unit.getType().maxHitPoints();
-                    auto threatened = Units::getImmThreat() > 0.0 || !unit.getUnitsInReachOfThis().empty();
+                    auto threatened = Units::enemyThreatening() || !unit.getUnitsInReachOfThis().empty();
 
                     if (damaged || threatened) {
                         if (unit.getType() == Terran_Missile_Turret)
@@ -187,6 +187,9 @@ namespace McRave::Roles {
             // ZvP
             if (Players::ZvP() && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) == 0 && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 &&
                 Util::getTime() < Time(6, 00)) {
+
+                if (Spy::getEnemyOpener() == P_Proxy_9_9 || Spy::getEnemyOpener() == P_Horror_9_9)
+                    return;
 
                 // Gateway or Cannon in territory, 6 drones
                 if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 && Spy::getEnemyBuild() == P_CannonRush && com(Zerg_Zergling) <= 6)
