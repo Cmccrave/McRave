@@ -155,12 +155,16 @@ namespace McRave::Expansion {
                     auto dist = (grdParent * grdHome /** airParent * airHome*/) / (grdEnemy * airEnemy * airCenter);
 
                     // Stations with narrower chokes are desirable
-                    auto widestChoke = 0;
-                    for (auto &choke : station.getBase()->GetArea()->ChokePoints()) {
-                        if (choke->Width() > widestChoke)
-                            widestChoke = choke->Width();
+                    auto widestChoke = 0.0;
+                    if (!station.isMain() && int(expansionOrder.size()) <= 2) {                       
+                        for (auto &choke : station.getBase()->GetArea()->ChokePoints()) {
+                            if (choke->Width() > widestChoke)
+                                widestChoke = double(choke->Width());
+                        }
                     }
-                    dist *= widestChoke;
+                    else {
+                        widestChoke = 320.0;
+                    }
 
                     // Check for a blocking neutral
                     auto blockerCost = 0.0;
@@ -174,7 +178,7 @@ namespace McRave::Expansion {
                     // Add in remaining resources
                     auto percentMinerals = (double(1 + Stations::getMineralsRemaining(&station)) / double(1 + Stations::getMineralsInitial(&station)));
                     auto percentGas      = (double(1 + Stations::getGasRemaining(&station)) / double(1 + Stations::getGasInitial(&station)));
-                    auto cost            = dist / (percentMinerals * percentGas);
+                    auto cost            = (dist * widestChoke) / (percentMinerals * percentGas);
 
                     if (cost < costBest) {
                         costBest    = cost;
@@ -186,6 +190,12 @@ namespace McRave::Expansion {
                     expansionOrder.push_back(stationBest);
                     parentStation = stationBest;
                 }
+            }
+
+            auto i = 1;
+            for (auto station : expansionOrder) {
+                Broodwar->drawTextMap(station->getBase()->Center(), "%d", i);
+                i++;
             }
         }
 

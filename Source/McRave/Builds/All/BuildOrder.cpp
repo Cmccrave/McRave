@@ -216,6 +216,8 @@ namespace McRave::BuildOrder {
             return com(Zerg_Spawning_Pool) > 0;
         if (type == Zerg_Mutalisk)
             return com(Zerg_Spire) > 0;
+        if (type == Zerg_Devourer || type == Zerg_Guardian)
+            return com(Zerg_Greater_Spire) > 0;
         if (type == Zerg_Hydralisk)
             return com(Zerg_Hydralisk_Den) > 0;
         if (type == Zerg_Lurker)
@@ -227,7 +229,7 @@ namespace McRave::BuildOrder {
         if (type == Zerg_Defiler)
             return com(Zerg_Defiler_Mound) > 0;
 
-        Broodwar << "Type not checked for training: " << type.c_str() << endl;
+        LOG_ONCE("Type not checked for training: ", type.c_str());
         return false;
     }
 

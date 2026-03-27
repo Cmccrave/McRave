@@ -14,13 +14,13 @@ namespace BWEB {
 
         struct Node {
             TilePosition tile{-1, -1};
-            int f = 0;
+            double f = 0;
             bool operator>(const Node &rhs) const { return f > rhs.f; }
         };
 
         struct TileData {
             TilePosition parent;
-            int g;
+            double g;
             int lastVisitedId = 0;
             bool isClosed     = false;
         };
@@ -66,6 +66,8 @@ namespace BWEB {
                 tiles.push_back(t);
             }
             reachable = true;
+            if (reverse)
+                std::reverse(tiles.begin(), tiles.end());
         }
         else {
             notReachable.insert(source);
@@ -99,7 +101,7 @@ namespace BWEB {
         tileData[startIdx].isClosed      = false;
         tileData[startIdx].parent        = target;
 
-        int h = source.getApproxDistance(target) * 1000;
+        auto h = double(source.getApproxDistance(target));
         openQueue.push({target, h});
 
         while (!openQueue.empty()) {
@@ -121,6 +123,8 @@ namespace BWEB {
                     step = tileData[oneDim(step)].parent;
                 }
                 tiles.push_back(target);
+                if (reverse)
+                    std::reverse(tiles.begin(), tiles.end());
                 return;
             }
 
@@ -132,8 +136,8 @@ namespace BWEB {
                     continue;
 
                 // Costs calcs
-                int moveCost   = ((d.x != 0 && d.y != 0) ? 1414 : 1000) + int(passedHeuristic(next));
-                int currG      = tileData[currIdx].g + moveCost;
+                double moveCost = ((d.x != 0 && d.y != 0) ? 45.248 : 32.0) + passedHeuristic(next);
+                double currG    = tileData[currIdx].g + moveCost;
                 auto &nextData = tileData[oneDim(next)];
 
                 // Walkability checks
@@ -147,7 +151,7 @@ namespace BWEB {
                 // Check if visited or lower score
                 if (nextData.lastVisitedId != currentId || currG < nextData.g) {
                     nextData  = {current.tile, currG, currentId, false};
-                    int nextH = source.getApproxDistance(next) * 1000;
+                    auto nextH = double(source.getApproxDistance(next));
                     openQueue.push({next, currG + nextH});
                 }
             }

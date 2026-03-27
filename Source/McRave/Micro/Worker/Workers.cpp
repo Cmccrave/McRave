@@ -29,7 +29,7 @@ namespace McRave::Workers {
             if (Players::ZvT()) {
                 if (Spy::getEnemyOpener() == T_8Rax || Spy::getEnemyOpener() == T_BBS)
                     desiredTransfer = 1;
-                if (Units::enemyThreatening() || Spy::getEnemyTransition() == U_WorkerRush || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
+                if (Spy::getEnemyOpener() == T_Proxy_8Rax || Units::enemyThreatening() || Spy::getEnemyTransition() == U_WorkerRush || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
                     desiredTransfer = 0;
             }
 
@@ -224,8 +224,8 @@ namespace McRave::Workers {
                     unit.setNavigation(newDestination);
             }
 
-            // Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
-            // Visuals::drawPath(unit.getDestinationPath());
+             //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
+             //Visuals::drawPath(unit.getDestinationPath());
         }
 
         void updateDestination(UnitInfo &unit)

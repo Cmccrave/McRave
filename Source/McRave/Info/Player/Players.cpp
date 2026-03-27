@@ -15,12 +15,12 @@ using namespace UnitTypes;
 
 namespace McRave::Players {
     namespace {
-        map<Player, PlayerInfo>              thePlayers;
-        map<Race, int>                       raceCount;
+        map<Player, PlayerInfo> thePlayers;
+        map<Race, int> raceCount;
         map<PlayerState, map<UnitType, int>> allVisibleTypeCounts;
         map<PlayerState, map<UnitType, int>> allCompleteTypeCounts;
         map<PlayerState, map<UnitType, int>> allTotalTypeCounts;
-        map<PlayerState, Strength>           allPlayerStrengths;
+        map<PlayerState, Strength> allPlayerStrengths;
 
         void update(PlayerInfo &player)
         {
@@ -37,6 +37,19 @@ namespace McRave::Players {
                 allTotalTypeCounts[player.getPlayerState()][type] += cnt;
             allPlayerStrengths[player.getPlayerState()] += player.getStrength();
         }
+
+        int getCounts(map<UnitType, int> &list, vector<UnitType> types)
+        {
+            // Finds how many of each UnitType this PlayerState has
+            auto count = 0;
+            for (UnitType type : types) {
+                auto itr = list.find(type);
+                if (itr != list.end())
+                    count += itr->second;
+            }
+            return count;
+        }
+
     } // namespace
 
     void onStart()
@@ -190,41 +203,15 @@ namespace McRave::Players {
         }
     }
 
-    int getCompleteCount(PlayerState state, UnitType type)
-    {
-        // Finds how many of a UnitType this PlayerState currently has completed
-        auto &list = allCompleteTypeCounts[state];
-        auto  itr  = list.find(type);
-        if (itr != list.end())
-            return itr->second;
-        return 0;
-    }
+    int getVisibleCount(PlayerState state, BWAPI::UnitType type) { return getVisibleCount(state, vector<UnitType>{type}); }
+    int getCompleteCount(PlayerState state, BWAPI::UnitType type) { return getCompleteCount(state, vector<UnitType>{type}); }
+    int getTotalCount(PlayerState state, BWAPI::UnitType type) { return getTotalCount(state, vector<UnitType>{type}); }
+    int getDeadCount(PlayerState state, BWAPI::UnitType type) { return getTotalCount(state, vector<UnitType>{type}) - getVisibleCount(state, vector<UnitType>{type}); }
 
-    int getVisibleCount(PlayerState state, UnitType type)
-    {
-        // Finds how many of a UnitType this PlayerState currently has visible
-        auto &list = allVisibleTypeCounts[state];
-        auto  itr  = list.find(type);
-        if (itr != list.end())
-            return itr->second;
-        return 0;
-    }
-
-    int getTotalCount(PlayerState state, UnitType type)
-    {
-        // Finds how many of a UnitType the PlayerState total has ever had
-        auto &list = allTotalTypeCounts[state];
-        auto  itr  = list.find(type);
-        if (itr != list.end())
-            return itr->second;
-        return 0;
-    }
-
-    int getDeadCount(PlayerState state, UnitType type)
-    {
-        // Finds how many of a UnitType the PlayerState has lost
-        return getTotalCount(state, type) - getVisibleCount(state, type);
-    }
+    int getVisibleCount(PlayerState state, std::vector<UnitType> types) { return getCounts(allVisibleTypeCounts[state], types); }
+    int getCompleteCount(PlayerState state, std::vector<UnitType> types) { return getCounts(allCompleteTypeCounts[state], types); }
+    int getTotalCount(PlayerState state, std::vector<UnitType> types) { return getCounts(allTotalTypeCounts[state], types); }
+    int getDeadCount(PlayerState state, std::vector<UnitType> types) { return getCounts(allTotalTypeCounts[state], types) - getCounts(allVisibleTypeCounts[state], types); }
 
     bool hasDetection(PlayerState state)
     {

@@ -10,7 +10,7 @@ namespace McRave::BuildOrder::Zerg {
     // ZvP
     inline const std::vector<BWAPI::UnitType> mutaling  = {BWAPI::UnitTypes::Zerg_Mutalisk, BWAPI::UnitTypes::Zerg_Zergling};
     inline const std::vector<BWAPI::UnitType> hydralurk = {BWAPI::UnitTypes::Zerg_Hydralisk, BWAPI::UnitTypes::Zerg_Lurker, BWAPI::UnitTypes::Zerg_Mutalisk};
-    inline const std::vector<BWAPI::UnitType> mutalurk  = {BWAPI::UnitTypes::Zerg_Mutalisk, BWAPI::UnitTypes::Zerg_Hydralisk, BWAPI::UnitTypes::Zerg_Lurker};
+    inline const std::vector<BWAPI::UnitType> mutalurk  = {BWAPI::UnitTypes::Zerg_Mutalisk, BWAPI::UnitTypes::Zerg_Lurker};
 
     // ZvT
     inline const std::vector<BWAPI::UnitType> mutalingqueen   = {BWAPI::UnitTypes::Zerg_Mutalisk, BWAPI::UnitTypes::Zerg_Queen, BWAPI::UnitTypes::Zerg_Zergling};

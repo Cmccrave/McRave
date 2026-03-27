@@ -130,6 +130,8 @@ namespace McRave::Util {
                             posB.y - typeB.dimensionUp(), posB.x + typeB.dimensionRight() + 1, posB.y + typeB.dimensionDown() + 1);
     }
 
+    int boxDistance(UnitInfo &unit, UnitInfo &target) { return boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()); }
+
     bool rectangleIntersect(Position topLeft, Position botRight, Position target)
     {
         if (target.x >= topLeft.x && target.x < botRight.x && target.y >= topLeft.y && target.y < botRight.y)
@@ -430,8 +432,5 @@ namespace McRave::Util {
 
     vector<TilePosition> &getTileCircle(int radius) { return tileCircleCache[radius]; }
 
-    void writeToLoggerImpl(const std::string &msg)
-    {
-        writeFile << msg << "\n";
-    }
+    void writeToLoggerImpl(const std::string &msg) { writeFile << msg << "\n"; }
 } // namespace McRave::Util

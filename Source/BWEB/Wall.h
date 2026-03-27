@@ -13,6 +13,7 @@ namespace BWEB {
     {
         UnitType tightType;
         TilePosition wallLocation;
+        vector<TilePosition> smlOrder, medOrder, lrgOrder, opnOrder, pylOrder;
         set<TilePosition> smallTiles, mediumTiles, largeTiles, openings;
         map<int, set<TilePosition>> defenses;
         vector<UnitType> rawBuildings, rawDefenses;
@@ -33,6 +34,8 @@ namespace BWEB {
         void addPieces();
         void addDefenses();
         void cleanup();
+
+        void addOpenings();
         bool tryLocations(vector<TilePosition>&, set<TilePosition>&, UnitType);
 
     public:
@@ -49,6 +52,7 @@ namespace BWEB {
             initialize();
             addPieces();
             addDefenses();
+            addOpenings();
             cleanup();
         }
 
@@ -100,6 +104,9 @@ namespace BWEB {
         /// <summary> Returns true if the Wall only contains Pylons. </summary>
         const bool isPylonWall() const { return pylonWall; }
 
+        /// <summary> Returns true if an additional defense layer was planned, can only be called once.
+        const bool requestAddedLayer();
+
         /// <summary> Returns the number of ground defenses associated with this Wall. </summary>
         const int getGroundDefenseCount() const;
 
@@ -120,11 +127,11 @@ namespace BWEB {
 
         /// <summary> Returns a pointer to a Wall if it has been created at the given ChokePoint. </summary>
         /// <param name="choke"> The Chokepoint that the Wall blocks. </param>
-        const Wall * const getWall(const BWEM::ChokePoint *);
+        Wall * const getWall(const BWEM::ChokePoint *);
 
         /// <summary> Returns the closest Wall to the given Point. </summary>
         template<typename T>
-        const Wall * const getClosestWall(T h)
+        Wall * const getClosestWall(T h)
         {
             const auto here = Position(h);
             auto distBest = DBL_MAX;
@@ -150,22 +157,22 @@ namespace BWEB {
         /// <param name="defenses"> (Optional) A Vector of UnitTypes that you want the Wall to have defenses consisting of. </param>
         /// <param name="openWall"> (Optional) Set as true if you want an opening in the wall for unit movement. </param>
         /// <param name="requireTight"> (Optional) Set as true if you want pixel perfect placement. </param>
-        const Wall * const createWall(vector<UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, UnitType tight = UnitTypes::None, const vector<UnitType>& defenses ={}, bool openWall = false, bool requireTight = false);
+        Wall * const createWall(vector<UnitType>& buildings, const BWEM::Area * area, const BWEM::ChokePoint * choke, UnitType tight = UnitTypes::None, const vector<UnitType>& defenses ={}, bool openWall = false, bool requireTight = false);
 
         /// I only added this to support Alchemist because it's a trash fucking map.
-        const Wall * const createHardWall(multimap<UnitType, TilePosition>&, const BWEM::Area * const, const BWEM::ChokePoint *);
+        Wall * const createHardWall(multimap<UnitType, TilePosition>&, const BWEM::Area * const, const BWEM::ChokePoint *);
 
         /// <summary><para> Creates a Forge Fast Expand at the natural. </para>
         /// <para> Places 1 Forge, 1 Gateway, 1 Pylon and Cannons. </para></summary>
-        const Wall * const createProtossWall();
+        Wall * const createProtossWall();
 
         /// <summary><para> Creates a "Sim City" of Zerg buildings at the natural. </para>
         /// <para> Places Sunkens, 1 Evolution Chamber and 1 Hatchery. </para>
-        const Wall * const createZergWall();
+        Wall * const createZergWall();
 
         /// <summary><para> Creates a full wall of Terran buildings at the main choke. </para>
         /// <para> Places 2 Depots and 1 Barracks. </para>
-        const Wall * const createTerranWall();
+        Wall * const createTerranWall();
 
         /// <summary> Calls the draw function for each Wall that exists. </summary>
         void draw();

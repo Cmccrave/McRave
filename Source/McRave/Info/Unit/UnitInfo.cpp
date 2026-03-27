@@ -73,6 +73,11 @@ namespace McRave {
                 orderHistory.erase(orderHistory.begin());
             if (commandHistory.size() > 10)
                 commandHistory.erase(commandHistory.begin());
+
+            lastPos  = position;
+            lastWalk = walkPosition;
+            lastTile = tilePosition;
+            lastRole = role;
         }
     }
 
@@ -104,6 +109,12 @@ namespace McRave {
             framesVisible = 0;
         }
 
+        // Reset completion/started if type changed
+        if (t != type) {
+            completeFrame = -999;
+            startedFrame  = -999;
+        }
+
         if (unit()->exists()) {
 
             lastPos  = position;
@@ -127,9 +138,17 @@ namespace McRave {
             retreatPos        = Positions::Invalid;
             marchPos          = Positions::Invalid;
             surroundPosition  = Positions::Invalid;
+            trapPosition      = Positions::Invalid;
             interceptPosition = Positions::Invalid;
             formation         = Positions::Invalid;
             navigation        = Positions::Invalid;
+
+            double angle = unit()->getAngle();
+
+            double dx = cos(angle);
+            double dy = sin(angle);
+
+            facingPosition = position + Position(int(dx * 32.0), int(dy * 32.0));
 
             // Flags
             flying    = unit()->isFlying() || getType().isFlyer() || unit()->getOrder() == Orders::LiftingOff || unit()->getOrder() == Orders::BuildingLiftOff;
@@ -392,7 +411,8 @@ namespace McRave {
             auto fragileBuilding = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
                 return !u->isHealthy() && u->getType().isBuilding() && u->isCompleted() && Terrain::inTerritory(PlayerState::Self, u->getPosition());
             });
-            return fragileBuilding && Util::boxDistance(fragileBuilding->getType(), fragileBuilding->getPosition(), getType(), getPosition()) < proximityCheck;
+            return fragileBuilding && hasTarget() && !getTarget().lock()->isHealthy() &&
+                   Util::boxDistance(fragileBuilding->getType(), fragileBuilding->getPosition(), getType(), getPosition()) < proximityCheck;
         };
 
         // Check if any builders can be hit or blocked
@@ -478,7 +498,8 @@ namespace McRave {
                     const auto closerToMyNat  = closestNat && closestNat == Terrain::getMyNatural();
                     const auto farFromHome    = position.getDistance(closestMain->getBase()->Center()) > 960.0 && position.getDistance(closestNat->getBase()->Center()) > 960.0;
 
-                    const auto timedOrKnown = Util::getTime() < Time(4, 00) || Spy::getEnemyBuild() == P_CannonRush || Spy::getEnemyOpener() == T_8Rax || Spy::getEnemyTransition() == U_WorkerRush;
+                    const auto timedOrKnown = Util::getTime() < Time(4, 00) || Spy::getEnemyBuild() == P_CannonRush || Spy::getEnemyOpener() == T_Proxy_8Rax ||
+                                              Spy::getEnemyTransition() == U_WorkerRush;
 
                     // Workers are proxy if they're close enough to our bases and considered suspicious
                     if (getType().isWorker()) {
@@ -509,14 +530,15 @@ namespace McRave {
         }
 
         // Calculate completion based on build time
-        else if (!completed && (completeFrame < 0 || startedFrame < 0)) {
+        else if (!completed && (completeFrame <= 0 || startedFrame <= 0)) {
             auto ratio    = (double(health) - (0.1 * double(type.maxHitPoints()))) / (0.9 * double(type.maxHitPoints()));
+            ratio         = std::clamp(ratio, 0.0, 1.0);
             completeFrame = Broodwar->getFrameCount() + int(std::round((1.0 - ratio) * double(type.buildTime()))) + extra;
             startedFrame  = Broodwar->getFrameCount() - int(std::round((ratio) * double(type.buildTime())));
         }
 
         // Set completion based on seeing it already completed and this is the first time visible
-        else if (startedFrame == -999 && completeFrame == -999) {
+        else if (completed && startedFrame == -999 && completeFrame == -999) {
             completeFrame = Broodwar->getFrameCount();
             startedFrame  = Broodwar->getFrameCount();
         }
@@ -656,8 +678,8 @@ namespace McRave {
         const auto cooldown = (getType() == Protoss_Reaver) ? weaponCooldown - framesSinceAttack : (target.getType().isFlyer() ? unit()->getAirWeaponCooldown() : unit()->getGroundWeaponCooldown());
 
         auto angle       = BWEB::Map::getAngle(getPosition(), target.getPosition());
-        auto facingAngle = 6.18 - unit()->getAngle(); // Reverse direction to counter clockwise, as it should be
-        auto angleDiff   = (M_PI - fabs(fmod(fabs(angle - facingAngle), 2 * M_PI) - M_PI));
+        auto facingAngle = M_PI_T2 - unit()->getAngle(); // Reverse direction to counter clockwise, as it should be
+        auto angleDiff   = (M_PI - fabs(fmod(fabs(angle - facingAngle), M_PI_T2) - M_PI));
 
         // Time to turn and face - confirmed
         auto turnFrames = 0;
@@ -888,27 +910,31 @@ namespace McRave {
 
     bool UnitInfo::attemptingSurround()
     {
-        if (!hasTarget() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 16.0)
+        if (!hasTarget() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 16.0 || lState != LocalState::Attack)
             return false;
 
         auto &target = *getTarget().lock();
-        if (Broodwar->getGameType() != GameTypes::Use_Map_Settings) {
-            if (target.isThreatening())
-                return false;
-            if (!target.getType().isWorker() && Util::getTime() < Time(4, 00))
-                return false;
-        }
+        if (target.isThreatening())
+            return false;
+        if (!target.getType().isWorker() && Util::getTime() < Time(4, 00))
+            return false;
+        if (target.getSpeed() >= speed)
+            return false;
+        return position.getDistance(surroundPosition) > 8.0;
+    }
+
+    bool UnitInfo::attemptingTrap()
+    {
+        if (!hasTarget() || !trapPosition.isValid() || position.getDistance(trapPosition) < 16.0 || lState != LocalState::Attack)
+            return false;
+
+        auto &target = *getTarget().lock();
 
         if (target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target.getPosition()))
             return true;
-        return position.getDistance(surroundPosition) > 8.0;
-
-        // if (target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target.getPosition()))
-        //    return true;
-
-        // if (attemptingRunby() || (Util::getTime() < Time(4, 00) && Broodwar->getGameType() != GameTypes::Use_Map_Settings))
-        //    return false;
-        // return false;
+        if (target.getSpeed() >= speed && Terrain::inTerritory(PlayerState::Self, target.getPosition()))
+            return true;
+        return false;
     }
 
     bool UnitInfo::attemptingHarass()

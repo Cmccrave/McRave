@@ -38,16 +38,10 @@ namespace McRave::Targets {
         bool selfCanHitAir;
         bool selfCanHitGround;
 
+        int combatTargeters = 0; // Not ideal, this is global but applies to individual targets
+
         bool allowWorkerTarget(UnitInfo &unit, UnitInfo &target)
         {
-            auto combatTargeters = 0;
-            for (auto &t : target.getUnitsTargetingThis()) {
-                if (auto &targeter = t.lock()) {
-                    if (targeter->getRole() == Role::Combat)
-                        combatTargeters++;
-                }
-            }
-
             if (unit.getType().isWorker()) {
                 return Spy::getEnemyTransition() == U_WorkerRush || target.hasAttackedRecently() || target.hasRepairedRecently() || target.isThreatening() || combatTargeters == 0;
             }
@@ -89,13 +83,9 @@ namespace McRave::Targets {
             if (Util::getTime() < Time(5, 00)) {
                 if (Players::ZvZ() && !target.canAttackGround() && !Spy::enemyFastExpand()) // Avoid non ground hitters to try and kill drones
                     return Priority::Ignore;
+                if (Players::ZvT() && target.getType() == Terran_Vulture && combatTargeters >= 2)
+                    return Priority::Ignore;
             }
-
-            const auto targetSize     = max(target.getType().width(), target.getType().height());
-            const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(),
-                                                 [&](auto &u) { return u.lock()->getType() == Zerg_Zergling && u.lock()->isWithinRange(target); });
-            if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
-                return Priority::Minor;
 
             // Already in range, continue to target it if possible
             if (unit.isWithinRange(target) && !target.getType().isBuilding() && !target.getType().isWorker())
@@ -140,7 +130,7 @@ namespace McRave::Targets {
             if (Players::ZvT()) {
 
                 // Ignore vultures so we don't chase them too much
-                if (target.getType() == Terran_Vulture && !unit.isWithinRange(target) && !unit.getGoal().isValid() && !target.isThreatening() && Util::getTime() < Time(8, 00))
+                if (target.getType() == Terran_Vulture && !unit.isWithinRange(target) && !unit.getGoal().isValid() && !target.isThreatening())
                     return Priority::Ignore;
                 if (target.getType() == Terran_Vulture_Spider_Mine && Grids::getAirThreat(target.getTilePosition(), PlayerState::Enemy) > 0)
                     return Priority::Ignore;
@@ -221,6 +211,19 @@ namespace McRave::Targets {
 
         Priority getPriority(UnitInfo &unit, UnitInfo &target)
         {
+            combatTargeters = 0;
+            for (auto &t : target.getUnitsTargetingThis()) {
+                if (auto &targeter = t.lock()) {
+                    if (targeter->getRole() == Role::Combat)
+                        combatTargeters++;
+                }
+            }
+
+            if (unit.getType() == Zerg_Zergling && Util::getTime() < Time(5, 00)) {
+                if (Players::ZvT() && target.getType() == Terran_Vulture && combatTargeters >= 2 && !unit.isWithinRange(target))
+                    return Priority::Minor;
+            }
+
             bool targetCanAttack = !unit.isHidden() && (((unit.getType().isFlyer() && target.canAttackAir()) || (!unit.getType().isFlyer() && target.canAttackGround()) ||
                                                          (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine)));
             bool unitCanAttack   = !target.isHidden() && ((target.isFlying() && unit.canAttackAir()) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));
@@ -403,8 +406,8 @@ namespace McRave::Targets {
             const auto boxDistance = double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
             const auto useGrd      = !unit.getType().isWorker() && !unit.isFlying() && !target.isFlying() && mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea(target.getTilePosition()) &&
                                 mapBWEM.GetArea(unit.getTilePosition())->AccessibleFrom(mapBWEM.GetArea(target.getTilePosition())) && boxDistance < unit.getEngageRadius() && boxDistance > reach;
-            const auto actualDist = (useGrd ? BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) : boxDistance) - max(range, enemyRange);
-            const auto dist       = exp(0.0125 * actualDist);
+            const auto actualDist = (useGrd ? BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) : boxDistance);
+            const auto dist       = actualDist;
 
             if (unit.isSiegeTank()) {
                 range = 384.0;
@@ -422,6 +425,13 @@ namespace McRave::Targets {
                     return 1.0;
                 else if (unit.getType().isWorker() && target.getType().isWorker() && Spy::getEnemyTransition() == U_WorkerRush && int(target.getUnitsTargetingThis().size()) < 6) {
                     return (1.0 + (1.0 * double(target.getUnitsTargetingThis().size())));
+                }
+
+                if (unit.isMelee()) {
+                    const auto targetSize     = max(target.getType().width(), target.getType().height());
+                    const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->isMelee(); });
+                    if (!target.getType().isBuilding() && targetingCount >= targetSize / 6)
+                        return 0.05;
                 }
 
                 const auto withinReachHigherRange = range > 32.0 && range >= enemyRange && boxDistance <= reach;
@@ -468,7 +478,7 @@ namespace McRave::Targets {
                 return 1.0 / dist;
 
             // Proximity targeting (targetScore not used)
-            else if (unit.getType() == Protoss_Reaver || unit.getType() == Zerg_Queen || unit.isMelee() || unit.isLightAir()) {
+            else if (unit.getType() == Protoss_Reaver || unit.getType() == Zerg_Queen || unit.isLightAir()) {
                 if (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir())
                     return 0.1 / dist;
                 return 1.0 / dist;

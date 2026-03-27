@@ -18,11 +18,13 @@ namespace McRave::Combat {
     namespace {
 
         // Defending
-        bool holdChoke                = false;
-        bool defendNatural            = false;
-        const ChokePoint *defendChoke = nullptr;
-        const Area *defendArea        = nullptr;
-        Position defendPosition       = Positions::Invalid;
+        bool holdChoke                     = false;
+        bool defendNatural                 = false;
+        bool defendNaturalAtMain           = false;
+        const ChokePoint *defendChoke      = nullptr;
+        const Area *defendArea             = nullptr;
+        const BWEB::Station *defendStation = nullptr;
+        Position defendPosition            = Positions::Invalid;
 
         // Harassing
         Position harassPosition = Positions::Invalid;
@@ -83,30 +85,34 @@ namespace McRave::Combat {
             const auto baseType = Broodwar->self()->getRace().getResourceDepot();
 
             // When we want to defend our natural
-            defendNatural = false;
+            defendNatural       = false;
+            defendNaturalAtMain = false;
             if (Terrain::getMyNatural() && Terrain::getNaturalChoke() && !Terrain::isPocketNatural() && !Stations::isBlocked(Terrain::getMyNatural())) {
                 defendNatural = (BuildOrder::takeNatural() && !Players::ZvZ()) || (Broodwar->self()->getRace() != Races::Zerg && BuildOrder::buildCount(baseType) > (1 + !BuildOrder::takeNatural())) ||
                                 Stations::getStations(PlayerState::Self).size() >= 2 || (!Players::PvZ() && Players::getSupply(PlayerState::Self, Races::Protoss) > 140) ||
                                 (Broodwar->self()->getRace() != Races::Zerg && Terrain::isReverseRamp());
             }
 
+            const auto closestDefense = Util::getClosestUnit(Stations::getDefendPosition(Terrain::getMyMain()), PlayerState::Self,
+                                                             [&](auto &u) { return u->canAttackGround() && u->getRole() == Role::Defender; });
+
             static bool sixLings = false;
             if (com(Zerg_Zergling) >= 6)
                 sixLings = true;
 
             // When we don't want to defend our natural
-            if (Players::ZvT() && Util::getTime() < Time(8, 00) && (Spy::enemyRush() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0))
-                defendNatural = false;
+            if (Players::ZvT() && Util::getTime() < Time(8, 00) && (Spy::enemyRush() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)) {
+                auto mainDefendPosition = Stations::getDefendPosition(Terrain::getMyMain());
+                if (closestDefense && closestDefense->getPosition().getDistance(mainDefendPosition) < closestDefense->getGroundRange() + 64.0) {
+                    LOG_ONCE("Defending in main temporarily");
+                    defendNaturalAtMain = true;
+                }
+            }
 
             // ZvP
             if (Players::ZvP()) {
                 if (Spy::enemyProxy() && Spy::getEnemyBuild() == P_2Gate) {
-                    static bool tenLings = false;
-                    if (com(Zerg_Zergling) >= 10)
-                        tenLings = true;
-
-                    auto delayNaturalDefending = Util::getTime() < Time(3, 45) && (Spy::getEnemyBuild() == "Unknown" || !tenLings);
-
+                    auto delayNaturalDefending = Util::getTime() < Time(3, 45) && (Spy::getEnemyBuild() == "Unknown" || !sixLings);
                     if (delayNaturalDefending) {
                         LOG_ONCE("Defending in main temporarily");
                         defendNatural = false;
@@ -120,14 +126,15 @@ namespace McRave::Combat {
                 auto delayNaturalDefending = Util::getTime() < Time(3, 20) && (Spy::getEnemyOpener() == "Unknown" || !sixLings);
 
                 if (BuildOrder::getCurrentBuild() != Z_PoolLair && (delayNaturalDefending || Spy::enemyRush()))
-                    defendNatural = false;
+                    defendNaturalAtMain = true;
             }
 
             // Natural defending position
-            if (defendNatural) {
+            if (defendNatural && !defendNaturalAtMain) {
                 defendChoke    = Terrain::getNaturalChoke();
                 defendArea     = Terrain::getNaturalArea();
                 defendPosition = Stations::getDefendPosition(Terrain::getMyNatural());
+                defendStation  = Terrain::getMyNatural();
             }
 
             // Main defending position
@@ -135,6 +142,7 @@ namespace McRave::Combat {
                 defendChoke    = Terrain::getMainChoke();
                 defendArea     = Terrain::getMainArea();
                 defendPosition = Stations::getDefendPosition(Terrain::getMyMain());
+                defendStation  = Terrain::getMyMain();
             }
         }
 
@@ -158,7 +166,7 @@ namespace McRave::Combat {
             if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure()) {
 
                 const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return (Util::getTime() < Time(8, 00) && Units::inBoundUnit(*u, 15) && !u->getType().isWorker() && u->getType() != Terran_Vulture) || u->isThreatening();
+                    return (Util::getTime() < Time(8, 00) && Units::inBoundUnit(*u, 15) && !u->getType().isWorker() && u->getType() != Terran_Vulture);
                 });
 
                 if (closest) {
@@ -194,7 +202,7 @@ namespace McRave::Combat {
             }
 
             // ZvT main is easier to harass in the immediate
-            if (Players::ZvT() && Util::getTime() < Time(10, 00) && Terrain::getEnemyMain()) {
+            if (Players::ZvT() && Util::getTime() < Time(8, 00) && Terrain::getEnemyMain()) {
                 harassPosition = Terrain::getEnemyMain()->getResourceCentroid();
                 LOG_SLOW("Harassing enemy main");
                 return;
@@ -222,8 +230,8 @@ namespace McRave::Combat {
                 nextStation();
 
             // Harass all stations by last visited
-            auto best = -1.0;
-            const BWEB::Station * harassStation = nullptr;
+            auto best                          = -1.0;
+            const BWEB::Station *harassStation = nullptr;
             for (auto &station : stations) {
                 auto score = double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(station->getResourceCentroid())));
                 if (score > best) {
@@ -263,14 +271,14 @@ namespace McRave::Combat {
             // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 if (Players::ZvZ()) {
-                    holdChoke = !defendNatural;
+                    holdChoke = !defendNatural || defendNaturalAtMain;
                     if (!defendNatural && Stations::getGroundDefenseCount(Terrain::getMyMain()) > 0 && com(Zerg_Sunken_Colony) > 0)
                         holdChoke = false;
                     if (Spy::enemyRush())
                         holdChoke = false;
                 }
                 if (Players::ZvP()) {
-                    holdChoke = !defendNatural;
+                    holdChoke = !defendNatural || defendNaturalAtMain;
                     if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
                         holdChoke = false;
                     if (Terrain::isPocketNatural())
@@ -279,7 +287,7 @@ namespace McRave::Combat {
                         holdChoke = false;
                 }
                 if (Players::ZvT()) {
-                    holdChoke = !defendNatural;
+                    holdChoke = !defendNatural || defendNaturalAtMain;
                     if (Terrain::isPocketNatural())
                         holdChoke = false;
                 }
@@ -312,7 +320,7 @@ namespace McRave::Combat {
 
     const ChokePoint *getDefendChoke() { return defendChoke; }
     const Area *getDefendArea() { return defendArea; }
-    const BWEB::Station *getDefendStation() { return defendNatural ? Terrain::getMyNatural() : Terrain::getMyMain(); }
+    const BWEB::Station *getDefendStation() { return defendStation; }
     bool isDefendNatural() { return defendNatural; }
 
     bool holdAtChoke() { return holdChoke; }

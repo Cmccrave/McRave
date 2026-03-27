@@ -55,16 +55,26 @@ namespace McRave::Combat::Clusters {
                 if (child.unit->getType() == Zerg_Queen)
                     return false;
 
+                auto engageTogether = false;
+                if (child.unit->hasTarget() && parent.unit->hasTarget()) {
+                    auto childTarget  = child.unit->getTarget().lock();
+                    auto parentTarget = parent.unit->getTarget().lock();
+                    if (child.unit->isWithinReach(*parentTarget) || parent.unit->isWithinReach(*childTarget))
+                        engageTogether = true;
+                }
+
                 auto matchedGoal     = (parent.unit->getGoal() == child.unit->getGoal());
                 auto matchedType     = (parent.unit->isFlying() == child.unit->isFlying() && parent.unit->isMelee() == child.unit->isMelee());
-                auto matchedStrat    = (parent.unit->getGlobalState() == child.unit->getGlobalState() && parent.unit->getDestination().getDistance(child.unit->getDestination()) < 640.0);
-                auto matchedDistance = child.position.getDistance(root.position) < 160.0 || child.position.getDistance(parent.position) < 96.0 ||
+                auto matchedStrat    = (parent.unit->getGlobalState() == child.unit->getGlobalState());
+                auto matchedDistance = child.position.getDistance(root.position) < 160.0 || child.position.getDistance(parent.position) < 96.0 || engageTogether ||
                                        (child.position.getDistance(parent.unit->retreatPos) < 128.0 && parent.position.getDistance(parent.unit->retreatPos) < 128.0) ||
                                        (child.position.getDistance(parent.unit->marchPos) < 128.0 && parent.position.getDistance(parent.unit->marchPos) < 128.0) ||
                                        (parent.unit->isLightAir() && child.unit->isLightAir());
-                auto matchedTarget = (parent.unit->hasTarget() && child.unit->hasTarget() && parent.unit->getTarget().lock()->isFlying() == child.unit->getTarget().lock()->isFlying()) ||
-                                     (!parent.unit->hasTarget() && !child.unit->hasTarget());
-                return matchedType && matchedStrat && matchedDistance && matchedGoal && matchedTarget;
+
+                if (parent.unit->isLightAir() && child.unit->isLightAir())
+                    return matchedStrat && matchedGoal;
+
+                return matchedType && matchedStrat && matchedDistance && matchedGoal;
             };
 
             auto getNeighbors = [&](auto &parent, auto &queue) {
@@ -118,7 +128,7 @@ namespace McRave::Combat::Clusters {
         void getCommander(Cluster &cluster)
         {
             // Check if a commander previously existed within a similar cluster
-            auto closestPreviousCommander = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
+            auto closestPreviousCommander = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
                 return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() &&
                        find(previousCommanders.begin(), previousCommanders.end(), u) != previousCommanders.end() && !u->isTargetedBySuicide();
             });
@@ -129,9 +139,9 @@ namespace McRave::Combat::Clusters {
             }
 
             // Check if a commander is already engaged in combat
-            auto closestCommanderFighting = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
+            auto closestCommanderFighting = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
                 return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() &&
-                       !u->isTargetedBySuicide() && u->getLocalState() != LocalState::None;
+                       !u->isTargetedBySuicide();
             });
             if (closestCommanderFighting) {
                 cluster.commander = closestCommanderFighting->weak_from_this();
@@ -297,14 +307,20 @@ namespace McRave::Combat::Clusters {
         {
             for (auto &cluster : clusters) {
                 if (auto commander = cluster.commander.lock()) {
-                    cluster.marchPosition   = commander->marchPos;
-                    cluster.retreatPosition = commander->retreatPos;
 
                     // Determine how commands are sent out
-                    if (commander->isLightAir())
-                        cluster.commandShare = CommandShare::Exact;
-                    else
-                        cluster.commandShare = CommandShare::Parallel;
+                    if (commander->isLightAir()) {
+
+                        cluster.commandShare    = CommandShare::Exact;
+                        cluster.marchPosition   = Combat::getHarassPosition();
+                        cluster.retreatPosition = commander->retreatPos;
+                    }
+                    else {
+
+                        cluster.commandShare    = CommandShare::Parallel;
+                        cluster.marchPosition   = commander->marchPos;
+                        cluster.retreatPosition = commander->retreatPos;
+                    }
 
                     // Assign commander to each unit
                     for (auto &unit : cluster.units) {
@@ -319,9 +335,9 @@ namespace McRave::Combat::Clusters {
         void drawClusters()
         {
             for (auto &cluster : clusters) {
-                if (cluster.commander.lock()) {
+                if (auto cmder = cluster.commander.lock()) {
                     for (auto &unit : cluster.units) {
-                        Visuals::drawLine(unit->getPosition(), cluster.commander.lock()->getPosition(), cluster.color);
+                        Visuals::drawLine(unit->getPosition(), cmder->getPosition(), cluster.color);
                         unit->circle(cluster.color);
                     }
                 }
@@ -355,7 +371,7 @@ namespace McRave::Combat::Clusters {
 
     vector<Cluster> &getClusters() { return clusters; }
 
-    bool canDecimate(UnitInfo &unit, UnitInfo &target)
+    bool canDecimate(UnitInfo &unit, UnitInfo &target, bool logData)
     {
         if (target.isHidden() || target.movedFlag || target.isToken())
             return false;
@@ -387,36 +403,50 @@ namespace McRave::Combat::Clusters {
         clusterSize -= (Util::getTime() > Time(10, 00)) + (Util::getTime() > Time(12, 00)) + (Util::getTime() > Time(14, 00));
         auto damageEstimate = clusterSize * multiplier;
 
+        // One shotting units for free / two shotting important units
+        auto easilyKilled = (target.unit()->exists() && damageEstimate * cnt >= (target.getHealth() + target.getShields())) ||
+                            (!target.unit()->exists() && damageEstimate * cnt >= (target.getType().maxHitPoints() + target.getType().maxShields()));
+        if (!easilyKilled)
+            return false;
+
+        set<weak_ptr<UnitInfo>> reachList;
+        for (auto t : unit.getUnitsInReachOfThis())
+            reachList.insert(t);
+        for (auto t : target.getUnitsInReachOfThis())
+            reachList.insert(t);
+
         // Calculate the risk
-        auto dpsInRange     = 0.0;
-        for (auto &e : target.getUnitsInReachOfThis()) {
+        auto unitRange  = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
+        auto dpsInRange = 0.0;
+        for (auto &e : reachList) {
             if (e.expired())
                 continue;
 
             auto &enemy = *e.lock();
             if (enemy.canAttackAir() && (!enemy.isStale() || enemy.getType().isBuilding())) {
-                if (enemy.getPosition().getDistance(unit.getEngagePosition()) < enemy.getAirRange() + 64.0 || enemy.getPosition().getDistance(unit.getPosition()) < enemy.getAirRange() + 64.0) {
+
+                // Have to check this estimate as engage position isn't set yet
+                if (enemy.getPosition().getDistance(target.getPosition()) + unitRange <= enemy.getAirReach()) {
                     dpsInRange += enemy.getDpsAgainst(unit);
                 }
             }
         }
 
-        // One shotting units for free / two shotting important units
-        auto easilyKilled = (target.unit()->exists() && damageEstimate * cnt >= (target.getHealth() + target.getShields())) ||
-                            (!target.unit()->exists() && damageEstimate * cnt >= (target.getType().maxHitPoints() + target.getType().maxShields()));
-
-        if (easilyKilled) {
-            if ((dpsInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker())                      //
-                || (dpsInRange <= 4.0 && Util::getTime() < Time(8, 00))                                    //
-                || (dpsInRange <= 6.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))  //
-                || (dpsInRange <= 7.5 && Util::getTime() > Time(12, 00) && Util::getTime() < Time(16, 00)) //
-                || (dpsInRange <= 8.0 && Util::getTime() > Time(16, 00)))                                  //
-                return true;
-
-            // If already in range and haven't attack recently, it's fine to swing once, this helps for recalculations done once in range
-            if (unit.isWithinRange(target) && !unit.hasAttackedRecently())
-                return true;
+        if (logData) {
+            LOG_FAST("DPS in range of target is ", dpsInRange);
+            LOG_FAST("Target is ", target.getType().c_str(), " at ", target.getPosition());
         }
+
+        if ((dpsInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker())                      //
+            || (dpsInRange <= 4.0 && Util::getTime() < Time(8, 00))                                    //
+            || (dpsInRange <= 5.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))  //
+            || (dpsInRange <= 6.0 && Util::getTime() > Time(12, 00) && Util::getTime() < Time(16, 00)) //
+            || (dpsInRange <= 7.0 && Util::getTime() > Time(16, 00)))                                  //
+            return true;
+
+        // If already in range and haven't attack recently, it's fine to swing once, this helps for recalculations done once in range
+        if (unit.isWithinRange(target) && !unit.hasAttackedRecently())
+            return true;
         return false;
     }
 } // namespace McRave::Combat::Clusters

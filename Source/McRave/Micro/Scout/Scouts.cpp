@@ -216,8 +216,9 @@ namespace McRave::Scouts {
                 if (Players::ZvT()) {
 
                     // Drone
-                    if (Spy::getEnemyOpener() == T_8Rax || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 ||
-                        Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Factory) > 0 ||
+                    if (Spy::getEnemyOpener() == T_8Rax || Spy::getEnemyOpener() == T_Proxy_8Rax || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0 ||
+                        Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0 ||
+                        Players::getTotalCount(PlayerState::Enemy, Terran_Factory) > 0 ||
                         (Terrain::getEnemyStartingPosition().isValid() && unexploredNaturals.empty() && Util::getTime() > Time(3, 30)) || Spy::getEnemyTransition() == U_WorkerRush ||
                         Util::getTime() > Time(4, 00))
                         main.desiredTypeCounts[Zerg_Drone] = 0;
@@ -326,16 +327,13 @@ namespace McRave::Scouts {
             // Check if fully scouted
             if (Terrain::getEnemyNatural()) {
                 natural.center = Terrain::getEnemyNatural()->getBase()->Center();
+                natural.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
                 if (Stations::isBaseExplored(Terrain::getEnemyNatural()))
                     natScouted = true;
 
-                // Add natural position as a target
-                if (Util::getTime() > Time(4, 00) || Players::TvZ() || Players::PvZ())
-                    natural.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
-
                 // If we scouted the main, scout the nat to get a full scout
-                if (Broodwar->self()->getRace() == Races::Zerg) {
-                    if (mainScouted && !natScouted && main.desiredTypeCounts[Zerg_Drone] > 0) {
+                if (Util::getTime() < Time(2, 30) && (Players::ZvT() || Players::ZvP())) {
+                    if (mainScouted && main.desiredTypeCounts[Zerg_Drone] > 0) {
                         main.desiredTypeCounts[Zerg_Drone]    = 0;
                         natural.desiredTypeCounts[Zerg_Drone] = 1;
                     }
@@ -474,6 +472,8 @@ namespace McRave::Scouts {
         {
             auto &army = scoutTargets[ScoutType::Army];
             if (Players::ZvZ() || Util::getTime() < Time(7, 00))
+                return;
+            if (Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
                 return;
 
             auto &expansion                            = scoutTargets[ScoutType::Expansion];
@@ -878,8 +878,8 @@ namespace McRave::Scouts {
 
         vector<const BWEB::Station *> enemyStations = {Terrain::getEnemyNatural()};
         safeDiscovered                              = true;
-        safePositions[Terrain::getEnemyNatural()] = Positions::Invalid;
-        safePositions[Terrain::getEnemyMain()]    = Positions::Invalid;
+        safePositions[Terrain::getEnemyNatural()]   = Positions::Invalid;
+        safePositions[Terrain::getEnemyMain()]      = Positions::Invalid;
 
         auto natWatch  = Stations::getDefendPosition(Terrain::getEnemyNatural());
         auto mainWatch = Stations::getDefendPosition(Terrain::getEnemyMain());

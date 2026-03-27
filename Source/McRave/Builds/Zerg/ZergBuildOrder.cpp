@@ -45,10 +45,12 @@ namespace McRave::BuildOrder::Zerg {
         {
             needSunks                     = false;
             needSpores                    = false;
-            buildQueue[Zerg_Creep_Colony] = vis(Zerg_Creep_Colony) + vis(Zerg_Spore_Colony) + vis(Zerg_Sunken_Colony);
+            auto colonyCount              = vis(Zerg_Creep_Colony) + vis(Zerg_Spore_Colony) + vis(Zerg_Sunken_Colony);
+            buildQueue[Zerg_Creep_Colony] = colonyCount;
 
             // Adding Wall defenses
             if ((vis(Zerg_Drone) >= 8 || Players::ZvZ()) && !isPreparingAllIn()) {
+                auto i = 1;
                 for (auto &[_, wall] : BWEB::Walls::getWalls()) {
                     if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()))
                         continue;
@@ -70,14 +72,16 @@ namespace McRave::BuildOrder::Zerg {
                         needSunks = true;
 
                     if ((atPercent(Zerg_Spawning_Pool, 0.66) && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
-                        buildQueue[Zerg_Creep_Colony] += 1;
-                        return; // TODO: Only queue 1 for now otherwise sometimes we plan 2 (2 walls separately request a colony)
+                        buildQueue[Zerg_Creep_Colony] = colonyCount + 1;
+                        LOG_SLOW("Wall ", i, " needs a sunken/spore");
+                        i++;
                     }
                 }
             }
 
             // Adding Station defenses
             if (vis(Zerg_Drone) >= 8 || Players::ZvZ()) {
+                auto i = 1;
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
                     auto colonies  = Stations::getColonyCount(station);
                     auto airNeeded = Stations::needAirDefenses(station);
@@ -89,8 +93,9 @@ namespace McRave::BuildOrder::Zerg {
                         needSunks = true;
 
                     if ((atPercent(Zerg_Spawning_Pool, 0.66) && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
-                        buildQueue[Zerg_Creep_Colony] += 1;
-                        return; // TODO: Only queue 1 for now otherwise sometimes we plan 2 (2 stations separately request a colony)
+                        buildQueue[Zerg_Creep_Colony] = colonyCount + 1;
+                        LOG_SLOW("Station ", i, " needs a sunken/spore");
+                        i++;
                     }
                 }
             }
@@ -104,7 +109,7 @@ namespace McRave::BuildOrder::Zerg {
                 if (Players::ZvP() && !Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown" && !Spy::enemyFastExpand() &&
                     ((Spy::getEnemyBuild() == P_2Gate && Util::getTime() > Time(4, 45)) || (Spy::getEnemyBuild() == P_1GateCore && Util::getTime() > Time(4, 15)))) {
                     needSpores = true;
-                    wallNat    = false;
+                    wallNat    = true;
                 }
                 if (Players::ZvZ() && !Spy::enemyFastExpand() && Spy::getEnemyOpener() != Z_4Pool && !Spy::enemyTurtle() && Spy::getEnemyOpener() != Z_7Pool &&
                     Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00)) {
@@ -401,12 +406,12 @@ namespace McRave::BuildOrder::Zerg {
             upgradeQueue[Adrenal_Glands]    = com(Zerg_Hive) > 0 && vis(Zerg_Zergling) >= 36 && Broodwar->self()->getUpgradeLevel(Metabolic_Boost) > 0;
 
             // Ground unit upgrades
-            auto upgradingGrdArmor = (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Melee_Attacks)) || Broodwar->self()->isUpgrading(Zerg_Carapace);
-            upgradeQueue[Zerg_Melee_Attacks]   = upgradingGrdArmor && (BuildOrder::getCompositionPercentage(Zerg_Zergling) > 0.0 || BuildOrder::getCompositionPercentage(Zerg_Ultralisk) > 0.0);
-            upgradeQueue[Zerg_Missile_Attacks] = upgradingGrdArmor && (BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0 || BuildOrder::getCompositionPercentage(Zerg_Lurker) > 0.0);
-            upgradeQueue[Zerg_Carapace]        = (BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0 || BuildOrder::getCompositionPercentage(Zerg_Zergling) > 0.0 ||
-                                           BuildOrder::getCompositionPercentage(Zerg_Ultralisk) > 0.0) &&
-                                          Players::getSupply(PlayerState::Self, Races::Zerg) > 100;
+            const auto upgradingGrdArmor   = (Broodwar->self()->getUpgradeLevel(Zerg_Carapace) > Broodwar->self()->getUpgradeLevel(Zerg_Melee_Attacks)) || Broodwar->self()->isUpgrading(Zerg_Carapace);
+            const auto compositionAndCount = [&](auto &t) { return BuildOrder::getCompositionPercentage(t) > 0.0 && total(t) >= (t.supplyRequired() / 2); };
+            upgradeQueue[Zerg_Melee_Attacks]   = upgradingGrdArmor && (compositionAndCount(Zerg_Zergling) || compositionAndCount(Zerg_Ultralisk));
+            upgradeQueue[Zerg_Missile_Attacks] = upgradingGrdArmor && (compositionAndCount(Zerg_Hydralisk) || compositionAndCount(Zerg_Lurker));
+            upgradeQueue[Zerg_Carapace]        = s >= 100 &&
+                                          (compositionAndCount(Zerg_Hydralisk) || compositionAndCount(Zerg_Lurker) || compositionAndCount(Zerg_Zergling) || compositionAndCount(Zerg_Ultralisk));
 
             // Want 3x upgrades by default
             upgradeQueue[Zerg_Carapace] *= 3;
@@ -539,6 +544,8 @@ namespace McRave::BuildOrder::Zerg {
                 // Hive tech
                 buildQueue[Zerg_Queens_Nest] = 1;
                 buildQueue[Zerg_Hive]        = atPercent(Zerg_Queens_Nest, 0.95);
+
+                expandDesired = hatchCount() >= 7;
 
                 // Upgrades
                 upgradeQueue[UpgradeTypes::Metabolic_Boost]    = 1;
@@ -741,12 +748,15 @@ namespace McRave::BuildOrder::Zerg {
                 // Keep a consistent muta count, get ultras and defilers eventually
                 else if (unitOrder == ultraling || unitOrder == defilerling) {
                     priorityOrder = {
-                        {Zerg_Drone, 30},    {Zerg_Mutalisk, 16}, {Zerg_Ultralisk, 4}, {Zerg_Defiler, 1},   {Zerg_Drone, 45},     {Zerg_Mutalisk, 16},
-                        {Zerg_Ultralisk, 8}, {Zerg_Defiler, 2},   {Zerg_Drone, 60},    {Zerg_Mutalisk, 48}, {Zerg_Ultralisk, 12}, {Zerg_Defiler, 2},
+                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 16}, {Zerg_Ultralisk, 4},  {Zerg_Defiler, 1}, //
+                        {Zerg_Drone, 45}, {Zerg_Mutalisk, 16}, {Zerg_Ultralisk, 8},  {Zerg_Defiler, 2}, //
+                        {Zerg_Drone, 60}, {Zerg_Mutalisk, 48}, {Zerg_Ultralisk, 12}, {Zerg_Defiler, 2},
                     };
                     if (total(Zerg_Ultralisk) > 0 || total(Zerg_Defiler) > 0) {
-                        priorityOrder = {{Zerg_Drone, 30},  {Zerg_Ultralisk, 4}, {Zerg_Defiler, 1},    {Zerg_Drone, 45},  {Zerg_Ultralisk, 8},
-                                         {Zerg_Defiler, 2}, {Zerg_Drone, 60},    {Zerg_Ultralisk, 12}, {Zerg_Defiler, 2}, {Zerg_Mutalisk, 16}};
+                        priorityOrder = {{Zerg_Drone, 30},   {Zerg_Ultralisk, 4},  {Zerg_Defiler, 1}, //
+                                         {Zerg_Drone, 45},   {Zerg_Ultralisk, 8},  {Zerg_Defiler, 2}, //
+                                         {Zerg_Drone, 60},   {Zerg_Ultralisk, 12}, {Zerg_Defiler, 2}, //
+                                         {Zerg_Mutalisk, 16}};
                     }
                 }
 
@@ -755,6 +765,15 @@ namespace McRave::BuildOrder::Zerg {
                         {Zerg_Drone, 30}, {Zerg_Mutalisk, 16}, {Zerg_Queen, 6},  //
                         {Zerg_Drone, 45}, {Zerg_Mutalisk, 24}, {Zerg_Queen, 12}, //
                         {Zerg_Drone, 60}, {Zerg_Mutalisk, 48},
+                    };
+                }
+
+                else if (unitOrder == mutalurk) {
+                    priorityOrder = {
+                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 6}, {Zerg_Hydralisk, 2}, {Zerg_Lurker, 2}, //
+                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 12}, {Zerg_Hydralisk, 4}, {Zerg_Lurker, 4}, //
+                        {Zerg_Drone, 45}, {Zerg_Mutalisk, 18}, {Zerg_Hydralisk, 8}, {Zerg_Lurker, 8}, //
+                        {Zerg_Drone, 60}, {Zerg_Mutalisk, 24}, {Zerg_Hydralisk, 16}, {Zerg_Lurker, 16},
                     };
                 }
             }
@@ -771,8 +790,9 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             for (auto &[type, count] : priorityOrder) {
-                auto typeAvailable = (unlockReady(type) && isFocusUnit(type) && vis(type) < count) ||
-                                     (type.isWorker() && (!Resources::isMineralSaturated() || !Resources::isGasSaturated()) && vis(type) < count);
+                auto typeAvailable = (unlockReady(type) && isFocusUnit(type) && vis(type) < count) ||                                                                               //
+                                     (!type.isWorker() && any_of(type.buildsWhat().begin(), type.buildsWhat().end(), [&](auto &t) { return unlockReady(t) && isFocusUnit(t); })) || //
+                                     (type.isWorker() && (!Resources::isMineralSaturated() || !Resources::isGasSaturated()) && vis(type) < count);                                  //
                 if (!typeAvailable)
                     continue;
 

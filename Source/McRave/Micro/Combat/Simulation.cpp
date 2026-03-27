@@ -58,11 +58,11 @@ namespace McRave::Combat::Simulation {
             unit.setSimState(SimState::Loss);
 
         //// Reset counter if we're losing
-        //if (unit.getSimState() == SimState::Loss)
+        // if (unit.getSimState() == SimState::Loss)
         //    unit.framesCommitted = 0;
 
         //// Only commit to a win after some debouncing
-        //if (unit.getSimState() == SimState::Win && !unit.isLightAir()) {
+        // if (unit.getSimState() == SimState::Win && !unit.isLightAir()) {
         //    unit.framesCommitted++;
         //    if (unit.framesCommitted < 80)
         //        unit.setSimState(SimState::Loss);
@@ -155,6 +155,17 @@ namespace McRave::Combat::Simulation {
                 updateThresholds(unit);
                 updateIncentives(unit);
                 updateSimulation(unit);
+            }
+        }
+
+        for (auto &u : Units::getUnits(PlayerState::Self)) {
+            UnitInfo &self = *u;
+            if (!u->hasCommander())
+                continue;
+
+            if (u->hasCommander() && !u->isLightAir()) {
+                u->setSimValue(u->getCommander().lock()->getSimValue());
+                u->setSimState(u->getCommander().lock()->getSimState());
             }
         }
     }

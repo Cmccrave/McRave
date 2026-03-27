@@ -131,6 +131,7 @@ namespace McRave::Stations {
 
         void updateDefendPositions()
         {
+            // Only calculate this once per station
             for (auto &station : BWEB::Stations::getStations()) {
                 auto defendPosition                 = station.getBase()->Center();
                 const BWEM::ChokePoint *defendChoke = nullptr;
@@ -197,6 +198,23 @@ namespace McRave::Stations {
                 //}
                 defendPositions[&station] = defendPosition;
             }
+
+            
+            // Check if any walls are completed that defend this station
+            for (auto &station : Stations::getStations(PlayerState::Self)) {
+                auto wall = BWEB::Walls::getClosestWall(station->getBase()->Center());
+                if (wall && Walls::isComplete(wall) && wall->getStation() == station) {
+                    if (wall->getOpenings().size() > 0) {
+                        TilePosition avgOpeningPosition = TilePosition(0, 0);
+                        for (auto opening : wall->getOpenings()) {
+                            avgOpeningPosition += opening;
+                        }
+                        avgOpeningPosition /= int(wall->getOpenings().size());
+                        defendPositions[station] = Position(avgOpeningPosition) + Position(16,16);
+                        Visuals::drawCircle(defendPositions[station], 10, Colors::Cyan, true);
+                    }
+                }
+            }
         }
 
         int PvPgroundDef(const BWEB::Station *const station)
@@ -250,7 +268,7 @@ namespace McRave::Stations {
 
             if (station->isMain()) {
                 // Add 2 sunks if we gave up the natural intentionally against horror gates
-                if (Spy::getEnemyOpener() == P_Horror_9_9 || (Spy::getEnemyOpener() == P_Proxy_9_9 && BuildOrder::getCurrentOpener() == Z_12Hatch))
+                if (Spy::getEnemyOpener() == P_Horror_9_9)
                     return (Util::getTime() > Time(2, 40)) + (Util::getTime() > Time(3, 00)) - groundCount;
 
                 //// Add 1 sunks if we opened greedy against proxy gates
@@ -280,7 +298,7 @@ namespace McRave::Stations {
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
                 if (Players::ZvT() && Spy::getEnemyBuild() != T_2Rax && Spy::getEnemyTransition() == U_WorkerRush)
                     return 1 - groundCount;
-                if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(7, 00))
+                if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(9, 00))
                     return 1 - groundCount;
             }
             return 0;
@@ -558,7 +576,6 @@ namespace McRave::Stations {
 
     int needAirDefenses(const BWEB::Station *const station)
     {
-
         // We don't want to pull workers to build things if none are nearby
         if (getSaturationRatio(station) == 0.0 && getColonyCount(station) == 0)
             return 0;
@@ -623,13 +640,9 @@ namespace McRave::Stations {
 
         if (Players::ZvT()) {
 
-            // Must get a spore if they have cloak
-            if (Spy::getEnemyTransition() == T_2PortWraith && Spy::enemyInvis())
-                return 1 - airCount;
-
-            // Need a spore with later mutas
-            if (Spy::getEnemyTransition() == T_2PortWraith && BuildOrder::getCurrentTransition() != Z_2HatchMuta)
-                return (Util::getTime() > Time(5, 30)) - airCount;
+            // 1 Fact 2 Port Wraith
+            if (Spy::getEnemyTransition() == T_2PortWraith)
+                return (Util::getTime() > Time(4, 30)) - airCount;
 
             // Late game we want a spore protecting ovies from stray valks/wraiths
             if (Stations::getStations(PlayerState::Self).size() >= 3 &&
@@ -766,7 +779,7 @@ namespace McRave::Stations {
             if (unit.isLightAir() && Util::getTime() < Time(8, 00))
                 return Terrain::getMyMain();
             if (Util::getTime() < Time(5, 00) || Spy::enemyRush() || lowGroundCount)
-                return Combat::isDefendNatural() ? Terrain::getMyNatural() : Terrain::getMyMain();
+                return Combat::getDefendStation();
         }
 
         auto distBest    = DBL_MAX;

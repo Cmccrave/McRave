@@ -11,6 +11,7 @@ namespace McRave::Util {
     double getCastLimit(BWAPI::TechType);
 
     int boxDistance(BWAPI::UnitType, BWAPI::Position, BWAPI::UnitType, BWAPI::Position);
+    int boxDistance(UnitInfo &unit, UnitInfo &target);
 
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);
@@ -293,6 +294,15 @@ constexpr const char *baseName(const char *path)
         if (!_logged) {                                                                                                                                                                                \
             Util::writeToLogger(baseName(__FILE__), __LINE__, __VA_ARGS__);                                                                                                                            \
             _logged = true;                                                                                                                                                                            \
+        }                                                                                                                                                                                              \
+    } while (0)
+
+#define LOG_FAST(...)                                                                                                                                                                                  \
+    do {                                                                                                                                                                                               \
+        static Time lastLogTime = Util::getTime() - Time(0, 01);                                                                                                                                       \
+        if (Util::getTime() - lastLogTime >= Time(0, 01)) {                                                                                                                                            \
+            Util::writeToLogger(baseName(__FILE__), __LINE__, __VA_ARGS__);                                                                                                                            \
+            lastLogTime = Util::getTime();                                                                                                                                                             \
         }                                                                                                                                                                                              \
     } while (0)
 

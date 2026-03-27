@@ -375,6 +375,14 @@ namespace McRave::Planning {
             if (!building.isResourceDepot() || !expand || expansionPlanned || BuildOrder::isProxy())
                 return false;
 
+            // Rebuild main if it was lost
+            if (isBuildable(baseType, Terrain::getMainTile()) && isPlannable(baseType, Terrain::getMainTile()) && isPathable(building, Terrain::getMainTile())) {
+                placement        = Terrain::getMainTile();
+                currentExpansion = Terrain::getMyMain();
+                expansionPlanned = true;
+                return true;
+            }
+
             // First expansion is always the Natural
             if (BuildOrder::takeNatural() && isBuildable(baseType, Terrain::getNaturalTile()) && isPlannable(baseType, Terrain::getNaturalTile()) && isPathable(building, Terrain::getNaturalTile())) {
                 placement        = Terrain::getNaturalTile();
@@ -525,16 +533,20 @@ namespace McRave::Planning {
                     desiredCenter = closestSunk->getPosition();
                 }
 
-                // How to dictate row order
-                vector<int> desiredRowOrder = {1, 2};
-                if (Players::ZvZ())
-                    desiredRowOrder = {2, 1};
-
                 int colonies = 0;
                 for (auto &tile : wall.getDefenses()) {
                     if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony || buildingsPlanned.find(tile) != buildingsPlanned.end())
                         colonies++;
                 }
+
+                // How to dictate row order
+                vector<int> desiredRowOrder = {1, 2, 3};
+                if (Players::ZvZ())
+                    desiredRowOrder = {3, 2, 1};
+
+                // First defense must be placed in an optimal spot
+                if (wall.getGroundDefenseCount() + wall.getAirDefenseCount() + colonies <= 0)
+                    desiredRowOrder = {1};
 
                 // If this wall needs defenses
                 if (Walls::needGroundDefenses(wall) > colonies) {
@@ -542,7 +554,7 @@ namespace McRave::Planning {
                     // Try to place in adjacent rows as existing defenses
                     if (!desiredRowOrder.empty()) {
                         for (auto i : desiredRowOrder) {
-                            placement = returnClosest(building, wall.getDefenses(i), desiredCenter, false, Util::getTime() < Time(4, 00));
+                            placement = returnClosest(building, wall.getDefenses(i), desiredCenter, false, true);
                             if (placement.isValid()) {
                                 plannedGround.insert(placement);
                                 return true;
@@ -597,7 +609,7 @@ namespace McRave::Planning {
 
                 if (wall.getStation()->isMain() && !BuildOrder::isWallMain())
                     continue;
-                if (wall.getStation()->isNatural() && (!BuildOrder::isWallNat() || building == Zerg_Evolution_Chamber))
+                if (wall.getStation()->isNatural() && !BuildOrder::isWallNat())
                     continue;
                 if (!wall.getStation()->isMain() && !wall.getStation()->isNatural() && !BuildOrder::isWallThird())
                     continue;
@@ -839,8 +851,10 @@ namespace McRave::Planning {
                     queuedCount++;
                     auto here   = getBuildLocation(building);
                     auto center = Position(here) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
-                    if (!here.isValid())
+                    if (!here.isValid()) {
+                        LOG_SLOW("Couldn't find a position to build ", building.c_str());
                         continue;
+                    }
 
                     auto builder = getBuilder(building, center);
 
@@ -857,8 +871,10 @@ namespace McRave::Planning {
                         }
                     }
 
-                    if (!builder)
+                    if (!builder) {
+                        LOG_SLOW("Couldn't find a builder for ", building.c_str());
                         Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::Red);
+                    }
 
                     if (here.isValid() && builder && Workers::shouldMoveToBuild(*builder, here, building)) {
                         Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::White);

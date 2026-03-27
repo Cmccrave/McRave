@@ -4,7 +4,9 @@
 #include "Info/Unit/UnitInfo.h"
 #include "Info/Unit/Units.h"
 #include "Main/Common.h"
+#include "Map/Stations.h"
 #include "Map/Terrain.h"
+#include "Micro/Combat/Combat.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -50,98 +52,170 @@ namespace McRave::Pathing {
             if (!target.unit()->exists() || unit.getSpeed() == 0.0 || target.getSpeed() == 0.0 || !target.getPosition().isValid())
                 return;
 
-            auto range          = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
-            auto boxDistance    = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition());
-            auto framesToArrive = clamp((boxDistance - range) / unit.getSpeed(), 0.0, 24.0);
-            auto intercept      = target.getPosition() + Position(int(target.unit()->getVelocityX() * framesToArrive), int(target.unit()->getVelocityY() * framesToArrive));
-            unit.setInterceptPosition(intercept);
-        }
-
-        void updateSurroundPositions()
-        {
-            if (Players::ZvZ())
+            // Only generate for light air for now
+            if (!unit.isLightAir())
                 return;
 
-            // Allowed types to surround
-            auto allowedTypes = {Zerg_Zergling, Protoss_Zealot};
+            auto toTarget      = target.getPosition() - unit.getPosition();
+            auto distance      = toTarget.getLength();
+            auto relativeSpeed = unit.getSpeed();
+            auto t             = max(distance / relativeSpeed, 1.0);
+            auto intercept     = target.getPosition() + Position(target.unit()->getVelocityX() * t, target.unit()->getVelocityY() * t);
+            unit.setInterceptPosition(intercept);
 
-            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
-                UnitInfo &unit = *u;
+            // auto range          = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
+            // auto boxDistance    = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition());
+            // auto framesToArrive = clamp((boxDistance - range) / unit.getSpeed(), 0.0, 24.0);
+            // auto intercept      = target.getPosition() + Position(int(target.unit()->getVelocityX() * framesToArrive), int(target.unit()->getVelocityY() * framesToArrive));
+            // unit.setInterceptPosition(intercept);
+        }
 
-                if (unit.isFlying() || unit.getType().isBuilding() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()))
-                    continue;
+        using PositionScore = std::pair<Position, double>;
+        template <typename Generator> std::vector<PositionScore> generatePositions(UnitInfo &enemy, Position biasTowards, Generator gen)
+        {
+            std::vector<PositionScore> positions;
+            for (auto &pos : gen(enemy, biasTowards)) {
+                positions.emplace_back(pos, pos.getDistance(biasTowards));
+            }
 
-                // Get the furthest unit targeting this to offset how many frames to estimate
-                auto furthestTargeter = Util::getFurthestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u->hasTarget() && find(allowedTypes.begin(), allowedTypes.end(), u->getType()) != allowedTypes.end() && u->getRole() == Role::Combat && *u->getTarget().lock() == unit;
+            std::sort(positions.begin(), positions.end(), [](auto &l, auto &r) { return l.second < r.second; });
+            return positions;
+        }
+
+        auto lineGenerator = [&](UnitInfo &enemy, Position biasTowards) {
+            vector<Position> result;
+            Position dir = biasTowards - enemy.getPosition();
+
+            double length = max(1.0, enemy.getPosition().getDistance(biasTowards));
+            double dx     = dir.x / length;
+            double dy     = dir.y / length;
+
+            int fx = int(dx * 32.0);
+            int fy = int(dy * 32.0);
+
+            for (int i = -3; i < 3; i++) {
+                auto x = int(-dy * i * (enemy.getType().width() - 1)) + fx;
+                auto y = int(dx * i * (enemy.getType().height() - 1)) + fy;
+                result.emplace_back(enemy.getPosition().x + x, enemy.getPosition().y + y);
+            }
+
+            return result;
+        };
+
+        auto circleGenerator = [&](UnitInfo &enemy, Position biasTowards) {
+            std::vector<Position> result;
+
+            double radius = std::max(enemy.getType().width(), enemy.getType().height()) * 0.8;
+
+            for (int i = 0; i < 8; i++) {
+                double angle = (2.0 * M_PI / 8) * i;
+                result.emplace_back(enemy.getPosition().x + int(cos(angle) * radius), enemy.getPosition().y + int(sin(angle) * radius));
+            }
+
+            return result;
+        };
+
+        void updateInterceptPositions(UnitInfo &enemy) {}
+
+        void updateTrapPositions(UnitInfo &enemy)
+        {
+            if (enemy.getType() != Terran_Vulture)
+                return;
+
+            // Figure out how to trap the unit
+            auto biasTowards    = Terrain::inTerritory(PlayerState::Self, enemy.getPosition()) ? Combat::getDefendPosition() : Position(Util::getClosestChokepoint(enemy.getPosition())->Center());
+            auto closestStation = Stations::getClosestStationAir(enemy.getPosition(), PlayerState::Self);
+            if (closestStation && closestStation->isNatural()) {
+                auto closestMain = BWEB::Stations::getClosestMainStation(enemy.getPosition());
+                if (closestMain && Stations::ownedBy(closestMain) == PlayerState::Self)
+                    biasTowards = Stations::getDefendPosition(closestMain);
+            }
+
+            static set<UnitType> allowedTypes = {Zerg_Zergling, Protoss_Zealot};
+
+            auto assignPosition = [&](UnitInfo &unit, Position pos) {
+                double distToBias = enemy.getPosition().getDistance(biasTowards);
+                double distToPos  = enemy.getPosition().getDistance(pos);
+
+                auto dirx = (biasTowards.x - enemy.getPosition().x) / max(1.0, distToBias);
+                auto diry = (biasTowards.y - enemy.getPosition().y) / max(1.0, distToBias);
+
+                auto expandx = (pos.x - unit.getPosition().x) / max(1.0, distToPos);
+                auto expandy = (pos.y - unit.getPosition().y) / max(1.0, distToPos);
+
+                auto frames = clamp(unit.getPosition().getDistance(pos) / unit.getSpeed(), 2.0, 64.0);
+
+                double factor      = distToBias / (distToBias + 96.0);
+                auto weightTowards = (frames + 12) * factor;
+                auto weightExpand  = (frames + 2);
+                auto finalPosition = pos + Position(int(dirx * weightTowards), int(diry * weightTowards)) + Position(int(expandx * weightExpand), int(expandy * weightExpand));
+
+                Visuals::drawLine(unit.getPosition(), finalPosition, Colors::Green);
+                Visuals::drawCircle(finalPosition, 4, Colors::Green);
+
+                if (Util::findWalkable(unit, finalPosition))
+                    unit.setTrapPosition(finalPosition);
+            };
+
+            auto positions = generatePositions(enemy, biasTowards, lineGenerator);
+            for (auto &[pos, dist] : positions) {
+                auto closestTargeter = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
+                    return allowedTypes.find(u->getType()) != allowedTypes.end() && u->hasTarget() && u->getRole() == Role::Combat &&
+                           (!u->getTrapPosition().isValid() || u->getTrapPosition() == pos) && *u->getTarget().lock() == enemy;
                 });
-                if (furthestTargeter) {
-                    auto furthestFramesToArrive = (clamp(furthestTargeter->getPosition().getDistance(unit.getPosition()) / furthestTargeter->getSpeed(), 0.0, 24.0));
-
-                    // Figure out how to trap the unit
-                    auto trapTowards = unit.getPosition();// +Position(int(unit.unit()->getVelocityX() * furthestFramesToArrive), int(unit.unit()->getVelocityY() * furthestFramesToArrive));
-                    if (unit.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, unit.getPosition())) {
-                        trapTowards += Position(int(unit.unit()->getVelocityX() * furthestFramesToArrive), int(unit.unit()->getVelocityY() * furthestFramesToArrive));
-                        trapTowards /= 2.0;
-                        // furthestFramesToArrive *= 1.15;
-                    }
-                    // Visuals::drawLine(unit.getPosition(), trapTowards, Colors::Purple);
-
-                    // Create surround positions in a circle
-                    vector<pair<Position, double>> surroundPositions;
-                    double radius = max(unit.getType().width(), unit.getType().height()) * 0.8;
-                    for (int i = 0; i < 8; i++) {
-                        double angle = (2.0 * M_PI / 8) * i;
-                        Position pos(unit.getPosition().x + int(cos(angle) * radius), unit.getPosition().y + int(sin(angle) * radius));
-
-                        surroundPositions.emplace_back(pos, pos.getDistance(trapTowards));
-                    }
-
-                    // Sort positions by summed distances
-                    sort(surroundPositions.begin(), surroundPositions.end(), [&](auto &l, auto &r) { return l.second < r.second; });
-
-                    // Assign closest targeter
-                    int nx = 0;
-                    for (auto &[pos, dist] : surroundPositions) {
-                        nx++;
-                        // Visuals::drawCircle(pos, 4, Colors::Blue);
-
-                        auto closestTargeter = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
-                            return u->hasTarget() && find(allowedTypes.begin(), allowedTypes.end(), u->getType()) != allowedTypes.end() &&
-                                   (!u->getSurroundPosition().isValid() || u->getSurroundPosition() == pos) && u->getRole() == Role::Combat && *u->getTarget().lock() == unit;
-                        });
-
-                        // Get time to arrive to the surround position
-                        if (closestTargeter) {
-                            auto dirx = (trapTowards.x - unit.getPosition().x) / (1.0 + unit.getPosition().getDistance(trapTowards));
-                            auto diry = (trapTowards.y - unit.getPosition().y) / (1.0 + unit.getPosition().getDistance(trapTowards));
-
-                            auto expandx = (pos.x - unit.getPosition().x) / unit.getPosition().getDistance(pos);
-                            auto expandy = (pos.y - unit.getPosition().y) / unit.getPosition().getDistance(pos);
-
-                            auto closestFramesToArrive = (clamp(pow(closestTargeter->getPosition().getDistance(pos) / closestTargeter->getSpeed(), 1.5), 2.0, 64.0));
-
-                            if (!unit.getType().isWorker()) {
-                                auto ct_angle  = BWEB::Map::getAngle(closestTargeter->getPosition(), pos);
-                                auto pos_angle = BWEB::Map::getAngle(pos, unit.getPosition());
-
-                                auto angleDiff = abs(ct_angle - pos_angle);
-                            }
-
-                            auto correctedPos = pos + Position(int(dirx * closestFramesToArrive), int(diry * closestFramesToArrive)) +
-                                                Position(int(expandx * closestFramesToArrive), int(expandy * closestFramesToArrive));
-
-                            closestTargeter->setSurroundPosition(correctedPos);
-                            //Visuals::drawLine(closestTargeter->getPosition(), correctedPos, Colors::Green);
-                            //Visuals::drawCircle(correctedPos, 4, Colors::Green);
-                        }
-                    }
-                }
+                if (closestTargeter)
+                    assignPosition(*closestTargeter, pos);
             }
         }
 
-        void updatePaths()
+        void updateSurroundPositions(UnitInfo &enemy)
         {
+            auto biasTowards                  = enemy.getPosition() + Position(int(enemy.unit()->getVelocityX() * 24.0), int(enemy.unit()->getVelocityY() * 24.0));
+            static set<UnitType> allowedTypes = {Zerg_Zergling, Protoss_Zealot};
+
+            auto assignPosition = [&](UnitInfo &unit, Position pos) {
+                double distToBias = enemy.getPosition().getDistance(biasTowards);
+                double distToPos  = enemy.getPosition().getDistance(pos);
+
+                auto dirx = (biasTowards.x - enemy.getPosition().x) / max(1.0, distToBias);
+                auto diry = (biasTowards.y - enemy.getPosition().y) / max(1.0, distToBias);
+
+                auto expandx = (pos.x - unit.getPosition().x) / max(1.0, distToPos);
+                auto expandy = (pos.y - unit.getPosition().y) / max(1.0, distToPos);
+
+                auto frames = clamp(pow(unit.getPosition().getDistance(pos) / unit.getSpeed(), 1.5), 2.0, 64.0);
+
+                auto finalPosition = pos + Position(int(dirx * frames), int(diry * frames)) + Position(int(expandx * frames), int(expandy * frames));
+
+                // Visuals::drawLine(unit.getPosition(), finalPosition, Colors::Green);
+                // Visuals::drawCircle(finalPosition, 4, Colors::Green);
+                unit.setSurroundPosition(finalPosition);
+            };
+
+            auto positions = generatePositions(enemy, biasTowards, circleGenerator);
+            for (auto &[pos, dist] : positions) {
+                auto closestTargeter = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
+                    return allowedTypes.find(u->getType()) != allowedTypes.end() && u->hasTarget() && u->getRole() == Role::Combat &&
+                           (!u->getSurroundPosition().isValid() || u->getSurroundPosition() == pos) && *u->getTarget().lock() == enemy;
+                });
+                if (closestTargeter)
+                    assignPosition(*closestTargeter, pos);
+            }
+        }
+
+        void updatePositions()
+        {
+            for (auto &e : Units::getUnits(PlayerState::Enemy)) {
+                UnitInfo &enemy = *e;
+
+                if (enemy.isFlying() || enemy.getType().isBuilding() || Terrain::inTerritory(PlayerState::Enemy, enemy.getPosition()))
+                    continue;
+
+                updateInterceptPositions(enemy);
+                updateTrapPositions(enemy);
+                updateSurroundPositions(enemy);
+            }
+
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
                 if (unit.hasTarget()) {
@@ -159,9 +233,5 @@ namespace McRave::Pathing {
 
     void getDefaultPath(UnitInfo &unit, BWEB::Path &path) {}
 
-    void onFrame()
-    {
-        updateSurroundPositions();
-        updatePaths();
-    }
+    void onFrame() { updatePositions(); }
 } // namespace McRave::Pathing

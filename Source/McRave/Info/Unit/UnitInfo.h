@@ -10,6 +10,7 @@
 #include "Main/Helpers.h"
 #include "UnitData.h"
 #include "UnitHelpers.h"
+#include "UnitHistory.h"
 #include "UnitMath.h"
 
 namespace McRave {
@@ -17,7 +18,8 @@ namespace McRave {
     class UnitInfo : public std::enable_shared_from_this<UnitInfo>, //
                      public UnitFrames,                             //
                      public UnitData,                               //
-                     public UnitHelpers                             //
+                     public UnitHelpers,                            //
+                     public UnitHistory                             //
     {
 
         double engageDist    = 0.0;
@@ -68,21 +70,17 @@ namespace McRave {
         Position destination        = Positions::Invalid;
         Position formation          = Positions::Invalid;
         Position navigation         = Positions::Invalid;
-        Position lastPos            = Positions::Invalid;
         Position goal               = Positions::Invalid;
         Position commandPosition    = Positions::Invalid;
         Position surroundPosition   = Positions::Invalid;
         Position interceptPosition  = Positions::Invalid;
+        Position trapPosition       = Positions::Invalid;
+        Position facingPosition     = Positions::Invalid;
         WalkPosition walkPosition   = WalkPositions::Invalid;
-        WalkPosition lastWalk       = WalkPositions::Invalid;
         TilePosition tilePosition   = TilePositions::Invalid;
         TilePosition buildPosition  = TilePositions::Invalid;
-        TilePosition lastTile       = TilePositions::Invalid;
         UnitCommandType commandType = UnitCommandTypes::None;
 
-        std::map<int, Position> positionHistory;
-        std::map<int, UnitCommandType> commandHistory;
-        std::map<int, std::pair<Order, Position>> orderHistory;
         BWEB::Path destinationPath;
         void updateHistory();
         void updateStatistics();
@@ -185,6 +183,8 @@ namespace McRave {
 
         bool attemptingRunby();
         bool attemptingSurround();
+        bool attemptingTrap();
+        bool attemptingIntercept();
         bool attemptingHarass();
         bool attemptingRegroup();
 
@@ -221,10 +221,11 @@ namespace McRave {
         Position getGoal() { return goal; }
         Position getInterceptPosition() { return interceptPosition; }
         Position getSurroundPosition() { return surroundPosition; }
+        Position getTrapPosition() { return trapPosition; }
+        Position getFacingPosition() { return facingPosition; }
         WalkPosition getWalkPosition() { return walkPosition; }
         TilePosition getTilePosition() { return tilePosition; }
         TilePosition getBuildPosition() { return buildPosition; }
-        TilePosition getLastTile() { return lastTile; }
         BWEB::Path &getDestinationPath() { return destinationPath; }
 
         double getCurrentSpeed() { return currentSpeed; }
@@ -281,6 +282,7 @@ namespace McRave {
 
         void setInterceptPosition(Position p) { interceptPosition = p; }
         void setSurroundPosition(Position p) { surroundPosition = p; }
+        void setTrapPosition(Position p) { trapPosition = p; }
 
         void circle(Color color);
         void box(Color color);

@@ -6,10 +6,10 @@ namespace McRave::Walls {
     void onStart();
     void onFrame();
 
-    int getColonyCount(const BWEB::Wall *const);
-
-    int needGroundDefenses(const BWEB::Wall &);
-    int needAirDefenses(const BWEB::Wall &);
-    const BWEB::Wall *const getMainWall();
-    const BWEB::Wall *const getNaturalWall();
+    bool isComplete(BWEB::Wall *const);
+    int getColonyCount(BWEB::Wall *const);
+    int needGroundDefenses(BWEB::Wall &);
+    int needAirDefenses(BWEB::Wall &);
+    BWEB::Wall *const getMainWall();
+    BWEB::Wall *const getNaturalWall();
 } // namespace McRave::Walls

@@ -45,6 +45,10 @@ namespace McRave {
         if (extractorsLastFrame != Broodwar->self()->visibleUnitCount(Zerg_Extractor))
             raceSupply[Races::Zerg] += 2 * (Broodwar->self()->visibleUnitCount(Zerg_Extractor) - extractorsLastFrame);
 
+        auto totalGrndDamage = 0.0;
+        auto totalAirDamage  = 0.0;
+        auto grndCount       = 0;
+        auto airCount        = 0;
         for (auto &u : units) {
             auto &unit = *u;
             auto isEgg = (unit.getType() == Zerg_Egg || unit.getType() == Zerg_Lurker_Egg);
@@ -91,7 +95,21 @@ namespace McRave {
                 pStrength.groundToAir += unit.getVisibleAirStrength();
                 pStrength.groundToGround += unit.getVisibleGroundStrength();
             }
+
+            if (!type.isBuilding() && !type.isWorker()) {
+
+                if (unit.getAirDamage() > 0) {
+                    totalAirDamage += unit.getAirDamage();
+                    airCount++;
+                }
+                if (unit.getGroundDamage() > 0) {
+                    totalGrndDamage += unit.getGroundDamage();
+                    grndCount++;
+                }
+            }
         }
+        pStrength.avgGroundDamage = grndCount > 0 ? totalGrndDamage / double(grndCount) : 5;
+        pStrength.avgAirDamage    = airCount > 0 ? totalAirDamage / double(airCount) : 5;
 
         // Round up to nearest 2 (for actual Broodwar supply)
         for (auto &supply : raceSupply)

@@ -55,7 +55,7 @@ namespace McRave::Combat {
     namespace Clusters {
         void onFrame();
         std::vector<Cluster>& getClusters();
-        bool canDecimate(UnitInfo& unit, UnitInfo& target);
+        bool canDecimate(UnitInfo& unit, UnitInfo& target, bool logData = false);
     }
 
     namespace Simulation {

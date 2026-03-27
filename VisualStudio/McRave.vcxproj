@@ -163,6 +163,7 @@
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitData.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitFrames.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitHelpers.h" />
+    <ClInclude Include="..\Source\McRave\Info\Unit\UnitHistory.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitInfo.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitMath.h" />
     <ClInclude Include="..\Source\McRave\Info\Unit\Units.h" />

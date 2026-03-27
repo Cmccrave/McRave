@@ -812,11 +812,18 @@ namespace McRave::Terrain {
     vector<Position> &getGroundCleanupPositions() { return groundCleanupPositions; }
     vector<Position> &getAirCleanupPositions() { return airCleanupPositions; }
 
-    bool isAtHome(Position here) { 
+    bool isAtHome(Position here)
+    {
         const auto dist           = min(640.0, 96.0 + Util::getTime().minutes * 16.0);
         const auto closestStation = Stations::getClosestStationAir(here, PlayerState::Self);
-        const auto atHome         = Terrain::inTerritory(PlayerState::Self, here) && closestStation && closestStation->getBase()->Center().getDistance(here) < dist;
-        return atHome;
+
+        const auto closestMain    = BWEB::Stations::getClosestMainStation(here);
+        const auto closestNatural = BWEB::Stations::getClosestNaturalStation(here);
+
+        const auto inDefendedArea = Terrain::inTerritory(PlayerState::Self, here) && closestStation && closestStation->getBase()->Center().getDistance(here) < dist;
+        const auto inDefendedMain = closestMain && closestNatural && Terrain::inArea(closestMain->getBase()->GetArea(), here) && Stations::ownedBy(closestMain) == PlayerState::Self &&
+                                    Stations::ownedBy(closestNatural) == PlayerState::Self;
+        return inDefendedArea || inDefendedMain;
     }
 
     // Main information

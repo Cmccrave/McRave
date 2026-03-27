@@ -28,6 +28,11 @@ namespace McRave::Spy::Zerg {
         {static_cast<string>(Z_12Hatch), Time(2, 50)},
     };
 
+    map<string, Time> overlordTimings = {
+        {static_cast<string>(Z_Overpool), Time(1, 20)},
+        {static_cast<string>(Z_9Pool), Time(1, 55)},
+    };
+
     map<string, Time> lingTimings;
     map<string, Time> hatchTimings;
 
@@ -62,6 +67,24 @@ namespace McRave::Spy::Zerg {
 
         void enemyZergOpeners(PlayerInfo &player, StrategySpy &theSpy)
         {
+            // Overlord timings
+            if (Terrain::getEnemyStartingPosition().isValid() && Players::getTotalCount(PlayerState::Enemy, Zerg_Overlord) > 0) {
+                for (auto &u : player.getUnits()) {
+                    UnitInfo &unit = *u;
+
+                    if (unit.getType() == Zerg_Overlord) {
+                        auto distFromStart   = unit.getPosition().getDistance(Terrain::getEnemyStartingPosition());
+                        auto framesTravelled = distFromStart / unit.getSpeed();
+                        auto time            = Util::getTime() - Time(framesTravelled);
+
+                        if (time > Time(0, 30)) {
+                            LOG_ONCE("Overlord came from enemy start at: ", time.toString());
+                            LOG_ONCE("frames: ", framesTravelled);
+                        }
+                    }
+                }
+            }
+
             // Hatch timing
             // 9Hatch
             if (Players::getCompleteCount(PlayerState::Enemy, Zerg_Hatchery) > 0) {
@@ -193,8 +216,7 @@ namespace McRave::Spy::Zerg {
                 // ZvZ
                 auto mutaTech = Players::getTotalCount(PlayerState::Enemy, Zerg_Lair) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 ||
                                 Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0;
-                if (Players::ZvZ() && mutaTech)
-                {
+                if (Players::ZvZ() && mutaTech) {
                     if (!theSpy.expand.likely && theSpy.productionCount == 1 && Util::getTime() > Time(5, 30))
                         theSpy.transition.name = Z_1HatchMuta;
                     else if (theSpy.expand.likely && theSpy.productionCount == 2 && Util::getTime() > Time(6, 00))

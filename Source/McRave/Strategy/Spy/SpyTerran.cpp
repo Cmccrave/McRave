@@ -14,6 +14,9 @@ namespace McRave::Spy::Terran {
 
     namespace {
 
+        int totalMechUnits = 0;
+        int totalBioUnits  = 0;
+
         void enemyTerranBuilds(PlayerInfo &player, StrategySpy &theSpy)
         {
             for (auto &u : player.getUnits()) {
@@ -41,12 +44,14 @@ namespace McRave::Spy::Terran {
                            Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode) > 0 || Players::getVisibleCount(PlayerState::Enemy, Terran_Goliath) > 0;
 
             // 2Rax
-            if ((theSpy.rushArrivalTime < Time(3, 10) && Util::getTime() < Time(3, 25) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 3) ||
-                (Util::getTime() < Time(2, 55) && Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) >= 2) ||
-                (Util::getTime() < Time(4, 00) && Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) >= 2 && Players::getTotalCount(PlayerState::Enemy, Terran_Refinery) == 0) ||
-                completesBy(3, Terran_Barracks, Time(5, 15)) || completesBy(12, Terran_Marine, Time(5, 00)) || arrivesBy(3, Terran_Marine, Time(4, 00)) || arrivesBy(5, Terran_Marine, Time(4, 30)) ||
-                arrivesBy(7, Terran_Marine, Time(5, 00)) || arrivesBy(2, Terran_Medic, Time(5, 45)) || arrivesBy(3, Terran_Medic, Time(6, 15)))
-                theSpy.build.name = T_2Rax;
+            if (theSpy.opener.name != T_8Rax) {
+                if ((theSpy.rushArrivalTime < Time(3, 10) && Util::getTime() < Time(3, 25) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 3) ||
+                    (Util::getTime() < Time(2, 55) && Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) >= 2) ||
+                    (Util::getTime() < Time(4, 00) && Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) >= 2 && Players::getTotalCount(PlayerState::Enemy, Terran_Refinery) == 0) ||
+                    completesBy(3, Terran_Barracks, Time(5, 15)) || completesBy(12, Terran_Marine, Time(5, 00)) || arrivesBy(3, Terran_Marine, Time(4, 00)) ||
+                    arrivesBy(5, Terran_Marine, Time(4, 30)) || arrivesBy(7, Terran_Marine, Time(5, 00)) || arrivesBy(2, Terran_Medic, Time(5, 45)) || arrivesBy(3, Terran_Medic, Time(6, 15)))
+                    theSpy.build.name = T_2Rax;
+            }
 
             // RaxCC
             if ((completesBy(2, Terran_Command_Center, Time(4, 30))) || (theSpy.expand.possible && Util::getTime() < Time(4, 15)))
@@ -54,8 +59,7 @@ namespace McRave::Spy::Terran {
 
             // RaxFact
             if (completesBy(1, Terran_Refinery, Time(2, 30)) || completesBy(1, Terran_Factory, Time(4, 00)) || completesBy(2, Terran_Factory, Time(6, 30)) ||
-                completesBy(2, Terran_Machine_Shop, Time(6, 30)) || (Util::getTime() < Time(6, 00) && hasMech) || (theSpy.proxy.likely && theSpy.opener.name == T_8Rax) ||
-                arrivesBy(1, Terran_Wraith, Time(6, 00)))
+                completesBy(2, Terran_Machine_Shop, Time(6, 30)) || (Util::getTime() < Time(6, 00) && hasMech) || arrivesBy(1, Terran_Wraith, Time(6, 00)))
                 theSpy.build.name = T_RaxFact;
 
             // 2Rax Proxy - No info estimation
@@ -108,8 +112,10 @@ namespace McRave::Spy::Terran {
                     theSpy.opener.name = T_8Rax;
 
                 // Slightly sooner arrival is a proxy
-                if (arrivesBy(1, Terran_Marine, Time(2, 50)) || arrivesBy(2, Terran_Marine, Time(3, 10)) || arrivesBy(3, Terran_Marine, Time(3, 25)) || arrivesBy(4, Terran_Marine, Time(3, 40)))
-                    theSpy.proxy.possible = true;
+                if (arrivesBy(1, Terran_Marine, Time(2, 45)) || arrivesBy(2, Terran_Marine, Time(3, 05)) || arrivesBy(3, Terran_Marine, Time(3, 20)) || arrivesBy(4, Terran_Marine, Time(3, 35))) {
+                    theSpy.proxy.likely = true;
+                    theSpy.opener.name  = T_Proxy_8Rax;
+                }
             }
         }
 
@@ -120,7 +126,7 @@ namespace McRave::Spy::Terran {
             auto hasWraiths = Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > 0;
 
             if ((theSpy.workersPulled >= 3 && Util::getTime() < Time(1, 30)) || (theSpy.workersPulled >= 4 && Util::getTime() < Time(1, 45)) ||
-                (theSpy.workersPulled >= 5 && Util::getTime() < Time(4, 00)))
+                (theSpy.workersPulled >= 5 && Util::getTime() < Time(3, 30)))
                 theSpy.transition.name = U_WorkerRush;
 
             // PvT
@@ -162,7 +168,7 @@ namespace McRave::Spy::Terran {
                     if (theSpy.expand.possible && (hasTanks || Players::getVisibleCount(PlayerState::Enemy, Terran_Machine_Shop) > 0) &&
                         Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) <= 1 && Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) >= 3 && Util::getTime() < Time(10, 30))
                         theSpy.transition.name = T_1FactTanks;
-                    else if (theSpy.proxy.likely || arrivesBy(10, Terran_Marine, Time(5, 15)) || completesBy(2, Terran_Barracks, Time(2, 35)) || completesBy(3, Terran_Barracks, Time(4, 00)))
+                    else if (theSpy.proxy.likely || arrivesBy(10, Terran_Marine, Time(5, 15)))
                         theSpy.transition.name = T_Rush;
                     else if (!theSpy.expand.possible && (completesBy(1, Terran_Academy, Time(5, 10)) || player.hasTech(TechTypes::Stim_Packs) || arrivesBy(1, Terran_Medic, Time(6, 00)) ||
                                                          arrivesBy(1, Terran_Firebat, Time(6, 00))))
@@ -198,6 +204,10 @@ namespace McRave::Spy::Terran {
 
     void updateTerran(StrategySpy &theSpy)
     {
+        // Excludes Vultures as it doesn't indicate mech decision
+        totalMechUnits = Players::getTotalCount(PlayerState::Enemy, Terran_Goliath, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode);
+        totalBioUnits  = Players::getTotalCount(PlayerState::Enemy, Terran_Marine, Terran_Firebat, Terran_Medic);
+
         for (auto &p : Players::getPlayers()) {
             PlayerInfo &player = p.second;
             if (player.isEnemy() && player.getCurrentRace() == Races::Terran) {
@@ -211,15 +221,7 @@ namespace McRave::Spy::Terran {
         }
     }
 
-    bool enemyMech()
-    {
-        return ((Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) + Players::getTotalCount(PlayerState::Enemy, Terran_Goliath) +
-                 Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode) + Players::getTotalCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode)) >
-                (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) + Players::getTotalCount(PlayerState::Enemy, Terran_Firebat) + Players::getTotalCount(PlayerState::Enemy, Terran_Medic)));
-    }
+    bool enemyMech() { return totalMechUnits >= 4 && totalMechUnits > totalBioUnits; }
 
-    bool enemyBio()
-    {
-        return false; // TODO
-    }
+    bool enemyBio() { return totalBioUnits >= 12 && totalBioUnits > totalMechUnits; }
 } // namespace McRave::Spy::Terran

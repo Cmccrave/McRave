@@ -66,6 +66,8 @@ namespace McRave::Goals {
                             return false;
                         if (u->getRole() == Role::Scout)
                             return false;
+                        if (u->getLocalState() == LocalState::Attack)
+                            return false;
                         return u->getType() == type && !u->getGoal().isValid();
                     });
 
@@ -78,6 +80,8 @@ namespace McRave::Goals {
                 else {
                     const auto closest = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
                         if (gType == GoalType::Attack && Combat::State::isStaticRetreat(type))
+                            return false;
+                        if (u->getLocalState() == LocalState::Attack)
                             return false;
                         return u->getType() == type && !u->getGoal().isValid();
                     });
@@ -137,10 +141,10 @@ namespace McRave::Goals {
                 }
 
                 auto proxyGates    = Spy::getEnemyOpener() == P_Proxy_9_9 || Spy::getEnemyOpener() == P_Horror_9_9;
-                auto proxyBackstab = proxyGates && Util::getTime() < Time(4, 00) && (com(Zerg_Sunken_Colony) > 0 || BuildOrder::getCurrentOpener() == Z_12Hatch);
+                auto proxyBackstab = proxyGates && Util::getTime() < Time(4, 00) && (com(Zerg_Sunken_Colony) >= 2 || BuildOrder::getCurrentOpener() == Z_12Hatch);
 
-                if (proxyBackstab && !Units::enemyThreatening())
-                    assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
+                if (proxyBackstab)
+                    assignNumberToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 4, GoalType::Runby);
             }
 
             // ZvZ ling runby
@@ -260,12 +264,26 @@ namespace McRave::Goals {
                     });
                     auto type           = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
                     auto perEnemy       = (type == airType) ? 1 : 4;
+                    auto typeSpeed      = 0;
+                    if (auto unit = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == type; }))
+                        typeSpeed = unit->getSpeed();
 
-                    if (closestBuilder && !closestBuilder->isWithinBuildRange()) {
-                        for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
-                            auto assignEscorter = unit->getPosition().getDistance(closestBuilder->getPosition()) < 960.0;
-                            if (!unit->isSuicidal() && assignEscorter)
-                                assignNumberToGoal(unit->getPosition(), type, perEnemy, GoalType::Escort);
+                    if (closestBuilder) {
+                        LOG_FAST("Drone looking to expand");
+                        // for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
+                        //    auto assignEscorter = enemy->getPosition().getDistance(closestBuilder->getPosition()) < 320.0 || enemy->getType() == Terran_Vulture; // Just assign vs vultures for now
+                        //    if (!enemy->isSuicidal() && assignEscorter)
+                        //        assignNumberToGoal(enemy->getPosition(), type, perEnemy, GoalType::Escort);
+                        //}
+                        if (Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
+                            assignNumberToGoal(closestBuilder->getPosition(), type, 1, GoalType::Escort);
+
+                        // TODO: If we had a predicate, we can do this easier
+                        for (auto &unit : Units::getUnits(PlayerState::Self)) {
+                            if (unit->isLightAir() && unit->saveUnit) {
+                                unit->setGoal(closestBuilder->getPosition());
+                                unit->setGoalType(GoalType::Defend);
+                            }
                         }
                     }
                 }
@@ -363,8 +381,11 @@ namespace McRave::Goals {
             auto enemyAir = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) +
                             Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk);
 
+            auto watchChoke = Terrain::getNaturalChoke() && !Spy::enemyRush() && !Spy::enemyProxy() && //
+                              (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) == 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0);
+
             // Assign an Overlord to watch our Choke early on
-            if (Terrain::getNaturalChoke() && !Spy::enemyRush()) {
+            if (watchChoke) {
                 const auto natSpot = Position(Terrain::getNaturalChoke()->Center());
                 if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && !enemyAir)) {
                     assignNumberToGoal(natSpot, Zerg_Overlord, 1, GoalType::Escort);
@@ -394,12 +415,12 @@ namespace McRave::Goals {
                 return;
 
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
+            auto oldestTile    = Terrain::getOldestPosition(Terrain::getMainArea());
 
             // Clear out base early game
             auto proxyNeedsScouting = !Spy::enemyProxy() || Spy::getEnemyBuild() == P_CannonRush;
             if (Util::getTime() < Time(4, 00) && !BuildOrder::isRush() && proxyNeedsScouting && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() &&
                 Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
-                auto oldestTile = Terrain::getOldestPosition(Terrain::getMainArea());
 
                 if (oldestTile.isValid())
                     assignNumberToGoal(oldestTile, Zerg_Zergling, 1, GoalType::Explore);
@@ -410,7 +431,7 @@ namespace McRave::Goals {
             auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto &s) { return s->isMain(); }));
 
             // Before Hydras have upgrades, defend vulnerable bases, put lings on defense too
-            //if (Combat::State::isStaticRetreat(Zerg_Hydralisk) && !BuildOrder::isAllIn() && com(Zerg_Hydralisk_Den) > 0) {
+            // if (Combat::State::isStaticRetreat(Zerg_Hydralisk) && !BuildOrder::isAllIn() && com(Zerg_Hydralisk_Den) > 0) {
             //    auto evenSplit = (1.0 / double(stations.size() - mainStations));
 
             //    if (!stations.empty()) {

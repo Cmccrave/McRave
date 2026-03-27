@@ -65,7 +65,7 @@ namespace McRave::Horizon {
             if (unit.getType() == UnitTypes::Zerg_Lurker && !unit.isBurrowed())
                 return 36.0 / 24.0;
             if (unit.attemptingSurround())
-                return 0.2;
+                return 0.5;
             return 0.0;
         }
     } // namespace

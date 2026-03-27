@@ -81,8 +81,8 @@ void McRaveModule::onFrame()
     if (Broodwar->getGameType() != GameTypes::Use_Map_Settings && Broodwar->isPaused())
         return;
 
-    // if (Util::getTime() > Time(29, 59))
-    //    Broodwar->leaveGame();
+     if (Util::getTime() > Time(29, 59))
+        Broodwar->leaveGame();
 
     // Update game state
     Util::onFrame();

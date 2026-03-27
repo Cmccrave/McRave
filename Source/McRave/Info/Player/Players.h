@@ -1,13 +1,19 @@
 #pragma once
+#include "Info/Player/PlayerInfo.h"
 #include "Main/Common.h"
 
-#include "Info/Player/PlayerInfo.h"
-
 namespace McRave::Players {
-    int getVisibleCount(PlayerState, BWAPI::UnitType);
-    int getCompleteCount(PlayerState, BWAPI::UnitType);
-    int getTotalCount(PlayerState, BWAPI::UnitType);
-    int getDeadCount(PlayerState, BWAPI::UnitType);
+
+    int getVisibleCount(PlayerState state, std::vector<BWAPI::UnitType> types);
+    int getCompleteCount(PlayerState state, std::vector<BWAPI::UnitType> types);
+    int getTotalCount(PlayerState state, std::vector<BWAPI::UnitType> types);
+    int getDeadCount(PlayerState state, std::vector<BWAPI::UnitType> types);
+
+    template <typename... Types> int getVisibleCount(PlayerState state, Types... types) { return getVisibleCount(state, {types...}); }
+    template <typename... Types> int getCompleteCount(PlayerState state, Types... types) { return getCompleteCount(state, {types...}); }
+    template <typename... Types> int getTotalCount(PlayerState state, Types... types) { return getTotalCount(state, {types...}); }
+    template <typename... Types> int getDeadCount(PlayerState state, Types... types) { return getDeadCount(state, {types...}); }
+
     bool hasDetection(PlayerState);
     bool hasMelee(PlayerState);
     bool hasRanged(PlayerState);
@@ -69,4 +75,5 @@ namespace McRave {
     static inline int total(BWAPI::UnitType t) { return Players::getTotalCount(PlayerState::Self, t); }
 
     static inline int hatchCount() { return vis(BWAPI::UnitTypes::Zerg_Hatchery) + vis(BWAPI::UnitTypes::Zerg_Lair) + vis(BWAPI::UnitTypes::Zerg_Hive); }
+    static inline int comHatchCount() { return com(BWAPI::UnitTypes::Zerg_Hatchery) + vis(BWAPI::UnitTypes::Zerg_Lair) + vis(BWAPI::UnitTypes::Zerg_Hive); }
 } // namespace McRave

@@ -30,13 +30,12 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyOpener() == P_Horror_9_9 || (Spy::getEnemyOpener() == P_Proxy_9_9 && currentOpener == Z_12Hatch))
             wantNatural = hatchCount() >= 3;
 
-        wantThird   = (Spy::enemyFastExpand() && hatchCount() >= 4) || hatchCount() >= 5 || Spy::getEnemyBuild() == P_FFE || Spy::getEnemyBuild() == "Unknown";
+        wantThird = (Spy::enemyFastExpand() && hatchCount() >= 4) || hatchCount() >= 5 || Spy::getEnemyBuild() == P_FFE || Spy::getEnemyBuild() == "Unknown";
         if (!wantNatural)
             wantThird = false;
 
-        wallNat     = wantNatural &&
-                  ((Spy::getEnemyOpener() == P_Proxy_9_9 && Stations::getStations(PlayerState::Self).size() >= 2) || (Spy::getEnemyBuild() == P_FFE && hatchCount() >= 4) ||
-                   (Spy::getEnemyBuild() == P_2Gate && hatchCount() >= 2) || Spy::getEnemyTransition() == P_Speedlot || Spy::getEnemyTransition() == P_Rush);
+        wallNat = wantNatural && ((Spy::getEnemyOpener() == P_Proxy_9_9 && Stations::getStations(PlayerState::Self).size() >= 2) || (Spy::getEnemyBuild() == P_FFE && hatchCount() >= 4) ||
+                                  (Spy::getEnemyBuild() == P_2Gate && hatchCount() >= 2) || Spy::getEnemyTransition() == P_Speedlot || Spy::getEnemyTransition() == P_Rush);
 
         wallMain  = Terrain::isPocketNatural() && !wantThird;
         wallThird = Stations::getStations(PlayerState::Self).size() >= 3;
@@ -67,6 +66,8 @@ namespace McRave::BuildOrder::Zerg {
         if (Players::hasUpgraded(PlayerState::Enemy, Protoss_Ground_Weapons, 1))
             trackables[Protoss_Zealot] += 0.5;
 
+        auto softCap = vis(Zerg_Drone) < 28 ? 24 : 64;
+
         // Economic estimate (have information on army, they aren't close):
         // For each unit, assume it arrives with enough time for us to create defenders
         auto arrivalValue = 0.0;
@@ -76,7 +77,7 @@ namespace McRave::BuildOrder::Zerg {
             auto idx = trackables.find(unit.getType());
             if (idx != trackables.end() && (inOpening || unit.isThreatening())) {
                 arrivalValue += idx->second / 1.25;
-                if (Units::inBoundUnit(unit))
+                if (Units::inBoundUnit(unit) && com(Zerg_Zergling) < softCap)
                     arrivalValue += idx->second / 1.15;
             }
         }
@@ -150,6 +151,11 @@ namespace McRave::BuildOrder::Zerg {
 
         // If they're aggressive, delay remaining build until we've made a transitional count (at 8 lings, we have minerals)
         transitionLings = min(initialValue, 8);
+
+        // Minimum lings
+        auto minimumLings = 2;
+        if (vis(Zerg_Zergling) < minimumLings)
+            return minimumLings;
 
         if (total(Zerg_Zergling) < initialValue)
             return initialValue;
@@ -253,13 +259,15 @@ namespace McRave::BuildOrder::Zerg {
         auto hydraDone = !hydraOpen || total(Zerg_Hydralisk) >= 32;
         auto mutaDone  = !mutaOpen || total(Zerg_Mutalisk) >= 5;
 
+        auto mutaLingOpen = mutaOpen && Spy::getEnemyBuild() == P_2Gate && Spy::getEnemyBuild() == P_Rush;
+
         // Gas timings
         auto firstGas  = (Util::getTime() > Time(2, 32)) || (s >= 40);
-        auto secondGas = (vis(Zerg_Evolution_Chamber) > 0 && vis(Zerg_Drone) >= 32) || (!wantThird && vis(Zerg_Drone) >= 28) || (mutaOpen && vis(Zerg_Drone) >= 30);
+        auto secondGas = (vis(Zerg_Evolution_Chamber) > 0 && vis(Zerg_Drone) >= 32) || (!wantThird && vis(Zerg_Drone) >= 26) || (mutaOpen && vis(Zerg_Drone) >= 30);
         auto thirdGas  = (mutaOpen && hatchCount() >= 5 && Util::getTime() > Time(8, 00)) || (hydraOpen && hydraDone);
 
         // Hatch timings
-        auto thirdHatch  = (s >= 28 && vis(Zerg_Drone) >= 13 && vis(Zerg_Extractor) > 0 && total(Zerg_Zergling) >= transitionLings) || (s >= 36);
+        auto thirdHatch  = (s >= 28 && vis(Zerg_Drone) >= 13 && vis(Zerg_Extractor) > 0 && total(Zerg_Zergling) >= transitionLings) || (s >= 34);
         auto fourthHatch = (vis(Zerg_Drone) >= 28 && vis(Zerg_Spire) > 0) || (total(Zerg_Scourge) >= 6);
         auto fifthHatch  = (vis(Zerg_Drone) >= 30);
         auto sixHatch    = (vis(Zerg_Drone) >= 38);
@@ -280,7 +288,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Lair]              = (Util::getTime() > Time(3, 20) && gas(80) && vis(Zerg_Drone) >= 14);
         buildQueue[Zerg_Spire]             = (s >= 32 && atPercent(Zerg_Lair, 0.9) && vis(Zerg_Drone) >= 16);
         buildQueue[Zerg_Hydralisk_Den]     = (hydraOpen && mutaDone && vis(Zerg_Drone) >= 32);
-        buildQueue[Zerg_Evolution_Chamber] = (vis(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Drone) >= 32);
+        buildQueue[Zerg_Evolution_Chamber] = (vis(Zerg_Hydralisk_Den) > 0 && vis(Zerg_Drone) >= 32) || (vis(Zerg_Drone) >= 26 && mutaLingOpen);
 
         // Upgrades
         upgradeQueue[Metabolic_Boost]      = (vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 15);
@@ -288,6 +296,7 @@ namespace McRave::BuildOrder::Zerg {
         upgradeQueue[Zerg_Missile_Attacks] = hydraOpen && com(Zerg_Evolution_Chamber) > 0 && com(Zerg_Hydralisk_Den) > 0;
         upgradeQueue[Grooved_Spines]       = hydraOpen && hydraSpeed();
         upgradeQueue[Zerg_Flyer_Carapace]  = 2 * (mutaDone && !hydraOpen);
+        upgradeQueue[Zerg_Melee_Attacks]   = mutaLingOpen;
 
         // Hydra pump - 26 then any
         auto needMinimumHydras = com(Zerg_Hydralisk_Den) > 0 && hydraOpen && vis(Zerg_Hydralisk) < 4;

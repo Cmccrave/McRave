@@ -121,7 +121,7 @@ namespace McRave::Units {
 
                     auto frames          = unit.isLightAir() ? 2 : 6;
                     auto newCommandFrame = (Broodwar->getFrameCount() - unit.commandFrame > frames) ||
-                                           (unit.getRole() != Role::Combat && unit.getRole() != Role::Scout && Util::getTime() < Time(4, 00));
+                                           (Util::getTime() < Time(4, 00));
 
                     if (unit.getType() == Zerg_Overlord)
                         frames = 12;

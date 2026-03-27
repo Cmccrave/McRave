@@ -7,7 +7,7 @@ namespace BWEB {
     class Path {
         std::vector<BWAPI::TilePosition> tiles;
         double dist;
-        bool reachable, diagonal, cached;
+        bool reachable, diagonal, cached, reverse;
         BWAPI::TilePosition source, target;
         BWAPI::UnitType type;
 
@@ -17,6 +17,7 @@ namespace BWEB {
             tiles     = {};
             dist      = 0.0;
             reachable = false;
+            reverse   = false;
             diagonal  = _diagonal;
             cached    = _cached;
             source    = BWAPI::TilePosition(_source);
@@ -63,6 +64,8 @@ namespace BWEB {
         {
             generateAS([&](auto &t) { return 0.0; }, w);
         }
+
+        void setReverse(bool _reverse) { reverse = _reverse; }
 
         /// <summary> Returns true if the TilePosition is walkable (does not include any buildings). </summary>
         bool terrainWalkable(const BWAPI::TilePosition &tile);

@@ -49,7 +49,7 @@ namespace McRave {
                 continue;
 
             const auto inRangeOfResource = enemy->getPosition().getDistance(position) < max(200.0, enemy->getGroundReach());
-            if (inRangeOfResource)
+            if (inRangeOfResource && enemy->isThreatening())
                 threatened = true;
         }
 

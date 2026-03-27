@@ -271,14 +271,18 @@ namespace McRave::Command {
             // Determine if we need to burrow or not
             auto threatened = false;
             auto &list      = unit.getUnitsInReachOfThis();
+            auto damage     = 5;
             for (auto &t : list) {
                 if (auto enemy = t.lock()) {
-                    if (enemy->getType() == Protoss_Reaver || enemy->isThreatening())
-                        threatened = unit.isBurrowed() || (enemy->hasTarget() && enemy->getTarget().lock()->getType().isWorker());
+                    if (enemy->getType() == Protoss_Reaver || enemy->isThreatening()) {
+                        threatened = unit.isBurrowed() || (enemy->hasTarget() && enemy->getTarget().lock()->getType().isWorker() && enemy->hasAttackedRecently());
+                        damage += enemy->getGroundDamage();
+                    }
                 }
             }
 
-            auto burrowUnit = !unit.getBuildPosition().isValid() && threatened && !Planning::overlapsPlan(unit, unit.getPosition());
+            auto hideFromDamage = unit.isBurrowed() ? damage >= unit.getHealth() / 2 : damage >= unit.getHealth();
+            auto burrowUnit     = !unit.getBuildPosition().isValid() && hideFromDamage && threatened && !Planning::overlapsPlan(unit, unit.getPosition());
 
             // Burrow/unburrow as needed
             if (!unit.isBurrowed() && burrowUnit) {
@@ -697,8 +701,13 @@ namespace McRave::Command {
 
         // If build position is fully visible and unit is close to it, start building as soon as possible
         if (fullyVisible && canAfford && unit.isWithinBuildRange()) {
-            if (unit.unit()->getLastCommandFrame() < Broodwar->getFrameCount() - 10)
-                unit.unit()->build(unit.getBuildType(), unit.getBuildPosition());
+            if (unit.unit()->getLastCommandFrame() < Broodwar->getFrameCount() - 10) {
+                auto bwapiresult = unit.unit()->build(unit.getBuildType(), unit.getBuildPosition());
+                if (unit.getBuildType() == Zerg_Nydus_Canal) {
+                    LOG_FAST("Attempting to build a Nydus at ", unit.getBuildPosition());
+                    LOG_FAST("BWAPI said this command would fail? ", bwapiresult);
+                }
+            }
             unit.commandText  = "Build";
             unit.commandFrame = Broodwar->getFrameCount();
             return true;
@@ -779,9 +788,9 @@ namespace McRave::Command {
 
             // Builder is close and may need space opened up
             if (builder) {
-                auto center         = Position(builder->getBuildPosition()) + Position(32, 32);
-                auto canAfford      = Broodwar->self()->minerals() >= builder->getBuildType().mineralPrice() && Broodwar->self()->gas() >= builder->getBuildType().gasPrice();
-                auto builderClose   = builder->getPosition().getDistance(center) < 64.0 && unit.getResource().lock()->getPosition().getDistance(center) < 160.0;
+                auto center       = Position(builder->getBuildPosition()) + Position(32, 32);
+                auto canAfford    = Broodwar->self()->minerals() >= builder->getBuildType().mineralPrice() && Broodwar->self()->gas() >= builder->getBuildType().gasPrice();
+                auto builderClose = builder->getPosition().getDistance(center) < 64.0 && unit.getResource().lock()->getPosition().getDistance(center) < 160.0;
 
                 if (canAfford && builderClose) {
 

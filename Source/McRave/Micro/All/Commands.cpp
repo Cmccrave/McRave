@@ -24,7 +24,7 @@ namespace McRave::Command {
         {
             if (unit.isFlying()) {
                 if (unit.hasCommander() && (unit.isTargetedBySplash() || unit.isTargetedBySuicide())) {
-                    return 1.0 + max(0.0, Position(w).getDistance(unit.getCommander().lock()->getPosition()) - 64.0);
+                    return 1.0 + pow(max(0.0, Position(w).getDistance(unit.getCommander().lock()->getPosition()) - 32.0), 2.0);
                 }
             }
             return 1.0;
@@ -36,7 +36,7 @@ namespace McRave::Command {
             return max(10.0, p.getDistance(unit.getNavigation()));
         }
 
-        double mobility(UnitInfo &unit, WalkPosition w) { return unit.isFlying() ? 1.0 : Util::log10(10 + Grids::getMobility(w)); }
+        double mobility(UnitInfo &unit, WalkPosition w) { return unit.isFlying() ? 1.0 : Util::log10(1 + Grids::getMobility(w)); }
 
         double threat(UnitInfo &unit, WalkPosition w)
         {
@@ -62,28 +62,28 @@ namespace McRave::Command {
 
         double tangential(UnitInfo &unit, std::shared_ptr<UnitInfo> target, WalkPosition w)
         {
-            //auto p = Position(w) + Position(4, 4);
+            // auto p = Position(w) + Position(4, 4);
 
-            //auto toEnemy     = target->getPosition() - unit.getPosition();
-            //auto toCandidate = p - unit.getPosition();
+            // auto toEnemy     = target->getPosition() - unit.getPosition();
+            // auto toCandidate = p - unit.getPosition();
 
-            //double len1 = unit.getPosition().getDistance(target->getPosition());
-            //double len2 = unit.getPosition().getDistance(p);
+            // double len1 = unit.getPosition().getDistance(target->getPosition());
+            // double len2 = unit.getPosition().getDistance(p);
 
-            //if (len1 < 1.0 || len2 < 1.0)
+            // if (len1 < 1.0 || len2 < 1.0)
             //    return 0.0;
 
-            //toEnemy /= len1;
-            //toCandidate /= len2;
+            // toEnemy /= len1;
+            // toCandidate /= len2;
 
-            //double side = toEnemy.x * toCandidate.y - toEnemy.y * toCandidate.x;
+            // double side = toEnemy.x * toCandidate.y - toEnemy.y * toCandidate.x;
 
-            //double dist          = p.getDistance(target->getPosition());
-            //double desiredRadius = 64.0;
+            // double dist          = p.getDistance(target->getPosition());
+            // double desiredRadius = 64.0;
 
-            //double radiusFactor = std::max(0.0, 1.0 - std::abs(dist - desiredRadius) / desiredRadius);
+            // double radiusFactor = std::max(0.0, 1.0 - std::abs(dist - desiredRadius) / desiredRadius);
 
-            //return 0.1 * side * radiusFactor;
+            // return 0.1 * side * radiusFactor;
             return 1.0;
         }
 
@@ -188,16 +188,6 @@ namespace McRave::Command {
             }
         }
 
-        // Block vulture runby
-        else if (unit.getType() == Zerg_Zergling && Combat::State::isStaticRetreat(Zerg_Zergling) && unit.getPosition().getDistance(unit.getFormation()) < 16.0) {
-            if (unit.hasTarget(); auto target = unit.getTarget().lock()) {
-                if (target->getType() == Terran_Vulture && !target->hasAttackedRecently() && !unit.isWithinRange(*target)) {
-                    unit.setCommand(Hold_Position);
-                    return true;
-                }
-            }
-        }
-
         // Run into the reaver when targeted by it
         else if (!unit.isFlying() && unit.isTargetedBySplash()) {
             if (unit.hasTarget(); auto target = unit.getTarget().lock()) {
@@ -205,6 +195,17 @@ namespace McRave::Command {
                 return true;
             }
         }
+
+        // Block vulture runby
+        // else if (unit.getType() == Zerg_Zergling && Combat::State::isStaticRetreat(Zerg_Zergling)) {
+        //    Visuals::drawLine(unit.getPosition(), unit.getFormation(), Colors::Green);
+        //    if (unit.hasTarget(); auto target = unit.getTarget().lock()) {
+        //        if (target->getType() == Terran_Vulture && target->isThreatening() && !target->isWithinRange(unit)) {
+        //            unit.setCommand(Hold_Position);
+        //            return true;
+        //        }
+        //    }
+        //}
         return false;
     }
 
@@ -236,9 +237,9 @@ namespace McRave::Command {
         const auto shouldAttack = [&]() {
             // Combat will attack when in range unless surrounding
             if (unit.getRole() == Role::Combat) {
-                if (unit.attemptingSurround())
+                if (unit.attemptingSurround() || unit.attemptingTrap())
                     return false;
-                if (unit.isMelee() && unit.isWithinReach(target) && unit.getLocalState() == LocalState::Attack)
+                if (unit.isMelee() && !unit.isHovering() && unit.isWithinReach(target) && unit.getLocalState() == LocalState::Attack)
                     return true;
                 if (unit.isLightAir() && !unit.isWithinAngle(target) && unit.getPosition().getDistance(target.getPosition()) > 48.0)
                     return false;
@@ -285,7 +286,8 @@ namespace McRave::Command {
             if (unit.getSpeed() <= 0.0 || unit.canStartAttack() || unit.isCapitalShip() || target.isSuicidal() || unit.isSpellcaster() || unit.getLocalState() == LocalState::Retreat ||
                 (unit.getType() == Zerg_Lurker && !unit.isBurrowed()) || (!unit.isTargetedBySplash() && !unit.isTargetedBySuicide() && (target.isSplasher() || target.isSuicidal())) ||
                 (unit.getGroundRange() <= 32.0 && unit.getAirRange() <= 32.0 && !unit.isHovering()) || (unit.getType() == Zerg_Hydralisk) ||
-                (unit.isFlying() && unit.getPosition().getDistance(target.getPosition()) < 32.0))
+                (unit.getType().isWorker() && target.getType().isWorker()) || (unit.isHovering() && Util::boxDistance(unit, target) < 16.0) ||
+                (unit.isFlying() && Util::boxDistance(unit, target) < 32.0))
                 return false;
 
             auto unitRange         = (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
@@ -331,7 +333,7 @@ namespace McRave::Command {
             auto score   = 0.0;
 
             if (target && surround)
-                score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w) * threat(unit, w) * tangential(unit, target, w));
+                score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w) * tangential(unit, target, w));
             else if (safeMovement)
                 score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w) * threat(unit, w));
             else
@@ -354,7 +356,7 @@ namespace McRave::Command {
             // Combats should move if we're not retreating
             if (unit.getRole() == Role::Combat) {
 
-                if (unit.attemptingSurround())
+                if (unit.attemptingSurround() || unit.attemptingTrap())
                     return true;
 
                 if (unit.hasTarget()) {
@@ -390,9 +392,18 @@ namespace McRave::Command {
         // If unit can move and should move
         if (shouldMove()) {
 
+            auto clickToTrap = unit.attemptingTrap() && unit.getPosition().getDistance(unit.getTrapPosition()) < 160.0;
+            if (clickToTrap) {
+                unit.setCommand(Move, unit.getTrapPosition());
+                Visuals::drawCircle(unit.getTrapPosition(), 8, Colors::Purple, true);
+                unit.commandText = "Move_T";
+                return true;
+            }
+
             auto clickToSurround = unit.attemptingSurround() && unit.getPosition().getDistance(unit.getSurroundPosition()) < 160.0;
             if (clickToSurround) {
                 unit.setCommand(Move, unit.getSurroundPosition());
+                Visuals::drawLine(unit.getPosition(), unit.getSurroundPosition(), Colors::Orange);
                 unit.commandText = "Move_S";
                 return true;
             }
@@ -542,6 +553,10 @@ namespace McRave::Command {
 
                 if (!target.canAttackGround() && !target.canAttackAir() && !unit.getType().isFlyer()) // Don't kite non attackers unless we're a flying unit
                     return false;
+
+                // Kite as a hovering unit to maintain speed
+                if (unit.getType().isWorker() && target.getType().isWorker())
+                    return true;
 
                 if (unit.getGroundRange() <= 32.0 && unit.getAirRange() <= 32.0)
                     return false;

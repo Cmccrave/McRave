@@ -1,39 +1,47 @@
 #pragma once
 #include "Main/Common.h"
 
-namespace McRave
-{
-    class Strength
-    {
+namespace McRave {
+    class Strength {
     public:
-        double airToAir = 0.0;
-        double airToGround = 0.0;
-        double groundToAir = 0.0;
+        double airToAir       = 0.0;
+        double airToGround    = 0.0;
+        double groundToAir    = 0.0;
         double groundToGround = 0.0;
-        double airDefense = 0.0;
-        double groundDefense = 0.0;
+        double airDefense     = 0.0;
+        double groundDefense  = 0.0;
 
-        void operator+= (const Strength &second) {
+        double avgGroundDamage = 5.0;
+        double avgAirDamage    = 5.0;
+
+        void operator+=(const Strength &second)
+        {
             airToAir += second.airToAir;
             airToGround += second.airToGround;
             groundToAir += second.groundToAir;
             groundToGround += second.groundToGround;
             airDefense += second.airDefense;
             groundDefense += second.groundDefense;
+
+            avgGroundDamage = std::max(second.avgGroundDamage, avgGroundDamage);
+            avgAirDamage    = std::max(second.avgAirDamage, avgAirDamage);
         }
 
-        void clear() {
-            airToAir = 0.0;
-            airToGround = 0.0;
-            groundToAir = 0.0;
+        void clear()
+        {
+            airToAir       = 0.0;
+            airToGround    = 0.0;
+            groundToAir    = 0.0;
             groundToGround = 0.0;
-            airDefense = 0.0;
-            groundDefense = 0.0;
+            airDefense     = 0.0;
+            groundDefense  = 0.0;
+
+            avgGroundDamage = 5.0;
+            avgAirDamage    = 5.0;
         }
     };
 
-    class PlayerInfo
-    {
+    class PlayerInfo {
         std::map<BWAPI::UpgradeType, int> playerUpgrades;
         std::set<BWAPI::TechType> playerTechs;
         std::set<std::shared_ptr<UnitInfo>> units;
@@ -51,23 +59,21 @@ namespace McRave
 
         bool alive;
         std::map<BWAPI::Race, int> raceSupply;
+
     public:
-        PlayerInfo() {
-            thisPlayer = nullptr;
+        PlayerInfo()
+        {
+            thisPlayer  = nullptr;
             currentRace = BWAPI::Races::None;
-            startRace = BWAPI::Races::None;
-            alive = true;
-            pState = PlayerState::None;
-            build = "Unknown";
+            startRace   = BWAPI::Races::None;
+            alive       = true;
+            pState      = PlayerState::None;
+            build       = "Unknown";
         }
 
-        bool operator== (PlayerInfo const& p) const {
-            return thisPlayer == p.player();
-        }
+        bool operator==(PlayerInfo const &p) const { return thisPlayer == p.player(); }
 
-        bool operator< (PlayerInfo const& p) const {
-            return thisPlayer < p.player();
-        }
+        bool operator<(PlayerInfo const &p) const { return thisPlayer < p.player(); }
 
         void update();
 
@@ -76,13 +82,13 @@ namespace McRave
         BWAPI::Race getStartRace() { return startRace; }
         BWAPI::Player player() const { return thisPlayer; }
         PlayerState getPlayerState() { return pState; }
-        Strength& getStrength() { return pStrength; }
-        std::set<std::shared_ptr<UnitInfo>>& getUnits() { return units; }
+        Strength &getStrength() { return pStrength; }
+        std::set<std::shared_ptr<UnitInfo>> &getUnits() { return units; }
         std::string getBuild() { return build; }
 
-        std::map<BWAPI::UnitType, int>& getVisibleTypeCounts() { return visibleTypeCounts; }
-        std::map<BWAPI::UnitType, int>& getCompleteTypeCounts() { return completeTypeCounts; }
-        std::map<BWAPI::UnitType, int>& getTotalTypeCounts() { return totalTypeCounts; }
+        std::map<BWAPI::UnitType, int> &getVisibleTypeCounts() { return visibleTypeCounts; }
+        std::map<BWAPI::UnitType, int> &getCompleteTypeCounts() { return completeTypeCounts; }
+        std::map<BWAPI::UnitType, int> &getTotalTypeCounts() { return totalTypeCounts; }
 
         bool isAlive() { return alive; }
         bool isEnemy() { return pState == PlayerState::Enemy; }
@@ -100,16 +106,18 @@ namespace McRave
         void setOpener(std::string newOpener) { opener = newOpener; }
         void setTransition(std::string newTransition) { transition = newTransition; }
 
-        bool hasUpgrade(BWAPI::UpgradeType upgrade, int level = 1) {
+        bool hasUpgrade(BWAPI::UpgradeType upgrade, int level = 1)
+        {
             auto ptr = playerUpgrades.find(upgrade);
             if (ptr != playerUpgrades.end())
                 return ptr->second >= level;
             return false;
         }
-        bool hasTech(BWAPI::TechType tech) {
+        bool hasTech(BWAPI::TechType tech)
+        {
             if (playerTechs.find(tech) != playerTechs.end())
                 return true;
             return false;
         }
     };
-}
+} // namespace McRave

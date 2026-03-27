@@ -228,11 +228,16 @@ namespace McRave::Math {
 
     double calcSurvivability(UnitInfo &unit)
     {
+        auto oppositeStrength = (unit.getPlayer() == Broodwar->self()) ? Players::getStrength(PlayerState::Enemy) : Players::getStrength(PlayerState::Self);
+        auto oppositeDamage   = unit.isFlying() ? oppositeStrength.avgAirDamage : oppositeStrength.avgGroundDamage;
+
         const auto armor = [&]() {
-            auto baseArmor    = double(unit.getType().armor()) / 10.0;
-            auto upgrades     = double(unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade())) / 10.0;
-            auto miscUpgrades = double((unit.getType() == Zerg_Ultralisk) * 2 * unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Chitinous_Plating)) / 10.0;
-            return (1.0 + baseArmor + upgrades + miscUpgrades);
+            double armorValue = double(unit.getType().armor()) + double(unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade())) +
+                                double((unit.getType() == Zerg_Ultralisk) * 2 * unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Chitinous_Plating));
+
+            double dmg = max(1.0, oppositeDamage - armorValue);
+
+            return oppositeDamage / dmg;
         };
 
         const auto speed = [&]() {
@@ -244,7 +249,7 @@ namespace McRave::Math {
 
         const auto health = [&]() { return (double(unit.getType().maxHitPoints() + unit.getType().maxShields())) / 50.0; };
 
-        return log(speed() * armor() * health());
+        return log(health() * armor()) + speed();
     }
 
     double calcGroundRange(UnitInfo &unit)
@@ -313,7 +318,7 @@ namespace McRave::Math {
         auto upLevel     = unit.getPlayer()->getUpgradeLevel(unit.getType().groundWeapon().upgradeType());
 
         auto state     = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
-        auto reduction = Units::getDamageReductionGrd(state);
+        //auto reduction = Units::getDamageReductionGrd(state);
 
         auto dmgPerHit = double(unit.getType().groundWeapon().damageAmount() + (unit.getType().groundWeapon().damageBonus() * upLevel));
 
@@ -331,7 +336,7 @@ namespace McRave::Math {
         if (unit.getType() == Protoss_High_Templar)
             return 112.0;
 
-        return attackCount * (dmgPerHit - reduction);
+        return attackCount * (dmgPerHit /*- reduction*/);
     }
 
     double calcAirDamage(UnitInfo &unit)
@@ -344,7 +349,7 @@ namespace McRave::Math {
         auto upLevel     = unit.getPlayer()->getUpgradeLevel(unit.getType().airWeapon().upgradeType());
 
         auto state     = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
-        auto reduction = Units::getDamageReductionAir(state);
+        //auto reduction = Units::getDamageReductionAir(state);
 
         auto dmgPerHit = double(unit.getType().airWeapon().damageAmount() + (unit.getType().airWeapon().damageBonus() * upLevel));
 
@@ -355,7 +360,7 @@ namespace McRave::Math {
         }
         if (unit.getType() == Protoss_High_Templar)
             return 112.0;
-        return attackCount * (dmgPerHit - reduction);
+        return attackCount * (dmgPerHit /*- reduction*/);
     }
 
     double calcMoveSpeed(UnitInfo &unit)
