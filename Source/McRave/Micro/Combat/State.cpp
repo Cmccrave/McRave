@@ -98,12 +98,12 @@ namespace McRave::Combat::State {
                 if (Players::ZvT()) {
                     const auto counterAttack = com(Zerg_Sunken_Colony) > 0 && Spy::getEnemyTransition() == U_WorkerRush;
                     const auto speedVultures = Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters, 1);
-                    const auto defendSunkens = com(Zerg_Mutalisk) == 0 && com(Zerg_Sunken_Colony) > 0 && !speedLing;
+                    const auto defendSunkens = com(Zerg_Mutalisk) == 0 && !speedLing && vis(Zerg_Sunken_Colony) > 0;
                     const auto vulturesExist = Players::getCompleteCount(PlayerState::Enemy, Terran_Vulture) > 0;
                     const auto vultureThreat = Util::getTime() < Time(8, 00) && Util::getTime() > Time(3, 30) && !Spy::enemyGreedy() && !Spy::enemyProxy() &&
                                                (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled());
                     if (!counterAttack) {
-                        if (vulturesExist || vultureThreat) {
+                        if (vulturesExist || vultureThreat || defendSunkens) {
                             staticRetreatTypes.push_back(Zerg_Zergling);
                         }
                     }

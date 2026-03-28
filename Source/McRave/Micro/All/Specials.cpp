@@ -138,7 +138,7 @@ namespace McRave::Command {
 
             if (unit.getDestination() == resource->getPosition() && boxDist >= 128.0) {
                 auto closestUnit = Util::getClosestUnit(unit.getPosition(), PlayerState::None, [&](auto &u) {
-                    return u->isCompleted() && *u != unit && !u->getType().isWorker() && !u->getType().isBuilding() && !u->isFlying() && u->getPosition().getDistance(unit.getPosition()) < 64.0;
+                    return u->isCompleted() && *u != unit && !u->getType().isBuilding() && !u->isFlying() && u->getPosition().getDistance(unit.getPosition()) < 32.0;
                 });
 
                 if (closestUnit) {

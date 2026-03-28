@@ -155,9 +155,12 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Check if any are low, add an extra if so
-            auto injuredOverlord = Util::getFurthestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Overlord && !u->isHealthy() && u->isCompleted(); });
-            if (injuredOverlord) {
-                buildQueue[Zerg_Overlord]++;
+            if (Util::getTime() > Time(3, 30)) {
+                auto injuredOverlord = Util::getFurthestUnit(Terrain::getMainPosition(), PlayerState::Self,
+                                                             [&](auto &u) { return u->getType() == Zerg_Overlord && !u->isHealthy() && u->isCompleted(); });
+                if (injuredOverlord) {
+                    buildQueue[Zerg_Overlord]++;
+                }
             }
 
             // Remove spending money on Overlords if they'll have no protection anyways
@@ -770,9 +773,9 @@ namespace McRave::BuildOrder::Zerg {
 
                 else if (unitOrder == mutalurk) {
                     priorityOrder = {
-                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 6}, {Zerg_Hydralisk, 2}, {Zerg_Lurker, 2}, //
-                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 12}, {Zerg_Hydralisk, 4}, {Zerg_Lurker, 4}, //
-                        {Zerg_Drone, 45}, {Zerg_Mutalisk, 18}, {Zerg_Hydralisk, 8}, {Zerg_Lurker, 8}, //
+                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 6},  {Zerg_Hydralisk, 2},  {Zerg_Lurker, 2}, //
+                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 12}, {Zerg_Hydralisk, 4},  {Zerg_Lurker, 4}, //
+                        {Zerg_Drone, 45}, {Zerg_Mutalisk, 18}, {Zerg_Hydralisk, 8},  {Zerg_Lurker, 8}, //
                         {Zerg_Drone, 60}, {Zerg_Mutalisk, 24}, {Zerg_Hydralisk, 16}, {Zerg_Lurker, 16},
                     };
                 }

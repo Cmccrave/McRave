@@ -39,7 +39,7 @@ namespace McRave::Spy {
         {
             possible ? framesTrue++ : framesTrue    = 0;
             (framesTrue >= framesRequired) ? likely = true : possible = false;
-            if ((likely && !changeable) || (framesTrue >= framesLikely))
+            if ((likely && !changeable) || (framesTrue >= framesLikely && Util::getTime() > Time(3, 00)))
                 confirmed = true;
         }
 
@@ -47,7 +47,7 @@ namespace McRave::Spy {
         {
             possible ? framesTrue++ : framesTrue    = 0;
             (framesTrue >= framesRequired) ? likely = true : possible = false;
-            if ((likely && !changeable) || (framesTrue >= framesLikely))
+            if ((likely && !changeable) || (framesTrue >= framesLikely && Util::getTime() > Time(3, 00)))
                 confirmed = true;
             if (!possible)
                 name = "Unknown";

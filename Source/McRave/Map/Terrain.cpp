@@ -98,14 +98,32 @@ namespace McRave::Terrain {
                 }
             }
 
-            // Infer based on enemy Zealot
+            auto inferZvT = Players::ZvT() && Util::getTime() < Time(2, 30) && Players::getVisibleCount(PlayerState::Enemy, Terran_Marine) > 0 &&
+                            Players::getVisibleCount(PlayerState::Enemy, Terran_Barracks) == 0;
+            auto inferZvP = Players::ZvP() && Util::getTime() < Time(2, 45) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) > 0 &&
+                            Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0;
+
             static bool inferComplete = false;
-            if (!Players::vP() && !inferComplete && Util::getTime() < Time(2, 45) && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) > 0) {
-                auto zealot      = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType() == Protoss_Zealot; });
-                auto closestMain = BWEB::Stations::getClosestMainStation(zealot->getTilePosition());
-                if (closestMain != Terrain::getMyMain()) {
-                    inferComplete = true;
-                    LOG("Inferred enemy start: " + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
+            static auto inferTypes    = {Protoss_Zealot, Terran_Marine};
+
+            if (!inferComplete) {
+                if (auto unit = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy,
+                                                     [&](auto &u) { return find(inferTypes.begin(), inferTypes.end(), u->getType()) != inferTypes.end(); })) {
+
+                    // Infer by timing, get closest main and hopefully that's their main
+                    auto closestMain = BWEB::Stations::getClosestMainStation(unit->getTilePosition());
+                    if (closestMain != Terrain::getMyMain() && (inferZvT || inferZvP)) {
+                        inferComplete         = true;
+                        enemyStartingPosition = closestMain->getBase()->Center();
+                        LOG("Inferred enemy start: " + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
+                    }
+
+                    // Infer by being within a main area when we see it
+                    if (closestMain && Terrain::inArea(closestMain->getBase()->GetArea(), unit->getPosition())) {
+                        inferComplete         = true;
+                        enemyStartingPosition = closestMain->getBase()->Center();
+                        LOG("Inferred enemy start: " + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
+                    }
                 }
             }
 

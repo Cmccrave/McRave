@@ -368,7 +368,7 @@ namespace McRave::Walls {
 
                 // Upwards of 5 sunkens vs marine flood
                 if (Spy::getEnemyTransition() == T_Rush)
-                    return 2 + (Util::getTime() > Time(4, 20)) + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 00));
+                    return 2 + (Util::getTime() > Time(4, 20)) + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 45)) + (Util::getTime() > Time(6, 30));
 
                 // Need 5 sunkens to defend against ~5:00 timing, then add slowly
                 if (Spy::getEnemyTransition() == T_Academy)

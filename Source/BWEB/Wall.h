@@ -12,6 +12,7 @@ namespace BWEB {
     class Wall
     {
         UnitType tightType;
+        UnitType defenseType;
         TilePosition wallLocation;
         vector<TilePosition> smlOrder, medOrder, lrgOrder, opnOrder, pylOrder;
         set<TilePosition> smallTiles, mediumTiles, largeTiles, openings;
@@ -33,6 +34,7 @@ namespace BWEB {
         void initialize();
         void addPieces();
         void addDefenses();
+        void addDefenseLayer(int, int, int);
         void cleanup();
 
         void addOpenings();

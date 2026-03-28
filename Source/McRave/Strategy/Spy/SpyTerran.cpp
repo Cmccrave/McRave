@@ -47,6 +47,7 @@ namespace McRave::Spy::Terran {
             if (theSpy.opener.name != T_8Rax) {
                 if ((theSpy.rushArrivalTime < Time(3, 10) && Util::getTime() < Time(3, 25) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 3) ||
                     (Util::getTime() < Time(2, 55) && Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) >= 2) ||
+                    (Util::getTime() < Time(3, 10) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 2) ||
                     (Util::getTime() < Time(4, 00) && Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) >= 2 && Players::getTotalCount(PlayerState::Enemy, Terran_Refinery) == 0) ||
                     completesBy(3, Terran_Barracks, Time(5, 15)) || completesBy(12, Terran_Marine, Time(5, 00)) || arrivesBy(3, Terran_Marine, Time(4, 00)) ||
                     arrivesBy(5, Terran_Marine, Time(4, 30)) || arrivesBy(7, Terran_Marine, Time(5, 00)) || arrivesBy(2, Terran_Medic, Time(5, 45)) || arrivesBy(3, Terran_Medic, Time(6, 15)))
