@@ -178,8 +178,10 @@ namespace McRave {
             }
 
             // Clear last path
-            if (lastTile != tilePosition)
-                destinationPath = BWEB::Path();
+            if (lastTile != tilePosition) {
+                marchPath   = BWEB::Path();
+                retreatPath = BWEB::Path();
+            }
 
             // Frames
             remainingTrainFrame = max(0, remainingTrainFrame - 1);
@@ -362,7 +364,7 @@ namespace McRave {
 
         // Check if enemy is generally in our territory
         auto nearTerritory = [&]() {
-            if (isFlying())
+            if (isFlying() && getType().spaceProvided() == 0)
                 return atHome;
 
             if ((Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural() && Combat::holdAtChoke()) ||

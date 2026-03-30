@@ -51,28 +51,25 @@ namespace McRave::Combat::Clusters {
 
         bool generateCluster(ClusterNode &root, int id, int minsize, int maxsize)
         {
+            // Calculate eps
+            double clusterNearby = root.unit->isFlying() ? Grids::getAirDensity(root.position, PlayerState::Self) : Grids::getGroundDensity(root.position, PlayerState::Self);
+            double baseEps       = 96.0 + clusterNearby * 16.0;
+            double eps           = baseEps * 1.5;
+            eps                  = std::min(eps, 200.0);
+
             auto matching = [&](auto &parent, auto &child) {
                 if (child.unit->getType() == Zerg_Queen)
                     return false;
 
-                auto engageTogether = false;
-                if (child.unit->hasTarget() && parent.unit->hasTarget()) {
-                    auto childTarget  = child.unit->getTarget().lock();
-                    auto parentTarget = parent.unit->getTarget().lock();
-                    if (child.unit->isWithinReach(*parentTarget) || parent.unit->isWithinReach(*childTarget))
-                        engageTogether = true;
-                }
-
-                auto matchedGoal     = (parent.unit->getGoal() == child.unit->getGoal());
-                auto matchedType     = (parent.unit->isFlying() == child.unit->isFlying() && parent.unit->isMelee() == child.unit->isMelee());
-                auto matchedStrat    = (parent.unit->getGlobalState() == child.unit->getGlobalState());
-                auto matchedDistance = child.position.getDistance(root.position) < 160.0 || child.position.getDistance(parent.position) < 96.0 || engageTogether ||
-                                       (child.position.getDistance(parent.unit->retreatPos) < 128.0 && parent.position.getDistance(parent.unit->retreatPos) < 128.0) ||
-                                       (child.position.getDistance(parent.unit->marchPos) < 128.0 && parent.position.getDistance(parent.unit->marchPos) < 128.0) ||
-                                       (parent.unit->isLightAir() && child.unit->isLightAir());
+                auto matchedGoal  = parent.unit->getGoal() == child.unit->getGoal();
+                auto matchedStrat = parent.unit->getGlobalState() == child.unit->getGlobalState();
 
                 if (parent.unit->isLightAir() && child.unit->isLightAir())
                     return matchedStrat && matchedGoal;
+
+                auto matchedType     = parent.unit->isFlying() == child.unit->isFlying() && parent.unit->isMelee() == child.unit->isMelee();
+                auto matchedDistance = abs(parent.unit->getEngDist() - child.unit->getEngDist()) < eps &&
+                                       (child.position.getDistance(root.position) < eps || child.position.getDistance(parent.position) < eps);
 
                 return matchedType && matchedStrat && matchedDistance && matchedGoal;
             };
@@ -167,21 +164,14 @@ namespace McRave::Combat::Clusters {
         void pathCluster(Cluster &cluster, double dist)
         {
             auto commander      = cluster.commander.lock();
-            auto marchPathPoint = Util::getPathPoint(*commander, cluster.marchPosition);
-            BWEB::Path newMarchPath(cluster.avgPosition, marchPathPoint, commander->getType());
-            newMarchPath.generateJPS([&](const TilePosition &t) { return commander->isFlying() || newMarchPath.unitWalkable(t); });
-            cluster.marchPath = newMarchPath;
+            cluster.marchPath   = commander->getMarchPath();
+            cluster.retreatPath = commander->getRetreatPath();
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.marchNavigation = cluster.marchPosition;
             const auto march        = Util::findPointOnPath(cluster.marchPath, [&](Position p) { return p.getDistance(cluster.avgPosition) >= dist; });
             if (march.isValid())
                 cluster.marchNavigation = march;
-
-            auto retreatPathPoint = Util::getPathPoint(*commander, cluster.retreatPosition);
-            BWEB::Path newRetreatPath(cluster.avgPosition, retreatPathPoint, commander->getType());
-            newRetreatPath.generateJPS([&](const TilePosition &t) { return commander->isFlying() || newRetreatPath.unitWalkable(t); });
-            cluster.retreatPath = newRetreatPath;
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.retreatNavigation = cluster.retreatPosition;

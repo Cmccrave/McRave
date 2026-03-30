@@ -192,15 +192,28 @@ namespace McRave::Grids {
 
         void updateGrids()
         {
+            // Cache positions of units for when threat grids are important
+            vector<Position> cachedPositions;
+            for (auto &unit : Units::getUnits(PlayerState::Self)) {
+                if (unit->getRole() == Role::Scout || unit->getRole() == Role::Combat)
+                    cachedPositions.push_back(unit->getPosition());
+            }
+
             // Don't add to any grid under these conditions
             const auto canAddToGrid = [&](auto &unit) {
                 if ((unit.unit()->exists() && (unit.unit()->isStasised() || unit.unit()->isMaelstrommed() || unit.unit()->isLoaded())) || !unit.getPosition().isValid() ||
                     unit.getType() == Protoss_Interceptor || unit.getType().isSpell() || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Protoss_Scarab ||
-                    (unit.getPlayer() == Broodwar->self() && !unit.getType().isBuilding() && !unit.unit()->isCompleted()) ||
-                    (unit.getPlayer() != Broodwar->self() && unit.getType().isWorker() && !unit.hasAttackedRecently() && !Scouts::gatheringInformation()) ||
-                    (unit.getPlayer() != Broodwar->self() && !unit.hasTarget() && !unit.unit()->exists() && !Scouts::gatheringInformation()))
+                    (unit.getPlayer() == Broodwar->self() && !unit.getType().isBuilding() && !unit.unit()->isCompleted()))
                     return false;
-                return true;
+
+                static auto distLimit = 640.0;
+                for (auto &pos : cachedPositions) {
+                    auto dist = unit.getPosition().getApproxDistance(pos);
+                    if (dist < distLimit) {
+                        return true;
+                    }
+                }
+                return false;
             };
 
             // Iterate player states and units, adding to grids if possible

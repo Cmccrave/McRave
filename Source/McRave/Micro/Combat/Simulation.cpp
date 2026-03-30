@@ -14,8 +14,8 @@ namespace McRave::Combat::Simulation {
 
     namespace {
         bool ignoreSim       = false;
-        double minWinPercent = 0.6;
-        double maxWinPercent = 1.2;
+        double minWinPercent = 0.8;
+        double maxWinPercent = 1.4;
     } // namespace
 
     void updateSimulation(UnitInfo &unit)
@@ -42,31 +42,27 @@ namespace McRave::Combat::Simulation {
             return;
         }
 
-        auto belowGrdtoGrdLimit = false;
-        auto belowGrdtoAirLimit = false;
-        auto belowAirtoAirLimit = false;
-        auto belowAirtoGrdLimit = false;
-        auto &unitTarget        = unit.getTarget().lock();
-        auto selfEngaged        = false;
-        auto enemyEngaged       = false;
-        auto allyEngaged        = false;
-
         // If above/below thresholds, it's a sim win/loss
+        auto newState = SimState::Loss;
         if (unit.getSimValue() >= maxWinPercent)
-            unit.setSimState(SimState::Win);
-        else if (unit.getSimValue() < minWinPercent || (unit.getSimState() == SimState::None && unit.getSimValue() < maxWinPercent))
-            unit.setSimState(SimState::Loss);
+            newState = SimState::Win;
+        else if (unit.getSimValue() < minWinPercent)
+            newState = SimState::Loss;
 
-        //// Reset counter if we're losing
-        // if (unit.getSimState() == SimState::Loss)
-        //    unit.framesCommitted = 0;
-
-        //// Only commit to a win after some debouncing
-        // if (unit.getSimState() == SimState::Win && !unit.isLightAir()) {
-        //    unit.framesCommitted++;
-        //    if (unit.framesCommitted < 80)
-        //        unit.setSimState(SimState::Loss);
-        //}
+        if (newState != lastState) {
+            unit.framesCommitted++;
+            if (unit.framesCommitted >= 72) {
+                unit.setSimState(newState);
+                unit.framesCommitted = 0;
+            }
+            else {
+                unit.setSimState(lastState);
+            }
+        }
+        else {
+            unit.framesCommitted = 0;
+            unit.setSimState(newState);
+        }
     }
 
     void updateThresholds(UnitInfo &unit)
@@ -96,6 +92,10 @@ namespace McRave::Combat::Simulation {
         }
         if (Players::ZvT()) {
             minWinPercent = 1.0;
+            maxWinPercent = 1.4;
+        }
+        if (Players::ZvFFA()) {
+            minWinPercent = 0.8;
             maxWinPercent = 1.4;
         }
 

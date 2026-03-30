@@ -222,7 +222,7 @@ namespace McRave::Spy::Terran {
         }
     }
 
-    bool enemyMech() { return totalMechUnits >= 4 && totalMechUnits > totalBioUnits; }
+    bool enemyMech() { return totalMechUnits >= 4 && totalMechUnits * 2 > totalBioUnits; }
 
-    bool enemyBio() { return totalBioUnits >= 12 && totalBioUnits > totalMechUnits; }
+    bool enemyBio() { return totalBioUnits >= 12 && totalBioUnits > totalMechUnits * 2; }
 } // namespace McRave::Spy::Terran

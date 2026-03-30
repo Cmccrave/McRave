@@ -255,7 +255,7 @@ namespace McRave::BuildOrder::Zerg {
         auto hydraOpen = (Spy::getEnemyBuild() == P_FFE && Spy::getEnemyTransition() != P_5GateGoon && Spy::getEnemyTransition() != P_CorsairGoon && Spy::getEnemyTransition() != P_Speedlot) || //
                          (Spy::getEnemyBuild() == P_1GateCore && Spy::getEnemyTransition() != P_4Gate) ||                                                                                        //
                          total(Zerg_Hydralisk) > 0;
-        auto mutaOpen  = !hydraOpen || Spy::getEnemyBuild() == P_FFE || Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 || total(Zerg_Mutalisk) > 0;
+        auto mutaOpen  = !hydraOpen;
         auto hydraDone = !hydraOpen || total(Zerg_Hydralisk) >= 32;
         auto mutaDone  = !mutaOpen || total(Zerg_Mutalisk) >= 5;
 
@@ -448,7 +448,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // All-in
         if (!needMinimumHydras && total(Zerg_Hydralisk) >= 2 && hatchCount() >= 3) {
-            if (Spy::enemyGreedy() || Spy::getEnemyTransition() == P_4Gate || Spy::getEnemyTransition() == P_Corsair || Spy::getEnemyTransition() == P_CorsairGoon ||
+            if (Spy::enemyGreedy() || Spy::getEnemyTransition() == P_4Gate || Spy::getEnemyTransition() == P_CorsairGoon ||
                 Spy::getEnemyTransition() == P_5GateGoon)
                 activeAllinType = AllinType::Z_5HatchSpeedling;
         }

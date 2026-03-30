@@ -21,7 +21,7 @@ namespace McRave::Transports {
 
             BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
             newPath.generateAS_h(transportDrop);
-            unit.setDestinationPath(newPath);
+            unit.setMarchPath(newPath);
             Visuals::drawPath(newPath);
         }
 
@@ -206,8 +206,8 @@ namespace McRave::Transports {
         {
             // If path is reachable, find a point n pixels away to set as new destination
             unit.setNavigation(unit.getDestination());
-            if (unit.getDestinationPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > 96.0) {
-                auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= 96.0; });
+            if (unit.getMarchPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > 96.0) {
+                auto newDestination = Util::findPointOnPath(unit.getMarchPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= 96.0; });
 
                 if (newDestination.isValid())
                     unit.setNavigation(newDestination);

@@ -18,82 +18,72 @@ namespace McRave::Command {
 
     vector<pair<double, Position>> positionsByCost;
 
+    struct ScoreContext {
+        Position p;
+        WalkPosition w;
+        std::shared_ptr<UnitInfo> unit;
+        std::shared_ptr<UnitInfo> target;
+        std::shared_ptr<UnitInfo> commander;
+    };
+
     namespace {
 
-        double grouping(UnitInfo &unit, WalkPosition w)
+        double grouping(ScoreContext& context)
         {
-            if (unit.isFlying()) {
-                if (unit.hasCommander() && (unit.isTargetedBySplash() || unit.isTargetedBySuicide())) {
-                    return 1.0 + pow(max(0.0, Position(w).getDistance(unit.getCommander().lock()->getPosition()) - 32.0), 2.0);
+            if (context.unit->isFlying()) {
+                if (context.commander && (context.unit->isTargetedBySplash() || context.unit->isTargetedBySuicide())) {
+                    return 1.0 + pow(max(0.0, context.p.getDistance(context.commander->getPosition()) - 32.0), 2.0);
                 }
             }
             return 1.0;
         }
 
-        double distance(UnitInfo &unit, WalkPosition w)
+        double distance(ScoreContext& context) //
         {
-            const auto p = Position(w) + Position(4, 4);
-            return max(10.0, p.getDistance(unit.getNavigation()));
+            return max(10.0, context.p.getDistance(context.unit->getNavigation()));
         }
 
-        double mobility(UnitInfo &unit, WalkPosition w) { return unit.isFlying() ? 1.0 : Util::log10(1 + Grids::getMobility(w)); }
-
-        double threat(UnitInfo &unit, WalkPosition w)
+        double mobility(ScoreContext& context) //
         {
-            const auto p = Position(w) + Position(4, 4);
-            if (unit.isTransport()) {
-                if (p.getDistance(unit.getNavigation()) < 32.0)
-                    return max(0.01f, Grids::getGroundThreat(w, PlayerState::Enemy) + Grids::getAirThreat(w, PlayerState::Enemy));
-                return max(0.01f, Grids::getAirThreat(w, PlayerState::Enemy));
+            return context.unit->isFlying() ? 1.0 : Util::log10(1 + Grids::getMobility(context.w));
+        }
+
+        double threat(ScoreContext& context)
+        {
+            if (context.unit->isTransport()) {
+                if (context.p.getDistance(context.unit->getNavigation()) < 32.0)
+                    return max(0.01f, Grids::getGroundThreat(context.w, PlayerState::Enemy) + Grids::getAirThreat(context.w, PlayerState::Enemy));
+                return max(0.01f, Grids::getAirThreat(context.w, PlayerState::Enemy));
             }
 
-            if (unit.isHidden()) {
-                if (!Actions::overlapsDetection(unit.unit(), p, PlayerState::Enemy))
+            if (context.unit->isHidden()) {
+                if (!Actions::overlapsDetection(context.unit->unit(), context.p, PlayerState::Enemy))
                     return 0.01;
             }
-            return max(0.01f, unit.isFlying() ? (Grids::getAirThreat(w, PlayerState::Enemy) * Grids::getAirThreat(w, PlayerState::Enemy)) : (Grids::getGroundThreat(w, PlayerState::Enemy)));
+            return max(0.01f, context.unit->isFlying() ? (Grids::getAirThreat(context.w, PlayerState::Enemy) * Grids::getAirThreat(context.w, PlayerState::Enemy))
+                                                       : (Grids::getGroundThreat(context.w, PlayerState::Enemy)));
         }
 
-        double altitude(UnitInfo &unit, WalkPosition w)
+        double altitude(ScoreContext& context)
         {
             return 1.0;
             // unit.isFlying() ? Util::log10(1 + mapBWEM.GetMiniTile(w).Altitude()) : 1.0;
         }
 
-        double tangential(UnitInfo &unit, std::shared_ptr<UnitInfo> target, WalkPosition w)
-        {
-            // auto p = Position(w) + Position(4, 4);
-
-            // auto toEnemy     = target->getPosition() - unit.getPosition();
-            // auto toCandidate = p - unit.getPosition();
-
-            // double len1 = unit.getPosition().getDistance(target->getPosition());
-            // double len2 = unit.getPosition().getDistance(p);
-
-            // if (len1 < 1.0 || len2 < 1.0)
-            //    return 0.0;
-
-            // toEnemy /= len1;
-            // toCandidate /= len2;
-
-            // double side = toEnemy.x * toCandidate.y - toEnemy.y * toCandidate.x;
-
-            // double dist          = p.getDistance(target->getPosition());
-            // double desiredRadius = 64.0;
-
-            // double radiusFactor = std::max(0.0, 1.0 - std::abs(dist - desiredRadius) / desiredRadius);
-
-            // return 0.1 * side * radiusFactor;
-            return 1.0;
-        }
-
-        Position findViablePosition(UnitInfo &unit, Position pstart, function<double(WalkPosition)> score)
+        Position findViablePosition(UnitInfo &unit, Position pstart, function<double(ScoreContext&)> scoreFunc)
         {
             auto nearestEdge   = Terrain::getClosestMapEdge(unit.getPosition());
             auto nearestCorner = Terrain::getClosestMapCorner(unit.getPosition());
+            priority_queue<pair<double, Position>> posQueue;
+
+            // Create the score context
+            ScoreContext context;
+            context.unit      = unit.shared_from_this();
+            context.target    = unit.hasTarget() ? unit.getTarget().lock() : nullptr;
+            context.commander = unit.hasCommander() ? unit.getCommander().lock() : nullptr;
 
             // Check if this is a viable position for movement
-            const auto viablePosition = [&](Position &p) {
+            const auto viablePosition = [&](Position p) {
                 if (!unit.getType().isFlyer()) {
                     if (Planning::overlapsPlan(unit, p) || !Util::findWalkable(unit, p))
                         return false;
@@ -104,18 +94,17 @@ namespace McRave::Command {
             };
 
             // Get cost for movement to this position
-            const auto cost = [&](Position &p) {
-                const auto w = WalkPosition(p);
-                auto current = score(w);
+            const auto scorePosition = [&](Position &p) {
+                context.p    = p;
+                context.w    = WalkPosition(p);
+                auto current = scoreFunc(context);
 
                 if (unit.isLightAir()) {
                     auto edgePush   = clamp(nearestEdge.getDistance(p) / 96.0, 1.0, 5.00);
                     auto cornerPush = clamp(nearestCorner.getDistance(p) / 160.0, 1.0, 5.00);
                     current         = current * cornerPush * edgePush;
                 }
-
-                // TODO: make things a cost rather than score
-                return 1.0 / current;
+                return current;
             };
 
             // Clear the vector and keep the space reserved
@@ -128,19 +117,18 @@ namespace McRave::Command {
             for (auto &walk : Util::getWalkCircle(radius)) {
                 const auto w = WalkPosition(walk) + WalkPosition(unit.getPosition());
                 if (w.isValid()) {
-                    auto p = Position(w) + Position(4, 4);
-                    positionsByCost.push_back(make_pair(cost(p), p));
+                    auto p   = Position(w) + Position(4, 4);
+                    double s = scorePosition(p);
+                    posQueue.push({s, p});
                 }
             }
 
-            // Sort above positions by cost
-            sort(positionsByCost.begin(), positionsByCost.end(), [&](auto &p1, auto &p2) { return p1.first < p2.first; });
+            while (!posQueue.empty()) {
+                auto [c, pos] = posQueue.top();
+                posQueue.pop();
 
-            // Iterate ascending cost until a position is viable
-            for (auto &[cost, p] : positionsByCost) {
-                auto position = p;
-                if (viablePosition(position)) {
-                    return position;
+                if (viablePosition(pos)) {
+                    return pos;
                 }
             }
             return Positions::Invalid;
@@ -328,16 +316,15 @@ namespace McRave::Command {
         auto target         = unit.hasTarget() ? unit.getTarget().lock() : nullptr;
         const auto surround = target && unit.attemptingSurround() && unit.isWithinReach(*target);
 
-        const auto scoreFunction = [&](WalkPosition w) {
-            const auto p = Position(w) + Position(4, 4);
+        const auto scoreFunction = [&](ScoreContext& context) {
             auto score   = 0.0;
 
             if (target && surround)
-                score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w) * tangential(unit, target, w));
+                score = mobility(context) * grouping(context) * Util::fastReciprocal(distance(context));
             else if (safeMovement)
-                score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w) * threat(unit, w));
+                score = mobility(context) * grouping(context) * Util::fastReciprocal(distance(context) * threat(context));
             else
-                score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w));
+                score = mobility(context) * grouping(context) * Util::fastReciprocal(distance(context));
             return score;
         };
 
@@ -451,12 +438,12 @@ namespace McRave::Command {
         // Get current distance
         auto currentDistance = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()) / 8.0;
 
-        const auto scoreFunction = [&](WalkPosition w) {
+        const auto scoreFunction = [&](ScoreContext& context) {
             auto score = 0.0;
             if (kiteTowards.isValid())
-                score = (mobility(unit, w) * grouping(unit, w)) / (w.getDistance(WalkPosition(kiteTowards)) * (threat(unit, w)) * altitude(unit, w));
+                score = (mobility(context) * grouping(context)) * Util::fastReciprocal(context.p.getDistance(kiteTowards) * (threat(context)) * altitude(context));
             else
-                score = (mobility(unit, w) * grouping(unit, w)) / ((threat(unit, w)) * altitude(unit, w));
+                score = (mobility(context) * grouping(context)) * Util::fastReciprocal((threat(context)) * altitude(context));
             return score;
         };
 
@@ -619,8 +606,8 @@ namespace McRave::Command {
 
     bool explore(UnitInfo &unit)
     {
-        const auto scoreFunction = [&](WalkPosition w) {
-            auto score = mobility(unit, w) * grouping(unit, w) / (distance(unit, w));
+        const auto scoreFunction = [&](ScoreContext& context) {
+            auto score = mobility(context) * grouping(context) * Util::fastReciprocal(distance(context));
             return score;
         };
 
@@ -653,9 +640,9 @@ namespace McRave::Command {
 
     bool retreat(UnitInfo &unit)
     {
-        const auto scoreFunction = [&](WalkPosition w) {
+        const auto scoreFunction = [&](ScoreContext& context) {
             auto score = 0.0;
-            score      = (mobility(unit, w) * grouping(unit, w)) / (/*threat(unit, w) * */ distance(unit, w));
+            score      = (mobility(context) * grouping(context)) * Util::fastReciprocal(distance(context));
             return score;
         };
 
@@ -693,8 +680,8 @@ namespace McRave::Command {
 
     bool escort(UnitInfo &unit)
     {
-        const auto scoreFunction = [&](WalkPosition w) {
-            auto score = 1.0 / (threat(unit, w) * distance(unit, w));
+        const auto scoreFunction = [&](ScoreContext& context) {
+            auto score = 1.0 * Util::fastReciprocal(threat(context) * distance(context));
             return score;
         };
 
@@ -727,29 +714,25 @@ namespace McRave::Command {
     {
         auto closestRetreat = Stations::getClosestRetreatStation(unit);
 
-        const auto scoreFunction = [&](WalkPosition w) {
-            auto p = Position(w) + Position(4, 4);
-
-            const auto airDist     = max(1.0, p.getDistance(unit.getDestination()));
-            const auto grdDist     = max(1.0, BWEB::Map::getGroundDistance(p, unit.getDestination()));
-            const auto dist        = grdDist;
-            const auto distRetreat = p.getDistance(closestRetreat->getBase()->Center());
+        const auto scoreFunction = [&](ScoreContext& context) {
+            const auto grdDist     = max(1.0, BWEB::Map::getGroundDistance(context.p, unit.getDestination()));
+            const auto distRetreat = context.p.getDistance(closestRetreat->getBase()->Center());
 
             if (grdDist == DBL_MAX)
                 return 0.0;
 
             double score = 0.0;
             if (unit.getTransportState() == TransportState::Retreating)
-                score = 1.0 / (threat(unit, w) * distRetreat);
+                score = 1.0 * Util::fastReciprocal(threat(context) * distRetreat);
             else
-                score = 1.0 / (dist);
+                score = 1.0 * Util::fastReciprocal(grdDist);
 
             for (auto &c : unit.getAssignedCargo()) {
                 if (auto &cargo = c.lock()) {
 
                     // If we're trying to load
                     if (unit.getTransportState() == TransportState::Loading)
-                        score = 1.0 / dist;
+                        score = 1.0 * Util::fastReciprocal(grdDist);
                 }
             }
 

@@ -101,12 +101,9 @@ namespace McRave::Combat {
                 sixLings = true;
 
             // When we don't want to defend our natural
-            if (Players::ZvT() && Util::getTime() < Time(8, 00) && (Spy::enemyRush() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)) {
-                auto mainDefendPosition = Stations::getDefendPosition(Terrain::getMyMain());
-                if (closestDefense && closestDefense->getPosition().getDistance(mainDefendPosition) < closestDefense->getGroundRange() + 64.0) {
-                    LOG_ONCE("Defending in main temporarily");
-                    defendNaturalAtMain = true;
-                }
+            if (Players::ZvT() && Util::getTime() < Time(8, 00) && (Spy::enemyRush() || Spy::getEnemyBuild() == T_RaxFact || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)) {
+                LOG_ONCE("Defending in main temporarily");
+                defendNaturalAtMain = true;
             }
 
             // ZvP

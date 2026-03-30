@@ -32,13 +32,29 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueGasTrick()
         {
+            if (!gasTrick)
+                return;
+
             // Executing gas trick
-            if (gasTrick) {
-                if (Broodwar->self()->minerals() >= 80 && total(Zerg_Extractor) == 0)
-                    buildQueue[Zerg_Extractor] = 1;
-                if (vis(Zerg_Extractor) > 0)
-                    buildQueue[Zerg_Extractor] = (vis(Zerg_Drone) < 9);
+            static auto extractorMade = false;
+            if (total(Zerg_Extractor) > 0)
+                extractorMade = true;
+
+            static auto madeTenthDrone = false;
+            if (total(Zerg_Extractor) > 0 && vis(Zerg_Drone) >= 9)
+                madeTenthDrone = true;
+
+            static auto cancelled = false;
+            if (vis(Zerg_Extractor) == 0 && vis(Zerg_Drone) >= 10)
+                cancelled = true;
+
+            auto readyToCancel = extractorMade && madeTenthDrone;
+            if (!readyToCancel) {
+                buildQueue[Zerg_Extractor] = (vis(Zerg_Drone) >= 9 && Broodwar->self()->minerals() >= 80) || extractorMade;
             }
+
+            if (cancelled)
+                gasTrick = false;
         }
 
         void queueDefenses()
@@ -66,9 +82,9 @@ namespace McRave::BuildOrder::Zerg {
 
                     auto airNeeded = Walls::needAirDefenses(wall);
                     auto grdNeeded = Walls::needGroundDefenses(wall);
-                    if (airNeeded > colonies)
+                    if (airNeeded > 0)
                         needSpores = true;
-                    if (grdNeeded > colonies)
+                    if (grdNeeded > 0)
                         needSunks = true;
 
                     if ((atPercent(Zerg_Spawning_Pool, 0.66) && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
@@ -87,9 +103,9 @@ namespace McRave::BuildOrder::Zerg {
                     auto airNeeded = Stations::needAirDefenses(station);
                     auto grdNeeded = Stations::needGroundDefenses(station);
 
-                    if (airNeeded > colonies)
+                    if (airNeeded > 0)
                         needSpores = true;
-                    if (grdNeeded > colonies)
+                    if (grdNeeded > 0)
                         needSunks = true;
 
                     if ((atPercent(Zerg_Spawning_Pool, 0.66) && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
@@ -255,7 +271,7 @@ namespace McRave::BuildOrder::Zerg {
                 if (Players::ZvZ()) {
                     hatchPerBase = {{1, 1}, {2, 4}, {3, 5}, {4, 6}};
                 }
-                if (Players::ZvP()) {
+                if (Players::ZvP() || Players::ZvFFA()) {
                     hatchPerBase = {{1, 1}, {2, 3}, {3, 5}, {4, 6}};
                 }
                 if (Players::ZvT()) {
@@ -358,7 +374,7 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Drop extractors if we don't want gas right now
-            if (gasLimit == 0)
+            if (gasLimit == 0 && !gasTrick)
                 buildQueue[Zerg_Extractor] = 0;
 
             if (Players::ZvZ()) {
@@ -714,25 +730,28 @@ namespace McRave::BuildOrder::Zerg {
                         {Zerg_Drone, 30},     {Zerg_Mutalisk, 16}, //
                         {Zerg_Drone, 45},     {Zerg_Mutalisk, 24}, //
                         {Zerg_Drone, 60},     {Zerg_Mutalisk, 48}, //
-                        {Zerg_Mutalisk, 100},
+                        {Zerg_Mutalisk, 100},                      //
                     };
                 }
 
                 // No mutas, purely ground muscle
                 else if (unitOrder == hydralurk) {
                     priorityOrder = {
-                        {Zerg_Drone, 30},      {Zerg_Hydralisk, 24}, {Zerg_Lurker, 2}, //
-                        {Zerg_Drone, 44},      {Zerg_Hydralisk, 48}, {Zerg_Lurker, 4}, //
+                        {Zerg_Drone, 30},      {Zerg_Hydralisk, 24}, {Zerg_Lurker, 4}, //
+                        {Zerg_Drone, 44},      {Zerg_Hydralisk, 36}, {Zerg_Lurker, 6}, //
                         {Zerg_Drone, 60},      {Zerg_Hydralisk, 96}, {Zerg_Lurker, 8}, //
-                        {Zerg_Hydralisk, 200},
+                        {Zerg_Hydralisk, 200},                                         //
                     };
                 }
 
                 // Mix of both
                 else {
-                    priorityOrder = {{Zerg_Drone, 30}, {Zerg_Hydralisk, 32}, {Zerg_Defiler, 2}, {Zerg_Lurker, 2}, {Zerg_Mutalisk, 9},  //
-                                     {Zerg_Drone, 45}, {Zerg_Hydralisk, 64}, {Zerg_Defiler, 2}, {Zerg_Lurker, 2}, {Zerg_Mutalisk, 12}, //
-                                     {Zerg_Drone, 60}, {Zerg_Hydralisk, 96}, {Zerg_Defiler, 2}, {Zerg_Lurker, 2}, {Zerg_Mutalisk, 24}};
+                    priorityOrder = {
+                        {Zerg_Drone, 30},      {Zerg_Hydralisk, 24}, {Zerg_Defiler, 2}, {Zerg_Lurker, 2}, {Zerg_Mutalisk, 9},  //
+                        {Zerg_Drone, 45},      {Zerg_Hydralisk, 32}, {Zerg_Defiler, 2}, {Zerg_Lurker, 4}, {Zerg_Mutalisk, 12}, //
+                        {Zerg_Drone, 60},      {Zerg_Hydralisk, 64}, {Zerg_Defiler, 2}, {Zerg_Lurker, 6}, {Zerg_Mutalisk, 24}, //
+                        {Zerg_Hydralisk, 200},                                                                                 //
+                    };
                 }
             }
 
@@ -742,41 +761,48 @@ namespace McRave::BuildOrder::Zerg {
                 // Higher muta count, hive tech is just defilers
                 if (unitOrder == mutalingdefiler) {
                     priorityOrder = {
-                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 16}, {Zerg_Defiler, 1}, //
-                        {Zerg_Drone, 45}, {Zerg_Mutalisk, 24}, {Zerg_Defiler, 2}, //
-                        {Zerg_Drone, 60}, {Zerg_Mutalisk, 48},
+                        {Zerg_Drone, 30},    {Zerg_Mutalisk, 16}, {Zerg_Defiler, 1}, //
+                        {Zerg_Drone, 45},    {Zerg_Mutalisk, 24}, {Zerg_Defiler, 2}, //
+                        {Zerg_Drone, 60},    {Zerg_Mutalisk, 48}, {Zerg_Defiler, 3}, //
+                        {Zerg_Mutalisk, 100}                                         //
                     };
                 }
 
                 // Keep a consistent muta count, get ultras and defilers eventually
                 else if (unitOrder == ultraling || unitOrder == defilerling) {
                     priorityOrder = {
-                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 16}, {Zerg_Ultralisk, 4},  {Zerg_Defiler, 1}, //
-                        {Zerg_Drone, 45}, {Zerg_Mutalisk, 16}, {Zerg_Ultralisk, 8},  {Zerg_Defiler, 2}, //
-                        {Zerg_Drone, 60}, {Zerg_Mutalisk, 48}, {Zerg_Ultralisk, 12}, {Zerg_Defiler, 2},
+                        {Zerg_Drone, 30},    {Zerg_Mutalisk, 16}, {Zerg_Ultralisk, 4},  {Zerg_Defiler, 1}, //
+                        {Zerg_Drone, 45},    {Zerg_Mutalisk, 16}, {Zerg_Ultralisk, 8},  {Zerg_Defiler, 2}, //
+                        {Zerg_Drone, 60},    {Zerg_Mutalisk, 48}, {Zerg_Ultralisk, 12}, {Zerg_Defiler, 2}, //
+                        {Zerg_Mutalisk, 100}                                                               //
                     };
                     if (total(Zerg_Ultralisk) > 0 || total(Zerg_Defiler) > 0) {
-                        priorityOrder = {{Zerg_Drone, 30},   {Zerg_Ultralisk, 4},  {Zerg_Defiler, 1}, //
-                                         {Zerg_Drone, 45},   {Zerg_Ultralisk, 8},  {Zerg_Defiler, 2}, //
-                                         {Zerg_Drone, 60},   {Zerg_Ultralisk, 12}, {Zerg_Defiler, 2}, //
-                                         {Zerg_Mutalisk, 16}};
+                        priorityOrder = {
+                            {Zerg_Drone, 30},     {Zerg_Ultralisk, 4},  {Zerg_Defiler, 1}, //
+                            {Zerg_Drone, 45},     {Zerg_Ultralisk, 8},  {Zerg_Defiler, 2}, //
+                            {Zerg_Drone, 60},     {Zerg_Ultralisk, 12}, {Zerg_Defiler, 2}, //
+                            {Zerg_Mutalisk, 16},                                           //
+                            {Zerg_Ultralisk, 50},                                          //
+                        };
                     }
                 }
 
                 else if (unitOrder == mutalingqueen) {
                     priorityOrder = {
-                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 16}, {Zerg_Queen, 6},  //
-                        {Zerg_Drone, 45}, {Zerg_Mutalisk, 24}, {Zerg_Queen, 12}, //
-                        {Zerg_Drone, 60}, {Zerg_Mutalisk, 48},
+                        {Zerg_Drone, 30},     {Zerg_Mutalisk, 16}, {Zerg_Queen, 6},  //
+                        {Zerg_Drone, 45},     {Zerg_Mutalisk, 24}, {Zerg_Queen, 12}, //
+                        {Zerg_Drone, 60},     {Zerg_Mutalisk, 48},                   //
+                        {Zerg_Mutalisk, 100},                                        //
                     };
                 }
 
                 else if (unitOrder == mutalurk) {
                     priorityOrder = {
-                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 6},  {Zerg_Hydralisk, 2},  {Zerg_Lurker, 2}, //
-                        {Zerg_Drone, 30}, {Zerg_Mutalisk, 12}, {Zerg_Hydralisk, 4},  {Zerg_Lurker, 4}, //
-                        {Zerg_Drone, 45}, {Zerg_Mutalisk, 18}, {Zerg_Hydralisk, 8},  {Zerg_Lurker, 8}, //
-                        {Zerg_Drone, 60}, {Zerg_Mutalisk, 24}, {Zerg_Hydralisk, 16}, {Zerg_Lurker, 16},
+                        {Zerg_Drone, 30},     {Zerg_Mutalisk, 6},  {Zerg_Hydralisk, 2},  {Zerg_Lurker, 2},  //
+                        {Zerg_Drone, 30},     {Zerg_Mutalisk, 12}, {Zerg_Hydralisk, 4},  {Zerg_Lurker, 4},  //
+                        {Zerg_Drone, 45},     {Zerg_Mutalisk, 18}, {Zerg_Hydralisk, 8},  {Zerg_Lurker, 8},  //
+                        {Zerg_Drone, 60},     {Zerg_Mutalisk, 24}, {Zerg_Hydralisk, 16}, {Zerg_Lurker, 16}, //
+                        {Zerg_Mutalisk, 100},                                                               //
                     };
                 }
             }

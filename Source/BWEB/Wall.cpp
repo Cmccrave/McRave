@@ -79,7 +79,6 @@ namespace BWEB {
             defenseAngle = Map::getAngle(make_pair(station->getBase()->Center(), bestGeo)) + M_PI_D2;
         }
         defenseArrangement = int(round(defenseAngle / M_PI_D4)) % 4;
-        return;
 
         // If this is a natural wall, check if the wall can by bypassed into the main, then wall at the choke instead
         if (station && station->isNatural()) {

@@ -69,7 +69,6 @@ namespace McRave::Command {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit || unit.unit()->getLastCommand().getTarget() != battery->unit()) {
                     unit.setCommand(Right_Click_Unit, *battery);
                     unit.commandText  = "Regen";
-                    unit.commandFrame = Broodwar->getFrameCount();
                 }
                 return true;
             }
@@ -98,7 +97,6 @@ namespace McRave::Command {
                 if (!unit.unit()->isLoaded() && loadBunker) {
                     unit.setCommand(Right_Click_Unit, *bunker);
                     unit.commandText  = "LoadBunker";
-                    unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }
                 if (unit.unit()->isLoaded() && unloadBunker)
@@ -121,7 +119,6 @@ namespace McRave::Command {
                     if (unit.getPosition().getDistance(info->getPosition()) < 160.0) {
                         unit.setCommand(UnitCommandTypes::Right_Click_Unit, *info);
                         unit.commandText  = "NydusTravel";
-                        unit.commandFrame = Broodwar->getFrameCount();
                         return true;
                     }
                 }
@@ -144,7 +141,6 @@ namespace McRave::Command {
                 if (closestUnit) {
                     unit.unit()->gather(resource->unit());
                     unit.commandText  = "MineralWalk";
-                    unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }
             }
@@ -159,7 +155,7 @@ namespace McRave::Command {
 
         // Don't siege next to a tank that is already sieged
         if (!unit.unit()->isSieged()) {
-            auto nearestSiegedFriend = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) { return unit != u && u->getType() == Terran_Siege_Tank_Siege_Mode; });
+            auto nearestSiegedFriend = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) { return unit != *u && u->getType() == Terran_Siege_Tank_Siege_Mode; });
 
             if (nearestSiegedFriend && nearestSiegedFriend->getPosition().getDistance(unit.getPosition()) < 96.0)
                 return false;
@@ -174,12 +170,10 @@ namespace McRave::Command {
             if (siege) {
                 unit.unit()->siege();
                 unit.commandText  = "Siege";
-                unit.commandFrame = Broodwar->getFrameCount();
             }
             else if (unsiege) {
                 unit.unit()->unsiege();
                 unit.commandText  = "Unsiege";
-                unit.commandFrame = Broodwar->getFrameCount();
             }
         }
         return false;
@@ -198,7 +192,6 @@ namespace McRave::Command {
                 if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != mech->unit())
                     unit.unit()->repair(mech->unit());
                 unit.commandText  = "Repair";
-                unit.commandFrame = Broodwar->getFrameCount();
                 return true;
             }
 
@@ -212,7 +205,6 @@ namespace McRave::Command {
                 if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != building->unit())
                     unit.unit()->repair(building->unit());
                 unit.commandText  = "Repair";
-                unit.commandFrame = Broodwar->getFrameCount();
                 return true;
             }
         }
@@ -478,7 +470,7 @@ namespace McRave::Command {
 
             // If within range of an intermediate point within engaging distance of a tank
             if (!unit.targetsFriendly() && vis(Zerg_Zergling) + vis(Zerg_Ultralisk) > vis(Zerg_Hydralisk) && target.isSiegeTank()) {
-                for (auto &tile : unit.getDestinationPath().getTiles()) {
+                for (auto &tile : unit.getMarchPath().getTiles()) {
                     auto center = Position(tile) + Position(16, 16);
 
                     auto distMin = BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0 ? 200.0 : 0.0;
@@ -552,7 +544,6 @@ namespace McRave::Command {
                         unit.unit()->useTech(Archon_Warp, templar->unit());
                     lastMorphFrame    = Broodwar->getFrameCount();
                     unit.commandText  = "Archonification";
-                    unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }
             }
@@ -572,7 +563,6 @@ namespace McRave::Command {
                         unit.unit()->morph(Zerg_Lurker);
                     lastMorphFrame    = Broodwar->getFrameCount();
                     unit.commandText  = "Lurkification";
-                    unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }
             }
@@ -595,7 +585,6 @@ namespace McRave::Command {
                         unit.unit()->morph(Zerg_Guardian);
                     lastMorphFrame    = Broodwar->getFrameCount();
                     unit.commandText  = "Guardianification";
-                    unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }
             }
@@ -605,7 +594,6 @@ namespace McRave::Command {
                         unit.unit()->morph(Zerg_Devourer);
                     lastMorphFrame    = Broodwar->getFrameCount();
                     unit.commandText  = "Devourification";
-                    unit.commandFrame = Broodwar->getFrameCount();
                     return true;
                 }
             }
@@ -634,7 +622,6 @@ namespace McRave::Command {
                 unit.unit()->returnCargo();
             }
             unit.commandText  = "Return";
-            unit.commandFrame = Broodwar->getFrameCount();
             return true;
         }
 
@@ -659,13 +646,12 @@ namespace McRave::Command {
 
                 auto closestWorker = Util::getClosestUnit(boulder.getPosition(), PlayerState::Self, [&](auto &u) { return u->getRole() == Role::Worker; });
 
-                if (closestWorker && *closestWorker != unit)
+                if (closestWorker && *closestWorker != unit && closestWorker->unit()->getOrderTarget() == boulder.unit())
                     continue;
 
                 if (unit.unit()->getOrderTarget() != boulder.unit())
                     unit.unit()->gather(boulder.unit());
                 unit.commandText  = "Bouldering";
-                unit.commandFrame = Broodwar->getFrameCount();
                 return true;
             }
         }
@@ -694,7 +680,6 @@ namespace McRave::Command {
             if (closestMine) {
                 unit.setCommand(Attack_Unit, *closestMine);
                 unit.commandText  = "Attack Mine";
-                unit.commandFrame = Broodwar->getFrameCount();
                 return true;
             }
         }
@@ -709,7 +694,6 @@ namespace McRave::Command {
                 }
             }
             unit.commandText  = "Build";
-            unit.commandFrame = Broodwar->getFrameCount();
             return true;
         }
         return false;
@@ -811,7 +795,6 @@ namespace McRave::Command {
                     if (furthest) {
                         unit.unit()->gather(furthest->Unit());
                         unit.commandText  = "Gather";
-                        unit.commandFrame = Broodwar->getFrameCount();
                         return true;
                     }
                 }
@@ -824,7 +807,6 @@ namespace McRave::Command {
             if (canGather(resource)) {
                 unit.unit()->gather(resource->unit());
                 unit.commandText  = "Gather";
-                unit.commandFrame = Broodwar->getFrameCount();
                 return true;
             }
         }

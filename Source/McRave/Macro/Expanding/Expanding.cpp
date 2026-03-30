@@ -140,7 +140,8 @@ namespace McRave::Expansion {
                         (Terrain::getEnemyMain() && &station == Terrain::getEnemyMain()) || (Terrain::getEnemyNatural() && &station == Terrain::getEnemyNatural()) ||
                         (station == Terrain::getMyNatural() && !BuildOrder::takeNatural()) || (station.getBase()->Geysers().empty() && int(expansionOrder.size()) < allowedFirstMineralBase) ||
                         (station.getBase()->Geysers().empty() && geysersOwned + int(station.getBase()->Geysers().size()) < allowedFirstMineralBase) ||
-                        (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea())))
+                        (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea())) ||
+                        (Players::vFFA() && !Stations::isBaseExplored(&station)))
                         continue;
 
                     // Check if it's a dangerous/blocked station
@@ -152,7 +153,12 @@ namespace McRave::Expansion {
                         grdHome *= double(blockingNeutrals[&station].size());
                         airHome *= double(blockingNeutrals[&station].size());
                     }
-                    auto dist = (grdParent * grdHome /** airParent * airHome*/) / (grdEnemy * airEnemy * airCenter);
+
+                    auto dist = 0.0;
+                    if (Players::vFFA())
+                        dist = (grdParent * grdHome);
+                    else
+                        dist = (grdParent * grdHome) / (grdEnemy * airEnemy * airCenter);
 
                     // Stations with narrower chokes are desirable
                     auto widestChoke = 0.0;

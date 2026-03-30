@@ -163,7 +163,7 @@ namespace McRave::Targets {
                 return Priority::Critical;
 
             // If a building is unprotected
-            if (target.getType().isBuilding() && !target.canAttackAir() && target.getUnitsInRangeOfThis().empty() && unit.getUnitsInRangeOfThis().empty() && unit.isWithinRange(target)) {
+            if (!BuildOrder::isPressure() && target.getType().isBuilding() && !target.canAttackAir() && target.getUnitsInRangeOfThis().empty() && unit.getUnitsInRangeOfThis().empty() && unit.isWithinRange(target)) {
                 Priority::Major;
             }
 
@@ -306,12 +306,13 @@ namespace McRave::Targets {
                 }
 
                 // Threatening priority
-                if (!unit.getType().isWorker() && (unit.isWithinEngage(target) || Util::getTime() < Time(5, 00)) && target.isThreatening() && !target.getType().isWorker() &&
-                    unit.isFlying() == target.isFlying())
-                    return Priority::Major;
-                if (target.getType().isWorker() && target.isThreatening())
-                    return Priority::Critical;
-
+                if (target.isThreatening() && (unit.isWithinEngage(target) || Util::getTime() < Time(5, 00))) {
+                    if (!unit.getType().isWorker() && !target.getType().isWorker() && unit.isFlying() == target.isFlying())
+                        return Priority::Major;
+                    if (target.getType().isWorker() && target.isThreatening())
+                        return Priority::Critical;
+                } 
+                
                 // Sacrifice unit away from army
                 if (unit.isTargetedBySuicide() && (target.isTransport() || target.getType() == Protoss_Reaver || target.getType() == Protoss_High_Templar))
                     return Priority::Critical;
@@ -407,7 +408,7 @@ namespace McRave::Targets {
             const auto useGrd      = !unit.getType().isWorker() && !unit.isFlying() && !target.isFlying() && mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea(target.getTilePosition()) &&
                                 mapBWEM.GetArea(unit.getTilePosition())->AccessibleFrom(mapBWEM.GetArea(target.getTilePosition())) && boxDistance < unit.getEngageRadius() && boxDistance > reach;
             const auto actualDist = (useGrd ? BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) : boxDistance);
-            const auto dist       = actualDist;
+            const auto dist       = exp(actualDist / 32.0);
 
             if (unit.isSiegeTank()) {
                 range = 384.0;
@@ -495,7 +496,7 @@ namespace McRave::Targets {
                                         (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine));
                 auto unitCanAttack   = ((target.isFlying() && unit.canAttackAir()) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));
 
-                if (!targetCanAttack && (!unit.hasTarget() || target != unit.getTarget()))
+                if (!targetCanAttack && (!unit.hasTarget() || target != *unit.getTarget().lock()))
                     continue;
 
                 if (!target.isWithinEngage(unit))
@@ -558,6 +559,8 @@ namespace McRave::Targets {
 
                 // If this target is more important to target, set as current target
                 const auto thisUnit = scoreTarget(unit, target);
+                if (unit.getType() == Zerg_Hydralisk)
+                    Broodwar->drawTextMap(target.getPosition(), "%.2f", thisUnit);
                 if (thisUnit > scoreBest && checkGroundAccess(target)) {
                     scoreBest = thisUnit;
                     unit.setTarget(&target);

@@ -33,13 +33,13 @@ namespace McRave::Combat::State {
             const auto enemyTeched  = Players::getTotalCount(PlayerState::Enemy, Protoss_Shuttle) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0 ||
                                      Players::getTotalCount(PlayerState::Enemy, Protoss_Robotics_Facility) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Robotics_Support_Bay) > 0;
 
-            if (Players::ZvP()) {
+            if (Players::ZvP() || Players::ZvFFA()) {
                 if (!BuildOrder::isPressure() && !enemyTeched) {
                     if (!hydraRange || !hydraSpeed || BuildOrder::isAllIn() || defendTiming)
                         staticRetreatTypes.push_back(Zerg_Hydralisk);
                 }
             }
-            if (Players::ZvT()) {
+            if (Players::ZvT() || Players::ZvFFA()) {
                 if (!hydraRange || !hydraSpeed)
                     staticRetreatTypes.push_back(Zerg_Hydralisk);
             }
@@ -82,6 +82,11 @@ namespace McRave::Combat::State {
             const auto volume    = speedLing && Players::getTotalCount(PlayerState::Self, Zerg_Zergling) >= 64;
 
             if (!crackling && !volume && !BuildOrder::isRush() && !BuildOrder::isAllIn()) {
+
+                if (Players::ZvFFA()) {
+                    staticRetreatTypes.push_back(Zerg_Zergling);
+                }
+
                 if (Players::ZvP()) {
                     const auto killWorkers  = Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) >= 8;
                     const auto scaryOpeners = Spy::getEnemyBuild() != P_FFE && Util::getTime() < Time(8, 00) && vis(Zerg_Sunken_Colony) > 0;
@@ -406,7 +411,7 @@ namespace McRave::Combat::State {
                                     : BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition());
 
         const auto insideRetreatRadius = distSim < unit.getRetreatRadius() && (!unit.isLightAir() || !unit.hasTarget() || !unit.getUnitsInReachOfThis().empty());
-        const auto insideEngageRadius  = distTarget < unit.getEngageRadius() && (unit.getGlobalState() == GlobalState::Attack || atHome);
+        const auto insideEngageRadius  = distSim < unit.getEngageRadius() && (unit.getGlobalState() == GlobalState::Attack || atHome);
         const auto exploringGoal       = unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore && unit.getUnitsInReachOfThis().empty() && Util::getTime() > Time(4, 00);
 
         // Regardless of any decision, determine if Unit is in danger and needs to retreat

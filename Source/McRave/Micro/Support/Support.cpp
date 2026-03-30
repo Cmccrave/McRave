@@ -165,7 +165,7 @@ namespace McRave::Support {
         void updatePath(UnitInfo &unit)
         {
             // Check if we need a new path
-            if (!unit.getDestination().isValid() || (!unit.getDestinationPath().getTiles().empty() && unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())))
+            if (!unit.getDestination().isValid() || (!unit.getMarchPath().getTiles().empty() && unit.getMarchPath().getTarget() == TilePosition(unit.getDestination())))
                 return;
 
             if (unit.getType() == Zerg_Overlord && (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 || unit.getGoal().isValid())) {
@@ -177,9 +177,9 @@ namespace McRave::Support {
                     return !Terrain::inTerritory(PlayerState::Enemy, Position(t)) && t.isValid() &&
                            (t.x < 4 || t.y < 4 || t.x > xMax || t.y > yMax || Position(t).getDistance(mapBWEM.Center()) >= centerDist);
                 });
-                unit.setDestinationPath(newPath);
+                unit.setMarchPath(newPath);
             }
-            Visuals::drawPath(unit.getDestinationPath());
+            Visuals::drawPath(unit.getMarchPath());
         }
 
         void updateNavigation(UnitInfo &unit)
@@ -187,8 +187,8 @@ namespace McRave::Support {
             // If path is reachable, find a point n pixels away to set as new destination
             unit.setNavigation(unit.getDestination());
             auto dist = unit.isFlying() ? 96.0 : 160.0;
-            if (unit.getDestinationPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > 96.0) {
-                auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= dist; });
+            if (unit.getMarchPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > 96.0) {
+                auto newDestination = Util::findPointOnPath(unit.getMarchPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= dist; });
 
                 if (newDestination.isValid())
                     unit.setNavigation(newDestination);

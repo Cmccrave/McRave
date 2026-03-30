@@ -19,61 +19,70 @@ namespace McRave::Combat::Navigation {
         BWEB::Path groundHarassPath;
     } // namespace
 
-    void getGroundPath(UnitInfo &unit)
+    void getGroundMarchPath(UnitInfo &unit)
     {
         auto pathPoint      = Util::getPathPoint(unit, unit.getDestination());
         auto newPathAllowed = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) ||
                               mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)));
 
         if (unit.attemptingRunby()) {
-            unit.setDestinationPath(groundHarassPath);
+            unit.setMarchPath(groundHarassPath);
             return;
         }
 
-        if (newPathAllowed && !unit.hasSamePath(unit.getPosition(), pathPoint)) {
+        if (newPathAllowed && !unit.hasSameMarchPath(unit.getPosition(), pathPoint)) {
             BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
             newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
-            unit.setDestinationPath(newPath);
+            unit.setMarchPath(std::move(newPath));
         }
     }
 
-    void getFlyingPath(UnitInfo &unit)
+    void getGroundRetreatPath(UnitInfo &unit)
+    {
+        auto pathPoint      = Util::getPathPoint(unit, unit.retreatPos);
+        auto newPathAllowed = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) ||
+                              mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)));
+
+        if (newPathAllowed && !unit.hasSameRetreatPath(unit.getPosition(), pathPoint)) {
+            BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
+            newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
+            unit.setRetreatPath(std::move(newPath));
+        }
+    }
+
+    void getFlyingMarchPath(UnitInfo &unit)
     {
         BWEB::Path newPath(unit.getDestination(), unit.getPosition(), unit.getType());
         newPath.generateJPS([&](const TilePosition &t) { return true; });
-        unit.setDestinationPath(newPath);
+        unit.setMarchPath(std::move(newPath));
     }
 
     void getFlyingRetreatPath(UnitInfo &unit)
     {
-        auto newPathAllowed = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.retreatPos)) ||
-                              mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.retreatPos)));
         const auto retreat = [&](const TilePosition &t) {
             const auto threat = Grids::getAirThreat(t, PlayerState::Enemy) * 1000.0;
             return threat;
         };
 
-        if (newPathAllowed && !unit.hasSamePath(unit.getPosition(), unit.retreatPos)) {
+        if (!unit.hasSameMarchPath(unit.getPosition(), unit.retreatPos)) {
             BWEB::Path newPath(unit.getPosition(), unit.retreatPos, unit.getType());
             newPath.generateAS_h(retreat);
-            unit.setDestinationPath(newPath);
+            unit.setMarchPath(std::move(newPath));
         }
     }
 
     void getFlyingRegroupPath(UnitInfo &unit)
     {
-        if (unit.hasCommander(); auto cmder = unit.getCommander().lock()) {
-            auto newPathAllowed = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(cmder->getPosition())) ||
-                                  mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(cmder->getPosition())));
+        const auto regroup = [&](const TilePosition &t) {
+            const auto threat = Grids::getAirThreat(t, PlayerState::Enemy) * 1000.0;
+            return threat;
+        };
 
-            if (newPathAllowed && !unit.hasSamePath(unit.getPosition(), cmder->getPosition())) {
-                const auto regroup = [&](const TilePosition &t) {
-                    const auto threat = Grids::getAirThreat(t, PlayerState::Enemy) * 1000.0;
-                    return threat;
-                };
+        if (unit.hasCommander(); auto cmder = unit.getCommander().lock()) {
+            if (!unit.hasSameMarchPath(unit.getPosition(), cmder->getPosition())) {
                 BWEB::Path newPath(unit.getPosition(), cmder->getPosition(), unit.getType());
                 newPath.generateAS_h(regroup);
-                unit.setDestinationPath(newPath);
+                unit.setMarchPath(std::move(newPath));
             }
         }
     }
@@ -81,8 +90,7 @@ namespace McRave::Combat::Navigation {
     void updatePath(UnitInfo &unit)
     {
         // Check if we need a new path
-        if (!unit.getDestination().isValid() || (!unit.getDestinationPath().getTiles().empty() && unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())) &&
-                                                    unit.getDestinationPath().getSource() == TilePosition(unit.getPosition()))
+        if (!unit.getDestination().isValid())
             return;
 
         if (unit.isLightAir() && !unit.getGoal().isValid()) {
@@ -99,11 +107,11 @@ namespace McRave::Combat::Navigation {
             }
             else if (harassing) {
                 unit.circle(Colors::Green);
-                unit.setDestinationPath(flyerHarassPath);
-                // Visuals::drawPath(unit.getDestinationPath());
+                unit.setMarchPath(flyerHarassPath);
+                // Visuals::drawPath(unit.getMarchPath());
             }
             else {
-                getFlyingPath(unit);
+                getFlyingMarchPath(unit);
             }
 
             return;
@@ -111,24 +119,18 @@ namespace McRave::Combat::Navigation {
 
         // Generate a generic flying JPS path
         if (unit.isFlying())
-            getFlyingPath(unit);
+            getFlyingMarchPath(unit);
 
         // Generate a generic ground JPS path
-        else
-            getGroundPath(unit);
+        else {
+            getGroundMarchPath(unit);
+            getGroundRetreatPath(unit);
+        }
     }
 
     void updateNavigation(UnitInfo &unit)
     {
         unit.setNavigation(unit.getDestination());
-
-        // Check if it's time to break formation
-        // if (auto target = unit.getTarget().lock()) {
-        //    if (unit.getEngagePosition().isValid() && unit.getLocalState() == LocalState::Attack && (unit.isWithinRange(*target) || target->isWithinRange(unit))) {
-        //        unit.setNavigation(unit.getEngagePosition());
-        //        return;
-        //    }
-        //}
 
         if (unit.getFormation().isValid() && !unit.attemptingRunby() && unit.getLocalState() != LocalState::Attack) {
             unit.setNavigation(unit.getFormation());
@@ -138,10 +140,10 @@ namespace McRave::Combat::Navigation {
 
         // If path is reachable, find a point n pixels away to set as new destination
         auto dist = 160.0;
-        if (unit.getDestinationPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > dist) {
+        if (unit.getMarchPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > dist) {
             auto closestPoint   = unit.getDestination();
             auto closestDist    = DBL_MAX;
-            auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= dist; });
+            auto newDestination = Util::findPointOnPath(unit.getMarchPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= dist; });
 
             if (newDestination.isValid())
                 unit.setNavigation(newDestination);
@@ -149,7 +151,7 @@ namespace McRave::Combat::Navigation {
 
         if (unit.isLightAir()) {
             Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Purple);
-            Visuals::drawPath(unit.getDestinationPath());
+            Visuals::drawPath(unit.getMarchPath());
         }
     }
 
@@ -238,14 +240,18 @@ namespace McRave::Combat::Navigation {
             // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
             auto &simPositions     = lastSimPositions[&unit];
             auto cachedDist        = unit.getLocalState() == LocalState::Attack ? 0.0 : min(simDistCurrent, int(unit.getRetreatRadius() + 32.0));
+
+            static const Position offset(16, 16);
+            const int frameNow = Broodwar->getFrameCount();
+
             const auto flyerAttack = [&](const TilePosition &t) {
-                const auto center = Position(t) + Position(16, 16);
+                const auto center = Position(t) + offset;
                 auto d            = center.getApproxDistance(simPosition);
                 for (auto &pos : simPositions)
                     d = min(d, center.getApproxDistance(pos));
 
                 auto dist = max(0.01, double(d) - cachedDist);
-                auto vis  = clamp(double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(t)) * 0.0002, 0.05, 0.5);
+                auto vis  = clamp(double(frameNow - Grids::getLastVisibleFrame(t)) * 0.0002, 0.05, 0.5);
                 return Util::fastReciprocal(dist * vis);
             };
 
@@ -286,7 +292,7 @@ namespace McRave::Combat::Navigation {
                 }
                 else {
                     unit->setNavigation(commander->getNavigation());
-                    unit->setDestinationPath(commander->getDestinationPath());
+                    unit->setMarchPath(commander->getMarchPath());
                 }
             }
         }

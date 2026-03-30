@@ -199,7 +199,7 @@ namespace McRave::Workers {
         void updatePath(UnitInfo &unit)
         {
             // Create a path
-            if (unit.getDestination().isValid() && (unit.getDestinationPath().getTarget() != TilePosition(unit.getDestination()) || !unit.getDestinationPath().isReachable()) &&
+            if (unit.getDestination().isValid() && (unit.getMarchPath().getTarget() != TilePosition(unit.getDestination()) || !unit.getMarchPath().isReachable()) &&
                 (!mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(unit.getDestination())) ||
                  mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(unit.getDestination()))))) {
                 BWEB::Path newPath(unit.getPosition(), unit.getDestination(), unit.getType());
@@ -212,20 +212,20 @@ namespace McRave::Workers {
                            (unit.getBuildPosition().isValid() && BWEB::Map::isUsed(tile) == Resource_Vespene_Geyser) || newPath.unitWalkable(tile);
                 };
                 newPath.generateJPS(resourceWalkable);
-                unit.setDestinationPath(newPath);
+                unit.setMarchPath(newPath);
             }
 
             // Set destination to intermediate position along path
             unit.setNavigation(unit.getDestination());
-            if (unit.getDestinationPath().getTarget() == TilePosition(unit.getDestination())) {
-                auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= 96.0; });
+            if (unit.getMarchPath().getTarget() == TilePosition(unit.getDestination())) {
+                auto newDestination = Util::findPointOnPath(unit.getMarchPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= 96.0; });
 
                 if (newDestination.isValid())
                     unit.setNavigation(newDestination);
             }
 
              //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
-             //Visuals::drawPath(unit.getDestinationPath());
+             //Visuals::drawPath(unit.getMarchPath());
         }
 
         void updateDestination(UnitInfo &unit)

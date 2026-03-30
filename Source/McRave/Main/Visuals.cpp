@@ -104,6 +104,28 @@ namespace McRave::Visuals {
 
         Diagnostic currentDiagnostic = Diagnostic::None;
 
+        double calculateFrameTime()
+        {
+            using namespace std::chrono;
+            static auto last = high_resolution_clock::now();
+
+            auto now         = high_resolution_clock::now();
+            double frameTime = duration_cast<microseconds>(now - last).count();
+            last             = now;
+
+            static double frameBuffer[144] = {};
+            static double frameSum   = 0.0;
+            static int i      = 0;
+            static int frames = 144;
+
+            frameSum += frameTime - frameBuffer[i];
+            frameBuffer[i] = frameTime;
+
+            if (++i == frames)
+                i = 0;
+            return max(0.0, frameSum / double(frames)) / 1000.0;
+        }
+
         void drawStates(UnitInfo &unit)
         {
             int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
@@ -138,7 +160,8 @@ namespace McRave::Visuals {
             int minutes = Util::getTime().minutes;
             int seconds = Util::getTime().seconds;
             Broodwar->drawTextScreen(432, 36, "%c%d", Text::Grey, Broodwar->getFrameCount());
-            Broodwar->drawTextScreen(482, 36, "%c%d:%02d", Text::Grey, minutes, seconds);
+            Broodwar->drawTextScreen(472, 36, "%c%d:%02d", Text::Grey, minutes, seconds);
+            Broodwar->drawTextScreen(512, 36, "%c%.2f", Text::Grey, calculateFrameTime());
 
             // Builds
             if (builds) {

@@ -32,7 +32,7 @@ namespace McRave::BuildOrder::Zerg {
         transitionReady = vis(Zerg_Spawning_Pool) > 0;
         scout           = scout || (hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150);
         planEarly       = !Spy::enemyProxy() && hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150;
-        gasTrick        = s >= 18 && hatchCount() < 2 && total(Zerg_Spawning_Pool) == 0;
+        gasTrick        = true;
 
         // Buildings
         buildQueue[Zerg_Hatchery]      = 1 + (s >= 20);

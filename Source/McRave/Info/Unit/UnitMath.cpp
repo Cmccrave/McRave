@@ -96,7 +96,9 @@ namespace McRave::Math {
             return 0.0;
 
         // Bunch of priority hacks
-        if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Terran_Science_Vessel || unit.getType() == Protoss_Arbiter || unit.getType() == Protoss_Carrier)
+        if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Terran_Science_Vessel || unit.getType() == Terran_Dropship || //
+            unit.getType() == Protoss_Arbiter || unit.getType() == Protoss_Shuttle || unit.getType() == Protoss_Carrier || //
+            unit.getType() == Zerg_Queen)
             return 15.0;
         if (Spy::enemyProxy() && unit.getType() == Protoss_Pylon)
             return Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) <= 0.1f ? 5.0 : 1.0;
@@ -317,8 +319,8 @@ namespace McRave::Math {
         auto attackCount = double(max(unit.getType().groundWeapon().damageFactor(), unit.getType().maxGroundHits()));
         auto upLevel     = unit.getPlayer()->getUpgradeLevel(unit.getType().groundWeapon().upgradeType());
 
-        auto state     = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
-        //auto reduction = Units::getDamageReductionGrd(state);
+        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
+        // auto reduction = Units::getDamageReductionGrd(state);
 
         auto dmgPerHit = double(unit.getType().groundWeapon().damageAmount() + (unit.getType().groundWeapon().damageBonus() * upLevel));
 
@@ -348,8 +350,8 @@ namespace McRave::Math {
         auto attackCount = double(max(unit.getType().airWeapon().damageFactor(), unit.getType().maxAirHits()));
         auto upLevel     = unit.getPlayer()->getUpgradeLevel(unit.getType().airWeapon().upgradeType());
 
-        auto state     = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
-        //auto reduction = Units::getDamageReductionAir(state);
+        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
+        // auto reduction = Units::getDamageReductionAir(state);
 
         auto dmgPerHit = double(unit.getType().airWeapon().damageAmount() + (unit.getType().airWeapon().damageBonus() * upLevel));
 

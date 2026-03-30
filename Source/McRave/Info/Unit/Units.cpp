@@ -37,7 +37,6 @@ namespace McRave::Units {
         bool immThreat;
         Position enemyArmyCenter;
 
-        // This is hacky
         vector<UnitInfo *> commandQueue;
 
         void updateEnemies()
@@ -118,21 +117,28 @@ namespace McRave::Units {
                     unit.update();
                     auto validRole = unit.getRole() == Role::Combat || unit.getRole() == Role::Defender || unit.getRole() == Role::Scout || unit.getRole() == Role::Support ||
                                      unit.getRole() == Role::Transport || unit.getRole() == Role::Worker;
+                    if (!validRole)
+                        continue;
 
-                    auto frames          = unit.isLightAir() ? 2 : 6;
-                    auto newCommandFrame = (Broodwar->getFrameCount() - unit.commandFrame > frames) ||
-                                           (Util::getTime() < Time(4, 00));
-
+                    auto frames = 6;
                     if (unit.getType() == Zerg_Overlord)
                         frames = 12;
+                    if (unit.isLightAir())
+                        frames = 2;
 
-                    if (newCommandFrame && validRole)
-                        commandQueue.push_back(&unit);
+                    unit.nextCommandFrame = unit.lastCommandFrame + frames;
+                    commandQueue.push_back(&unit);
                 }
             }
 
-            // Sort command queue
-            sort(commandQueue.begin(), commandQueue.end(), [&](auto &u1, auto &u2) { return u1->commandFrame < u2->commandFrame; });
+            // Sort by stalest and truncate anything past 64
+            sort(commandQueue.begin(), commandQueue.end(), [](UnitInfo *a, UnitInfo *b) {
+                return a->lastCommandFrame < b->lastCommandFrame;
+            });
+            int maxCommandsPerFrame = 64;
+            if (int(commandQueue.size()) > maxCommandsPerFrame) {
+                commandQueue.resize(maxCommandsPerFrame);
+            }
         }
 
         void updateNeutrals()
@@ -338,10 +344,11 @@ namespace McRave::Units {
 
     bool commandAllowed(UnitInfo &unit)
     {
-        auto idx     = find_if(commandQueue.begin(), commandQueue.end(), [&](auto &u) { return u == &unit; });
-        auto allowed = idx != commandQueue.end() && idx - commandQueue.begin() < 64;
-        if (allowed)
-            unit.commandFrame = Broodwar->getFrameCount();
-        return allowed;
+        auto it = std::find(commandQueue.begin(), commandQueue.end(), &unit);
+        if (it != commandQueue.end()) {
+            unit.lastCommandFrame = Broodwar->getFrameCount();
+            return true;
+        }
+        return false;
     }
 } // namespace McRave::Units

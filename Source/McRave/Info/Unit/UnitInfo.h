@@ -81,7 +81,8 @@ namespace McRave {
         TilePosition buildPosition  = TilePositions::Invalid;
         UnitCommandType commandType = UnitCommandTypes::None;
 
-        BWEB::Path destinationPath;
+        BWEB::Path marchPath;
+        BWEB::Path retreatPath;
         void updateHistory();
         void updateStatistics();
         void updateEvents();
@@ -104,7 +105,8 @@ namespace McRave {
         bool inDanger  = false;
         bool sacrifice = false;
 
-        int commandFrame         = -999;
+        int lastCommandFrame     = -999;
+        int nextCommandFrame     = 0;
         int lastThreateningFrame = -999;
         int framesVisible        = -999;
         int framesCommitted      = 0;
@@ -122,7 +124,8 @@ namespace McRave {
         bool hasCommander() { return !commander.expired(); }
         bool hasSimTarget() { return !simTarget.expired(); }
 
-        bool hasSamePath(Position source, Position target) { return destinationPath.getSource() == TilePosition(source) && destinationPath.getTarget() == TilePosition(target); }
+        bool hasSameMarchPath(Position source, Position target) { return marchPath.getSource() == TilePosition(source) && marchPath.getTarget() == TilePosition(target); }
+        bool hasSameRetreatPath(Position source, Position target) { return retreatPath.getSource() == TilePosition(source) && retreatPath.getTarget() == TilePosition(target); }
         bool targetsFriendly() { return (type == UnitTypes::Terran_Medic && getEnergy() > 0) || type == UnitTypes::Terran_Science_Vessel || (type == UnitTypes::Zerg_Defiler && getEnergy() < 100); }
 
         bool isSuicidal() { return type == UnitTypes::Protoss_Scarab || type == UnitTypes::Terran_Vulture_Spider_Mine || type == UnitTypes::Zerg_Scourge || type == UnitTypes::Zerg_Infested_Terran; }
@@ -226,7 +229,8 @@ namespace McRave {
         WalkPosition getWalkPosition() { return walkPosition; }
         TilePosition getTilePosition() { return tilePosition; }
         TilePosition getBuildPosition() { return buildPosition; }
-        BWEB::Path &getDestinationPath() { return destinationPath; }
+        BWEB::Path &getMarchPath() { return marchPath; }
+        BWEB::Path &getRetreatPath() { return retreatPath; }
 
         double getCurrentSpeed() { return currentSpeed; }
         double getEngDist() { return engageDist; }
@@ -278,7 +282,8 @@ namespace McRave {
         void setNavigation(Position newPosition) { navigation = newPosition; }
         void setGoal(Position newPosition) { goal = newPosition; }
         void setBuildPosition(TilePosition newPosition) { buildPosition = newPosition; }
-        void setDestinationPath(BWEB::Path &newPath) { destinationPath = newPath; }
+        void setMarchPath(BWEB::Path &newPath) { marchPath = newPath; }
+        void setRetreatPath(BWEB::Path &newPath) { retreatPath = newPath; }
 
         void setInterceptPosition(Position p) { interceptPosition = p; }
         void setSurroundPosition(Position p) { surroundPosition = p; }
@@ -293,16 +298,6 @@ namespace McRave {
 
         bool operator<(const UnitInfo &other) const { return bwUnit < other.bwUnit; }
 
-        bool operator==(const std::weak_ptr<UnitInfo> &other) const
-        {
-            if (auto ptr = other.lock()) {
-                return bwUnit == ptr->bwUnit;
-            }
-            return false;
-        }
-
-        bool operator!=(const std::weak_ptr<UnitInfo> &other) const { return !(*this == other); }
-
         bool operator<(const std::weak_ptr<UnitInfo> &other) const
         {
             if (auto ptr = other.lock()) {
@@ -312,7 +307,9 @@ namespace McRave {
         }
     };
 
-    inline bool operator==(std::weak_ptr<UnitInfo>(lunit), std::weak_ptr<UnitInfo>(runit)) { return lunit.lock()->unit() == runit.lock()->unit(); }
+    inline bool operator==(const std::weak_ptr<UnitInfo> &a, const std::weak_ptr<UnitInfo> &b) { return !a.owner_before(b) && !b.owner_before(a); }
+
+    inline bool operator!=(const std::weak_ptr<UnitInfo> &a, const std::weak_ptr<UnitInfo> &b) { return a.owner_before(b) || b.owner_before(a); }
 
     inline bool operator<(std::weak_ptr<UnitInfo>(lunit), std::weak_ptr<UnitInfo>(runit)) { return lunit.lock()->unit() < runit.lock()->unit(); }
 } // namespace McRave

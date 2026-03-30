@@ -281,6 +281,12 @@ namespace McRave::Scouts {
                 if (Players::ZvR()) {
                     main.desiredTypeCounts[Zerg_Overlord] = 2;
                 }
+
+                // ZvFFA
+                if (Players::ZvFFA()) {
+                    main.desiredTypeCounts[Zerg_Drone] = 0;
+                    main.desiredTypeCounts[Zerg_Zergling] = !Terrain::getEnemyStartingPosition().isValid();
+                }
             }
 
             // Check for fully scouted
@@ -337,6 +343,11 @@ namespace McRave::Scouts {
                         main.desiredTypeCounts[Zerg_Drone]    = 0;
                         natural.desiredTypeCounts[Zerg_Drone] = 1;
                     }
+                }
+
+                // ZvFFA
+                if (Players::ZvFFA()) {
+                    main.desiredTypeCounts[Zerg_Zergling] = 1;
                 }
             }
         }
@@ -430,9 +441,16 @@ namespace McRave::Scouts {
                     time = Time(6, 00);
 
                 if (Util::getTime() > time) {
-                    if ((Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0) || (Players::ZvP() && Spy::enemyFastExpand() && Util::getTime() < Time(9, 00)) ||
-                        (Players::ZvP() && !Spy::enemyFastExpand() && Util::getTime() < Time(8, 00)))
+
+                    if (Players::ZvT()) {
                         army.desiredTypeCounts[Zerg_Zergling] = 1 + (int(Spy::getEnemyTransition() == "Unknown") && Util::getTime() > Time(4, 00));
+                        if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0 || Spy::getEnemyBuild() == T_RaxFact)
+                            army.desiredTypeCounts[Zerg_Zergling] = 0;
+                    }
+
+                    if (Players::ZvP()) {
+                        army.desiredTypeCounts[Zerg_Zergling] = 1 + (int(Spy::getEnemyTransition() == "Unknown") && Util::getTime() > Time(4, 00));
+                    }
                 }
             }
 
@@ -742,7 +760,7 @@ namespace McRave::Scouts {
 
             const auto requestSacrifice = [&]() {
                 unit.sacrifice = true;
-                unit.setDestinationPath(BWEB::Path());
+                unit.setMarchPath(BWEB::Path());
                 sacrificeCount++;
                 LOG("Sacrificing a scout (count: %d)", sacrificeCount);
             };
@@ -774,7 +792,7 @@ namespace McRave::Scouts {
             auto newPathAllowed = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) ||
                                   mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)));
 
-            if (newPathAllowed && !unit.hasSamePath(unit.getPosition(), pathPoint)) {
+            if (newPathAllowed && !unit.hasSameMarchPath(unit.getPosition(), pathPoint)) {
 
                 BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
 
@@ -786,15 +804,15 @@ namespace McRave::Scouts {
                     newPath.generateJPS(walkable);
                 else
                     newPath.generateAS(threat, walkable);
-                unit.setDestinationPath(newPath);
+                unit.setMarchPath(std::move(newPath));
             }
-            Visuals::drawPath(unit.getDestinationPath());
+            Visuals::drawPath(unit.getMarchPath());
             Visuals::drawLine(unit.getPosition(), pathPoint, Colors::Orange);
         }
 
         void updateNavigation(UnitInfo &unit)
         {
-            auto newDestination = Util::findPointOnPath(unit.getDestinationPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= 96.0 && BWEB::Map::isUsed(TilePosition(p)) == None; });
+            auto newDestination = Util::findPointOnPath(unit.getMarchPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= 96.0 && BWEB::Map::isUsed(TilePosition(p)) == None; });
 
             if (newDestination.isValid())
                 unit.setNavigation(newDestination);

@@ -106,7 +106,7 @@ namespace McRave {
     void ResourceInfo::removeTargetedBy(std::weak_ptr<UnitInfo> unit)
     {
         for (auto itr = targetedBy.begin(); itr != targetedBy.end(); itr++) {
-            if (*itr->lock() == unit.lock()) {
+            if (*itr == unit) {
                 targetedBy.erase(itr);
                 break;
             }

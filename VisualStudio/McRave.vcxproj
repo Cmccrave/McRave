@@ -60,6 +60,7 @@
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZSilly.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZvFFA.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZvFFA_HatchPool.cpp" />
+    <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZvFFA_PoolHatch.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvP\ZvP.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvP\ZvP_HatchPool.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvP\ZvP_PoolHatch.cpp" />

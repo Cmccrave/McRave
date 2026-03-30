@@ -7,6 +7,7 @@
 #include "Main/Common.h"
 #include "Map/Stations.h"
 #include "Map/Terrain.h"
+#include "Micro/Scout/Scouts.h"
 #include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;
@@ -351,6 +352,10 @@ namespace McRave::Walls {
                 return (Util::getTime() > Time(3, 15));
             }
 
+            // 
+            if (Scouts::enemyDeniedScout() || Spy::enemyWalled())
+                return 1;
+
             // Fall through unknown opener
             if (!Spy::enemyFastExpand() && !Spy::enemyRush())
                 return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00));
@@ -538,7 +543,7 @@ namespace McRave::Walls {
 
         // If they're only at home and not proxying units, don't make any defenses for a bit
         auto minimumColonyNeeded = Util::getTime() > Time(6, 00) ? 2 : 1;
-        if (!Spy::enemyProxy() && (groundCount >= minimumColonyNeeded || getColonyCount(&wall) >= minimumColonyNeeded)) {
+        if (!Players::vFFA() && !Spy::enemyProxy() && (groundCount >= minimumColonyNeeded || getColonyCount(&wall) >= minimumColonyNeeded)) {
             auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) { return Units::inBoundUnit(*u) && !u->getType().isWorker(); });
             if (!closestUnit)
                 return 0;

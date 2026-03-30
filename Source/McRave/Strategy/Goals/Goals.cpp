@@ -179,6 +179,18 @@ namespace McRave::Goals {
                 if (Terrain::getMyNatural() && Stations::getGroundDefenseCount(Terrain::getMyNatural()) <= 0)
                     assignNumberToGoal(Terrain::getNaturalPosition(), rangedType, 6, GoalType::Defend);
             }
+
+            // Assume each shuttle should have units assigned to fight it
+            for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
+                if (unit->getType() == Protoss_Shuttle) {
+                    if (unit->unit()->exists()) {
+                        assignNumberToGoal(unit->getPosition(), rangedType, 4, GoalType::Attack);
+                    }
+                    else if (auto closestStation = Stations::getClosestStationAir(unit->getPosition(), PlayerState::Self)) {
+                        assignNumberToGoal(closestStation->getBase()->Center(), rangedType, 4, GoalType::Defend);
+                    }
+                }
+            }
         }
 
         void updateExpandDenial()
