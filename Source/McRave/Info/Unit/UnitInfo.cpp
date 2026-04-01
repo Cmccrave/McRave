@@ -369,14 +369,11 @@ namespace McRave {
 
             if ((Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural() && Combat::holdAtChoke()) ||
                 (Terrain::inArea(Terrain::getMainArea(), position) && Combat::isDefendNatural() && !Terrain::isPocketNatural()) ||
-                (Roles::getMyRoleCount(Role::Defender) == 0 && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
+                (Roles::getRoleCount(Role::Defender) == 0 && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
                 return true;
 
-            if (Players::ZvZ())
-                return false;
-
             // If in a territory with a station/wall and there is no defenders, we will need to engage
-            if (Util::getTime() > Time(5, 00) && atHome) {
+            if (atHome) {
                 if (closestWall && Terrain::inArea(closestWall->getArea(), getPosition())) {
                     if ((closestWall->getGroundDefenseCount() == 0 && !isFlying()) || closestWall->getAirDefenseCount() == 0 && isFlying())
                         return true;

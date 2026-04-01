@@ -80,11 +80,21 @@ namespace McRave::Targets {
         // Z
         Priority zerglingPriority(UnitInfo &unit, UnitInfo &target)
         {
+            // Avoid targeting
             if (Util::getTime() < Time(5, 00)) {
-                if (Players::ZvZ() && !target.canAttackGround() && !Spy::enemyFastExpand()) // Avoid non ground hitters to try and kill drones
+                if (Players::ZvZ() && !target.canAttackGround() && !Spy::enemyFastExpand())
                     return Priority::Ignore;
                 if (Players::ZvT() && target.getType() == Terran_Vulture && combatTargeters >= 2)
                     return Priority::Ignore;
+            }
+
+            // Handle workers and cannons if we're in the same area in enemy territory
+            if (unit.isWithinReach(target) && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) &&
+                Terrain::inArea(mapBWEM.GetArea(target.getWalkPosition()), unit.getPosition())) {
+                if (target.getType().isWorker())
+                    return Priority::Major;
+                if (target.getType() == Protoss_Photon_Cannon && target.hasAttackedRecently())
+                    return Priority::Critical;
             }
 
             // Already in range, continue to target it if possible
@@ -153,9 +163,11 @@ namespace McRave::Targets {
                     return Priority::Critical;
 
                 // Kill zerglings if they have more and no mutas
-                if (Util::getTime() < Time(8, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) == 0 && target.getType() == Zerg_Zergling &&
-                    Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
-                    return Priority::Major;
+                if (!BuildOrder::isPressure()) {
+                    if (Util::getTime() < Time(8, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk, Zerg_Hydralisk) == 0 && target.getType() == Zerg_Zergling &&
+                        Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
+                        return Priority::Major;
+                }
             }
 
             // One/two shot is high priority to hit
@@ -163,7 +175,8 @@ namespace McRave::Targets {
                 return Priority::Critical;
 
             // If a building is unprotected
-            if (!BuildOrder::isPressure() && target.getType().isBuilding() && !target.canAttackAir() && target.getUnitsInRangeOfThis().empty() && unit.getUnitsInRangeOfThis().empty() && unit.isWithinRange(target)) {
+            if (!BuildOrder::isPressure() && target.getType().isBuilding() && !target.canAttackAir() && target.getUnitsInRangeOfThis().empty() && unit.getUnitsInRangeOfThis().empty() &&
+                unit.isWithinRange(target)) {
                 Priority::Major;
             }
 
@@ -311,8 +324,8 @@ namespace McRave::Targets {
                         return Priority::Major;
                     if (target.getType().isWorker() && target.isThreatening())
                         return Priority::Critical;
-                } 
-                
+                }
+
                 // Sacrifice unit away from army
                 if (unit.isTargetedBySuicide() && (target.isTransport() || target.getType() == Protoss_Reaver || target.getType() == Protoss_High_Templar))
                     return Priority::Critical;
@@ -327,15 +340,6 @@ namespace McRave::Targets {
                     || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) &&
                         !unit.isWithinRange(target))) // Don't target flyers that we can't reach)
                     return Priority::Ignore;
-
-                // Handle workers and cannons if we're in the same area in enemy territory
-                if (unit.isMelee() && unit.isWithinEngage(target) && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) &&
-                    Terrain::inArea(mapBWEM.GetArea(target.getWalkPosition()), unit.getPosition())) {
-                    if (target.getType().isWorker())
-                        return Priority::Major;
-                    if (target.getType() == Protoss_Photon_Cannon && target.hasAttackedRecently())
-                        return Priority::Critical;
-                }
 
                 // Handle photon cannons when in range
                 if (!unit.isMelee() && unit.isWithinRange(target)) {

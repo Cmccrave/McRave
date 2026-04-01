@@ -42,6 +42,20 @@ namespace McRave::Util {
 
     void writeToLoggerImpl(const std::string &msg);
 
+    inline BWAPI::Position getMousePosition() { return BWAPI::Broodwar->getScreenPosition() + BWAPI::Broodwar->getMousePosition(); }
+
+    inline bool isAdjacentUsed(BWAPI::TilePosition t)
+    {
+        for (int x = t.x - 1; x < t.x + 1; x++) {
+            for (int y = t.y - 1; y < t.y + 1; y++) {
+                auto tile = BWAPI::TilePosition(x, y);
+                if (BWEB::Map::isUsed(tile) != BWAPI::UnitTypes::None)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     template <typename... Args> void writeToLogger(const char *file, int line, Args &&... args)
     {
         std::ostringstream ss;

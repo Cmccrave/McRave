@@ -217,8 +217,9 @@ namespace McRave::Workers {
 
             // Set destination to intermediate position along path
             unit.setNavigation(unit.getDestination());
+            auto dist = Util::isAdjacentUsed(unit.getTilePosition()) ? 160.0 : 96.0;
             if (unit.getMarchPath().getTarget() == TilePosition(unit.getDestination())) {
-                auto newDestination = Util::findPointOnPath(unit.getMarchPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= 96.0; });
+                auto newDestination = Util::findPointOnPath(unit.getMarchPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= dist; });
 
                 if (newDestination.isValid())
                     unit.setNavigation(newDestination);

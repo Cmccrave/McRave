@@ -1,6 +1,7 @@
 #include "Units.h"
 
 #include "Info/Player/PlayerInfo.h"
+#include "Info/Roles.h"
 #include "Main/Common.h"
 #include "Main/Events.h"
 #include "Map/Grids.h"
@@ -132,12 +133,11 @@ namespace McRave::Units {
             }
 
             // Sort by stalest and truncate anything past 64
-            sort(commandQueue.begin(), commandQueue.end(), [](UnitInfo *a, UnitInfo *b) {
-                return a->lastCommandFrame < b->lastCommandFrame;
-            });
-            int maxCommandsPerFrame = 64;
-            if (int(commandQueue.size()) > maxCommandsPerFrame) {
-                commandQueue.resize(maxCommandsPerFrame);
+            sort(commandQueue.begin(), commandQueue.end(), [](UnitInfo *a, UnitInfo *b) { return a->nextCommandFrame < b->nextCommandFrame; });
+            int maxCommandsPerFrame = 64 - Roles::getRoleCount(Role::Production);
+            int maxCommandsPerTurn  = maxCommandsPerFrame / Broodwar->getLatencyFrames();
+            if (int(commandQueue.size()) > maxCommandsPerTurn) {
+                commandQueue.resize(maxCommandsPerTurn);
             }
         }
 

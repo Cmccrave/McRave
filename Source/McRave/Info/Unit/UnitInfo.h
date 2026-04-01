@@ -105,7 +105,7 @@ namespace McRave {
         bool inDanger  = false;
         bool sacrifice = false;
 
-        int lastCommandFrame     = -999;
+        int lastCommandFrame     = 0;
         int nextCommandFrame     = 0;
         int lastThreateningFrame = -999;
         int framesVisible        = -999;

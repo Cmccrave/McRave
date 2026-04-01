@@ -142,7 +142,7 @@ namespace McRave::Walls {
 
         int PvZ_Transition(BWEB::Wall &wall)
         {
-            auto cannonCount = 0 + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 6) + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 12) +
+            auto cannonCount = 1 + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 6) + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 12) +
                                (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 24) + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk) / 2);
 
             if (Spy::getEnemyTransition() == Z_2HatchHydra)
@@ -436,6 +436,12 @@ namespace McRave::Walls {
                 return 1 + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 15));
             if (Spy::getEnemyOpener() == Z_12Hatch || Spy::getEnemyOpener() == Z_10Hatch)
                 return 1;
+
+            // 1Hatch Hydra/Lurker
+            if (Spy::getEnemyTransition() == Z_1HatchLurker) {
+                return 2 * (Util::getTime() > Time(4, 30));
+            }
+
             return 0;
         }
 

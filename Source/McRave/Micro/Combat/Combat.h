@@ -51,11 +51,13 @@ namespace McRave::Combat {
     namespace Formations {
         void onFrame();
         std::vector<Formation>& getFormations();
+        void drawFormations();
     }
     namespace Clusters {
         void onFrame();
         std::vector<Cluster>& getClusters();
         bool canDecimate(UnitInfo& unit, UnitInfo& target, bool logData = false);
+        void drawClusters();
     }
 
     namespace Simulation {

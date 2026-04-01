@@ -82,10 +82,6 @@ namespace McRave::Math {
     double calcPriority(UnitInfo &unit)
     {
         // According to sheet linked above, these are the maximum values for normalizing
-        const auto maxGrdDps = 2.083;
-        const auto maxAirDps = 1.875;
-        const auto maxCost   = 69.589;
-        const auto maxSurv   = 128.311;
         auto bonus           = 1.0;
 
         if (unit.isMarkedForDeath())
@@ -115,9 +111,9 @@ namespace McRave::Math {
         }
 
         auto ff   = (unit.canAttackGround() || unit.canAttackAir() || !unit.getType().isBuilding()) ? 0.0 : 0.125;
-        auto dps  = ff + max(calcGroundDPS(unit) / maxGrdDps, calcAirDPS(unit) / maxAirDps);
-        auto cost = calcRelativeCost(unit) / maxCost;
-        auto surv = calcSurvivability(unit) / maxSurv;
+        auto dps  = ff + max(calcGroundDPS(unit), calcAirDPS(unit));
+        auto cost = calcRelativeCost(unit);
+        auto surv = calcSurvivability(unit);
         return clamp(bonus * (dps * cost / surv), 0.001, 9999.99);
     }
 
@@ -246,12 +242,12 @@ namespace McRave::Math {
             const auto avgUnitSpeed = 4.34;
             if (unit.isSiegeTank() || unit.getType() == Zerg_Lurker || unit.getType().isBuilding())
                 return 1.0;
-            return (unit.getSpeed() + avgUnitSpeed) / avgUnitSpeed;
+            return pow((unit.getSpeed() + avgUnitSpeed) / avgUnitSpeed, 0.5);
         };
 
         const auto health = [&]() { return (double(unit.getType().maxHitPoints() + unit.getType().maxShields())) / 50.0; };
 
-        return log(health() * armor()) + speed();
+        return health() * armor() * speed();
     }
 
     double calcGroundRange(UnitInfo &unit)

@@ -111,7 +111,7 @@ namespace McRave::Spy::General {
             }
 
             theSpy.workersPulled   = 0;
-            theSpy.productionCount = (player.getCurrentRace() == Races::Zerg ? 1 : 0); // Starting hatcheries always exist
+            theSpy.productionCount = 0;
             for (auto &u : player.getUnits()) {
                 UnitInfo &unit = *u;
 
@@ -189,6 +189,10 @@ namespace McRave::Spy::General {
             theSpy.pressure.possible = !supplySafe && (Spy::getEnemyTransition() == P_4Gate || Spy::getEnemyTransition() == Z_2HatchSpeedling || Spy::getEnemyTransition() == Z_3HatchSpeedling ||
                                                        Spy::getEnemyTransition() == T_Sparks || Spy::getEnemyTransition() == T_2FactVulture || Spy::getEnemyTransition() == T_Academy);
             if (supplySafe)
+                theSpy.pressure.possible = false;
+
+            // They are transitioning out
+            if (Players::getTotalCount(PlayerState::Enemy, Zerg_Lair) > 0 && (Spy::getEnemyTransition() == Z_2HatchSpeedling || Spy::getEnemyTransition() == Z_3HatchSpeedling))
                 theSpy.pressure.possible = false;
         }
 

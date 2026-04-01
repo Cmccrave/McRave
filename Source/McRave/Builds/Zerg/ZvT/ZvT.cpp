@@ -316,5 +316,8 @@ namespace McRave::BuildOrder::Zerg {
             if (currentTransition == Z_1HatchLurker)
                 ZvT_1HatchLurker();
         }
+
+        // Testing this
+        buildQueue[Zerg_Drone] |= (Spy::getEnemyTransition() == U_WorkerRush && vis(Zerg_Drone) < 15);
     }
 } // namespace McRave::BuildOrder::Zerg

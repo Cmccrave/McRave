@@ -207,11 +207,13 @@ namespace McRave::Players {
     int getCompleteCount(PlayerState state, BWAPI::UnitType type) { return getCompleteCount(state, vector<UnitType>{type}); }
     int getTotalCount(PlayerState state, BWAPI::UnitType type) { return getTotalCount(state, vector<UnitType>{type}); }
     int getDeadCount(PlayerState state, BWAPI::UnitType type) { return getTotalCount(state, vector<UnitType>{type}) - getVisibleCount(state, vector<UnitType>{type}); }
+    int getIncompleteCount(PlayerState state, BWAPI::UnitType type) { return getVisibleCount(state, vector<UnitType>{type}) - getCompleteCount(state, vector<UnitType>{type}); }
 
     int getVisibleCount(PlayerState state, std::vector<UnitType> types) { return getCounts(allVisibleTypeCounts[state], types); }
     int getCompleteCount(PlayerState state, std::vector<UnitType> types) { return getCounts(allCompleteTypeCounts[state], types); }
     int getTotalCount(PlayerState state, std::vector<UnitType> types) { return getCounts(allTotalTypeCounts[state], types); }
     int getDeadCount(PlayerState state, std::vector<UnitType> types) { return getCounts(allTotalTypeCounts[state], types) - getCounts(allVisibleTypeCounts[state], types); }
+    int getIncompleteCount(PlayerState state, std::vector<UnitType> types) { return getCounts(allVisibleTypeCounts[state], types) - getCounts(allCompleteTypeCounts[state], types); }
 
     bool hasDetection(PlayerState state)
     {

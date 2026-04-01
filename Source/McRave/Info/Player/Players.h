@@ -8,11 +8,13 @@ namespace McRave::Players {
     int getCompleteCount(PlayerState state, std::vector<BWAPI::UnitType> types);
     int getTotalCount(PlayerState state, std::vector<BWAPI::UnitType> types);
     int getDeadCount(PlayerState state, std::vector<BWAPI::UnitType> types);
+    int getIncompleteCount(PlayerState state, std::vector<BWAPI::UnitType> types);
 
     template <typename... Types> int getVisibleCount(PlayerState state, Types... types) { return getVisibleCount(state, {types...}); }
     template <typename... Types> int getCompleteCount(PlayerState state, Types... types) { return getCompleteCount(state, {types...}); }
     template <typename... Types> int getTotalCount(PlayerState state, Types... types) { return getTotalCount(state, {types...}); }
     template <typename... Types> int getDeadCount(PlayerState state, Types... types) { return getDeadCount(state, {types...}); }
+    template <typename... Types> int getIncompleteCount(PlayerState state, Types... types) { return getIncompleteCount(state, {types...}); }
 
     bool hasDetection(PlayerState);
     bool hasMelee(PlayerState);

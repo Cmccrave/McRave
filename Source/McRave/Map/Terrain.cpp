@@ -337,10 +337,6 @@ namespace McRave::Terrain {
                     findCorrectAngle(station);
             }
 
-            if (flatRamp) {
-                return;
-            }
-
             vector<WalkPosition> directions = {WalkPosition(-1, -1), WalkPosition(0, -1), WalkPosition(1, -1), WalkPosition(1, 0),
                                                WalkPosition(1, 1),   WalkPosition(0, 1),  WalkPosition(-1, 1), WalkPosition(-1, 0)};
             map<WalkPosition, int> scores;
@@ -477,6 +473,17 @@ namespace McRave::Terrain {
                 mainRamp.angle = 4.0 * M_PI / 3.0;
             else
                 mainRamp.angle = 5.0 * M_PI / 3.0;
+
+            // If it's a flat ramp, it's likely horizontal or vertical
+            if (flatRamp) {
+                double angle = std::fmod(mainRamp.angle, 2.0 * M_PI);
+                if (angle < 0.0)
+                    angle += 2.0 * M_PI;
+
+                // Snap to nearest multiple of PI/2
+                int quadrant   = int(std::round(angle / (M_PI / 4.0))) % 4;
+                mainRamp.angle = quadrant * (M_PI / 4.0);
+            }
         }
 
         void updateAreas()
@@ -508,24 +515,43 @@ namespace McRave::Terrain {
                 }
             }
 
-            // Draw a circle on areas colored by owner
-            for (auto &[area, player] : territoryArea) {
-                auto color = Colors::White;
-                if (player == PlayerState::Self)
-                    color = Colors::Green;
-                if (player == PlayerState::Enemy)
-                    color = Colors::Red;
-                Visuals::drawCircle(area->Top(), 12, color);
+            if (true) {
+                auto closestChoke = Util::getClosestChokepoint(Util::getMousePosition());
+                if (closestChoke) {
+                    for (auto &w : closestChoke->Geometry()) {
+                        Visuals::drawBox(w, w + WalkPosition(1, 1), Colors::Blue, false);
+                    }
+
+                    auto e1 = closestChoke->Pos(closestChoke->end1);
+                    auto e2 = closestChoke->Pos(closestChoke->end2);
+                    auto mid = closestChoke->Pos(closestChoke->middle);
+
+                    Visuals::drawBox(e1, e1 + WalkPosition(1, 1), Colors::Blue, true);
+                    Visuals::drawBox(e2, e2 + WalkPosition(1, 1), Colors::Blue, true);
+                    Visuals::drawBox(mid, mid + WalkPosition(1, 1), Colors::Purple, true);
+                }
             }
 
-            // Draw a box around chokepoint geoemtry colored by owner
-            for (auto &[walk, player] : territoryChokeGeometry) {
-                auto color = Colors::White;
-                if (player == PlayerState::Self)
-                    color = Colors::Green;
-                if (player == PlayerState::Enemy)
-                    color = Colors::Red;
-                Visuals::drawBox(walk, walk + WalkPosition(1, 1), color);
+            // Draw a circle on areas colored by owner
+            if (false) {
+                for (auto &[area, player] : territoryArea) {
+                    auto color = Colors::White;
+                    if (player == PlayerState::Self)
+                        color = Colors::Green;
+                    if (player == PlayerState::Enemy)
+                        color = Colors::Red;
+                    Visuals::drawCircle(area->Top(), 12, color);
+                }
+
+                // Draw a box around chokepoint geoemtry colored by owner
+                for (auto &[walk, player] : territoryChokeGeometry) {
+                    auto color = Colors::White;
+                    if (player == PlayerState::Self)
+                        color = Colors::Green;
+                    if (player == PlayerState::Enemy)
+                        color = Colors::Red;
+                    Visuals::drawBox(walk, walk + WalkPosition(1, 1), color);
+                }
             }
         }
     } // namespace
@@ -792,7 +818,7 @@ namespace McRave::Terrain {
         findEnemyNextExpand();
         findCleanupPositions();
         updateAreas();
-        // drawTerritory();
+        drawTerritory();
         Visuals::endPerfTest("Terrain");
 
         // Try to find the angle by locating nearest unwalkable tiles to entrance
@@ -832,7 +858,7 @@ namespace McRave::Terrain {
 
     bool isAtHome(Position here)
     {
-        const auto dist           = min(640.0, 96.0 + Util::getTime().minutes * 16.0);
+        const auto dist           = clamp(96.0 + Util::getTime().minutes * 16.0, 160.0, 640.0);
         const auto closestStation = Stations::getClosestStationAir(here, PlayerState::Self);
 
         const auto closestMain    = BWEB::Stations::getClosestMainStation(here);

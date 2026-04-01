@@ -128,7 +128,7 @@ namespace McRave::BuildOrder::Zerg {
                     wallNat    = true;
                 }
                 if (Players::ZvZ() && !Spy::enemyFastExpand() && Spy::getEnemyOpener() != Z_4Pool && !Spy::enemyTurtle() && Spy::getEnemyOpener() != Z_7Pool &&
-                    Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00)) {
+                    Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00) && currentTransition != Z_1HatchMuta) {
                     needSpores = true;
                     wallNat    = true;
                 }
@@ -269,7 +269,7 @@ namespace McRave::BuildOrder::Zerg {
                 // Calculate hatcheries per base
                 map<int, int> hatchPerBase;
                 if (Players::ZvZ()) {
-                    hatchPerBase = {{1, 1}, {2, 4}, {3, 5}, {4, 6}};
+                    hatchPerBase = {{1, 2}, {2, 4}, {3, 5}, {4, 6}};
                 }
                 if (Players::ZvP() || Players::ZvFFA()) {
                     hatchPerBase = {{1, 1}, {2, 3}, {3, 5}, {4, 6}};
@@ -340,15 +340,7 @@ namespace McRave::BuildOrder::Zerg {
             if (Spy::enemyInvis() && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0 && Util::getTime() > Time(4, 45) && atPercent(Zerg_Lair, 0.5))
                 gasLimit += 1;
 
-            //// If we have very limited mineral mining (maybe we pulled workers to fight) we need to cut all gas
-            // if (!Players::ZvZ() && Workers::getMineralWorkers() <= 5 && Util::getTime() < Time(5, 00))
-            //    gasLimit = 0;
-
             if (!Players::ZvZ() && Spy::getEnemyTransition() == U_WorkerRush && Util::getTime() < Time(3, 00))
-                gasLimit = 0;
-
-            // If we have to pull everything we have
-            if (Players::ZvZ() && Spy::getEnemyOpener() == Z_4Pool && currentOpener == Z_12Pool && total(Zerg_Zergling) < 18)
                 gasLimit = 0;
         }
 
@@ -367,7 +359,7 @@ namespace McRave::BuildOrder::Zerg {
                     auto mineralToGasRatio = minRemaining < max(100, 8 * vis(Zerg_Drone)) && gasRemaining > max(150, gasPer * vis(Zerg_Drone));
 
                     if (mineralToGasRatio && !rush && !pressure) {
-                        if (dropGasRush || dropGasLarva || dropGasDefenses || Roles::getMyRoleCount(Role::Worker) < 5 || Players::ZvZ())
+                        if (dropGasRush || dropGasLarva || dropGasDefenses || Roles::getRoleCount(Role::Worker) < 5 || Players::ZvZ())
                             gasLimit = 0;
                     }
                 }

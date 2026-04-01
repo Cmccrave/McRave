@@ -150,12 +150,16 @@ namespace McRave::Goals {
             // ZvZ ling runby
             static bool runbyOnce = true;
             if (Players::ZvZ() && runbyOnce) {
-                if ((Spy::enemyPressure() && Spy::Zerg::enemySlowerSpeed() && Upgrading::haveOrUpgrading(UpgradeTypes::Metabolic_Boost, 1)) ||
-                    (Spy::enemyTurtle() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) < 10 && Util::getTime() > Time(4, 00) &&
-                     Upgrading::haveOrUpgrading(UpgradeTypes::Metabolic_Boost, 1))) {
-                    assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
+                auto lingDiff = Players::getTotalCount(PlayerState::Self, Zerg_Zergling) - Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling);
 
-                    runbyOnce = false;
+                if (lingDiff > 0) {
+                    if ((Spy::enemyPressure() && Spy::Zerg::enemySlowerSpeed() && Upgrading::haveOrUpgrading(UpgradeTypes::Metabolic_Boost, 1)) ||
+                        (Spy::enemyTurtle() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) < 10 && Util::getTime() > Time(4, 00) &&
+                         Upgrading::haveOrUpgrading(UpgradeTypes::Metabolic_Boost, 1))) {
+                        assignNumberToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, lingDiff, GoalType::Runby);
+
+                        runbyOnce = false;
+                    }
                 }
             }
 
@@ -328,15 +332,6 @@ namespace McRave::Goals {
                     assignPercentToGoal(posBest, Protoss_Dragoon, 0.15);
                 else
                     assignPercentToGoal(posBest, Protoss_Zealot, 0.15);
-            }
-
-            // Zealots need to block the holes in walls in PvZ
-            if (Players::PvZ() && Combat::State::isStaticRetreat(Protoss_Zealot)) {
-                if (Walls::getNaturalWall()) {
-                    for (auto &opening : Walls::getNaturalWall()->getOpenings()) {
-                        assignNumberToGoal(Position(opening) + Position(16, 16), Protoss_Zealot, 1, GoalType::Block);
-                    }
-                }
             }
 
             // Send a DT / Zealot + Goon squad to enemys furthest station

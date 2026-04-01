@@ -67,7 +67,7 @@ namespace McRave::Combat::Clusters {
                 if (parent.unit->isLightAir() && child.unit->isLightAir())
                     return matchedStrat && matchedGoal;
 
-                auto matchedType     = parent.unit->isFlying() == child.unit->isFlying() && parent.unit->isMelee() == child.unit->isMelee();
+                auto matchedType     = parent.unit->isFlying() == child.unit->isFlying();
                 auto matchedDistance = abs(parent.unit->getEngDist() - child.unit->getEngDist()) < eps &&
                                        (child.position.getDistance(root.position) < eps || child.position.getDistance(parent.position) < eps);
 
@@ -125,39 +125,27 @@ namespace McRave::Combat::Clusters {
         void getCommander(Cluster &cluster)
         {
             // Check if a commander previously existed within a similar cluster
-            auto closestPreviousCommander = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
-                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() &&
-                       find(previousCommanders.begin(), previousCommanders.end(), u) != previousCommanders.end() && !u->isTargetedBySuicide();
+            auto nextCommander = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
+                return !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() &&
+                       find(previousCommanders.begin(), previousCommanders.end(), u) != previousCommanders.end();
             });
-            if (closestPreviousCommander) {
-                cluster.commander = closestPreviousCommander->weak_from_this();
-                closestPreviousCommander->setCommander(nullptr);
-                return;
-            }
-
-            // Check if a commander is already engaged in combat
-            auto closestCommanderFighting = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
-                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() &&
-                       !u->isTargetedBySuicide();
-            });
-            if (closestCommanderFighting) {
-                cluster.commander = closestCommanderFighting->weak_from_this();
-                closestCommanderFighting->setCommander(nullptr);
-                return;
-            }
 
             // Get closest unit to centroid
-            auto closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
-                return !u->isTargetedBySplash() && !u->getType().isBuilding() && !u->getType().isWorker() && !u->targetsFriendly() &&
-                       find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && !u->isTargetedBySuicide();
-            });
-            if (!closestToCentroid) {
-                closestToCentroid = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self,
-                                                         [&](auto &u) { return !u->targetsFriendly() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end(); });
+            if (!nextCommander) {
+                nextCommander = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
+                    return !u->getType().isBuilding() && !u->getType().isWorker() && !u->targetsFriendly() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end();
+                });
             }
-            if (closestToCentroid) {
-                cluster.commander = closestToCentroid->weak_from_this();
-                closestToCentroid->setCommander(nullptr);
+
+            // Get any units for commander
+            if (!nextCommander) {
+                nextCommander = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self,
+                                                     [&](auto &u) { return !u->targetsFriendly() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end(); });
+            }
+
+            if (nextCommander) {
+                cluster.commander = nextCommander->weak_from_this();
+                nextCommander->setCommander(nullptr);
             }
         }
 
@@ -258,8 +246,8 @@ namespace McRave::Combat::Clusters {
 
                     // Determine the shape we want
                     if (!commander->isLightAir() && !commander->isSuicidal() && !commander->getType().isWorker()) {
-                        if (cluster.state == LocalState::Hold && atHome)
-                            cluster.shape = Shape::Line;
+                        if (cluster.state == LocalState::Hold && atHome && Combat::holdAtChoke())
+                            cluster.shape = Shape::Concave;
                         else
                             cluster.shape = Shape::Line;
 
@@ -321,31 +309,6 @@ namespace McRave::Combat::Clusters {
                 }
             }
         }
-
-        void drawClusters()
-        {
-            for (auto &cluster : clusters) {
-                if (auto cmder = cluster.commander.lock()) {
-                    for (auto &unit : cluster.units) {
-                        Visuals::drawLine(unit->getPosition(), cmder->getPosition(), cluster.color);
-                        unit->circle(cluster.color);
-                    }
-                }
-
-                Visuals::drawPath(cluster.marchPath);
-                Visuals::drawPath(cluster.retreatPath);
-
-                // March
-                Visuals::drawCircle(cluster.marchNavigation, 8, Colors::Green);
-                Visuals::drawLine(cluster.marchNavigation, cluster.marchPosition, Colors::Green);
-
-                // Retreat
-                Visuals::drawCircle(cluster.retreatNavigation, 6, Colors::Red);
-                Visuals::drawLine(cluster.retreatNavigation, cluster.retreatPosition, Colors::Red);
-
-                // Broodwar->drawTextMap(cluster.marchNavigation, "%d", mapBWEM.GetMiniTile(WalkPosition(cluster.marchNavigation)).Altitude());
-            }
-        }
     } // namespace
 
     void onFrame()
@@ -356,7 +319,31 @@ namespace McRave::Combat::Clusters {
         shapeClusters();
         finishClusters();
         fixNavigations();
-        // drawClusters();
+    }
+
+    void drawClusters()
+    {
+        for (auto &cluster : clusters) {
+            if (auto cmder = cluster.commander.lock()) {
+                for (auto &unit : cluster.units) {
+                    Visuals::drawLine(unit->getPosition(), cmder->getPosition(), cluster.color);
+                    unit->circle(cluster.color);
+                }
+            }
+
+            Visuals::drawPath(cluster.marchPath);
+            Visuals::drawPath(cluster.retreatPath);
+
+            // March
+            Visuals::drawCircle(cluster.marchNavigation, 8, Colors::Green);
+            Visuals::drawLine(cluster.marchNavigation, cluster.marchPosition, Colors::Green);
+
+            // Retreat
+            Visuals::drawCircle(cluster.retreatNavigation, 6, Colors::Red);
+            Visuals::drawLine(cluster.retreatNavigation, cluster.retreatPosition, Colors::Red);
+
+            // Broodwar->drawTextMap(cluster.marchNavigation, "%d", mapBWEM.GetMiniTile(WalkPosition(cluster.marchNavigation)).Altitude());
+        }
     }
 
     vector<Cluster> &getClusters() { return clusters; }

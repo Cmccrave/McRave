@@ -82,7 +82,7 @@ namespace BWEB {
             auto ptr = defenses.find(row);
             if (ptr != defenses.end())
                 return (ptr->second);
-            return defenses.at(0);
+            return {};
         }
 
         /// <summary> Returns the TilePosition belonging to the opening of the wall. </summary>

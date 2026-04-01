@@ -199,7 +199,6 @@ namespace McRave::Stations {
                 defendPositions[&station] = defendPosition;
             }
 
-            
             // Check if any walls are completed that defend this station
             for (auto &station : Stations::getStations(PlayerState::Self)) {
                 auto wall = BWEB::Walls::getClosestWall(station->getBase()->Center());
@@ -210,7 +209,7 @@ namespace McRave::Stations {
                             avgOpeningPosition += opening;
                         }
                         avgOpeningPosition /= int(wall->getOpenings().size());
-                        defendPositions[station] = Position(avgOpeningPosition) + Position(16,16);
+                        defendPositions[station] = Position(avgOpeningPosition) + Position(16, 16);
                         Visuals::drawCircle(defendPositions[station], 10, Colors::Cyan, true);
                     }
                 }
@@ -314,16 +313,17 @@ namespace McRave::Stations {
                 groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Creep_Colony) +
                                Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
 
-            if (station->isMain()) {
-                if (!Spy::enemyRush() && getStations(PlayerState::Self).size() > 1)
+            // Don't make sunkens if we are within a certain ling count or are expanding
+            if (station->isMain() && !Spy::enemyRush()) {
+                auto lingsPerSunken = 6 * (1 + groundCount);
+                if (vis(Zerg_Zergling) + lingsPerSunken >= Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling))
+                    return 0;
+                if (BuildOrder::takeNatural() || getStations(PlayerState::Self).size() > 1)
                     return 0;
             }
 
             if (BuildOrder::getCurrentBuild() == Z_PoolHatch) {
                 if (station->isMain()) {
-
-                    if (!Spy::enemyRush() && (BuildOrder::takeNatural() || getStations(PlayerState::Self).size() > 1))
-                        return 0;
 
                     auto latePool = BuildOrder::getCurrentOpener() != Z_9Pool && BuildOrder::getCurrentOpener() != Z_Overpool;
 
@@ -358,8 +358,6 @@ namespace McRave::Stations {
 
                     // Speedling all-in
                     if (Spy::getEnemyTransition() == Z_2HatchSpeedling)
-                        // desiredDefenses = max(desiredDefenses, (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(3, 45)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4,
-                        // 30)));
                         return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(3, 00)) + (vis(Zerg_Spire) * 2) - groundCount;
 
                     if (total(Zerg_Mutalisk) >= 4) {

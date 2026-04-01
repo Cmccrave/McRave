@@ -4,5 +4,5 @@
 namespace McRave::Roles {
 
     void onFrame();
-    int getMyRoleCount(Role);
+    int getRoleCount(Role);
 };

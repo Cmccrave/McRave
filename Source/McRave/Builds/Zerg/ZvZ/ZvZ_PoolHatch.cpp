@@ -8,41 +8,38 @@ using namespace UnitTypes;
 using namespace McRave::BuildOrder::All;
 
 namespace McRave::BuildOrder::Zerg {
+    void ZvZ_PH_Overpool()
+    {
+        transitionReady = hatchCount() >= 2;
+        gasLimit        = capGas(100);
+        wantNatural     = !Spy::enemyRush();
 
-    namespace {
+        zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < (11 - vis(Zerg_Extractor));
+        zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvZ();
 
-        void ZvZ_PH_Overpool()
-        {
-            transitionReady =                               hatchCount() >= 2;
-            gasLimit =                                      capGas(100);
+        auto secondHatch = Spy::enemyRush() ? com(Zerg_Sunken_Colony) >= 1 : (s >= 22 && vis(Zerg_Extractor) > 0 && total(Zerg_Zergling) >= 6);
 
-            zergUnitPump[Zerg_Drone] = vis(Zerg_Drone) < (11 - vis(Zerg_Extractor));
-            zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvP();
+        // Buildings
+        buildQueue[Zerg_Hatchery]      = 1 + secondHatch;
+        buildQueue[Zerg_Spawning_Pool] = (vis(Zerg_Overlord) >= 2);
+        buildQueue[Zerg_Extractor]     = (s >= 22 && vis(Zerg_Spawning_Pool) > 0);
+        buildQueue[Zerg_Overlord]      = 1 + (s >= 18) + (s >= 32);
+    }
 
-            auto secondHatch = Spy::enemyRush() ? com(Zerg_Sunken_Colony) >= 1 : (s >= 22 && vis(Zerg_Extractor) > 0 && total(Zerg_Zergling) >= 6);
-            
-            // Buildings
-            buildQueue[Zerg_Hatchery] =                     1 + secondHatch;
-            buildQueue[Zerg_Spawning_Pool] =                (vis(Zerg_Overlord) >= 2);
-            buildQueue[Zerg_Extractor] =                    (s >= 22 && vis(Zerg_Spawning_Pool) > 0);
-            buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32);
-        }
+    void ZvZ_PH_12Pool()
+    {
+        transitionReady = hatchCount() >= 2;
+        wantNatural     = !Spy::enemyRush();
 
-        void ZvZ_PH_12Pool()
-        {
-            transitionReady =                               hatchCount() >= 2;
-            wantNatural =                                   !Spy::enemyRush();
+        zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < (13 - vis(Zerg_Hatchery) - vis(Zerg_Spawning_Pool));
+        zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvZ();
 
-            zergUnitPump[Zerg_Drone] = vis(Zerg_Drone) < (13 - vis(Zerg_Hatchery) - vis(Zerg_Spawning_Pool));
-            zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvP();
+        auto secondHatch = Spy::enemyRush() ? com(Zerg_Sunken_Colony) >= 1 : (s >= 22 && vis(Zerg_Extractor) > 0 && com(Zerg_Drone) >= 11);
 
-            auto secondHatch = Spy::enemyRush() ? com(Zerg_Sunken_Colony) >= 1 : (s >= 22 && vis(Zerg_Extractor) > 0 && com(Zerg_Drone) >= 11);
-            
-            buildQueue[Zerg_Hatchery] =                     1 + secondHatch;
-            buildQueue[Zerg_Spawning_Pool] =                s >= 24;
-            buildQueue[Zerg_Extractor] =                    (s >= 22 && Util::getTime() > Time(1, 45) && vis(Zerg_Spawning_Pool) > 0);
-            buildQueue[Zerg_Overlord] =                     1 + (s >= 18) + (s >= 32);
-        }
+        buildQueue[Zerg_Hatchery]      = 1 + secondHatch;
+        buildQueue[Zerg_Spawning_Pool] = s >= 24;
+        buildQueue[Zerg_Extractor]     = (s >= 22 && Util::getTime() > Time(1, 45) && vis(Zerg_Spawning_Pool) > 0);
+        buildQueue[Zerg_Overlord]      = 1 + (s >= 18) + (s >= 32);
     }
 
     void ZvZ_PH()
@@ -53,4 +50,4 @@ namespace McRave::BuildOrder::Zerg {
         if (currentOpener == Z_12Pool)
             ZvZ_PH_12Pool();
     }
-}
+} // namespace McRave::BuildOrder::Zerg

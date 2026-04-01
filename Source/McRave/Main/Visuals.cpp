@@ -101,6 +101,8 @@ namespace McRave::Visuals {
         bool stations    = false;
         bool gameFocused = false;
         bool bo_switch   = false;
+        bool clusters    = false;
+        bool formations  = false;
 
         Diagnostic currentDiagnostic = Diagnostic::None;
 
@@ -114,9 +116,9 @@ namespace McRave::Visuals {
             last             = now;
 
             static double frameBuffer[144] = {};
-            static double frameSum   = 0.0;
-            static int i      = 0;
-            static int frames = 144;
+            static double frameSum         = 0.0;
+            static int i                   = 0;
+            static int frames              = 144;
 
             frameSum += frameTime - frameBuffer[i];
             frameBuffer[i] = frameTime;
@@ -341,6 +343,14 @@ namespace McRave::Visuals {
                     int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
                     Broodwar->drawTextMap(unit.getPosition() + Position(width, 16), "%c%d", Text::White, unit.getRole());
                 }
+
+                if (clusters) {
+                    Combat::Clusters::drawClusters();
+                }
+
+                if (formations) {
+                    Combat::Formations::drawFormations();
+                }
             }
         }
 
@@ -491,6 +501,10 @@ namespace McRave::Visuals {
             roles = !roles;
         else if (text == "/bo")
             bo_switch = !bo_switch;
+        else if (text == "/clusters")
+            clusters = !clusters;
+        else if (text == "/formations")
+            formations = !formations;
         else
             Broodwar->sendText("%s", text.c_str());
         return;

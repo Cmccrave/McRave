@@ -118,30 +118,29 @@ namespace McRave::Combat::State {
                                                 Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) < 9;
                     const auto avoidDiceRoll = (Broodwar->getStartLocations().size() >= 3 && Util::getTime() < Time(3, 15) && !Terrain::getEnemyStartingPosition().isValid()) ||
                                                (BuildOrder::getCurrentOpener() == Z_12Pool) || (BuildOrder::getCurrentOpener() == Z_12Hatch);
-                    const auto enemyDroneScouted   = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(3, 15);
-                    const auto enemyHatchAdvatange = (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair)) >
-                                                         (Players::getVisibleCount(PlayerState::Self, Zerg_Hatchery) + Players::getVisibleCount(PlayerState::Self, Zerg_Lair)) &&
-                                                     Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 10;
+                    const auto enemyDroneScouted = Players::getCompleteCount(PlayerState::Enemy, Zerg_Drone) > 0 && !Terrain::getEnemyStartingPosition().isValid() && Util::getTime() < Time(3, 15);
+
+                    const auto hatchAdvatange = Players::getVisibleCount(PlayerState::Self, Zerg_Hatchery, Zerg_Lair, Zerg_Hive) >
+                                                Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery, Zerg_Lair, Zerg_Hive);
                     const auto lingAdvantage = Players::getVisibleCount(PlayerState::Self, Zerg_Zergling) * 2 > Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) * 3 &&
-                                               Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 6;
-                    const auto expansionAdvantage = Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() &&
-                                                    Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && !Spy::enemyTurtle() && !Spy::enemyFortress();
+                                               Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 6 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) < 2;
+                    const auto expansionAdvantage = Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size();
 
-                    // "well they shouldn't be able to do that"
-                    const auto justFuckingKillThem = Spy::getEnemyTransition() == Z_1HatchLurker;
-
-                    if (!lingAdvantage && !justFuckingKillThem) {
+                    //
+                    const auto enemyHydraBuild = Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_1HatchHydra;
+                    if (!enemyHydraBuild) {
+                        if (!lingAdvantage && (expansionAdvantage || hatchAdvatange))
+                            staticRetreatTypes.push_back(Zerg_Zergling);
 
                         // 1hm early
                         if (BuildOrder::getCurrentTransition() == Z_1HatchMuta && Util::getTime() < Time(7, 00)) {
-                            if (Spy::Zerg::enemyFasterPool() || Spy::Zerg::enemyEqualPool() || Spy::enemyTurtle() || enemyLingVomit || enemyDroneScouted || enemyHatchAdvatange)
+                            if (Spy::Zerg::enemyFasterPool() || Spy::Zerg::enemyEqualPool() || Spy::enemyTurtle() || enemyLingVomit || enemyDroneScouted)
                                 staticRetreatTypes.push_back(Zerg_Zergling);
                         }
 
                         // 1hm mid
                         if (BuildOrder::getCurrentTransition() == Z_1HatchMuta && Util::getTime() > Time(3, 15) && Util::getTime() < Time(10, 00)) {
-                            if (enemyHatchAdvatange)
-                                staticRetreatTypes.push_back(Zerg_Zergling);
+                            staticRetreatTypes.push_back(Zerg_Zergling);
                         }
 
                         // 2hm early
@@ -152,7 +151,7 @@ namespace McRave::Combat::State {
 
                         // 2hm mid
                         if (BuildOrder::getCurrentTransition() == Z_2HatchMuta && Util::getTime() < Time(10, 00) && !Spy::enemyFastExpand() && !Spy::Zerg::enemySlowerSpeed()) {
-                            if (enemyLingVomit || Spy::Zerg::enemyFasterSpeed() || expansionAdvantage)
+                            if (enemyLingVomit || Spy::Zerg::enemyFasterSpeed())
                                 staticRetreatTypes.push_back(Zerg_Zergling);
                         }
                     }
@@ -222,6 +221,9 @@ namespace McRave::Combat::State {
         if (!unit.hasTarget())
             return false;
         auto &target = *unit.getTarget().lock();
+
+        if (Players::ZvZ() && unit.getType() == Zerg_Zergling && Terrain::isAtHome(unit.getPosition()) && Combat::holdAtChoke())
+            return true;
         return false;
     }
 
@@ -395,7 +397,13 @@ namespace McRave::Combat::State {
 
     void updateLocalState(UnitInfo &unit)
     {
-        if (!unit.hasSimTarget() || !unit.hasTarget() || unit.getLocalState() != LocalState::None)
+        if (!unit.hasSimTarget() || !unit.hasTarget()) {
+            if (unit.getGlobalState() == GlobalState::Retreat)
+                unit.setLocalState(LocalState::Hold);
+            return;
+        }
+
+        if (unit.getLocalState() != LocalState::None)
             return;
 
         auto &simTarget   = *unit.getSimTarget().lock();
@@ -415,7 +423,7 @@ namespace McRave::Combat::State {
         const auto exploringGoal       = unit.getGoal().isValid() && unit.getGoalType() == GoalType::Explore && unit.getUnitsInReachOfThis().empty() && Util::getTime() > Time(4, 00);
 
         // Regardless of any decision, determine if Unit is in danger and needs to retreat
-        if ((unit.inDanger && !unit.isTargetedBySuicide()) || (unit.isNearSuicide() && unit.isFlying())) {
+        if (unit.inDanger && !unit.isTargetedBySuicide()) {
             unit.setLocalState(LocalState::Retreat);
         }
 

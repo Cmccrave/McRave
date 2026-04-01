@@ -128,7 +128,7 @@ namespace McRave::Roles {
         void zPullWorker()
         {
             if (Broodwar->self()->getRace() != Races::Zerg || BuildOrder::isRush())
-                return;
+                return;            
 
             auto proxyBuilding          = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy,
                                                       [&](auto &u) { return u->isProxy() && u->getType().isBuilding() && !u->canAttackGround() && !u->canAttackAir(); });
@@ -137,16 +137,16 @@ namespace McRave::Roles {
                        (u->canAttackGround() || u->canAttackAir() || Terrain::inTerritory(PlayerState::Self, u->getPosition()));
             });
             auto proxyWorker            = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy(); });
-            auto proxyBuildingWorker    = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+            auto proxyCombatWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy() && u->hasAttackedRecently(); });
+            auto proxyBuildingWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                 return u->getType().isWorker() && (u->isThreatening() || (proxyBuilding && u->getPosition().getDistance(proxyBuilding->getPosition()) < 160.0) ||
                                                    (proxyDangerousBuilding && u->getPosition().getDistance(proxyDangerousBuilding->getPosition()) < 160.0));
             });
-            auto proxyCombatUnit        = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy,
+            auto proxyCombatUnit     = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy,
                                                         [&](auto &u) { return u->isProxy() && !u->getType().isWorker() && !u->getType().isBuilding() && u->canAttackGround(); });
-            auto selfBuildingWorker     = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self,
+            auto selfBuildingWorker  = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self,
                                                            [&](auto &u) { return u->getType().isWorker() && u->getBuildType() == Zerg_Hatchery && Broodwar->self()->minerals() >= 200; });
 
-            auto proxyCombatWorker   = proxyWorker && proxyWorker->hasAttackedRecently();
             auto unknownMainLocation = Position(Terrain::getOldestPosition(Terrain::getMainArea()));
 
             static bool sixLings = false;
@@ -169,16 +169,25 @@ namespace McRave::Roles {
             }
 
             // ZvZ
-            if (Players::ZvZ() && Util::getTime() < Time(6, 00) && !Spy::enemyTurtle() && !Spy::enemyFastExpand() && Combat::State::isStaticRetreat(Zerg_Zergling)) {
-
-                // auto lState = Units::getImmThreat() > 0.0f ? LocalState::Attack : LocalState::None;
-
+            if (Players::ZvZ() && Util::getTime() < Time(6, 00) && !Spy::enemyTurtle() && !Spy::enemyFastExpand()) {
                 if (Combat::isDefendNatural()) {
-                    if ((Spy::getEnemyOpener() == Z_9Pool || Spy::getEnemyOpener() == Z_Overpool || Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling)) &&
-                        Util::getTime() > Time(2, 45) && Util::getTime() < Time(3, 30) && BuildOrder::getCurrentOpener() == Z_12Pool && total(Zerg_Zergling) < 20 &&
-                        int(Stations::getStations(PlayerState::Self).size()) >= 2)
-                        forceCombatWorker(2, Terrain::getNaturalPosition(), LocalState::None, GlobalState::Retreat);
+                    auto earlyPool = Spy::getEnemyOpener() == Z_9Pool || Spy::getEnemyOpener() == Z_Overpool || Spy::getEnemyOpener() == "Unknown";
+                    auto moreLings = Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling);
+
+                    if (earlyPool || moreLings) {
+                        if (Util::getTime() > Time(2, 45) && Util::getTime() < Time(3, 30) && BuildOrder::getCurrentOpener() == Z_12Pool && total(Zerg_Zergling) < 20 &&
+                            int(Stations::getStations(PlayerState::Self).size()) >= 2)
+                            forceCombatWorker(2, Terrain::getNaturalPosition(), LocalState::None, GlobalState::Retreat);
+                    }
                 }
+                else {
+                    auto earlyPool = Spy::getEnemyOpener() == Z_4Pool || Spy::getEnemyOpener() == Z_7Pool;
+                    auto defendSunkens = Util::getTime() < Time(3, 00) && proxyCombatUnit && !sixLings;
+
+                    if (earlyPool && defendSunkens)
+                        forceCombatWorker(10, Terrain::getMainPosition(), LocalState::Attack, GlobalState::Attack);
+                }
+
             }
 
             // ZvP
@@ -369,5 +378,5 @@ namespace McRave::Roles {
 
     void onFrame() { updateSelf(); }
 
-    int getMyRoleCount(Role role) { return myRoles[role]; }
+    int getRoleCount(Role role) { return myRoles[role]; }
 } // namespace McRave::Roles

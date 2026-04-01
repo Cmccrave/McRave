@@ -361,7 +361,7 @@ namespace McRave::Util {
                 }
             }
         }
-        writeFile.open("bwapi-data/write/logger.txt", std::ios::app);
+        writeFile.open("bwapi-data/write/logger.txt");
     }
 
     double log10(int index) { return log10Lookup[index]; }

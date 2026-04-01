@@ -101,10 +101,12 @@ namespace McRave {
                 if (unit.getAirDamage() > 0) {
                     totalAirDamage += unit.getAirDamage();
                     airCount++;
+                    pStrength.maxAirRange = max(pStrength.maxAirRange, unit.getAirRange());
                 }
                 if (unit.getGroundDamage() > 0) {
                     totalGrndDamage += unit.getGroundDamage();
                     grndCount++;
+                    pStrength.maxAirRange = max(pStrength.maxGroundRange, unit.getGroundRange());
                 }
             }
         }

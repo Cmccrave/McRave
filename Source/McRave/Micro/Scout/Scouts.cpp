@@ -262,10 +262,10 @@ namespace McRave::Scouts {
                     main.desiredTypeCounts[Zerg_Drone] = 0;
 
                     // Zergling
-                    main.desiredTypeCounts[Zerg_Zergling] = (!Terrain::foundEnemy() && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) &&
-                                                             Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost)) ||
-                                                            (!Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) &&
-                                                             Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) <= 10);
+                    auto fasterLings       = !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost);
+                    auto enemyLowLingCount = !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) <= 10;
+
+                    main.desiredTypeCounts[Zerg_Zergling] = !Terrain::foundEnemy() && (fasterLings || enemyLowLingCount);
                     if (BuildOrder::isRush() || Spy::enemyRush() || Spy::enemyPressure() || Spy::enemyTurtle() || Spy::enemyFortress())
                         main.desiredTypeCounts[Zerg_Zergling] = 0;
 
@@ -284,7 +284,7 @@ namespace McRave::Scouts {
 
                 // ZvFFA
                 if (Players::ZvFFA()) {
-                    main.desiredTypeCounts[Zerg_Drone] = 0;
+                    main.desiredTypeCounts[Zerg_Drone]    = 0;
                     main.desiredTypeCounts[Zerg_Zergling] = !Terrain::getEnemyStartingPosition().isValid();
                 }
             }
@@ -427,7 +427,7 @@ namespace McRave::Scouts {
 
         void updateArmyScouting()
         {
-            if (!Terrain::getEnemyNatural() || !Terrain::getMyNatural() || BuildOrder::isRush())
+            if (!Terrain::getEnemyNatural() || !Terrain::getEnemyMain() || BuildOrder::isRush())
                 return;
             auto &army                            = scoutTargets[ScoutType::Army];
             army.desiredTypeCounts[Zerg_Zergling] = 0;
@@ -437,6 +437,8 @@ namespace McRave::Scouts {
                 auto time = Time(2, 30);
                 if (Spy::enemyRush() || Spy::getEnemyBuild() == P_2Gate || Spy::getEnemyBuild() == P_1GateCore || Spy::enemyProxy() || total(Zerg_Zergling) <= 2)
                     time = Time(3, 45);
+                if (Players::ZvZ())
+                    time = Time(4, 00);
                 if (Spy::getEnemyTransition() == U_WorkerRush)
                     time = Time(6, 00);
 
@@ -450,6 +452,10 @@ namespace McRave::Scouts {
 
                     if (Players::ZvP()) {
                         army.desiredTypeCounts[Zerg_Zergling] = 1 + (int(Spy::getEnemyTransition() == "Unknown") && Util::getTime() > Time(4, 00));
+                    }
+
+                    if (Players::ZvZ()) {
+                        army.desiredTypeCounts[Zerg_Zergling] = 1;
                     }
                 }
             }

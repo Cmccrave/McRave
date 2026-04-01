@@ -16,6 +16,7 @@ namespace McRave::Combat::Simulation {
         bool ignoreSim       = false;
         double minWinPercent = 0.8;
         double maxWinPercent = 1.4;
+        int commitFrames     = 0;
     } // namespace
 
     void updateSimulation(UnitInfo &unit)
@@ -49,7 +50,7 @@ namespace McRave::Combat::Simulation {
         else if (unit.getSimValue() < minWinPercent)
             newState = SimState::Loss;
 
-        if (newState != lastState) {
+         if (newState != lastState) {
             unit.framesCommitted++;
             if (unit.framesCommitted >= 72) {
                 unit.setSimState(newState);
@@ -59,7 +60,7 @@ namespace McRave::Combat::Simulation {
                 unit.setSimState(lastState);
             }
         }
-        else {
+         else {
             unit.framesCommitted = 0;
             unit.setSimState(newState);
         }
@@ -71,46 +72,66 @@ namespace McRave::Combat::Simulation {
         if (Players::PvP()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.2;
+            commitFrames  = 72;
         }
         if (Players::PvZ()) {
             minWinPercent = 0.6;
             maxWinPercent = 1.2;
+            commitFrames  = 72;
         }
         if (Players::PvT()) {
             minWinPercent = 0.6;
             maxWinPercent = 1.0;
+            commitFrames  = 160;
+        }
+        if (Players::PvFFA()) {
+            minWinPercent = 0.8;
+            maxWinPercent = 1.4;
+            commitFrames  = 72;
         }
 
         // Z
         if (Players::ZvP()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.4;
+            commitFrames  = 72;
         }
         if (Players::ZvZ()) {
             minWinPercent = 0.7;
             maxWinPercent = 1.3;
+            commitFrames  = 0;
         }
         if (Players::ZvT()) {
             minWinPercent = 1.0;
             maxWinPercent = 1.4;
+            commitFrames  = 72;
         }
         if (Players::ZvFFA()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.4;
+            commitFrames  = 0;
         }
 
         // T
         if (Players::TvP()) {
             minWinPercent = 0.7;
             maxWinPercent = 1.1;
+            commitFrames  = 72;
         }
         if (Players::TvZ()) {
             minWinPercent = 0.7;
             maxWinPercent = 1.1;
+            commitFrames  = 72;
         }
         if (Players::TvT()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.2;
+            commitFrames  = 72;
+        }
+        if (Players::TvFFA()) {
+            minWinPercent = 0.8;
+            maxWinPercent = 1.4;
+            commitFrames  = 72;
         }
     }
 

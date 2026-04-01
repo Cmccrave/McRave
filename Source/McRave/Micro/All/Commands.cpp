@@ -28,27 +28,33 @@ namespace McRave::Command {
 
     namespace {
 
-        double grouping(ScoreContext& context)
+        double grouping(ScoreContext &context)
         {
             if (context.unit->isFlying()) {
-                if (context.commander && (context.unit->isTargetedBySplash() || context.unit->isTargetedBySuicide())) {
-                    return 1.0 + pow(max(0.0, context.p.getDistance(context.commander->getPosition()) - 32.0), 2.0);
+                if (context.commander && context.unit->isTargetedBySplash()) {
+                    return 1.0 + pow(max(0.0, context.p.getDistance(context.commander->getCommandPosition()) - 32.0), 2.0);
                 }
             }
             return 1.0;
         }
 
-        double distance(ScoreContext& context) //
+        double angle(ScoreContext &context)
+        {
+            //
+            return 1.0;
+        }
+
+        double distance(ScoreContext &context) //
         {
             return max(10.0, context.p.getDistance(context.unit->getNavigation()));
         }
 
-        double mobility(ScoreContext& context) //
+        double mobility(ScoreContext &context) //
         {
             return context.unit->isFlying() ? 1.0 : Util::log10(1 + Grids::getMobility(context.w));
         }
 
-        double threat(ScoreContext& context)
+        double threat(ScoreContext &context)
         {
             if (context.unit->isTransport()) {
                 if (context.p.getDistance(context.unit->getNavigation()) < 32.0)
@@ -64,13 +70,13 @@ namespace McRave::Command {
                                                        : (Grids::getGroundThreat(context.w, PlayerState::Enemy)));
         }
 
-        double altitude(ScoreContext& context)
+        double altitude(ScoreContext &context)
         {
             return 1.0;
             // unit.isFlying() ? Util::log10(1 + mapBWEM.GetMiniTile(w).Altitude()) : 1.0;
         }
 
-        Position findViablePosition(UnitInfo &unit, Position pstart, function<double(ScoreContext&)> scoreFunc)
+        Position findViablePosition(UnitInfo &unit, Position pstart, function<double(ScoreContext &)> scoreFunc)
         {
             auto nearestEdge   = Terrain::getClosestMapEdge(unit.getPosition());
             auto nearestCorner = Terrain::getClosestMapCorner(unit.getPosition());
@@ -316,8 +322,8 @@ namespace McRave::Command {
         auto target         = unit.hasTarget() ? unit.getTarget().lock() : nullptr;
         const auto surround = target && unit.attemptingSurround() && unit.isWithinReach(*target);
 
-        const auto scoreFunction = [&](ScoreContext& context) {
-            auto score   = 0.0;
+        const auto scoreFunction = [&](ScoreContext &context) {
+            auto score = 0.0;
 
             if (target && surround)
                 score = mobility(context) * grouping(context) * Util::fastReciprocal(distance(context));
@@ -419,8 +425,13 @@ namespace McRave::Command {
             return false;
         auto &target = *unit.getTarget().lock();
 
-        // Find the best possible position to kite towards
+        // Get a position away from the target
         auto kiteTowards = Positions::Invalid;
+        if (unit.isLightAir()) {
+            kiteTowards = Util::shiftTowards(target.getPosition(), unit.getPosition(), 160.0);
+        }
+
+        // Find the best possible position to kite towards
         if (unit.isLightAir() && !unit.attemptingRegroup() && unit.hasCommander() && Grids::getAirThreat(unit.getPosition(), PlayerState::Enemy) > 0.0) {
             auto maxRange         = max(unit.getAirRange(), unit.getGroundRange());
             auto commander        = unit.getCommander().lock();
@@ -438,12 +449,12 @@ namespace McRave::Command {
         // Get current distance
         auto currentDistance = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()) / 8.0;
 
-        const auto scoreFunction = [&](ScoreContext& context) {
+        const auto scoreFunction = [&](ScoreContext &context) {
             auto score = 0.0;
             if (kiteTowards.isValid())
-                score = (mobility(context) * grouping(context)) * Util::fastReciprocal(context.p.getDistance(kiteTowards) * (threat(context)) * altitude(context));
+                score = (mobility(context) * grouping(context) * angle(context)) * Util::fastReciprocal(context.p.getDistance(kiteTowards) * (threat(context)) * altitude(context));
             else
-                score = (mobility(context) * grouping(context)) * Util::fastReciprocal((threat(context)) * altitude(context));
+                score = (mobility(context) * grouping(context) * angle(context)) * Util::fastReciprocal((threat(context)) * altitude(context));
             return score;
         };
 
@@ -515,6 +526,12 @@ namespace McRave::Command {
                     if (Util::getTime() < Time(7, 00) && targetKitable && boxDist <= enemyRange + 48.0 && !unit.getUnitsTargetingThis().empty())
                         return true;
                 }
+
+                // Special Case: Kite suicidal units
+                if (unit.isLightAir() && unit.isTargetedBySuicide() && Util::boxDistance(unit, target) < 72.0)
+                    return true;
+                if (unit.isLightAir() && target.isSuicidal() && Util::boxDistance(unit, target) < 48.0)
+                    return true;
 
                 // Situation: Unit is targeted by a stationary unit, so we could kite out of range of it
                 // if (!unit.isMelee()) {
@@ -606,7 +623,7 @@ namespace McRave::Command {
 
     bool explore(UnitInfo &unit)
     {
-        const auto scoreFunction = [&](ScoreContext& context) {
+        const auto scoreFunction = [&](ScoreContext &context) {
             auto score = mobility(context) * grouping(context) * Util::fastReciprocal(distance(context));
             return score;
         };
@@ -640,7 +657,7 @@ namespace McRave::Command {
 
     bool retreat(UnitInfo &unit)
     {
-        const auto scoreFunction = [&](ScoreContext& context) {
+        const auto scoreFunction = [&](ScoreContext &context) {
             auto score = 0.0;
             score      = (mobility(context) * grouping(context)) * Util::fastReciprocal(distance(context));
             return score;
@@ -680,7 +697,7 @@ namespace McRave::Command {
 
     bool escort(UnitInfo &unit)
     {
-        const auto scoreFunction = [&](ScoreContext& context) {
+        const auto scoreFunction = [&](ScoreContext &context) {
             auto score = 1.0 * Util::fastReciprocal(threat(context) * distance(context));
             return score;
         };
@@ -714,7 +731,7 @@ namespace McRave::Command {
     {
         auto closestRetreat = Stations::getClosestRetreatStation(unit);
 
-        const auto scoreFunction = [&](ScoreContext& context) {
+        const auto scoreFunction = [&](ScoreContext &context) {
             const auto grdDist     = max(1.0, BWEB::Map::getGroundDistance(context.p, unit.getDestination()));
             const auto distRetreat = context.p.getDistance(closestRetreat->getBase()->Center());
 

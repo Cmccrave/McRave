@@ -106,9 +106,7 @@ namespace McRave::Combat::Navigation {
                 getFlyingRetreatPath(unit);
             }
             else if (harassing) {
-                unit.circle(Colors::Green);
                 unit.setMarchPath(flyerHarassPath);
-                // Visuals::drawPath(unit.getMarchPath());
             }
             else {
                 getFlyingMarchPath(unit);
@@ -134,7 +132,6 @@ namespace McRave::Combat::Navigation {
 
         if (unit.getFormation().isValid() && !unit.attemptingRunby() && unit.getLocalState() != LocalState::Attack) {
             unit.setNavigation(unit.getFormation());
-            // Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Cyan);
             return;
         }
 
@@ -147,11 +144,6 @@ namespace McRave::Combat::Navigation {
 
             if (newDestination.isValid())
                 unit.setNavigation(newDestination);
-        }
-
-        if (unit.isLightAir()) {
-            Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Purple);
-            Visuals::drawPath(unit.getMarchPath());
         }
     }
 

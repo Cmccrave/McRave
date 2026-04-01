@@ -51,6 +51,10 @@ namespace McRave::Grids {
 
         void addCollision(UnitInfo &unit)
         {
+            auto collisionLessOrders = {Orders::HarvestGas, Orders::MoveToGas, Orders::ReturnGas, Orders::WaitForGas, Orders::MiningMinerals, Orders::MoveToMinerals, Orders::ReturnMinerals, Orders::WaitForMinerals};
+            if (unit.unit()->exists() && find(collisionLessOrders.begin(), collisionLessOrders.end(), unit.unit()->getOrder()) != collisionLessOrders.end())
+                return;
+
             // Pixel rectangle (make any even size units an extra WalkPosition)
             const auto topLeft  = Position(unit.getPosition().x - unit.getType().dimensionLeft(), unit.getPosition().y - unit.getType().dimensionUp());
             const auto topRight = Position(unit.getPosition().x + unit.getType().dimensionRight() + 1, unit.getPosition().y - unit.getType().dimensionUp());
@@ -134,7 +138,7 @@ namespace McRave::Grids {
 
             if (addSplash) {
                 auto splashRadius = ceil(unit.getSplashRadius() / 8.0);
-                auto target = unit.getTarget().lock();
+                auto target       = unit.getTarget().lock();
                 for (auto &w : Util::getWalkCircle(splashRadius)) {
                     auto walk = target->getWalkPosition() + w;
                     if (!walk.isValid())
@@ -269,7 +273,7 @@ namespace McRave::Grids {
                         continue;
                     }
 
-                    auto valid = 0;
+                    auto valid    = 0;
                     auto walkable = 0;
                     for (int i = -12; i < 12; i++) {
                         for (int j = -12; j < 12; j++) {
@@ -362,9 +366,9 @@ namespace McRave::Grids {
         updateVisibility();
         // createChokeDirections();
 
-         //auto mousePos = WalkPosition(Broodwar->getScreenPosition() + Broodwar->getMousePosition());
-         //auto grid     = Grids::getGroundThreat(mousePos, PlayerState::Enemy);
-         //Broodwar << grid << endl;
+        // auto mousePos = WalkPosition(Broodwar->getScreenPosition() + Broodwar->getMousePosition());
+        // auto grid     = Grids::getGroundThreat(mousePos, PlayerState::Enemy);
+        // Broodwar << grid << endl;
     }
 
     void onStart()

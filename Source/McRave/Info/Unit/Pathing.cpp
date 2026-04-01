@@ -53,7 +53,7 @@ namespace McRave::Pathing {
                 return;
 
             // Only generate for light air for now
-            if (!unit.isLightAir())
+            if (!unit.isLightAir() || unit.isWithinRange(target))
                 return;
 
             auto toTarget      = target.getPosition() - unit.getPosition();
@@ -170,8 +170,14 @@ namespace McRave::Pathing {
 
         void updateSurroundPositions(UnitInfo &enemy)
         {
-            auto biasTowards                  = enemy.getPosition() + Position(int(enemy.unit()->getVelocityX() * 24.0), int(enemy.unit()->getVelocityY() * 24.0));
+            // List of viable surround targets
+            static set<UnitType> surroundTypes = {Protoss_Zealot, Protoss_Dragoon, Terran_Goliath, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode};
+            if (surroundTypes.find(enemy.getType()) == surroundTypes.end())
+                return;
+
+            // List of viable surround targeters
             static set<UnitType> allowedTypes = {Zerg_Zergling, Protoss_Zealot};
+            auto biasTowards                  = enemy.getPosition() + Position(int(enemy.unit()->getVelocityX() * 24.0), int(enemy.unit()->getVelocityY() * 24.0));
 
             auto assignPosition = [&](UnitInfo &unit, Position pos) {
                 double distToBias = enemy.getPosition().getDistance(biasTowards);

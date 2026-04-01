@@ -14,6 +14,9 @@ namespace McRave {
         double avgGroundDamage = 5.0;
         double avgAirDamage    = 5.0;
 
+        double maxGroundRange = 0;
+        double maxAirRange    = 0;
+
         void operator+=(const Strength &second)
         {
             airToAir += second.airToAir;
@@ -25,6 +28,9 @@ namespace McRave {
 
             avgGroundDamage = std::max(second.avgGroundDamage, avgGroundDamage);
             avgAirDamage    = std::max(second.avgAirDamage, avgAirDamage);
+
+            maxGroundRange = std::max(second.maxGroundRange, maxGroundRange);
+            maxAirRange    = std::max(second.maxAirRange, maxAirRange);
         }
 
         void clear()
@@ -38,6 +44,9 @@ namespace McRave {
 
             avgGroundDamage = 5.0;
             avgAirDamage    = 5.0;
+
+            maxGroundRange  = 0.0;
+            maxAirRange     = 0.0;
         }
     };
 
