@@ -238,7 +238,7 @@ namespace McRave::BuildOrder::Zerg {
                 const auto incompleteHatch   = vis(Zerg_Hatchery) - com(Zerg_Hatchery);
 
                 const auto waitForMinerals = 200 + (200 * incompleteHatch);
-                const auto resourceSat     = (availableMinerals >= waitForMinerals || vis(Zerg_Larva) <= Stations::getStations(PlayerState::Self).size()) && Resources::isHalfMineralSaturated() &&
+                const auto resourceSat     = (availableMinerals >= waitForMinerals || vis(Zerg_Larva) <= int(Stations::getStations(PlayerState::Self).size())) && Resources::isHalfMineralSaturated() &&
                                          Resources::isGasSaturated();
                 const auto excessResources = (availableMinerals >= waitForMinerals * 2 && vis(Zerg_Larva) <= 3);
 
@@ -283,7 +283,7 @@ namespace McRave::BuildOrder::Zerg {
                 auto desiredProduction = hatchPerBase[current];
 
                 if (isFocusUnit(Zerg_Zergling))
-                    desiredProduction *= 1.5;
+                    desiredProduction = round(double(desiredProduction) * 1.5);
 
                 productionSat = hatchCount() >= min(7, desiredProduction);
 
@@ -296,8 +296,12 @@ namespace McRave::BuildOrder::Zerg {
                 const auto excessResources = (availableMinerals >= waitForMinerals * 2 && !productionSat && vis(Zerg_Larva) <= 3);
                 const auto larvaBankrupt   = (availableMinerals >= waitForMinerals && (vis(Zerg_Larva) + (incompleteHatch)) < min(3, hatchCount()) && !productionSat);
 
-                rampDesired               = resourceSat || excessResources || larvaBankrupt;
-                buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + rampDesired);
+                const auto allowMultiple = !Players::ZvZ();
+
+                if (incompleteHatch == 0 || allowMultiple) {
+                    rampDesired               = resourceSat || excessResources || larvaBankrupt;
+                    buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + rampDesired);
+                }
             }
 
             // Above 3 hatcheries we need to carefully add, don't add hatcheries if we have larva to spend
@@ -801,11 +805,16 @@ namespace McRave::BuildOrder::Zerg {
 
             // ZvZ
             if (Players::ZvZ()) {
-                priorityOrder = {{Zerg_Mutalisk, 200}};
+                priorityOrder = {
+                    {Zerg_Drone, 12},     {Zerg_Mutalisk, 3}, //
+                    {Zerg_Drone, 14},     {Zerg_Mutalisk, 6}, //
+                    {Zerg_Drone, 16},     {Zerg_Mutalisk, 9}, //
+                    {Zerg_Mutalisk, 100},                     //
+                };
             }
 
             // Cleanup enemy
-            if (Util::getTime() > Time(15, 0) && Stations::getStations(PlayerState::Enemy).size() == 0 && Terrain::foundEnemy() && availGas > 0) {
+            if (Util::getTime() > Time(15, 00) && Stations::getStations(PlayerState::Enemy).size() == 0 && Terrain::foundEnemy() && availGas > 0) {
                 armyComposition.clear();
                 armyComposition[Zerg_Mutalisk] = 1.00;
             }
@@ -832,7 +841,8 @@ namespace McRave::BuildOrder::Zerg {
 
         // Pump lings or drones if nothing else to do
         if (availGas <= 0 || armyComposition.empty()) {
-            if (zergUnitPump[Zerg_Zergling] || vis(Zerg_Drone) >= droneCap || (Resources::isMineralSaturated() && Resources::isGasSaturated())) {
+            auto saturated = Resources::isGasSaturated() && (Players::ZvZ() ? Resources::isHalfMineralSaturated() : Resources::isMineralSaturated());
+            if (zergUnitPump[Zerg_Zergling] || vis(Zerg_Drone) >= droneCap || saturated) {
                 armyComposition[Zerg_Zergling] = 1.0;
                 armyComposition[Zerg_Drone]    = 0.0;
             }

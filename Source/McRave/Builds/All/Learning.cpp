@@ -332,10 +332,10 @@ namespace McRave::Learning {
             }
 
             if (Players::ZvZ()) {
-                PoolHatch.setOpeners({Z_12Pool});
+                PoolHatch.setOpeners({Z_12Pool, Z_Overpool});
                 PoolHatch.setTransitions({Z_2HatchMuta /*, Z_2HatchHydra*/});
 
-                PoolLair.setOpeners({Z_9Pool});
+                PoolLair.setOpeners({Z_9Pool, Z_Overpool});
                 PoolLair.setTransitions({Z_1HatchMuta});
 
                 myBuilds = {PoolHatch, PoolLair};

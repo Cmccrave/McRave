@@ -238,7 +238,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>..\Source\BWEB;..\Source\BWEM;..\Source\Horizon;..\Source\McRave;..\..\..\include;$(IncludePath)</IncludePath>
-    <OutDir>..\..\..\..\StarCraft McRave\bwapi-data\AI\</OutDir>
+    <OutDir>..\..\StarCraft\bwapi-data\AI\</OutDir>
     <LibraryPath>..\..\..\lib;$(LibraryPath)</LibraryPath>
     <CodeAnalysisRuleSet>RuleSet1.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>

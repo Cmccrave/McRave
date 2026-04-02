@@ -158,7 +158,7 @@ namespace McRave::Combat::Bearings {
             unit.marchPos = unit.getDestination();
         }
 
-        // Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+        Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
     }
 
     void onFrame()

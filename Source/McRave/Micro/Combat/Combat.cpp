@@ -32,6 +32,14 @@ namespace McRave::Combat {
         // Attacking
         Position attackPosition = Positions::Invalid;
 
+        bool viableStation(const BWEB::Station *station)
+        {
+            auto ownedByEnemy = Stations::ownedBy(station) == PlayerState::Enemy;
+            auto recencyCheck = Broodwar->getFrameCount() - Grids::getLastVisibleFrame(station->getResourceCentroid()) > 2880;
+            auto notExplored  = !Stations::isBaseExplored(station);
+            return (ownedByEnemy || recencyCheck || notExplored);
+        }
+
         void findAttackPosition()
         {
             // Choose a default attack position, in FFA we choose closest enemy station to us that isn't ours
@@ -102,18 +110,14 @@ namespace McRave::Combat {
 
             // When we don't want to defend our natural
             if (Players::ZvT() && Util::getTime() < Time(8, 00) && (Spy::enemyRush() || Spy::getEnemyBuild() == T_RaxFact || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)) {
-                LOG_ONCE("Defending in main temporarily");
                 defendNaturalAtMain = true;
             }
 
             // ZvP
             if (Players::ZvP()) {
+                auto delayNaturalDefending = Util::getTime() < Time(3, 20) && (Spy::getEnemyOpener() == "Unknown" || !sixLings);
                 if (Spy::enemyProxy() && Spy::getEnemyBuild() == P_2Gate) {
-                    auto delayNaturalDefending = Util::getTime() < Time(3, 45) && (Spy::getEnemyBuild() == "Unknown" || !sixLings);
-                    if (delayNaturalDefending) {
-                        LOG_ONCE("Defending in main temporarily");
-                        defendNatural = false;
-                    }
+                    defendNaturalAtMain = delayNaturalDefending;
                 }
             }
 
@@ -124,6 +128,20 @@ namespace McRave::Combat {
 
                 if (BuildOrder::getCurrentBuild() != Z_PoolLair && (delayNaturalDefending || Spy::enemyRush()))
                     defendNaturalAtMain = true;
+                if (Stations::getSaturationRatio(Terrain::getMyNatural()) <= 0.1)
+                    defendNaturalAtMain = true;
+            }
+
+            // Override if we have queued to build there, maybe need to clear it
+            auto closestBuilder = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Self,
+                                                       [&](auto &u) { return u->getBuildPosition() == Terrain::getMyNatural()->getBase()->Location(); });
+            if (closestBuilder) {
+                defendNaturalAtMain = false;
+                defendNatural       = true;
+            }
+
+            if (defendNaturalAtMain) {
+                LOG_ONCE("Defending in main temporarily");
             }
 
             // Natural defending position
@@ -151,17 +169,8 @@ namespace McRave::Combat {
             harassPosition                         = Positions::Invalid;
             vector<const BWEB::Station *> stations = Stations::getStations(PlayerState::Enemy);
 
-            const auto commanderInRange = [&](Position here) {
-                auto commander = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Mutalisk; });
-                return commander && commander->getPosition().getDistance(here) < 160.0;
-            };
-            const auto stationNotVisitedRecently = [&](auto &station) {
-                return Broodwar->getFrameCount() - Grids::getLastVisibleFrame(station->getResourceCentroid()) > 2880 && !commanderInRange(station->getResourceCentroid());
-            };
-
             // Inbound unit fighting
             if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure()) {
-
                 const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
                     return (Util::getTime() < Time(8, 00) && Units::inBoundUnit(*u, 15) && !u->getType().isWorker() && u->getType() != Terran_Vulture);
                 });
@@ -172,14 +181,6 @@ namespace McRave::Combat {
                     return;
                 }
             }
-
-            // Adds the next closest ground station
-            const auto nextStation = [&]() {
-                auto station = Stations::getClosestStationGround(Terrain::getEnemyNatural()->getBase()->Center(), PlayerState::None,
-                                                                 [&](auto &s) { return find(stations.begin(), stations.end(), s) == stations.end(); });
-                if (station)
-                    stations.push_back(station);
-            };
 
             // In FFA just hit closest base to us
             if (Players::vFFA() && attackPosition.isValid()) {
@@ -223,18 +224,30 @@ namespace McRave::Combat {
                                  (Stations::getStations(PlayerState::Enemy).size() <= 3 && Util::getTime() > Time(15, 00)) +
                                  (Terrain::isIslandMap() && Stations::getStations(PlayerState::Enemy).size() < 2 && Util::getTime() > Time(10, 00));
 
-            for (int x = 0; x < extrasToCheck; x++)
-                nextStation();
+            // Adds the next closest ground station
+            for (int x = 0; x < extrasToCheck; x++) {
+                auto station = Stations::getClosestStationGround(Terrain::getEnemyNatural()->getBase()->Center(), PlayerState::None,
+                                                                 [&](auto &s) { return find(stations.begin(), stations.end(), s) == stations.end(); });
+                if (station)
+                    stations.push_back(station);
+            }
+
+            const auto commanderInRange = [&](Position here) {
+                auto commander = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Mutalisk; });
+                return commander && commander->getPosition().getDistance(here) < 160.0;
+            };
 
             // Harass all stations by last visited
             auto best                          = -1.0;
             const BWEB::Station *harassStation = nullptr;
             for (auto &station : stations) {
-                auto score = double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(station->getResourceCentroid())));
-                if (score > best) {
-                    best           = score;
-                    harassPosition = station->getResourceCentroid();
-                    harassStation  = station;
+                if (viableStation(station) && !commanderInRange(station->getResourceCentroid())) {
+                    auto score = double(Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(station->getResourceCentroid())));
+                    if (score > best) {
+                        best           = score;
+                        harassPosition = station->getResourceCentroid();
+                        harassStation  = station;
+                    }
                 }
             }
 

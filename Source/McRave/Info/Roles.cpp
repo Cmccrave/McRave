@@ -128,7 +128,7 @@ namespace McRave::Roles {
         void zPullWorker()
         {
             if (Broodwar->self()->getRace() != Races::Zerg || BuildOrder::isRush())
-                return;            
+                return;
 
             auto proxyBuilding          = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy,
                                                       [&](auto &u) { return u->isProxy() && u->getType().isBuilding() && !u->canAttackGround() && !u->canAttackAir(); });
@@ -138,13 +138,14 @@ namespace McRave::Roles {
             });
             auto proxyWorker            = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy(); });
             auto proxyCombatWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy() && u->hasAttackedRecently(); });
-            auto proxyBuildingWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+            auto proxyBuildingWorker  = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                 return u->getType().isWorker() && (u->isThreatening() || (proxyBuilding && u->getPosition().getDistance(proxyBuilding->getPosition()) < 160.0) ||
                                                    (proxyDangerousBuilding && u->getPosition().getDistance(proxyDangerousBuilding->getPosition()) < 160.0));
             });
-            auto proxyCombatUnit     = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy,
+            auto proxyCombatUnit      = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy,
                                                         [&](auto &u) { return u->isProxy() && !u->getType().isWorker() && !u->getType().isBuilding() && u->canAttackGround(); });
-            auto selfBuildingWorker  = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self,
+            auto proxyThreateningUnit = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy, [&](auto &u) { return u->isThreatening() && u->canAttackGround(); });
+            auto selfBuildingWorker   = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self,
                                                            [&](auto &u) { return u->getType().isWorker() && u->getBuildType() == Zerg_Hatchery && Broodwar->self()->minerals() >= 200; });
 
             auto unknownMainLocation = Position(Terrain::getOldestPosition(Terrain::getMainArea()));
@@ -181,13 +182,12 @@ namespace McRave::Roles {
                     }
                 }
                 else {
-                    auto earlyPool = Spy::getEnemyOpener() == Z_4Pool || Spy::getEnemyOpener() == Z_7Pool;
-                    auto defendSunkens = Util::getTime() < Time(3, 00) && proxyCombatUnit && !sixLings;
+                    auto earlyPool     = Spy::getEnemyOpener() == Z_4Pool || Spy::getEnemyOpener() == Z_7Pool;
+                    auto defendSunkens = Util::getTime() < Time(3, 00) && proxyThreateningUnit && !sixLings;
 
                     if (earlyPool && defendSunkens)
                         forceCombatWorker(10, Terrain::getMainPosition(), LocalState::Attack, GlobalState::Attack);
                 }
-
             }
 
             // ZvP

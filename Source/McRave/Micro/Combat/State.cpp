@@ -49,7 +49,8 @@ namespace McRave::Combat::State {
         if (unlockedOrVis(Zerg_Mutalisk) || BuildOrder::getCurrentTransition() == Z_2HatchMuta || BuildOrder::getCurrentTransition() == Z_3HatchMuta) {
             if (Players::ZvZ()) {
                 const auto lessMutas = com(Zerg_Mutalisk) < Players::getCompleteCount(PlayerState::Enemy, Zerg_Mutalisk);
-                if (lessMutas)
+                const auto moreGas   = Stations::getStations(PlayerState::Self) > Stations::getStations(PlayerState::Enemy) && Util::getTime() < Time(9, 00);
+                if (lessMutas || moreGas)
                     staticRetreatTypes.push_back(Zerg_Mutalisk);
             }
             if (Players::ZvP()) {
@@ -127,7 +128,7 @@ namespace McRave::Combat::State {
                     const auto expansionAdvantage = Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size();
 
                     //
-                    const auto enemyHydraBuild = Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_1HatchHydra;
+                    const auto enemyHydraBuild = Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_1HatchHydra || Spy::getEnemyTransition() == Z_2HatchHydra;
                     if (!enemyHydraBuild) {
                         if (!lingAdvantage && (expansionAdvantage || hatchAdvatange))
                             staticRetreatTypes.push_back(Zerg_Zergling);

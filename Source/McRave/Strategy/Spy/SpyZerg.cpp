@@ -153,15 +153,26 @@ namespace McRave::Spy::Zerg {
                 else if (completesBy(6, Zerg_Zergling, Time(3, 15)) || arrivesBy(6, Zerg_Zergling, Time(4, 00)) || arrivesBy(10, Zerg_Zergling, Time(4, 20)))
                     theSpy.opener.name = Z_12Hatch;
             }
+
+            // Den timings
+            else if (Players::getIncompleteCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0) {
+                if (completesBy(1, Zerg_Hydralisk_Den, Time(2, 45)))
+                    theSpy.opener.name = Z_9Pool;
+                else if (completesBy(1, Zerg_Hydralisk_Den, Time(2, 55)))
+                    theSpy.opener.name = Z_Overpool;
+            }
         }
 
         void enemyZergTransitions(PlayerInfo &player, StrategySpy &theSpy)
         {
             // Ling rush detection
-            if (theSpy.opener.name == Z_4Pool || theSpy.opener.name == Z_7Pool ||
-                (!Players::ZvZ() && theSpy.opener.name == Z_9Pool && Util::getTime() > Time(3, 30) && Util::getTime() < Time(4, 30) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 &&
-                 theSpy.productionCount == 0))
+            if (theSpy.opener.name == Z_4Pool)
                 theSpy.transition.name = Z_Rush;
+
+            if (theSpy.opener.name == Z_7Pool || theSpy.opener.name == Z_9Pool) {
+                if (!Players::ZvZ() && Util::getTime() > Time(3, 30) && Util::getTime() < Time(4, 30) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && theSpy.productionCount == 0)
+                    theSpy.transition.name = Z_Rush;
+            }
 
             // Zergling all-in transitions
             if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) == 0 &&

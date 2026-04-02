@@ -155,7 +155,6 @@ namespace McRave::Combat::Formations {
 
         // Prevent blocking our own buildings
         auto closestBuilder = Util::getClosestUnit(formation.center, PlayerState::Self, [&](auto &u) { return u->getBuildPosition().isValid(); });
-
         bool first = true;
 
         // Checks if a position is okay, stores if it is

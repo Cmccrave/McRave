@@ -31,7 +31,7 @@ namespace McRave::BuildOrder::Zerg {
 
             auto idx = trackables.find(unit.getType());
             if (idx != trackables.end()) {
-                arrivalValue += idx->second / 2.0;
+                arrivalValue += idx->second / 1.5;
                 if (Units::inBoundUnit(unit, 15))
                     arrivalValue += idx->second / 2.0;
             }
@@ -83,10 +83,8 @@ namespace McRave::BuildOrder::Zerg {
 
         transitionLings = min(initialValue, 12);
         if (total(Zerg_Zergling) < initialValue)
-            return initialValue;
-
-        // If this is a 1Hatch build, we prefer sunkens over lings, don't make any after initial
-        if (currentTransition.find("1Hatch") != string::npos)
+            return initialValue;        
+        if (hatchCount() <= 1)
             return 0;
 
         // Doesn't really make sense to rely on this until our overlord scouting is really good
@@ -120,7 +118,7 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvZ_1HatchMuta()
     {
-        inOpening    = total(Zerg_Mutalisk) < 6 && total(Zerg_Scourge) < 12;
+        inOpening    = total(Zerg_Mutalisk) < 3 && total(Zerg_Scourge) < 6;
         inTransition = vis(Zerg_Lair) > 0;
         inBookSupply = false;
 
@@ -129,7 +127,8 @@ namespace McRave::BuildOrder::Zerg {
         pressure     = Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony, Zerg_Mutalisk) == 0 && Players::getDeadCount(PlayerState::Enemy, Zerg_Drone) < 8;
 
         auto secondHatch     = (Spy::getEnemyTransition() == Z_1HatchMuta && atPercent(Zerg_Spire, 0.5) && vis(Zerg_Drone) >= 12) || (Spy::enemyTurtle() && atPercent(Zerg_Spire, 0.5));
-        auto enemyHydraBuild = (Spy::getEnemyTransition().find("Hydra") != string::npos || Spy::getEnemyTransition().find("Lurker") != string::npos);
+        auto enemyHydraBuild = Spy::getEnemyTransition().find("Hydra") != string::npos || Spy::getEnemyTransition().find("Lurker") != string::npos;
+        auto enemyMutaBuild  = Spy::getEnemyTransition().find("Muta") != string::npos;
 
         auto speedFirst = !Spy::enemyTurtle();
 
@@ -142,9 +141,9 @@ namespace McRave::BuildOrder::Zerg {
         upgradeQueue[Metabolic_Boost] = (speedFirst || vis(Zerg_Lair) > 0) && (total(Zerg_Zergling) >= 6 && gas(100));
 
         // Pumping
-        zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 12 && com(Zerg_Spawning_Pool) > 0;
-        zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling) || (com(Zerg_Spire) == 1 && !gas(100)) || vis(Zerg_Drone) >= 12 || (!zergUnitPump[Zerg_Drone]);
-        zergUnitPump[Zerg_Scourge]  = com(Zerg_Spire) == 1 && hatchCount() >= 2 && total(Zerg_Scourge) < 6 && Spy::enemyTurtle() && !enemyHydraBuild;
+        zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 18 && com(Zerg_Spawning_Pool) > 0;
+        zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling);
+        zergUnitPump[Zerg_Scourge]  = com(Zerg_Spire) == 1 && hatchCount() >= 2 && total(Zerg_Scourge) < 6 && Spy::enemyTurtle() && enemyMutaBuild;
         zergUnitPump[Zerg_Mutalisk] = !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
 
         // Reactions
@@ -168,7 +167,7 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvZ_2HatchMuta()
     {
-        inOpening    = total(Zerg_Mutalisk) < 6 && total(Zerg_Scourge) < 24;
+        inOpening    = total(Zerg_Mutalisk) < 3 && total(Zerg_Scourge) < 6;
         inTransition = vis(Zerg_Lair) > 0;
         inBookSupply = vis(Zerg_Overlord) < 3;
 
@@ -189,8 +188,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Pumping
         zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 24 && com(Zerg_Spawning_Pool) > 0;
-        zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling) || (com(Zerg_Spire) == 1 && !gas(100) && !Spy::enemyTurtle()) || (vis(Zerg_Drone) >= 24 && !gas(100)) ||
-                                      (vis(Zerg_Drone) >= 24 && com(Zerg_Spire) == 0) || (!zergUnitPump[Zerg_Drone]);
+        zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling);
 
         // Reactions
         if (Spy::getEnemyTransition() == Z_1HatchMuta && !Spy::enemyTurtle()) {

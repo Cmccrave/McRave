@@ -56,18 +56,10 @@ namespace McRave::Pathing {
             if (!unit.isLightAir() || unit.isWithinRange(target))
                 return;
 
-            auto toTarget      = target.getPosition() - unit.getPosition();
-            auto distance      = toTarget.getLength();
-            auto relativeSpeed = unit.getSpeed();
-            auto t             = max(distance / relativeSpeed, 1.0);
-            auto intercept     = target.getPosition() + Position(target.unit()->getVelocityX() * t, target.unit()->getVelocityY() * t);
+            auto toTarget  = target.getPosition() - unit.getPosition();
+            auto time      = max(target.getPosition().getDistance(unit.getPosition()) / unit.getSpeed(), 1.0);
+            auto intercept = target.getPosition() + Position(int(round(target.unit()->getVelocityX() * time)), int(round(target.unit()->getVelocityY() * time)));
             unit.setInterceptPosition(intercept);
-
-            // auto range          = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
-            // auto boxDistance    = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition());
-            // auto framesToArrive = clamp((boxDistance - range) / unit.getSpeed(), 0.0, 24.0);
-            // auto intercept      = target.getPosition() + Position(int(target.unit()->getVelocityX() * framesToArrive), int(target.unit()->getVelocityY() * framesToArrive));
-            // unit.setInterceptPosition(intercept);
         }
 
         using PositionScore = std::pair<Position, double>;

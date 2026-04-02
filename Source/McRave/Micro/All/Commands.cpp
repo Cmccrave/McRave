@@ -514,10 +514,13 @@ namespace McRave::Command {
                             return true;
                     }
 
-                    if (unit.attemptingRunby() && unit.getHealth() < 16 && !unit.getUnitsTargetingThis().empty())
-                        return true;
-
                     if (Util::getTime() < Time(3, 30) && !target.isThreatening() && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10)
+                        return true;
+                }
+
+                // Special Case: runby units try to stay alive
+                if (unit.getType() == Zerg_Zergling && (Players::ZvT() || Players::ZvP())) {
+                    if (unit.attemptingRunby() && unit.getHealth() < 16 && !unit.getUnitsTargetingThis().empty())
                         return true;
                 }
 
@@ -528,10 +531,12 @@ namespace McRave::Command {
                 }
 
                 // Special Case: Kite suicidal units
-                if (unit.isLightAir() && unit.isTargetedBySuicide() && Util::boxDistance(unit, target) < 72.0)
-                    return true;
-                if (unit.isLightAir() && target.isSuicidal() && Util::boxDistance(unit, target) < 48.0)
-                    return true;
+                if (Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) == 0) {
+                    if (unit.isLightAir() && unit.isTargetedBySuicide() && Util::boxDistance(unit, target) < 72.0)
+                        return true;
+                    if (unit.isLightAir() && target.isSuicidal() && Util::boxDistance(unit, target) < 48.0)
+                        return true;
+                }
 
                 // Situation: Unit is targeted by a stationary unit, so we could kite out of range of it
                 // if (!unit.isMelee()) {

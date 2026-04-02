@@ -79,6 +79,7 @@ namespace McRave::Scouts {
         map<ScoutType, ScoutTarget> scoutTargets;
         map<UnitType, int> scoutTypeDeaths;
 
+        bool overloadFreemRoam = false;
         bool mainScouted       = false;
         bool natScouted        = false;
         bool fullScout         = false;
@@ -206,6 +207,7 @@ namespace McRave::Scouts {
                                 Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0 ||
                                 Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0 ||
                                 Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) > 0 || (Players::ZvT() && Terrain::getEnemyStartingPosition().isValid());
+                overloadFreemRoam = !enemyAir;
 
                 // Main drone scouting counts
                 main.desiredTypeCounts[Zerg_Drone] = int(BuildOrder::shouldScout()) + int(BuildOrder::shouldScout() && BuildOrder::isProxy());
@@ -416,10 +418,11 @@ namespace McRave::Scouts {
                 }
 
                 // Overlord scouting sometimes needed
-                auto safeToScout = !Spy::enemyFastExpand();
+                auto safeToScout  = !Spy::enemyFastExpand();
+                auto recencyCheck = Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())) >= 200 && Util::getTime() > Time(4, 00);
                 safe.addTargets(safePositions[Terrain::getEnemyNatural()]);
                 if (safeToScout) {
-                    if (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())) >= 200 && Util::getTime() > Time(4, 00))
+                    if (recencyCheck || overloadFreemRoam)
                         safe.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
                 }
             }

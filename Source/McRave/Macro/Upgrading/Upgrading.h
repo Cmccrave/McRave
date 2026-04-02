@@ -3,6 +3,7 @@
 
 namespace McRave::Upgrading {
     bool haveOrUpgrading(BWAPI::UpgradeType, int);
+    bool haveUpgrade(BWAPI::UpgradeType, int);
     bool upgradedThisFrame();
     void onFrame();
 

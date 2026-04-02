@@ -123,7 +123,8 @@ namespace McRave::Goals {
 
         void runbyGoals()
         {
-            if (!Terrain::getEnemyStartingPosition().isValid())
+            static bool runbyOnce = true;
+            if (!Terrain::getEnemyStartingPosition().isValid() || !runbyOnce)
                 return;
 
             // ZvP ling runby
@@ -143,21 +144,23 @@ namespace McRave::Goals {
                 auto proxyGates    = Spy::getEnemyOpener() == P_Proxy_9_9 || Spy::getEnemyOpener() == P_Horror_9_9;
                 auto proxyBackstab = proxyGates && Util::getTime() < Time(4, 00) && (com(Zerg_Sunken_Colony) >= 2 || BuildOrder::getCurrentOpener() == Z_12Hatch);
 
-                if (proxyBackstab)
+                if (proxyBackstab) {
+                    LOG_ONCE("Attempting ZvP ling runby");
                     assignNumberToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 4, GoalType::Runby);
+                    runbyOnce = false;
+                }
             }
 
             // ZvZ ling runby
-            static bool runbyOnce = true;
-            if (Players::ZvZ() && runbyOnce) {
-                auto lingDiff = Players::getTotalCount(PlayerState::Self, Zerg_Zergling) - Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling);
+            if (Players::ZvZ()) {
+                auto haveSpeed = Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost);
 
-                if (lingDiff > 0) {
-                    if ((Spy::enemyPressure() && Spy::Zerg::enemySlowerSpeed() && Upgrading::haveOrUpgrading(UpgradeTypes::Metabolic_Boost, 1)) ||
-                        (Spy::enemyTurtle() && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) < 10 && Util::getTime() > Time(4, 00) &&
-                         Upgrading::haveOrUpgrading(UpgradeTypes::Metabolic_Boost, 1))) {
+                if (haveSpeed) {
+                    auto lingDiff       = max(4, Players::getTotalCount(PlayerState::Self, Zerg_Zergling) - Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling));
+                    auto runbyTurtle    = Spy::enemyTurtle() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery, Zerg_Lair, Zerg_Hive) >= 2 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) < 10;
+                    if (runbyTurtle) {
+                        LOG_ONCE("Attempting ZvZ ling runby");
                         assignNumberToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, lingDiff, GoalType::Runby);
-
                         runbyOnce = false;
                     }
                 }
@@ -165,8 +168,11 @@ namespace McRave::Goals {
 
             // ZvT ling runby
             if (Players::ZvT()) {
-                if (BuildOrder::isRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0)
+                if (BuildOrder::isRush() && Players::getTotalCount(PlayerState::Enemy, Terran_Bunker) > 0) {
+                    LOG_ONCE("Attempting ZvT ling runby");
                     assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
+                    runbyOnce = false;
+                }
             }
         }
 
@@ -280,7 +286,7 @@ namespace McRave::Goals {
                     });
                     auto type           = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
                     auto perEnemy       = (type == airType) ? 1 : 4;
-                    auto typeSpeed      = 0;
+                    auto typeSpeed      = 0.0;
                     if (auto unit = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == type; }))
                         typeSpeed = unit->getSpeed();
 
