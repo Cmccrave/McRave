@@ -322,7 +322,7 @@ namespace McRave::Scouts {
                 }
 
                 // Add main choke as a target
-                if (Terrain::getEnemyMain() && mainScouted && Terrain::getEnemyMain()->getChokepoint() && Stations::isBaseExplored(Terrain::getEnemyMain()))
+                if (!Players::ZvZ() && Terrain::getEnemyMain() && mainScouted && Terrain::getEnemyMain()->getChokepoint() && Stations::isBaseExplored(Terrain::getEnemyMain()))
                     main.addTargets(Position(Terrain::getEnemyMain()->getChokepoint()->Center()));
             }
         }

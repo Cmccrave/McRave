@@ -23,15 +23,7 @@ namespace McRave::Spy::General {
                 if (unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva || unit.getType() == Zerg_Lurker_Egg || unit.getType() == Zerg_Creep_Colony || !unit.unit()->exists())
                     continue;
 
-                // If unit type is changing now, remove it from the timings
-                if ((unit.getType() == Zerg_Lair || unit.getType() == Zerg_Hive || unit.getType() == Zerg_Greater_Spire || unit.getType() == Zerg_Sunken_Colony ||
-                     unit.getType() == Zerg_Spore_Colony) &&
-                    !unit.isCompleted()) {
-                    unitsStored.erase(unit.unit());
-                    continue;
-                }
-
-                // Attempt to remove drones that morphed into a building
+                // Remove units that changed types so we can get their timings again
                 auto itr = unitsStored.find(unit.unit());
                 if (itr != unitsStored.end() && itr->second != unit.getType() && !unit.isSiegeTank())
                     unitsStored.erase(unit.unit());

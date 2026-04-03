@@ -78,6 +78,7 @@ namespace McRave {
             lastWalk = walkPosition;
             lastTile = tilePosition;
             lastRole = role;
+            lastType = type;
         }
     }
 
@@ -107,12 +108,6 @@ namespace McRave {
         if (!unit()->exists()) {
             threatening   = false;
             framesVisible = 0;
-        }
-
-        // Reset completion/started if type changed
-        if (t != type) {
-            completeFrame = -999;
-            startedFrame  = -999;
         }
 
         if (unit()->exists()) {
@@ -523,7 +518,7 @@ namespace McRave {
             extra = 9;
 
         // Reset frames when a Zerg building is morphing to another stage
-        if ((type == Zerg_Lair || type == Zerg_Hive || type == Zerg_Greater_Spire || type == Zerg_Sunken_Colony || type == Zerg_Spore_Colony) && !completed) {
+        if (player == Broodwar->self() && (type == Zerg_Lair || type == Zerg_Hive || type == Zerg_Greater_Spire || type == Zerg_Sunken_Colony || type == Zerg_Spore_Colony) && !completed) {
             completeFrame = -999;
             startedFrame  = -999;
         }
@@ -539,6 +534,12 @@ namespace McRave {
         // Set completion based on seeing it already completed and this is the first time visible
         else if (completed && startedFrame == -999 && completeFrame == -999) {
             completeFrame = Broodwar->getFrameCount();
+            startedFrame  = Broodwar->getFrameCount();
+        }
+
+        // Make a bad assumption that we saw it change types and assume completion time
+        else if (getLastType() != getType()) {
+            completeFrame = Broodwar->getFrameCount() + (!completed * type.buildTime());
             startedFrame  = Broodwar->getFrameCount();
         }
     }

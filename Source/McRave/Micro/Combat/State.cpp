@@ -46,10 +46,10 @@ namespace McRave::Combat::State {
         }
 
         // Mutalisks
-        if (unlockedOrVis(Zerg_Mutalisk) || BuildOrder::getCurrentTransition() == Z_2HatchMuta || BuildOrder::getCurrentTransition() == Z_3HatchMuta) {
+        if (unlockedOrVis(Zerg_Mutalisk) || BuildOrder::getCurrentTransition().find("Muta") != string::npos) {
             if (Players::ZvZ()) {
                 const auto lessMutas = com(Zerg_Mutalisk) < Players::getCompleteCount(PlayerState::Enemy, Zerg_Mutalisk);
-                const auto moreGas   = Stations::getStations(PlayerState::Self) > Stations::getStations(PlayerState::Enemy) && Util::getTime() < Time(9, 00);
+                const auto moreGas   = Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() && Util::getTime() < Time(9, 00);
                 if (lessMutas || moreGas)
                     staticRetreatTypes.push_back(Zerg_Mutalisk);
             }
@@ -126,11 +126,12 @@ namespace McRave::Combat::State {
                     const auto lingAdvantage = Players::getVisibleCount(PlayerState::Self, Zerg_Zergling) * 2 > Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) * 3 &&
                                                Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 6 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) < 2;
                     const auto expansionAdvantage = Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size();
+                    const auto techAdvantage      = Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair, Zerg_Hydralisk_Den) == 0;
 
                     //
                     const auto enemyHydraBuild = Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_1HatchHydra || Spy::getEnemyTransition() == Z_2HatchHydra;
                     if (!enemyHydraBuild) {
-                        if (!lingAdvantage && (expansionAdvantage || hatchAdvatange))
+                        if (!lingAdvantage && (expansionAdvantage || hatchAdvatange || techAdvantage))
                             staticRetreatTypes.push_back(Zerg_Zergling);
 
                         // 1hm early

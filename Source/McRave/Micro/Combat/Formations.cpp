@@ -51,6 +51,14 @@ namespace McRave::Combat::Formations {
             formation.angle  = (round(formation.angle / M_PI_D4)) * M_PI_D4;
         }
 
+        // Hold at retreat
+        else if (!Combat::holdAtChoke()) {
+            formation.center = cluster.marchPosition;
+            formation.start  = cluster.retreatPosition;
+            formation.radius = 96.0;
+            formation.angle  = (round(formation.angle / M_PI_D4)) * M_PI_D4;
+        }
+
         // Hold with choke, use ramp angles if provided
         else if (Combat::holdAtChoke() && closestChoke) {
 

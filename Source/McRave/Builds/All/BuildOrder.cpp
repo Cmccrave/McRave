@@ -345,6 +345,20 @@ namespace McRave::BuildOrder {
         return unitReservations[type];
     }
 
+    bool isRush(UnitType type)
+    {
+        if (type != None)
+            return unitRush[type];
+        return rush;
+    }
+
+    bool isPressure(UnitType type)
+    {
+        if (type != None)
+            return unitPressure[type];
+        return pressure;
+    }
+
     bool isAllIn() { return activeAllin.isActive(); }
 
     bool isPreparingAllIn() { return activeAllin.isPreparing(); }
@@ -361,8 +375,6 @@ namespace McRave::BuildOrder {
     bool isWallThird() { return wallThird; }
     bool isProxy() { return proxy; }
     bool isHideTech() { return hideTech; }
-    bool isRush() { return rush; }
-    bool isPressure() { return pressure; }
     bool isGasTrick() { return gasTrick; }
     bool isPlanEarly() { return planEarly; }
     bool shouldScout() { return scout; }

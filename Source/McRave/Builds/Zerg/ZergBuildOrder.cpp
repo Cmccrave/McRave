@@ -242,12 +242,20 @@ namespace McRave::BuildOrder::Zerg {
                                          Resources::isGasSaturated();
                 const auto excessResources = (availableMinerals >= waitForMinerals * 2 && vis(Zerg_Larva) <= 3);
 
-                expandDesired = (resourceSat && techSat && productionSat && Stations::getMiningStationsCount() <= 5) || (excessResources && productionSat) ||
-                                (Players::ZvZ() && Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0 &&
-                                 Stations::getStations(PlayerState::Self).size() < Stations::getStations(PlayerState::Enemy).size() && availableMinerals > waitForMinerals && availableGas < 150) ||
-                                (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2) ||
-                                (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1) ||
-                                (!Players::ZvZ() && Stations::getMiningStationsCount() < 2 && Util::getTime() > Time(12, 00));
+                auto selfCount  = Stations::getStations(PlayerState::Self).size();
+                auto enemyCount = Stations::getStations(PlayerState::Enemy).size();
+
+                if (Players::ZvZ()) {
+                    expandDesired = (Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0 && selfCount < enemyCount && availableMinerals > waitForMinerals && availableGas < 150) //
+                                    || (excessResources && productionSat);
+                }
+                else {
+                    expandDesired = (resourceSat && techSat && productionSat && Stations::getMiningStationsCount() <= 5) //
+                                    || (excessResources && productionSat)                                                //
+                                    || (selfCount >= 4 && Stations::getMiningStationsCount() <= 2)                       //
+                                    || (selfCount >= 4 && Stations::getGasingStationsCount() <= 1)                       //
+                                    || (Stations::getMiningStationsCount() < 2 && Util::getTime() > Time(12, 00));
+                }
 
                 buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + expandDesired);
 

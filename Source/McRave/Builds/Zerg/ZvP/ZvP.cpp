@@ -183,12 +183,13 @@ namespace McRave::BuildOrder::Zerg {
         inOpening    = total(Zerg_Mutalisk) < 36;
         inBookSupply = vis(Zerg_Overlord) < 3;
 
-        focusUnit    = Zerg_Mutalisk;
-        reserveLarva = (Spy::getEnemyBuild() == P_FFE || Spy::enemyFastExpand()) ? 6 : 0;
-        hideTech     = true;
-        pressure     = (total(Zerg_Mutalisk) >= 6 && Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) < 10 && Spy::getEnemyBuild() != P_1GateCore && Spy::getEnemyBuild() != P_2Gate);
-        wantThird    = hatchCount() >= 4;
-        wallNat      = hatchCount() >= 2;
+        focusUnit                   = Zerg_Mutalisk;
+        reserveLarva                = (Spy::getEnemyBuild() == P_FFE || Spy::enemyFastExpand()) ? 6 : 0;
+        hideTech                    = true;
+        wantThird                   = hatchCount() >= 4;
+        wallNat                     = hatchCount() >= 2;
+        unitPressure[Zerg_Mutalisk] = (total(Zerg_Mutalisk) >= 6 && Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) < 10 && Spy::getEnemyBuild() != P_1GateCore &&
+                                       Spy::getEnemyBuild() != P_2Gate);
 
         // Order
         unitOrder = mutalurk;
@@ -448,8 +449,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // All-in
         if (!needMinimumHydras && total(Zerg_Hydralisk) >= 2 && hatchCount() >= 3) {
-            if (Spy::enemyGreedy() || Spy::getEnemyTransition() == P_4Gate || Spy::getEnemyTransition() == P_CorsairGoon ||
-                Spy::getEnemyTransition() == P_5GateGoon)
+            if (Spy::enemyGreedy() || Spy::getEnemyTransition() == P_4Gate || Spy::getEnemyTransition() == P_CorsairGoon || Spy::getEnemyTransition() == P_5GateGoon)
                 activeAllinType = AllinType::Z_5HatchSpeedling;
         }
 

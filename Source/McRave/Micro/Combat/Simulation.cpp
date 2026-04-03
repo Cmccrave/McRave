@@ -52,7 +52,7 @@ namespace McRave::Combat::Simulation {
 
          if (newState != lastState) {
             unit.framesCommitted++;
-            if (unit.framesCommitted >= 72) {
+             if (unit.framesCommitted >= commitFrames) {
                 unit.setSimState(newState);
                 unit.framesCommitted = 0;
             }

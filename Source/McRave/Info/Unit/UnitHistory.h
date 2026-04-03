@@ -8,12 +8,14 @@ namespace McRave {
         std::map<int, UnitCommandType> commandHistory;
         std::map<int, std::pair<Order, Position>> orderHistory;
 
+        UnitType lastType     = UnitTypes::None;
         Role lastRole         = Role::None;
         Position lastPos      = Positions::Invalid;
         WalkPosition lastWalk = WalkPositions::Invalid;
         TilePosition lastTile = TilePositions::Invalid;
 
     public:
+        UnitType getLastType() { return lastType; }
         Role getLastRole() { return lastRole; }
         TilePosition getLastTile() { return lastTile; }
         WalkPosition getLastWalk() { return lastWalk; }

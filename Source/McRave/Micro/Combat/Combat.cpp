@@ -128,8 +128,6 @@ namespace McRave::Combat {
 
                 if (BuildOrder::getCurrentBuild() != Z_PoolLair && (delayNaturalDefending || Spy::enemyRush()))
                     defendNaturalAtMain = true;
-                if (Stations::getSaturationRatio(Terrain::getMyNatural()) <= 0.1)
-                    defendNaturalAtMain = true;
             }
 
             // Override if we have queued to build there, maybe need to clear it

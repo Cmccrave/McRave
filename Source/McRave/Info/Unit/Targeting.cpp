@@ -175,7 +175,7 @@ namespace McRave::Targets {
                 return Priority::Critical;
 
             // If a building is unprotected
-            if (!BuildOrder::isPressure() && target.getType().isBuilding() && !target.canAttackAir() && target.getUnitsInRangeOfThis().empty() && unit.getUnitsInRangeOfThis().empty() &&
+            if (!BuildOrder::isPressure() && Players::getStrength(PlayerState::Enemy).airDefense > 0.0 && target.getType().isBuilding() && !target.canAttackAir() && target.getUnitsInRangeOfThis().empty() && unit.getUnitsInRangeOfThis().empty() &&
                 unit.isWithinRange(target)) {
                 Priority::Major;
             }
@@ -319,7 +319,7 @@ namespace McRave::Targets {
                 }
 
                 // Threatening priority
-                if (target.isThreatening() && (unit.isWithinEngage(target) || Util::getTime() < Time(5, 00))) {
+                if (target.isThreatening() && (unit.isWithinReach(target) || Util::getTime() < Time(5, 00) || Combat::State::isStaticRetreat(unit.getType()))) {
                     if (!unit.getType().isWorker() && !target.getType().isWorker() && unit.isFlying() == target.isFlying())
                         return Priority::Major;
                     if (target.getType().isWorker() && target.isThreatening())

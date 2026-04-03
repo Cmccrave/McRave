@@ -166,7 +166,7 @@ namespace McRave::BuildOrder::Zerg {
         inTransition = vis(Zerg_Lair) > 0;
         inOpening    = total(Zerg_Mutalisk) <= 12;
         inBookSupply = total(Zerg_Overlord) < 3;
-        pressure     = (Spy::getEnemyTransition() == T_2FactVulture && Util::getTime() < Time(10, 00)) || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) == 0;
+        unitPressure[Zerg_Mutalisk] = (Spy::getEnemyTransition() == T_2FactVulture && Util::getTime() < Time(10, 00)) || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) == 0;
 
         focusUnit    = Zerg_Mutalisk;
         reserveLarva = 6;
@@ -196,7 +196,7 @@ namespace McRave::BuildOrder::Zerg {
 
         auto softDroneCap     = 28;
         auto firstScourgePump = com(Zerg_Spire) > 0 && total(Zerg_Mutalisk) < 5 && Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > vis(Zerg_Scourge);
-        auto firstMutaPump    = com(Zerg_Spire) > 0 && !firstScourgePump && (total(Zerg_Mutalisk) < 9 || pressure);
+        auto firstMutaPump    = com(Zerg_Spire) > 0 && !firstScourgePump && (total(Zerg_Mutalisk) < 9 || unitPressure[Zerg_Mutalisk]);
         auto secondMutaPump   = com(Zerg_Spire) > 0 && vis(Zerg_Drone) >= softDroneCap;
         auto firstHydraPump   = com(Zerg_Hydralisk_Den) > 0 && total(Zerg_Hydralisk) < 2 && Researching::haveOrResearching(Lurker_Aspect);
 
@@ -222,10 +222,10 @@ namespace McRave::BuildOrder::Zerg {
     void ZvT_3HatchMuta()
     {
         // 13h 12g
-        inTransition = vis(Zerg_Lair) > 0;
-        inOpening    = total(Zerg_Mutalisk) <= 12;
-        inBookSupply = vis(Zerg_Overlord) < 4;
-        pressure     = (Spy::getEnemyTransition() == T_2FactVulture && Util::getTime() < Time(10, 00)) || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) == 0;
+        inTransition                = vis(Zerg_Lair) > 0;
+        inOpening                   = total(Zerg_Mutalisk) <= 12;
+        inBookSupply                = vis(Zerg_Overlord) < 4;
+        unitPressure[Zerg_Mutalisk] = (Spy::getEnemyTransition() == T_2FactVulture && Util::getTime() < Time(10, 00)) || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) == 0;
 
         focusUnit    = Zerg_Mutalisk;
         reserveLarva = 9;
@@ -263,7 +263,7 @@ namespace McRave::BuildOrder::Zerg {
         auto softDroneCap     = 35;
         auto firstLingPump    = lingsNeeded_ZvT() > vis(Zerg_Zergling);
         auto firstScourgePump = com(Zerg_Spire) > 0 && total(Zerg_Mutalisk) < 5 && Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > vis(Zerg_Scourge);
-        auto firstMutaPump    = com(Zerg_Spire) > 0 && !firstScourgePump && (total(Zerg_Mutalisk) < 9 || pressure);
+        auto firstMutaPump    = com(Zerg_Spire) > 0 && !firstScourgePump && (total(Zerg_Mutalisk) < 9 || unitPressure[Zerg_Mutalisk]);
         auto secondMutaPump   = com(Zerg_Spire) > 0 && vis(Zerg_Drone) >= softDroneCap;
         auto firstHydraPump   = com(Zerg_Hydralisk_Den) > 0 && total(Zerg_Hydralisk) < 2 && Researching::haveOrResearching(Lurker_Aspect);
 

@@ -429,6 +429,9 @@ namespace McRave::Walls {
         // ZvZ
         int ZvZ_Defenses(BWEB::Wall &wall)
         {
+            if (Spy::getEnemyTransition() == Z_1HatchMuta || Spy::getEnemyTransition() == Z_2HatchMuta)
+                return 0;
+
             // 3 Hatch
             if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 || Spy::getEnemyTransition() == Z_3HatchSpeedling)
                 return 1 + (Util::getTime() > Time(4, 15));

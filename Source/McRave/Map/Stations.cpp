@@ -775,7 +775,7 @@ namespace McRave::Stations {
         else {
             const auto lowGroundCount = Broodwar->self()->getRace() == Races::Zerg && vis(Zerg_Zergling) < 12 && vis(Zerg_Hydralisk) < 6;
             if (unit.isLightAir() && Util::getTime() < Time(8, 00))
-                return Terrain::getMyMain();
+                return Combat::getDefendStation();
             if (Util::getTime() < Time(5, 00) || Spy::enemyRush() || lowGroundCount)
                 return Combat::getDefendStation();
         }

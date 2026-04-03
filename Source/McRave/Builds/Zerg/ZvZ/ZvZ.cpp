@@ -32,7 +32,7 @@ namespace McRave::BuildOrder::Zerg {
             auto idx = trackables.find(unit.getType());
             if (idx != trackables.end()) {
                 arrivalValue += idx->second / 1.5;
-                if (Units::inBoundUnit(unit, 15))
+                if (Units::inBoundUnit(unit, 20))
                     arrivalValue += idx->second / 2.0;
             }
         }
@@ -81,9 +81,12 @@ namespace McRave::BuildOrder::Zerg {
                 initialValue = 6;
         }
 
+        // Make less if they decided to defend
+        initialValue -= Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) * 4;
+
         transitionLings = min(initialValue, 12);
         if (total(Zerg_Zergling) < initialValue)
-            return initialValue;        
+            return initialValue;
         if (hatchCount() <= 1)
             return 0;
 
@@ -122,15 +125,17 @@ namespace McRave::BuildOrder::Zerg {
         inTransition = vis(Zerg_Lair) > 0;
         inBookSupply = false;
 
-        focusUnit    = Zerg_Mutalisk;
-        reserveLarva = (Spy::getEnemyTransition() == Z_1HatchMuta || Spy::getEnemyTransition() == Z_2HatchMuta) ? 3 : 0;
-        pressure     = Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony, Zerg_Mutalisk) == 0 && Players::getDeadCount(PlayerState::Enemy, Zerg_Drone) < 8;
+        focusUnit                   = Zerg_Mutalisk;
+        reserveLarva                = (Spy::getEnemyTransition() == Z_1HatchMuta || Spy::getEnemyTransition() == Z_2HatchMuta) ? 3 : 0;
+        unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony, Zerg_Mutalisk) == 0 && Players::getDeadCount(PlayerState::Enemy, Zerg_Drone) < 8;
+        wantNatural                 = (Spy::enemyTurtle() && Spy::getEnemyTransition() != Z_2HatchHydra) || Spy::getEnemyTransition() == Z_2HatchMuta;
 
-        auto secondHatch     = (Spy::getEnemyTransition() == Z_1HatchMuta && atPercent(Zerg_Spire, 0.5) && vis(Zerg_Drone) >= 12) || (Spy::enemyTurtle() && atPercent(Zerg_Spire, 0.5));
+        auto secondHatch = (Spy::getEnemyTransition() == Z_1HatchMuta && atPercent(Zerg_Spire, 0.5) && vis(Zerg_Drone) >= 12) || (Spy::enemyTurtle() && atPercent(Zerg_Lair, 0.2)) ||
+                           (Spy::getEnemyTransition() == Z_2HatchMuta && atPercent(Zerg_Lair, 0.5)) || (vis(Zerg_Drone) >= 12 && vis(Zerg_Larva) == 0 && minerals(250));
         auto enemyHydraBuild = Spy::getEnemyTransition().find("Hydra") != string::npos || Spy::getEnemyTransition().find("Lurker") != string::npos;
         auto enemyMutaBuild  = Spy::getEnemyTransition().find("Muta") != string::npos;
 
-        auto speedFirst = !Spy::enemyTurtle();
+        auto speedFirst = currentOpener == Z_9Pool && !Spy::enemyTurtle();
 
         // Build
         buildQueue[Zerg_Lair]     = (!speedFirst || lingSpeed()) && gas(100) && vis(Zerg_Zergling) >= 6 && vis(Zerg_Drone) >= 8;
@@ -144,14 +149,7 @@ namespace McRave::BuildOrder::Zerg {
         zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 18 && com(Zerg_Spawning_Pool) > 0;
         zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling);
         zergUnitPump[Zerg_Scourge]  = com(Zerg_Spire) == 1 && hatchCount() >= 2 && total(Zerg_Scourge) < 6 && Spy::enemyTurtle() && enemyMutaBuild;
-        zergUnitPump[Zerg_Mutalisk] = !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
-
-        // Reactions
-        if (Spy::enemyTurtle() && Spy::getEnemyTransition() != Z_2HatchHydra) {
-            wantNatural                 = true;
-            zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < 16;
-            zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) || (!zergUnitPump[Zerg_Drone]);
-        }
+        zergUnitPump[Zerg_Mutalisk] = !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) == 1 && gas(80) && vis(Zerg_Drone) >= 8;
 
         // Gas
         gasLimit = gasMax();
@@ -173,7 +171,7 @@ namespace McRave::BuildOrder::Zerg {
 
         focusUnit = Zerg_Mutalisk;
 
-        auto speedFirst = !Spy::enemyTurtle();
+        auto speedFirst = currentOpener == Z_9Pool && !Spy::enemyTurtle();
 
         auto secondOvie = (vis(Zerg_Extractor) + Spy::enemyGasSteal() >= 1) || (s >= 32);
 
@@ -197,15 +195,15 @@ namespace McRave::BuildOrder::Zerg {
             reserveLarva                = 0;
         }
         else if (Spy::enemyPressure()) {
-            zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
+            zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) == 1 && gas(80) && vis(Zerg_Drone) >= 8;
             reserveLarva                = 0;
         }
         else if (Spy::getEnemyTransition() == Z_2HatchMuta) {
-            zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
+            zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) == 1 && gas(80) && vis(Zerg_Drone) >= 8;
             reserveLarva                = 6;
         }
         else {
-            zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
+            zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) == 1 && gas(80) && vis(Zerg_Drone) >= 8;
             reserveLarva                = 3;
         }
 

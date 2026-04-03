@@ -63,6 +63,8 @@ namespace McRave::BuildOrder {
 
         inline std::map<BWAPI::UnitType, int> unitLimits;
         inline std::map<BWAPI::UnitType, int> unitReservations;
+        inline std::map<BWAPI::UnitType, bool> unitRush;
+        inline std::map<BWAPI::UnitType, bool> unitPressure;
         inline int gasLimit = INT_MAX;
         inline int s = 0;
 
@@ -123,8 +125,8 @@ namespace McRave::BuildOrder {
     bool isWallThird();
     bool isProxy();
     bool isHideTech();
-    bool isRush();
-    bool isPressure();
+    bool isRush(BWAPI::UnitType type = BWAPI::UnitTypes::None);
+    bool isPressure(BWAPI::UnitType type = BWAPI::UnitTypes::None);
     bool isGasTrick();
     bool isPlanEarly();
     bool mineralThirdDesired();
