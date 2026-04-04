@@ -880,9 +880,13 @@ namespace McRave {
             return false;
 
         const auto center = Position(getBuildPosition()) + Position(getBuildType().tileWidth() * 16, getBuildType().tileHeight() * 16);
-        const auto close  = Util::boxDistance(getType(), getPosition(), getBuildType(), center) <= 32;
+        const auto dist   = Util::boxDistance(getType(), getPosition(), getBuildType(), center);
 
-        return close;
+        // https://github.com/bwapi/bwapi/issues/914
+        if (getBuildType() == Zerg_Nydus_Canal) {
+            return dist <= 96.0;
+        }
+        return dist <= 32.0;
     }
 
     bool UnitInfo::isWithinGatherRange()

@@ -87,9 +87,13 @@ namespace McRave::BuildOrder::Zerg {
                     if (grdNeeded > 0)
                         needSunks = true;
 
+                    if (grdNeeded > colonies)
+                        LOG_SLOW("Wall ", i, " needs a sunken - has ", wall.getGroundDefenseCount(), ", wants ", grdNeeded, " more, has ", colonies, " colonies");
+                    if (airNeeded > colonies)
+                        LOG_SLOW("Wall ", i, " needs a spore - has ", wall.getAirDefenseCount(), ", wants ", airNeeded, " more, has ", colonies, " colonies");
+
                     if ((atPercent(Zerg_Spawning_Pool, 0.66) && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
-                        buildQueue[Zerg_Creep_Colony] = colonyCount + 1;
-                        LOG_SLOW("Wall ", i, " needs a sunken/spore");
+                        buildQueue[Zerg_Creep_Colony] = colonyCount + 1;                        
                         i++;
                     }
                 }
@@ -207,7 +211,7 @@ namespace McRave::BuildOrder::Zerg {
         void queueUpgradeStructures()
         {
             // Adding Evolution Chambers
-            if ((s >= 200 && Stations::getStations(PlayerState::Self).size() >= 3) || (s >= 50 && (unitOrder == mutalingdefiler || unitOrder == ultraling) && hatchCount() >= 3))
+            if (s >= 200 && Stations::getStations(PlayerState::Self).size() >= 3)
                 buildQueue[Zerg_Evolution_Chamber] = 1 + (Stations::getStations(PlayerState::Self).size() >= 4);
             if (needSpores)
                 buildQueue[Zerg_Evolution_Chamber] = max(buildQueue[Zerg_Evolution_Chamber], 1);
@@ -814,10 +818,7 @@ namespace McRave::BuildOrder::Zerg {
             // ZvZ
             if (Players::ZvZ()) {
                 priorityOrder = {
-                    {Zerg_Drone, 12},     {Zerg_Mutalisk, 3}, //
-                    {Zerg_Drone, 14},     {Zerg_Mutalisk, 6}, //
-                    {Zerg_Drone, 16},     {Zerg_Mutalisk, 9}, //
-                    {Zerg_Mutalisk, 100},                     //
+                    {Zerg_Mutalisk, 100}, //
                 };
             }
 

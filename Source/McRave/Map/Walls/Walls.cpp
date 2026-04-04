@@ -339,7 +339,7 @@ namespace McRave::Walls {
                     return (Util::getTime() > Time(4, 00));
 
                 if (!Spy::enemyFastExpand())
-                    return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 45));
+                    return 1 + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 45));
             }
 
             // RaxCC

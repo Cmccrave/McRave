@@ -87,7 +87,7 @@ namespace McRave::BuildOrder::Zerg {
             if (Spy::getEnemyOpener() == T_BBS)
                 initialValue = 10;
             if (Spy::getEnemyOpener() == T_11_13)
-                initialValue = 2;
+                initialValue = 4;
         }
 
         // RaxCC
@@ -163,9 +163,9 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvT_2HatchMuta()
     {
-        inTransition = vis(Zerg_Lair) > 0;
-        inOpening    = total(Zerg_Mutalisk) <= 12;
-        inBookSupply = total(Zerg_Overlord) < 3;
+        inTransition                = vis(Zerg_Lair) > 0;
+        inOpening                   = total(Zerg_Mutalisk) <= 12;
+        inBookSupply                = total(Zerg_Overlord) < 3;
         unitPressure[Zerg_Mutalisk] = (Spy::getEnemyTransition() == T_2FactVulture && Util::getTime() < Time(10, 00)) || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) == 0;
 
         focusUnit    = Zerg_Mutalisk;
@@ -185,12 +185,13 @@ namespace McRave::BuildOrder::Zerg {
             unitOrder = Spy::enemyFastExpand() ? ultraling : mutalurk;
 
         // Buildings
-        buildQueue[Zerg_Hatchery]      = 2 + thirdHatch + fourthHatch;
-        buildQueue[Zerg_Extractor]     = firstGas + secondGas;
-        buildQueue[Zerg_Overlord]      = 1 + (s >= 18) + (s >= 32);
-        buildQueue[Zerg_Lair]          = (s >= 24 && gas(80));
-        buildQueue[Zerg_Spire]         = (vis(Zerg_Drone) >= 16 && atPercent(Zerg_Lair, 0.95));
-        buildQueue[Zerg_Hydralisk_Den] = com(Zerg_Mutalisk) > 0 && unitOrder == mutalurk;
+        buildQueue[Zerg_Hatchery]          = 2 + thirdHatch + fourthHatch;
+        buildQueue[Zerg_Extractor]         = firstGas + secondGas;
+        buildQueue[Zerg_Overlord]          = 1 + (s >= 18) + (s >= 32);
+        buildQueue[Zerg_Lair]              = (s >= 24 && gas(80));
+        buildQueue[Zerg_Spire]             = (vis(Zerg_Drone) >= 16 && atPercent(Zerg_Lair, 0.95));
+        buildQueue[Zerg_Hydralisk_Den]     = com(Zerg_Mutalisk) > 0 && unitOrder == mutalurk;
+        buildQueue[Zerg_Evolution_Chamber] = (unitOrder == ultraling && hatchCount() >= 3) || (unitOrder == mutalingdefiler && total(Zerg_Mutalisk) >= 9);
 
         techQueue[Lurker_Aspect] = com(Zerg_Hydralisk_Den) > 0;
 
@@ -214,7 +215,9 @@ namespace McRave::BuildOrder::Zerg {
             auto dropGasEarly     = vis(Zerg_Drone) + vis(Zerg_Extractor) < 10;
             auto dropGasImmediate = (Spy::enemyProxy() || Spy::getEnemyOpener() == T_BBS) && Util::getTime() < Time(3, 00);
             auto dropGasAfterLair = vis(Zerg_Lair) > 0 && Spy::getEnemyBuild() == T_2Rax && Util::getTime() < Time(4, 00);
-            if (dropGasEarly || dropGasImmediate || dropGasAfterLair)
+            auto dropGasRush      = (vis(Zerg_Lair) > 0 || gas(100)) && Spy::getEnemyTransition() == T_Rush && Util::getTime() < Time(4, 30);
+            auto dropGasPressure  = (vis(Zerg_Spire) > 0 || gas(150)) && Spy::getEnemyTransition() == T_Academy && !Spy::enemyFastExpand() && Util::getTime() < Time(5, 00);
+            if (dropGasEarly || dropGasImmediate || dropGasAfterLair || dropGasRush || dropGasPressure)
                 gasLimit = 0;
         }
     }
@@ -228,7 +231,7 @@ namespace McRave::BuildOrder::Zerg {
         unitPressure[Zerg_Mutalisk] = (Spy::getEnemyTransition() == T_2FactVulture && Util::getTime() < Time(10, 00)) || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) == 0;
 
         focusUnit    = Zerg_Mutalisk;
-        reserveLarva = 9;
+        reserveLarva = (Spy::enemyFastExpand() ? 9 : 6);
 
         auto thirdHatch  = (s >= 26 && vis(Zerg_Drone) >= 11 && total(Zerg_Zergling) >= transitionLings);
         auto fourthHatch = (Spy::getEnemyBuild() == T_RaxFact || !Spy::enemyFastExpand()) ? com(Zerg_Mutalisk) > 0 : (vis(Zerg_Spire) > 0 && s >= 66);
@@ -246,12 +249,13 @@ namespace McRave::BuildOrder::Zerg {
             unitOrder = Spy::enemyFastExpand() ? ultraling : mutalurk;
 
         // Buildings
-        buildQueue[Zerg_Hatchery]      = 2 + thirdHatch + fourthHatch;
-        buildQueue[Zerg_Extractor]     = (s >= 26 && hatchCount() >= 3) + secondGas;
-        buildQueue[Zerg_Overlord]      = 1 + (s >= 18) + (s >= 32) + (s >= 48);
-        buildQueue[Zerg_Lair]          = (s >= 24 && gas(80));
-        buildQueue[Zerg_Spire]         = (vis(Zerg_Drone) >= 20 && atPercent(Zerg_Lair, 0.95));
-        buildQueue[Zerg_Hydralisk_Den] = com(Zerg_Mutalisk) > 0 && unitOrder == mutalurk;
+        buildQueue[Zerg_Hatchery]          = 2 + thirdHatch + fourthHatch;
+        buildQueue[Zerg_Extractor]         = (s >= 26 && hatchCount() >= 3) + secondGas;
+        buildQueue[Zerg_Overlord]          = 1 + (s >= 18) + (s >= 32) + (s >= 48);
+        buildQueue[Zerg_Lair]              = (s >= 24 && gas(80));
+        buildQueue[Zerg_Spire]             = (vis(Zerg_Drone) >= 20 && atPercent(Zerg_Lair, 0.95));
+        buildQueue[Zerg_Hydralisk_Den]     = com(Zerg_Mutalisk) > 0 && unitOrder == mutalurk;
+        buildQueue[Zerg_Evolution_Chamber] = (unitOrder == ultraling && hatchCount() >= 3) || (unitOrder == mutalingdefiler && total(Zerg_Mutalisk) >= 9);
 
         techQueue[Lurker_Aspect] = com(Zerg_Hydralisk_Den) > 0;
 
@@ -281,7 +285,9 @@ namespace McRave::BuildOrder::Zerg {
             auto dropGasEarly     = vis(Zerg_Drone) + vis(Zerg_Extractor) < 10;
             auto dropGasImmediate = (Spy::enemyProxy() || Spy::getEnemyOpener() == T_BBS) && Util::getTime() < Time(3, 30);
             auto dropGasAfterLair = vis(Zerg_Lair) > 0 && Spy::getEnemyBuild() == T_2Rax && Util::getTime() < Time(4, 30);
-            if (dropGasEarly || dropGasImmediate || dropGasAfterLair)
+            auto dropGasRush      = (vis(Zerg_Lair) > 0 || gas(100)) && Spy::getEnemyTransition() == T_Rush && Util::getTime() < Time(5, 00);
+            auto dropGasPressure  = (vis(Zerg_Spire) > 0 || gas(150)) && Spy::getEnemyTransition() == T_Academy && !Spy::enemyFastExpand() && Util::getTime() < Time(5, 30);
+            if (dropGasEarly || dropGasImmediate || dropGasAfterLair || dropGasRush || dropGasPressure)
                 gasLimit = 0;
         }
     }

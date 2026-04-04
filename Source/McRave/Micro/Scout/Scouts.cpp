@@ -407,7 +407,7 @@ namespace McRave::Scouts {
                 // Zerg
                 if (Broodwar->self()->getRace() == Races::Zerg) {
 
-                    safe.desiredTypeCounts[Zerg_Overlord] = 1;
+                    safe.desiredTypeCounts[Zerg_Overlord] = 0; // No scouting for now
                     if (total(Zerg_Mutalisk) >= 6 || (Players::ZvP() && Util::getTime() > Time(7, 00)) || (Players::ZvT() && Util::getTime() > Time(7, 00)) ||
                         (Players::ZvZ() && Util::getTime() > Time(5, 00)))
                         safe.desiredTypeCounts[Zerg_Overlord] = 0;
@@ -449,7 +449,7 @@ namespace McRave::Scouts {
 
                     if (Players::ZvT()) {
                         army.desiredTypeCounts[Zerg_Zergling] = 1 + (int(Spy::getEnemyTransition() == "Unknown") && Util::getTime() > Time(4, 00));
-                        if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0 || Spy::getEnemyBuild() == T_RaxFact)
+                        if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Spy::getEnemyBuild() == T_RaxFact)
                             army.desiredTypeCounts[Zerg_Zergling] = 0;
                     }
 
@@ -1006,7 +1006,7 @@ namespace McRave::Scouts {
                 auto pos  = Position(WalkPosition(parent) + w);
                 auto tile = TilePosition(pos);
 
-                if (Broodwar->getGroundHeight(tile) >= lowestHeight && (Util::boxDistance(type, pos, Zerg_Overlord, expectedCenter) - 16.0) <= range * 32 && enemyTiles.find(tile) != enemyTiles.end())
+                if ((Broodwar->getGroundHeight(tile) >= lowestHeight && (Util::boxDistance(type, pos, Zerg_Overlord, expectedCenter) - 16.0) <= range * 32) || enemyTiles.find(tile) != enemyTiles.end())
                     valid = false;
             }
 

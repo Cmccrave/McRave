@@ -6,6 +6,7 @@
 #include "Info/Unit/Units.h"
 #include "Map/Grids.h"
 #include "Map/Stations.h"
+#include "Map/Terrain.h"
 #include "Micro/All/Commands.h"
 #include "Strategy/Spy/Spy.h"
 
@@ -225,8 +226,8 @@ namespace McRave::Workers {
                     unit.setNavigation(newDestination);
             }
 
-             //Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
-             //Visuals::drawPath(unit.getMarchPath());
+            // Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
+            // Visuals::drawPath(unit.getMarchPath());
         }
 
         void updateDestination(UnitInfo &unit)
@@ -246,8 +247,20 @@ namespace McRave::Workers {
                     center.x -= 0;
                     center.y -= 7;
                 }
-
                 unit.setDestination(center);
+
+                // https://github.com/bwapi/bwapi/issues/914
+                if (unit.getBuildType() == Zerg_Nydus_Canal) {
+                    auto mapEdge = Terrain::getClosestMapEdge(Position(unit.getBuildPosition()));
+                    auto nudgeDiff = 64.0;
+
+                    if (mapEdge.x == center.x) {
+                        unit.setDestination(Position(center.x, mapEdge.y == 0 ? center.y - nudgeDiff : center.y + nudgeDiff));
+                    }
+                    else {
+                        unit.setDestination(Position(mapEdge.x == 0 ? center.x - nudgeDiff : center.x + nudgeDiff, center.y));
+                    }
+                }
             }
 
             // If unit has a transport

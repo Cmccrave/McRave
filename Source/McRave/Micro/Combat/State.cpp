@@ -50,7 +50,9 @@ namespace McRave::Combat::State {
             if (Players::ZvZ()) {
                 const auto lessMutas = com(Zerg_Mutalisk) < Players::getCompleteCount(PlayerState::Enemy, Zerg_Mutalisk);
                 const auto moreGas   = Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() && Util::getTime() < Time(9, 00);
-                if (lessMutas || moreGas)
+                const auto betterEco = Players::getVisibleCount(PlayerState::Self, Zerg_Drone) > Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone) &&
+                                       Players::getVisibleCount(PlayerState::Self, Zerg_Hatchery) > Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) && Util::getTime() < Time(7, 00);
+                if (lessMutas || moreGas || betterEco)
                     staticRetreatTypes.push_back(Zerg_Mutalisk);
             }
             if (Players::ZvP()) {

@@ -59,7 +59,10 @@ namespace McRave::Pathing {
             auto toTarget  = target.getPosition() - unit.getPosition();
             auto time      = max(target.getPosition().getDistance(unit.getPosition()) / unit.getSpeed(), 1.0);
             auto intercept = target.getPosition() + Position(int(round(target.unit()->getVelocityX() * time)), int(round(target.unit()->getVelocityY() * time)));
-            unit.setInterceptPosition(intercept);
+
+            // Only need to intercept if it's moving away
+            if (intercept.getDistance(unit.getPosition()) > target.getPosition().getDistance(unit.getPosition()))
+                unit.setInterceptPosition(intercept);
         }
 
         using PositionScore = std::pair<Position, double>;

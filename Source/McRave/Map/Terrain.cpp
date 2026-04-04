@@ -128,7 +128,7 @@ namespace McRave::Terrain {
             }
 
             // Infer based on enemy Overlord
-            if (Players::vZ() && Util::getTime() < Time(3, 15) && !inferComplete) {
+            if (Players::vZ() && Util::getTime() < Time(2, 30) && !inferComplete) {
                 auto inferedStart = TilePositions::Invalid;
                 auto inferedCount = 0;
                 for (auto &u : Units::getUnits(PlayerState::Enemy)) {
@@ -303,18 +303,6 @@ namespace McRave::Terrain {
 
         void updateChokepoints()
         {
-            // Notes:
-            // BWEM angle is pretty good for flat ramps
-            // For angled ramps we shift up to the high ground
-
-            // for (int x = 0; x < Broodwar->mapWidth() * 4; x++) {
-            //    for (int y = 0; y < Broodwar->mapHeight() * 4; y++) {
-            //        auto w = WalkPosition(x, y);
-            //        if (w.isValid() && !mapBWEM.GetMiniTile(w).Walkable())
-            //            Visuals::drawBox(w, w + WalkPosition(1, 1), Colors::White);
-            //    }
-            //}
-
             auto const findCorrectAngle = [&](const auto station) {
                 auto chokeAngle = BWEB::Map::getAngle(
                     make_pair(Position(station.getChokepoint()->Pos(station.getChokepoint()->end1)), Position(station.getChokepoint()->Pos(station.getChokepoint()->end2))));
@@ -348,7 +336,7 @@ namespace McRave::Terrain {
             // 2. In directions, check walkability
             for (auto &walk : geometry) {
                 // Visuals::drawBox(walk, walk + WalkPosition(1, 1), Colors::Yellow);
-                for (int x = 0; x < 20; x++) {
+                for (int x = 0; x < 25; x++) {
                     for (auto &dir : directions) {
                         auto pos = walk + dir * x;
                         if (pos.isValid() && mapBWEM.GetMiniTile(pos).Walkable()) {
@@ -375,10 +363,6 @@ namespace McRave::Terrain {
                 }
             }
 
-            // Broodwar terrain angles for ramps are 30deg - TODO this
-            auto angle                  = BWEB::Map::getAngle(dirBest, getMainChoke()->Center());
-            chokeAngles[getMainChoke()] = angle;
-
             // 4. Walk the direction towards main area to get the center
             auto tester1       = getMainChoke()->Center() + dirBest;
             auto tester2       = getMainChoke()->Center() - dirBest;
@@ -394,7 +378,7 @@ namespace McRave::Terrain {
                 }
             }
 
-            auto limit     = 8;
+            auto limit     = 16;
             auto breakout1 = false;
             while (!breakout1) {
                 tester1 += dirBest;
@@ -435,8 +419,8 @@ namespace McRave::Terrain {
                     highest2 = altitude;
                 }
             }
-            Visuals::drawBox(tester1, tester1 + WalkPosition(1, 1), Colors::Green);
-            Visuals::drawBox(tester2, tester2 + WalkPosition(1, 1), Colors::Red);
+            //Visuals::drawBox(tester1, tester1 + WalkPosition(1, 1), Colors::Green);
+            //Visuals::drawBox(tester2, tester2 + WalkPosition(1, 1), Colors::Red);
 
             // 6. Store true center and angle
             auto c1 = Position(tester1) + Position(4, 4);
@@ -484,6 +468,9 @@ namespace McRave::Terrain {
                 int quadrant   = int(std::round(angle / (M_PI / 4.0))) % 4;
                 mainRamp.angle = quadrant * (M_PI / 4.0);
             }
+
+            Visuals::drawCircle(mainRamp.entrance, 4, Colors::Green, true);
+            Visuals::drawCircle(mainRamp.exit, 4, Colors::Red, true);
         }
 
         void updateAreas()
@@ -820,23 +807,6 @@ namespace McRave::Terrain {
         updateAreas();
         drawTerritory();
         Visuals::endPerfTest("Terrain");
-
-        // Try to find the angle by locating nearest unwalkable tiles to entrance
-        auto distBest = DBL_MAX;
-        auto posBest  = Positions::Invalid;
-        for (auto w : Util::getWalkCircle(16)) {
-            auto walk = w + WalkPosition(mainRamp.entrance);
-            if (walk.isValid() && !mapBWEM.GetMiniTile(walk).Walkable()) {
-                Visuals::drawBox(walk, walk + WalkPosition(1, 1), Colors::Teal);
-                auto dist = Position(walk).getDistance(mainRamp.entrance);
-                if (dist < distBest) {
-                    distBest = dist;
-                    posBest  = Position(walk);
-                }
-            }
-        }
-
-        Visuals::drawCircle(posBest, 5, Colors::Teal);
     }
 
     set<const Base *> &getAllBases() { return allBases; }

@@ -686,12 +686,8 @@ namespace McRave::Command {
 
         // If build position is fully visible and unit is close to it, start building as soon as possible
         if (fullyVisible && canAfford && unit.isWithinBuildRange()) {
-            if (unit.unit()->getLastCommandFrame() < Broodwar->getFrameCount() - 10) {
-                auto bwapiresult = unit.unit()->build(unit.getBuildType(), unit.getBuildPosition());
-                if (unit.getBuildType() == Zerg_Nydus_Canal) {
-                    LOG_FAST("Attempting to build a Nydus at ", unit.getBuildPosition());
-                    LOG_FAST("BWAPI said this command would fail? ", bwapiresult);
-                }
+            if (unit.unit()->getLastCommandFrame() < Broodwar->getFrameCount() - 10 && unit.unit()->getOrder() != Orders::PlaceBuilding) {
+                unit.unit()->build(unit.getBuildType(), unit.getBuildPosition());
             }
             unit.commandText  = "Build";
             return true;
