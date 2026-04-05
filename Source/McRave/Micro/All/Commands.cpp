@@ -433,7 +433,7 @@ namespace McRave::Command {
 
         // Find the best possible position to kite towards
         if (unit.isLightAir() && !unit.attemptingRegroup() && unit.hasCommander() && Grids::getAirThreat(unit.getPosition(), PlayerState::Enemy) > 0.0) {
-            auto maxRange         = max(unit.getAirRange(), unit.getGroundRange());
+            auto maxRange         = 160.0;
             auto commander        = unit.getCommander().lock();
             const auto kiteRange  = unit.getType().groundWeapon().damageCooldown() * unit.getType().topSpeed() + 64.0;
             const auto threatCalc = [&](auto &p) {

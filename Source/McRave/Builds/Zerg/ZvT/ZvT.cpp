@@ -77,7 +77,7 @@ namespace McRave::BuildOrder::Zerg {
 
     int lingsNeeded_ZvT()
     {
-        auto initialValue = 2;
+        auto initialValue = 4;
         if (com(Zerg_Spawning_Pool) == 0)
             return 0;
 
@@ -97,7 +97,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // RaxFact
         if (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled() || Spy::getEnemyBuild() == "Unknown") {
-            initialValue = 2;
+            initialValue = 4;
             if (Spy::getEnemyOpener() == T_1FactFE || Spy::getEnemyOpener() == T_2FactFE || Util::getTime() > Time(4, 00))
                 initialValue = 6;
         }
@@ -175,7 +175,7 @@ namespace McRave::BuildOrder::Zerg {
         auto fourthHatch = com(Zerg_Mutalisk) > 0;
 
         auto firstGas  = (hatchCount() >= 2 && vis(Zerg_Drone) >= 10 && vis(Zerg_Spawning_Pool) > 0);
-        auto secondGas = (Spy::enemyFastExpand() && vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 20) || (atPercent(Zerg_Spire, 0.5) && vis(Zerg_Drone) >= 20);
+        auto secondGas = (Spy::enemyFastExpand() && vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 20) || (atPercent(Zerg_Spire, 0.5) && vis(Zerg_Drone) >= 18);
 
         // Order
         unitOrder = mutalingdefiler;

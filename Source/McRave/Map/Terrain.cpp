@@ -113,8 +113,9 @@ namespace McRave::Terrain {
                     // Infer by timing, get closest main and hopefully that's their main
                     auto closestMain = BWEB::Stations::getClosestMainStation(unit->getTilePosition());
                     if (closestMain != Terrain::getMyMain() && (inferZvT || inferZvP)) {
-                        inferComplete         = true;
-                        enemyStartingPosition = closestMain->getBase()->Center();
+                        inferComplete             = true;
+                        enemyStartingPosition     = closestMain->getBase()->Center();
+                        enemyStartingTilePosition = closestMain->getBase()->Location();
                         LOG("Inferred enemy start: " + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
                     }
 
@@ -122,6 +123,7 @@ namespace McRave::Terrain {
                     if (closestMain && Terrain::inArea(closestMain->getBase()->GetArea(), unit->getPosition())) {
                         inferComplete         = true;
                         enemyStartingPosition = closestMain->getBase()->Center();
+                        enemyStartingTilePosition = closestMain->getBase()->Location();
                         LOG("Inferred enemy start: " + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
                     }
                 }
@@ -188,7 +190,7 @@ namespace McRave::Terrain {
             }
 
             // Locate Stations
-            if (enemyStartingPosition.isValid()) {
+            if (enemyStartingPosition.isValid() && enemyStartingTilePosition.isValid()) {
                 enemyMain    = BWEB::Stations::getClosestMainStation(enemyStartingTilePosition);
                 enemyNatural = BWEB::Stations::getClosestNaturalStation(enemyStartingTilePosition);
 
@@ -419,8 +421,8 @@ namespace McRave::Terrain {
                     highest2 = altitude;
                 }
             }
-            //Visuals::drawBox(tester1, tester1 + WalkPosition(1, 1), Colors::Green);
-            //Visuals::drawBox(tester2, tester2 + WalkPosition(1, 1), Colors::Red);
+            // Visuals::drawBox(tester1, tester1 + WalkPosition(1, 1), Colors::Green);
+            // Visuals::drawBox(tester2, tester2 + WalkPosition(1, 1), Colors::Red);
 
             // 6. Store true center and angle
             auto c1 = Position(tester1) + Position(4, 4);
@@ -509,8 +511,8 @@ namespace McRave::Terrain {
                         Visuals::drawBox(w, w + WalkPosition(1, 1), Colors::Blue, false);
                     }
 
-                    auto e1 = closestChoke->Pos(closestChoke->end1);
-                    auto e2 = closestChoke->Pos(closestChoke->end2);
+                    auto e1  = closestChoke->Pos(closestChoke->end1);
+                    auto e2  = closestChoke->Pos(closestChoke->end2);
                     auto mid = closestChoke->Pos(closestChoke->middle);
 
                     Visuals::drawBox(e1, e1 + WalkPosition(1, 1), Colors::Blue, true);

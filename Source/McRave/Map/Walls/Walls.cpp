@@ -348,8 +348,8 @@ namespace McRave::Walls {
             }
 
             // RaxFact
-            if (Spy::getEnemyBuild() == T_RaxFact || Spy::getEnemyBuild() == "Unknown" || Spy::enemyWalled()) {
-                return (Util::getTime() > Time(3, 15));
+            if (Spy::getEnemyBuild() == T_RaxFact || Spy::getEnemyBuild() == "Unknown") {
+                return 1;
             }
 
             // 

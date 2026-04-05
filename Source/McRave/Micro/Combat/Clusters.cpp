@@ -387,8 +387,6 @@ namespace McRave::Combat::Clusters {
             return false;
 
         set<weak_ptr<UnitInfo>> reachList;
-        for (auto t : unit.getUnitsInReachOfThis())
-            reachList.insert(t);
         for (auto t : target.getUnitsInReachOfThis())
             reachList.insert(t);
 
@@ -414,11 +412,14 @@ namespace McRave::Combat::Clusters {
             LOG_FAST("Target is ", target.getType().c_str(), " at ", target.getPosition());
         }
 
+        if (unit.getLocalState() == LocalState::Attack)
+            dpsInRange /= 2.0;
+
         if ((dpsInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker())                      //
-            || (dpsInRange <= 4.0 && Util::getTime() < Time(8, 00))                                    //
-            || (dpsInRange <= 5.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))  //
-            || (dpsInRange <= 6.0 && Util::getTime() > Time(12, 00) && Util::getTime() < Time(16, 00)) //
-            || (dpsInRange <= 7.0 && Util::getTime() > Time(16, 00)))                                  //
+            || (dpsInRange <= 2.0 && Util::getTime() < Time(8, 00))                                    //
+            || (dpsInRange <= 3.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))  //
+            || (dpsInRange <= 4.0 && Util::getTime() > Time(12, 00) && Util::getTime() < Time(16, 00)) //
+            || (dpsInRange <= 5.0 && Util::getTime() > Time(16, 00)))                                  //
             return true;
 
         // If already in range and haven't attack recently, it's fine to swing once, this helps for recalculations done once in range

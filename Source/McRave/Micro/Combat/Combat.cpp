@@ -168,14 +168,14 @@ namespace McRave::Combat {
             vector<const BWEB::Station *> stations = Stations::getStations(PlayerState::Enemy);
 
             // Inbound unit fighting
-            if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure()) {
+            if (Util::getTime() < Time(8, 00) && (Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure()) {
                 const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return (Util::getTime() < Time(8, 00) && Units::inBoundUnit(*u, 15) && !u->getType().isWorker() && u->getType() != Terran_Vulture);
+                    return Units::inBoundUnit(*u, 15) && !u->getType().isWorker() && u->getType() != Terran_Vulture;
                 });
 
                 if (closest) {
                     harassPosition = closest->getPosition();
-                    LOG_SLOW("Harassing inbound units");
+                    LOG_SLOW("Harassing inbound units, closest is a ", closest->getType().c_str());
                     return;
                 }
             }

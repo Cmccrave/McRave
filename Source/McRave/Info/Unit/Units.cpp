@@ -132,9 +132,9 @@ namespace McRave::Units {
                 }
             }
 
-            // Sort by stalest and truncate anything past 64
+            // Sort by stalest and truncate anything past 64, but reserve 3 slots for production/upgrades/research for now and 1 for padding
             sort(commandQueue.begin(), commandQueue.end(), [](UnitInfo *a, UnitInfo *b) { return a->nextCommandFrame < b->nextCommandFrame; });
-            int maxCommandsPerFrame = 64 - Roles::getRoleCount(Role::Production);
+            int maxCommandsPerFrame = 60;
             int maxCommandsPerTurn  = maxCommandsPerFrame / Broodwar->getLatencyFrames();
             if (int(commandQueue.size()) > maxCommandsPerTurn) {
                 commandQueue.resize(maxCommandsPerTurn);
@@ -326,7 +326,7 @@ namespace McRave::Units {
 
     bool inBoundUnit(UnitInfo &unit, int seconds)
     {
-        if (unit.movedFlag || unit.getType().isBuilding() || unit.getType().isWorker())
+        if (unit.movedFlag || unit.getType().isBuilding() || unit.getType().isWorker() || unit.isToken())
             return false;
 
         const auto visDiff = Broodwar->getFrameCount() - unit.getLastVisibleFrame();
@@ -346,6 +346,7 @@ namespace McRave::Units {
     {
         auto it = std::find(commandQueue.begin(), commandQueue.end(), &unit);
         if (it != commandQueue.end()) {
+            unit.circle(Colors::Blue);
             unit.lastCommandFrame = Broodwar->getFrameCount();
             return true;
         }

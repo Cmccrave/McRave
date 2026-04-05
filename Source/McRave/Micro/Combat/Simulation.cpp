@@ -72,29 +72,29 @@ namespace McRave::Combat::Simulation {
         if (Players::PvP()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.2;
-            commitFrames  = 72;
+            commitFrames  = 12;
         }
         if (Players::PvZ()) {
             minWinPercent = 0.6;
             maxWinPercent = 1.2;
-            commitFrames  = 72;
+            commitFrames  = 12;
         }
         if (Players::PvT()) {
             minWinPercent = 0.6;
             maxWinPercent = 1.0;
-            commitFrames  = 160;
+            commitFrames  = 12;
         }
         if (Players::PvFFA()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.4;
-            commitFrames  = 72;
+            commitFrames  = 12;
         }
 
         // Z
         if (Players::ZvP()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.4;
-            commitFrames  = 72;
+            commitFrames  = 12;
         }
         if (Players::ZvZ()) {
             minWinPercent = 0.7;
@@ -104,7 +104,7 @@ namespace McRave::Combat::Simulation {
         if (Players::ZvT()) {
             minWinPercent = 1.0;
             maxWinPercent = 1.4;
-            commitFrames  = 72;
+            commitFrames  = 12;
         }
         if (Players::ZvFFA()) {
             minWinPercent = 0.8;
@@ -116,22 +116,22 @@ namespace McRave::Combat::Simulation {
         if (Players::TvP()) {
             minWinPercent = 0.7;
             maxWinPercent = 1.1;
-            commitFrames  = 72;
+            commitFrames  = 12;
         }
         if (Players::TvZ()) {
             minWinPercent = 0.7;
             maxWinPercent = 1.1;
-            commitFrames  = 72;
+            commitFrames  = 12;
         }
         if (Players::TvT()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.2;
-            commitFrames  = 72;
+            commitFrames  = 12;
         }
         if (Players::TvFFA()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.4;
-            commitFrames  = 72;
+            commitFrames  = 12;
         }
     }
 

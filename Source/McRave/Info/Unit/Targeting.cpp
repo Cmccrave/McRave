@@ -183,6 +183,9 @@ namespace McRave::Targets {
             if (unit.isWithinRange(target) && !target.getType().isBuilding() && target.canAttackAir())
                 return Priority::Major;
 
+            if (target.getType().isBuilding() && !target.canAttackAir())
+                return Priority::Minor;
+
             return Priority::Normal;
         }
 

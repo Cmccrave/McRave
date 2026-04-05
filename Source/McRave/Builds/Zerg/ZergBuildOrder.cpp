@@ -87,9 +87,9 @@ namespace McRave::BuildOrder::Zerg {
                     if (grdNeeded > 0)
                         needSunks = true;
 
-                    if (grdNeeded > colonies)
+                    if (grdNeeded > 0)
                         LOG_SLOW("Wall ", i, " needs a sunken - has ", wall.getGroundDefenseCount(), ", wants ", grdNeeded, " more, has ", colonies, " colonies");
-                    if (airNeeded > colonies)
+                    if (airNeeded > 0)
                         LOG_SLOW("Wall ", i, " needs a spore - has ", wall.getAirDefenseCount(), ", wants ", airNeeded, " more, has ", colonies, " colonies");
 
                     if ((atPercent(Zerg_Spawning_Pool, 0.66) && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {

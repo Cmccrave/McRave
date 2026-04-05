@@ -205,8 +205,7 @@ namespace McRave::Spy::Terran {
 
     void updateTerran(StrategySpy &theSpy)
     {
-        // Excludes Vultures as it doesn't indicate mech decision
-        totalMechUnits = Players::getTotalCount(PlayerState::Enemy, Terran_Goliath, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode);
+        totalMechUnits = Players::getTotalCount(PlayerState::Enemy, Terran_Goliath, Terran_Vulture, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode);
         totalBioUnits  = Players::getTotalCount(PlayerState::Enemy, Terran_Marine, Terran_Firebat, Terran_Medic);
 
         for (auto &p : Players::getPlayers()) {
