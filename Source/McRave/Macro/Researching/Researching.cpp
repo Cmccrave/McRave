@@ -132,6 +132,8 @@ namespace McRave::Researching {
 
     bool haveOrResearching(TechType tech) { return Broodwar->self()->isResearching(tech) || Broodwar->self()->hasResearched(tech); }
 
+    bool haveResearch(TechType tech) { return Broodwar->self()->hasResearched(tech); }
+
     int getReservedMineral() { return reservedMineral; }
     int getReservedGas() { return reservedGas; }
     bool hasIdleResearch() { return !idleResearch.empty(); }

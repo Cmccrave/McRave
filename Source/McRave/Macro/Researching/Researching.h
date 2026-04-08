@@ -4,6 +4,7 @@
 namespace McRave::Researching
 {
     bool haveOrResearching(BWAPI::TechType);
+    bool haveResearch(BWAPI::TechType);
     bool researchedThisFrame();
     void onFrame();
 

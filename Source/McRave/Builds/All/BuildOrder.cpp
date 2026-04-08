@@ -236,7 +236,7 @@ namespace McRave::BuildOrder {
     void getNewTech()
     {
         // First one always gets inserted
-        if (!isFocusUnit(focusUnit)) {
+        if (focusUnit != None && !isFocusUnit(focusUnit)) {
             focusUnits.insert(focusUnit);
             LOG("focusing existing ", focusUnit.c_str());
             return;

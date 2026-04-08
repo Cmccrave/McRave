@@ -221,6 +221,11 @@ namespace McRave::Spy::General {
             }
         }
 
+        void checkEnemyDetection(PlayerInfo &player, StrategySpy &theSpy)
+        {
+            theSpy.detection.possible = Players::getTotalCount(PlayerState::Enemy, Protoss_Observer, Terran_Science_Vessel, Zerg_Overlord, Spell_Scanner_Sweep) > 0;
+        }
+
         void checkEnemyEarly(PlayerInfo &player, StrategySpy &theSpy)
         {
             // If we have seen an enemy worker before we've scouted the enemy, follow it
@@ -269,6 +274,7 @@ namespace McRave::Spy::General {
                 checkEnemyRush(player, theSpy);
                 checkEnemyPressure(player, theSpy);
                 checkEnemyInvis(player, theSpy);
+                checkEnemyDetection(player, theSpy);
                 checkEnemyEarly(player, theSpy);
                 checkEnemyProxy(player, theSpy);
                 checkEnemyGreedy(player, theSpy);

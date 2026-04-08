@@ -7,6 +7,7 @@
 #include "Info/Unit/Units.h"
 #include "Main/Common.h"
 #include "Main/Events.h"
+#include "Main/Util.h"
 #include "Map/Grids.h"
 #include "Map/Stations.h"
 #include "Map/Terrain.h"
@@ -74,11 +75,15 @@ namespace McRave {
             if (commandHistory.size() > 10)
                 commandHistory.erase(commandHistory.begin());
 
-            lastPos  = position;
-            lastWalk = walkPosition;
-            lastTile = tilePosition;
-            lastRole = role;
-            lastType = type;
+            lastPos       = position;
+            lastFormation = formation;
+            lastWalk      = walkPosition;
+            lastTile      = tilePosition;
+            lastRole      = role;
+            lastType      = type;
+
+            lastGState = gState;
+            lastLState = lState;
         }
     }
 
@@ -201,19 +206,23 @@ namespace McRave {
 
         // Create a list of units that are in reach of this unit
         unitsInReachOfThis.clear();
+        typesReachingThis.clear();
         for (auto &u : Units::getUnits(PlayerState::Enemy)) {
             auto &unit = *u;
             if (((this->isFlying() && unit.canAttackAir()) || (!this->isFlying() && unit.canAttackGround())) && unit.isWithinReach(*this)) {
                 unitsInReachOfThis.push_back(unit.weak_from_this());
+                typesReachingThis.insert(unit.getType());
             }
         }
 
         // Create a list of units that are in range of this unit
         unitsInRangeOfThis.clear();
+        typesRangingThis.clear();
         for (auto &u : Units::getUnits(PlayerState::Enemy)) {
             auto &unit = *u;
             if (((this->isFlying() && unit.canAttackAir()) || (!this->isFlying() && unit.canAttackGround())) && unit.isWithinRange(*this)) {
                 unitsInRangeOfThis.push_back(unit.weak_from_this());
+                typesRangingThis.insert(unit.getType());
             }
         }
 
@@ -264,6 +273,7 @@ namespace McRave {
 
         target_.reset();
         unitsTargetingThis.clear();
+        typesTargetingThis.clear();
     }
 
     // Strategic flags
@@ -960,7 +970,7 @@ namespace McRave {
 
     bool UnitInfo::attemptingRegroup()
     {
-        if (!isLightAir() || saveUnit)
+        if (!isLightAir() || saveUnit || attemptingAvoidance())
             return false;
         if (hasCommander(); auto cmder = commander.lock()) {
             if (cmder->getLocalState() == LocalState::Attack)
@@ -969,6 +979,18 @@ namespace McRave {
         }
         return false;
     }
+
+    bool UnitInfo::attemptingAvoidance()
+    {
+        if (!isLightAir())
+            return false;
+
+        return (isRangedByType(Protoss_Corsair) || isRangedByType(Zerg_Devourer) || isReachedByType(Protoss_Archon) || isTargetedByType(Terran_Valkyrie));
+    }
+
+    bool UnitInfo::isTargetedByType(UnitType type) { return Util::contains(typesTargetingThis, type); }
+    bool UnitInfo::isReachedByType(UnitType type) { return Util::contains(typesReachingThis, type); }
+    bool UnitInfo::isRangedByType(UnitType type) { return Util::contains(typesRangingThis, type); }
 
     void UnitInfo::setResource(ResourceInfo *unit) { unit ? resource = unit->weak_from_this() : resource.reset(); }
 } // namespace McRave

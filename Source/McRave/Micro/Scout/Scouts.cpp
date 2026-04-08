@@ -922,9 +922,6 @@ namespace McRave::Scouts {
         // drawScouting();
         Visuals::endPerfTest("Scouts");
 
-        for (auto &tile : enemyVisionTiles)
-            Visuals::drawBox(tile, Colors::Yellow);
-
         static bool safeDiscovered = false;
         if (!Terrain::getEnemyMain() || !Terrain::getEnemyNatural() || safeDiscovered) {
             return;

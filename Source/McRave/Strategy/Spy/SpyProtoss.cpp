@@ -154,12 +154,8 @@ namespace McRave::Spy::Protoss {
                 theSpy.opener.name = P_Nexus;
 
             // Gateway
-            else if (completesBy(1, Protoss_Gateway, Time(2, 40)) || arrivesBy(1, Protoss_Zealot, Time(3, 15)))
+            else if (completesBy(1, Protoss_Gateway, Time(2, 40)) || arrivesBy(1, Protoss_Zealot, Time(3, 45)))
                 theSpy.opener.name = P_Gateway;
-
-            // Forge
-            else
-                theSpy.opener.name = P_Forge;
         }
 
         // 1Gate Openers -  need timings for when Core completes
@@ -255,7 +251,7 @@ namespace McRave::Spy::Protoss {
 
                 if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Stargate) == 0) {
                     if ((!theSpy.expand.possible && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 4 && Util::getTime() < Time(6, 00)) ||                        
-                        (Spy::enemyTurtle() && completesBy(1, Singularity_Charge, Time(6, 30))) || (arrivesBy(3, Protoss_Dragoon, Time(5, 45))) || (arrivesBy(5, Protoss_Dragoon, Time(6, 05))) ||
+                        (Spy::enemyTurtle() && completesBy(1, Singularity_Charge, Time(6, 30))) || (arrivesBy(3, Protoss_Dragoon, Time(5, 15))) || (arrivesBy(5, Protoss_Dragoon, Time(6, 05))) ||
                         (arrivesBy(9, Protoss_Dragoon, Time(6, 40))) || (arrivesBy(12, Protoss_Dragoon, Time(7, 25))) ||
                         (completesBy(4, Protoss_Gateway, Time(5, 30)) &&
                          Players::getVisibleCount(PlayerState::Enemy, Protoss_Cybernetics_Core) + Players::getVisibleCount(PlayerState::Enemy, Protoss_Assimilator) >= 1))
@@ -265,7 +261,11 @@ namespace McRave::Spy::Protoss {
                 if ((theSpy.typeUpgrading.find(Protoss_Cybernetics_Core) != theSpy.typeUpgrading.end() && Util::getTime() < Time(4, 15)) || (completesBy(1, Singularity_Charge, Time(6, 00)))) {
                     if (completesBy(1, Protoss_Stargate, Time(5, 00)) || completesBy(1, Protoss_Corsair, Time(5, 30)) || arrivesBy(1, Protoss_Corsair, Time(5, 50)))
                         theSpy.transition.name = P_CorsairGoon;
-                }
+                } 
+                
+                // CorsairGoon
+                if (completesBy(1, UpgradeTypes::Singularity_Charge, Time(4, 45)) && arrivesBy(1, Protoss_Corsair, Time(6, 00)))
+                    theSpy.transition.name = P_CorsairGoon;
             }
 
             // 5ZealotExpand

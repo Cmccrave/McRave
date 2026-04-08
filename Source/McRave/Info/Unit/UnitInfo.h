@@ -51,9 +51,14 @@ namespace McRave {
         std::weak_ptr<ResourceInfo> resource;
 
         std::vector<std::weak_ptr<UnitInfo>> assignedCargo;
+
         std::vector<std::weak_ptr<UnitInfo>> unitsTargetingThis;
         std::vector<std::weak_ptr<UnitInfo>> unitsInReachOfThis;
         std::vector<std::weak_ptr<UnitInfo>> unitsInRangeOfThis;
+        std::set<BWAPI::UnitType> typesTargetingThis;
+        std::set<BWAPI::UnitType> typesReachingThis;
+        std::set<BWAPI::UnitType> typesRangingThis;
+
         TransportState tState = TransportState::None;
         LocalState lState     = LocalState::None;
         GlobalState gState    = GlobalState::None;
@@ -124,6 +129,12 @@ namespace McRave {
         bool hasCommander() { return !commander.expired(); }
         bool hasSimTarget() { return !simTarget.expired(); }
 
+        void addTargeter(UnitInfo &targeter)
+        {
+            unitsTargetingThis.push_back(targeter.weak_from_this());
+            typesTargetingThis.insert(targeter.getType());
+        }
+
         bool hasSameMarchPath(Position source, Position target) { return marchPath.getSource() == TilePosition(source) && marchPath.getTarget() == TilePosition(target); }
         bool hasSameRetreatPath(Position source, Position target) { return retreatPath.getSource() == TilePosition(source) && retreatPath.getTarget() == TilePosition(target); }
         bool targetsFriendly() { return (type == UnitTypes::Terran_Medic && getEnergy() > 0) || type == UnitTypes::Terran_Science_Vessel || (type == UnitTypes::Zerg_Defiler && getEnergy() < 100); }
@@ -150,7 +161,10 @@ namespace McRave {
 
         bool canMirrorCommander(UnitInfo &otherUnit)
         {
-            return gState != GlobalState::Retreat && !unit()->isIrradiated() && !isNearSuicide() && !isTargetedBySplash() && !attemptingRegroup() &&
+            if (attemptingAvoidance())
+                return false;
+
+            return gState != GlobalState::Retreat && !unit()->isIrradiated() && !isNearSuicide() && !attemptingRegroup() &&
                    (getType() == otherUnit.getType() || lState != LocalState::Attack);
         }
 
@@ -190,6 +204,7 @@ namespace McRave {
         bool attemptingIntercept();
         bool attemptingHarass();
         bool attemptingRegroup();
+        bool attemptingAvoidance();
 
         std::vector<std::weak_ptr<UnitInfo>> &getAssignedCargo() { return assignedCargo; }
         std::vector<std::weak_ptr<UnitInfo>> &getUnitsTargetingThis() { return unitsTargetingThis; }
@@ -254,6 +269,10 @@ namespace McRave {
         bool isTargetedBySplash() { return targetedBySplash; }
         bool isTargetedBySuicide() { return targetedBySuicide; }
         bool isTargetedByHidden() { return targetedByHidden; }
+
+        bool isTargetedByType(BWAPI::UnitType type);
+        bool isReachedByType(BWAPI::UnitType type);
+        bool isRangedByType(BWAPI::UnitType type);
 
         void setAssumedLocation(Position p, WalkPosition w, TilePosition t)
         {

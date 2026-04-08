@@ -44,6 +44,7 @@ namespace McRave::Combat {
         BWAPI::Position center;
         BWAPI::Position start;
         double radius, leash, angle;
+        double stepPerUnit, sumTotalSteps;
         std::vector<BWAPI::Position> positions;
         LocalState lState = LocalState::None;
     };

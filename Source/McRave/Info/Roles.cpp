@@ -79,6 +79,12 @@ namespace McRave::Roles {
             }
         }
 
+        void genericPullWorker()
+        {
+            // CannonRush response is generically the same
+            // Manner stuff is generically the same, except zvz sunken rush
+        }
+
         void pPullWorker()
         {
             if (Broodwar->self()->getRace() != Races::Protoss)
@@ -154,14 +160,13 @@ namespace McRave::Roles {
             if (com(Zerg_Zergling) >= 6)
                 sixLings = true;
 
-            // Worker rush - pull 3 unless they all in
+            // Worker rush
             if (Spy::getEnemyTransition() == U_WorkerRush) {
                 if (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0)
                     return;
 
-                if (Players::ZvP() && sixLings && com(Zerg_Sunken_Colony) == 0 && Combat::isDefendNatural() && proxyWorker) {
-                    auto cnt = 3 + Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot);
-                    forceCombatWorker(5, Position(Terrain::getNaturalPosition()), LocalState::None, GlobalState::Retreat);
+                if (Players::ZvP() && sixLings && com(Zerg_Sunken_Colony) == 0 && Combat::isDefendNatural() && proxyWorker && proxyCombatUnit) {
+                    forceCombatWorker(12, Position(Terrain::getNaturalPosition()), LocalState::None, GlobalState::Retreat);
                 }
                 if (Players::ZvT() && com(Zerg_Sunken_Colony) == 0 && proxyCombatWorker) {
                     forceCombatWorker(Spy::getWorkersPulled() + 1, Terrain::getMainPosition(), LocalState::Attack, GlobalState::Retreat);

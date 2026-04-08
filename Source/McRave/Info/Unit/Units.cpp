@@ -85,7 +85,7 @@ namespace McRave::Units {
                         auto &targetInfo = getUnitInfo(unit.unit()->getOrderTarget());
                         if (targetInfo) {
                             unit.setTarget(&*targetInfo);
-                            targetInfo->getUnitsTargetingThis().push_back(unit.weak_from_this());
+                            targetInfo->addTargeter(unit);
                         }
                     }
 
@@ -346,7 +346,6 @@ namespace McRave::Units {
     {
         auto it = std::find(commandQueue.begin(), commandQueue.end(), &unit);
         if (it != commandQueue.end()) {
-            unit.circle(Colors::Blue);
             unit.lastCommandFrame = Broodwar->getFrameCount();
             return true;
         }

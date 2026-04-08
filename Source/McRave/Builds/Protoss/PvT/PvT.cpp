@@ -30,6 +30,9 @@ namespace McRave::BuildOrder::Protoss {
     }
 
     int zealotsNeeded_PvT() {
+        if (Spy::getEnemyTransition() == U_WorkerRush)
+            return 3;
+
         if (currentOpener == P_NZCore)
             return 0;
         if (currentOpener == P_ZCore)

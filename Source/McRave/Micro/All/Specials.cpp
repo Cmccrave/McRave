@@ -68,7 +68,7 @@ namespace McRave::Command {
                             unit.unit()->getDistance(battery->getPosition()) < 320)) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit || unit.unit()->getLastCommand().getTarget() != battery->unit()) {
                     unit.setCommand(Right_Click_Unit, *battery);
-                    unit.commandText  = "Regen";
+                    unit.commandText = "Regen";
                 }
                 return true;
             }
@@ -96,7 +96,7 @@ namespace McRave::Command {
                 }
                 if (!unit.unit()->isLoaded() && loadBunker) {
                     unit.setCommand(Right_Click_Unit, *bunker);
-                    unit.commandText  = "LoadBunker";
+                    unit.commandText = "LoadBunker";
                     return true;
                 }
                 if (unit.unit()->isLoaded() && unloadBunker)
@@ -118,7 +118,7 @@ namespace McRave::Command {
                 if (auto info = Units::getUnitInfo(destinationNydus->unit()->getNydusExit())) {
                     if (unit.getPosition().getDistance(info->getPosition()) < 160.0) {
                         unit.setCommand(UnitCommandTypes::Right_Click_Unit, *info);
-                        unit.commandText  = "NydusTravel";
+                        unit.commandText = "NydusTravel";
                         return true;
                     }
                 }
@@ -140,7 +140,7 @@ namespace McRave::Command {
 
                 if (closestUnit) {
                     unit.unit()->gather(resource->unit());
-                    unit.commandText  = "MineralWalk";
+                    unit.commandText = "MineralWalk";
                     return true;
                 }
             }
@@ -169,11 +169,11 @@ namespace McRave::Command {
         if (unit.getType() == Terran_Siege_Tank_Tank_Mode || unit.getType() == Terran_Siege_Tank_Siege_Mode) {
             if (siege) {
                 unit.unit()->siege();
-                unit.commandText  = "Siege";
+                unit.commandText = "Siege";
             }
             else if (unsiege) {
                 unit.unit()->unsiege();
-                unit.commandText  = "Unsiege";
+                unit.commandText = "Unsiege";
             }
         }
         return false;
@@ -191,7 +191,7 @@ namespace McRave::Command {
             if (mech && mech->unit()) {
                 if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != mech->unit())
                     unit.unit()->repair(mech->unit());
-                unit.commandText  = "Repair";
+                unit.commandText = "Repair";
                 return true;
             }
 
@@ -204,7 +204,7 @@ namespace McRave::Command {
             if (building && building->unit()) {
                 if (!unit.unit()->isRepairing() || unit.unit()->getLastCommand().getType() != UnitCommandTypes::Repair || unit.unit()->getLastCommand().getTarget() != building->unit())
                     unit.unit()->repair(building->unit());
-                unit.commandText  = "Repair";
+                unit.commandText = "Repair";
                 return true;
             }
         }
@@ -267,14 +267,14 @@ namespace McRave::Command {
             for (auto &t : list) {
                 if (auto enemy = t.lock()) {
                     if (enemy->getType() == Protoss_Reaver || enemy->isThreatening()) {
-                        threatened = unit.isBurrowed() || (enemy->hasTarget() && enemy->getTarget().lock()->getType().isWorker() && enemy->hasAttackedRecently());
+                        threatened = enemy->hasTarget() && enemy->getTarget().lock()->getType().isWorker() && enemy->hasAttackedRecently();
                         damage += enemy->getGroundDamage();
                     }
                 }
             }
 
             auto hideFromDamage = unit.isBurrowed() ? damage >= unit.getHealth() / 2 : damage >= unit.getHealth();
-            auto burrowUnit     = !unit.getBuildPosition().isValid() && hideFromDamage && threatened && !Planning::overlapsPlan(unit, unit.getPosition());
+            auto burrowUnit     = !unit.getBuildPosition().isValid() && (hideFromDamage || threatened) && !Planning::overlapsPlan(unit, unit.getPosition());
 
             // Burrow/unburrow as needed
             if (!unit.isBurrowed() && burrowUnit) {
@@ -542,8 +542,8 @@ namespace McRave::Command {
                 if (templar) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->useTech(Archon_Warp, templar->unit());
-                    lastMorphFrame    = Broodwar->getFrameCount();
-                    unit.commandText  = "Archonification";
+                    lastMorphFrame   = Broodwar->getFrameCount();
+                    unit.commandText = "Archonification";
                     return true;
                 }
             }
@@ -551,18 +551,15 @@ namespace McRave::Command {
 
         // Hydralisk - Lurker Morph
         else if (unit.getType() == Zerg_Hydralisk && Broodwar->self()->hasResearched(Lurker_Aspect)) {
-            const auto wantLurkers = (vis(Zerg_Lurker) + vis(Zerg_Lurker_Egg)) / BuildOrder::getCompositionPercentage(Zerg_Lurker) <
-                                     vis(Zerg_Hydralisk) / BuildOrder::getCompositionPercentage(Zerg_Hydralisk);
-            const auto onlyLurkers = (BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00 && vis(Zerg_Lurker_Egg) < 4) ||
-                                     (Players::ZvT() && BuildOrder::getCompositionPercentage(Zerg_Lurker) == 0.0 && BuildOrder::getCompositionPercentage(Zerg_Hydralisk) == 0.0);
+            const auto wantLurkers = BuildOrder::getCompositionPercentage(Zerg_Lurker) >= 1.00;
 
-            if ((wantLurkers || onlyLurkers)) {
+            if (wantLurkers) {
                 const auto furthestHydra = Util::getFurthestUnit(Terrain::getEnemyStartingPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == UnitTypes::Zerg_Hydralisk; });
                 if (canAffordMorph(Zerg_Lurker) && furthestHydra && unit == *furthestHydra) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->morph(Zerg_Lurker);
-                    lastMorphFrame    = Broodwar->getFrameCount();
-                    unit.commandText  = "Lurkification";
+                    lastMorphFrame   = Broodwar->getFrameCount();
+                    unit.commandText = "Lurkification";
                     return true;
                 }
             }
@@ -570,30 +567,25 @@ namespace McRave::Command {
 
         // Mutalisk - Devourer / Guardian Morph
         else if (unit.getType() == Zerg_Mutalisk && com(Zerg_Greater_Spire) > 0) {
-            const auto wantDevo = vis(Zerg_Devourer) / BuildOrder::getCompositionPercentage(Zerg_Devourer) <
-                                  (vis(Zerg_Mutalisk) / BuildOrder::getCompositionPercentage(Zerg_Mutalisk)) + (vis(Zerg_Guardian) / BuildOrder::getCompositionPercentage(Zerg_Guardian));
-            const auto wantGuard = vis(Zerg_Guardian) / BuildOrder::getCompositionPercentage(Zerg_Guardian) <
-                                   (vis(Zerg_Mutalisk) / BuildOrder::getCompositionPercentage(Zerg_Mutalisk)) + (vis(Zerg_Devourer) / BuildOrder::getCompositionPercentage(Zerg_Devourer));
+            const auto wantDevo  = BuildOrder::getCompositionPercentage(Zerg_Devourer) >= 1.00;
+            const auto wantGuard = BuildOrder::getCompositionPercentage(Zerg_Guardian) >= 1.00;
 
-            const auto onlyDevo  = BuildOrder::getCompositionPercentage(Zerg_Devourer) >= 1.00;
-            const auto onlyGuard = BuildOrder::getCompositionPercentage(Zerg_Guardian) >= 1.00;
-
-            if ((onlyGuard || wantGuard)) {
+            if (wantGuard) {
                 if (canAffordMorph(Zerg_Guardian) && unit.getPosition().getDistance(unit.getSimTarget().lock()->getPosition()) >= unit.getEngageRadius() &&
                     unit.getPosition().getDistance(unit.getSimTarget().lock()->getPosition()) < unit.getEngageRadius() + 160.0) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->morph(Zerg_Guardian);
-                    lastMorphFrame    = Broodwar->getFrameCount();
-                    unit.commandText  = "Guardianification";
+                    lastMorphFrame   = Broodwar->getFrameCount();
+                    unit.commandText = "Guardianification";
                     return true;
                 }
             }
-            else if ((onlyDevo || wantDevo)) {
+            else if (wantDevo) {
                 if (canAffordMorph(Zerg_Devourer) && unit.getPosition().getDistance(unit.getSimTarget().lock()->getPosition()) >= unit.getEngageRadius()) {
                     if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Morph)
                         unit.unit()->morph(Zerg_Devourer);
-                    lastMorphFrame    = Broodwar->getFrameCount();
-                    unit.commandText  = "Devourification";
+                    lastMorphFrame   = Broodwar->getFrameCount();
+                    unit.commandText = "Devourification";
                     return true;
                 }
             }
@@ -621,7 +613,7 @@ namespace McRave::Command {
                 unit.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo) {
                 unit.unit()->returnCargo();
             }
-            unit.commandText  = "Return";
+            unit.commandText = "Return";
             return true;
         }
 
@@ -651,7 +643,7 @@ namespace McRave::Command {
 
                 if (unit.unit()->getOrderTarget() != boulder.unit())
                     unit.unit()->gather(boulder.unit());
-                unit.commandText  = "Bouldering";
+                unit.commandText = "Bouldering";
                 return true;
             }
         }
@@ -679,7 +671,7 @@ namespace McRave::Command {
                                                     [&](auto &u) { return u->getType() == Terran_Vulture_Spider_Mine && Util::rectangleIntersect(u->getPosition(), topLeft, botRight); });
             if (closestMine) {
                 unit.setCommand(Attack_Unit, *closestMine);
-                unit.commandText  = "Attack Mine";
+                unit.commandText = "Attack Mine";
                 return true;
             }
         }
@@ -689,7 +681,7 @@ namespace McRave::Command {
             if (unit.unit()->getLastCommandFrame() < Broodwar->getFrameCount() - 10 && unit.unit()->getOrder() != Orders::PlaceBuilding) {
                 unit.unit()->build(unit.getBuildType(), unit.getBuildPosition());
             }
-            unit.commandText  = "Build";
+            unit.commandText = "Build";
             return true;
         }
         return false;
@@ -706,10 +698,18 @@ namespace McRave::Command {
         if (!resource)
             return false;
 
-        auto closestChokepoint    = Util::getClosestChokepoint(unit.getPosition());
-        auto nearNonBlockingChoke = closestChokepoint && !closestChokepoint->Blocked() && unit.getPosition().getDistance(Position(closestChokepoint->Center())) < 160.0;
         auto boxDist              = Util::boxDistance(unit.getType(), unit.getPosition(), resource->getType(), resource->getPosition());
         auto allowOptimisations   = Players::getSupply(PlayerState::Self, Races::None) <= 200;
+
+        const auto nearNonBlockingChoke = [&]() {
+            auto closest = Util::getClosestChokepoint(unit.getPosition());
+            return closest && !closest->Blocked() && unit.getPosition().getDistance(Position(closest->Center())) < 160.0;
+        };
+
+        const auto nearNonWorker = [&]() {
+            auto closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) { return *u != unit && !u->getType().isWorker(); });
+            return closest && Util::boxDistance(unit, *closest) < 32.0;
+        };
 
         const auto canGather = [&](ResourceInfo *resource) {
             if (allowOptimisations) {
@@ -731,9 +731,9 @@ namespace McRave::Command {
                 return true;
             if (Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) > 0.0f)
                 return true;
-            if (hasMineableResource && (unit.isWithinGatherRange() || Grids::getGroundDensity(unit.getPosition(), PlayerState::Self) > 0.0f || nearNonBlockingChoke))
+            if (hasMineableResource && (unit.isWithinGatherRange() || nearNonWorker() || nearNonBlockingChoke()))
                 return true;
-            if (!hasMineableResource)
+            if (!hasMineableResource) // What
                 return true;
             if (Planning::overlapsPlan(unit, unit.getPosition()))
                 return true;
@@ -762,47 +762,12 @@ namespace McRave::Command {
             }
         }
 
-        // Check if we're trying to build a structure near this worker
-        if (unit.hasResource()) {
-            auto builder = Util::getClosestUnit(unit.getResource().lock()->getPosition(), PlayerState::Self, [&](auto &u) { return *u != unit && u->getBuildType() != UnitTypes::None; });
-
-            // Builder is close and may need space opened up
-            if (builder) {
-                auto center       = Position(builder->getBuildPosition()) + Position(32, 32);
-                auto canAfford    = Broodwar->self()->minerals() >= builder->getBuildType().mineralPrice() && Broodwar->self()->gas() >= builder->getBuildType().gasPrice();
-                auto builderClose = builder->getPosition().getDistance(center) < 64.0 && unit.getResource().lock()->getPosition().getDistance(center) < 160.0;
-
-                if (canAfford && builderClose) {
-
-                    // Get furthest Mineral
-                    BWEM::Mineral *furthest = nullptr;
-                    auto furthestDist       = 0.0;
-                    for (auto &resource : unit.getResource().lock()->getStation()->getBase()->Minerals()) {
-                        if (resource && resource->Unit()->exists()) {
-                            auto dist = resource->Pos().getDistance(center);
-                            if (dist > furthestDist) {
-                                furthestDist = dist;
-                                furthest     = resource;
-                            }
-                        }
-                    }
-
-                    // Spam gather it to move out of the way
-                    if (furthest) {
-                        unit.unit()->gather(furthest->Unit());
-                        unit.commandText  = "Gather";
-                        return true;
-                    }
-                }
-            }
-        }
-
         // Gather from resource
         auto station = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
         if (resource->unit()->exists()) {
             if (canGather(resource)) {
                 unit.unit()->gather(resource->unit());
-                unit.commandText  = "Gather";
+                unit.commandText = "Gather";
                 return true;
             }
         }

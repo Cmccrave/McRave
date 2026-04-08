@@ -28,6 +28,7 @@ namespace McRave::Stations
     bool isGeyserExplored(const BWEB::Station * const);
     bool isCompleted(const BWEB::Station * const);
     bool isBlocked(const BWEB::Station * const);
+    bool isPocket(const BWEB::Station * const);
     int lastVisible(const BWEB::Station * const);
     double getSaturationRatio(const BWEB::Station * const);
     double getStationSaturation(const BWEB::Station * const);

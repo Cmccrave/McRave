@@ -44,26 +44,27 @@ namespace McRave::Combat::Simulation {
         }
 
         // If above/below thresholds, it's a sim win/loss
-        auto newState = SimState::Loss;
+        auto newState = unit.getSimState();
         if (unit.getSimValue() >= maxWinPercent)
             newState = SimState::Win;
         else if (unit.getSimValue() < minWinPercent)
             newState = SimState::Loss;
+        unit.setSimState(newState);
 
-         if (newState != lastState) {
-            unit.framesCommitted++;
-             if (unit.framesCommitted >= commitFrames) {
-                unit.setSimState(newState);
-                unit.framesCommitted = 0;
-            }
-            else {
-                unit.setSimState(lastState);
-            }
-        }
-         else {
-            unit.framesCommitted = 0;
-            unit.setSimState(newState);
-        }
+        //if (newState != lastState) {
+        //    unit.framesCommitted++;
+        //    if (unit.framesCommitted >= commitFrames) {
+        //        unit.setSimState(newState);
+        //        unit.framesCommitted = 0;
+        //    }
+        //    else {
+        //        unit.setSimState(lastState);
+        //    }
+        //}
+        //else {
+        //    unit.framesCommitted = 0;
+        //    unit.setSimState(newState);
+        //}
     }
 
     void updateThresholds(UnitInfo &unit)
@@ -93,44 +94,44 @@ namespace McRave::Combat::Simulation {
         // Z
         if (Players::ZvP()) {
             minWinPercent = 0.8;
-            maxWinPercent = 1.4;
+            maxWinPercent = 1.2;
             commitFrames  = 12;
         }
         if (Players::ZvZ()) {
-            minWinPercent = 0.7;
-            maxWinPercent = 1.3;
+            minWinPercent = 0.8;
+            maxWinPercent = 1.2;
             commitFrames  = 0;
         }
         if (Players::ZvT()) {
-            minWinPercent = 1.0;
-            maxWinPercent = 1.4;
+            minWinPercent = 0.8;
+            maxWinPercent = 1.2;
             commitFrames  = 12;
         }
         if (Players::ZvFFA()) {
             minWinPercent = 0.8;
-            maxWinPercent = 1.4;
+            maxWinPercent = 1.2;
             commitFrames  = 0;
         }
 
         // T
         if (Players::TvP()) {
-            minWinPercent = 0.7;
-            maxWinPercent = 1.1;
+            minWinPercent = 0.9;
+            maxWinPercent = 1.3;
             commitFrames  = 12;
         }
         if (Players::TvZ()) {
-            minWinPercent = 0.7;
-            maxWinPercent = 1.1;
+            minWinPercent = 0.9;
+            maxWinPercent = 1.3;
             commitFrames  = 12;
         }
         if (Players::TvT()) {
-            minWinPercent = 0.8;
-            maxWinPercent = 1.2;
+            minWinPercent = 0.9;
+            maxWinPercent = 1.3;
             commitFrames  = 12;
         }
         if (Players::TvFFA()) {
-            minWinPercent = 0.8;
-            maxWinPercent = 1.4;
+            minWinPercent = 0.9;
+            maxWinPercent = 1.3;
             commitFrames  = 12;
         }
     }

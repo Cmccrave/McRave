@@ -30,6 +30,50 @@ namespace McRave::BuildOrder::Zerg {
         bool needSunks     = false;
         bool needHatch     = false;
 
+        void switchComposition()
+        {
+            static auto lastSwitchTime = Time(10, 00);
+
+            static vector<UnitType> switchedComposition = {};
+            if (!switchedComposition.empty())
+                unitOrder = switchedComposition;
+
+            if (Util::getTime() - lastSwitchTime < Time(2, 30))
+                return;
+
+            if (Players::ZvP()) {
+
+                // Opposites for now
+                auto enemyWeakToMuta = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair, Protoss_Archon) <
+                                       Players::getVisibleCount(PlayerState::Enemy, Protoss_High_Templar, Protoss_Reaver);
+                auto enemyWeakToHydra = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair, Protoss_Archon) >
+                                        Players::getVisibleCount(PlayerState::Enemy, Protoss_High_Templar, Protoss_Reaver);
+
+                const auto stringCount = [&](auto t) { return to_string(Players::getVisibleCount(PlayerState::Enemy, t)); };
+
+                auto typesToLog = "Corsair: " + stringCount(Protoss_Corsair) +  //
+                                  " Archon: " + stringCount(Protoss_Archon) +   //
+                                  " HT: " + stringCount(Protoss_High_Templar) + //
+                                  " Reaver: " + stringCount(Protoss_Reaver);
+
+                if (enemyWeakToHydra && com(Zerg_Hydralisk_Den) > 0) {
+                    switchedComposition = hydralurk;
+                    lastSwitchTime      = Util::getTime();
+                    LOG("Composition is hydralurk - ", typesToLog);
+                }
+
+                if (enemyWeakToMuta && com(Zerg_Spire) > 0) {
+                    switchedComposition = mutaling;
+                    lastSwitchTime      = Util::getTime();
+                    LOG("Composition is mutaling - ", typesToLog);
+                }
+            }
+
+            if (Players::ZvT()) {
+                // Switch between mutas and ultras
+            }
+        }
+
         void queueGasTrick()
         {
             if (!gasTrick)
@@ -93,7 +137,7 @@ namespace McRave::BuildOrder::Zerg {
                         LOG_SLOW("Wall ", i, " needs a spore - has ", wall.getAirDefenseCount(), ", wants ", airNeeded, " more, has ", colonies, " colonies");
 
                     if ((atPercent(Zerg_Spawning_Pool, 0.66) && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
-                        buildQueue[Zerg_Creep_Colony] = colonyCount + 1;                        
+                        buildQueue[Zerg_Creep_Colony] = colonyCount + 1;
                         i++;
                     }
                 }
@@ -249,6 +293,9 @@ namespace McRave::BuildOrder::Zerg {
                 auto selfCount  = Stations::getStations(PlayerState::Self).size();
                 auto enemyCount = Stations::getStations(PlayerState::Enemy).size();
 
+                // Gas matters more, mineral bases are "free"
+                Stations::getGasingStationsCount();
+
                 if (Players::ZvZ()) {
                     expandDesired = (Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0 && selfCount < enemyCount && availableMinerals > waitForMinerals && availableGas < 150) //
                                     || (excessResources && productionSat);
@@ -394,15 +441,16 @@ namespace McRave::BuildOrder::Zerg {
         void queueUpgrades()
         {
             using namespace UpgradeTypes;
+            auto enemyAir = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair, Protoss_Scout, Protoss_Arbiter, Terran_Wraith, Terran_Valkyrie, Terran_Battlecruiser) > 0;
 
             // Overlord speed can be done inside openings
-            auto zvpOvieSpeed = Players::ZvP() &&                                                                                                                                  //
-                                ((Players::getStrength(PlayerState::Enemy).airToAir > 0 && Players::getSupply(PlayerState::Self, Races::Zerg) >= 140 && total(Zerg_Hydralisk) > 0) //
-                                 || (Players::getTotalCount(PlayerState::Enemy, Protoss_Arbiter) > 0)                                                                              //
-                                 || (Util::getTime() > Time(9, 00)));                                                                                                              //
+            auto zvpOvieSpeed = Players::ZvP() &&                                        //
+                                ((enemyAir && s >= 140 && total(Zerg_Hydralisk) > 0)     //
+                                 || (Spy::enemyInvis() && Util::getTime() > Time(6, 00)) //
+                                 || (Util::getTime() > Time(9, 00)));                    //
 
-            auto zvtOvieSpeed = Players::ZvT() &&                                                              //
-                                (Spy::getEnemyTransition() == T_2PortWraith && Util::getTime() > Time(6, 00)); //
+            auto zvtOvieSpeed = Players::ZvT() &&                                     //
+                                (Spy::enemyInvis() && Util::getTime() > Time(6, 00)); //
 
             const auto queueOvieSpeed = zvpOvieSpeed || zvpOvieSpeed ||                                                                                //
                                         (Spy::enemyInvis() && (BuildOrder::isFocusUnit(Zerg_Hydralisk) || BuildOrder::isFocusUnit(Zerg_Ultralisk))) || //
@@ -650,6 +698,12 @@ namespace McRave::BuildOrder::Zerg {
             if (Players::ZvFFA())
                 unitOrder = {Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker};
 
+            // Ensure anything we already made is added into the list
+            for (auto unit : unitOrder) {
+                if (unlockReady(unit))
+                    focusUnits.insert(unit);
+            }
+
             // Adding tech
             const auto endOfTech   = !unitOrder.empty() && isFocusUnit(unitOrder.back());
             const auto techVal     = int(focusUnits.size()) + techOffset + mineralThird;
@@ -728,6 +782,7 @@ namespace McRave::BuildOrder::Zerg {
 
         if (!inOpening) {
             static vector<pair<UnitType, int>> priorityOrder;
+            switchComposition();
 
             // ZvP
             if (Players::ZvP() || Players::ZvTVB() || Players::ZvFFA()) {
@@ -829,10 +884,10 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             for (auto &[type, count] : priorityOrder) {
-                auto typeAvailable = (unlockReady(type) && isFocusUnit(type) && vis(type) < count) ||                                                                               //
+                auto typeAvailable = (unlockReady(type) && isFocusUnit(type)) ||                                                                                                    //
                                      (!type.isWorker() && any_of(type.buildsWhat().begin(), type.buildsWhat().end(), [&](auto &t) { return unlockReady(t) && isFocusUnit(t); })) || //
-                                     (type.isWorker() && (!Resources::isMineralSaturated() || !Resources::isGasSaturated()) && vis(type) < count);                                  //
-                if (!typeAvailable)
+                                     (type.isWorker() && (!Resources::isMineralSaturated() || !Resources::isGasSaturated()));                                                       //
+                if (!typeAvailable || vis(type) >= count)
                     continue;
 
                 // Queue if affordable, break otherwise to prevent spending gas on other units

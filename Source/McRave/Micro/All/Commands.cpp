@@ -30,11 +30,11 @@ namespace McRave::Command {
 
         double grouping(ScoreContext &context)
         {
-            if (context.unit->isFlying()) {
-                if (context.commander && context.unit->isTargetedBySplash()) {
-                    return 1.0 + pow(max(0.0, context.p.getDistance(context.commander->getCommandPosition()) - 32.0), 2.0);
-                }
-            }
+            // if (context.unit->isFlying()) {
+            //    if (context.commander && context.unit->attemptingAvoidance()) {
+            //        return 1.0 + pow(max(0.0, context.p.getDistance(context.commander->getCommandPosition()) - 32.0), 2.0);
+            //    }
+            //}
             return 1.0;
         }
 
@@ -183,7 +183,7 @@ namespace McRave::Command {
         }
 
         // Run into the reaver when targeted by it
-        else if (!unit.isFlying() && unit.isTargetedBySplash()) {
+        else if (!unit.isFlying() && unit.isTargetedByType(Protoss_Scarab)) {
             if (unit.hasTarget(); auto target = unit.getTarget().lock()) {
                 unit.setCommand(Move, target->getPosition());
                 return true;
@@ -364,16 +364,7 @@ namespace McRave::Command {
 
             // Workers should move if they need to get to a new gather or construction job
             if (unit.getRole() == Role::Worker) {
-                const auto hasBuildingAssignment = unit.getBuildPosition().isValid() && unit.getBuildType() != UnitTypes::None;
-
-                auto hasMineableResource = false;
-                if (unit.hasResource()) {
-                    auto &resource      = unit.getResource().lock();
-                    hasMineableResource = resource->getResourceState() == ResourceState::Mineable;
-                }
-
-                return ((hasBuildingAssignment && Workers::shouldMoveToBuild(unit, unit.getBuildPosition(), unit.getBuildType())) || (hasMineableResource && !unit.isWithinGatherRange())) ||
-                       unit.getGoal().isValid();
+                return unit.getDestination().isValid();
             }
 
             // Scouts and Transports should always move
@@ -432,18 +423,39 @@ namespace McRave::Command {
         }
 
         // Find the best possible position to kite towards
-        if (unit.isLightAir() && !unit.attemptingRegroup() && unit.hasCommander() && Grids::getAirThreat(unit.getPosition(), PlayerState::Enemy) > 0.0) {
-            auto maxRange         = 160.0;
-            auto commander        = unit.getCommander().lock();
-            const auto kiteRange  = unit.getType().groundWeapon().damageCooldown() * unit.getType().topSpeed() + 64.0;
+        if (unit.isLightAir() && unit.hasCommander() && Grids::getAirThreat(unit.getPosition(), PlayerState::Enemy) > 0.0) {
+
+            auto maxRange       = 160.0;
+            auto commander      = unit.getCommander().lock();
+            auto commanderAngle = BWEB::Map::getAngle(commander->getPosition(), target.getPosition());
+
+            const auto kiteRange = unit.getType().groundWeapon().damageCooldown() * unit.getType().topSpeed() + 64.0;
+
+            const auto angleDiff = [&](double a, double b) {
+                double d = fmod(a - b + M_PI, 2.0 * M_PI);
+                if (d < 0)
+                    d += 2.0 * M_PI;
+                return abs(d - M_PI);
+            };
+
             const auto threatCalc = [&](auto &p) {
-                if (unit.isTargetedBySplash()) {
-                    return 1.0 / p.getDistance(commander->getPosition());
+                auto threat  = double(Grids::getAirThreat(p, PlayerState::Enemy));
+                auto density = double(Grids::getAirDensity(p, PlayerState::Self));
+                if (unit.isTargetedByType(Terran_Valkyrie)) {
+                    auto angle = BWEB::Map::getAngle(p, target.getPosition());
+                    return threat / angleDiff(angle, commanderAngle);
+                }
+                if (unit.isRangedByType(Protoss_Corsair) || unit.isReachedByType(Protoss_Archon)) {
+                    return p.getDistance(unit.getFormation());
                 }
                 return double(Grids::getAirThreat(p, PlayerState::Enemy));
             };
             auto calcPair = Util::findPointOnCircle(unit.getPosition(), target.getPosition(), maxRange, threatCalc);
-            kiteTowards   = Util::shiftTowards(target.getPosition(), calcPair.second, kiteRange);
+            kiteTowards   = calcPair.second;
+            Util::shiftTowards(target.getPosition(), calcPair.second, kiteRange);
+
+            // if (unit.attemptingAvoidance())
+            //    Visuals::drawLine(unit.getPosition(), kiteTowards, Colors::Purple);
         }
 
         // Get current distance

@@ -42,9 +42,9 @@ namespace McRave::Combat::Decision {
         unit.commandText = "";
         if (commander.getCommandType() == UnitCommandTypes::Attack_Unit && commander.hasTarget())
             unit.setCommand(commander.getCommandType(), *commander.getTarget().lock());
-        else if (commander.getCommandType() == UnitCommandTypes::Move && !unit.isTargetedBySplash())
+        else if (commander.getCommandType() == UnitCommandTypes::Move)
             unit.setCommand(commander.getCommandType(), cmdPos);
-        else if (commander.getCommandType() == UnitCommandTypes::Right_Click_Position && !unit.isTargetedBySplash())
+        else if (commander.getCommandType() == UnitCommandTypes::Right_Click_Position)
             unit.setCommand(UnitCommandTypes::Right_Click_Position, commander.getCommandPosition());
         else
             updateDecision(unit);

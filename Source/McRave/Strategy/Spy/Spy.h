@@ -65,7 +65,7 @@ namespace McRave::Spy {
 
     struct StrategySpy { // TODO: Impl multiple players
 
-        Strat build, opener, transition, expand, rush, wall, proxy, early, steal, pressure, greedy, invis, allin, turtle, fortress;
+        Strat build, opener, transition, expand, rush, wall, proxy, early, steal, pressure, greedy, invis, detection, allin, turtle, fortress;
         Time buildTime, openerTime, transitionTime, rushArrivalTime;
         std::vector<Strat *> strats;
         std::vector<Strat *> blueprints;
@@ -79,7 +79,7 @@ namespace McRave::Spy {
 
         StrategySpy()
         {
-            strats                    = {&expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &allin, &turtle, &fortress};
+            strats                    = {&expand, &rush, &wall, &proxy, &early, &steal, &pressure, &greedy, &invis, &detection, &allin, &turtle, &fortress};
             blueprints                = {&build, &opener, &transition};
             build.framesRequired      = 12;
             build.framesLikely        = 500;
@@ -92,18 +92,19 @@ namespace McRave::Spy {
             transition.changeable     = true;
 
             // Attaching names to strats for logging purposes
-            expand.name   = "Expand";
-            rush.name     = "Rush";
-            wall.name     = "Wall";
-            proxy.name    = "Proxy";
-            early.name    = "Early";
-            steal.name    = "Steal";
-            pressure.name = "Pressure";
-            greedy.name   = "Greedy";
-            invis.name    = "Invis";
-            allin.name    = "Allin";
-            turtle.name   = "Turtle";
-            fortress.name = "Fortress";
+            expand.name    = "Expand";
+            rush.name      = "Rush";
+            wall.name      = "Wall";
+            proxy.name     = "Proxy";
+            early.name     = "Early";
+            steal.name     = "Steal";
+            pressure.name  = "Pressure";
+            greedy.name    = "Greedy";
+            invis.name     = "Invis";
+            detection.name = "Detection";
+            allin.name     = "Allin";
+            turtle.name    = "Turtle";
+            fortress.name  = "Fortress";
         }
     };
 
@@ -124,6 +125,7 @@ namespace McRave::Spy {
     bool enemyFastExpand();
     bool enemyRush();
     bool enemyInvis();
+    bool enemyDetection();
     bool enemyPossibleProxy();
     bool enemyProxy();
     bool enemyGasSteal();

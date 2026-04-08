@@ -35,8 +35,6 @@ namespace McRave::Terrain {
     bool isNarrowNatural();
     bool isPocketNatural();
     bool foundEnemy();
-    bool inTerritory(PlayerState, BWAPI::Position);
-    bool inTerritory(PlayerState, const BWEM::Area *);
     void addTerritory(PlayerState, const BWEB::Station *);
     void removeTerritory(PlayerState, const BWEB::Station *);
     std::vector<BWAPI::Position> &getGroundCleanupPositions();
@@ -71,8 +69,8 @@ namespace McRave::Terrain {
     bool inArea(const BWEM::Area *area, BWAPI::Position here);
 
     // Checks if "here" is in the station area
-    template <typename T>                        //
-    inline bool inArea(const BWEB::Station * station, T here) //
+    template <typename T>                                    //
+    inline bool inArea(const BWEB::Station *station, T here) //
     {
         if (!here.isValid() || !station)
             return false;
@@ -81,13 +79,31 @@ namespace McRave::Terrain {
     }
 
     // Checks if "here" is in the area of "there"
-    template <typename T>    //
+    template <typename T>               //
     inline bool inArea(T there, T here) //
     {
         if (!here.isValid() || !there.isValid())
             return false;
         auto area = mapBWEM.GetArea(BWAPI::TilePosition(there));
         return inArea(area, BWAPI::Position(here));
+    }
+
+    bool inTerritory(PlayerState, BWAPI::Position);
+    bool inTerritory(PlayerState, const BWEM::Area *);
+
+    // Checks if the source to the target is all within the given PlayerState territory
+    template <typename T> //
+    inline bool inTerritoryPath(PlayerState state, T source, T target)
+    {
+        if (!inTerritory(state, source) || !inTerritory(state, target))
+            return false;
+
+        for (auto path : mapBWEM.GetPath(source, target)) {
+            if (!inTerritory(state, path->GetAreas().first) || !inTerritory(state, path->GetAreas().second)) {
+                return false;
+            }
+        }
+        return true;
     }
 
 } // namespace McRave::Terrain

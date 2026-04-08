@@ -389,13 +389,13 @@ namespace McRave::Math {
         if (unit.getPlayer()->isEnemy(Broodwar->self()))
             return 0.0;
 
-        auto maxAirRange = max(200.0, Players::getStrength(PlayerState::Enemy).maxAirRange);
-        auto maxGrdRange = max(200.0, Players::getStrength(PlayerState::Enemy).maxGroundRange);
+        auto maxAirReach = max(256.0, Players::getStrength(PlayerState::Enemy).maxAirReach);
+        auto maxGrdReach = max(256.0, Players::getStrength(PlayerState::Enemy).maxGroundReach);
 
         if (unit.isFlying())
-            return maxAirRange;
+            return maxAirReach;
         else
-            return maxGrdRange + 160.0;
+            return maxGrdReach + 160.0;
     }
 
     int stopAnimationFrames(UnitType unitType)

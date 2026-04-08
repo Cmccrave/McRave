@@ -27,6 +27,7 @@ namespace McRave::Planning {
         const BWEB::Station *currentExpansion = nullptr;
         const BWEB::Station *nextExpansion    = nullptr;
         vector<TilePosition> unreachablePositions;
+        vector<UnitType> unplannableType;
 
         UnitInfo *getBuilder(UnitType building, Position here)
         {
@@ -116,11 +117,11 @@ namespace McRave::Planning {
             auto haveSomeHelp = Players::getCompleteCount(PlayerState::Self, Zerg_Zergling) > 0 || Players::getCompleteCount(PlayerState::Self, Zerg_Hydralisk) > 0 ||
                                 Players::getCompleteCount(PlayerState::Self, Protoss_Zealot) > 0 || Players::getCompleteCount(PlayerState::Self, Protoss_Dragoon) > 0 ||
                                 Players::getCompleteCount(PlayerState::Self, Terran_Marine) > 0 || Players::getCompleteCount(PlayerState::Self, Terran_Vulture) > 0;
-            if (!isDefensiveType(building) || !haveSomeHelp) {
+            if (Util::getTime() < Time(3, 30)) {
                 auto closestEnemy = Util::getClosestUnit(center, PlayerState::Enemy, [&](auto &u) {
                     return !u->isFlying() && !u->getType().isWorker() && !u->getType().isBuilding() && u->getType() != Terran_Vulture_Spider_Mine;
                 });
-                if (closestEnemy && Util::boxDistance(closestEnemy->getType(), closestEnemy->getPosition(), building, center) <= 0.0)
+                if (closestEnemy && Util::boxDistance(closestEnemy->getType(), closestEnemy->getPosition(), building, center) <= 32.0)
                     return false;
             }
 
@@ -544,10 +545,6 @@ namespace McRave::Planning {
                 if (Players::ZvZ())
                     desiredRowOrder = {3, 2, 1};
 
-                // First defense must be placed in an optimal spot
-                if (wall.getGroundDefenseCount() + wall.getAirDefenseCount() + colonies <= 0)
-                    desiredRowOrder = {1};
-
                 // If this wall needs defenses
                 if (Walls::needGroundDefenses(wall) > colonies) {
 
@@ -814,6 +811,7 @@ namespace McRave::Planning {
                 }
             }
             buildingsPlanned.clear();
+            unplannableType.clear();
 
             // Add up how many more buildings of each type we need
             for (auto &[building, count] : BuildOrder::getBuildQueue()) {
@@ -853,6 +851,7 @@ namespace McRave::Planning {
                     auto center = Position(here) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
                     if (!here.isValid()) {
                         LOG_SLOW("Couldn't find a position to build ", building.c_str());
+                        unplannableType.push_back(building);
                         continue;
                     }
 
@@ -991,6 +990,8 @@ namespace McRave::Planning {
         }
         return false;
     }
+
+    bool isUnplannable(UnitType type) { return Util::contains(unplannableType, type); }
 
     bool isDefensiveType(UnitType building)
     {

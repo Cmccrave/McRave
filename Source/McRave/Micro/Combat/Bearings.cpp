@@ -50,11 +50,10 @@ namespace McRave::Combat::Bearings {
     void updateRetreat(UnitInfo &unit)
     {
         auto retreat = Stations::getClosestRetreatStation(unit);
+        unit.retreatPos = Terrain::getMainPosition();
 
         if (retreat)
             unit.retreatPos = retreat->getBase()->Center();
-        else
-            unit.retreatPos = Terrain::getMainPosition();
     }
 
     // What is the "forward" bearing for this unit
@@ -63,10 +62,9 @@ namespace McRave::Combat::Bearings {
         auto retreat = Stations::getClosestRetreatStation(unit);
 
         if (unit.getGlobalState() == GlobalState::Retreat) {
+            unit.marchPos = Stations::getDefendPosition(Terrain::getMyMain());
             if (retreat)
                 unit.marchPos = Stations::getDefendPosition(retreat);
-            else
-                unit.marchPos = Stations::getDefendPosition(Terrain::getMyMain());
         }
         else {
             unit.marchPos = unit.getDestination();
@@ -101,10 +99,6 @@ namespace McRave::Combat::Bearings {
                 unit.setDestination(unit.getSurroundPosition());
                 // Broodwar->drawTextMap(unit.getPosition(), "a_surround");
             }
-            else if (!unit.isLightAir() && unit.getEngagePosition().isValid()) {
-                unit.setDestination(unit.getEngagePosition());
-                // Broodwar->drawTextMap(unit.getPosition(), "a_engage");
-            }
             else if (unit.hasTarget()) {
                 unit.setDestination(unit.getTarget().lock()->getPosition());
                 // Broodwar->drawTextMap(unit.getPosition(), "a_target");
@@ -115,11 +109,8 @@ namespace McRave::Combat::Bearings {
             if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Defend) {
                 unit.setDestination(unit.getGoal());
             }
-            else if (retreat && unit.isFlying()) {
-                unit.setDestination(retreat->getBase()->Center());
-            }
             else if (retreat) {
-                unit.setDestination(Stations::getDefendPosition(retreat));
+                unit.setDestination(retreat->getBase()->Center());
             }
             else {
                 unit.setDestination(Position(Terrain::getMainChoke()->Center()));

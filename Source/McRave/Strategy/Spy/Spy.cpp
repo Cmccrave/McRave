@@ -105,6 +105,7 @@ namespace McRave::Spy {
     bool enemyFastExpand() { return theSpy.expand.likely; }
     bool enemyRush() { return theSpy.rush.likely; }
     bool enemyInvis() { return theSpy.invis.likely; }
+    bool enemyDetection() { return theSpy.detection.likely; }
     bool enemyPossibleProxy() { return theSpy.early.likely; }
     bool enemyProxy() { return theSpy.proxy.likely; }
     bool enemyGasSteal() { return theSpy.steal.likely; }

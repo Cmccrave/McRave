@@ -135,6 +135,12 @@ namespace McRave::Combat::Navigation {
             return;
         }
 
+        if (unit.getFormation().isValid() && !unit.attemptingRunby() && unit.getLocalState() == LocalState::Attack) {
+            auto dist          = unit.getPosition().getDistance(unit.getDestination());
+            auto shiftToTarget = Util::shiftTowards(unit.getFormation(), unit.getDestination(), max(dist, 32.0));
+            return;
+        }
+
         // If path is reachable, find a point n pixels away to set as new destination
         auto dist = 160.0;
         if (unit.getMarchPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > dist) {
@@ -230,8 +236,8 @@ namespace McRave::Combat::Navigation {
             auto simPosition    = unit.hasSimTarget() ? unit.getSimTarget().lock()->getPosition() : unit.getDestination();
 
             // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
-            auto &simPositions     = lastSimPositions[&unit];
-            auto cachedDist        = unit.getLocalState() == LocalState::Attack ? 0.0 : min(simDistCurrent, int(unit.getRetreatRadius() + 32.0));
+            auto &simPositions = lastSimPositions[&unit];
+            auto cachedDist    = unit.getLocalState() == LocalState::Attack ? 0.0 : min(simDistCurrent, int(unit.getRetreatRadius() + 32.0));
 
             static const Position offset(16, 16);
             const int frameNow = Broodwar->getFrameCount();

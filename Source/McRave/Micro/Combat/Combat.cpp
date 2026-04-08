@@ -168,9 +168,9 @@ namespace McRave::Combat {
             vector<const BWEB::Station *> stations = Stations::getStations(PlayerState::Enemy);
 
             // Inbound unit fighting
-            if (Util::getTime() < Time(8, 00) && (Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure()) {
+            if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure(Zerg_Mutalisk) && Util::getTime() < Time(10, 00)) {
                 const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return Units::inBoundUnit(*u, 15) && !u->getType().isWorker() && u->getType() != Terran_Vulture;
+                    return Units::inBoundUnit(*u, 15) && !u->getType().isWorker() && u->getType() != Terran_Vulture && !u->isHidden();
                 });
 
                 if (closest) {

@@ -124,9 +124,9 @@ namespace McRave::Combat::Clusters {
 
         void getCommander(Cluster &cluster)
         {
-            // Check if a commander previously existed within a similar cluster
+            // Check if a commander previously existed within a similar cluster for flying units
             auto nextCommander = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
-                return !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() &&
+                return u->isFlying() && !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() &&
                        find(previousCommanders.begin(), previousCommanders.end(), u) != previousCommanders.end();
             });
 
@@ -157,13 +157,13 @@ namespace McRave::Combat::Clusters {
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.marchNavigation = cluster.marchPosition;
-            const auto march        = Util::findPointOnPath(cluster.marchPath, [&](Position p) { return p.getDistance(cluster.avgPosition) >= dist; });
+            const auto march        = Util::findPointOnPath(cluster.marchPath, [&](Position p) { return p.getDistance(commander->getPosition()) >= dist; });
             if (march.isValid())
                 cluster.marchNavigation = march;
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.retreatNavigation = cluster.retreatPosition;
-            const auto retreat = Util::findPointOnPath(cluster.retreatPath, [&](Position p) { return p.getDistance(cluster.avgPosition) >= dist && p.getDistance(cluster.marchNavigation) >= 32.0; });
+            const auto retreat        = Util::findPointOnPath(cluster.retreatPath, [&](Position p) { return p.getDistance(commander->getPosition()) >= dist; });
             if (retreat.isValid())
                 cluster.retreatNavigation = retreat;
 
@@ -172,48 +172,7 @@ namespace McRave::Combat::Clusters {
             cluster.retreatNavigation -= Position(16, 16);
         }
 
-        void fixNavigations()
-        {
-            // Create new navigation points that are more centered to the terrain
-            for (auto &cluster : clusters) {
-
-                const auto desiredAltitude = (int(cluster.units.size()) * 32);
-
-                const auto newNavigations = [&](Position navigation) {
-                    auto perpAngle       = BWEB::Map::getAngle(make_pair(navigation, cluster.avgPosition)) + 1.57;
-                    auto size            = 32;
-                    auto newNav          = navigation;
-                    auto currentAltitude = 0;
-
-                    // Now take the center and try to shift it perpendicular towards lower altitude
-                    while (newNav.isValid() && mapBWEM.GetMiniTile(WalkPosition(newNav)).Altitude() < desiredAltitude) {
-                        auto p1        = Util::clipPosition(newNav - Position(int(-size * cos(perpAngle)), int(size * sin(perpAngle))));
-                        auto p2        = Util::clipPosition(newNav + Position(int(-size * cos(perpAngle)), int(size * sin(perpAngle))));
-                        auto altitude1 = mapBWEM.GetMiniTile(WalkPosition(p1)).Altitude();
-                        auto altitude2 = mapBWEM.GetMiniTile(WalkPosition(p2)).Altitude();
-
-                        if (altitude1 > altitude2 && altitude1 > currentAltitude) {
-                            newNav          = p1;
-                            size            = 32;
-                            currentAltitude = altitude1;
-                        }
-                        else if (altitude2 > currentAltitude) {
-                            newNav          = p2;
-                            size            = 32;
-                            currentAltitude = altitude2;
-                        }
-                        else if (altitude1 == 0 && altitude2 == 0)
-                            size += 32;
-                        else
-                            break;
-                    }
-                    return newNav;
-                };
-
-                cluster.marchNavigation   = newNavigations(cluster.marchNavigation);
-                cluster.retreatNavigation = newNavigations(cluster.retreatNavigation);
-            }
-        }
+        void fixNavigations() {}
 
         void finishClusters()
         {
@@ -233,7 +192,7 @@ namespace McRave::Combat::Clusters {
                         }
                     }
                     cluster.spacing = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0));
-                    pathCluster(cluster, 160.0);
+                    pathCluster(cluster, 96.0);
 
                     // Determine the state of the cluster
                     // Move to formation
@@ -245,16 +204,17 @@ namespace McRave::Combat::Clusters {
                         cluster.state = LocalState::Attack;
 
                     // Determine the shape we want
+                    cluster.shape = Shape::None;
                     if (!commander->isLightAir() && !commander->isSuicidal() && !commander->getType().isWorker()) {
                         if (cluster.state == LocalState::Hold && atHome && Combat::holdAtChoke())
                             cluster.shape = Shape::Concave;
                         else
                             cluster.shape = Shape::Line;
-
-                        //// HACK: Flip to a better shape
-                        // if (Terrain::inArea(Terrain::getMainArea(), cluster.avgPosition) && cluster.state == LocalState::Hold && Terrain::isFlatRamp())
-                        //    cluster.shape = Shape::Concave;
                     }
+
+                    // Testing
+                    if (commander->isLightAir() && commander->attemptingAvoidance())
+                        cluster.shape = Shape::Concave;
                 }
             }
         }

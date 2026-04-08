@@ -243,6 +243,11 @@ namespace McRave::Walls {
                            (Util::getTime() > Time(5, 20)) + (Util::getTime() > Time(5, 40)) + (Util::getTime() > Time(6, 00)) - Spy::enemyProxy();
                 }
 
+                // Worker rush with zealots
+                if (Spy::getEnemyTransition() == U_WorkerRush) {
+                    return 2 + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 20));
+                }
+
                 if (Util::getTime() > Time(4, 00) && Util::getTime() < Time(6, 30))
                     return (Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) / 2) + (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) / 2);
             }
@@ -352,7 +357,7 @@ namespace McRave::Walls {
                 return 1;
             }
 
-            // 
+            //
             if (Scouts::enemyDeniedScout() || Spy::enemyWalled())
                 return 1;
 
@@ -520,7 +525,7 @@ namespace McRave::Walls {
     int needGroundDefenses(BWEB::Wall &wall)
     {
         auto groundCount = wall.getGroundDefenseCount();
-        if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) || BuildOrder::isAllIn() || (!Combat::isDefendNatural() && wall.getStation()->isNatural()))
+        if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) || BuildOrder::isAllIn() || (!Combat::isDefendNatural() && wall.getStation()->isNatural()) || Stations::isPocket(wall.getStation()))
             return 0;
 
         // If any defense in the wall is severely damaged, we should build 1 extra
@@ -548,6 +553,11 @@ namespace McRave::Walls {
             auto nearestHatch = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Self, [&](auto &u) { return u->getType().isResourceDepot(); });
             if (nearestHatch && nearestHatch->frameCompletesWhen() > Broodwar->getFrameCount() + 200)
                 return 0;
+        }
+
+        // (Zv) If the natural is narrow, it's fair to skip one eventually
+        if (Broodwar->self()->getRace() == Races::Zerg && Terrain::isNarrowNatural() && groundCount >= 2) {
+            groundCount++;
         }
 
         // If they're only at home and not proxying units, don't make any defenses for a bit

@@ -18,6 +18,13 @@ namespace McRave::Targets {
 
     namespace {
 
+        struct Context {
+            shared_ptr<UnitInfo> unit, target;
+            double dist;
+            double enemyRange, enemyReach, selfRange, selfReach;
+            double wH, wF, wP;
+        };
+
         set<UnitType> cancelPriority = {Terran_Missile_Turret, Terran_Barracks, Terran_Bunker, Terran_Factory, Terran_Starport, Terran_Armory, Terran_Bunker};
         set<UnitType> proxyTargeting = {Protoss_Pylon, Terran_Barracks, Terran_Bunker, Zerg_Sunken_Colony};
         map<UnitInfo *, int> meleeSpotsAvailable;
@@ -89,8 +96,7 @@ namespace McRave::Targets {
             }
 
             // Handle workers and cannons if we're in the same area in enemy territory
-            if (unit.isWithinReach(target) && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) &&
-                Terrain::inArea(mapBWEM.GetArea(target.getWalkPosition()), unit.getPosition())) {
+            if (unit.isWithinReach(target) && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) && Terrain::inArea(mapBWEM.GetArea(target.getWalkPosition()), unit.getPosition())) {
                 if (target.getType().isWorker())
                     return Priority::Major;
                 if (target.getType() == Protoss_Photon_Cannon && target.hasAttackedRecently())
@@ -124,7 +130,7 @@ namespace McRave::Targets {
             auto anythingTime     = Util::getTime() > (Players::ZvZ() ? Time(7, 00) : Time(10, 00));
             auto anythingSupply   = !Players::ZvZ() && Players::getSupply(PlayerState::Enemy, Races::None) < 20;
             auto defendExpander   = BuildOrder::shouldExpand() && unit.getGoal().isValid();
-            auto somethingInRange = (unit.isWithinRange(target) || target.isWithinRange(unit));
+            auto somethingInRange = Grids::getAirThreat(unit.getPosition(), PlayerState::Enemy) > 0.0f || Grids::getAirThreat(target.getPosition(), PlayerState::Enemy) > 0.0f;
 
             if (Players::ZvP()) {
 
@@ -175,15 +181,15 @@ namespace McRave::Targets {
                 return Priority::Critical;
 
             // If a building is unprotected
-            if (!BuildOrder::isPressure() && Players::getStrength(PlayerState::Enemy).airDefense > 0.0 && target.getType().isBuilding() && !target.canAttackAir() && target.getUnitsInRangeOfThis().empty() && unit.getUnitsInRangeOfThis().empty() &&
-                unit.isWithinRange(target)) {
+            if (!BuildOrder::isPressure() && Players::getStrength(PlayerState::Enemy).airDefense > 0.0 && target.getType().isBuilding() && !target.canAttackAir() &&
+                target.getUnitsInRangeOfThis().empty() && unit.getUnitsInRangeOfThis().empty() && unit.isWithinRange(target)) {
                 Priority::Major;
             }
 
             if (unit.isWithinRange(target) && !target.getType().isBuilding() && target.canAttackAir())
                 return Priority::Major;
 
-            if (target.getType().isBuilding() && !target.canAttackAir())
+            if ((target.getType().isBuilding() || somethingInRange) && !target.canAttackAir())
                 return Priority::Minor;
 
             return Priority::Normal;
@@ -322,7 +328,7 @@ namespace McRave::Targets {
                 }
 
                 // Threatening priority
-                if (target.isThreatening() && (unit.isWithinReach(target) || Util::getTime() < Time(5, 00) || Combat::State::isStaticRetreat(unit.getType()))) {
+                if (target.isThreatening() && (unit.isWithinReach(target) || Util::getTime() < Time(5, 00) || Terrain::inTerritoryPath(PlayerState::Self, unit.getPosition(), target.getPosition()))) {
                     if (!unit.getType().isWorker() && !target.getType().isWorker() && unit.isFlying() == target.isFlying())
                         return Priority::Major;
                     if (target.getType().isWorker() && target.isThreatening())
@@ -403,6 +409,48 @@ namespace McRave::Targets {
             return Priority::Minor;
         }
 
+        double healthScore(UnitInfo &unit, UnitInfo &target) //
+        {
+            return pow(2.0, (1.0 - target.getPercentTotal()));
+        }
+
+        double focusScore(UnitInfo &unit, UnitInfo &target)
+        {
+            auto range             = target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
+            auto reach             = target.getType().isFlyer() ? unit.getAirReach() : unit.getGroundReach();
+            auto enemyRange        = unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange();
+            auto enemyReach        = unit.getType().isFlyer() ? target.getAirReach() : target.getGroundReach();
+            const auto boxDistance = double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
+
+            if (unit.isLightAir() || Players::ZvZ())
+                return 1.0;
+            else if (unit.getType().isWorker() && target.getType().isWorker() && Spy::getEnemyTransition() == U_WorkerRush && int(target.getUnitsTargetingThis().size()) < 6) {
+                return (1.0 + (1.0 * double(target.getUnitsTargetingThis().size())));
+            }
+
+            if (unit.isMelee()) {
+                const auto targetSize     = max(target.getType().width(), target.getType().height());
+                const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->isMelee(); });
+                if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
+                    return 0.05;
+            }
+
+            const auto withinReachHigherRange = range > 32.0 && range >= enemyRange && boxDistance <= reach;
+            const auto withinReachMelee       = range <= 32.0 && boxDistance <= reach;
+
+            const auto withinRangeLessRange = range > 32.0 && range < enemyRange && boxDistance <= range;
+            const auto withinRangeMelee     = range <= 32.0 && boxDistance <= 64.0;
+
+            if (withinReachHigherRange || withinRangeLessRange || withinRangeMelee)
+                return (1.0 + (0.5 * double(target.getUnitsTargetingThis().size())));
+            return 1.0;
+        }
+
+        double priorityScore(UnitInfo &unit, UnitInfo &target) //
+        {
+            return target.getPriority() / maxPriority;
+        }
+
         double scoreTarget(UnitInfo &unit, UnitInfo &target)
         {
             // Scoring parameters
@@ -411,52 +459,21 @@ namespace McRave::Targets {
             auto enemyRange = unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange();
             auto enemyReach = unit.getType().isFlyer() ? target.getAirReach() : target.getGroundReach();
 
-            const auto boxDistance = double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
-            const auto useGrd      = !unit.getType().isWorker() && !unit.isFlying() && !target.isFlying() && mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea(target.getTilePosition()) &&
-                                mapBWEM.GetArea(unit.getTilePosition())->AccessibleFrom(mapBWEM.GetArea(target.getTilePosition())) && boxDistance < unit.getEngageRadius() && boxDistance > reach;
-            const auto actualDist = (useGrd ? BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) : boxDistance);
-            const auto dist       = exp(actualDist / 32.0);
-
             if (unit.isSiegeTank()) {
                 range = 384.0;
                 reach = range + (unit.getSpeed() * 16.0) + double(unit.getType().width() / 2) + 64.0;
             }
 
-            const auto healthScore = [&]() {
-                if ((range > 32.0 || unit.isWithinRange(target) || target.isWithinRange(unit)) && target.isCompleted())
-                    return 1.0 + (0.1 * (1.0 - target.getPercentTotal()));
-                return 1.0;
-            };
+            const auto boxDistance = double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
+            const auto useGrd      = !unit.getType().isWorker() && !unit.isFlying() && !target.isFlying() && mapBWEM.GetArea(unit.getTilePosition()) && mapBWEM.GetArea(target.getTilePosition()) &&
+                                mapBWEM.GetArea(unit.getTilePosition())->AccessibleFrom(mapBWEM.GetArea(target.getTilePosition())) && boxDistance < unit.getEngageRadius() && boxDistance > reach;
+            const auto actualDist = (useGrd ? BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) : boxDistance);
 
-            const auto focusScore = [&]() {
-                if (unit.isLightAir() || Players::ZvZ())
-                    return 1.0;
-                else if (unit.getType().isWorker() && target.getType().isWorker() && Spy::getEnemyTransition() == U_WorkerRush && int(target.getUnitsTargetingThis().size()) < 6) {
-                    return (1.0 + (1.0 * double(target.getUnitsTargetingThis().size())));
-                }
+            // Make distance targeting scaling with minutes in the game
+            const auto earlyScale = max(1.0, 4.0 - Util::getTime().minutes * 0.3);
+            const auto dist       = exp(actualDist / (48.0 * earlyScale));
 
-                if (unit.isMelee()) {
-                    const auto targetSize     = max(target.getType().width(), target.getType().height());
-                    const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->isMelee(); });
-                    if (!target.getType().isBuilding() && targetingCount >= targetSize / 6)
-                        return 0.05;
-                }
-
-                const auto withinReachHigherRange = range > 32.0 && range >= enemyRange && boxDistance <= reach;
-                const auto withinReachMelee       = range <= 32.0 && boxDistance <= reach;
-
-                const auto withinRangeLessRange = range > 32.0 && range < enemyRange && boxDistance <= range;
-                const auto withinRangeMelee     = range <= 32.0 && boxDistance <= 64.0;
-
-                if (withinReachHigherRange || withinRangeLessRange || withinRangeMelee)
-                    return (1.0 + (0.5 * double(target.getUnitsTargetingThis().size())));
-                return 1.0;
-            };
-
-            const auto priorityScore = [&]() { return target.getPriority() / maxPriority; };
-            const auto effectiveness = [&]() { return unit.getDpsAgainst(target); };
-
-            const auto targetScore = healthScore() * focusScore() * priorityScore();
+            const auto targetScore = healthScore(unit, target) * focusScore(unit, target) * priorityScore(unit, target) / dist;
 
             // Detector targeting (distance to nearest ally added)
             if ((target.isBurrowed() || target.isCloaked()) && ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == Terran_Comsat_Station)) {
@@ -465,7 +482,7 @@ namespace McRave::Targets {
 
                 // Detectors want to stay close to their target if we have a friendly nearby
                 if (closest && closest->getPosition().getDistance(target.getPosition()) < 480.0)
-                    return priorityScore() / (dist * closest->getPosition().getDistance(target.getPosition()));
+                    return priorityScore(unit, target) / (dist * closest->getPosition().getDistance(target.getPosition()));
                 return 0.0;
             }
 
@@ -474,24 +491,20 @@ namespace McRave::Targets {
                 const auto eGrid     = Grids::getGroundDensity(target.getPosition(), PlayerState::Enemy) + Grids::getAirDensity(target.getPosition(), PlayerState::Enemy);
                 const auto aGrid     = 1.0 + Grids::getGroundDensity(target.getPosition(), PlayerState::Self) + Grids::getAirDensity(target.getPosition(), PlayerState::Self);
                 const auto gridScore = eGrid / aGrid;
-                return gridScore * targetScore / dist;
+                return gridScore * targetScore;
             }
 
             // Defender targeting (distance not used)
             else if (unit.getRole() == Role::Defender && boxDistance - range <= 16.0)
-                return healthScore() * priorityScore() * effectiveness();
-
-            // Lurker burrowed targeting (only distance matters)
-            else if (unit.getType() == Zerg_Lurker && unit.isBurrowed())
-                return 1.0 / dist;
+                return healthScore(unit, target) * priorityScore(unit, target);
 
             // Proximity targeting (targetScore not used)
-            else if (unit.getType() == Protoss_Reaver || unit.getType() == Zerg_Queen || unit.isLightAir()) {
+            else if (unit.getType() == Protoss_Reaver || unit.getType() == Zerg_Queen || unit.isLightAir() || unit.getType() == Zerg_Guardian || (unit.getType() == Zerg_Lurker && unit.isBurrowed())) {
                 if (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir())
                     return 0.1 / dist;
                 return 1.0 / dist;
             }
-            return targetScore / dist;
+            return targetScore;
         }
 
         void getSimTarget(UnitInfo &unit, PlayerState pState)
@@ -627,8 +640,10 @@ namespace McRave::Targets {
             }
 
             // Add this unit to the targeted by vector
-            if (unit.hasTarget() && (unit.getRole() == Role::Combat || unit.getRole() == Role::Support))
-                unit.getTarget().lock()->getUnitsTargetingThis().push_back(unit.weak_from_this());
+            if (unit.hasTarget() && (unit.getRole() == Role::Combat || unit.getRole() == Role::Support)) {
+                auto target = unit.getTarget().lock();
+                target->addTargeter(unit);
+            }
         }
 
         void getTarget(UnitInfo &unit)

@@ -5,6 +5,15 @@
 
 namespace McRave::Util {
 
+    // Generic utility
+
+    template <typename C, typename T> //
+    inline bool contains(const C &container, const T &item)
+    {
+        return std::find(container.begin(), container.end(), item) != container.end();
+    }
+
+    // Broodwar utility
     const BWEM::ChokePoint *getClosestChokepoint(BWAPI::Position);
 
     int getCastRadius(BWAPI::TechType);
@@ -15,6 +24,20 @@ namespace McRave::Util {
 
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);
+
+    template <typename T> //
+    inline bool rectangleIntersect(T topLeftA, T botRightA, T topLeftB, T botRightB)
+    {
+        if (botRightA.x <= topLeftB.x)
+            return false;
+        if (topLeftA.x >= botRightB.x)
+            return false;
+        if (botRightA.y <= topLeftB.y)
+            return false;
+        if (topLeftA.y >= botRightB.y)
+            return false;
+        return true;
+    }
 
     std::pair<BWAPI::Position, BWAPI::Position> typeBoundingBox(BWAPI::Position here, BWAPI::UnitType type);
 

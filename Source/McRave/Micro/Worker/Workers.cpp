@@ -4,6 +4,7 @@
 #include "Info/Player/Players.h"
 #include "Info/Resource/Resources.h"
 #include "Info/Unit/Units.h"
+#include "Main/Util.h"
 #include "Map/Grids.h"
 #include "Map/Stations.h"
 #include "Map/Terrain.h"
@@ -232,14 +233,16 @@ namespace McRave::Workers {
 
         void updateDestination(UnitInfo &unit)
         {
+            auto resource = unit.hasResource() ? unit.getResource().lock() : nullptr;
+
             // If unit has a building type and we are ready to build
             if (unit.getBuildType() != UnitTypes::None && shouldMoveToBuild(unit, unit.getBuildPosition(), unit.getBuildType()) && isBuildingSafe(unit)) {
                 auto center = Position(unit.getBuildPosition()) + Position(unit.getBuildType().tileWidth() * 16, unit.getBuildType().tileHeight() * 16);
 
                 // Probes wants to try to place offcenter so the Probe doesn't have to reset collision on placement
-                if (unit.getType() == Protoss_Probe && unit.hasResource()) {
-                    center.x += unit.getResource().lock()->getPosition().x > center.x ? unit.getBuildType().dimensionRight() : -unit.getBuildType().dimensionLeft();
-                    center.y += unit.getResource().lock()->getPosition().y > center.y ? unit.getBuildType().dimensionDown() : -unit.getBuildType().dimensionUp();
+                if (unit.getType() == Protoss_Probe && resource) {
+                    center.x += resource->getPosition().x > center.x ? unit.getBuildType().dimensionRight() : -unit.getBuildType().dimensionLeft();
+                    center.y += resource->getPosition().y > center.y ? unit.getBuildType().dimensionDown() : -unit.getBuildType().dimensionUp();
                 }
 
                 // Drone wants to be slightly offcenter to prevent a long animation before placing
@@ -251,7 +254,7 @@ namespace McRave::Workers {
 
                 // https://github.com/bwapi/bwapi/issues/914
                 if (unit.getBuildType() == Zerg_Nydus_Canal) {
-                    auto mapEdge = Terrain::getClosestMapEdge(Position(unit.getBuildPosition()));
+                    auto mapEdge   = Terrain::getClosestMapEdge(Position(unit.getBuildPosition()));
                     auto nudgeDiff = 64.0;
 
                     if (mapEdge.x == center.x) {
@@ -272,8 +275,29 @@ namespace McRave::Workers {
                 unit.setDestination(unit.getGoal());
 
             // If unit has a resource
-            else if (unit.hasResource() && unit.getResource().lock()->getResourceState() == ResourceState::Mineable && unit.getPosition().getDistance(unit.getResource().lock()->getPosition()) > 96.0)
-                unit.setDestination(unit.getResource().lock()->getPosition());
+            else if (resource && resource->getResourceState() == ResourceState::Mineable && !unit.isWithinGatherRange()) {
+                unit.setDestination(resource->getPosition());
+            }
+
+            // Check if we're trying to build a structure near this worker
+            else if (resource) {
+                if (auto builder = Util::getClosestUnit(resource->getPosition(), PlayerState::Self, [&](auto &u) { return *u != unit && u->getBuildType() != UnitTypes::None; })) {
+                    auto center       = Position(builder->getBuildPosition()) + Position(builder->getBuildType().tileWidth() * 32, builder->getBuildType().tileHeight() * 32);
+                    auto canAfford    = Broodwar->self()->minerals() >= builder->getBuildType().mineralPrice() && Broodwar->self()->gas() >= builder->getBuildType().gasPrice();
+                    auto builderClose = builder->getPosition().getDistance(center) < 96.0;
+                    auto destination  = Util::shiftTowards(center, unit.getPosition(), 96.0);
+
+                    // Check if the resource is adjacent to the planning by padding by 1
+                    auto buildingTopLeft  = builder->getBuildPosition() - TilePosition(1, 1);
+                    auto buildingBotRight = builder->getBuildPosition() + builder->getBuildType().tileSize() + TilePosition(1, 1);
+                    auto resourceTopLeft  = resource->getTilePosition();
+                    auto resourceBotRight = resource->getTilePosition() + resource->getType().tileSize();
+                    auto adjacentPlanning = Util::rectangleIntersect(buildingTopLeft, buildingBotRight, resourceTopLeft, resourceBotRight);
+
+                    if (builderClose && canAfford && adjacentPlanning)
+                        unit.setDestination(destination);
+                }
+            }
         }
 
         void updateResource(UnitInfo &unit)

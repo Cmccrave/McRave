@@ -16,6 +16,7 @@ namespace McRave::Planning {
 
     BWAPI::UnitType whatPlannedHere(BWAPI::TilePosition);
     bool overlapsPlan(UnitInfo &, BWAPI::Position);
+    bool isUnplannable(BWAPI::UnitType);
 
     std::map<BWAPI::TilePosition, BWAPI::UnitType> &getPlannedBuildings();
     int getPlannedMineral();

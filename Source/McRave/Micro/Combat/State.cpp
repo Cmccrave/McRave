@@ -344,7 +344,7 @@ namespace McRave::Combat::State {
                (target.isThreatening() && !target.isHidden()) || (unit.isSuicidal() && (Terrain::inTerritory(PlayerState::Self, target.getPosition()) || target.isThreatening())) ||
                (unit.isSuicidal() && !nearGrdToAir()) || (unit.getType() == Zerg_Lurker && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy)) ||
                (unit.isHidden() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy)) ||
-               (unit.getType() == Zerg_Lurker && unit.isBurrowed() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy)) ||
+               (unit.getType() == Zerg_Lurker && unit.isBurrowed() && !Spy::enemyDetection() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy)) ||
                (!unit.isFlying() && unit.getGroundRange() < 32.0 && unit.getGoalType() == GoalType::Explore && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) &&
                 Util::getTime() > Time(8, 00) && !Players::ZvZ() && nearEnemyStation()) ||
                (!unit.isFlying() && Actions::overlapsActions(unit.unit(), unit.getEngagePosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, 96)) ||

@@ -1,15 +1,15 @@
 #include "ProtossBuildOrder.h"
 
-#include "Main/Common.h"
-#include "Strategy/Spy/Spy.h"
-#include "Map/Walls/Walls.h"
-#include "Map/Stations.h"
-#include "Info/Resource/Resources.h"
-#include "Map/Terrain.h"
-#include "Macro/Upgrading/Upgrading.h"
-#include "Macro/Researching/Researching.h"
 #include "Info/Player/Players.h"
+#include "Info/Resource/Resources.h"
 #include "Macro/Planning/Planning.h"
+#include "Macro/Researching/Researching.h"
+#include "Macro/Upgrading/Upgrading.h"
+#include "Main/Common.h"
+#include "Map/Stations.h"
+#include "Map/Terrain.h"
+#include "Map/Walls/Walls.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -43,7 +43,7 @@ namespace McRave::BuildOrder::Protoss {
         void queueSupply()
         {
             if (!inBookSupply) {
-                int count = min(22, s / 14) - (com(Protoss_Nexus) - 1);
+                int count                 = min(22, s / 14) - (com(Protoss_Nexus) - 1);
                 buildQueue[Protoss_Pylon] = count;
 
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
@@ -58,7 +58,7 @@ namespace McRave::BuildOrder::Protoss {
         void queueGeysers()
         {
             if (!inOpening) {
-                gasDesired = ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200) || Resources::isMineralSaturated()) && com(Protoss_Probe) >= 30;
+                gasDesired                      = ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200) || Resources::isMineralSaturated()) && com(Protoss_Probe) >= 30;
                 buildQueue[Protoss_Assimilator] = min(vis(Protoss_Assimilator) + gasDesired, Resources::getGasCount());
             }
         }
@@ -71,15 +71,15 @@ namespace McRave::BuildOrder::Protoss {
                 // Adding upgrade buildings
                 if (com(Protoss_Assimilator) >= 3) {
                     auto forgeCount = com(Protoss_Assimilator) >= 4 ? 2 - (int)Terrain::isIslandMap() : 1;
-                    auto coreCount = com(Protoss_Assimilator) >= 4 ? 1 + (int)Terrain::isIslandMap() : 1;
+                    auto coreCount  = com(Protoss_Assimilator) >= 4 ? 1 + (int)Terrain::isIslandMap() : 1;
 
                     buildQueue[Protoss_Cybernetics_Core] = 1 + (int)Terrain::isIslandMap();
-                    buildQueue[Protoss_Forge] = 2 - (int)Terrain::isIslandMap();
+                    buildQueue[Protoss_Forge]            = 2 - (int)Terrain::isIslandMap();
                 }
 
                 // Add robo tech if we have the opposite one
                 if (com(Protoss_Robotics_Facility) > 0 && (com(Protoss_Observatory) > 0 || com(Protoss_Robotics_Support_Bay) > 0)) {
-                    buildQueue[Protoss_Observatory] = total(Protoss_Reaver) > 0;
+                    buildQueue[Protoss_Observatory]          = total(Protoss_Reaver) > 0;
                     buildQueue[Protoss_Robotics_Support_Bay] = total(Protoss_Observer) > 0;
                 }
 
@@ -102,19 +102,19 @@ namespace McRave::BuildOrder::Protoss {
             // Against FFE add a Nexus
             if (Spy::getEnemyBuild() == P_FFE && Broodwar->getFrameCount() < 15000) {
                 auto cannonCount = Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon);
-                wantNatural = true;
+                wantNatural      = true;
 
                 if (cannonCount < 6) {
-                    buildQueue[Protoss_Nexus] = 2;
+                    buildQueue[Protoss_Nexus]       = 2;
                     buildQueue[Protoss_Assimilator] = (vis(Protoss_Nexus) >= 2) + (s >= 120);
-                    unitLimits[Protoss_Zealot] = 0;
-                    gasLimit = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
+                    unitLimits[Protoss_Zealot]      = 0;
+                    gasLimit                        = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
                 }
                 else {
-                    buildQueue[Protoss_Nexus] = 3;
+                    buildQueue[Protoss_Nexus]       = 3;
                     buildQueue[Protoss_Assimilator] = (vis(Protoss_Nexus) >= 2) + (s >= 120);
-                    unitLimits[Protoss_Zealot] = 0;
-                    gasLimit = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
+                    unitLimits[Protoss_Zealot]      = 0;
+                    gasLimit                        = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
                 }
             }
 
@@ -136,18 +136,19 @@ namespace McRave::BuildOrder::Protoss {
             // If we're not in our opener
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                auto maxGates = Players::vT() ? 16 : 12;
-                auto gatesPerBase = 2.5;
+                auto maxGates                = Players::vT() ? 10 : 8;
+                auto gatesPerBase            = 2.5;
 
-                productionSat = (vis(Protoss_Gateway) >= int(gatesPerBase * Stations::getGasingStationsCount())) || vis(Protoss_Gateway) >= maxGates;
+                productionSat = (vis(Protoss_Gateway) >= int(gatesPerBase * Stations::getGasingStationsCount())) || vis(Protoss_Gateway) >= maxGates || Planning::isUnplannable(Protoss_Gateway) ||
+                                Planning::isUnplannable(Protoss_Stargate);
 
                 // Adding production
                 rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || Stations::getGasingStationsCount() >= 3)) || availableMinerals >= 300);
 
                 if (rampDesired) {
-                    auto gateCount = min({maxGates, int(round(Stations::getGasingStationsCount() * gatesPerBase)), vis(Protoss_Gateway) + 1});
-                    auto stargateCount = min({4, int(isFocusUnit(Protoss_Carrier) || isFocusUnit(Protoss_Scout)) * Stations::getGasingStationsCount(), vis(Protoss_Stargate) + 1});
-                    buildQueue[Protoss_Gateway] = gateCount;
+                    auto gateCount               = min({maxGates, int(round(Stations::getGasingStationsCount() * gatesPerBase)), vis(Protoss_Gateway) + 1});
+                    auto stargateCount           = min({4, int(isFocusUnit(Protoss_Carrier) || isFocusUnit(Protoss_Scout)) * Stations::getGasingStationsCount(), vis(Protoss_Stargate) + 1});
+                    buildQueue[Protoss_Gateway]  = gateCount;
                     buildQueue[Protoss_Stargate] = stargateCount;
                 }
             }
@@ -161,7 +162,7 @@ namespace McRave::BuildOrder::Protoss {
             else if (com(Protoss_Probe) < 20)
                 gasLimit = min(gasLimit, com(Protoss_Probe) / 4);
             else if (!inOpening && com(Protoss_Probe) >= 20)
-                gasLimit = INT_MAX;
+                gasLimit = gasMax();
         }
 
         void removeExcessGas() {}
@@ -173,32 +174,32 @@ namespace McRave::BuildOrder::Protoss {
                 return;
 
             // Speed upgrades
-            upgradeQueue[Gravitic_Drive] = vis(Protoss_Shuttle) > 0 && (vis(Protoss_High_Templar) > 0 || com(Protoss_Reaver) >= 2);
+            upgradeQueue[Gravitic_Drive]     = vis(Protoss_Shuttle) > 0 && (vis(Protoss_High_Templar) > 0 || com(Protoss_Reaver) >= 2);
             upgradeQueue[Gravitic_Thrusters] = BuildOrder::isFocusUnit(Protoss_Scout);
-            upgradeQueue[Gravitic_Boosters] = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
-            upgradeQueue[Leg_Enhancements] = (vis(Protoss_Nexus) >= 3) || Players::PvZ();
+            upgradeQueue[Gravitic_Boosters]  = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+            upgradeQueue[Leg_Enhancements]   = (vis(Protoss_Nexus) >= 3) || Players::PvZ();
 
             // Range upgrades
             upgradeQueue[Singularity_Charge] = vis(Protoss_Dragoon) >= 1;
 
             // Energy upgrades
             upgradeQueue[Khaydarin_Amulet] = (vis(Protoss_Assimilator) >= 4 && Broodwar->self()->hasResearched(TechTypes::Psionic_Storm) && Broodwar->self()->gas() >= 750);
-            upgradeQueue[Khaydarin_Core] = true;
+            upgradeQueue[Khaydarin_Core]   = true;
 
             // Sight upgrades
             upgradeQueue[Apial_Sensors] = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
-            upgradeQueue[Sensor_Array] = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+            upgradeQueue[Sensor_Array]  = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
 
             // Capacity upgrades
             upgradeQueue[Carrier_Capacity] = vis(Protoss_Carrier) >= 2;
-            upgradeQueue[Reaver_Capacity] = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
-            upgradeQueue[Scarab_Damage] = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+            upgradeQueue[Reaver_Capacity]  = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
+            upgradeQueue[Scarab_Damage]    = (Broodwar->self()->minerals() > 1500 && Broodwar->self()->gas() > 1000);
 
             // Ground unit upgrades
             auto upgradingGrdWeapon = (Broodwar->self()->getUpgradeLevel(Protoss_Ground_Weapons) > Broodwar->self()->getUpgradeLevel(Protoss_Ground_Armor)) ||
                                       Broodwar->self()->isUpgrading(Protoss_Ground_Weapons);
             upgradeQueue[Protoss_Ground_Weapons] = int(Stations::getStations(PlayerState::Self).size()) >= 2;
-            upgradeQueue[Protoss_Ground_Armor] = upgradingGrdWeapon;
+            upgradeQueue[Protoss_Ground_Armor]   = upgradingGrdWeapon;
             upgradeQueue[Protoss_Plasma_Shields] = Upgrading::haveOrUpgrading(Protoss_Ground_Weapons, 3) && Upgrading::haveOrUpgrading(Protoss_Ground_Armor, 3);
 
             // Want 3x upgrades by default
@@ -215,7 +216,7 @@ namespace McRave::BuildOrder::Protoss {
 
             if (vis(Protoss_Stargate) > 0) {
                 upgradeQueue[Protoss_Air_Weapons] = PvZAirAttack || PvTAirAttack || PvPAirAttack;
-                upgradeQueue[Protoss_Air_Armor] = upgradingAirAttack;
+                upgradeQueue[Protoss_Air_Armor]   = upgradingAirAttack;
             }
 
             // Want 3x upgrades by default
@@ -229,8 +230,8 @@ namespace McRave::BuildOrder::Protoss {
             if (inOpening)
                 return;
 
-            techQueue[Psionic_Storm] = isFocusUnit(Protoss_High_Templar);
-            techQueue[Stasis_Field] = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Khaydarin_Core) > 0;
+            techQueue[Psionic_Storm]  = isFocusUnit(Protoss_High_Templar);
+            techQueue[Stasis_Field]   = Broodwar->self()->getUpgradeLevel(UpgradeTypes::Khaydarin_Core) > 0;
             techQueue[Disruption_Web] = vis(Protoss_Corsair) >= 10;
         }
     } // namespace
@@ -299,19 +300,25 @@ namespace McRave::BuildOrder::Protoss {
             unitOrder = {Protoss_Observer, Protoss_Reaver, Protoss_Carrier};
         }
 
+        // Ensure anything we already made is added into the list
+        for (auto unit : unitOrder) {
+            if (unlockReady(unit))
+                focusUnits.insert(unit);
+        }
+
         const auto endOfTech = !unitOrder.empty() && isFocusUnit(unitOrder.back());
-        const auto techVal = int(focusUnits.size()) + techOffset + mineralThird;
-        techSat = (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
+        const auto techVal   = int(focusUnits.size()) + techOffset + mineralThird;
+        techSat              = (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
 
         // Change desired detection if we get Cannons
         // TODO: Clean up all below this section
         if (Spy::enemyInvis() && desiredDetection == Protoss_Forge) {
-            buildQueue[Protoss_Forge] = 1;
+            buildQueue[Protoss_Forge]         = 1;
             buildQueue[Protoss_Photon_Cannon] = com(Protoss_Forge) * 2;
 
             if (com(Protoss_Photon_Cannon) >= 1) {
                 desiredDetection = Protoss_Observer;
-                hideTech = true;
+                hideTech         = true;
             }
         }
 

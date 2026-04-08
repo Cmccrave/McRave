@@ -139,7 +139,6 @@ namespace McRave::Expansion {
                         (find_if(islandStations.begin(), islandStations.end(), [&](auto &s) { return s == &station; }) != islandStations.end()) ||
                         (Terrain::getEnemyMain() && &station == Terrain::getEnemyMain()) || (Terrain::getEnemyNatural() && &station == Terrain::getEnemyNatural()) ||
                         (station == Terrain::getMyNatural() && !BuildOrder::takeNatural()) || (station.getBase()->Geysers().empty() && int(expansionOrder.size()) < allowedFirstMineralBase) ||
-                        (station.getBase()->Geysers().empty() && geysersOwned + int(station.getBase()->Geysers().size()) < allowedFirstMineralBase) ||
                         (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea())) ||
                         (Players::vFFA() && !Stations::isBaseExplored(&station)))
                         continue;
@@ -178,8 +177,10 @@ namespace McRave::Expansion {
                         blockerCost += double(blocker->getHealth()) / 1000.0;
                     if (blockerCost > 0)
                         dist = blockerCost;
-                    if (station.getBase()->Geysers().empty())
+                    if (station.getBase()->Geysers().empty() && int(expansionOrder.size()) < allowedFirstMineralBase)
                         dist *= 1.5;
+                    if (station.isNatural())
+                        dist *= 0.75;
 
                     // Add in remaining resources
                     auto percentMinerals = (double(1 + Stations::getMineralsRemaining(&station)) / double(1 + Stations::getMineralsInitial(&station)));

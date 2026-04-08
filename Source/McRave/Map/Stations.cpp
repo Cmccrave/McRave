@@ -266,8 +266,8 @@ namespace McRave::Stations {
             auto groundCount = getGroundDefenseCount(station);
 
             if (station->isMain()) {
-                // Add 2 sunks if we gave up the natural intentionally against horror gates
-                if (Spy::getEnemyOpener() == P_Horror_9_9)
+                // Add 2 sunks if we gave up the natural intentionally
+                if (!BuildOrder::takeNatural())
                     return (Util::getTime() > Time(2, 40)) + (Util::getTime() > Time(3, 00)) - groundCount;
 
                 //// Add 1 sunks if we opened greedy against proxy gates
@@ -548,7 +548,7 @@ namespace McRave::Stations {
 
     int needGroundDefenses(const BWEB::Station *const station)
     {
-        if (BuildOrder::isRush() || BuildOrder::isPressure() || Spy::getEnemyTransition() == P_Carrier)
+        if (BuildOrder::isRush() || BuildOrder::isPressure() || Spy::getEnemyTransition() == P_Carrier || isPocket(station))
             return 0;
 
         // We don't want to pull workers to build things if none are nearby
@@ -709,6 +709,19 @@ namespace McRave::Stations {
         return false;
     }
 
+    // Return true if this station is adjacent to only our territory
+    bool isPocket(const BWEB::Station *const station)
+    {
+        if (station->isMain() || station->isNatural())
+            return false;
+
+        for (auto &area : station->getBase()->GetArea()->AccessibleNeighbours()) {
+            if (!Terrain::inTerritory(PlayerState::Self, area))
+                return false;
+        }
+        return true;
+    }
+
     int lastVisible(const BWEB::Station *const station)
     {
         auto botRight = station->getBase()->Location() + TilePosition(4, 3);
@@ -734,32 +747,9 @@ namespace McRave::Stations {
 
     const BWEB::Station *const getClosestRetreatStation(UnitInfo &unit)
     {
-        const auto closerThanSim = [&](auto &defendPosition) {
-            if (!unit.hasSimTarget())
-                return true;
-            auto sim         = unit.getSimTarget().lock();
-            auto eitherFlyer = (sim->isFlying() || unit.isFlying());
-
-            return !unit.hasSimTarget() || eitherFlyer ||
-                   BWEB::Map::getGroundDistance(unit.getPosition(), defendPosition) < BWEB::Map::getGroundDistance(unit.getSimTarget().lock()->getPosition(), defendPosition);
-        };
-
-        const auto alreadyInArea = [&](auto station) {
-            if (Terrain::inArea(station->getBase()->GetArea(), unit.getPosition()))
-                return true;
-
-            // If this is a main, check if we own a natural that isn't under attack
-            if (station->isNatural() && Stations::isCompleted(station) && !Terrain::isPocketNatural()) {
-                const auto closestMain = BWEB::Stations::getClosestMainStation(station->getBase()->Location());
-                if (closestMain && Stations::ownedBy(closestMain) == PlayerState::Self) {
-                    if (Terrain::inArea(closestMain->getBase()->GetArea(), unit.getPosition()))
-                        return true;
-                }
-            }
-            return false;
-        };
-
         const auto ownForwardBase = [&](auto station) {
+            if (isPocket(station))
+                return true;
             if (station->isMain() && Stations::isCompleted(station) && !Terrain::isPocketNatural()) {
                 const auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
                 if (Stations::ownedBy(closestNatural) == PlayerState::Self)
@@ -768,24 +758,12 @@ namespace McRave::Stations {
             return false;
         };
 
-        auto here = unit.getPosition();
-        if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Defend) {
-            here = unit.getGoal();
-        }
-        else {
-            const auto lowGroundCount = Broodwar->self()->getRace() == Races::Zerg && vis(Zerg_Zergling) < 12 && vis(Zerg_Hydralisk) < 6;
-            if (unit.isLightAir() && Util::getTime() < Time(8, 00))
-                return Combat::getDefendStation();
-            if (Util::getTime() < Time(5, 00) || Spy::enemyRush() || lowGroundCount)
-                return Combat::getDefendStation();
-        }
-
         auto distBest    = DBL_MAX;
         auto bestStation = Terrain::getMyMain();
         for (auto &station : getStations(PlayerState::Self)) {
             auto defendPosition = station->getBase()->Center();
-            auto distDefend     = defendPosition.getDistance(here);
-            auto distCenter     = station->getBase()->Center().getDistance(here);
+            auto distDefend     = defendPosition.getDistance(unit.getPosition());
+            auto distCenter     = station->getBase()->Center().getDistance(unit.getPosition());
 
             if (distDefend < distBest && !ownForwardBase(station)) {
                 bestStation = station;

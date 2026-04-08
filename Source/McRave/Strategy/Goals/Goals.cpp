@@ -273,7 +273,11 @@ namespace McRave::Goals {
             // Send detector to next expansion
             if (Planning::getCurrentExpansion()) {
                 auto nextExpand   = Planning::getCurrentExpansion()->getBase()->Center();
-                auto needDetector = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 || Players::vZ();
+                auto detectDTs  = BuildOrder::shouldExpand() && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0;
+                auto detectMines  = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0;
+
+                auto needDetector = detectDTs || detectMines || Players::vZ();
+
                 if (nextExpand.isValid() && needDetector && BWEB::Map::isUsed(Planning::getCurrentExpansion()->getBase()->Location()) == UnitTypes::None) {
                     if (Stations::getStations(PlayerState::Self).size() >= 2 && BuildOrder::buildCount(base) > vis(base))
                         assignNumberToGoal(nextExpand, detector, 1);
@@ -406,8 +410,8 @@ namespace McRave::Goals {
                 }
             }
 
-            // Assign an Overlord to each main choke
-            if (!enemyAir) {
+            // Assign an Overlord to each main choke early on
+            if (!enemyAir && Util::getTime() < Time(5, 00)) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
                     if (station->isMain()) {
                         auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());

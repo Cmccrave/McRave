@@ -18,6 +18,8 @@ namespace McRave::Combat::Formations {
         formation.angle  = BWEB::Map::getAngle(cluster.marchPosition, cluster.retreatPosition);
         formation.lState = LocalState::Hold;
 
+        auto outRangesWall = Players::getStrength(PlayerState::Enemy).maxGroundRange >= 160;
+
         auto closestChoke    = Util::getClosestChokepoint(cluster.marchPosition);
         auto closestBuilding = Util::getClosestUnit(cluster.marchPosition, PlayerState::Self, [&](auto &u) {
             return u->getType().isBuilding() && u->getFormation().isValid() &&
@@ -30,12 +32,22 @@ namespace McRave::Combat::Formations {
                     (Terrain::inArea(u->getPosition(), cluster.avgPosition) && Terrain::inArea(u->getPosition(), cluster.retreatPosition)));
         });
 
+        auto formationWithBase      = (!Combat::holdAtChoke() && Util::getTime() < Time(5, 00)) || (!closestBuilding && !closestDefender);
+        auto formationWithDefender  = !Combat::holdAtChoke() && closestDefender && (Players::ZvZ() || !outRangesWall);
         auto formationWithBuilding  = !Combat::holdAtChoke() && closestBuilding;
         auto formationWithChoke     = Combat::holdAtChoke() && closestChoke && Position(closestChoke->Center()).getDistance(cluster.marchPosition) < 32.0;
         auto formationWithCommander = cluster.shape == Shape::Concave;
 
+        // Hold at retreat
+        if (formationWithBase) {
+            formation.center = cluster.marchPosition;
+            formation.start  = cluster.retreatPosition;
+            formation.radius = 96.0;
+            formation.angle  = (round(formation.angle / M_PI_D4)) * M_PI_D4;
+        }
+
         // Hold with defender
-        if (!Combat::holdAtChoke() && closestDefender && Players::ZvZ()) {
+        else if (formationWithDefender) {
             formation.center = cluster.marchPosition;
             formation.start  = closestDefender->getPosition();
             formation.radius = 96.0;
@@ -43,7 +55,7 @@ namespace McRave::Combat::Formations {
         }
 
         // Hold with building
-        else if (!Combat::holdAtChoke() && closestBuilding) {
+        else if (formationWithBuilding) {
             closestBuilding->circle(Colors::Yellow);
             formation.center = cluster.marchPosition;
             formation.start  = closestBuilding->getPosition();
@@ -51,16 +63,8 @@ namespace McRave::Combat::Formations {
             formation.angle  = (round(formation.angle / M_PI_D4)) * M_PI_D4;
         }
 
-        // Hold at retreat
-        else if (!Combat::holdAtChoke()) {
-            formation.center = cluster.marchPosition;
-            formation.start  = cluster.retreatPosition;
-            formation.radius = 96.0;
-            formation.angle  = (round(formation.angle / M_PI_D4)) * M_PI_D4;
-        }
-
         // Hold with choke, use ramp angles if provided
-        else if (Combat::holdAtChoke() && closestChoke) {
+        else if (formationWithChoke) {
 
             // If any unit is in the wrong side of the chokepoint, shift the center back. Assumes only main area is correct for now
             auto badArea = false;
@@ -83,7 +87,7 @@ namespace McRave::Combat::Formations {
                 formation.angle  = Terrain::getChokepointAngle(closestChoke);
                 formation.radius = max(commander->getGroundRange(), double(closestChoke->Width()));
                 formation.center = Position(closestChoke->Center());
-                formation.start  = Position(closestChoke->Center()); // ?? 
+                formation.start  = Position(closestChoke->Center()); // ??
             }
 
             if (badArea) {
@@ -101,25 +105,54 @@ namespace McRave::Combat::Formations {
 
     void marchFormation(Formation &formation, Cluster &cluster)
     {
-        auto shift = max(160.0, formation.radius) + 32.0;
-        shift += max(0, 5 - Grids::getMobility(cluster.marchNavigation)) * 16.0;
+        auto commander   = cluster.commander.lock();
+        auto minMobility = min(Grids::getMobility(commander->getPosition()), Grids::getMobility(cluster.avgPosition));
 
-        formation.radius = clamp((cluster.units.size() * cluster.spacing / 1.3), 16.0, 640.0);
-        formation.start  = Util::shiftTowards(cluster.avgPosition, cluster.marchNavigation, shift);
-        formation.center = cluster.marchNavigation;
-        formation.angle  = BWEB::Map::getAngle(cluster.marchNavigation, cluster.avgPosition);
         formation.lState = LocalState::Attack;
+        formation.center = cluster.marchNavigation;
+        formation.angle  = BWEB::Map::getAngle(cluster.marchNavigation, commander->getPosition());
+
+        // March concave
+        if (cluster.shape == Shape::Concave) {
+            auto shift = max(160.0, formation.radius) + 32.0;
+            shift += max(0, 5 - minMobility) * 16.0;
+            formation.start = Util::shiftTowards(commander->getPosition(), cluster.marchNavigation, shift);
+        }
+
+        // March line
+        if (cluster.shape == Shape::Line) {
+            auto shift      = 96.0 + max(0, 5 - minMobility) * 16.0;
+            formation.start = Util::shiftTowards(commander->getPosition(), cluster.marchNavigation, shift);
+        }
+
+        // Flying formations - mostly just avoiding splash with a circle
+        if (commander->isFlying()) {
+            formation.radius = max(commander->getGroundRange(), commander->getAirRange()) + 32.0;
+            formation.center = cluster.marchPosition; // Should be marchNavigation, but we are trying to do avoidance right now
+        }
     }
 
     void retreatFormation(Formation &formation, Cluster &cluster)
     {
-        auto shift = max(160.0, formation.radius) + 32.0;
+        auto commander   = cluster.commander.lock();
+        auto minMobility = min(Grids::getMobility(commander->getPosition()), Grids::getMobility(cluster.avgPosition));
 
-        formation.radius = clamp((cluster.units.size() * cluster.spacing / 1.3), 16.0, 640.0);
-        formation.start  = Util::shiftTowards(cluster.avgPosition, cluster.retreatNavigation, shift);
-        formation.center = cluster.retreatNavigation;
-        formation.angle  = BWEB::Map::getAngle(cluster.avgPosition, cluster.retreatNavigation);
         formation.lState = LocalState::Retreat;
+        formation.center = cluster.retreatNavigation;
+        formation.angle  = BWEB::Map::getAngle(commander->getPosition(), cluster.retreatNavigation);
+
+        // Retreat concave
+        if (cluster.shape == Shape::Concave) {
+            auto shift = max(160.0, formation.radius) + 32.0;
+            shift += max(0, 5 - minMobility) * 16.0;
+            formation.start = Util::shiftTowards(commander->getPosition(), cluster.retreatNavigation, shift);
+        }
+
+        // Retreat line
+        if (cluster.shape == Shape::Line) {
+            auto shift      = 96.0 + max(0, 5 - minMobility) * 16.0;
+            formation.start = Util::shiftTowards(commander->getPosition(), cluster.retreatNavigation, shift);
+        }
     }
 
     void formationSetup(Formation &formation, Cluster &cluster)
@@ -131,9 +164,8 @@ namespace McRave::Combat::Formations {
         else
             marchFormation(formation, cluster);
 
-        // Lines are perpendicular arrangements
         if (cluster.shape == Shape::Line)
-            formation.angle += 1.57;
+            formation.angle += M_PI_D2;
     }
 
     void assignPosition(Cluster &cluster, Formation &concave, Position p)
@@ -142,7 +174,7 @@ namespace McRave::Combat::Formations {
         UnitInfo *closestUnit = nullptr;
         auto distBest         = DBL_MAX;
         for (auto &unit : cluster.units) {
-            auto dist = min(unit->getPosition().getDistance(p), unit->getCommandPosition().getDistance(p));
+            auto dist = min(unit->getPosition().getDistance(p), unit->getLastFormation().getDistance(p));
             if (dist < distBest && !unit->getFormation().isValid()) {
                 distBest    = dist;
                 closestUnit = &*unit;
@@ -151,7 +183,7 @@ namespace McRave::Combat::Formations {
         if (closestUnit) {
             // Util::findWalkable(*closestUnit, p);
             closestUnit->setFormation(p);
-            // Visuals::drawLine(closestUnit->getPosition(), p, Colors::Green);
+            //::drawLine(closestUnit->getPosition(), p, Colors::Green);
         }
     }
 
@@ -163,7 +195,7 @@ namespace McRave::Combat::Formations {
 
         // Prevent blocking our own buildings
         auto closestBuilder = Util::getClosestUnit(formation.center, PlayerState::Self, [&](auto &u) { return u->getBuildPosition().isValid(); });
-        bool first = true;
+        bool first          = true;
 
         // Checks if a position is okay, stores if it is
         auto checkPosition = [&](Position &p, Position &last, bool &skip) {
@@ -262,6 +294,9 @@ namespace McRave::Combat::Formations {
         auto commander     = cluster.commander.lock();
         auto pixelsPerUnit = max(commander->getType().width(), commander->getType().height()) + 2;
         auto radsPerUnit   = (double(max(commander->getType().width(), commander->getType().height()) + 2) / formation.radius);
+
+        if (commander->isFlying())
+            radsPerUnit = M_PI_T2 / cluster.units.size();
         // formation.center = Util::shiftTowards(cluster.avgPosition, formation.start, formation.radius);
         // formation.radius = max(formation.radius, 160.0);
 
@@ -295,7 +330,14 @@ namespace McRave::Combat::Formations {
     void createConcave(Formation &formation, Cluster &cluster)
     {
         formationSetup(formation, cluster);
-        generateConcavePositions(formation, cluster, 1.3);
+        if (auto commander = cluster.commander.lock()) {
+            if (commander && commander->isFlying() && commander->attemptingAvoidance()) {
+                generateConcavePositions(formation, cluster, M_PI_T2);
+            }
+            else {
+                generateConcavePositions(formation, cluster, 1.3);
+            }
+        }
     }
 
     void createLine(Formation &formation, Cluster &cluster)
