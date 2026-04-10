@@ -36,6 +36,8 @@ namespace McRave::Spy::Zerg {
     map<string, Time> lingTimings;
     map<string, Time> hatchTimings;
 
+    Time equalMutaTiming = Time(0, 15);
+
     namespace {
 
         void enemyZergBuilds(PlayerInfo &player, StrategySpy &theSpy)

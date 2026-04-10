@@ -113,6 +113,10 @@ namespace McRave::Roles {
             if (Broodwar->self()->getRace() != Races::Terran)
                 return;
 
+            auto proxyWorker     = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy(); });
+            auto proxyCombatUnit = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy,
+                                                        [&](auto &u) { return u->isProxy() && !u->getType().isWorker() && !u->getType().isBuilding() && u->canAttackGround(); });
+
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
                 if (unit.isCompleted()) {
@@ -128,6 +132,17 @@ namespace McRave::Roles {
                             forceCombatWorker(1, unit.getPosition(), LocalState::Retreat, GlobalState::Retreat);
                     }
                 }
+            }
+
+            if (Terrain::inTerritory(PlayerState::Self, proxyWorker->getPosition()) && Util::getTime() < Time(4, 00))
+                forceCombatWorker(1, proxyWorker->getPosition());
+
+            if (Players::TvP()) {
+                auto rush = Spy::enemyRush() || Spy::enemyProxy();
+
+                // Support marines vs rushes
+                if (rush && proxyCombatUnit)
+                    forceCombatWorker(3, proxyCombatUnit->getPosition());
             }
         }
 

@@ -23,8 +23,6 @@ namespace McRave::BuildOrder::Terran {
         transitionReady = false;
         planEarly       = false;
 
-        desiredDetection = Terran_Missile_Turret;
-
         wallNat  = false;
         wallMain = false;
     }

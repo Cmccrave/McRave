@@ -285,7 +285,6 @@ namespace McRave::Workers {
                     auto center       = Position(builder->getBuildPosition()) + Position(builder->getBuildType().tileWidth() * 32, builder->getBuildType().tileHeight() * 32);
                     auto canAfford    = Broodwar->self()->minerals() >= builder->getBuildType().mineralPrice() && Broodwar->self()->gas() >= builder->getBuildType().gasPrice();
                     auto builderClose = builder->getPosition().getDistance(center) < 96.0;
-                    auto destination  = Util::shiftTowards(center, unit.getPosition(), 96.0);
 
                     // Check if the resource is adjacent to the planning by padding by 1
                     auto buildingTopLeft  = builder->getBuildPosition() - TilePosition(1, 1);
@@ -294,8 +293,11 @@ namespace McRave::Workers {
                     auto resourceBotRight = resource->getTilePosition() + resource->getType().tileSize();
                     auto adjacentPlanning = Util::rectangleIntersect(buildingTopLeft, buildingBotRight, resourceTopLeft, resourceBotRight);
 
-                    if (builderClose && canAfford && adjacentPlanning)
+                    if (builderClose && canAfford && adjacentPlanning) {
+                        auto destination = Util::shiftTowards(center, unit.getPosition(), 96.0);
                         unit.setDestination(destination);
+                        Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Green);
+                    }
                 }
             }
         }

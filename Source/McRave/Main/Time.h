@@ -7,7 +7,7 @@ struct Time {
     int frames;
     Time(int f)
     {
-        frames = f;
+        frames  = f;
         minutes = int(double(f) / 1428.6);
         seconds = int(double(f) / 23.81) % 60;
     }
@@ -21,40 +21,21 @@ struct Time {
         minutes = 999;
         seconds = 0;
     }
-    std::string toString()
-    {
-        return std::to_string(minutes) + ":" + (seconds < 10 ? "0" + std::to_string(seconds) : std::to_string(seconds));
-    }
+    std::string toString() { return std::to_string(minutes) + ":" + (seconds < 10 ? "0" + std::to_string(seconds) : std::to_string(seconds)); }
 
-    bool isUnknown()
-    {
-        return minutes >= 999;
-    }
+    bool isUnknown() { return minutes >= 999; }
 
-    bool operator<(const Time t2)
-    {
-        return (minutes < t2.minutes) || (minutes == t2.minutes && seconds < t2.seconds);
-    }
+    bool operator<(const Time t2) { return (minutes < t2.minutes) || (minutes == t2.minutes && seconds < t2.seconds); }
 
-    bool operator<=(const Time t2)
-    {
-        return (minutes < t2.minutes) || (minutes == t2.minutes && seconds <= t2.seconds);
-    }
+    bool operator<=(const Time t2) { return (minutes < t2.minutes) || (minutes == t2.minutes && seconds <= t2.seconds); }
 
-    const bool operator>(const Time t2) const
-    {
-        return (minutes > t2.minutes) || (minutes == t2.minutes && seconds > t2.seconds);
-    }
+    const bool operator>(const Time t2) const { return (minutes > t2.minutes) || (minutes == t2.minutes && seconds > t2.seconds); }
 
-    bool operator>=(const Time t2)
-    {
-        return (minutes > t2.minutes) || (minutes == t2.minutes && seconds >= t2.seconds);
-    }
+    bool operator>=(const Time t2) { return (minutes > t2.minutes) || (minutes == t2.minutes && seconds >= t2.seconds); }
 
-    bool operator==(const Time t2)
-    {
-        return minutes == t2.minutes && seconds == t2.seconds;
-    }
+    bool operator!=(const Time t2) { return minutes != t2.minutes || seconds != t2.seconds; }
+
+    bool operator==(const Time t2) { return minutes == t2.minutes && seconds == t2.seconds; }
 
     Time operator-(const Time t2)
     {

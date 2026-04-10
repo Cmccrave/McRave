@@ -1,5 +1,6 @@
 #include "TerranBuildOrder.h"
 
+#include "Info/Player/Players.h"
 #include "Info/Resource/Resources.h"
 #include "Macro/Planning/Planning.h"
 #include "Macro/Researching/Researching.h"
@@ -7,7 +8,6 @@
 #include "Map/Stations.h"
 #include "Map/Terrain.h"
 #include "Strategy/Spy/Spy.h"
-#include "Info/Player/Players.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -18,7 +18,7 @@ namespace McRave::BuildOrder::Terran {
 
     namespace {
         bool againstRandom = false;
-        bool needTurrets = false;
+        bool needTurrets   = false;
 
         void queueWallDefenses() {}
 
@@ -48,7 +48,7 @@ namespace McRave::BuildOrder::Terran {
         {
             if (!inBookSupply) {
                 if (vis(Terran_Supply_Depot) > 0) {
-                    int count = min(25, s / 14) - (com(Terran_Command_Center) - 1);
+                    int count                       = min(25, s / 14) - (com(Terran_Command_Center) - 1);
                     buildQueue[Terran_Supply_Depot] = count;
                 }
             }
@@ -57,7 +57,7 @@ namespace McRave::BuildOrder::Terran {
         void queueGeysers()
         {
             if (!inOpening) {
-                gasDesired = ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200) || Resources::isMineralSaturated()) && com(Terran_SCV) >= 30;
+                gasDesired                  = ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200) || Resources::isMineralSaturated()) && com(Terran_SCV) >= 30;
                 buildQueue[Terran_Refinery] = min(vis(Terran_Refinery) + gasDesired, Resources::getGasCount());
             }
         }
@@ -74,12 +74,9 @@ namespace McRave::BuildOrder::Terran {
 
             // Academy
             if (Spy::enemyInvis()) {
-                if (desiredDetection == Terran_Missile_Turret)
-                    buildQueue[Terran_Engineering_Bay] = 1;
-                else {
-                    buildQueue[Terran_Academy] = 1;
-                    buildQueue[Terran_Comsat_Station] = 2;
-                }
+                buildQueue[Terran_Engineering_Bay] = 1;
+                buildQueue[Terran_Academy]         = 1;
+                buildQueue[Terran_Comsat_Station]  = 2;
             }
 
             // Turrets
@@ -107,7 +104,7 @@ namespace McRave::BuildOrder::Terran {
             // If we're not in our opener
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                expandDesired = (focusUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Terran_Command_Center) >= 3) &&
+                expandDesired                = (focusUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Terran_Command_Center) >= 3) &&
                                  (techSat || com(Terran_Command_Center) >= 3) && productionSat) ||
                                 (com(Terran_Command_Center) >= 2 && availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated())) ||
                                 (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2) ||
@@ -126,26 +123,26 @@ namespace McRave::BuildOrder::Terran {
                 // Adding production
                 // Mech play
                 if (rampType == Terran_Factory) {
-                    auto maxFacts = 8;
+                    auto maxFacts     = 8;
                     auto factsPerBase = 3;
-                    productionSat = (vis(Terran_Factory) >= int(factsPerBase * vis(Terran_Command_Center)) || vis(Terran_Factory) >= maxFacts);
-                    rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
+                    productionSat     = (vis(Terran_Factory) >= int(factsPerBase * vis(Terran_Command_Center)) || vis(Terran_Factory) >= maxFacts);
+                    rampDesired       = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
 
                     if (rampDesired) {
-                        auto factCount = min({maxFacts, int(round(com(Terran_Command_Center) * factsPerBase)), vis(Terran_Factory) + 1});
+                        auto factCount             = min({maxFacts, int(round(com(Terran_Command_Center) * factsPerBase)), vis(Terran_Factory) + 1});
                         buildQueue[Terran_Factory] = factCount;
                     }
                 }
 
                 // Bio play
                 if (rampType == Terran_Barracks) {
-                    auto maxRax = 10;
+                    auto maxRax     = 10;
                     auto raxPerBase = 3;
-                    productionSat = (vis(Terran_Barracks) >= int(raxPerBase * vis(Terran_Command_Center)) || vis(Terran_Command_Center) >= maxRax);
-                    rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
+                    productionSat   = (vis(Terran_Barracks) >= int(raxPerBase * vis(Terran_Command_Center)) || vis(Terran_Command_Center) >= maxRax);
+                    rampDesired     = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
 
                     if (rampDesired) {
-                        auto raxCount = min({maxRax, int(round(com(Terran_Command_Center) * raxPerBase)), vis(Terran_Barracks) + 1});
+                        auto raxCount               = min({maxRax, int(round(com(Terran_Command_Center) * raxPerBase)), vis(Terran_Barracks) + 1});
                         buildQueue[Terran_Barracks] = raxCount;
                     }
                 }
@@ -176,7 +173,7 @@ namespace McRave::BuildOrder::Terran {
 
             // Range upgrades
             upgradeQueue[Charon_Boosters] = vis(Terran_Goliath) > 0;
-            upgradeQueue[U_238_Shells] = Researching::haveOrResearching(TechTypes::Stim_Packs);
+            upgradeQueue[U_238_Shells]    = Researching::haveOrResearching(TechTypes::Stim_Packs);
 
             // Mech unit upgrades
             auto upgradingMechAttack = (Broodwar->self()->getUpgradeLevel(Terran_Vehicle_Weapons) > Broodwar->self()->getUpgradeLevel(Terran_Vehicle_Plating)) ||
@@ -203,7 +200,7 @@ namespace McRave::BuildOrder::Terran {
 
             if (vis(Terran_Engineering_Bay) > 0) {
                 upgradeQueue[Terran_Infantry_Weapons] = TvZBioAttack || TvTBioAttack || TvPBioAttack;
-                upgradeQueue[Terran_Infantry_Armor] = upgradingBioAttack;
+                upgradeQueue[Terran_Infantry_Armor]   = upgradingBioAttack;
             }
 
             // Want 3x upgrades by default
@@ -217,11 +214,11 @@ namespace McRave::BuildOrder::Terran {
             if (inOpening)
                 return;
 
-            techQueue[Stim_Packs] = Players::TvZ();
-            techQueue[Spider_Mines] = true;
-            techQueue[Tank_Siege_Mode] = Researching::haveOrResearching(Spider_Mines);
-            techQueue[Cloaking_Field] = isFocusUnit(Terran_Wraith);
-            techQueue[Yamato_Gun] = isFocusUnit(Terran_Battlecruiser);
+            techQueue[Stim_Packs]         = Players::TvZ();
+            techQueue[Spider_Mines]       = true;
+            techQueue[Tank_Siege_Mode]    = Researching::haveOrResearching(Spider_Mines);
+            techQueue[Cloaking_Field]     = isFocusUnit(Terran_Wraith);
+            techQueue[Yamato_Gun]         = isFocusUnit(Terran_Battlecruiser);
             techQueue[Personnel_Cloaking] = isFocusUnit(Terran_Ghost);
         }
     } // namespace
@@ -247,9 +244,9 @@ namespace McRave::BuildOrder::Terran {
     void tech()
     {
         auto techVal = int(focusUnits.size());
-        techSat = (techVal > com(Terran_Command_Center));
-        unitOrder = {Terran_Vulture, Terran_Siege_Tank_Tank_Mode};
-        getTech = !inOpening && !techSat;
+        techSat      = (techVal > com(Terran_Command_Center));
+        unitOrder    = {Terran_Vulture, Terran_Siege_Tank_Tank_Mode};
+        getTech      = !inOpening && !techSat;
 
         if (Players::TvZ())
             unitOrder = {Terran_Medic, Terran_Science_Vessel};
@@ -289,7 +286,7 @@ namespace McRave::BuildOrder::Terran {
     void composition()
     {
         armyComposition.clear();
-        auto availGas = Broodwar->self()->gas() - (Upgrading::getReservedGas() + Researching::getReservedGas() + Planning::getPlannedGas());
+        auto availGas           = Broodwar->self()->gas() - (Upgrading::getReservedGas() + Researching::getReservedGas() + Planning::getPlannedGas());
         const auto withoutAddon = {Terran_Goliath, Terran_Vulture, Terran_Wraith};
 
         const auto buildingAvailable = [&](auto &type) {

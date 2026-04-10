@@ -42,10 +42,8 @@ namespace McRave::BuildOrder::Zerg {
         gasTrick        = false;
         reserveLarva    = 0;
 
-        gasLimit = gasMax();
-
-        desiredDetection = Zerg_Overlord;
-        focusUnit        = UnitTypes::None;
+        gasLimit  = gasMax();
+        focusUnit = UnitTypes::None;
     }
 
     int inboundUnits_ZvT()
@@ -212,12 +210,12 @@ namespace McRave::BuildOrder::Zerg {
         // Gas
         gasLimit = gasMax();
         if (!Spy::enemyFastExpand()) {
-            auto dropGasEarly     = vis(Zerg_Drone) + vis(Zerg_Extractor) < 10;
-            auto dropGasImmediate = (Spy::enemyProxy() || Spy::getEnemyOpener() == T_BBS) && Util::getTime() < Time(3, 00);
+            auto dropGasLowDrone  = vis(Zerg_Drone) + vis(Zerg_Extractor) < 10;
+            auto dropGasEarly     = (Spy::enemyProxy() || Spy::getEnemyOpener() == T_BBS) && Util::getTime() < Time(3, 00);
             auto dropGasAfterLair = vis(Zerg_Lair) > 0 && Spy::getEnemyBuild() == T_2Rax && Util::getTime() < Time(4, 00);
             auto dropGasRush      = (vis(Zerg_Lair) > 0 || gas(100)) && Spy::getEnemyTransition() == T_Rush && Util::getTime() < Time(4, 30);
             auto dropGasPressure  = (vis(Zerg_Spire) > 0 || gas(150)) && Spy::getEnemyTransition() == T_Academy && !Spy::enemyFastExpand() && Util::getTime() < Time(5, 00);
-            if (dropGasEarly || dropGasImmediate || dropGasAfterLair || dropGasRush || dropGasPressure)
+            if (dropGasLowDrone || dropGasEarly || dropGasAfterLair || dropGasRush || dropGasPressure)
                 gasLimit = 0;
         }
     }

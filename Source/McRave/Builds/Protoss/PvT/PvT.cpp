@@ -25,8 +25,6 @@ namespace McRave::BuildOrder::Protoss {
         transitionReady =                               false;
 
         gasLimit =                                      gasMax();
-
-        desiredDetection =                              Protoss_Observer;
     }
 
     int zealotsNeeded_PvT() {

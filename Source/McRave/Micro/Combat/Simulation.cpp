@@ -76,18 +76,18 @@ namespace McRave::Combat::Simulation {
             commitFrames  = 12;
         }
         if (Players::PvZ()) {
-            minWinPercent = 0.6;
+            minWinPercent = 0.8;
             maxWinPercent = 1.2;
             commitFrames  = 12;
         }
         if (Players::PvT()) {
-            minWinPercent = 0.6;
-            maxWinPercent = 1.0;
+            minWinPercent = 0.8;
+            maxWinPercent = 1.2;
             commitFrames  = 12;
         }
         if (Players::PvFFA()) {
             minWinPercent = 0.8;
-            maxWinPercent = 1.4;
+            maxWinPercent = 1.2;
             commitFrames  = 12;
         }
 

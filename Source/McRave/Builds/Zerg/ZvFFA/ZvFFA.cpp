@@ -28,8 +28,7 @@ namespace McRave::BuildOrder::Zerg {
 
         gasLimit = gasMax();
 
-        desiredDetection = Zerg_Overlord;
-        focusUnit        = UnitTypes::None;
+        focusUnit = UnitTypes::None;
     }
 
     int lingsNeeded_ZvFFA()
@@ -69,7 +68,7 @@ namespace McRave::BuildOrder::Zerg {
         // Pumping
         zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 33 && com(Zerg_Spawning_Pool) > 0;
         zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvFFA() > vis(Zerg_Zergling);
-        zergUnitPump[Zerg_Mutalisk] = vis(Zerg_Drone) >= 20 && com(Zerg_Spire)> 0;
+        zergUnitPump[Zerg_Mutalisk] = vis(Zerg_Drone) >= 20 && com(Zerg_Spire) > 0;
     }
 
     void ZvFFA()

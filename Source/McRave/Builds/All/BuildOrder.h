@@ -79,7 +79,6 @@ namespace McRave::BuildOrder {
         // Focus complete
         inline std::set <BWAPI::UnitType> focusUnits;
 
-        inline BWAPI::UnitType desiredDetection = BWAPI::UnitTypes::None;        
         inline std::set <BWAPI::UnitType> unlockedType;
         inline std::map <BWAPI::UnitType, double> armyComposition;
 

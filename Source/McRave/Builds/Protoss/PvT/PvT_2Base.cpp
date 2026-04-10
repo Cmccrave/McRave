@@ -14,24 +14,24 @@ namespace McRave::BuildOrder::Protoss {
     void PvT_2B_12Nexus()
     {
         // 8p 12n 12g 13g 15c
-        unitLimits[Protoss_Zealot] =                    1;
-        scout =                                         vis(Protoss_Pylon) > 0;
-        transitionReady =                               vis(Protoss_Gateway) >= 2;
+        unitLimits[Protoss_Zealot] = 1;
+        scout                      = vis(Protoss_Pylon) > 0;
+        transitionReady            = vis(Protoss_Gateway) >= 2;
 
         // Buildings
-        buildQueue[Protoss_Nexus] =                     1 + (s >= 24);
-        buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 44);
-        buildQueue[Protoss_Assimilator] =               (s >= 26);
-        buildQueue[Protoss_Gateway] =                   (vis(Protoss_Nexus) >= 2) + (s >= 34);
-        buildQueue[Protoss_Cybernetics_Core] =          (s >= 30);
+        buildQueue[Protoss_Nexus]            = 1 + (s >= 24);
+        buildQueue[Protoss_Pylon]            = (s >= 16) + (s >= 44);
+        buildQueue[Protoss_Assimilator]      = (s >= 26);
+        buildQueue[Protoss_Gateway]          = (vis(Protoss_Nexus) >= 2) + (s >= 34);
+        buildQueue[Protoss_Cybernetics_Core] = (s >= 30);
 
         // Upgrades
-        upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
+        upgradeQueue[Singularity_Charge] = vis(Protoss_Dragoon) > 0;
 
         // Pumping
-        protossUnitPump[Protoss_Probe] =                true;
-        protossUnitPump[Protoss_Zealot] =               com(Protoss_Gateway) > 0 && vis(Protoss_Cybernetics_Core) > 0 && total(Protoss_Zealot) < 2;
-        protossUnitPump[Protoss_Dragoon] =              com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
+        protossUnitPump[Protoss_Probe]   = true;
+        protossUnitPump[Protoss_Zealot]  = com(Protoss_Gateway) > 0 && vis(Protoss_Cybernetics_Core) > 0 && total(Protoss_Zealot) < 2;
+        protossUnitPump[Protoss_Dragoon] = com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
 
         // Gas
         gasLimit = gasMax();
@@ -42,23 +42,23 @@ namespace McRave::BuildOrder::Protoss {
     void PvT_2B_21Nexus()
     {
         // "http://liquipedia.net/starcraft/21_Nexus"
-        scout =                                         Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
-        transitionReady =                               vis(Protoss_Gateway) >= 2;
+        scout           = Broodwar->getStartLocations().size() == 4 ? vis(Protoss_Pylon) > 0 : vis(Protoss_Pylon) > 0;
+        transitionReady = vis(Protoss_Gateway) >= 2;
 
         // Buildings
-        buildQueue[Protoss_Nexus] =                     1 + (s >= 42);
-        buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 30);
-        buildQueue[Protoss_Assimilator] =               s >= 24;
-        buildQueue[Protoss_Gateway] =                   (s >= 20) + (vis(Protoss_Nexus) >= 2);
-        buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
+        buildQueue[Protoss_Nexus]            = 1 + (s >= 42);
+        buildQueue[Protoss_Pylon]            = (s >= 16) + (s >= 30);
+        buildQueue[Protoss_Assimilator]      = s >= 24;
+        buildQueue[Protoss_Gateway]          = (s >= 20) + (vis(Protoss_Nexus) >= 2);
+        buildQueue[Protoss_Cybernetics_Core] = s >= 26;
 
         // Upgrades
-        upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
+        upgradeQueue[Singularity_Charge] = vis(Protoss_Dragoon) > 0;
 
         // Pumping
-        protossUnitPump[Protoss_Probe] =                total(Protoss_Probe) < 19 || total(Protoss_Pylon) >= 3;
-        protossUnitPump[Protoss_Zealot] =               com(Protoss_Gateway) > 0 && zealotsNeeded_PvT() > total(Protoss_Zealot);
-        protossUnitPump[Protoss_Dragoon] =              com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
+        protossUnitPump[Protoss_Probe]   = total(Protoss_Probe) < 19 || total(Protoss_Pylon) >= 3;
+        protossUnitPump[Protoss_Zealot]  = com(Protoss_Gateway) > 0 && zealotsNeeded_PvT() > total(Protoss_Zealot);
+        protossUnitPump[Protoss_Dragoon] = com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
 
         // Gas
         gasLimit = gasMax();
@@ -69,23 +69,23 @@ namespace McRave::BuildOrder::Protoss {
     void PvT_2B_20Nexus()
     {
         // "https://liquipedia.net/starcraft/2_Gate_Range_Expand"
-        scout =                                             vis(Protoss_Cybernetics_Core) > 0;
-        gasLimit =                                          goonRange() && vis(Protoss_Pylon) < 3 ? 2 : INT_MAX;
-        transitionReady =                                   vis(Protoss_Gateway) >= 2;
+        scout           = vis(Protoss_Cybernetics_Core) > 0;
+        gasLimit        = goonRange() && vis(Protoss_Pylon) < 3 ? 2 : INT_MAX;
+        transitionReady = vis(Protoss_Gateway) >= 2;
 
-        buildQueue[Protoss_Nexus] =                         1 + (s >= 40);
-        buildQueue[Protoss_Pylon] =                         (s >= 16) + (s >= 30);
-        buildQueue[Protoss_Assimilator] =                   s >= 24;
-        buildQueue[Protoss_Gateway] =                       (s >= 20) + (s >= 34);
-        buildQueue[Protoss_Cybernetics_Core] =              s >= 26;
+        buildQueue[Protoss_Nexus]            = 1 + (s >= 40);
+        buildQueue[Protoss_Pylon]            = (s >= 16) + (s >= 30);
+        buildQueue[Protoss_Assimilator]      = s >= 24;
+        buildQueue[Protoss_Gateway]          = (s >= 20) + (s >= 34);
+        buildQueue[Protoss_Cybernetics_Core] = s >= 26;
 
         // Upgrades
-        upgradeQueue[Singularity_Charge] =                  vis(Protoss_Dragoon) > 0;
+        upgradeQueue[Singularity_Charge] = vis(Protoss_Dragoon) > 0;
 
         // Pumping
-        protossUnitPump[Protoss_Probe] =                total(Protoss_Probe) < 20 || total(Protoss_Dragoon) >= 2;
-        protossUnitPump[Protoss_Zealot] =               com(Protoss_Gateway) > 0 && zealotsNeeded_PvT() > total(Protoss_Zealot);
-        protossUnitPump[Protoss_Dragoon] =              com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
+        protossUnitPump[Protoss_Probe]   = total(Protoss_Probe) < 20 || total(Protoss_Dragoon) >= 2;
+        protossUnitPump[Protoss_Zealot]  = com(Protoss_Gateway) > 0 && zealotsNeeded_PvT() > total(Protoss_Zealot);
+        protossUnitPump[Protoss_Dragoon] = com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
 
         // Gas
         gasLimit = gasMax();
@@ -95,66 +95,66 @@ namespace McRave::BuildOrder::Protoss {
 
     void PvT_2B_Obs()
     {
-        inOpening =                                     s < 80;
-        inTransition =                                  total(Protoss_Nexus) >= 2;
-        focusUnit =                                     Protoss_Observer;
+        inOpening    = s < 80;
+        inTransition = total(Protoss_Nexus) >= 2;
+        focusUnit    = Protoss_Observer;
 
         // Buildings
-        buildQueue[Protoss_Assimilator] =               s >= 24;
-        buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
-        buildQueue[Protoss_Robotics_Facility] =         s >= 62;
-        buildQueue[Protoss_Observatory] =               com(Protoss_Robotics_Facility) > 0;
+        buildQueue[Protoss_Assimilator]       = s >= 24;
+        buildQueue[Protoss_Cybernetics_Core]  = s >= 26;
+        buildQueue[Protoss_Robotics_Facility] = s >= 62;
+        buildQueue[Protoss_Observatory]       = com(Protoss_Robotics_Facility) > 0;
 
         // Composition
-        protossUnitPump[Protoss_Dragoon] =              com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
-        protossUnitPump[Protoss_Observer] =             com(Protoss_Gateway) > 0 && com(Protoss_Observatory) > 0;
+        protossUnitPump[Protoss_Dragoon]  = com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
+        protossUnitPump[Protoss_Observer] = com(Protoss_Gateway) > 0 && com(Protoss_Observatory) > 0;
     }
 
     void PvT_2B_Carrier()
     {
-        inOpening =                                     total(Protoss_Stargate) < 2;
-        focusUnit =                                     Protoss_Carrier;
-        inTransition =                                  total(Protoss_Stargate) > 0;
+        inOpening    = total(Protoss_Stargate) < 2;
+        focusUnit    = Protoss_Carrier;
+        inTransition = total(Protoss_Stargate) > 0;
 
         // Buildings
-        buildQueue[Protoss_Assimilator] =               (s >= 24) + (s >= 60);
-        buildQueue[Protoss_Cybernetics_Core] =          s >= 26;
-        buildQueue[Protoss_Stargate] =                  (vis(Protoss_Dragoon) >= 6) + (vis(Protoss_Carrier) > 0);
-        buildQueue[Protoss_Fleet_Beacon] =              atPercent(Protoss_Stargate, 1.00);
+        buildQueue[Protoss_Assimilator]      = (s >= 24) + (s >= 60);
+        buildQueue[Protoss_Cybernetics_Core] = s >= 26;
+        buildQueue[Protoss_Stargate]         = (vis(Protoss_Dragoon) >= 6) + (vis(Protoss_Carrier) > 0);
+        buildQueue[Protoss_Fleet_Beacon]     = atPercent(Protoss_Stargate, 1.00);
 
         // Upgrades
-        upgradeQueue[Protoss_Air_Weapons] =             vis(Protoss_Stargate) > 0;
-        upgradeQueue[Carrier_Capacity] =                com(Protoss_Fleet_Beacon) > 0;
+        upgradeQueue[Protoss_Air_Weapons] = vis(Protoss_Stargate) > 0;
+        upgradeQueue[Carrier_Capacity]    = com(Protoss_Fleet_Beacon) > 0;
 
         // Composition
-        protossUnitPump[Protoss_Dragoon] =              com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
-        protossUnitPump[Protoss_Carrier] =              com(Protoss_Stargate) > 0 && com(Protoss_Fleet_Beacon) > 0;
+        protossUnitPump[Protoss_Dragoon] = com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
+        protossUnitPump[Protoss_Carrier] = com(Protoss_Stargate) > 0 && com(Protoss_Fleet_Beacon) > 0;
     }
 
     void PvT_2B_ReaverCarrier()
     {
-        inOpening =                                     s < 200;
-        inTransition =                                  total(Protoss_Stargate) > 0;
-        focusUnit =                                     Players::getTotalCount(PlayerState::Enemy, Terran_Medic) > 0 ? Protoss_Reaver : Protoss_Carrier;
+        inOpening    = s < 200;
+        inTransition = total(Protoss_Stargate) > 0;
+        focusUnit    = Protoss_Reaver;
 
         // Buildings
-        buildQueue[Protoss_Assimilator] =               1 + (s >= 56);
-        buildQueue[Protoss_Robotics_Facility] =         s >= 58;
-        buildQueue[Protoss_Robotics_Support_Bay] =      atPercent(Protoss_Robotics_Facility, 0.95);
-        buildQueue[Protoss_Stargate] =                  (s >= 80) + (vis(Protoss_Carrier) > 0);
-        buildQueue[Protoss_Fleet_Beacon] =              atPercent(Protoss_Stargate, 0.95);
+        buildQueue[Protoss_Assimilator]          = 1 + (s >= 56);
+        buildQueue[Protoss_Robotics_Facility]    = s >= 58;
+        buildQueue[Protoss_Robotics_Support_Bay] = atPercent(Protoss_Robotics_Facility, 0.95);
+        buildQueue[Protoss_Stargate]             = (s >= 80) + (vis(Protoss_Carrier) > 0);
+        buildQueue[Protoss_Fleet_Beacon]         = atPercent(Protoss_Stargate, 0.95);
 
         // Upgrades
-        upgradeQueue[Gravitic_Drive] =                  total(Protoss_Shuttle) > 0;
-        upgradeQueue[Protoss_Air_Weapons] =             vis(Protoss_Stargate) > 0;
-        upgradeQueue[Carrier_Capacity] =                com(Protoss_Fleet_Beacon) > 0;
+        upgradeQueue[Gravitic_Drive]      = total(Protoss_Shuttle) > 0;
+        upgradeQueue[Protoss_Air_Weapons] = vis(Protoss_Stargate) > 0;
+        upgradeQueue[Carrier_Capacity]    = com(Protoss_Fleet_Beacon) > 0;
 
         // Composition
-        protossUnitPump[Protoss_Dragoon] =              com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
-        protossUnitPump[Protoss_Reaver] =               com(Protoss_Robotics_Facility) > 0 && com(Protoss_Robotics_Support_Bay) > 0;
-        protossUnitPump[Protoss_Observer] =             com(Protoss_Robotics_Facility) > 0 && com(Protoss_Observatory) > 0;
-        protossUnitPump[Protoss_Shuttle] =              com(Protoss_Robotics_Facility) > 0 && vis(Protoss_Reaver) > vis(Protoss_Shuttle) * 2;
-        protossUnitPump[Protoss_Carrier] =              com(Protoss_Stargate) > 0 && com(Protoss_Fleet_Beacon) > 0;
+        protossUnitPump[Protoss_Dragoon]  = com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
+        protossUnitPump[Protoss_Reaver]   = com(Protoss_Robotics_Facility) > 0 && com(Protoss_Robotics_Support_Bay) > 0;
+        protossUnitPump[Protoss_Observer] = com(Protoss_Robotics_Facility) > 0 && com(Protoss_Observatory) > 0;
+        protossUnitPump[Protoss_Shuttle]  = com(Protoss_Robotics_Facility) > 0 && vis(Protoss_Reaver) > vis(Protoss_Shuttle) * 2;
+        protossUnitPump[Protoss_Carrier]  = com(Protoss_Stargate) > 0 && com(Protoss_Fleet_Beacon) > 0;
     }
 
     void PvT_2B()
@@ -187,4 +187,4 @@ namespace McRave::BuildOrder::Protoss {
                 PvT_2B_ReaverCarrier();
         }
     }
-}
+} // namespace McRave::BuildOrder::Protoss

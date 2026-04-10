@@ -221,7 +221,7 @@ namespace McRave::Learning {
             // Testing builds if needed
             if (false) {
                 if (Players::PvZ()) {
-                    BuildOrder::setLearnedBuild(P_FFE, P_Forge, P_NeoBisu);
+                    BuildOrder::setLearnedBuild(P_2Gate, P_10_12, P_4Gate);
                     return;
                 }
                 if (Players::PvP()) {
@@ -241,7 +241,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild(Z_PoolHatch, Z_Overpool, Z_3HatchHydra);
+                    BuildOrder::setLearnedBuild(Z_PoolHatch, Z_Overpool, Z_4HatchHydra);
                     return;
                 }
             }

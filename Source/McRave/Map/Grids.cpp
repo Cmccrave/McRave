@@ -51,14 +51,15 @@ namespace McRave::Grids {
 
         void addCollision(UnitInfo &unit)
         {
-            auto collisionLessOrders = {Orders::HarvestGas, Orders::MoveToGas, Orders::ReturnGas, Orders::WaitForGas, Orders::MiningMinerals, Orders::MoveToMinerals, Orders::ReturnMinerals, Orders::WaitForMinerals};
+            auto collisionLessOrders = {Orders::HarvestGas,     Orders::MoveToGas,      Orders::ReturnGas,      Orders::WaitForGas,
+                                        Orders::MiningMinerals, Orders::MoveToMinerals, Orders::ReturnMinerals, Orders::WaitForMinerals};
             if (unit.unit()->exists() && find(collisionLessOrders.begin(), collisionLessOrders.end(), unit.unit()->getOrder()) != collisionLessOrders.end())
                 return;
 
             // Pixel rectangle (make any even size units an extra WalkPosition)
             const auto topLeft  = Position(unit.getPosition().x - unit.getType().dimensionLeft(), unit.getPosition().y - unit.getType().dimensionUp());
             const auto topRight = Position(unit.getPosition().x + unit.getType().dimensionRight() + 1, unit.getPosition().y - unit.getType().dimensionUp());
-            const auto botLeft  = Position(unit.getPosition().x - unit.getType().dimensionLeft(), unit.getPosition().y + unit.getType().dimensionDown() + 1);
+            const auto botLeft  = Position(unit.getPosition().x - unit.getType().dimensionLeft(), unit.getPosition().y + unit.getType().dimensionDown());
             const auto botRight = Position(unit.getPosition().x + unit.getType().dimensionRight() + 1, unit.getPosition().y + unit.getType().dimensionDown() + 1);
 
             // Just store these in a position, it's a viable struct here
@@ -102,8 +103,13 @@ namespace McRave::Grids {
                     index.lastUpdateFrame     = currentGridFrame;
                 }
             }
-            for (int x = TL.x; x <= BR.x; x++) {
-                for (int y = TL.y; y <= BR.y; y++) {
+
+            // Full collision is everything inside if the size isn't "even"
+            auto topLeftGap  = WalkPosition(topLeftMod.x > 0 ? 1 + topLeftMod.x / 8 : 0, topLeftMod.y > 0 ? 1 + topLeftMod.y / 8 : 0);
+            auto botRightGap = WalkPosition(botRightMod.x > 0 ? botRightMod.x / 8 : 0, botRightMod.y > 0 ? botRightMod.y / 8 : 0);
+
+            for (int x = TL.x + topLeftGap.x; x < BR.x - botRightGap.x; x++) {
+                for (int y = TL.y + topLeftGap.y; y < BR.y - botRightGap.y; y++) {
                     auto &index = grid[gridWalkScale * y + x];
                     index.fullCollision++;
                     index.lastUpdateFrame = currentGridFrame;
@@ -199,7 +205,7 @@ namespace McRave::Grids {
             // Cache positions of units for when threat grids are important
             vector<Position> cachedPositions;
             for (auto &unit : Units::getUnits(PlayerState::Self)) {
-                if (unit->getRole() == Role::Scout || unit->getRole() == Role::Combat)
+                if (unit->getRole() == Role::Scout || unit->getRole() == Role::Combat || Util::getTime() < Time(5, 00))
                     cachedPositions.push_back(unit->getPosition());
             }
 
@@ -357,6 +363,33 @@ namespace McRave::Grids {
                 }
             }
         }
+
+        void drawCollision()
+        {
+            BWAPI::Broodwar->setTextSize(BWAPI::Text::Size::Small);
+            const auto drawThisWalk = [&](auto &w) {
+                auto vertical   = getVCollision(w, PlayerState::All);
+                auto horizontal = getHCollision(w, PlayerState::All);
+                auto full       = getFCollision(w, PlayerState::All);
+
+                if (vertical > 0) {
+                    Broodwar->drawTextMap(Position(w), "%d", vertical);
+                }
+                if (horizontal > 0) {
+                    Broodwar->drawTextMap(Position(w), "%d", horizontal);
+                }
+                if (full > 0) {
+                    Visuals::drawBox(w, Colors::Purple, true);
+                }
+            };
+
+            for (int x = 0; x < mapWalkWidth; x++) {
+                for (int y = 0; y < mapWalkHeight; y++) {
+                    drawThisWalk(WalkPosition(x, y));
+                }
+            }
+            BWAPI::Broodwar->setTextSize();
+        }
     } // namespace
 
     void onFrame()
@@ -364,11 +397,8 @@ namespace McRave::Grids {
         currentGridFrame = Broodwar->getFrameCount();
         updateGrids();
         updateVisibility();
+        // drawCollision();
         // createChokeDirections();
-
-        // auto mousePos = WalkPosition(Broodwar->getScreenPosition() + Broodwar->getMousePosition());
-        // auto grid     = Grids::getGroundThreat(mousePos, PlayerState::Enemy);
-        // Broodwar << grid << endl;
     }
 
     void onStart()
@@ -378,9 +408,10 @@ namespace McRave::Grids {
         updateVisibility();
     }
 
-    template <typename T> T getGridValue(const Grid *gridArray, int x, int y, T Grid::*member)
+    template <typename T> //
+    T getGridValue(const Grid *gridArray, int x, int y, T Grid::*member)
     {
-        if (x < 0 || y < 0 || x > mapWalkWidth || y > mapWalkHeight) {
+        if (x < 0 || y < 0 || x >= mapWalkWidth || y >= mapWalkHeight) {
             return {};
         }
         const auto &index = gridArray[gridWalkScale * y + x];

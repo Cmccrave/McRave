@@ -176,6 +176,8 @@ namespace McRave::Walls {
         {
             // 1GateCore
             if (Spy::getEnemyBuild() == P_1GateCore || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
+                if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 3)
+                    return 2;
                 return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 30));
             }
 
@@ -193,6 +195,7 @@ namespace McRave::Walls {
                     return 2;
                 if (Spy::getEnemyOpener() == P_Horror_9_9)
                     return 1;
+                return (Util::getTime() > Time(3, 15));
             }
 
             // FFE

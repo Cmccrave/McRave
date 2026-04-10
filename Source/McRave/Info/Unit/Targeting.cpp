@@ -137,10 +137,6 @@ namespace McRave::Targets {
                 // Clean Zealots up vs rushes
                 if (Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == P_Rush)
                     return Priority::Major;
-
-                // If our build is hitting a timing, kill workers
-                if (BuildOrder::isPressure() && !target.getType().isWorker() && !target.isThreatening() && Util::getTime() < Time(8, 00))
-                    return Priority::Ignore;
             }
 
             if (Players::ZvT()) {
@@ -165,23 +161,20 @@ namespace McRave::Targets {
             if (Players::ZvZ()) {
 
                 // Kill scourge immediately
-                if (target.getType() == Zerg_Scourge && unit.isWithinEngage(target))
+                if (target.getType() == Zerg_Scourge && unit.isWithinRange(target))
                     return Priority::Critical;
-
-                // Kill zerglings if they have more and no mutas
-                if (!BuildOrder::isPressure()) {
-                    if (Util::getTime() < Time(8, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk, Zerg_Hydralisk) == 0 && target.getType() == Zerg_Zergling &&
-                        Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) > vis(Zerg_Zergling))
-                        return Priority::Major;
-                }
             }
 
+            // If our build is hitting a timing, kill workers
+            if (BuildOrder::isPressure(Zerg_Mutalisk) && !target.getType().isWorker() && !target.isThreatening() && Util::getTime() < Time(8, 00))
+                return Priority::Ignore;
+
             // One/two shot is high priority to hit
-            if (unit.isWithinReach(target) && (Combat::Clusters::canDecimate(unit, target) || target.isSplasher()))
+            if (!Players::ZvZ() && unit.isWithinReach(target) && (Combat::Clusters::canDecimate(unit, target) || target.isSplasher()))
                 return Priority::Critical;
 
             // If a building is unprotected
-            if (!BuildOrder::isPressure() && Players::getStrength(PlayerState::Enemy).airDefense > 0.0 && target.getType().isBuilding() && !target.canAttackAir() &&
+            if (!BuildOrder::isPressure(Zerg_Mutalisk) && Players::getStrength(PlayerState::Enemy).airDefense > 0.0 && target.getType().isBuilding() && !target.canAttackAir() &&
                 target.getUnitsInRangeOfThis().empty() && unit.getUnitsInRangeOfThis().empty() && unit.isWithinRange(target)) {
                 Priority::Major;
             }

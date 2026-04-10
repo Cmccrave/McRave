@@ -24,7 +24,6 @@ namespace McRave::BuildOrder::Protoss {
 
         gasLimit =                                      INT_MAX;
 
-        desiredDetection =                              Protoss_Observer;
         focusUnit =                                     UnitTypes::None;
     }
 

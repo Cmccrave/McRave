@@ -16,7 +16,6 @@ namespace McRave::BuildOrder::Protoss {
         inOpening    = s < 110;
         inTransition = true;
         wallNat      = vis(Protoss_Nexus) >= 2;
-        focusUnit    = Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0 ? Protoss_Reaver : Protoss_Corsair;
 
         // Buildings
         buildQueue[Protoss_Gateway]          = 2 + (s >= 62) + (s >= 70);

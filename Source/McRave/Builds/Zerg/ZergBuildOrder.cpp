@@ -675,45 +675,45 @@ namespace McRave::BuildOrder::Zerg {
     void tech()
     {
         getTech = false;
-        if (!inOpening) {
+        if (inOpening)
+            return;
 
-            auto techOffset = 0;
+        auto techOffset = 0;
 
-            // ZvP
-            if (Players::ZvP()) {
-                techOffset = 2;
-            }
-
-            // ZvT
-            if (Players::ZvT()) {
-                techOffset = 1 + Spy::Terran::enemyMech();
-            }
-
-            // ZvZ
-            if (Players::ZvZ()) {
-                techOffset = 0;
-            }
-
-            // ZvFFA
-            if (Players::ZvFFA())
-                unitOrder = {Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker};
-
-            // Ensure anything we already made is added into the list
-            for (auto unit : unitOrder) {
-                if (unlockReady(unit))
-                    focusUnits.insert(unit);
-            }
-
-            // Adding tech
-            const auto endOfTech   = !unitOrder.empty() && isFocusUnit(unitOrder.back());
-            const auto techVal     = int(focusUnits.size()) + techOffset + mineralThird;
-            const auto readyToTech = (vis(Zerg_Extractor) >= 2 || int(Stations::getStations(PlayerState::Self).size()) >= 4 || focusUnits.empty()) && vis(Zerg_Drone) >= 10;
-            techSat                = (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
-
-            getTech = readyToTech && !techSat && productionSat;
-            getNewTech();
-            getTechBuildings();
+        // ZvP
+        if (Players::ZvP()) {
+            techOffset = 2;
         }
+
+        // ZvT
+        if (Players::ZvT()) {
+            techOffset = 1 + Spy::Terran::enemyMech();
+        }
+
+        // ZvZ
+        if (Players::ZvZ()) {
+            techOffset = 0;
+        }
+
+        // ZvFFA
+        if (Players::ZvFFA())
+            unitOrder = {Zerg_Mutalisk, Zerg_Hydralisk, Zerg_Lurker};
+
+        // Ensure anything we already made is added into the list
+        for (auto unit : unitOrder) {
+            if (unlockReady(unit))
+                focusUnits.insert(unit);
+        }
+
+        // Adding tech
+        const auto endOfTech   = !unitOrder.empty() && isFocusUnit(unitOrder.back());
+        const auto techVal     = int(focusUnits.size()) + techOffset + mineralThird;
+        const auto readyToTech = (vis(Zerg_Extractor) >= 2 || int(Stations::getStations(PlayerState::Self).size()) >= 4 || focusUnits.empty()) && vis(Zerg_Drone) >= 10;
+        techSat                = (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
+
+        getTech = readyToTech && !techSat && productionSat;
+        getNewTech();
+        getTechBuildings();
     }
 
     void situational()

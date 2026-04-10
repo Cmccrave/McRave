@@ -267,6 +267,8 @@ namespace McRave {
 
             if (closestHidden && closestHidden->isWithinReach(*this))
                 nearHidden = true;
+            if (closestHidden && closestHidden->getSpeed() == 0.0 && closestHidden->isWithinEngage(*this))
+                nearHidden = true;
 
             targetedByHidden = any_of(unitsTargetingThis.begin(), unitsTargetingThis.end(), [&](auto &t) { return !t.expired() && t.lock()->isHidden(); });
         }

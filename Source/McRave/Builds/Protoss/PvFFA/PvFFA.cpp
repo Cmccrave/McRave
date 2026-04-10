@@ -23,8 +23,6 @@ namespace McRave::BuildOrder::Protoss {
         transitionReady =                               false;
 
         gasLimit =                                      INT_MAX;
-
-        desiredDetection =                              Protoss_Observer;
     }
 
     void PvFFA()

@@ -26,15 +26,15 @@ namespace McRave::Combat::State {
         const auto unlockedOrVis = [&](auto &t) { return vis(t) > 0 || BuildOrder::isUnitUnlocked(t); };
 
         // Hydralisks
-        if (unlockedOrVis(Zerg_Hydralisk) || BuildOrder::getCurrentTransition() == Z_4HatchHydra || BuildOrder::getCurrentTransition() == Z_6HatchHydra) {
+        if (!BuildOrder::isPressure(Zerg_Hydralisk) && (unlockedOrVis(Zerg_Hydralisk) || BuildOrder::getCurrentTransition() == Z_4HatchHydra || BuildOrder::getCurrentTransition() == Z_6HatchHydra)) {
             const auto hydraSpeed   = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments);
             const auto hydraRange   = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines);
-            const auto defendTiming = Spy::getEnemyBuild() == P_FFE && !BuildOrder::isPressure() && Util::getTime() < Time(12, 00);
+            const auto defendTiming = Spy::getEnemyBuild() == P_FFE && Util::getTime() < Time(12, 00);
             const auto enemyTeched  = Players::getTotalCount(PlayerState::Enemy, Protoss_Shuttle) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0 ||
                                      Players::getTotalCount(PlayerState::Enemy, Protoss_Robotics_Facility) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Robotics_Support_Bay) > 0;
 
             if (Players::ZvP() || Players::ZvFFA()) {
-                if (!BuildOrder::isPressure() && !enemyTeched) {
+                if (!enemyTeched) {
                     if (!hydraRange || !hydraSpeed || BuildOrder::isAllIn() || defendTiming)
                         staticRetreatTypes.push_back(Zerg_Hydralisk);
                 }
@@ -46,7 +46,7 @@ namespace McRave::Combat::State {
         }
 
         // Mutalisks
-        if (unlockedOrVis(Zerg_Mutalisk) || BuildOrder::getCurrentTransition().find("Muta") != string::npos) {
+        if (!BuildOrder::isPressure(Zerg_Mutalisk) && (unlockedOrVis(Zerg_Mutalisk) || BuildOrder::getCurrentTransition() == Z_2HatchMuta || BuildOrder::getCurrentTransition() == Z_3HatchMuta)) {
             if (Players::ZvZ()) {
                 const auto lessMutas = com(Zerg_Mutalisk) < Players::getCompleteCount(PlayerState::Enemy, Zerg_Mutalisk);
                 const auto moreGas   = Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() && Util::getTime() < Time(9, 00);
@@ -79,7 +79,7 @@ namespace McRave::Combat::State {
         }
 
         // Zerglings
-        if (unlockedOrVis(Zerg_Zergling)) {
+        if (!BuildOrder::isPressure(Zerg_Zergling) && unlockedOrVis(Zerg_Zergling)) {
             const auto speedLing = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Metabolic_Boost);
             const auto crackling = Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Adrenal_Glands);
             const auto volume    = speedLing && Players::getTotalCount(PlayerState::Self, Zerg_Zergling) >= 64;
@@ -98,7 +98,7 @@ namespace McRave::Combat::State {
                     const auto defendProxy  = Spy::enemyProxy() && !speedLing && Util::getTime() < Time(5, 00) && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0;
                     const auto defendTiming = Spy::getEnemyBuild() == P_FFE && Util::getTime() > Time(6, 00) && Util::getTime() < Time(8, 00);
 
-                    if (!killWorkers && !deniedProxy && Spy::getEnemyBuild() != P_CannonRush && !BuildOrder::isPressure()) {
+                    if (!killWorkers && !deniedProxy && Spy::getEnemyBuild() != P_CannonRush) {
                         if (scaryOpeners || hideCheese || defendProxy || defendTiming)
                             staticRetreatTypes.push_back(Zerg_Zergling);
                     }
@@ -164,7 +164,7 @@ namespace McRave::Combat::State {
         }
 
         // Corsairs
-        if (unlockedOrVis(Protoss_Corsair)) {
+        if (!BuildOrder::isPressure(Protoss_Corsair) && unlockedOrVis(Protoss_Corsair)) {
             if (Players::PvZ()) {
                 if (Players::getCompleteCount(PlayerState::Enemy, Zerg_Scourge) > 0 && !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Protoss_Air_Weapons) &&
                     com(Protoss_Corsair) < 6)
@@ -174,7 +174,7 @@ namespace McRave::Combat::State {
 
         // Carriers
         static bool carrierCountReady = carrierCountReady || com(Protoss_Carrier) >= 4;
-        if (unlockedOrVis(Protoss_Carrier)) {
+        if (!BuildOrder::isPressure(Protoss_Carrier) && unlockedOrVis(Protoss_Carrier)) {
             if (Players::PvT()) {
                 if (!carrierCountReady)
                     staticRetreatTypes.push_back(Protoss_Carrier);
@@ -187,8 +187,8 @@ namespace McRave::Combat::State {
         };
 
         // Zealots / Dragoons
-        if (unlockedOrVis(Protoss_Zealot) || unlockedOrVis(Protoss_Dragoon)) {
-            if (Players::PvZ() && !BuildOrder::isPressure()) {
+        if (!BuildOrder::isPressure(Protoss_Dragoon) && !BuildOrder::isPressure(Protoss_Zealot) && (unlockedOrVis(Protoss_Zealot) || unlockedOrVis(Protoss_Dragoon))) {
+            if (Players::PvZ()) {
                 auto gateUnits = total(Protoss_Zealot) + total(Protoss_Dragoon);
                 if ((gateUnits < 12 && int(Stations::getStations(PlayerState::Enemy).size()) < 2) || gateUnits < 3)
                     lockGateways();
@@ -196,7 +196,7 @@ namespace McRave::Combat::State {
         }
 
         // Marines
-        if (unlockedOrVis(Terran_Marine)) {
+        if (!BuildOrder::isPressure(Terran_Marine) && unlockedOrVis(Terran_Marine)) {
             if (Players::TvZ()) {
                 auto stim = Players::getPlayerInfo(Broodwar->self())->hasTech(TechTypes::Stim_Packs);
                 if (!stim)
@@ -209,7 +209,8 @@ namespace McRave::Combat::State {
         }
 
         // Tanks / Goliaths
-        if (unlockedOrVis(Terran_Siege_Tank_Tank_Mode) || unlockedOrVis(Terran_Siege_Tank_Siege_Mode)) {
+        if (!BuildOrder::isPressure(Terran_Siege_Tank_Tank_Mode) && !BuildOrder::isPressure(Terran_Siege_Tank_Siege_Mode) &&
+            (unlockedOrVis(Terran_Siege_Tank_Tank_Mode) || unlockedOrVis(Terran_Siege_Tank_Siege_Mode))) {
             if (Players::TvP()) {
                 if (Util::getTime() < Time(12, 00)) {
                     staticRetreatTypes.push_back(Terran_Siege_Tank_Tank_Mode);

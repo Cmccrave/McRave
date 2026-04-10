@@ -65,36 +65,41 @@ namespace McRave::BuildOrder::Protoss {
 
         void queueUpgradeStructures()
         {
-            // If we're not in our opener
-            if (!inOpening) {
-
-                // Adding upgrade buildings
-                if (com(Protoss_Assimilator) >= 3) {
-                    auto forgeCount = com(Protoss_Assimilator) >= 4 ? 2 - (int)Terrain::isIslandMap() : 1;
-                    auto coreCount  = com(Protoss_Assimilator) >= 4 ? 1 + (int)Terrain::isIslandMap() : 1;
-
-                    buildQueue[Protoss_Cybernetics_Core] = 1 + (int)Terrain::isIslandMap();
-                    buildQueue[Protoss_Forge]            = 2 - (int)Terrain::isIslandMap();
-                }
-
-                // Add robo tech if we have the opposite one
-                if (com(Protoss_Robotics_Facility) > 0 && (com(Protoss_Observatory) > 0 || com(Protoss_Robotics_Support_Bay) > 0)) {
-                    buildQueue[Protoss_Observatory]          = total(Protoss_Reaver) > 0;
-                    buildQueue[Protoss_Robotics_Support_Bay] = total(Protoss_Observer) > 0;
-                }
-
-                // Important to have a forge vs Z
-                if (com(Protoss_Nexus) >= 2 && Players::vZ())
-                    buildQueue[Protoss_Forge] = 1;
-
-                // Ensure we build a core outside our opening book
-                if (com(Protoss_Gateway) >= 2)
-                    buildQueue[Protoss_Cybernetics_Core] = 1;
-
-                // Corsair/Scout upgrades
-                if (s >= 300 && (isFocusUnit(Protoss_Scout) || isFocusUnit(Protoss_Corsair)))
-                    buildQueue[Protoss_Fleet_Beacon] = 1;
+            auto forgeDetectionBuilds = {P_4Gate, P_DT};
+            if (Spy::enemyInvis() && Util::contains(forgeDetectionBuilds, currentTransition)) {
+                buildQueue[Protoss_Forge]         = 1;
+                buildQueue[Protoss_Photon_Cannon] = com(Protoss_Forge) * 2;
             }
+
+            if (inOpening)
+                return;
+
+            // Adding upgrade buildings
+            if (com(Protoss_Assimilator) >= 3) {
+                auto forgeCount = com(Protoss_Assimilator) >= 4 ? 2 - (int)Terrain::isIslandMap() : 1;
+                auto coreCount  = com(Protoss_Assimilator) >= 4 ? 1 + (int)Terrain::isIslandMap() : 1;
+
+                buildQueue[Protoss_Cybernetics_Core] = 1 + (int)Terrain::isIslandMap();
+                buildQueue[Protoss_Forge]            = 2 - (int)Terrain::isIslandMap();
+            }
+
+            // Add robo tech if we have the opposite one
+            if (com(Protoss_Robotics_Facility) > 0 && (com(Protoss_Observatory) > 0 || com(Protoss_Robotics_Support_Bay) > 0)) {
+                buildQueue[Protoss_Observatory]          = total(Protoss_Reaver) > 0;
+                buildQueue[Protoss_Robotics_Support_Bay] = total(Protoss_Observer) > 0;
+            }
+
+            // Important to have a forge vs Z
+            if (com(Protoss_Nexus) >= 2 && Players::vZ())
+                buildQueue[Protoss_Forge] = 1;
+
+            // Ensure we build a core outside our opening book
+            if (com(Protoss_Gateway) >= 2)
+                buildQueue[Protoss_Cybernetics_Core] = 1;
+
+            // Corsair/Scout upgrades
+            if (s >= 300 && (isFocusUnit(Protoss_Scout) || isFocusUnit(Protoss_Corsair)))
+                buildQueue[Protoss_Fleet_Beacon] = 1;
         }
 
         void queueExpansions()
@@ -256,13 +261,15 @@ namespace McRave::BuildOrder::Protoss {
 
     void tech()
     {
-        if (!atPercent(Protoss_Cybernetics_Core, 1.00))
+        getTech = false;
+        if (inOpening)
             return;
+
         auto techOffset = 0;
 
         // PvP
         if (Players::PvP()) {
-            techOffset = 1;
+            techOffset = 1 + (currentTransition == P_4Gate);
             if (focusUnit == Protoss_Dark_Templar)
                 unitOrder = {Protoss_High_Templar, Protoss_Observer};
             else
@@ -271,7 +278,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // PvZ
         if (Players::PvZ()) {
-            techOffset = 1;
+            techOffset = 1 + (currentTransition == P_4Gate);
             if (focusUnit == Protoss_Reaver)
                 unitOrder = {Protoss_Corsair, Protoss_High_Templar};
             else if (focusUnit == Protoss_Corsair)
@@ -286,7 +293,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // PvT
         if (Players::PvT()) {
-            techOffset = 1;
+            techOffset = 1 + (currentTransition == P_4Gate);
             if (focusUnit == Protoss_Dark_Templar)
                 unitOrder = {Protoss_Arbiter, Protoss_Observer, Protoss_High_Templar};
             else if (focusUnit == Protoss_Carrier)
@@ -306,30 +313,13 @@ namespace McRave::BuildOrder::Protoss {
                 focusUnits.insert(unit);
         }
 
-        const auto endOfTech = !unitOrder.empty() && isFocusUnit(unitOrder.back());
-        const auto techVal   = int(focusUnits.size()) + techOffset + mineralThird;
-        techSat              = (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
+        // Adding tech
+        const auto endOfTech   = !unitOrder.empty() && isFocusUnit(unitOrder.back());
+        const auto techVal     = int(focusUnits.size()) + techOffset + mineralThird;
+        const auto readyToTech = (vis(Protoss_Assimilator) > 0 || int(Stations::getStations(PlayerState::Self).size()) >= 3 || focusUnits.empty()) && vis(Protoss_Probe) >= 20;
+        techSat                = (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
 
-        // Change desired detection if we get Cannons
-        // TODO: Clean up all below this section
-        if (Spy::enemyInvis() && desiredDetection == Protoss_Forge) {
-            buildQueue[Protoss_Forge]         = 1;
-            buildQueue[Protoss_Photon_Cannon] = com(Protoss_Forge) * 2;
-
-            if (com(Protoss_Photon_Cannon) >= 1) {
-                desiredDetection = Protoss_Observer;
-                hideTech         = true;
-            }
-        }
-
-        // If production is saturated and none are idle or we need detection, choose a tech
-        if ((!inOpening && !getTech && !techSat) || (Spy::enemyInvis() && !isFocusUnit(desiredDetection)))
-            getTech = true;
-
-        // If we need detection
-        if (getTech && Spy::enemyInvis() && desiredDetection == Protoss_Observer && !isFocusUnit(desiredDetection))
-            focusUnit = desiredDetection;
-
+        getTech = readyToTech && !techSat && productionSat;
         getNewTech();
         getTechBuildings();
     }
@@ -402,46 +392,53 @@ namespace McRave::BuildOrder::Protoss {
 
         if (!inOpening) {
             static vector<pair<UnitType, int>> priorityOrder;
+            static vector<pair<UnitType, int>> nexusOrder;
+            static vector<pair<UnitType, int>> gateOrder;
+            static vector<pair<UnitType, int>> roboOrder;
+            static vector<pair<UnitType, int>> stargateOrder;
+
+            nexusOrder = {{Protoss_Probe, 60}};
 
             // PvP
             if (Players::PvP() || Players::PvTVB() || Players::PvFFA()) {
                 priorityOrder = {
-                    {Protoss_Probe, 60},
-
-                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1}, {Protoss_Dragoon, 12},     {Protoss_Zealot, 2},   {Protoss_Dragoon, 24}, {Protoss_Zealot, 4}, {Protoss_High_Templar, 2},
-                    {Protoss_Dragoon, 36},     {Protoss_Zealot, 12},      {Protoss_High_Templar, 4}, {Protoss_Dragoon, 64},
-
-                    {Protoss_Observer, 1},     {Protoss_Reaver, 1},       {Protoss_Shuttle, 1},      {Protoss_Reaver, 4},   {Protoss_Shuttle, 2},  {Protoss_Reaver, 8}, {Protoss_Shuttle, 4},
+                    {Protoss_Probe, 60},                                                                              // Nexus
+                    {Protoss_Observer, 1},     {Protoss_Reaver, 1},       {Protoss_Shuttle, 1},                       // Robo
+                    {Protoss_Observer, 2},     {Protoss_Reaver, 4},       {Protoss_Shuttle, 2},                       //
+                    {Protoss_Observer, 3},     {Protoss_Reaver, 8},       {Protoss_Shuttle, 4},                       //
+                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1}, {Protoss_Dragoon, 24}, {Protoss_Zealot, 4}, // Gateway
+                    {Protoss_High_Templar, 2}, {Protoss_Dragoon, 36},     {Protoss_Zealot, 12},                       //
+                    {Protoss_High_Templar, 4}, {Protoss_Dragoon, 64},                                                 //
                 };
             }
 
             // PvT
             if (Players::PvT()) {
                 priorityOrder = {
-                    {Protoss_Probe, 60},
-
-                    {Protoss_Carrier, 12},     {Protoss_Arbiter, 4},
-
-                    {Protoss_Observer, 1},     {Protoss_Reaver, 1},       {Protoss_Shuttle, 1},  {Protoss_Observer, 2},     {Protoss_Reaver, 4},   {Protoss_Shuttle, 2},
-                    {Protoss_Observer, 3},     {Protoss_Reaver, 8},       {Protoss_Shuttle, 4},
-
-                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1}, {Protoss_Dragoon, 12}, {Protoss_Zealot, 2},       {Protoss_Dragoon, 24}, {Protoss_Zealot, 4},
-                    {Protoss_High_Templar, 2}, {Protoss_Dragoon, 36},     {Protoss_Zealot, 12},  {Protoss_High_Templar, 4}, {Protoss_Dragoon, 64},
+                    {Protoss_Probe, 60},                                                                              // Nexus
+                    {Protoss_Carrier, 12},     {Protoss_Arbiter, 4},                                                  // Stargate
+                    {Protoss_Observer, 1},     {Protoss_Reaver, 1},       {Protoss_Shuttle, 1},                       // Robo
+                    {Protoss_Observer, 2},     {Protoss_Reaver, 4},       {Protoss_Shuttle, 2},                       //
+                    {Protoss_Observer, 3},     {Protoss_Reaver, 8},       {Protoss_Shuttle, 4},                       //
+                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1}, {Protoss_Dragoon, 12}, {Protoss_Zealot, 6}, // Gateway
+                    {Protoss_High_Templar, 2}, {Protoss_Dragoon, 24},     {Protoss_Zealot, 12},                       //
+                    {Protoss_High_Templar, 4}, {Protoss_Dragoon, 36},     {Protoss_Zealot, 18},                       //
+                    {Protoss_Dragoon, 64}                                                                             //
                 };
             }
 
             // PvZ
             if (Players::PvZ()) {
                 priorityOrder = {
-                    {Protoss_Probe, 60},
-
-                    {Protoss_Corsair, 12},
-
-                    {Protoss_Observer, 1},     {Protoss_Reaver, 1},       {Protoss_Shuttle, 1},  {Protoss_Observer, 2},     {Protoss_Reaver, 4},
-                    {Protoss_Shuttle, 2},      {Protoss_Observer, 3},     {Protoss_Reaver, 8},   {Protoss_Shuttle, 4},
-
-                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1}, {Protoss_Zealot, 12},  {Protoss_Dragoon, 2},      {Protoss_Zealot, 24},
-                    {Protoss_Dragoon, 4},      {Protoss_High_Templar, 3}, {Protoss_Dragoon, 36}, {Protoss_High_Templar, 6}, {Protoss_Dragoon, 64},
+                    {Protoss_Probe, 60},                                                                               // Nexus
+                    {Protoss_Corsair, 12},                                                                             // Stargate
+                    {Protoss_Observer, 1},     {Protoss_Reaver, 1},       {Protoss_Shuttle, 1},                        // Robo
+                    {Protoss_Observer, 2},     {Protoss_Reaver, 4},       {Protoss_Shuttle, 2},                        //
+                    {Protoss_Observer, 3},     {Protoss_Reaver, 8},       {Protoss_Shuttle, 4},                        //
+                    {Protoss_Dark_Templar, 1}, {Protoss_High_Templar, 1}, {Protoss_Dragoon, 12}, {Protoss_Zealot, 12}, // Gateway
+                    {Protoss_High_Templar, 3}, {Protoss_Dragoon, 24},     {Protoss_Zealot, 24},                        //
+                    {Protoss_High_Templar, 6}, {Protoss_Dragoon, 36},     {Protoss_Zealot, 36},                        //
+                    {Protoss_Zealot, 64}                                                                               //
                 };
             }
 

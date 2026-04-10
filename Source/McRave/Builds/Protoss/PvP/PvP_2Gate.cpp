@@ -68,7 +68,6 @@ namespace McRave::BuildOrder::Protoss {
         unitLimits[Protoss_Zealot] =                    s <= 80 ? 5 : 0;
         scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) >= 1 : vis(Protoss_Gateway) >= 2;
         transitionReady =                               vis(Protoss_Gateway) >= 2;
-        desiredDetection =                              Protoss_Forge;
         gasLimit =                                      total(Protoss_Zealot) >= 3 ? INT_MAX : 0;
 
         // Buildings

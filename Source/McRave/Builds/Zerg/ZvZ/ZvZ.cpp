@@ -22,6 +22,8 @@ namespace McRave::BuildOrder::Zerg {
     int inboundUnits_ZvZ()
     {
         static map<BWAPI::UnitType, double> trackables = {{Zerg_Zergling, 1.0}};
+        if (Players::hasUpgraded(PlayerState::Enemy, Zerg_Melee_Attacks, 1))
+            trackables[Zerg_Zergling] += 0.2;
 
         // Economic estimate (have information on army, they aren't close):
         // For each unit, assume it arrives with enough time for us to create defenders
@@ -31,18 +33,23 @@ namespace McRave::BuildOrder::Zerg {
 
             auto idx = trackables.find(unit.getType());
             if (idx != trackables.end()) {
-                arrivalValue += idx->second / 1.5;
-                if (Units::inBoundUnit(unit, 20))
-                    arrivalValue += idx->second / 2.0;
+                arrivalValue += idx->second * 0.9;
+                if (Units::inBoundUnit(unit))
+                    arrivalValue += idx->second * 0.4;
             }
         }
 
         // Make less if we have some other units outside our opening
         if (com(Zerg_Sunken_Colony) > 0) {
             arrivalValue -= vis(Zerg_Hydralisk);
-            arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 4.0;
+            arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 6.0;
         }
 
+        // Make more if we have a drone lead
+        auto droneDiff = vis(Zerg_Drone) > Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone);
+        if (droneDiff >= 3) {
+            arrivalValue *= 1.25;
+        }
         return int(arrivalValue);
     }
 
@@ -97,6 +104,40 @@ namespace McRave::BuildOrder::Zerg {
         return 0;
     }
 
+    // Their spire is fast enough to be lethal
+    bool enemyFasterSpire()
+    {
+        static auto selfSpireTiming  = Time(0, 00);
+        static auto enemySpireTiming = Time(0, 00);
+        if (vis(Zerg_Spire) > 0 && selfSpireTiming == Time(0, 00))
+            selfSpireTiming = Util::getTime();
+        if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) > 0 && enemySpireTiming == Time(0, 00))
+            enemySpireTiming = Util::getTime();
+
+        auto faster = selfSpireTiming - enemySpireTiming > Time(0, 25);
+        if (faster)
+            LOG_ONCE("Enemy faster spire");
+
+        return enemySpireTiming != Time(0, 00) && selfSpireTiming - enemySpireTiming > Time(0, 25);
+    }
+
+    // Our spire is fast enough to be lethal
+    bool selfFasterSpire()
+    {
+        static auto selfSpireTiming  = Time(0, 00);
+        static auto enemySpireTiming = Time(0, 00);
+        if (vis(Zerg_Spire) > 0 && selfSpireTiming == Time(0, 00))
+            selfSpireTiming = Util::getTime();
+        if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) > 0 && enemySpireTiming == Time(0, 00))
+            enemySpireTiming = Util::getTime();
+
+        auto faster = selfSpireTiming - enemySpireTiming > Time(0, 25);
+        if (faster)
+            LOG_ONCE("Enemy faster spire");
+
+        return enemySpireTiming == Time(0, 00) || enemySpireTiming - selfSpireTiming > Time(0, 25);
+    }
+
     void defaultZvZ()
     {
         inOpening       = true;
@@ -113,10 +154,8 @@ namespace McRave::BuildOrder::Zerg {
         gasTrick        = false;
         reserveLarva    = 0;
 
-        gasLimit = gasMax();
-
-        desiredDetection = Zerg_Overlord;
-        focusUnit        = UnitTypes::None;
+        gasLimit  = gasMax();
+        focusUnit = UnitTypes::None;
     }
 
     void ZvZ_1HatchMuta()
@@ -126,12 +165,17 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply = false;
 
         focusUnit                   = Zerg_Mutalisk;
-        reserveLarva                = (Spy::getEnemyTransition() == Z_1HatchMuta || Spy::getEnemyTransition() == Z_2HatchMuta) ? 3 : 0;
+        reserveLarva                = 3;
         unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony, Zerg_Mutalisk) == 0 && Players::getDeadCount(PlayerState::Enemy, Zerg_Drone) < 8;
         wantNatural                 = (Spy::enemyTurtle() && Spy::getEnemyTransition() != Z_2HatchHydra) || Spy::getEnemyTransition() == Z_2HatchMuta;
 
-        auto secondHatch = (Spy::getEnemyTransition() == Z_1HatchMuta && atPercent(Zerg_Spire, 0.5) && vis(Zerg_Drone) >= 12) || (Spy::enemyTurtle() && atPercent(Zerg_Lair, 0.2)) ||
-                           (Spy::getEnemyTransition() == Z_2HatchMuta && atPercent(Zerg_Lair, 0.5)) || (vis(Zerg_Drone) >= 12 && vis(Zerg_Larva) == 0 && minerals(250));
+        auto mirrorBuild  = (Spy::getEnemyTransition() == Z_1HatchMuta && atPercent(Zerg_Spire, 0.5) && vis(Zerg_Drone) >= 12); // We have a mirror, so take a greedy extra hatch
+        auto catchupHatch = (Spy::getEnemyTransition() == Z_2HatchMuta && atPercent(Zerg_Lair, 0.5));                           // We need to catch up on production
+        auto resourceRich = (vis(Zerg_Drone) >= 12 && vis(Zerg_Larva) == 0 && minerals(250) && !atPercent(Zerg_Spire, 0.5));    // We can afford a hatch
+
+        auto fasterSpire = (Spy::enemyTurtle() && selfFasterSpire() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Evolution_Chamber) == 0); // We have a lethal spire timing
+
+        auto secondHatch     = !fasterSpire && (mirrorBuild || catchupHatch || resourceRich);
         auto enemyHydraBuild = Spy::getEnemyTransition().find("Hydra") != string::npos || Spy::getEnemyTransition().find("Lurker") != string::npos;
         auto enemyMutaBuild  = Spy::getEnemyTransition().find("Muta") != string::npos;
 
@@ -148,7 +192,7 @@ namespace McRave::BuildOrder::Zerg {
         // Pumping
         zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 18 && com(Zerg_Spawning_Pool) > 0;
         zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling);
-        zergUnitPump[Zerg_Scourge]  = com(Zerg_Spire) == 1 && hatchCount() >= 2 && total(Zerg_Scourge) < 6 && Spy::enemyTurtle() && enemyMutaBuild;
+        zergUnitPump[Zerg_Scourge]  = com(Zerg_Spire) == 1 && hatchCount() >= 2 && enemyFasterSpire();
         zergUnitPump[Zerg_Mutalisk] = !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) == 1 && gas(80) && vis(Zerg_Drone) >= 8;
 
         // Gas
@@ -170,8 +214,9 @@ namespace McRave::BuildOrder::Zerg {
         inBookSupply = vis(Zerg_Overlord) < 3;
 
         focusUnit = Zerg_Mutalisk;
+        unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony, Zerg_Mutalisk) == 0 && Players::getDeadCount(PlayerState::Enemy, Zerg_Drone) < 8;
 
-        auto speedFirst = currentOpener == Z_9Pool && !Spy::enemyTurtle();
+        auto speedFirst = (currentOpener == Z_9Pool || currentOpener == Z_Overpool) && !Spy::enemyTurtle();
 
         auto secondOvie = (vis(Zerg_Extractor) + Spy::enemyGasSteal() >= 1) || (s >= 32);
 
@@ -208,19 +253,21 @@ namespace McRave::BuildOrder::Zerg {
         }
 
         // Gas
-        gasLimit = gasMax() - gas(50);
-        if (!Spy::enemyTurtle() && !Spy::enemyFastExpand()) {
-            if (Spy::enemyPressure() && Util::getTime() < Time(5, 00))
-                gasLimit = 0;
-            else if ((Spy::getEnemyOpener() == Z_9Pool || Spy::getEnemyOpener() == Z_Overpool) && Util::getTime() < Time(3, 20))
-                gasLimit = 0;
-            else if (lingSpeed() && vis(Zerg_Lair) > 0 && Util::getTime() < Time(6, 00))
-                gasLimit = 2;
-            else if ((lingSpeed() || vis(Zerg_Lair) > 0) && Util::getTime() < Time(6, 00))
-                gasLimit = 1;
-            else if (Spy::getEnemyOpener() == Z_4Pool && total(Zerg_Zergling) < transitionLings)
+        gasLimit = gasMax();
+        if (!Spy::enemyTurtle()) {
+            auto dropGasLowDrone  = vis(Zerg_Drone) + vis(Zerg_Extractor) < 8;
+            auto dropGasEarly     = Spy::Zerg::enemyFasterPool() && Util::getTime() < Time(3, 20);
+            auto dropGasAfterLair = vis(Zerg_Lair) > 0 && Spy::getEnemyTransition() != Z_1HatchMuta && Spy::getEnemyTransition() != Z_2HatchMuta && Util::getTime() < Time(4, 00);
+            auto dropGasRush      = (vis(Zerg_Lair) > 0 || gas(100)) && Spy::getEnemyTransition() == Z_2HatchSpeedling && Util::getTime() < Time(4, 30);
+            auto dropGasPressure  = (vis(Zerg_Spire) > 0 || gas(150)) && Spy::enemyPressure() && Util::getTime() < Time(5, 00);
+
+            if (dropGasLowDrone || dropGasEarly || dropGasAfterLair || dropGasRush || dropGasPressure)
                 gasLimit = 0;
         }
+
+        // Drop one off gas after speed or lair started
+        if (lingSpeed() != vis(Zerg_Lair))
+            gasLimit = 2;
     }
 
     void ZvZ_2HatchHydra()

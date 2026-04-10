@@ -50,10 +50,8 @@ namespace McRave::BuildOrder::Zerg {
         mineralThird    = false;
         reserveLarva    = 0;
 
-        gasLimit = gasMax();
-
-        desiredDetection = Zerg_Overlord;
-        focusUnit        = UnitTypes::None;
+        gasLimit  = gasMax();
+        focusUnit = UnitTypes::None;
     }
 
     int inboundUnits_ZvP()
@@ -343,9 +341,10 @@ namespace McRave::BuildOrder::Zerg {
         // Gas
         gasLimit = gasMax();
         if (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != P_FFE && !Spy::enemyFastExpand()) {
-            if (Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(3, 30))
-                gasLimit = 0;
-            else if (vis(Zerg_Drone) + vis(Zerg_Extractor) < 13)
+            auto dropGasLowDrone = vis(Zerg_Drone) + vis(Zerg_Extractor) < 13;
+            auto dropGasEarly    = Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(3, 30);
+
+            if (dropGasLowDrone || dropGasEarly)
                 gasLimit = 0;
             else if (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 16)
                 gasLimit = 1;
@@ -410,7 +409,7 @@ namespace McRave::BuildOrder::Zerg {
 
         focusUnit    = Zerg_Hydralisk;
         mineralThird = wantThird && Spy::getEnemyBuild() == P_1GateCore;
-        planEarly = wantNatural && wantThird && hatchCount() < 3 && Util::getTime() > Time(2, 30);
+        planEarly    = wantNatural && wantThird && hatchCount() < 3 && Util::getTime() > Time(2, 30);
 
         // Order
         unitOrder = hydralurk;
@@ -468,12 +467,13 @@ namespace McRave::BuildOrder::Zerg {
         // Gas
         gasLimit = gasMax();
         if (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != P_FFE) {
-            if (zergUnitPump[Zerg_Hydralisk])
-                gasLimit = min(5, gasMax());
-            else if (vis(Zerg_Hydralisk_Den) > 0 && Util::getTime() < Time(4, 30))
-                gasLimit = 1;
-            else if (vis(Zerg_Drone) + vis(Zerg_Extractor) < 11)
+            auto dropGasLowDrone = vis(Zerg_Drone) + vis(Zerg_Extractor) < 11;
+            auto dropGasEarly    = Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(3, 30);
+
+            if (dropGasLowDrone || dropGasEarly)
                 gasLimit = 0;
+            if (vis(Zerg_Hydralisk_Den) > 0 && Util::getTime() < Time(4, 30))
+                gasLimit = 1;
             else if (vis(Zerg_Drone) < 18)
                 gasLimit = 1;
             else if (vis(Zerg_Drone) < 28)

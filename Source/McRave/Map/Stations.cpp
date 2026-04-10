@@ -632,7 +632,7 @@ namespace McRave::Stations {
 
             // We have more bases
             if (Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 && Stations::getStations(PlayerState::Self).size() > Stations::getStations(PlayerState::Enemy).size() &&
-                com(Zerg_Extractor) >= 2)
+                !Combat::State::isStaticRetreat(Zerg_Mutalisk))
                 return (Util::getTime() > Time(6, 15)) - airCount;
         }
 
@@ -750,7 +750,7 @@ namespace McRave::Stations {
         const auto ownForwardBase = [&](auto station) {
             if (isPocket(station))
                 return true;
-            if (station->isMain() && Stations::isCompleted(station) && !Terrain::isPocketNatural()) {
+            if (station->isMain() && !Terrain::isPocketNatural()) {
                 const auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
                 if (Stations::ownedBy(closestNatural) == PlayerState::Self)
                     return true;

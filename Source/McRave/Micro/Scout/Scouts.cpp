@@ -794,6 +794,12 @@ namespace McRave::Scouts {
                 if (sacrificeZvT > sacrificeCount)
                     requestSacrifice();
             }
+            if (Players::ZvZ()) {
+                auto sacrificeZvZ = (!Terrain::foundEnemy() && !Spy::enemyTurtle() && Util::getTime() > Time(4, 00) && Spy::getEnemyTransition() == "Unknown");
+
+                if (sacrificeZvZ > sacrificeCount)
+                    requestSacrifice();
+            }
         }
 
         void updateFlyingPath(UnitInfo &unit)
@@ -817,15 +823,12 @@ namespace McRave::Scouts {
             if (newPathAllowed && !unit.hasSameMarchPath(unit.getPosition(), pathPoint)) {
 
                 BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
+                auto wT = unit.sacrifice ? 200.0 : 1000.0;
 
-                const auto threat   = [&](const TilePosition &t) { return Grids::getGroundThreat(t, PlayerState::Enemy) * 1000.0; };
+                const auto threat   = [&](const TilePosition &t) { return Grids::getGroundThreat(t, PlayerState::Enemy) * wT; };
                 const auto walkable = [&](const TilePosition &t) { return newPath.unitWalkable(t); };
 
-                // Suicidal scouts don't care about threat
-                if (unit.sacrifice)
-                    newPath.generateJPS(walkable);
-                else
-                    newPath.generateAS(threat, walkable);
+                newPath.generateAS(threat, walkable);
                 unit.setMarchPath(std::move(newPath));
             }
             Visuals::drawPath(unit.getMarchPath());

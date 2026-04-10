@@ -56,7 +56,6 @@ namespace McRave::BuildOrder::Protoss {
         // "https://liquipedia.net/starcraft/4_Gate_Goon_(vs._Protoss)"
         inTransition =                              total(Protoss_Gateway) >= 3;
         inOpening =                                 s < 140;
-        desiredDetection =                          Protoss_Forge;
 
         // Buildings
         if (Spy::getEnemyBuild() == P_2Gate) {
@@ -88,7 +87,6 @@ namespace McRave::BuildOrder::Protoss {
         inTransition =                              total(Protoss_Citadel_of_Adun) > 0;
         inOpening =                                 s < 90;
         wallNat =                                   (com(Protoss_Forge) > 0 && com(Protoss_Dark_Templar) > 0);
-        desiredDetection =                          Protoss_Forge;
         hideTech =                                  com(Protoss_Dark_Templar) <= 0;
         unitLimits[Protoss_Zealot] =                vis(Protoss_Photon_Cannon) >= 2 && s < 60 ? INT_MAX : unitLimits[Protoss_Zealot];
 
