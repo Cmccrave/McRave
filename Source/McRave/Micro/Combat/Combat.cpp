@@ -169,13 +169,23 @@ namespace McRave::Combat {
 
             // Inbound unit fighting
             if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure(Zerg_Mutalisk) && Util::getTime() < Time(10, 00)) {
-                const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return Units::inBoundUnit(*u, 15) && !u->getType().isWorker() && u->getType() != Terran_Vulture && !u->isHidden();
-                });
+                const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy,
+                                                          [&](auto &u) { return Units::inBoundUnit(*u, 15) && !u->getType().isWorker() && u->getType() != Terran_Vulture && !u->isHidden(); });
 
                 if (closest) {
                     harassPosition = closest->getPosition();
                     LOG_SLOW("Harassing inbound units, closest is a ", closest->getType().c_str());
+                    return;
+                }
+            }
+
+            // Inbound tank targeting
+            if (Players::ZvT()) {
+                const auto closestTank = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy,
+                                                          [&](auto &u) { return Units::inBoundUnit(*u, 15) && u->isSiegeTank(); });
+                if (closestTank) {
+                    harassPosition = closestTank->getPosition();
+                    LOG_SLOW("Harassing inbound units, closest is a ", closestTank->getType().c_str());
                     return;
                 }
             }

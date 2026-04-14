@@ -147,7 +147,7 @@ namespace McRave::Upgrading {
         return ((Broodwar->self()->isUpgrading(upgrade) && Broodwar->self()->getUpgradeLevel(upgrade) == level - 1) || Broodwar->self()->getUpgradeLevel(upgrade) >= level);
     }
 
-    bool haveUpgrade(UpgradeType upgrade, int level) { Broodwar->self()->getUpgradeLevel(upgrade) >= level; }
+    bool haveUpgrade(UpgradeType upgrade, int level) { return Broodwar->self()->getUpgradeLevel(upgrade) >= level; }
 
     int getReservedMineral() { return reservedMineral; }
     int getReservedGas() { return reservedGas; }

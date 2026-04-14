@@ -39,6 +39,27 @@ namespace McRave::BuildOrder::Protoss {
             || Spy::getEnemyTransition() == P_DT;
     }
 
+    int zealotsNeeded_PvP()
+    {
+        if (Spy::getEnemyOpener() == P_9_9 || Spy::getEnemyOpener() == P_Proxy_9_9)
+            return 5;
+
+        // 2Gate
+        if (currentOpener == P_10_12)
+            return 3;
+        if (currentOpener == P_10_15)
+            return 1;
+
+        // 1GC
+        if (currentOpener == P_NZCore)
+            return 0;
+        if (currentOpener == P_ZCore)
+            return 1;
+        if (currentOpener == P_ZZCore)
+            return 1 + (vis(Protoss_Cybernetics_Core) > 0);
+        return 1;
+    }
+
     void PvP()
     {
         defaultPvP();

@@ -793,6 +793,8 @@ namespace McRave {
                getType() == Zerg_Defiler || getType() == Zerg_Queen;
     }
 
+    bool UnitInfo::canAttack(UnitInfo &otherUnit) { return (canAttackAir() && otherUnit.isFlying()) || (canAttackGround() && !otherUnit.isFlying()); }
+
     // Get damage per frame for this unit against a target
     double UnitInfo::getDpsAgainst(UnitInfo &otherUnit)
     {

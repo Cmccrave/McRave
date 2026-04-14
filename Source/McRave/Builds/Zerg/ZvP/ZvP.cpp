@@ -30,7 +30,7 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyOpener() == P_Horror_9_9 || (Spy::getEnemyOpener() == P_Proxy_9_9 && currentOpener == Z_12Hatch))
             wantNatural = hatchCount() >= 3;
 
-        wantThird = (Spy::enemyFastExpand() && hatchCount() >= 4) || hatchCount() >= 5 || Spy::getEnemyBuild() == P_FFE || Spy::getEnemyBuild() == P_1GateCore || Spy::getEnemyBuild() == "Unknown";
+        wantThird = (Spy::enemyFastExpand() && hatchCount() >= 4) || hatchCount() >= 5 || Spy::getEnemyBuild() == P_FFE || (Spy::getEnemyBuild() == P_1GateCore && hatchCount() >= 3) || Spy::getEnemyBuild() == "Unknown";
         if (!wantNatural)
             wantThird = false;
 

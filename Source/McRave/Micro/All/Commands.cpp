@@ -156,7 +156,7 @@ namespace McRave::Command {
         }
 
         // Run irradiated units away
-        else if (unit.unit()->isIrradiated()) {
+        else if (unit.unit()->isIrradiated() && unit.getType() != Zerg_Ultralisk) {
             unit.setCommand(Move, Terrain::getClosestMapCorner(unit.getPosition()));
             unit.commandText = "IrradiateSplit";
             return true;
@@ -466,7 +466,7 @@ namespace McRave::Command {
             if (kiteTowards.isValid())
                 score = (mobility(context) * grouping(context) * angle(context)) * Util::fastReciprocal(context.p.getDistance(kiteTowards) * (threat(context)) * altitude(context));
             else
-                score = (mobility(context) * grouping(context) * angle(context)) * Util::fastReciprocal((threat(context)) * altitude(context));
+                score = (mobility(context) * grouping(context) * angle(context) * context.p.getDistance(target.getPosition())) * Util::fastReciprocal((threat(context)) * altitude(context));
             return score;
         };
 
@@ -510,6 +510,10 @@ namespace McRave::Command {
             auto enemyRange    = (unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange());
             auto targetKitable = allyRange > enemyRange && enemyRange != 0 && allyRange != 0;
             auto boxDist       = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition());
+
+            // Special Case: workers trying to not die
+            if (unit.getType().isWorker() && !unit.isHealthy() && Util::getTime() < Time(4, 00) && !unit.getUnitsInReachOfThis().empty() && !unit.isWithinGatherRange())
+                return true;
 
             if (unit.getRole() == Role::Combat || unit.getRole() == Role::Scout) {
 
@@ -574,10 +578,6 @@ namespace McRave::Command {
 
                 if (!target.canAttackGround() && !target.canAttackAir() && !unit.getType().isFlyer()) // Don't kite non attackers unless we're a flying unit
                     return false;
-
-                // Kite as a hovering unit to maintain speed
-                if (unit.getType().isWorker() && target.getType().isWorker())
-                    return true;
 
                 if (unit.getGroundRange() <= 32.0 && unit.getAirRange() <= 32.0)
                     return false;

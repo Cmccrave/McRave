@@ -58,7 +58,13 @@ namespace McRave::BuildOrder::Protoss {
         void queueGeysers()
         {
             if (!inOpening) {
-                gasDesired                      = ((Broodwar->self()->minerals() > 600 && Broodwar->self()->gas() < 200) || Resources::isMineralSaturated()) && com(Protoss_Probe) >= 30;
+                auto minProbesAllGas = 48;
+                auto minProbesPerGas = 24 + (4 * vis(Protoss_Assimilator));
+                auto takeAllGeysers  = com(Protoss_Probe) >= minProbesAllGas;
+                auto allowNewGeyser  = com(Protoss_Probe) >= minProbesPerGas && (Resources::isHalfMineralSaturated() || productionSat || takeAllGeysers);
+                auto needGeyser      = gasLimit > vis(Protoss_Assimilator) * 3;
+                gasDesired           = allowNewGeyser && needGeyser;
+
                 buildQueue[Protoss_Assimilator] = min(vis(Protoss_Assimilator) + gasDesired, Resources::getGasCount());
             }
         }
@@ -112,13 +118,11 @@ namespace McRave::BuildOrder::Protoss {
                 if (cannonCount < 6) {
                     buildQueue[Protoss_Nexus]       = 2;
                     buildQueue[Protoss_Assimilator] = (vis(Protoss_Nexus) >= 2) + (s >= 120);
-                    unitLimits[Protoss_Zealot]      = 0;
                     gasLimit                        = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
                 }
                 else {
                     buildQueue[Protoss_Nexus]       = 3;
                     buildQueue[Protoss_Assimilator] = (vis(Protoss_Nexus) >= 2) + (s >= 120);
-                    unitLimits[Protoss_Zealot]      = 0;
                     gasLimit                        = vis(Protoss_Nexus) != buildCount(Protoss_Nexus) ? 0 : INT_MAX;
                 }
             }
@@ -126,8 +130,7 @@ namespace McRave::BuildOrder::Protoss {
             // If we're not in our opener
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                expandDesired = (focusUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Protoss_Nexus) >= 3) && (techSat || com(Protoss_Nexus) >= 3) &&
-                                 productionSat) ||
+                expandDesired                = (Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Protoss_Nexus) >= 3) && (techSat || com(Protoss_Nexus) >= 3) && productionSat) ||
                                 (availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated())) ||
                                 (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2) ||
                                 (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1);
@@ -141,18 +144,22 @@ namespace McRave::BuildOrder::Protoss {
             // If we're not in our opener
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
+                const auto incompleteGate    = vis(Protoss_Gateway) - com(Protoss_Gateway);
+                const auto waitForMinerals   = 150 + (75 * incompleteGate);
                 auto maxGates                = Players::vT() ? 10 : 8;
-                auto gatesPerBase            = 2.5;
+                auto gatesPerBase            = 3.0;
 
                 productionSat = (vis(Protoss_Gateway) >= int(gatesPerBase * Stations::getGasingStationsCount())) || vis(Protoss_Gateway) >= maxGates || Planning::isUnplannable(Protoss_Gateway) ||
                                 Planning::isUnplannable(Protoss_Stargate);
 
                 // Adding production
-                rampDesired = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || Stations::getGasingStationsCount() >= 3)) || availableMinerals >= 300);
+                const auto resourceSat     = (availableMinerals >= waitForMinerals && Resources::isMineralSaturated() && Resources::isGasSaturated());
+                const auto excessResources = (availableMinerals >= waitForMinerals * 2);
 
-                if (rampDesired) {
-                    auto gateCount               = min({maxGates, int(round(Stations::getGasingStationsCount() * gatesPerBase)), vis(Protoss_Gateway) + 1});
-                    auto stargateCount           = min({4, int(isFocusUnit(Protoss_Carrier) || isFocusUnit(Protoss_Scout)) * Stations::getGasingStationsCount(), vis(Protoss_Stargate) + 1});
+                if (!productionSat) {
+                    rampDesired                  = resourceSat || excessResources;
+                    auto gateCount               = min({maxGates, int(round(Stations::getGasingStationsCount() * gatesPerBase)), vis(Protoss_Gateway) + rampDesired});
+                    auto stargateCount           = min({4, int(isFocusUnit(Protoss_Carrier) || isFocusUnit(Protoss_Scout)) * Stations::getGasingStationsCount(), vis(Protoss_Stargate) + rampDesired});
                     buildQueue[Protoss_Gateway]  = gateCount;
                     buildQueue[Protoss_Stargate] = stargateCount;
                 }
@@ -381,7 +388,7 @@ namespace McRave::BuildOrder::Protoss {
                 sort(sortedByGas.begin(), sortedByGas.end(), [&](auto &lhs, auto &rhs) { return lhs.gasPrice() >= rhs.gasPrice(); });
 
                 for (auto &type : sortedByGas) {
-                    if (!protossUnitPump[type] || availGas < type.gasPrice() || !buildingAvailable(type))
+                    if (!protossUnitPump[type] || !unlockReady(type) || availGas < type.gasPrice() || !buildingAvailable(type))
                         continue;
 
                     armyComposition[type] = 1.00;

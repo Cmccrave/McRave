@@ -332,7 +332,7 @@ namespace BWEB {
                 std::reverse(lrgOrder.begin(), lrgOrder.end()); // Flip large order so that gateway is opposite of forge, center opening
                 tryLocations(medOrder, mediumTiles, Protoss_Forge);
                 tryLocations(lrgOrder, largeTiles, Protoss_Gateway);
-                tryLocations(smlOrder, smallTiles, Protoss_Pylon);
+                //tryLocations(smlOrder, smallTiles, Protoss_Pylon);
                 tryLocations(pylOrder, smallTiles, Protoss_Pylon);
             }
 

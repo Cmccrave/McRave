@@ -401,12 +401,19 @@ namespace McRave::Goals {
             auto watchChoke = Terrain::getNaturalChoke() && !Spy::enemyRush() && !Spy::enemyProxy() && //
                               (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) == 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0);
 
+            auto watchNatural = Spy::getEnemyTransition() == U_WorkerRush;
+
+            // Assign an Overlord to give drones a drill
+            if (watchNatural) {
+                assignNumberToGoal(Terrain::getNaturalPosition(), Zerg_Overlord, 1, GoalType::Escort);
+            }
+
             // Assign an Overlord to watch our Choke early on
             if (watchChoke) {
                 const auto natSpot = Position(Terrain::getNaturalChoke()->Center());
                 if ((Util::getTime() < Time(3, 00) && !Spy::enemyProxy()) || (Util::getTime() < Time(2, 15) && Spy::enemyProxy()) || (Players::ZvZ() && !enemyAir)) {
                     assignNumberToGoal(natSpot, Zerg_Overlord, 1, GoalType::Escort);
-                    return;
+                    return; // Why do we return here?
                 }
             }
 

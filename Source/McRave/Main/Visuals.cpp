@@ -94,7 +94,7 @@ namespace McRave::Visuals {
         bool strengths   = false;
         bool orders      = false;
         bool states      = false;
-        bool resources   = false;
+        bool resources   = true;
         bool timers      = false;
         bool scores      = true;
         bool roles       = false;
@@ -332,6 +332,8 @@ namespace McRave::Visuals {
                     else if (unit.unit() && unit.unit()->exists() && unit.unit()->isCompleted()) {
                         if (unit.unit()->getOrder() != Orders::Nothing)
                             Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, unit.unit()->getOrder().c_str());
+                        if (unit.unit()->getSecondaryOrder() != Orders::Nothing)
+                            Broodwar->drawTextMap(unit.getPosition() + Position(width, -16), "%c%s", textColor, unit.unit()->getOrder().c_str());
                         if (unit.unit()->isUpgrading())
                             Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, unit.unit()->getUpgrade().c_str());
                         else if (unit.unit()->isResearching())

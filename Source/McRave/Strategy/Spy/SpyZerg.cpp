@@ -191,7 +191,7 @@ namespace McRave::Spy::Zerg {
 
                 // ZvZ
                 if (Players::ZvZ()) {
-                    if (completesBy(1, UpgradeTypes::Zerg_Melee_Attacks, Time(5, 30)))
+                    if (completesBy(1, UpgradeTypes::Zerg_Melee_Attacks, Time(5, 30)) || completesBy(1, Zerg_Evolution_Chamber, Time(3, 30)))
                         theSpy.transition.name = Z_UpgradeLing;
                 }
             }

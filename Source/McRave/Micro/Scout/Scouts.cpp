@@ -79,7 +79,7 @@ namespace McRave::Scouts {
         map<ScoutType, ScoutTarget> scoutTargets;
         map<UnitType, int> scoutTypeDeaths;
 
-        bool overloadFreemRoam = false;
+        bool enemyAir          = false;
         bool mainScouted       = false;
         bool natScouted        = false;
         bool fullScout         = false;
@@ -92,6 +92,9 @@ namespace McRave::Scouts {
         map<const BWEB::Station *const, Position> safePositions;
         bool resourceWalkPossible[256][256];
         UnitType workerType;
+
+        set<TilePosition> safeTiles;
+        set<Position> potentialSafePositions;
         set<TilePosition> enemyTiles;
         set<TilePosition> enemyVisionTiles;
 
@@ -119,6 +122,14 @@ namespace McRave::Scouts {
             scoutTargets.clear();
             unexploredMains.clear();
             unexploredNaturals.clear();
+
+            auto enemyStrength = Players::getStrength(PlayerState::Enemy);
+            enemyAir           = enemyStrength.groundToAir > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 ||
+                       Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0 ||
+                       Players::getTotalCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) > 0 ||
+                       Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0 ||
+                       Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0 ||
+                       Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) > 0 || (Players::ZvT() && Terrain::getEnemyStartingPosition().isValid());
 
             // Calculate the number of unexplored bases
             for (auto &station : BWEB::Stations::getStations()) {
@@ -149,6 +160,160 @@ namespace McRave::Scouts {
             auto closestRanged = Util::getClosestUnit(Position(choke->Center()), PlayerState::Enemy,
                                                       [&](auto &u) { return u->getGroundRange() >= 64.0 && u->getPosition().getDistance(Position(Terrain::getNaturalChoke()->Center())) < 320.0; });
             contained          = closestRanged != nullptr;
+        }
+
+        void updateSafePositions()
+        {
+            //for (auto tile : enemyVisionTiles)
+            //    Visuals::drawBox(tile, Colors::Yellow);
+            //for (auto tile : enemyTiles)
+            //    Visuals::drawBox(tile, Colors::Red);
+            //for (auto tile : safeTiles)
+            //    Visuals::drawBox(tile, Colors::Green);
+            //for (auto p : potentialSafePositions)
+            //    Visuals::drawCircle(p, 8, Colors::Blue, true);
+
+            static bool safeDiscovered = false;
+            if (!Terrain::getEnemyMain() || !Terrain::getEnemyNatural() || safeDiscovered) {
+                return;
+            }
+
+            vector<const BWEB::Station *> enemyStations = {Terrain::getEnemyNatural()};
+            safeDiscovered                              = true;
+            safePositions[Terrain::getEnemyNatural()]   = Positions::Invalid;
+            safePositions[Terrain::getEnemyMain()]      = Positions::Invalid;
+
+            auto neighborAreas = Terrain::getEnemyNatural()->getBase()->GetArea()->AccessibleNeighbours();
+
+            // Not accessible from "enemy territory"
+            const auto tileInEnemyArea = [&](TilePosition tile) {
+                for (auto x = 0; x < 4; x++) {
+                    for (auto y = 0; y < 4; y++) {
+                        auto w = WalkPosition(tile) + WalkPosition(x, y);
+                        if (Terrain::inTerritory(PlayerState::Enemy, Position(w)) || Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), Position(w)) ||
+                            Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), w) || find(neighborAreas.begin(), neighborAreas.end(), mapBWEM.GetArea(w)) != neighborAreas.end() ||
+                            (mapBWEM.GetArea(w) && !mapBWEM.GetArea(w)->AccessibleFrom(Terrain::getEnemyNatural()->getBase()->GetArea())))
+                            return true;
+                    }
+                }
+                return false;
+            };
+
+            // Create a path from natural to natural, tiles around it with equal height or less are considered dangerous
+            BWEB::Path path = {Terrain::getEnemyNatural()->getChokepoint()->Center(), Terrain::getMyNatural()->getChokepoint()->Center(), Protoss_Dragoon, true, false};
+            path.generateJPS([&](auto t) { return path.unitWalkable(t); });
+
+            // For each tile on this path, mark as being an "enemyTile"
+            auto enemyNatArea = Terrain::getEnemyNatural()->getBase()->GetArea();
+            Util::testAllPointOnPath(path, [&](auto &pos) {
+                if (pos.getDistance(Terrain::getEnemyNatural()->getBase()->Center()) > 1000.0)
+                    return;
+
+                auto parent       = TilePosition(pos);
+                auto parentHeight = Broodwar->getGroundHeight(parent);
+                auto parentArea   = mapBWEM.GetArea(parent);
+                for (auto &t : Util::getTileCircle(6)) {
+                    auto tile             = TilePosition(pos) + t;
+                    auto validOrEnemyArea = (mapBWEM.GetArea(tile) && mapBWEM.GetArea(tile)->AccessibleFrom(enemyNatArea)) || Terrain::isChokepointGeo(tile);
+                    if (tile.isValid() && pos.isValid() && Broodwar->getGroundHeight(tile) <= parentHeight && validOrEnemyArea) {
+                        enemyTiles.insert(tile);
+                    }
+                }
+                for (auto &t : Util::getTileCircle(9)) {
+                    auto tile             = TilePosition(pos) + t;
+                    auto validOrEnemyArea = (mapBWEM.GetArea(tile) && mapBWEM.GetArea(tile)->AccessibleFrom(enemyNatArea)) || Terrain::isChokepointGeo(tile);
+                    if (tile.isValid() && pos.isValid() && Broodwar->getGroundHeight(tile) <= parentHeight && validOrEnemyArea) {
+                        enemyVisionTiles.insert(tile);
+                    }
+                }
+            });
+
+            // Place all enemy tiles inside the vision tiles to prevent overlord moving through them
+            for (int x = 0; x < Broodwar->mapWidth(); x++) {
+                for (int y = 0; y < Broodwar->mapHeight(); y++) {
+                    auto t = TilePosition(x, y);
+                    if (Terrain::inArea(Terrain::getEnemyMain(), t) || Terrain::inArea(Terrain::getEnemyNatural(), t))
+                        enemyVisionTiles.insert(t);
+                }
+            }
+
+            // Designate tiles as either safe tiles or enemy tiles
+            const auto checkAround = [&](auto station) {
+                auto watch = station->getBase()->Center();
+                for (auto &t : Util::getTileCircle(25)) {
+                    auto tile = t + TilePosition(watch);
+                    auto pos  = Position(tile) + Position(16, 16);
+
+                    if (!tile.isValid())
+                        continue;
+
+                    // Within range of overlord sight sort of
+                    auto enemyArea = tileInEnemyArea(tile);
+                    if (enemyArea)
+                        enemyTiles.insert(tile);
+                    else
+                        safeTiles.insert(tile);
+                }
+            };
+
+            for (auto &station : enemyStations)
+                checkAround(station);
+
+            for (auto &parent : safeTiles) {
+                auto lowestHeight   = 4;
+                auto expectedCenter = Position(parent) + Position(16,16);
+                auto valid          = true;
+                for (int x = 0; x < 2; x++) {
+                    for (int y = 0; y < 2; y++) {
+                        auto tile = parent + TilePosition(x, y);
+                        if (tile.isValid() && enemyVisionTiles.find(tile) != enemyVisionTiles.end())
+                            lowestHeight = min(lowestHeight, Broodwar->getGroundHeight(tile));
+                    }
+                }
+
+                // Check a hollow box around for having an adjacent enemy area tile
+                for (int x = -1; x < 3; x++) {
+                    int y = -1;
+                    for (; y < 3;) {
+                        auto tile = parent + TilePosition(x, y);
+                        if (tile.isValid() && enemyVisionTiles.find(tile) != enemyVisionTiles.end())
+                            valid = false;
+
+                        y += (x == -1 || x == 2) ? 1 : 3;
+                    }
+                }
+
+                if (valid) {
+                    // potentialSafePositions.insert(Position(parent + TilePosition(1, 1)));
+                }
+
+                // Each potential tile needs to look for a >= height tile within 5 range zvt, 6 range zvp, padded by a bit for safety
+                auto range = Players::ZvT() ? 5 : 6;
+                auto type  = Players::ZvT() ? Terran_Marine : Protoss_Dragoon;
+                for (auto &w : Util::getWalkCircle(range * 4)) {
+                    auto pos  = Position(WalkPosition(parent) + w);
+                    auto tile = TilePosition(pos);
+
+                    if (Broodwar->getGroundHeight(tile) >= lowestHeight && (Util::boxDistance(type, pos, Zerg_Overlord, expectedCenter) - 16.0) <= range * 32 &&
+                        enemyVisionTiles.find(tile) != enemyVisionTiles.end())
+                        valid = false;
+                }
+
+                if (valid) {
+                    potentialSafePositions.insert(expectedCenter);
+                    Visuals::drawBox(parent, Colors::Green);
+                }
+            }
+
+            // Get closest safe position
+            auto distBest = DBL_MAX;
+            for (auto &pos : potentialSafePositions) {
+                auto dist = pos.getDistance(Terrain::getMainPosition()) / (1 + Broodwar->getGroundHeight(TilePosition(pos)));
+                if (dist < distBest) {
+                    safePositions[Terrain::getEnemyNatural()] = pos;
+                    distBest                                  = dist;
+                }
+            }
         }
 
         void checkScoutDenied()
@@ -201,15 +366,6 @@ namespace McRave::Scouts {
 
             // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
-
-                auto enemyStrength = Players::getStrength(PlayerState::Enemy);
-                auto enemyAir = enemyStrength.groundToAir > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 ||
-                                Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0 ||
-                                Players::getTotalCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) > 0 ||
-                                Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0 ||
-                                Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0 ||
-                                Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) > 0 || (Players::ZvT() && Terrain::getEnemyStartingPosition().isValid());
-                overloadFreemRoam = !enemyAir;
 
                 // Main drone scouting counts
                 main.desiredTypeCounts[Zerg_Drone] = int(BuildOrder::shouldScout()) + int(BuildOrder::shouldScout() && BuildOrder::isProxy());
@@ -267,9 +423,9 @@ namespace McRave::Scouts {
 
                     // Zergling
                     auto fasterLings       = !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost);
-                    auto enemyLowLingCount = !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) <= 10;
+                    auto enemyLowLingCount = !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) <= 12;
 
-                    main.desiredTypeCounts[Zerg_Zergling] = !Terrain::foundEnemy() && (fasterLings || enemyLowLingCount);
+                    main.desiredTypeCounts[Zerg_Zergling] = !fullScout && (fasterLings || enemyLowLingCount);
                     if (BuildOrder::isRush() || Spy::enemyRush() || Spy::enemyPressure() || Spy::enemyTurtle() || Spy::enemyFortress())
                         main.desiredTypeCounts[Zerg_Zergling] = 0;
 
@@ -349,6 +505,10 @@ namespace McRave::Scouts {
                     }
                 }
 
+                if (Players::ZvZ()) {
+                    natural.desiredTypeCounts[Zerg_Overlord] = !enemyAir;
+                }
+
                 // ZvFFA
                 if (Players::ZvFFA()) {
                     main.desiredTypeCounts[Zerg_Zergling] = 1;
@@ -411,9 +571,8 @@ namespace McRave::Scouts {
                 // Zerg
                 if (Broodwar->self()->getRace() == Races::Zerg) {
 
-                    safe.desiredTypeCounts[Zerg_Overlord] = 1;
-                    if (total(Zerg_Mutalisk) >= 6 || (Players::ZvP() && Util::getTime() > Time(8, 00)) || (Players::ZvT() && Util::getTime() > Time(8, 00)) ||
-                        (Players::ZvZ() && Util::getTime() > Time(5, 00)))
+                    safe.desiredTypeCounts[Zerg_Overlord] = Players::ZvT() || Players::ZvP();
+                    if (total(Zerg_Mutalisk) >= 6 || (Players::ZvP() && Util::getTime() > Time(8, 00)) || (Players::ZvT() && Util::getTime() > Time(8, 00)))
                         safe.desiredTypeCounts[Zerg_Overlord] = 0;
 
                     // When terran is rushing, don't risk losing an overlord for information
@@ -426,7 +585,7 @@ namespace McRave::Scouts {
                 auto recencyCheck = Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())) >= 200 && Util::getTime() > Time(4, 00);
                 safe.addTargets(safePositions[Terrain::getEnemyNatural()]);
                 if (safeToScout) {
-                    if (recencyCheck || overloadFreemRoam)
+                    if (recencyCheck || !enemyAir)
                         safe.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
                 }
             }
@@ -913,6 +1072,7 @@ namespace McRave::Scouts {
         Visuals::startPerfTest();
         checkScoutDenied();
         updateMisc();
+        updateSafePositions();
         updateMainScouting();
         updateNaturalScouting();
         updateSafeScouting();
@@ -924,149 +1084,6 @@ namespace McRave::Scouts {
         updateScouts();
         // drawScouting();
         Visuals::endPerfTest("Scouts");
-
-        static bool safeDiscovered = false;
-        if (!Terrain::getEnemyMain() || !Terrain::getEnemyNatural() || safeDiscovered) {
-            return;
-        }
-
-        vector<const BWEB::Station *> enemyStations = {Terrain::getEnemyNatural()};
-        safeDiscovered                              = true;
-        safePositions[Terrain::getEnemyNatural()]   = Positions::Invalid;
-        safePositions[Terrain::getEnemyMain()]      = Positions::Invalid;
-
-        auto natWatch  = Stations::getDefendPosition(Terrain::getEnemyNatural());
-        auto mainWatch = Stations::getDefendPosition(Terrain::getEnemyMain());
-        set<TilePosition> safeTiles;
-
-        auto neighborAreas = Terrain::getEnemyNatural()->getBase()->GetArea()->AccessibleNeighbours();
-
-        // Not accessible from "enemy territory"
-        const auto tileInEnemyArea = [&](TilePosition tile) {
-            for (auto x = 0; x < 4; x++) {
-                for (auto y = 0; y < 4; y++) {
-                    auto w = WalkPosition(tile) + WalkPosition(x, y);
-                    if (Terrain::inTerritory(PlayerState::Enemy, Position(w)) || Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), Position(w)) ||
-                        Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), Position(w)) || find(neighborAreas.begin(), neighborAreas.end(), mapBWEM.GetArea(w)) != neighborAreas.end() ||
-                        (mapBWEM.GetArea(w) && !mapBWEM.GetArea(w)->AccessibleFrom(Terrain::getEnemyNatural()->getBase()->GetArea())))
-                        return true;
-                }
-            }
-            return false;
-        };
-
-        // Create a path from natural to natural, tiles around it with equal height or less are considered dangerous
-        BWEB::Path path = {Terrain::getEnemyNatural()->getChokepoint()->Center(), Terrain::getMyNatural()->getChokepoint()->Center(), Protoss_Dragoon, true, false};
-        path.generateJPS([&](auto t) { return path.unitWalkable(t); });
-
-        // For each tile on this path, mark as being an "enemyTile"
-        Util::testAllPointOnPath(path, [&](auto &pos) {
-            if (pos.getDistance(Terrain::getEnemyNatural()->getBase()->Center()) > 1000.0)
-                return;
-            auto parentHeight = Broodwar->getGroundHeight(TilePosition(pos));
-            for (auto &t : Util::getTileCircle(6)) {
-                auto tile = TilePosition(pos) + t;
-                if (tile.isValid() && pos.isValid() && Broodwar->getGroundHeight(tile) >= parentHeight) {
-                    enemyTiles.insert(tile);
-                }
-            }
-            for (auto &t : Util::getTileCircle(9)) {
-                auto tile = TilePosition(pos) + t;
-                if (tile.isValid() && pos.isValid() && Broodwar->getGroundHeight(tile) >= parentHeight) {
-                    enemyVisionTiles.insert(tile);
-                }
-            }
-        });
-
-        // Place all enemy tiles inside the vision tiles to prevent overlord moving through them
-        for (int x = 0; x < Broodwar->mapWidth(); x++) {
-            for (int y = 0; y < Broodwar->mapHeight(); y++) {
-                auto t = TilePosition(x, y);
-                if (Terrain::inArea(Terrain::getEnemyMain(), t) || Terrain::inArea(Terrain::getEnemyNatural(), t))
-                    enemyVisionTiles.insert(t);
-            }
-        }
-
-        // Designate tiles as either safe tiles, enemy tiles, or not useful
-        const auto checkAround = [&](auto station) {
-            auto watch = station->getBase()->Center();
-            for (auto &t : Util::getTileCircle(25)) {
-                auto tile = t + TilePosition(watch);
-                auto pos  = Position(tile) + Position(16, 16);
-
-                if (!tile.isValid())
-                    continue;
-
-                // Within range of overlord sight sort of
-                auto withinChokeSight = pos.getDistance(watch) <= 600.0;
-                auto enemyArea        = tileInEnemyArea(tile);
-
-                if (enemyArea)
-                    enemyTiles.insert(tile);
-                else if (withinChokeSight)
-                    safeTiles.insert(tile);
-            }
-        };
-
-        for (auto &station : enemyStations)
-            checkAround(station);
-
-        set<Position> potentialSafePositions;
-        for (auto &parent : safeTiles) {
-            auto lowestHeight   = 4;
-            auto expectedCenter = Position(parent + TilePosition(1, 1));
-            auto valid          = true;
-            for (int x = 0; x < 2; x++) {
-                for (int y = 0; y < 2; y++) {
-                    auto tile = parent + TilePosition(x, y);
-                    if (tile.isValid())
-                        lowestHeight = min(lowestHeight, Broodwar->getGroundHeight(tile));
-                }
-            }
-
-            // Check a hollow box around for having an adjacent enemy area tile
-            for (int x = -1; x < 3; x++) {
-                int y = -1;
-                for (; y < 3;) {
-                    auto tile = parent + TilePosition(x, y);
-                    if (tile.isValid() && enemyTiles.find(tile) != enemyTiles.end())
-                        valid = false;
-
-                    y += (x == -1 || x == 2) ? 1 : 3;
-                }
-            }
-
-            if (valid) {
-                // potentialSafePositions.insert(Position(parent + TilePosition(1, 1)));
-            }
-
-            // Each potential tile needs to look for a >= height tile within 5 range zvt, 6 range zvp, padded by a bit for safety
-            auto range = Players::ZvT() ? 5 : 6;
-            auto type  = Players::ZvT() ? Terran_Marine : Protoss_Dragoon;
-            for (auto &w : Util::getWalkCircle(range * 4)) {
-                auto pos  = Position(WalkPosition(parent) + w);
-                auto tile = TilePosition(pos);
-
-                if (Broodwar->getGroundHeight(tile) >= lowestHeight && (Util::boxDistance(type, pos, Zerg_Overlord, expectedCenter) - 16.0) <= range * 32 && enemyTiles.find(tile) != enemyTiles.end())
-                    valid = false;
-            }
-
-            if (valid) {
-                potentialSafePositions.insert(expectedCenter);
-                Visuals::drawBox(parent, Colors::Green);
-            }
-        }
-
-        // Get closest safe position
-        auto distBest = DBL_MAX;
-        for (auto &pos : potentialSafePositions) {
-            auto edge = Terrain::getClosestMapEdge(pos);
-            auto dist = pos.getDistance(edge);
-            if (dist < distBest) {
-                safePositions[Terrain::getEnemyNatural()] = pos;
-                distBest                                  = dist;
-            }
-        }
     }
 
     void onStart()

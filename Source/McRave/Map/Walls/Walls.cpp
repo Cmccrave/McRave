@@ -558,14 +558,14 @@ namespace McRave::Walls {
                 return 0;
         }
 
-        // (Zv) If the natural is narrow, it's fair to skip one eventually
-        if (Broodwar->self()->getRace() == Races::Zerg && Terrain::isNarrowNatural() && groundCount >= 2) {
+        // (Zv) If the natural is narrow, it's fair to skip one after we hit 2
+        if (Broodwar->self()->getRace() == Races::Zerg && Terrain::isNarrowNatural() && wall.getGroundDefenseCount() >= 2) {
             groundCount++;
         }
 
         // If they're only at home and not proxying units, don't make any defenses for a bit
         auto minimumColonyNeeded = Util::getTime() > Time(6, 00) ? 2 : 1;
-        if (!Players::vFFA() && !Spy::enemyProxy() && (groundCount >= minimumColonyNeeded || getColonyCount(&wall) >= minimumColonyNeeded)) {
+        if (!Players::vFFA() && !Spy::enemyProxy() && (wall.getGroundDefenseCount() >= minimumColonyNeeded || getColonyCount(&wall) >= minimumColonyNeeded)) {
             auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) { return Units::inBoundUnit(*u) && !u->getType().isWorker(); });
             if (!closestUnit)
                 return 0;

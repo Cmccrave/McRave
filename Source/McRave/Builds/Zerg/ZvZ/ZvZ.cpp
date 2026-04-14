@@ -94,8 +94,6 @@ namespace McRave::BuildOrder::Zerg {
         transitionLings = min(initialValue, 12);
         if (total(Zerg_Zergling) < initialValue)
             return initialValue;
-        if (hatchCount() <= 1)
-            return 0;
 
         // Doesn't really make sense to rely on this until our overlord scouting is really good
         auto inbound = max(6, inboundUnits_ZvZ());
@@ -173,9 +171,9 @@ namespace McRave::BuildOrder::Zerg {
         auto catchupHatch = (Spy::getEnemyTransition() == Z_2HatchMuta && atPercent(Zerg_Lair, 0.5));                           // We need to catch up on production
         auto resourceRich = (vis(Zerg_Drone) >= 12 && vis(Zerg_Larva) == 0 && minerals(250) && !atPercent(Zerg_Spire, 0.5));    // We can afford a hatch
 
-        auto fasterSpire = (Spy::enemyTurtle() && selfFasterSpire() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Evolution_Chamber) == 0); // We have a lethal spire timing
+        auto lethalTiming = (selfFasterSpire() && unitPressure[Zerg_Mutalisk]); // We have a lethal spire timing
 
-        auto secondHatch     = !fasterSpire && (mirrorBuild || catchupHatch || resourceRich);
+        auto secondHatch     = !lethalTiming && (mirrorBuild || catchupHatch || resourceRich);
         auto enemyHydraBuild = Spy::getEnemyTransition().find("Hydra") != string::npos || Spy::getEnemyTransition().find("Lurker") != string::npos;
         auto enemyMutaBuild  = Spy::getEnemyTransition().find("Muta") != string::npos;
 
@@ -216,8 +214,13 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit = Zerg_Mutalisk;
         unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony, Zerg_Mutalisk) == 0 && Players::getDeadCount(PlayerState::Enemy, Zerg_Drone) < 8;
 
-        auto speedFirst = (currentOpener == Z_9Pool || currentOpener == Z_Overpool) && !Spy::enemyTurtle();
+        reserveLarva = 3;
+        if (Spy::enemyPressure() || (Spy::getEnemyTransition() == Z_1HatchMuta && !Spy::enemyTurtle()))
+            reserveLarva = 0;
+        if (Spy::getEnemyTransition() == Z_2HatchMuta)
+            reserveLarva = 6;
 
+        auto speedFirst = (currentOpener == Z_9Pool || currentOpener == Z_Overpool) && !Spy::enemyTurtle();
         auto secondOvie = (vis(Zerg_Extractor) + Spy::enemyGasSteal() >= 1) || (s >= 32);
 
         // Build
@@ -232,28 +235,23 @@ namespace McRave::BuildOrder::Zerg {
         // Pumping
         zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 24 && com(Zerg_Spawning_Pool) > 0;
         zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling);
+        zergUnitPump[Zerg_Scourge]  = com(Zerg_Spire) == 1 && Spy::getEnemyTransition() == Z_1HatchMuta && !Spy::enemyTurtle() && gas(75) && total(Zerg_Scourge) < 24;
+        zergUnitPump[Zerg_Mutalisk] = !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) == 1 && gas(80) && vis(Zerg_Drone) >= 8;
+        
+        // Cap gas at 100 until lair and speed, then put all on
+        gasLimit = capGas(100);
 
-        // Reactions
-        if (Spy::getEnemyTransition() == Z_1HatchMuta && !Spy::enemyTurtle()) {
-            zergUnitPump[Zerg_Scourge]  = com(Zerg_Spire) == 1 && gas(75) && total(Zerg_Scourge) < 24;
-            zergUnitPump[Zerg_Mutalisk] = !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) == 1 && gas(100) && vis(Zerg_Drone) >= 8;
-            reserveLarva                = 0;
-        }
-        else if (Spy::enemyPressure()) {
-            zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) == 1 && gas(80) && vis(Zerg_Drone) >= 8;
-            reserveLarva                = 0;
-        }
-        else if (Spy::getEnemyTransition() == Z_2HatchMuta) {
-            zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) == 1 && gas(80) && vis(Zerg_Drone) >= 8;
-            reserveLarva                = 6;
-        }
-        else {
-            zergUnitPump[Zerg_Mutalisk] = com(Zerg_Spire) == 1 && gas(80) && vis(Zerg_Drone) >= 8;
-            reserveLarva                = 3;
+        // After lair starts, no gas for a bit
+        if (lingSpeed() && vis(Zerg_Lair) > 0) {
+            gasLimit = 0;
+            if (atPercent(Zerg_Lair, 0.5))
+                gasLimit = 2;
         }
 
-        // Gas
-        gasLimit = gasMax();
+        // AFter lair completes, full gas mining
+        if (com(Zerg_Lair) > 0)
+            gasLimit = gasMax();
+
         if (!Spy::enemyTurtle()) {
             auto dropGasLowDrone  = vis(Zerg_Drone) + vis(Zerg_Extractor) < 8;
             auto dropGasEarly     = Spy::Zerg::enemyFasterPool() && Util::getTime() < Time(3, 20);
@@ -264,10 +262,6 @@ namespace McRave::BuildOrder::Zerg {
             if (dropGasLowDrone || dropGasEarly || dropGasAfterLair || dropGasRush || dropGasPressure)
                 gasLimit = 0;
         }
-
-        // Drop one off gas after speed or lair started
-        if (lingSpeed() != vis(Zerg_Lair))
-            gasLimit = 2;
     }
 
     void ZvZ_2HatchHydra()

@@ -15,7 +15,6 @@ namespace McRave::Terrain {
     BWAPI::Position getClosestMapCorner(BWAPI::Position);
     BWAPI::Position getClosestMapEdge(BWAPI::Position);
     BWAPI::Position getOldestPosition(const BWEM::Area *);
-    BWAPI::Position getSafeSpot(const BWEB::Station *);
     void onStart();
     void onFrame();
 
@@ -65,8 +64,14 @@ namespace McRave::Terrain {
         return BWAPI::Broodwar->isExplored(BWAPI::TilePosition(here));
     }
 
+    bool isChokepointGeo(BWAPI::Position);
+    bool isChokepointGeo(BWAPI::WalkPosition);
+    bool isChokepointGeo(BWAPI::TilePosition);
+
     // Checks if "here" is in area
     bool inArea(const BWEM::Area *area, BWAPI::Position here);
+    bool inArea(const BWEM::Area *area, BWAPI::WalkPosition here);
+    bool inArea(const BWEM::Area *area, BWAPI::TilePosition here);
 
     // Checks if "here" is in the station area
     template <typename T>                                    //
@@ -75,7 +80,7 @@ namespace McRave::Terrain {
         if (!here.isValid() || !station)
             return false;
         auto area = station->getBase()->GetArea();
-        return inArea(area, BWAPI::Position(here));
+        return inArea(area, here);
     }
 
     // Checks if "here" is in the area of "there"
@@ -85,7 +90,7 @@ namespace McRave::Terrain {
         if (!here.isValid() || !there.isValid())
             return false;
         auto area = mapBWEM.GetArea(BWAPI::TilePosition(there));
-        return inArea(area, BWAPI::Position(here));
+        return inArea(area, here);
     }
 
     bool inTerritory(PlayerState, BWAPI::Position);

@@ -1,6 +1,6 @@
-#include "Main/Common.h"
 #include "Builds/Protoss/ProtossBuildOrder.h"
-#include "Strategy/Spy/Defs.h"
+#include "Main/Common.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace std;
 using namespace BWAPI;
@@ -9,45 +9,44 @@ using namespace McRave::BuildOrder::All;
 using namespace UpgradeTypes;
 using namespace TechTypes;
 
-
 namespace McRave::BuildOrder::Protoss {
 
     void PvFFA_1GC_3Gate()
     {
         // -nolink-
-        inTransition =                                  total(Protoss_Gateway) >= 3;
-        inOpening =                                     s < 82;
-        gasLimit =                                      vis(Protoss_Gateway) >= 2 && com(Protoss_Gateway) < 3 ? 2 : INT_MAX;
-        wallNat =                                       Util::getTime() > Time(4, 30);
+        inTransition = total(Protoss_Gateway) >= 3;
+        inOpening    = Spy::enemyPressure() ? Broodwar->getFrameCount() < 9000 : Broodwar->getFrameCount() < 8000;
+        gasLimit     = vis(Protoss_Gateway) >= 2 && com(Protoss_Gateway) < 3 ? 2 : INT_MAX;
+        wallNat      = Util::getTime() > Time(4, 30);
 
         // Build
-        buildQueue[Protoss_Gateway] =                   (s >= 20) + (s >= 38) + (s >= 40);
+        buildQueue[Protoss_Gateway] = 1 + (s >= 50) + (s >= 50);
+
+        // Upgrades
+        upgradeQueue[Singularity_Charge] = vis(Protoss_Dragoon) > 0;
 
         // Pumping
-        protossUnitPump[Protoss_Probe] = true;
-        protossUnitPump[Protoss_Dragoon] = com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
+        protossUnitPump[Protoss_Probe]   = true;
+        protossUnitPump[Protoss_Zealot]  = total(Protoss_Zealot) < zealotsNeeded_PvP();
+        protossUnitPump[Protoss_Dragoon] = true;
     }
 
     void PvFFA_1GC_ZCore()
     {
         // "https://liquipedia.net/starcraft/1_Gate_Core_(vs._Protoss)"
-        unitLimits[Protoss_Zealot] =                    s >= 60 ? 0 : 1;
-        scout =                                         Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
-        transitionReady =                               vis(Protoss_Cybernetics_Core) > 0;
+        scout           = Broodwar->getStartLocations().size() >= 3 ? vis(Protoss_Gateway) > 0 : vis(Protoss_Pylon) > 0;
+        transitionReady = vis(Protoss_Cybernetics_Core) > 0;
 
         // Buildings
-        buildQueue[Protoss_Nexus] =                     1;
-        buildQueue[Protoss_Pylon] =                     (s >= 16) + (s >= 32);
-        buildQueue[Protoss_Gateway] =                   s >= 20;
-        buildQueue[Protoss_Assimilator] =               s >= 24;
-        buildQueue[Protoss_Cybernetics_Core] =          s >= 34;
-
-        // Upgrades
-        upgradeQueue[Singularity_Charge] =              vis(Protoss_Dragoon) > 0;
+        buildQueue[Protoss_Nexus]            = 1;
+        buildQueue[Protoss_Pylon]            = (s >= 16) + (s >= 32);
+        buildQueue[Protoss_Gateway]          = s >= 20;
+        buildQueue[Protoss_Assimilator]      = s >= 24;
+        buildQueue[Protoss_Cybernetics_Core] = s >= 34;
 
         // Pumping
-        protossUnitPump[Protoss_Probe] = true;
-        protossUnitPump[Protoss_Zealot] = com(Protoss_Gateway) > 0 && total(Protoss_Zealot) < 1;
+        protossUnitPump[Protoss_Probe]  = true;
+        protossUnitPump[Protoss_Zealot] = total(Protoss_Zealot) < zealotsNeeded_PvP();
     }
 
     void PvFFA_1GC()
@@ -62,4 +61,4 @@ namespace McRave::BuildOrder::Protoss {
                 PvFFA_1GC_3Gate();
         }
     }
-}
+} // namespace McRave::BuildOrder::Protoss

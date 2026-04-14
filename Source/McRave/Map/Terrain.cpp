@@ -47,9 +47,6 @@ namespace McRave::Terrain {
         vector<Position> groundCleanupPositions;
         vector<Position> airCleanupPositions;
 
-        // Overlord scouting
-        map<const BWEB::Station *const, Position> safeSpots;
-
         // Chokepoints
         map<const BWEM::ChokePoint *const, double> chokeAngles;
         map<const BWEM::ChokePoint *const, Position> chokeCenters;
@@ -121,8 +118,8 @@ namespace McRave::Terrain {
 
                     // Infer by being within a main area when we see it
                     if (closestMain && Terrain::inArea(closestMain->getBase()->GetArea(), unit->getPosition())) {
-                        inferComplete         = true;
-                        enemyStartingPosition = closestMain->getBase()->Center();
+                        inferComplete             = true;
+                        enemyStartingPosition     = closestMain->getBase()->Center();
                         enemyStartingTilePosition = closestMain->getBase()->Location();
                         LOG("Inferred enemy start: " + to_string(enemyStartingPosition.x) + "," + to_string(enemyStartingPosition.y));
                     }
@@ -601,21 +598,38 @@ namespace McRave::Terrain {
         return Position(oldestTile) + Position(16, 16);
     }
 
-    Position getSafeSpot(const BWEB::Station *station)
+    bool isChokepointGeo(Position here) //
     {
-        if (station && safeSpots.find(station) != safeSpots.end())
-            return safeSpots[station];
-        return Positions::Invalid;
+        isChokepointGeo(WalkPosition(here));
+    }
+    bool isChokepointGeo(WalkPosition here)
+    {
+        auto geo = areaChokeGeometry.find(here);
+        return geo != areaChokeGeometry.end();
+    }
+    bool isChokepointGeo(TilePosition here)
+    {
+        auto walk = WalkPosition(here);
+        for (auto x = walk.x; x < walk.x + 4; x++) {
+            for (auto y = walk.y; y < walk.y + 4; y++) {
+                if (isChokepointGeo(WalkPosition(x, y)))
+                    return true;
+            }
+        }
     }
 
-    bool inArea(const BWEM::Area *area, Position here)
+    bool inArea(const BWEM::Area *area, Position here) //
+    {
+        return inArea(area, WalkPosition(here));
+    }
+    bool inArea(const BWEM::Area *area, WalkPosition here)
     {
         if (!here.isValid())
             return false;
-        auto areaToCheck = mapBWEM.GetArea(TilePosition(here));
+        auto areaToCheck = mapBWEM.GetArea(here);
         if (areaToCheck == area)
             return true;
-        auto geo = areaChokeGeometry.find(WalkPosition(here));
+        auto geo = areaChokeGeometry.find(here);
         if (geo != areaChokeGeometry.end()) {
             const auto &areas = geo->second;
             return areas.first == area || areas.second == area;
@@ -624,6 +638,17 @@ namespace McRave::Terrain {
         auto shared = sharedArea.find(area);
         if (shared != sharedArea.end()) {
             return find(shared->second.begin(), shared->second.end(), areaToCheck) != shared->second.end();
+        }
+        return false;
+    }
+    bool inArea(const BWEM::Area *area, TilePosition here)
+    {
+        auto walk = WalkPosition(here);
+        for (auto x = walk.x; x < walk.x + 4; x++) {
+            for (auto y = walk.y; y < walk.y + 4; y++) {
+                if (inArea(area, WalkPosition(x, y)))
+                    return true;
+            }
         }
         return false;
     }

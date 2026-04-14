@@ -47,6 +47,9 @@ namespace McRave::Workers {
             if (Players::ZvZ())
                 desiredTransfer = 0;
 
+            if (desiredTransfer == 0)
+                return nullptr;
+
             // Keep damaged workers in the main
             if (Util::getTime() < Time(4, 00) && unit.getHealth() < unit.getType().maxHitPoints()) {
                 if (unit.hasResource() && unit.getResource().lock()->getStation()->isNatural()) {
@@ -307,8 +310,12 @@ namespace McRave::Workers {
             // Get some information of the workers current assignment
             const auto isGasunit     = unit.hasResource() && unit.getResource().lock()->getType().isRefinery();
             const auto isMineralunit = unit.hasResource() && unit.getResource().lock()->getType().isMineralField();
-            const auto threatened    = unit.hasResource() && unit.getResource().lock()->isThreatened() &&
-                                    (unit.getHealth() < unit.getType().maxHitPoints() || Spy::enemyPressure() || Spy::enemyRush() || Players::ZvZ());
+
+            const auto critical       = unit.getHealth() <= 16 && !unit.getUnitsInReachOfThis().empty() && (!unit.hasResource() || unit.isWithinGatherRange());
+            const auto resourceThreat = unit.hasResource() && unit.getResource().lock()->isThreatened() &&
+                                        (unit.getHealth() < unit.getType().maxHitPoints() || Spy::enemyPressure() || Spy::enemyRush() || Players::ZvZ());
+            const auto threatened = critical || resourceThreat;
+
             const auto excessAssigned  = isResourceFlooded(unit);
             const auto transferStation = getTransferStation(unit);
 
@@ -374,9 +381,11 @@ namespace McRave::Workers {
                             continue;
 
                         auto stationDist  = unit.getPosition().getDistance(resource.getStation()->getBase()->Center());
+                        auto workerDist   = unit.getPosition().getDistance(resource.getPosition());
                         auto resourceDist = Util::boxDistance(UnitTypes::Resource_Mineral_Field, resource.getPosition(), Broodwar->self()->getRace().getResourceDepot(),
                                                               resource.getStation()->getBase()->Center());
-                        auto dist         = stationDist * resourceDist;
+                        auto dist         = Util::getTime() < Time(4, 00) ? workerDist : stationDist * resourceDist;
+                        Broodwar->drawTextMap(resource.getPosition(), "%.2f", dist);
 
                         if ((dist < distBest && !threatened) || (dist > distBest && threatened)) {
                             unit.setResource(r.get());
@@ -423,8 +432,8 @@ namespace McRave::Workers {
                 return;
 
             // Iterate commands, if one is executed then don't try to execute other commands
-            static const auto commands = {Command::misc,         Command::attack, Command::burrow, Command::returnResource, Command::build,
-                                          Command::clearNeutral, Command::click,  Command::move,   Command::gather};
+            static const auto commands = {Command::misc,  Command::kite,         Command::attack, Command::burrow, Command::returnResource,
+                                          Command::build, Command::clearNeutral, Command::click,  Command::move,   Command::gather};
             for (auto cmd : commands) {
                 if (cmd(unit))
                     break;

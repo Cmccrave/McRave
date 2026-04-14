@@ -20,14 +20,14 @@ namespace McRave::Roles {
         set<UnitType> proxyTargeting = {Protoss_Pylon, Protoss_Photon_Cannon, Terran_Barracks, Terran_Bunker, Terran_Factory, Zerg_Sunken_Colony};
         int lastCombatWorkerCount    = 0;
 
-        void forceCombatWorker(int count, Position here, LocalState lState = LocalState::Attack, GlobalState gState = GlobalState::Attack)
+        void forceCombatWorker(int count, Position here = Positions::Invalid, LocalState lState = LocalState::Attack, GlobalState gState = GlobalState::Attack)
         {
             auto needed = count - forcedRoles[Role::Combat];
 
             // Update where
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
-                if (unit.getType().isWorker() && unit.getRole() == Role::Combat)
+                if (here.isValid() && unit.getType().isWorker() && unit.getRole() == Role::Combat)
                     unit.setDestination(here);
             }
 
@@ -58,18 +58,21 @@ namespace McRave::Roles {
 
             // Only pull the closest worker
             for (int i = 0; i < needed; i++) {
-                auto closestForcedWorker = Util::getClosestUnitGround(here, PlayerState::Self,
+                auto fromWhere           = here.isValid() ? here : Terrain::getMainPosition();
+                auto closestForcedWorker = Util::getClosestUnitGround(fromWhere, PlayerState::Self,
                                                                       [&](auto &unit) { return !invalid(unit) && unit->getRole() == Role::Worker && unit->getLastRole() == Role::Combat; });
 
                 auto closestWorker = closestForcedWorker ? closestForcedWorker
-                                                         : Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &unit) { return !invalid(unit) && unit->getRole() == Role::Worker; });
+                                                         : Util::getClosestUnitGround(fromWhere, PlayerState::Self, [&](auto &unit) { return !invalid(unit) && unit->getRole() == Role::Worker; });
 
                 if (closestWorker) {
                     closestWorker->circle(Colors::Purple);
                     closestWorker->setRole(Role::Combat);
                     closestWorker->setLocalState(lState);
                     closestWorker->setGlobalState(gState);
-                    closestWorker->setDestination(here);
+
+                    if (here.isValid())
+                        closestWorker->setDestination(here);
 
                     forcedRoles[Role::Combat]++;
 
@@ -134,7 +137,7 @@ namespace McRave::Roles {
                 }
             }
 
-            if (Terrain::inTerritory(PlayerState::Self, proxyWorker->getPosition()) && Util::getTime() < Time(4, 00))
+            if (proxyWorker && Terrain::inTerritory(PlayerState::Self, proxyWorker->getPosition()) && Util::getTime() < Time(4, 00))
                 forceCombatWorker(1, proxyWorker->getPosition());
 
             if (Players::TvP()) {
@@ -158,15 +161,15 @@ namespace McRave::Roles {
                        (u->canAttackGround() || u->canAttackAir() || Terrain::inTerritory(PlayerState::Self, u->getPosition()));
             });
             auto proxyWorker            = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy(); });
-            auto proxyCombatWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy() && u->hasAttackedRecently(); });
-            auto proxyBuildingWorker  = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
+            auto proxyCombatWorker      = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isThreatening(); });
+            auto proxyBuildingWorker    = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                 return u->getType().isWorker() && (u->isThreatening() || (proxyBuilding && u->getPosition().getDistance(proxyBuilding->getPosition()) < 160.0) ||
                                                    (proxyDangerousBuilding && u->getPosition().getDistance(proxyDangerousBuilding->getPosition()) < 160.0));
             });
-            auto proxyCombatUnit      = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy,
+            auto proxyCombatUnit        = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy,
                                                         [&](auto &u) { return u->isProxy() && !u->getType().isWorker() && !u->getType().isBuilding() && u->canAttackGround(); });
-            auto proxyThreateningUnit = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy, [&](auto &u) { return u->isThreatening() && u->canAttackGround(); });
-            auto selfBuildingWorker   = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self,
+            auto proxyThreateningUnit   = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy, [&](auto &u) { return u->isThreatening() && u->canAttackGround(); });
+            auto selfBuildingWorker     = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self,
                                                            [&](auto &u) { return u->getType().isWorker() && u->getBuildType() == Zerg_Hatchery && Broodwar->self()->minerals() >= 200; });
 
             auto unknownMainLocation = Position(Terrain::getOldestPosition(Terrain::getMainArea()));
@@ -181,10 +184,10 @@ namespace McRave::Roles {
                     return;
 
                 if (Players::ZvP() && sixLings && com(Zerg_Sunken_Colony) == 0 && Combat::isDefendNatural() && proxyWorker && proxyCombatUnit) {
-                    forceCombatWorker(12, Position(Terrain::getNaturalPosition()), LocalState::None, GlobalState::Retreat);
+                    forceCombatWorker(12);
                 }
                 if (Players::ZvT() && com(Zerg_Sunken_Colony) == 0 && proxyCombatWorker) {
-                    forceCombatWorker(Spy::getWorkersPulled() + 1, Terrain::getMainPosition(), LocalState::Attack, GlobalState::Retreat);
+                    forceCombatWorker(Spy::getWorkersPulled() + 1, Positions::Invalid, LocalState::Attack, GlobalState::Retreat);
                 }
                 return;
             }

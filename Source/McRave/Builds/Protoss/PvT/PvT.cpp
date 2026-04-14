@@ -11,24 +11,26 @@ using namespace TechTypes;
 
 namespace McRave::BuildOrder::Protoss {
 
-    void defaultPvT() {
-        inOpening =                                     true;
-        inBookSupply =                                  vis(Protoss_Pylon) < 2;
-        wallNat =                                       com(Protoss_Pylon) >= 6;
-        wallMain =                                      false;
-        scout =                                         vis(Protoss_Cybernetics_Core) > 0;
-        wantNatural =                                   true;
-        wantThird =                                     true;
-        proxy =                                         false;
-        hideTech =                                      false;
-        rush =                                          false;
-        transitionReady =                               false;
+    void defaultPvT()
+    {
+        inOpening       = true;
+        inBookSupply    = vis(Protoss_Pylon) < 2;
+        wallNat         = com(Protoss_Pylon) >= 6;
+        wallMain        = false;
+        scout           = vis(Protoss_Cybernetics_Core) > 0;
+        wantNatural     = true;
+        wantThird       = true;
+        proxy           = false;
+        hideTech        = false;
+        rush            = false;
+        transitionReady = false;
 
-        gasLimit =                                      gasMax();
+        gasLimit = gasMax();
     }
 
-    int zealotsNeeded_PvT() {
-        if (Spy::getEnemyTransition() == U_WorkerRush)
+    int zealotsNeeded_PvT()
+    {
+        if (Spy::getEnemyTransition() == U_WorkerRush || Spy::getEnemyOpener() == T_BBS)
             return 3;
 
         if (currentOpener == P_NZCore)
@@ -37,7 +39,6 @@ namespace McRave::BuildOrder::Protoss {
             return 1;
         return 0;
     }
-
 
     void PvT()
     {
@@ -51,4 +52,4 @@ namespace McRave::BuildOrder::Protoss {
         if (currentBuild == P_2Base)
             PvT_2B();
     }
-}
+} // namespace McRave::BuildOrder::Protoss

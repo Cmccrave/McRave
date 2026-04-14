@@ -110,6 +110,9 @@ namespace McRave {
         bool inDanger  = false;
         bool sacrifice = false;
 
+        int debugNum = 0;
+        bool debugFlag = false;
+
         int lastCommandFrame     = 0;
         int nextCommandFrame     = 0;
         int lastThreateningFrame = -999;
@@ -182,6 +185,7 @@ namespace McRave {
         bool canStartGather();
         bool canAttackGround();
         bool canAttackAir();
+        bool canAttack(UnitInfo &);
 
         double getDpsAgainst(UnitInfo &);
 

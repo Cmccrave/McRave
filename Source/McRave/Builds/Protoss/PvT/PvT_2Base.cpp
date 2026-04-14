@@ -14,7 +14,6 @@ namespace McRave::BuildOrder::Protoss {
     void PvT_2B_12Nexus()
     {
         // 8p 12n 12g 13g 15c
-        unitLimits[Protoss_Zealot] = 1;
         scout                      = vis(Protoss_Pylon) > 0;
         transitionReady            = vis(Protoss_Gateway) >= 2;
 

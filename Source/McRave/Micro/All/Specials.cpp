@@ -713,12 +713,11 @@ namespace McRave::Command {
 
         const auto canGather = [&](ResourceInfo *resource) {
             if (allowOptimisations) {
+                if (boxDist > 0 && unit.unit()->getOrder() == Orders::MoveToMinerals && resource->getGatherOrderPositions().find(unit.getPosition()) != resource->getGatherOrderPositions().end())
+                    return true;
                 // Force mineral lock
                 if (unit.unit()->getTarget() == resource->unit() && unit.unit()->getLastCommand().getType() == UnitCommandTypes::Gather)
                     return false;
-
-                if (boxDist > 0 && unit.unit()->getOrder() == Orders::MoveToMinerals && resource->getGatherOrderPositions().find(unit.getPosition()) != resource->getGatherOrderPositions().end())
-                    return true;
             }
             else {
                 // Don't try to mineral lock

@@ -15,6 +15,7 @@
 using namespace BWAPI;
 using namespace std;
 using namespace UnitTypes;
+using namespace UpgradeTypes;
 using namespace McRave::BuildOrder::All;
 
 // Notes:
@@ -32,11 +33,22 @@ namespace McRave::BuildOrder::Zerg {
 
         void switchComposition()
         {
-            static auto lastSwitchTime = Time(10, 00);
-
+            static auto lastSwitchTime                  = Time(10, 00);
             static vector<UnitType> switchedComposition = {};
-            if (!switchedComposition.empty())
-                unitOrder = switchedComposition;
+
+            // For certain switches, we don't want to start producing anything until we're actually ready
+            if (!switchedComposition.empty()) {
+                auto ready = false;
+                if (switchedComposition == hydralurk) {
+                    ready = Upgrading::haveUpgrade(Grooved_Spines) && Upgrading::haveUpgrade(Muscular_Augments);
+                }
+
+                if (switchedComposition == mutaling) {
+                    ready = com(Zerg_Spire) > 0;
+                }
+                if (ready)
+                    unitOrder = switchedComposition;
+            }
 
             if (Util::getTime() - lastSwitchTime < Time(2, 30))
                 return;
@@ -56,16 +68,19 @@ namespace McRave::BuildOrder::Zerg {
                                   " HT: " + stringCount(Protoss_High_Templar) + //
                                   " Reaver: " + stringCount(Protoss_Reaver);
 
-                if (enemyWeakToHydra && com(Zerg_Hydralisk_Den) > 0) {
+                if (enemyWeakToHydra) {
                     switchedComposition = hydralurk;
                     lastSwitchTime      = Util::getTime();
-                    LOG("Composition is hydralurk - ", typesToLog);
+                    focusUnits.insert(Zerg_Hydralisk);
+                    focusUnits.insert(Zerg_Lurker);
+                    LOG("Desired switch to hydralurk - ", typesToLog);
                 }
 
-                if (enemyWeakToMuta && com(Zerg_Spire) > 0) {
+                if (enemyWeakToMuta) {
                     switchedComposition = mutaling;
                     lastSwitchTime      = Util::getTime();
-                    LOG("Composition is mutaling - ", typesToLog);
+                    focusUnits.insert(Zerg_Mutalisk);
+                    LOG("Desired switch to mutaling - ", typesToLog);
                 }
             }
 
@@ -351,13 +366,13 @@ namespace McRave::BuildOrder::Zerg {
                 const auto incompleteHatch   = vis(Zerg_Hatchery) - com(Zerg_Hatchery);
                 const auto waitForMinerals   = 200 + (200 * incompleteHatch);
 
-                const auto resourceSat     = (availableMinerals >= waitForMinerals && Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && !productionSat && vis(Zerg_Larva) <= 3);
-                const auto excessResources = (availableMinerals >= waitForMinerals * 2 && !productionSat && vis(Zerg_Larva) <= 3);
-                const auto larvaBankrupt   = (availableMinerals >= waitForMinerals && (vis(Zerg_Larva) + (incompleteHatch)) < min(3, hatchCount()) && !productionSat);
+                const auto resourceSat     = (availableMinerals >= waitForMinerals && Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && vis(Zerg_Larva) <= 3);
+                const auto excessResources = (availableMinerals >= waitForMinerals * 2 && vis(Zerg_Larva) <= 3);
+                const auto larvaBankrupt   = (availableMinerals >= waitForMinerals && (vis(Zerg_Larva) + (incompleteHatch)) < min(3, hatchCount()));
 
                 const auto allowMultiple = !Players::ZvZ();
 
-                if (incompleteHatch == 0 || allowMultiple) {
+                if (!productionSat && (incompleteHatch == 0 || allowMultiple)) {
                     rampDesired               = resourceSat || excessResources || larvaBankrupt;
                     buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + rampDesired);
                 }
@@ -574,7 +589,7 @@ namespace McRave::BuildOrder::Zerg {
             if (activeAllin.name != "") {
                 armyComposition.clear();
                 reserveLarva = 0;
-                focusUnit    = None;
+                focusUnit    = UnitTypes::None;
 
                 if (inOpening) {
                     inOpening = false;
