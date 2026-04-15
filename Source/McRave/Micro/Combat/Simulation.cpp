@@ -115,12 +115,12 @@ namespace McRave::Combat::Simulation {
 
         // T
         if (Players::TvP()) {
-            minWinPercent = 0.9;
+            minWinPercent = 0.7;
             maxWinPercent = 1.3;
             commitFrames  = 12;
         }
         if (Players::TvZ()) {
-            minWinPercent = 0.9;
+            minWinPercent = 0.7;
             maxWinPercent = 1.3;
             commitFrames  = 12;
         }

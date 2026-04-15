@@ -246,7 +246,8 @@ namespace McRave::Combat::State {
         if (!unit.hasTarget())
             return false;
         auto &target = *unit.getTarget().lock();
-
+        if (isStaticRetreat(unit.getType()))
+            return true;
         return false;
     }
 
@@ -264,6 +265,11 @@ namespace McRave::Combat::State {
         const auto nearEnemyDefense = [&]() {
             const auto closestDefense = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isBuilding() && u->canAttack(unit); });
             return closestDefense && closestDefense->getPosition().getDistance(target.getPosition()) < 256.0;
+        };
+
+        const auto nearMainRamp = [&]() { 
+            auto center = Terrain::getMainRamp().center;
+            return center.isValid() && target.getPosition().getDistance(center) < 64.0;
         };
 
         // General commonly used checks
@@ -319,8 +325,13 @@ namespace McRave::Combat::State {
 
         // If inside self territory, likely forcing an attack is best
         auto atHomeAttack = [&]() {
-            if (target.isThreatening() && !target.isHidden())
+
+            // If both sides are melee vs melee, we don't need to force engagement until something is in range
+            if (target.isThreatening() && !target.isHidden()) {
+                if (unit.isMelee() && target.isMelee() && !target.hasAttackedRecently() && !unit.isWithinRange(target) && !Combat::isDefendNatural() && nearMainRamp())
+                    return false;
                 return true;
+            }
 
             if (!atHome)
                 return false;
@@ -440,7 +451,7 @@ namespace McRave::Combat::State {
 
         const auto insideRetreatRadius = distSim < unit.getRetreatRadius();
         const auto insideEngageRadius  = distSim < unit.getEngageRadius();
-        const auto insideHoldRadius    = distSim >= unit.getRetreatRadius();
+        const auto insideHoldRadius    = distSim >= unit.getRetreatRadius() || selfTerritory;
 
         const auto localRetreat = unit.getSimState() == SimState::Loss && (!unit.attemptingRunby() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()));
         const auto localEngage  = unit.getSimState() == SimState::Win && (unit.getGlobalState() == GlobalState::Attack || targetAtHome);
@@ -452,10 +463,10 @@ namespace McRave::Combat::State {
         }
 
         // Forced states
-        else if (insideHoldRadius && forceLocalHold(unit))
-            unit.setLocalState(LocalState::Hold);
         else if (insideEngageRadius && forceLocalAttack(unit))
             unit.setLocalState(LocalState::Attack);
+        else if (insideHoldRadius && forceLocalHold(unit))
+            unit.setLocalState(LocalState::Hold);
         else if (insideRetreatRadius && forceLocalRetreat(unit))
             unit.setLocalState(LocalState::Retreat);
 

@@ -8,6 +8,7 @@
 #include "Micro/Combat/Combat.h"
 #include "Micro/Worker/Workers.h"
 #include "Strategy/Actions/Actions.h"
+#include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -249,8 +250,10 @@ namespace McRave::Command {
                 }
 
                 if (auto resource = unit.getResource().lock()) {
-                    if (unit.isWithinRange(target) && Util::boxDistance(unit.getType(), unit.getPosition(), Resource_Mineral_Field, resource->getPosition()) <= 16.0)
+                    if (unit.isWithinRange(target) && Util::boxDistance(unit.getType(), unit.getPosition(), Resource_Mineral_Field, resource->getPosition()) <= 16.0) {
+                        unit.circle(Colors::Blue);
                         return true;
+                    }
                 }
             }
 
@@ -512,7 +515,7 @@ namespace McRave::Command {
             auto boxDist       = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition());
 
             // Special Case: workers trying to not die
-            if (unit.getType().isWorker() && !unit.isHealthy() && Util::getTime() < Time(4, 00) && !unit.getUnitsInReachOfThis().empty() && !unit.isWithinGatherRange())
+            if (unit.getType().isWorker() && Spy::getEnemyTransition() == U_WorkerRush && vis(Zerg_Sunken_Colony) == 0 && !unit.getUnitsInReachOfThis().empty() && unit.getHealth() < unit.getType().maxHitPoints() && !unit.unit()->isCarryingMinerals())
                 return true;
 
             if (unit.getRole() == Role::Combat || unit.getRole() == Role::Scout) {

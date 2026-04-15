@@ -94,13 +94,12 @@ namespace McRave::Workers {
                 stationGrdOkay = (Stations::getGroundDefenseCount(station) > 0 || Stations::getColonyCount(station) > 0);
                 stationAirOkay = (Stations::getAirDefenseCount(station) > 0 || Stations::getColonyCount(station) > 0);
 
-                // Current station is a fortress, we can stay
+                // Current station has defensive structures, we can stay
                 if (stationGrdOkay && stationAirOkay) {
                     safeStations.push_back(station);
-                    return safeStations;
                 }
 
-                // If this station has a defense to deal with whatever is near us, stay at this station
+                // If this station has a defense to deal with whatever is near us, can stay at this station
                 auto currentStationSafe = true;
                 for (auto &t : unit.getUnitsInReachOfThis()) {
                     if (auto targeter = t.lock()) {
@@ -111,25 +110,23 @@ namespace McRave::Workers {
 
                 if (currentStationSafe) {
                     safeStations.push_back(unit.getResource().lock()->getStation());
-                    return safeStations;
                 }
             }
 
             // Find safe stations to mine resources from
             if (auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self)) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
-
-                    // If unit is close, it must be safe
-                    if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(unit.getTilePosition()) == station->getBase()->GetArea() ||
-                        Util::getTime() < Time(3, 30))
-                        safeStations.push_back(station);
-
-                    else {
-                        auto &path     = Stations::getPathBetween(closestStation, station);
-                        auto threatPos = Util::findPointOnPath(path, [&](auto &t) { return Grids::getGroundThreat(t, PlayerState::Enemy) > 0.0; });
-                        if (!threatPos)
-                            safeStations.push_back(station);
+                    bool safe = true;
+                    for (auto &mineral : Resources::getMyMinerals()) {
+                        if (mineral->getResourceState() == ResourceState::Mineable || mineral->getResourceState() == ResourceState::Assignable) {
+                            if (mineral->isThreatened()) {
+                                safe = false;
+                                break;
+                            }
+                        }
                     }
+                    if (safe)
+                        safeStations.push_back(station);
                 }
             }
             return safeStations;
@@ -174,11 +171,29 @@ namespace McRave::Workers {
 
         bool isResourceSafe(UnitInfo &unit)
         {
-            // Determine if the resource we're at is safe or if we need to ditch this station entirely
-            // 1. Safe, no threats around
-            // 2. Any threat exists, but we have burrow and they dont have detection
-            // 3. A minor threat exists, move between resources
-            // 4. A major threat exists, ditch the station (TODO?)
+            if (!unit.hasResource())
+                return false;
+            auto resource = unit.getResource().lock();
+
+            // If around defenders
+            auto aroundDefenders = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
+                if (u->getRole() != Role::Combat && u->getRole() != Role::Defender)
+                    return false;
+
+                return (unit.getPosition().getDistance(u->getPosition()) < u->getGroundReach());
+            });
+            if (aroundDefenders)
+                return true;
+
+            // Generate a path that obeys refinery placement as well
+            auto pathPoint = Util::getPathPoint(unit, resource->getPosition());
+            BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
+            newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
+
+            auto threatPosition = Util::findPointOnPath(newPath, [&](Position p) { return Grids::getGroundThreat(p, PlayerState::Enemy) > 0.0 && Broodwar->isVisible(TilePosition(p)); });
+
+            if (threatPosition && threatPosition.getDistance(unit.getPosition()) < 32.0 && Util::getTime() > Time(5, 00))
+                return false;
             return true;
         }
 
@@ -295,8 +310,9 @@ namespace McRave::Workers {
                     auto resourceTopLeft  = resource->getTilePosition();
                     auto resourceBotRight = resource->getTilePosition() + resource->getType().tileSize();
                     auto adjacentPlanning = Util::rectangleIntersect(buildingTopLeft, buildingBotRight, resourceTopLeft, resourceBotRight);
+                    auto nearby           = unit.getPosition().getDistance(center) < 160.0 && (unit.unit()->isCarryingMinerals() || unit.unit()->isCarryingGas());
 
-                    if (builderClose && canAfford && adjacentPlanning) {
+                    if (builderClose && canAfford && (adjacentPlanning || nearby)) {
                         auto destination = Util::shiftTowards(center, unit.getPosition(), 96.0);
                         unit.setDestination(destination);
                         Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Green);

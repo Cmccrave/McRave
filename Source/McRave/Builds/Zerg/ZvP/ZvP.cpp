@@ -30,7 +30,8 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyOpener() == P_Horror_9_9 || (Spy::getEnemyOpener() == P_Proxy_9_9 && currentOpener == Z_12Hatch))
             wantNatural = hatchCount() >= 3;
 
-        wantThird = (Spy::enemyFastExpand() && hatchCount() >= 4) || hatchCount() >= 5 || Spy::getEnemyBuild() == P_FFE || (Spy::getEnemyBuild() == P_1GateCore && hatchCount() >= 3) || Spy::getEnemyBuild() == "Unknown";
+        wantThird = (Spy::enemyFastExpand() && hatchCount() >= 4) || hatchCount() >= 5 || Spy::getEnemyBuild() == P_FFE || (Spy::getEnemyBuild() == P_1GateCore && hatchCount() >= 3) ||
+                    Spy::getEnemyBuild() == "Unknown";
         if (!wantNatural)
             wantThird = false;
 
@@ -82,7 +83,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Make less if we have some other units outside our opening
         if (total(Zerg_Zergling) >= transitionLings || com(Zerg_Sunken_Colony) > 0) {
-            arrivalValue -= vis(Zerg_Hydralisk);
+            arrivalValue -= vis(Zerg_Hydralisk) * 2;
             arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 6.0;
         }
 
@@ -122,9 +123,6 @@ namespace McRave::BuildOrder::Zerg {
                 initialValue = 10;
             if (Spy::getEnemyOpener() == P_10_15)
                 initialValue = 2;
-
-            if (currentOpener == Z_12Hatch || currentOpener == Z_12Pool)
-                initialValue += 4;
         }
 
         // FFE
@@ -240,10 +238,12 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvP3HatchMuta()
     {
-        auto hydraOpen = (Spy::getEnemyBuild() == P_FFE && Spy::getEnemyTransition() != P_5GateGoon && Spy::getEnemyTransition() != P_CorsairGoon && Spy::getEnemyTransition() != P_Speedlot) || //
-                         (Spy::getEnemyBuild() == P_1GateCore && Spy::getEnemyTransition() != P_4Gate && Spy::getEnemyTransition() != P_Robo) ||                                                 //
-                         total(Zerg_Hydralisk) > 0;
+        auto hydraOpenerOK = (Spy::getEnemyBuild() == P_1GateCore && Spy::getEnemyTransition() != P_4Gate && Spy::getEnemyTransition() != P_Robo) //
+                             || (Spy::getEnemyBuild() == P_FFE && Spy::getEnemyTransition() != P_5GateGoon && Spy::getEnemyTransition() != P_CorsairGoon && Spy::getEnemyTransition() != P_Speedlot);
+
+        auto hydraOpen = !Terrain::isNarrowNatural() && (hydraOpenerOK || total(Zerg_Hydralisk) > 0);
         auto mutaOpen  = !hydraOpen;
+
         auto hydraDone = !hydraOpen || total(Zerg_Hydralisk) >= 32;
         auto mutaDone  = !mutaOpen || total(Zerg_Mutalisk) >= 5;
 
@@ -366,8 +366,8 @@ namespace McRave::BuildOrder::Zerg {
         hideTech     = true;
         reserveLarva = 0;
 
-        rush     = hydraRange() && total(Zerg_Hydralisk) >= 12 && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) < 3;
-        pressure = rush;
+        rush                         = hydraRange() && total(Zerg_Hydralisk) >= 12 && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) < 3;
+        unitPressure[Zerg_Hydralisk] = rush;
 
         // Order
         unitOrder = hydralurk;

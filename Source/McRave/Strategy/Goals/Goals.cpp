@@ -156,8 +156,9 @@ namespace McRave::Goals {
                 auto haveSpeed = Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost);
 
                 if (haveSpeed) {
-                    auto lingDiff       = max(4, Players::getTotalCount(PlayerState::Self, Zerg_Zergling) - Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling));
-                    auto runbyTurtle    = Spy::enemyTurtle() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery, Zerg_Lair, Zerg_Hive) >= 2 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) < 10;
+                    auto lingDiff    = max(4, Players::getTotalCount(PlayerState::Self, Zerg_Zergling) - Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling));
+                    auto runbyTurtle = Spy::enemyTurtle() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery, Zerg_Lair, Zerg_Hive) >= 2 &&
+                                       Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) < 10;
                     if (runbyTurtle) {
                         LOG_ONCE("Attempting ZvZ ling runby");
                         assignNumberToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, lingDiff, GoalType::Runby);
@@ -272,9 +273,9 @@ namespace McRave::Goals {
 
             // Send detector to next expansion
             if (Planning::getCurrentExpansion()) {
-                auto nextExpand   = Planning::getCurrentExpansion()->getBase()->Center();
-                auto detectDTs  = BuildOrder::shouldExpand() && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0;
-                auto detectMines  = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0;
+                auto nextExpand  = Planning::getCurrentExpansion()->getBase()->Center();
+                auto detectDTs   = BuildOrder::shouldExpand() && Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0;
+                auto detectMines = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0;
 
                 auto needDetector = detectDTs || detectMines || Players::vZ();
 
@@ -312,6 +313,15 @@ namespace McRave::Goals {
                             }
                         }
                     }
+                }
+            }
+
+            // Escort workers when they can't transfer
+            auto type = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
+            for (auto &unit : Units::getUnits(PlayerState::Self)) {
+                if (unit->hasResource(); auto resource = unit->getResource().lock()) {
+                    if (!resource->getType().isMineralField() && !unit->isWithinGatherRange() && !Terrain::inTerritoryPath(PlayerState::Self, unit->getPosition(), resource->getPosition()))
+                        assignNumberToGoal(unit->getPosition(), type, 1, GoalType::Escort);
                 }
             }
         }

@@ -84,6 +84,11 @@ namespace McRave::Targets {
             return Priority::Normal;
         }
 
+        Priority htPriority(UnitInfo &unit, UnitInfo &target) 
+        { 
+            return Priority::Normal;
+        }
+
         // Z
         Priority zerglingPriority(UnitInfo &unit, UnitInfo &target)
         {
@@ -364,11 +369,6 @@ namespace McRave::Targets {
                         return Priority::Ignore;
                 }
 
-                // Dark Templar
-                if (unit.getType() == Protoss_Dark_Templar) {
-                    return dtPriority(unit, target);
-                }
-
                 // Ghost
                 if (unit.getType() == Terran_Ghost) {
                     if (!target.getType().isResourceDepot())
@@ -387,6 +387,12 @@ namespace McRave::Targets {
                 }
             }
 
+            // P
+            if (unit.getType() == Protoss_Dark_Templar)
+                return dtPriority(unit, target);
+            if (unit.getType() == Protoss_High_Templar)
+                return htPriority(unit, target);
+
             // Z
             if (unit.getType() == Zerg_Zergling)
                 return zerglingPriority(unit, target);
@@ -399,7 +405,7 @@ namespace McRave::Targets {
             if (unit.getType() == Zerg_Queen)
                 return queenPriority(unit, target);
 
-            return Priority::Minor;
+            return Priority::Normal;
         }
 
         double healthScore(UnitInfo &unit, UnitInfo &target) //
@@ -444,9 +450,8 @@ namespace McRave::Targets {
             return target.getPriority() / maxPriority;
         }
 
-        double scoreTarget(UnitInfo &unit, UnitInfo &target)
+        double distScore(UnitInfo &unit, UnitInfo &target)
         {
-            // Scoring parameters
             auto range      = target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange();
             auto reach      = target.getType().isFlyer() ? unit.getAirReach() : unit.getGroundReach();
             auto enemyRange = unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange();
@@ -454,7 +459,7 @@ namespace McRave::Targets {
 
             if (unit.isSiegeTank()) {
                 range = 384.0;
-                reach = range + (unit.getSpeed() * 16.0) + double(unit.getType().width() / 2) + 64.0;
+                reach = range + double(unit.getType().width() / 2) + 64.0;
             }
 
             const auto boxDistance = double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
@@ -462,20 +467,33 @@ namespace McRave::Targets {
                                 mapBWEM.GetArea(unit.getTilePosition())->AccessibleFrom(mapBWEM.GetArea(target.getTilePosition())) && boxDistance < unit.getEngageRadius() && boxDistance > reach;
             const auto actualDist = (useGrd ? BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition()) : boxDistance);
 
+            auto minuteScalar = Players::ZvZ() ? 8.0 : 4.0;
+
             // Make distance targeting scaling with minutes in the game
             const auto earlyScale = max(1.0, 4.0 - Util::getTime().minutes * 0.3);
             const auto dist       = exp(actualDist / (48.0 * earlyScale));
+            return dist;
+        }
 
-            const auto targetScore = healthScore(unit, target) * focusScore(unit, target) * priorityScore(unit, target) / dist;
+        double scoreTarget(UnitInfo &unit, UnitInfo &target)
+        {
+            auto health            = healthScore(unit, target);
+            auto focus             = focusScore(unit, target);
+            auto priority          = priorityScore(unit, target);
+            auto dist              = distScore(unit, target);
+            const auto targetScore = health * focus * priority / dist;
 
             // Detector targeting (distance to nearest ally added)
             if ((target.isBurrowed() || target.isCloaked()) && ((unit.getType().isDetector() && !unit.getType().isBuilding()) || unit.getType() == Terran_Comsat_Station)) {
-                auto closest = Util::getClosestUnit(target.getPosition(), PlayerState::Self,
-                                                    [&](auto &u) { return *u != unit && u->getRole() == Role::Combat && target.getType().isFlyer() ? u->getAirRange() > 0 : u->getGroundRange() > 0; });
+                if (auto closestAlly = Util::getClosestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
+                        return *u != unit && u->getRole() == Role::Combat && target.getType().isFlyer() ? u->getAirRange() > 0 : u->getGroundRange() > 0;
+                    })) {
 
-                // Detectors want to stay close to their target if we have a friendly nearby
-                if (closest && closest->getPosition().getDistance(target.getPosition()) < 480.0)
-                    return priorityScore(unit, target) / (dist * closest->getPosition().getDistance(target.getPosition()));
+                    // Detectors want to stay close to their target if we have a friendly nearby
+                    auto closestDist = closestAlly->getPosition().getDistance(target.getPosition());
+                    if (closestDist < 480.0)
+                        return priorityScore(unit, target) / (dist * closestDist);
+                }
                 return 0.0;
             }
 
@@ -488,11 +506,11 @@ namespace McRave::Targets {
             }
 
             // Defender targeting (distance not used)
-            else if (unit.getRole() == Role::Defender && boxDistance - range <= 16.0)
+            else if (unit.getRole() == Role::Defender)
                 return healthScore(unit, target) * priorityScore(unit, target);
 
             // Proximity targeting (targetScore not used)
-            else if (unit.getType() == Protoss_Reaver || unit.getType() == Zerg_Queen || unit.isLightAir() || unit.getType() == Zerg_Guardian || (unit.getType() == Zerg_Lurker && unit.isBurrowed())) {
+            else if (unit.getType().isWorker() || unit.getType() == Protoss_Reaver || unit.getType() == Zerg_Queen || unit.isLightAir() || unit.getType() == Zerg_Guardian || (unit.getType() == Zerg_Lurker && unit.isBurrowed())) {
                 if (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir())
                     return 0.1 / dist;
                 return 1.0 / dist;

@@ -377,40 +377,29 @@ namespace McRave::Walls {
                 return 0;
             }
 
-            if (Spy::getEnemyBuild() == T_2Rax) {
+            // Upwards of 5 sunkens vs marine flood
+            if (Spy::getEnemyTransition() == T_Rush)
+                return 2 + (Util::getTime() > Time(4, 20)) + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 45)) + (Util::getTime() > Time(6, 30));
 
-                // Upwards of 5 sunkens vs marine flood
-                if (Spy::getEnemyTransition() == T_Rush)
-                    return 2 + (Util::getTime() > Time(4, 20)) + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 45)) + (Util::getTime() > Time(6, 30));
+            // Need 5 sunkens to defend against 5:00 timing, then add slowly
+            if (Spy::getEnemyTransition() == T_Academy)
+                return 5 * (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 45));
 
-                // Need 5 sunkens to defend against ~5:00 timing, then add slowly
-                if (Spy::getEnemyTransition() == T_Academy)
-                    return 5 * (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 45));
-            }
+            // Need 3 sunkens to defend against 7:30 timing
+            if (Spy::getEnemyTransition() == T_3FactGoliath)
+                return 1 + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 30));
 
-            if (Spy::getEnemyBuild() == T_RaxFact) {
+            // Need 1 sunken to defend vulture threat
+            if (Spy::getEnemyTransition() == T_2PortWraith)
+                return (Util::getTime() > Time(5, 30));
 
-                // Need 3 sunkens to defend against 7:30 timing
-                if (Spy::getEnemyTransition() == T_3FactGoliath)
-                    return 1 + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 30));
+            // Need 3 sunkens to defend against tank timing
+            if (Spy::getEnemyTransition() == T_1FactTanks)
+                return (Util::getTime() > Time(7, 45)) + (Util::getTime() > Time(8, 15)) + (Util::getTime() > Time(8, 45));
 
-                // Need 1 sunken to defend vulture threat
-                if (Spy::getEnemyTransition() == T_2PortWraith)
-                    return (Util::getTime() > Time(5, 30));
-
-                // Otherwise throw down 2 if they haven't expanded by 6:00
-                if (!Spy::enemyFastExpand())
-                    return 2 * (Util::getTime() > Time(6, 00));
-            }
-
-            if (Spy::getEnemyBuild() == T_RaxCC) {
-                if (Spy::getEnemyTransition() == T_1FactTanks || !BuildOrder::isFocusUnit(Zerg_Lurker))
-                    return (Util::getTime() > Time(7, 45)) + (Util::getTime() > Time(8, 15)) + (Util::getTime() > Time(8, 45)) + (Util::getTime() > Time(9, 15)) + (Util::getTime() > Time(9, 45)) +
-                           (Util::getTime() > Time(10, 15));
-            }
-
+            // Otherwise throw down 2 if they haven't expanded by 6:00
             if (!Spy::enemyFastExpand())
-                return 2 * (Util::getTime() > Time(4, 30));
+                return 2 * (Util::getTime() > Time(6, 00));
 
             return 0;
         }
@@ -430,6 +419,8 @@ namespace McRave::Walls {
 
             if (expected > 0)
                 minimum = 1;
+            if (Util::getTime() > Time(10, 00) && expected >= 2)
+                minimum = 2;
 
             return max(minimum, expected - reduction);
         }
@@ -528,7 +519,8 @@ namespace McRave::Walls {
     int needGroundDefenses(BWEB::Wall &wall)
     {
         auto groundCount = wall.getGroundDefenseCount();
-        if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) || BuildOrder::isAllIn() || (!Combat::isDefendNatural() && wall.getStation()->isNatural()) || Stations::isPocket(wall.getStation()))
+        if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) || BuildOrder::isAllIn() || (!Combat::isDefendNatural() && wall.getStation()->isNatural()) ||
+            Stations::isPocket(wall.getStation()))
             return 0;
 
         // If any defense in the wall is severely damaged, we should build 1 extra

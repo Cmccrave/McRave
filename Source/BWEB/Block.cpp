@@ -5,6 +5,8 @@ using namespace BWAPI;
 
 namespace BWEB {
 
+    set<TilePosition> debugTiles;
+
     void Block::draw()
     {
         int color     = Broodwar->self()->getColor();
@@ -26,6 +28,9 @@ namespace BWEB {
         for (auto &tile : wideTiles) {
             Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(129, 65), color);
             Broodwar->drawTextMap(Position(tile) + Position(116, 52), "%cB", textColor);
+        }
+        for (auto &tile : debugTiles) {
+            Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(31, 31), Colors::Yellow);
         }
 
         Broodwar->drawTextMap(Position(tile), "%d, %d", w, h);
@@ -214,6 +219,12 @@ namespace BWEB::Blocks {
                 if (width == 10)
                     pieces = {Piece::Large, Piece::Large, Piece::Addon, Piece::Row, Piece::Large, Piece::Large, Piece::Addon};
             }
+            else if (height == 9) {
+                if (width == 6)
+                    pieces = {Piece::Large, Piece::Addon, Piece::Row, Piece::Large, Piece::Addon, Piece::Row, Piece::Large, Piece::Addon};
+                if (width == 10)
+                    pieces = {Piece::Large, Piece::Large, Piece::Addon, Piece::Row, Piece::Large, Piece::Large, Piece::Addon, Piece::Row, Piece::Large, Piece::Large, Piece::Addon};
+            }
         }
         return pieces;
     }
@@ -278,6 +289,14 @@ namespace BWEB::Blocks {
                     return false;
             }
         }
+
+        // Can't place too close to main choke
+        if (type == BlockType::Supply) {
+            auto center = Position(here) + Position(width * 32, height * 32);
+            if (center.getDistance(Position(Stations::getStartingMain()->getChokepoint()->Center())) < 160.0)
+                return false;
+        }
+
         return true;
     }
 
@@ -336,7 +355,8 @@ namespace BWEB::Blocks {
         }
     }
 
-    template <typename T, typename C> bool findBlock(Position start, BlockType type, int width, int height, vector<TilePosition> searchTiles, T conditions, C callback)
+    template <typename T, typename C> //
+    bool findBlock(Position start, BlockType type, int width, int height, vector<TilePosition> searchTiles, T conditions, C callback)
     {
         const auto race = Broodwar->self()->getRace();
         auto tileStart  = TilePosition(start);
@@ -406,7 +426,7 @@ namespace BWEB::Blocks {
             return true;
         };
 
-        const auto defOk = [&](TilePosition tile, const std::vector<BWEB::Piece> pieces) { return true; };
+        const auto defOk           = [&](TilePosition tile, const std::vector<BWEB::Piece> pieces) { return true; };
         const auto successCallback = [&](TilePosition tile) { return; };
 
         // Sort available tiles by distance to starting main
@@ -504,20 +524,13 @@ namespace BWEB::Blocks {
             return;
 
         const auto supplyOk = [&](TilePosition tile, const std::vector<BWEB::Piece> pieces) {
-            if (firstSupplyBlock.isValid()) {
-                if (tile.x % supplyWidth != firstSupplyBlock.x % supplyWidth || tile.y % 2 != firstSupplyBlock.y % 2)
-                    return false;
-            }
             const auto &area = Map::mapBWEM.GetArea(tile);
             if ((supplyWidth == 2 && piecePerArea[area].pieces[Piece::Small] >= 10) || (supplyWidth == 3 && piecePerArea[area].pieces[Piece::Medium] >= 25))
                 return false;
             return true;
         };
 
-        const auto successCallback = [&](TilePosition tile) {
-            if (!firstSupplyTile.isValid())
-                firstSupplyTile = tile;
-        };
+        const auto successCallback = [&](TilePosition tile) { return; };
 
         // Sort available tiles by distance to closest main
         for (auto &station : Stations::getStations()) {

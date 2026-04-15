@@ -48,7 +48,7 @@ namespace McRave::Roles {
                         health = 22;
                 }
                 if (Players::ZvT()) {
-                    health = 16;
+                    health = 6;
                     if (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0)
                         health = 22;
                 }
@@ -186,9 +186,9 @@ namespace McRave::Roles {
                 if (Players::ZvP() && sixLings && com(Zerg_Sunken_Colony) == 0 && Combat::isDefendNatural() && proxyWorker && proxyCombatUnit) {
                     forceCombatWorker(12);
                 }
-                if (Players::ZvT() && com(Zerg_Sunken_Colony) == 0 && proxyCombatWorker) {
-                    forceCombatWorker(Spy::getWorkersPulled() + 1, Positions::Invalid, LocalState::Attack, GlobalState::Retreat);
-                }
+                //if (Players::ZvT() && com(Zerg_Sunken_Colony) == 0 && proxyCombatWorker) {
+                //    forceCombatWorker(Spy::getWorkersPulled() + 1, Positions::Invalid, LocalState::Attack, GlobalState::Retreat);
+                //}
                 return;
             }
 
@@ -201,7 +201,7 @@ namespace McRave::Roles {
                     if (earlyPool || moreLings) {
                         if (Util::getTime() > Time(2, 45) && Util::getTime() < Time(3, 30) && BuildOrder::getCurrentOpener() == Z_12Pool && total(Zerg_Zergling) < 20 &&
                             int(Stations::getStations(PlayerState::Self).size()) >= 2)
-                            forceCombatWorker(2, Terrain::getNaturalPosition(), LocalState::None, GlobalState::Retreat);
+                            forceCombatWorker(2);
                     }
                 }
                 else {
@@ -209,7 +209,7 @@ namespace McRave::Roles {
                     auto defendSunkens = Util::getTime() < Time(3, 00) && proxyThreateningUnit && !sixLings;
 
                     if (earlyPool && defendSunkens)
-                        forceCombatWorker(10, Terrain::getMainPosition(), LocalState::Attack, GlobalState::Attack);
+                        forceCombatWorker(10);
                 }
             }
 

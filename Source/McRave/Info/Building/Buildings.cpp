@@ -116,6 +116,13 @@ namespace McRave::Buildings {
                 building.unit()->cancelConstruction();
             }
 
+            // Cancelling hatchery if against an all-in worker rush
+            auto workerRush = Spy::getEnemyBuild() != T_2Rax && Spy::getEnemyTransition() == U_WorkerRush;
+            if (naturalHatch && workerRush) {
+                Events::onUnitCancelBecauseBWAPISucks(building);
+                building.unit()->cancelConstruction();
+            }
+
             // Cancelling colonies we don't need now
             if (building.getType() == Zerg_Creep_Colony) {
             }

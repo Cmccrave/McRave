@@ -66,7 +66,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Make less if we have some other units outside our opening
         if (total(Zerg_Zergling) >= 10 && vis(Zerg_Zergling) >= 6) {
-            arrivalValue -= vis(Zerg_Mutalisk);
+            arrivalValue -= vis(Zerg_Mutalisk) * 4;
             arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 6.0;
         }
 
@@ -268,6 +268,7 @@ namespace McRave::BuildOrder::Zerg {
         auto firstMutaPump    = com(Zerg_Spire) > 0 && !firstScourgePump && (total(Zerg_Mutalisk) < 9 || unitPressure[Zerg_Mutalisk]);
         auto secondMutaPump   = com(Zerg_Spire) > 0 && vis(Zerg_Drone) >= softDroneCap;
         auto firstHydraPump   = com(Zerg_Hydralisk_Den) > 0 && total(Zerg_Hydralisk) < 2 && Researching::haveOrResearching(Lurker_Aspect);
+        auto firstLurkerPump  = com(Zerg_Hydralisk) > 0 && Researching::haveResearch(Lurker_Aspect);
 
         // Pumping
         zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < softDroneCap && com(Zerg_Spawning_Pool) > 0;
@@ -275,7 +276,7 @@ namespace McRave::BuildOrder::Zerg {
         zergUnitPump[Zerg_Scourge]   = firstScourgePump;
         zergUnitPump[Zerg_Mutalisk]  = firstMutaPump || secondMutaPump;
         zergUnitPump[Zerg_Hydralisk] = firstHydraPump;
-        zergUnitPump[Zerg_Lurker]    = true;
+        zergUnitPump[Zerg_Lurker]    = firstLurkerPump;
 
         // Gas
         gasLimit = gasMax();
@@ -320,8 +321,5 @@ namespace McRave::BuildOrder::Zerg {
             if (currentTransition == Z_1HatchLurker)
                 ZvT_1HatchLurker();
         }
-
-        // Testing this
-        buildQueue[Zerg_Drone] |= (Spy::getEnemyTransition() == U_WorkerRush && vis(Zerg_Drone) < 15);
     }
 } // namespace McRave::BuildOrder::Zerg

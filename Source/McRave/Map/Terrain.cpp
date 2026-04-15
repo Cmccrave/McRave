@@ -50,6 +50,7 @@ namespace McRave::Terrain {
         // Chokepoints
         map<const BWEM::ChokePoint *const, double> chokeAngles;
         map<const BWEM::ChokePoint *const, Position> chokeCenters;
+        const vector<WalkPosition> directions = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
 
         void findEnemy()
         {
@@ -424,7 +425,7 @@ namespace McRave::Terrain {
             // 6. Store true center and angle
             auto c1 = Position(tester1) + Position(4, 4);
             auto c2 = Position(tester2) + Position(4, 4);
-            if (Terrain::inArea(Terrain::getMainArea(), c1)) {
+            if (Terrain::inArea(Terrain::getMainArea(), c1) || Terrain::inArea(Terrain::getNaturalPosition(), c2)) {
                 chokeCenters[Terrain::getMainChoke()] = c1;
                 chokeAngles[getMainChoke()]           = BWEB::Map::getAngle(c2, c1);
                 mainRamp.entrance                     = c1;
@@ -491,17 +492,7 @@ namespace McRave::Terrain {
 
         void drawTerritory()
         {
-            if (false) {
-                for (int x = 0; x < Broodwar->mapWidth() * 4; x++) {
-                    for (int y = 0; y < Broodwar->mapHeight() * 4; y++) {
-                        auto w = WalkPosition(x, y);
-                        if (w.isValid() && !mapBWEM.GetArea(w))
-                            Visuals::drawBox(w, w + WalkPosition(1, 1), Colors::Red, true);
-                    }
-                }
-            }
-
-            if (true) {
+            if (true && Util::getMousePosition().isValid()) {
                 auto closestChoke = Util::getClosestChokepoint(Util::getMousePosition());
                 if (closestChoke) {
                     for (auto &w : closestChoke->Geometry()) {

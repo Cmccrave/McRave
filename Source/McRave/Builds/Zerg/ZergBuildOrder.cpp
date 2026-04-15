@@ -171,7 +171,7 @@ namespace McRave::BuildOrder::Zerg {
                     if (grdNeeded > 0)
                         needSunks = true;
 
-                    if ((atPercent(Zerg_Spawning_Pool, 0.66) && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
+                    if ((vis(Zerg_Spawning_Pool) > 0 && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
                         buildQueue[Zerg_Creep_Colony] = colonyCount + 1;
                         LOG_SLOW("Station ", i, " needs a sunken/spore");
                         i++;

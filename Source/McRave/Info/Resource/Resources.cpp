@@ -1,10 +1,10 @@
 #include "Resources.h"
 
-#include "Main/Common.h"
 #include "Info/Resource/ResourceInfo.h"
 #include "Info/Unit/UnitInfo.h"
-#include "Map/Terrain.h"
+#include "Main/Common.h"
 #include "Map/Stations.h"
+#include "Map/Terrain.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -25,17 +25,17 @@ namespace McRave::Resources {
         int maxMin;
         string mapName, myRaceChar;
 
-        void updateIncome(const shared_ptr<ResourceInfo>& r)
+        void updateIncome(const shared_ptr<ResourceInfo> &r)
         {
             auto &resource = *r;
-            auto cnt = resource.getGathererCount();
+            auto cnt       = resource.getGathererCount();
             if (resource.getType().isMineralField())
                 incomeMineral += cnt == 1 ? 65 : 126;
             else
                 incomeGas += resource.getRemainingResources() ? 103 * cnt : 26 * cnt;
         }
 
-        void updateInformation(const shared_ptr<ResourceInfo>& r)
+        void updateInformation(const shared_ptr<ResourceInfo> &r)
         {
             auto &resource = *r;
             resource.updateResource();
@@ -61,18 +61,15 @@ namespace McRave::Resources {
             // Update resource state
             if (resource.hasStation()) {
                 resource.setResourceState(ResourceState::None);
-                auto base = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
-                    return u->getType().isResourceDepot() && u->getPosition() == resource.getStation()->getBase()->Center();
-                });
+                auto base = Util::getClosestUnit(resource.getPosition(), PlayerState::Self,
+                                                 [&](auto &u) { return u->getType().isResourceDepot() && u->getPosition() == resource.getStation()->getBase()->Center(); });
 
                 if (base) {
                     auto baseCompletion = base->unit()->getRemainingBuildTime();
                     resource.setResourceState(ResourceState::Assignable);
 
                     if (resource.getType().isMineralField()) {
-                        auto worker = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
-                            return u->getType().isWorker();
-                        });
+                        auto worker = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) { return u->getType().isWorker(); });
 
                         if (worker) {
                             auto workerArrival = worker->getPosition().getDistance(resource.getPosition()) / worker->getSpeed();
@@ -91,7 +88,7 @@ namespace McRave::Resources {
                 }
             }
 
-            // Update saturation            
+            // Update saturation
             if (resource.getType().isMineralField() && resource.getResourceState() != ResourceState::None)
                 miners += resource.getGathererCount();
             else if (resource.getType() == geyserType && resource.unit()->isCompleted() && resource.getResourceState() != ResourceState::None)
@@ -100,7 +97,7 @@ namespace McRave::Resources {
             if (!resource.isBoulder()) {
                 if (resource.getResourceState() == ResourceState::Mineable || resource.getResourceState() == ResourceState::Assignable) {
                     resource.getType().isMineralField() ? mineralCount++ : gasCount++;
-                    resource.getType().isMineralField() ? maxMin+=resource.getWorkerCap() : maxGas+=resource.getWorkerCap();
+                    resource.getType().isMineralField() ? maxMin += resource.getWorkerCap() : maxGas += resource.getWorkerCap();
                 }
 
                 for (auto &w : resource.targetedByWhat()) {
@@ -115,13 +112,13 @@ namespace McRave::Resources {
         void updateResources()
         {
             mineralCount = 0;
-            gasCount = 0;
-            miners = 0;
-            gassers = 0;
-            maxGas = 0;
-            maxMin = 0;
+            gasCount     = 0;
+            miners       = 0;
+            gassers      = 0;
+            maxGas       = 0;
+            maxMin       = 0;
 
-            const auto update = [&](const shared_ptr<ResourceInfo>& r) {
+            const auto update = [&](const shared_ptr<ResourceInfo> &r) {
                 updateInformation(r);
                 updateIncome(r);
             };
@@ -133,20 +130,19 @@ namespace McRave::Resources {
             for (auto &r : myGas)
                 update(r);
 
-            mineralSat = miners >= maxMin;
+            mineralSat     = miners >= maxMin;
             halfMineralSat = miners >= mineralCount;
-            gasSat = gassers >= maxGas;
-            halfGasSat = gassers >= gasCount;
+            gasSat         = gassers >= maxGas;
+            halfGasSat     = gassers >= gasCount;
         }
 
         void updateDrilling()
         {
             static Time drillTime = Time(0, -05);
-            static bool drillFar = true;
-            // TODO: Drill per station
+            static bool drillFar  = true;
 
-            // Latch in drill choice every 4 seconds
-            if (Util::getTime() - drillTime < Time(0, 04))
+            // Latch in drill choice every 5 seconds or after a worker attacks
+            if (Util::getTime() - drillTime < Time(0, 05))
                 return;
 
             bool threat = false;
@@ -159,19 +155,19 @@ namespace McRave::Resources {
 
             // If there's a threat, find a new drill mineral
             if (threat) {
-                auto distBest = drillFar ? 0.0 : DBL_MAX;
-                ResourceInfo * ptr = nullptr;
+                auto distBest     = drillFar ? 0.0 : DBL_MAX;
+                ResourceInfo *ptr = nullptr;
                 for (auto &mineral : myMinerals) {
-                    auto dist = mineral->getPosition().getDistance(Position(Terrain::getMainChoke()->Center()));
+                    auto dist   = mineral->getPosition().getDistance(Position(Terrain::getMainChoke()->Center()));
                     auto better = mineral->getResourceState() == ResourceState::Mineable && ((dist < distBest && !drillFar) || (dist > distBest && drillFar));
                     if (better) {
                         distBest = dist;
-                        ptr = &*mineral;
+                        ptr      = &*mineral;
                     }
                 }
 
                 if (ptr) {
-                    drillFar = !drillFar;
+                    drillFar  = !drillFar;
                     ptr->safe = true;
                     drillTime = Util::getTime();
                 }
@@ -181,11 +177,11 @@ namespace McRave::Resources {
             if (!threat)
                 drillFar = false;
         }
-    }
+    } // namespace
 
     void recheckSaturation()
     {
-        miners = 0;
+        miners  = 0;
         gassers = 0;
 
         for (auto &r : myMinerals) {
@@ -198,10 +194,10 @@ namespace McRave::Resources {
             gassers += resource.getGathererCount();
         }
 
-        mineralSat = miners >= maxMin;
+        mineralSat     = miners >= maxMin;
         halfMineralSat = miners >= mineralCount;
-        gasSat = gassers >= maxGas;
-        halfGasSat = gassers >= gasCount;
+        gasSat         = gassers >= maxGas;
+        halfGasSat     = gassers >= gasCount;
     }
 
     void onFrame()
@@ -270,7 +266,7 @@ namespace McRave::Resources {
 
     void storeResource(Unit resource)
     {
-        auto info = ResourceInfo(resource);
+        auto info          = ResourceInfo(resource);
         auto &resourceList = (!info.isBoulder() ? (resource->getType().isMineralField() ? myMinerals : myGas) : myBoulders);
 
         // Check if we already stored this resource
@@ -334,7 +330,7 @@ namespace McRave::Resources {
     bool isHalfMineralSaturated() { return halfMineralSat; }
     bool isGasSaturated() { return gasSat; }
     bool isHalfGasSaturated() { return halfGasSat; }
-    set<shared_ptr<ResourceInfo>>& getMyMinerals() { return myMinerals; }
-    set<shared_ptr<ResourceInfo>>& getMyGas() { return myGas; }
-    set<shared_ptr<ResourceInfo>>& getMyBoulders() { return myBoulders; }
-}
+    set<shared_ptr<ResourceInfo>> &getMyMinerals() { return myMinerals; }
+    set<shared_ptr<ResourceInfo>> &getMyGas() { return myGas; }
+    set<shared_ptr<ResourceInfo>> &getMyBoulders() { return myBoulders; }
+} // namespace McRave::Resources

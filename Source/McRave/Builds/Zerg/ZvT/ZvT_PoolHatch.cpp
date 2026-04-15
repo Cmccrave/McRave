@@ -33,7 +33,7 @@ namespace McRave::BuildOrder::Zerg {
     void ZvT_PH_Overpool()
     {
         // 9o 9p
-        transitionReady = hatchCount() >= 2;
+        transitionReady = Spy::getEnemyTransition() == U_WorkerRush ? com(Zerg_Sunken_Colony) > 0 : hatchCount() >= 2;
         scout           = scout || (hatchCount() >= 2);
 
         auto secondHatch = Spy::getEnemyTransition() == U_WorkerRush ? com(Zerg_Zergling) >= 4 : (s >= 22);
