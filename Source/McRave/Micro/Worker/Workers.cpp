@@ -116,17 +116,18 @@ namespace McRave::Workers {
             // Find safe stations to mine resources from
             if (auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self)) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
-                    bool safe = true;
-                    for (auto &mineral : Resources::getMyMinerals()) {
-                        if (mineral->getResourceState() == ResourceState::Mineable || mineral->getResourceState() == ResourceState::Assignable) {
-                            if (mineral->isThreatened()) {
-                                safe = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (safe)
+
+                    // If unit is close, it must be safe
+                    if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(unit.getTilePosition()) == station->getBase()->GetArea() ||
+                        Util::getTime() < Time(3, 30))
                         safeStations.push_back(station);
+
+                    else {
+                        auto &path     = Stations::getPathBetween(closestStation, station);
+                        auto threatPos = Util::findPointOnPath(path, [&](auto &t) { return Grids::getGroundThreat(t, PlayerState::Enemy) > 0.0; });
+                        if (!threatPos)
+                            safeStations.push_back(station);
+                    }
                 }
             }
             return safeStations;
@@ -313,7 +314,7 @@ namespace McRave::Workers {
                     auto nearby           = unit.getPosition().getDistance(center) < 160.0 && (unit.unit()->isCarryingMinerals() || unit.unit()->isCarryingGas());
 
                     if (builderClose && canAfford && (adjacentPlanning || nearby)) {
-                        auto destination = Util::shiftTowards(center, unit.getPosition(), 96.0);
+                        auto destination = Util::shiftTowards(center, unit.getPosition(), 160.0);
                         unit.setDestination(destination);
                         Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Green);
                     }

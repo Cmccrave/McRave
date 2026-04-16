@@ -20,9 +20,7 @@ namespace McRave::BuildOrder::Terran {
         bool againstRandom = false;
         bool needTurrets   = false;
 
-        void queueWallDefenses() {}
-
-        void queueStationDefenses()
+        void queueDefenses()
         {
             // Adding Station Defenses
             for (auto &station : Stations::getStations(PlayerState::Self)) {
@@ -104,13 +102,21 @@ namespace McRave::BuildOrder::Terran {
             // If we're not in our opener
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                expandDesired                = (focusUnit == None && Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Terran_Command_Center) >= 3) &&
-                                 (techSat || com(Terran_Command_Center) >= 3) && productionSat) ||
-                                (com(Terran_Command_Center) >= 2 && availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated())) ||
-                                (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2) ||
-                                (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1);
+                const auto incompleteProd    = vis(rampType) - com(rampType);
+                const auto waitForMinerals   = 300 + (100 * incompleteProd);
+                const auto resourceSat       = availableMinerals >= waitForMinerals && Resources::isMineralSaturated() && Resources::isGasSaturated();
+                const auto excessResources   = availableMinerals >= waitForMinerals * 2;
 
-                buildQueue[Terran_Command_Center] = vis(Terran_Command_Center) + expandDesired;
+                auto selfCount  = Stations::getStations(PlayerState::Self).size();
+                auto enemyCount = Stations::getStations(PlayerState::Enemy).size();
+
+                expandDesired = (resourceSat && techSat && productionSat && Stations::getMiningStationsCount() <= 5) //
+                                || (excessResources && productionSat)                                                //
+                                || (selfCount >= 4 && Stations::getMiningStationsCount() <= 2)                       //
+                                || (selfCount >= 4 && Stations::getGasingStationsCount() <= 1)                       //
+                                || (Stations::getMiningStationsCount() < 2 && Util::getTime() > Time(12, 00));
+
+                buildQueue[Terran_Command_Center] = com(Terran_Command_Center) + expandDesired;
             }
         }
 
@@ -137,7 +143,7 @@ namespace McRave::BuildOrder::Terran {
                 // Bio play
                 if (rampType == Terran_Barracks) {
                     auto maxRax     = 10;
-                    auto raxPerBase = 3;
+                    auto raxPerBase = 2.5;
                     productionSat   = (vis(Terran_Barracks) >= int(raxPerBase * vis(Terran_Command_Center)) || vis(Terran_Command_Center) >= maxRax);
                     rampDesired     = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
 
@@ -243,18 +249,49 @@ namespace McRave::BuildOrder::Terran {
 
     void tech()
     {
-        auto techVal = int(focusUnits.size());
-        techSat      = (techVal > com(Terran_Command_Center));
-        unitOrder    = {Terran_Vulture, Terran_Siege_Tank_Tank_Mode};
-        getTech      = !inOpening && !techSat;
+        getTech = false;
+        if (inOpening)
+            return;
 
-        if (Players::TvZ())
-            unitOrder = {Terran_Medic, Terran_Science_Vessel};
-        if (Players::TvP())
-            unitOrder = {Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Science_Vessel};
-        if (Players::TvT())
-            unitOrder = {Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Science_Vessel};
+        auto techOffset = 0;
 
+        // TvZ
+        if (Players::TvZ()) {
+            techOffset = 0;
+            unitOrder  = {Terran_Medic, Terran_Science_Vessel};
+        }
+
+        // TvP
+        if (Players::TvP()) {
+            techOffset = 1;
+            unitOrder  = {Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Science_Vessel};
+        }
+
+        // TvT
+        if (Players::TvT()) {
+            techOffset = 1;
+            unitOrder  = {Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Science_Vessel};
+        }
+
+        // TvFFA
+        if (Players::TvFFA()) {
+            techOffset = 1;
+            unitOrder  = {Terran_Vulture, Terran_Siege_Tank_Tank_Mode, Terran_Science_Vessel};
+        }
+
+        // Ensure anything we already made is added into the list
+        for (auto unit : unitOrder) {
+            if (unlockReady(unit))
+                focusUnits.insert(unit);
+        }
+
+        // Adding tech
+        const auto endOfTech   = !unitOrder.empty() && isFocusUnit(unitOrder.back());
+        const auto techVal     = int(focusUnits.size()) + techOffset;
+        const auto readyToTech = (vis(Terran_Refinery) > 0 || int(Stations::getStations(PlayerState::Self).size()) >= 3 || focusUnits.empty()) && vis(Terran_SCV) >= 20;
+        techSat                = (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
+
+        getTech = readyToTech && !techSat && productionSat;
         getNewTech();
         getTechBuildings();
     }
@@ -262,8 +299,7 @@ namespace McRave::BuildOrder::Terran {
     void situational()
     {
         // Queue up defenses
-        queueWallDefenses();
-        queueStationDefenses();
+        queueDefenses();
 
         // Queue up supply, upgrade structures
         queueSupply();
@@ -322,14 +358,13 @@ namespace McRave::BuildOrder::Terran {
 
             if (rampType == Terran_Factory) {
                 priorityOrder = {
-                    {Terran_SCV, 30},           {Terran_Siege_Tank_Tank_Mode, 2},  {Terran_Vulture, 2},  {Terran_Goliath, 1},
-                    {Terran_Science_Vessel, 1}, {Terran_Siege_Tank_Tank_Mode, 4},  {Terran_Vulture, 8},  {Terran_Goliath, 2},
-
-                    {Terran_SCV, 45},           {Terran_Siege_Tank_Tank_Mode, 8},  {Terran_Vulture, 16}, {Terran_Goliath, 4},
-                    {Terran_Science_Vessel, 2}, {Terran_Siege_Tank_Tank_Mode, 16}, {Terran_Vulture, 24}, {Terran_Goliath, 4},
-
-                    {Terran_SCV, 60},           {Terran_Siege_Tank_Tank_Mode, 32}, {Terran_Vulture, 32}, {Terran_Goliath, 6},
-                    {Terran_Science_Vessel, 3},
+                    {Terran_SCV, 60},                                                                   // CC
+                    {Terran_Vulture, 2},        {Terran_Goliath, 1}, {Terran_Siege_Tank_Tank_Mode, 2},  // Factory
+                    {Terran_Vulture, 8},        {Terran_Goliath, 2}, {Terran_Siege_Tank_Tank_Mode, 4},  //
+                    {Terran_Vulture, 16},       {Terran_Goliath, 4}, {Terran_Siege_Tank_Tank_Mode, 8},  //
+                    {Terran_Vulture, 24},       {Terran_Goliath, 4}, {Terran_Siege_Tank_Tank_Mode, 16}, //
+                    {Terran_Vulture, 32},       {Terran_Goliath, 6}, {Terran_Siege_Tank_Tank_Mode, 32}, //
+                    {Terran_Science_Vessel, 3},                                                         // Starport
                 };
 
                 // Swap tank/goliath count vs carriers
@@ -347,15 +382,12 @@ namespace McRave::BuildOrder::Terran {
 
             if (rampType == Terran_Barracks) {
                 priorityOrder = {
-                    {Terran_SCV, 30},
-
-                    {Terran_Marine, 5},  {Terran_Medic, 1},   {Terran_Science_Vessel, 6},
-
-                    {Terran_Marine, 10}, {Terran_Medic, 3},
-
-                    {Terran_SCV, 45},    {Terran_Marine, 20}, {Terran_Medic, 6},          {Terran_Marine, 40}, {Terran_Medic, 8},
-
-                    {Terran_SCV, 60},    {Terran_Marine, 80}, {Terran_Medic, 12},
+                    {Terran_SCV, 60},                              // CC
+                    {Terran_Marine, 5},        {Terran_Medic, 2},  // Rax
+                    {Terran_Marine, 20},       {Terran_Medic, 6},  //
+                    {Terran_Marine, 40},       {Terran_Medic, 8},  //
+                    {Terran_Marine, 80},       {Terran_Medic, 12}, //
+                    {Terran_Science_Vessel, 6}                     // Starport
                 };
             }
 

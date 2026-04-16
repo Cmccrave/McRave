@@ -126,9 +126,10 @@ namespace McRave::Combat::Formations {
         }
 
         // Flying formations - mostly just avoiding splash with a circle
-        if (commander->isFlying()) {
+        if (commander->isFlying() && commander->hasTarget()) {
+            formation.angle  = BWEB::Map::getAngle(cluster.marchPosition, cluster.retreatPosition);
             formation.radius = max(commander->getGroundRange(), commander->getAirRange()) + 32.0;
-            formation.center = cluster.marchPosition; // Should be marchNavigation, but we are trying to do avoidance right now
+            formation.center = commander->getTarget().lock()->getPosition(); // Should be marchNavigation, but we are trying to do avoidance right now
         }
     }
 
@@ -183,7 +184,7 @@ namespace McRave::Combat::Formations {
         if (closestUnit) {
             // Util::findWalkable(*closestUnit, p);
             closestUnit->setFormation(p);
-            //::drawLine(closestUnit->getPosition(), p, Colors::Green);
+            //Visuals::drawLine(closestUnit->getPosition(), p, Colors::Green);
         }
     }
 
@@ -296,9 +297,7 @@ namespace McRave::Combat::Formations {
         auto radsPerUnit   = (double(max(commander->getType().width(), commander->getType().height()) + 2) / formation.radius);
 
         if (commander->isFlying())
-            radsPerUnit = M_PI_T2 / cluster.units.size();
-        // formation.center = Util::shiftTowards(cluster.avgPosition, formation.start, formation.radius);
-        // formation.radius = max(formation.radius, 160.0);
+            radsPerUnit = M_PI / cluster.units.size();
 
         auto pRads = formation.angle;
         auto nRads = formation.angle;
@@ -332,7 +331,7 @@ namespace McRave::Combat::Formations {
         formationSetup(formation, cluster);
         if (auto commander = cluster.commander.lock()) {
             if (commander && commander->isFlying() && commander->attemptingAvoidance()) {
-                generateConcavePositions(formation, cluster, M_PI_T2);
+                generateConcavePositions(formation, cluster, M_PI);
             }
             else {
                 generateConcavePositions(formation, cluster, 1.3);

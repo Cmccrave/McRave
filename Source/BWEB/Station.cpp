@@ -21,12 +21,56 @@ namespace BWEB {
 
     void Station::addResourceReserves()
     {
-        const auto biggerReserve = [&](Unit resource, TilePosition start, TilePosition end) {
+        auto closestTiles = [&](Unit resource) {
+            const int aw = 4;
+            const int ah = 3;
+
+            int ax1 = base->Location().x;
+            int ay1 = base->Location().y;
+            int ax2 = ax1 + aw - 1;
+            int ay2 = ay1 + ah - 1;
+
+            BWAPI::TilePosition bTopLeft = resource->getTilePosition();
+            int bw                       = resource->getType().tileWidth();
+            int bh                       = resource->getType().tileHeight();
+
+            int bx1 = bTopLeft.x;
+            int by1 = bTopLeft.y;
+            int bx2 = bx1 + bw - 1;
+            int by2 = by1 + bh - 1;
+
+            int tileAx = (ax1 + ax2) / 2;
+            int tileAy = (ay1 + ay2) / 2;
+            int tileBx = (bx1 + bx2) / 2;
+            int tileBy = (by1 + by2) / 2;
+
+            if (ax2 < bx1) {
+                tileAx = ax2;
+                tileBx = bx1;
+            }
+            else if (bx2 < ax1) {
+                tileAx = ax1;
+                tileBx = bx2;
+            }
+
+            if (ay2 < by1) {
+                tileAy = ay2;
+                tileBy = by1;
+            }
+            else if (by2 < ay1) {
+                tileAy = ay1;
+                tileBy = by2;
+            }
+
+            return std::make_pair(BWAPI::TilePosition(tileAx, tileAy), BWAPI::TilePosition(tileBx, tileBy));
+        };
+
+        const auto biggerReserve = [&](TilePosition start, TilePosition end) {
             vector<TilePosition> directions{{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
             TilePosition next = start;
             Position pEnd     = Position(end);
 
-            while (next != end) {
+            while (next.getDistance(end) > 1) {
                 auto distBest = DBL_MAX;
                 start         = next;
                 int itrcount  = 0;
@@ -44,7 +88,6 @@ namespace BWEB {
                         itrcount++;
                     }
                 }
-
                 auto size = 1;
                 Map::addReserve(next, size, size);
             }
@@ -53,16 +96,13 @@ namespace BWEB {
         // Add reserved tiles
         for (auto &m : base->Minerals()) {
             Map::addReserve(m->TopLeft(), 2, 1);
-            for (int x = 0; x < 2; x++) {
-                biggerReserve(m->Unit(), m->Unit()->getTilePosition() + TilePosition(x, 0), TilePosition(base->Center()));
-            }
+            auto tilePair = closestTiles(m->Unit());
+            biggerReserve(tilePair.first, tilePair.second);
         }
         for (auto &g : base->Geysers()) {
             Map::addReserve(g->TopLeft(), 4, 2);
-            for (int x = 0; x < 4; x++) {
-                for (int y = 0; y < 2; y++)
-                    biggerReserve(g->Unit(), g->Unit()->getTilePosition() + TilePosition(x, y), TilePosition(base->Center()));
-            }
+            auto tilePair = closestTiles(g->Unit());
+            biggerReserve(tilePair.first, tilePair.second);
         }
     }
 

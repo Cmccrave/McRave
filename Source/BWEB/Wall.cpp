@@ -188,7 +188,6 @@ namespace BWEB {
         // Iteration attempts move buildings closer
         auto iteration    = 0;
         auto maxIteration = 1;
-        auto hatchOffset  = requireTight ? 6 : 0;
 
         if (station->isNatural() && Broodwar->self()->getRace() == Races::Protoss) {
             iteration    = 1;
@@ -229,7 +228,7 @@ namespace BWEB {
                 // Shift positions based on chokepoint offset and iteration
                 auto diffX = !maintainShape ? TilePosition(choke->Center()).x - wallLocation.x : 0;
                 auto diffY = -iteration;
-                wallOffset = TilePosition(0, -iteration - hatchOffset);
+                wallOffset = TilePosition(0, -iteration);
                 adjustOrder(lrgOrder, TilePosition(diffX, diffY));
                 adjustOrder(medOrder, TilePosition(diffX, diffY));
                 adjustOrder(smlOrder, TilePosition(diffX, diffY));
@@ -252,7 +251,7 @@ namespace BWEB {
                 // Shift positions based on iteration
                 auto diffX = -iteration;
                 auto diffY = -iteration;
-                wallOffset = TilePosition(-iteration - hatchOffset, -iteration - hatchOffset);
+                wallOffset = TilePosition(-iteration - 2, -iteration - 2);
                 adjustOrder(lrgOrder, TilePosition(diffX, diffY));
                 adjustOrder(medOrder, TilePosition(diffX, diffY));
                 adjustOrder(smlOrder, TilePosition(diffX, diffY));
@@ -282,7 +281,7 @@ namespace BWEB {
                 // Shift positions based on chokepoint offset and iteration
                 auto diffX = -iteration;
                 auto diffY = !maintainShape ? TilePosition(choke->Center()).y - wallLocation.y : 0;
-                wallOffset = TilePosition(-iteration - hatchOffset, 0);
+                wallOffset = TilePosition(-iteration, 0);
                 adjustOrder(lrgOrder, TilePosition(diffX, diffY));
                 adjustOrder(medOrder, TilePosition(diffX, diffY));
                 adjustOrder(smlOrder, TilePosition(diffX, diffY));
@@ -291,14 +290,14 @@ namespace BWEB {
             // Flip them vertically / horizontally as needed
             const auto flipPositions = [&](auto &tryOrder, auto type) {
                 if (flipVertical) {
-                    wallOffset = TilePosition(wallOffset.x, iteration + hatchOffset);
+                    wallOffset = TilePosition(wallOffset.x, iteration);
                     for (auto &placement : tryOrder) {
                         auto diff   = 3 - type.tileHeight();
                         placement.y = -(placement.y - diff);
                     }
                 }
                 if (flipHorizontal) {
-                    wallOffset = TilePosition(iteration + hatchOffset, wallOffset.y);
+                    wallOffset = TilePosition(iteration, wallOffset.y);
                     for (auto &placement : tryOrder) {
                         auto diff   = 4 - type.tileWidth();
                         placement.x = -(placement.x - diff);
@@ -379,6 +378,7 @@ namespace BWEB {
             dx = 1;
             dy = -1;
             oy = offset;
+            width-=2;
         }
 
         const auto addToList = [&](int i) {
@@ -408,7 +408,7 @@ namespace BWEB {
         // Add wall defenses to the set
         for (auto &placement : wallPlacements) {
             auto tile = base->Location() + placement;
-            if (Map::isPlaceable(defenseType, tile) && !isWallReserved(tile, defenseType) && (layer == 1 || !Map::isReserved(tile, 2, 2))) {
+            if (Map::isPlaceable(defenseType, tile) && !isWallReserved(tile, defenseType) && (layer == 1 || !Map::isReserved(tile, 2, 2) || station->getDefenses().find(tile) != station->getDefenses().end())) {
                 addWallReserve(tile, defenseType);
                 defenses[0].insert(tile);
                 defenses[layer].insert(tile);
@@ -535,10 +535,12 @@ namespace BWEB {
         }
 
         // Draw the line and angle of the ChokePoint
-        auto p1 = choke->Pos(choke->end1);
-        auto p2 = choke->Pos(choke->end2);
-        Broodwar->drawTextMap(Position(choke->Center()), "%c%.2f", Text::Grey, defenseAngle);
-        Broodwar->drawLineMap(Position(p1), Position(p2), Colors::Grey);
+        //auto p1 = choke->Pos(choke->end1);
+        //auto p2 = choke->Pos(choke->end2);
+        //Broodwar->drawTextMap(Position(choke->Center()), "%c%.2f", Text::Grey, defenseAngle);
+        //Broodwar->drawLineMap(Position(p1), Position(p2), Colors::Grey);
+
+        Broodwar->drawTextMap(Position(choke->Center()), "%d", Map::mapBWEM.GetTTile(choke->Center()).Altitude());
     }
 } // namespace BWEB
 

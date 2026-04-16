@@ -20,7 +20,6 @@ namespace McRave::Learning {
         bool mapLearning;
         vector<Build> myBuilds;
         stringstream ss;
-        string mapName;
         string noStats;
         string myRaceChar, enemyRaceChar;
         string version;
@@ -335,7 +334,7 @@ namespace McRave::Learning {
                 PoolHatch.setOpeners({Z_12Pool, Z_Overpool});
                 PoolHatch.setTransitions({Z_2HatchMuta /*, Z_2HatchHydra*/});
 
-                PoolLair.setOpeners({Z_9Pool, Z_Overpool});
+                PoolLair.setOpeners({Z_9Pool, Z_Overpool, Z_Gaspool});
                 PoolLair.setTransitions({Z_1HatchMuta});
 
                 myBuilds = {PoolHatch, PoolLair};
@@ -430,7 +429,7 @@ namespace McRave::Learning {
         ofstream gameLog("bwapi-data/write/" + gameInfoExtension, std::ios_base::app);
 
         // Who won on what map in how long
-        gameLog << (isWinner ? "Won" : "Lost") << "," << mapName << "," << std::setfill('0') << Util::getTime().minutes << ":" << std::setw(2) << Util::getTime().seconds << ",";
+        gameLog << (isWinner ? "Won" : "Lost") << "," << Util::getMapName() << "," << std::setfill('0') << Util::getTime().minutes << ":" << std::setw(2) << Util::getTime().seconds << ",";
 
         // What strategies were used/detected
         gameLog << Spy::getEnemyBuild() << "," << Spy::getEnemyOpener() << "," << Spy::getEnemyTransition() << "," << currentBuild << "," << currentOpener << "," << currentTransition << ",";
@@ -466,20 +465,11 @@ namespace McRave::Learning {
             return;
         }
 
-        // Grab only the alpha characters from the map name to remove version numbers
-        for (auto &c : Broodwar->mapFileName()) {
-            if (isalpha(c))
-                mapName.push_back(c);
-            if (c == '.')
-                break;
-        }
-        LOG("New game on " + mapName);
-
         // File extension including our race initial;
         mapLearning       = false;
         myRaceChar        = {*Broodwar->self()->getRace().c_str()};
         enemyRaceChar     = {*Broodwar->enemy()->getRace().c_str()};
-        version           = "BASIL_2024_2";
+        version           = "BASIL_2026_1";
         noStats           = " 0 0 ";
         learningExtension = myRaceChar + "v" + enemyRaceChar + "_" + Broodwar->enemy()->getName() + "_" + version + " Learning.txt";
         gameInfoExtension = myRaceChar + "v" + enemyRaceChar + "_" + Broodwar->enemy()->getName() + "_" + version + " Info.txt";

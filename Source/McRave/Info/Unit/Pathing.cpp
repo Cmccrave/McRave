@@ -174,6 +174,15 @@ namespace McRave::Pathing {
             static set<UnitType> allowedTypes = {Zerg_Zergling, Protoss_Zealot};
             auto biasTowards                  = enemy.getPosition() + Position(int(enemy.unit()->getVelocityX() * 24.0), int(enemy.unit()->getVelocityY() * 24.0));
 
+            // Need at least 5 units targeting to surround
+            auto cnt = 0;
+            for (auto &targeter : enemy.getUnitsTargetingThis()) {
+                if (Util::contains(allowedTypes, targeter.lock()->getType()))
+                    cnt++;            
+            }
+            if (cnt < 5)
+                return;
+
             auto assignPosition = [&](UnitInfo &unit, Position pos) {
                 double distToBias = enemy.getPosition().getDistance(biasTowards);
                 double distToPos  = enemy.getPosition().getDistance(pos);

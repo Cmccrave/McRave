@@ -58,6 +58,8 @@ namespace McRave::Util {
 
     Time getTime();
 
+    std::string getMapName();
+
     void onStart();
     void onFrame();
 
@@ -67,10 +69,12 @@ namespace McRave::Util {
 
     inline BWAPI::Position getMousePosition() { return BWAPI::Broodwar->getScreenPosition() + BWAPI::Broodwar->getMousePosition(); }
 
-    inline bool isAdjacentUsed(BWAPI::TilePosition t)
+    template <typename T> //
+    inline bool isAdjacentUsed(T t, int depth = 1)
     {
-        for (int x = t.x - 1; x < t.x + 1; x++) {
-            for (int y = t.y - 1; y < t.y + 1; y++) {
+        auto tile = BWAPI::TilePosition(t);
+        for (int x = tile.x - depth; x < tile.x + depth; x++) {
+            for (int y = tile.y - depth; y < tile.y + depth; y++) {
                 auto tile = BWAPI::TilePosition(x, y);
                 if (BWEB::Map::isUsed(tile) != BWAPI::UnitTypes::None)
                     return true;
@@ -79,7 +83,22 @@ namespace McRave::Util {
         return false;
     }
 
-    template <typename... Args> void writeToLogger(const char *file, int line, Args &&... args)
+    template <typename T> //
+    inline bool isAdjacentUnwalkable(T t, int depth = 1)
+    {
+        auto tile = BWAPI::TilePosition(t);
+        for (int x = tile.x - depth; x < tile.x + depth; x++) {
+            for (int y = tile.y - depth; y < tile.y + depth; y++) {
+                auto tile = BWAPI::TilePosition(x, y);
+                if (!BWEB::Map::isWalkable(tile))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    template <typename... Args> //
+    void writeToLogger(const char *file, int line, Args &&... args)
     {
         std::ostringstream ss;
 
@@ -124,7 +143,8 @@ namespace McRave::Util {
         return (minCalc >> 5) + minCalc + max - (max >> 4) - (max >> 6);
     }
 
-    template <typename F> UnitInfo *getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred)
+    template <typename F> //
+    UnitInfo *getClosestUnit(BWAPI::Position here, PlayerState player, F &&pred)
     {
         auto distBest  = DBL_MAX;
         auto &units    = Units::getUnits(player);
@@ -143,7 +163,8 @@ namespace McRave::Util {
         return best;
     }
 
-    template <typename F> UnitInfo *getFurthestUnit(BWAPI::Position here, PlayerState player, F &&pred)
+    template <typename F> //
+    UnitInfo *getFurthestUnit(BWAPI::Position here, PlayerState player, F &&pred)
     {
         auto distBest  = 0.0;
         auto &units    = Units::getUnits(player);
@@ -162,7 +183,8 @@ namespace McRave::Util {
         return best;
     }
 
-    template <typename F> UnitInfo *getClosestUnitGround(BWAPI::Position here, PlayerState player, F &&pred)
+    template <typename F> //
+    UnitInfo *getClosestUnitGround(BWAPI::Position here, PlayerState player, F &&pred)
     {
         auto distBest  = DBL_MAX;
         auto &units    = Units::getUnits(player);
@@ -181,7 +203,8 @@ namespace McRave::Util {
         return best;
     }
 
-    template <typename F> UnitInfo *getFurthestUnitGround(BWAPI::Position here, PlayerState player, F &&pred)
+    template <typename F> //
+    UnitInfo *getFurthestUnitGround(BWAPI::Position here, PlayerState player, F &&pred)
     {
         auto distBest  = 0.0;
         auto &units    = Units::getUnits(player);
@@ -200,7 +223,8 @@ namespace McRave::Util {
         return best;
     }
 
-    template <typename F> void testPointOnPath(BWEB::Path &path, F &&pred)
+    template <typename F> //
+    void testPointOnPath(BWEB::Path &path, F &&pred)
     {
         BWAPI::TilePosition last = BWAPI::TilePositions::Invalid;
 
@@ -226,7 +250,8 @@ namespace McRave::Util {
         }
     }
 
-    template <typename F> void testAllPointOnPath(BWEB::Path &path, F &&pred)
+    template <typename F> //
+    void testAllPointOnPath(BWEB::Path &path, F &&pred)
     {
         BWAPI::TilePosition last = BWAPI::TilePositions::Invalid;
 
@@ -251,7 +276,8 @@ namespace McRave::Util {
         }
     }
 
-    template <typename F> BWAPI::Position findPointOnPath(BWEB::Path &path, F &&pred)
+    template <typename F> //
+    BWAPI::Position findPointOnPath(BWEB::Path &path, F &&pred)
     {
         BWAPI::TilePosition last = BWAPI::TilePositions::Invalid;
 
@@ -278,7 +304,8 @@ namespace McRave::Util {
         return Positions::Invalid;
     }
 
-    template <typename F> std::vector<BWAPI::Position> findAllPointOnPath(BWEB::Path &path, F &&pred)
+    template <typename F> //
+    std::vector<BWAPI::Position> findAllPointOnPath(BWEB::Path &path, F &&pred)
     {
         BWAPI::TilePosition last = BWAPI::TilePositions::Invalid;
         std::vector<BWAPI::Position> returnVector;

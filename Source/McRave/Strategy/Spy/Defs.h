@@ -53,7 +53,7 @@ const std::string_view T_2RaxFE  = "2RaxFE";
 const std::string_view T_1FactFE = "1FactFE";
 const std::string_view T_2FactFE = "2FactFE";
 
-const std::string_view T_8Rax = "8Rax";
+const std::string_view T_8Rax       = "8Rax";
 const std::string_view T_Proxy_8Rax = "Proxy8Rax";
 
 // Z Openers
@@ -61,6 +61,7 @@ const std::string_view Z_4Pool    = "4Pool";
 const std::string_view Z_7Pool    = "7Pool";
 const std::string_view Z_9Pool    = "9Pool";
 const std::string_view Z_Overpool = "Overpool";
+const std::string_view Z_Gaspool  = "Gaspool";
 const std::string_view Z_12Pool   = "12Pool";
 
 const std::string_view Z_9Hatch  = "9Hatch";

@@ -11,6 +11,8 @@ namespace McRave {
         int lastStuckFrame       = 0;
         int lastStimFrame        = 0;
         int lastStateChangeFrame = 0;
+        int lastCommandFrame     = 0;
+
         int threateningFrames    = 0;
         int resourceHeldFrames   = -999;
         int remainingTrainFrame  = -999;

@@ -166,6 +166,15 @@ namespace McRave::Combat {
                 return;
             harassPosition                         = Positions::Invalid;
             vector<const BWEB::Station *> stations = Stations::getStations(PlayerState::Enemy);
+            
+            // Threatening unit with nothing fighting it
+            for (auto &station : Stations::getStations(PlayerState::Self)) {
+                if (Stations::isThreatened(station)) {
+                    LOG_SLOW("Harassing threatening units at home");
+                    harassPosition = station->getBase()->Center();
+                    return;
+                }
+            }
 
             // Inbound unit fighting
             if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure(Zerg_Mutalisk) && Util::getTime() < Time(10, 00)) {

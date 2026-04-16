@@ -141,11 +141,9 @@ namespace McRave::Roles {
                 forceCombatWorker(1, proxyWorker->getPosition());
 
             if (Players::TvP()) {
-                auto rush = Spy::enemyRush() || Spy::enemyProxy();
-
-                // Support marines vs rushes
-                if (rush && proxyCombatUnit)
-                    forceCombatWorker(3, proxyCombatUnit->getPosition());
+                // Support marines vs zealots
+                if (proxyCombatUnit && Terrain::inTerritory(PlayerState::Self, proxyCombatUnit->getPosition()))
+                    forceCombatWorker(2, proxyCombatUnit->getPosition());
             }
         }
 

@@ -15,7 +15,8 @@ using namespace UnitTypes;
 namespace McRave::Util {
 
     namespace {
-        std::ofstream writeFile;
+        string mapName;
+        ofstream writeFile;
         Time gameTime(0, 0);
         double log10Lookup[1000];
         vector<Position> posCircleCache[256];
@@ -330,6 +331,8 @@ namespace McRave::Util {
 
     Time getTime() { return gameTime; }
 
+    string getMapName() { return mapName; }
+
     void onStart()
     {
         log10Lookup[0] = 0;
@@ -360,7 +363,17 @@ namespace McRave::Util {
                     }
                 }
             }
+        }        
+
+        // Grab only the alpha characters from the map name to remove version numbers
+        for (auto &c : Broodwar->mapFileName()) {
+            if (isalpha(c))
+                mapName.push_back(c);
+            if (c == '.')
+                break;
         }
+        LOG("New game on " + mapName);
+
         writeFile.open("bwapi-data/write/logger.txt");
     }
 

@@ -622,6 +622,10 @@ namespace McRave::Stations {
             if (!Combat::State::isStaticRetreat(Zerg_Hydralisk) && !station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 &&
                 Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0)
                 return (Util::getTime() > Time(9, 00)) - airCount;
+
+            // All-in and Corsairs exists
+            if (station->isNatural() && BuildOrder::isAllIn() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0)
+                return 1 + (Util::getTime() > Time(10, 00)) - airCount;
         }
 
         if (Players::ZvZ()) {
@@ -720,6 +724,31 @@ namespace McRave::Stations {
                 return false;
         }
         return true;
+    }
+
+    // Returns true if this station is going to be lost
+    bool isThreatened(const BWEB::Station *const station)
+    {
+        // Find self unit with losing sim state that is targeting a threatening unit near this station
+        const auto closestSelf = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) { 
+            if (u->getRole() != Role::Combat)
+                return false;
+            return Terrain::inArea(station, u->getPosition());
+        });
+        if (closestSelf) {
+            if (closestSelf->hasTarget(); auto target = closestSelf->getTarget().lock()) {
+                if (target->isThreatening() && closestSelf->getSimState() == SimState::Loss)
+                    return true;
+                return false;
+            }
+        }
+
+        // There's a threatening unit and nothing to support
+        const auto closestEnemy = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Enemy, [&](auto &u) {
+            return u->isThreatening() && Terrain::inArea(station, u->getPosition());
+        });
+
+        return closestEnemy;
     }
 
     int lastVisible(const BWEB::Station *const station)

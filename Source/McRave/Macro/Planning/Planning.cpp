@@ -541,9 +541,11 @@ namespace McRave::Planning {
                 }
 
                 // How to dictate row order
-                vector<int> desiredRowOrder = {1, 2, 3};
+                vector<int> desiredRowOrder = {1};
                 if (Players::ZvZ())
                     desiredRowOrder = {3, 2, 1};
+                else if (Spy::enemyRush() || Spy::enemyProxy() || wall.getGroundDefenseCount() > 0)
+                    desiredRowOrder = {1, 2, 3};
 
                 // If this wall needs defenses
                 if (Walls::needGroundDefenses(wall) > colonies) {

@@ -197,7 +197,9 @@ namespace McRave::Spy::Zerg {
             }
 
             // Hydralisk/Lurker build detection
-            if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0) {
+            auto hydrasExist = Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk, Zerg_Lurker, Zerg_Hydralisk_Den) > 0;
+            auto mutasExist  = Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk, Zerg_Spire) > 0;
+            if (!mutasExist && hydrasExist) {
 
                 if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0) {
                     if (theSpy.productionCount == 4)
@@ -220,7 +222,7 @@ namespace McRave::Spy::Zerg {
             }
 
             // Mutalisk transition detection
-            if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) == 0) {
+            if (!hydrasExist) {
 
                 // General
                 if (theSpy.productionCount == 0 && (completesBy(1, Zerg_Lair, Time(3, 45)) || completesBy(1, Zerg_Spire, Time(5, 15)) || arrivesBy(1, Zerg_Mutalisk, Time(6, 00))))

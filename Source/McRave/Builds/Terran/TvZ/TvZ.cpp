@@ -48,7 +48,7 @@ namespace McRave::BuildOrder::Terran {
         // Pumping
         terranUnitPump[Terran_SCV]    = true;
         terranUnitPump[Terran_Marine] = total(Terran_Marine) < 4 || total(Terran_Supply_Depot) >= 3;
-        terranUnitPump[Terran_Medic]  = com(Terran_Academy) > 0 && vis(Terran_Medic) < 2;
+        terranUnitPump[Terran_Medic]  = com(Terran_Academy) > 0 && vis(Terran_Medic) < Terran_Marine * 2;
     }
 
     void TvZ()

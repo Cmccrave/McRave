@@ -456,9 +456,6 @@ namespace McRave::Command {
             auto calcPair = Util::findPointOnCircle(unit.getPosition(), target.getPosition(), maxRange, threatCalc);
             kiteTowards   = calcPair.second;
             Util::shiftTowards(target.getPosition(), calcPair.second, kiteRange);
-
-            // if (unit.attemptingAvoidance())
-            //    Visuals::drawLine(unit.getPosition(), kiteTowards, Colors::Purple);
         }
 
         // Get current distance

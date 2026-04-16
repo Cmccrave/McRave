@@ -6,6 +6,7 @@ AccessModifierOffset: -4
 AlignConsecutiveAssignments: true
 AllowShortFunctionsOnASingleLine: All
 AlwaysBreakTemplateDeclarations: false
+BinPackArguments: true
 BinPackParameters: true
 BreakBeforeBraces: Stroustrup
 ColumnLimit: 200

@@ -181,15 +181,24 @@ namespace McRave::BuildOrder::Zerg {
 
             // Prepare evo chamber just in case and not a hydra build
             if (focusUnit != Zerg_Hydralisk && focusUnit != Zerg_Lurker) {
+
+                // ZvT anticipate wraith timing on 1 base
                 if (Players::ZvT() && !Spy::enemyFastExpand() && (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled()) && Util::getTime() > Time(4, 15)) {
                     needSpores = true;
                     wallNat    = true;
                 }
-                if (Players::ZvP() && !Spy::enemyFastExpand() && Spy::getEnemyTransition() == "Unknown" && !Spy::enemyFastExpand() &&
-                    ((Spy::getEnemyBuild() == P_2Gate && Util::getTime() > Time(4, 45)) || (Spy::getEnemyBuild() == P_1GateCore && Util::getTime() > Time(4, 15)))) {
+
+                // ZvP anticipate corsair timing on 1 base
+                auto ruleOutCorsairs = Players::getTotalCount(PlayerState::Enemy, Protoss_Gateway) >= 3 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2 //
+                                       || Spy::enemyFastExpand() || Spy::getEnemyTransition() != "Unknown";                                                                 //
+                auto p2GateSair = Spy::getEnemyBuild() == P_2Gate && Util::getTime() > Time(4, 45);
+                auto p1GcSair   = Spy::getEnemyBuild() == P_1GateCore && Util::getTime() > Time(4, 15);
+                if (Players::ZvP() && !ruleOutCorsairs && (p2GateSair || p1GcSair)) {
                     needSpores = true;
                     wallNat    = true;
                 }
+
+                // ZvZ anticipate faster muta timing
                 if (Players::ZvZ() && !Spy::enemyFastExpand() && Spy::getEnemyOpener() != Z_4Pool && !Spy::enemyTurtle() && Spy::getEnemyOpener() != Z_7Pool &&
                     Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00) && currentTransition != Z_1HatchMuta) {
                     needSpores = true;

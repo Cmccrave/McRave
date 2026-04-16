@@ -82,7 +82,7 @@ namespace McRave::Math {
     double calcPriority(UnitInfo &unit)
     {
         // According to sheet linked above, these are the maximum values for normalizing
-        auto bonus           = 1.0;
+        auto bonus = 1.0;
 
         if (unit.isMarkedForDeath())
             return 5.0;
@@ -93,7 +93,7 @@ namespace McRave::Math {
 
         // Bunch of priority hacks
         if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Terran_Science_Vessel || unit.getType() == Terran_Dropship || //
-            unit.getType() == Protoss_Arbiter || unit.getType() == Protoss_Shuttle || unit.getType() == Protoss_Carrier || //
+            unit.getType() == Protoss_Arbiter || unit.getType() == Protoss_Shuttle || unit.getType() == Protoss_Carrier ||                  //
             unit.getType() == Zerg_Queen)
             return 15.0;
         if (Spy::enemyProxy() && unit.getType() == Protoss_Pylon)
@@ -229,23 +229,28 @@ namespace McRave::Math {
         auto oppositeStrength = (unit.getPlayer() == Broodwar->self()) ? Players::getStrength(PlayerState::Enemy) : Players::getStrength(PlayerState::Self);
         auto oppositeDamage   = unit.isFlying() ? oppositeStrength.avgAirDamage : oppositeStrength.avgGroundDamage;
 
+        static const auto avgUnitSpeed = 4.34;
+        static const auto avgHealth    = 161.05;
+
+        // Estimate how much damage reduction armor is currently applying vs opposite damage
         const auto armor = [&]() {
             double armorValue = double(unit.getType().armor()) + double(unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade())) +
                                 double((unit.getType() == Zerg_Ultralisk) * 2 * unit.getPlayer()->getUpgradeLevel(UpgradeTypes::Chitinous_Plating));
-
             double dmg = max(1.0, oppositeDamage - armorValue);
-
             return oppositeDamage / dmg;
         };
 
+        // Estimate value of speed vs average unit speed
         const auto speed = [&]() {
-            const auto avgUnitSpeed = 4.34;
-            if (unit.isSiegeTank() || unit.getType() == Zerg_Lurker || unit.getType().isBuilding())
-                return 1.0;
-            return pow((unit.getSpeed() + avgUnitSpeed) / avgUnitSpeed, 0.5);
+            auto value = (unit.getSpeed() + avgUnitSpeed) / avgUnitSpeed;
+            return pow(value, 0.5);
         };
 
-        const auto health = [&]() { return (double(unit.getType().maxHitPoints() + unit.getType().maxShields())) / 50.0; };
+        // Estimate value of health vs average unit health
+        const auto health = [&]() {
+            auto value = (double(unit.getType().maxHitPoints() + unit.getType().maxShields())) / avgHealth;
+            return pow(value, 0.5);
+        };
 
         return health() * armor() * speed();
     }

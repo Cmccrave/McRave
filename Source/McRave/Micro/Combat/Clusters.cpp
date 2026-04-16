@@ -155,15 +155,20 @@ namespace McRave::Combat::Clusters {
             cluster.marchPath   = commander->getMarchPath();
             cluster.retreatPath = commander->getRetreatPath();
 
+            const auto validPathPoint = [&](auto &p) {
+                auto distExtra = (!Util::isAdjacentUsed(p, 3) * 32.0) + (!Util::isAdjacentUnwalkable(p, 3) * 32.0);
+                return p.getDistance(commander->getPosition()) >= dist + distExtra;
+            };
+
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.marchNavigation = cluster.marchPosition;
-            const auto march        = Util::findPointOnPath(cluster.marchPath, [&](Position p) { return p.getDistance(commander->getPosition()) >= dist; });
+            const auto march        = Util::findPointOnPath(cluster.marchPath, validPathPoint);
             if (march.isValid())
                 cluster.marchNavigation = march;
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.retreatNavigation = cluster.retreatPosition;
-            const auto retreat        = Util::findPointOnPath(cluster.retreatPath, [&](Position p) { return p.getDistance(commander->getPosition()) >= dist; });
+            const auto retreat        = Util::findPointOnPath(cluster.retreatPath, validPathPoint);
             if (retreat.isValid())
                 cluster.retreatNavigation = retreat;
 

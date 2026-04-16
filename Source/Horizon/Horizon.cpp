@@ -65,7 +65,7 @@ namespace McRave::Horizon {
             if (unit.getType() == UnitTypes::Zerg_Lurker && !unit.isBurrowed())
                 return 36.0 / 24.0;
             if (unit.attemptingSurround())
-                return 0.5;
+                return 1.0;
             return 0.0;
         }
     } // namespace
@@ -131,6 +131,9 @@ namespace McRave::Horizon {
             addBonus(enemy, *enemyTarget, simRatio);
             addSimStrength(simStrengthPerPlayer[enemy.getPlayer()], enemy, simRatio);
             addSimStrength(simStrengthPerState[PlayerState::Enemy], enemy, simRatio);
+
+            if (unit.unit()->isSelected())
+                Broodwar->drawTextMap(enemy.getPosition(), "%.2f", simRatio);
         }
 
         for (auto &a : Units::getUnits(PlayerState::Self)) {
@@ -158,6 +161,9 @@ namespace McRave::Horizon {
             addBonus(self, *selfTarget, simRatio);
             addSimStrength(simStrengthPerPlayer[self.getPlayer()], self, simRatio);
             addSimStrength(simStrengthPerState[PlayerState::Self], self, simRatio);
+
+            if (unit.unit()->isSelected())
+                Broodwar->drawTextMap(self.getPosition(), "%.2f", simRatio);
         }
 
         for (auto &a : Units::getUnits(PlayerState::Ally)) {

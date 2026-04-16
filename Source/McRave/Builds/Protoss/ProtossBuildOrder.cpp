@@ -20,17 +20,14 @@ namespace McRave::BuildOrder::Protoss {
     namespace {
         bool againstRandom = false;
 
-        void queueWallDefenses()
+        void queueDefenses()
         {
             // Adding Wall Defenses
             if (Walls::getNaturalWall()) {
                 if (vis(Protoss_Forge) > 0 && (Walls::needAirDefenses(*Walls::getNaturalWall()) > 0 || Walls::needGroundDefenses(*Walls::getNaturalWall()) > 0))
                     buildQueue[Protoss_Photon_Cannon] = vis(Protoss_Photon_Cannon) + 1;
             }
-        }
 
-        void queueStationDefenses()
-        {
             // Adding Station Defenses
             if (int(Stations::getStations(PlayerState::Self).size()) >= 2) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
@@ -61,7 +58,7 @@ namespace McRave::BuildOrder::Protoss {
                 auto minProbesAllGas = 48;
                 auto minProbesPerGas = 24 + (4 * vis(Protoss_Assimilator));
                 auto takeAllGeysers  = com(Protoss_Probe) >= minProbesAllGas;
-                auto allowNewGeyser  = com(Protoss_Probe) >= minProbesPerGas && (Resources::isHalfMineralSaturated() || productionSat || takeAllGeysers);
+                auto allowNewGeyser  = com(Protoss_Probe) >= minProbesPerGas && (Resources::isMineralSaturated() || productionSat || takeAllGeysers);
                 auto needGeyser      = gasLimit > vis(Protoss_Assimilator) * 3;
                 gasDesired           = allowNewGeyser && needGeyser;
 
@@ -130,10 +127,19 @@ namespace McRave::BuildOrder::Protoss {
             // If we're not in our opener
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                expandDesired                = (Resources::isGasSaturated() && (Resources::isMineralSaturated() || com(Protoss_Nexus) >= 3) && (techSat || com(Protoss_Nexus) >= 3) && productionSat) ||
-                                (availableMinerals >= 800 && (Resources::isMineralSaturated() || Resources::isGasSaturated())) ||
-                                (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getMiningStationsCount() <= 2) ||
-                                (Stations::getStations(PlayerState::Self).size() >= 4 && Stations::getGasingStationsCount() <= 1);
+                const auto incompleteGate    = vis(Protoss_Gateway) - com(Protoss_Gateway);
+                const auto waitForMinerals   = 300 + (100 * incompleteGate);
+                const auto resourceSat       = availableMinerals >= waitForMinerals && Resources::isMineralSaturated() && Resources::isGasSaturated();
+                const auto excessResources   = availableMinerals >= waitForMinerals * 2;
+
+                auto selfCount  = Stations::getStations(PlayerState::Self).size();
+                auto enemyCount = Stations::getStations(PlayerState::Enemy).size();
+
+                expandDesired = (resourceSat && techSat && productionSat && Stations::getMiningStationsCount() <= 5) //
+                                || (excessResources && productionSat)                                                //
+                                || (selfCount >= 4 && Stations::getMiningStationsCount() <= 2)                       //
+                                || (selfCount >= 4 && Stations::getGasingStationsCount() <= 1)                       //
+                                || (Stations::getMiningStationsCount() < 2 && Util::getTime() > Time(12, 00));
 
                 buildQueue[Protoss_Nexus] = com(Protoss_Nexus) + expandDesired;
             }
@@ -334,8 +340,7 @@ namespace McRave::BuildOrder::Protoss {
     void situational()
     {
         // Queue up defenses
-        queueWallDefenses();
-        queueStationDefenses();
+        queueDefenses();
 
         // Queue up supply, upgrade structures
         queueSupply();

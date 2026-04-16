@@ -559,7 +559,6 @@ namespace McRave {
     // Execute a command
     void UnitInfo::setCommand(UnitCommandType cmd, Position here)
     {
-        // Check if this is very similar to the last command
         if (isCommandable()) {
             commandPosition = here;
             commandType     = cmd;
@@ -974,9 +973,14 @@ namespace McRave {
 
     bool UnitInfo::attemptingRegroup()
     {
-        if (!isLightAir() || saveUnit || attemptingAvoidance())
+        if (!isLightAir() || saveUnit)
             return false;
         if (hasCommander(); auto cmder = commander.lock()) {
+            if (cmder->hasTarget()) {
+                if (position.getDistance(cmder->getTarget().lock()->getPosition()) < 200.0)
+                    return false;
+            }
+
             if (cmder->getLocalState() == LocalState::Attack)
                 return position.getDistance(cmder->getPosition()) > 160.0;
             return position.getDistance(cmder->getPosition()) > 96.0;

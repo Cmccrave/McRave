@@ -678,7 +678,7 @@ namespace McRave::Command {
 
         // If build position is fully visible and unit is close to it, start building as soon as possible
         if (fullyVisible && canAfford && unit.isWithinBuildRange()) {
-            if (unit.unit()->getLastCommandFrame() < Broodwar->getFrameCount() - 10 && unit.unit()->getOrder() != Orders::PlaceBuilding) {
+            if (unit.unit()->getLastCommandFrame() < Broodwar->getFrameCount() - 10 && unit.unit()->getOrder() != Orders::PlaceBuilding && !unit.unit()->isStuck()) {
                 unit.unit()->build(unit.getBuildType(), unit.getBuildPosition());
             }
             unit.commandText = "Build";

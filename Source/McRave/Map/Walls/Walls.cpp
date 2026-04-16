@@ -2,6 +2,7 @@
 
 #include "BWEB.h"
 #include "Builds/All/BuildOrder.h"
+#include "Builds/All/Learning.h"
 #include "Info/Player/Players.h"
 #include "Info/Unit/Units.h"
 #include "Main/Common.h"
@@ -108,13 +109,15 @@ namespace McRave::Walls {
 
             // In FFA just make a wall at our natural (if we have one)
             if (Players::vFFA() && Terrain::getMyNatural() && Terrain::getNaturalChoke()) {
-                generateWall(Terrain::getMyNatural(), Terrain::getNaturalChoke());
+                if (Terrain::getMyNatural()->getChokepoint())
+                    generateWall(Terrain::getMyNatural(), Terrain::getNaturalChoke());
             }
             else {
                 for (auto &station : BWEB::Stations::getStations()) {
                     if ((station.isMain() && !Terrain::isPocketNatural()) || (station.isNatural() && Terrain::isPocketNatural()))
                         continue;
-                    generateWall(&station, station.getChokepoint());
+                    if (station.getChokepoint())
+                        generateWall(&station, station.getChokepoint());
                 }
             }
 
@@ -185,16 +188,22 @@ namespace McRave::Walls {
             if (Spy::getEnemyBuild() == P_2Gate) {
                 if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
                     return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 10)) + (Util::getTime() > Time(4, 30));
+
                 if (Spy::getEnemyOpener() == P_10_15)
                     return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 10)) + (Util::getTime() > Time(5, 00));
+
                 if (Spy::getEnemyOpener() == P_10_12 || Spy::getEnemyOpener() == "Unknown")
-                    return 1 + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 45));
+                    return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 45));
+
                 if (Spy::getEnemyOpener() == P_9_9)
                     return 1 + (BuildOrder::getCurrentOpener() == Z_12Hatch) + (Util::getTime() > Time(4, 30));
+
                 if (Spy::getEnemyOpener() == P_Proxy_9_9)
                     return 2;
+
                 if (Spy::getEnemyOpener() == P_Horror_9_9)
                     return 1;
+
                 return (Util::getTime() > Time(3, 15));
             }
 
@@ -280,9 +289,6 @@ namespace McRave::Walls {
 
         int ZvP_Defenses(BWEB::Wall &wall)
         {
-            if (BuildOrder::getCurrentTransition() == Z_3HatchHydra)
-                return 0;
-
             // Determine how much we have traded
             auto unitsKilled     = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot) + Players::getDeadCount(PlayerState::Enemy, Protoss_Dragoon);
             auto buildingsKilled = Players::getDeadCount(PlayerState::Enemy, Protoss_Gateway);
@@ -466,7 +472,7 @@ namespace McRave::Walls {
                 continue;
 
             auto defendPos = Stations::getDefendPosition(&station);
-            if (defendPos.isValid()) {
+            if (defendPos.isValid() && station.getChokepoint()) {
                 auto defendChoke = Util::getClosestChokepoint(defendPos);
                 if (defendChoke && !BWEB::Walls::getWall(defendChoke)) {
                     generateWall(&station, defendChoke);
@@ -518,6 +524,9 @@ namespace McRave::Walls {
 
     int needGroundDefenses(BWEB::Wall &wall)
     {
+        if (BuildOrder::isRush() || BuildOrder::isPressure() || Spy::getEnemyTransition() == P_Carrier)
+            return 0;
+
         auto groundCount = wall.getGroundDefenseCount();
         if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) || BuildOrder::isAllIn() || (!Combat::isDefendNatural() && wall.getStation()->isNatural()) ||
             Stations::isPocket(wall.getStation()))
