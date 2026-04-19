@@ -95,9 +95,9 @@
     <ClCompile Include="..\Source\McRave\Main\McRave.cpp" />
     <ClCompile Include="..\Source\McRave\Main\Util.cpp" />
     <ClCompile Include="..\Source\McRave\Main\Visuals.cpp" />
-    <ClCompile Include="..\Source\McRave\Map\Grids.cpp" />
-    <ClCompile Include="..\Source\McRave\Map\Stations.cpp" />
-    <ClCompile Include="..\Source\McRave\Map\Terrain.cpp" />
+    <ClCompile Include="..\Source\McRave\Map\Grids\Grids.cpp" />
+    <ClCompile Include="..\Source\McRave\Map\Stations\Stations.cpp" />
+    <ClCompile Include="..\Source\McRave\Map\Terrain\Terrain.cpp" />
     <ClCompile Include="..\Source\McRave\Map\Walls\Walls.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\All\Commands.cpp" />
     <ClCompile Include="..\Source\McRave\Micro\All\Specials.cpp" />
@@ -184,9 +184,9 @@
     <ClInclude Include="..\Source\McRave\Main\Time.h" />
     <ClInclude Include="..\Source\McRave\Main\Util.h" />
     <ClInclude Include="..\Source\McRave\Main\Visuals.h" />
-    <ClInclude Include="..\Source\McRave\Map\Grids.h" />
-    <ClInclude Include="..\Source\McRave\Map\Stations.h" />
-    <ClInclude Include="..\Source\McRave\Map\Terrain.h" />
+    <ClInclude Include="..\Source\McRave\Map\Grids\Grids.h" />
+    <ClInclude Include="..\Source\McRave\Map\Stations\Stations.h" />
+    <ClInclude Include="..\Source\McRave\Map\Terrain\Terrain.h" />
     <ClInclude Include="..\Source\McRave\Map\Walls\Walls.h" />
     <ClInclude Include="..\Source\McRave\Micro\All\Commands.h" />
     <ClInclude Include="..\Source\McRave\Micro\Combat\Combat.h" />

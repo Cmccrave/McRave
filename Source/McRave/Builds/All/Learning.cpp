@@ -5,7 +5,7 @@
 
 #include "BuildOrder.h"
 #include "Info/Player/Players.h"
-#include "Map/Terrain.h"
+#include "Map/Terrain/Terrain.h"
 #include "Map/Walls/Walls.h"
 #include "Strategy/Spy/Spy.h"
 

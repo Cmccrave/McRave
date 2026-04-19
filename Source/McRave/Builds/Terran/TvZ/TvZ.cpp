@@ -1,6 +1,7 @@
 #include "Builds/Terran/TerranBuildOrder.h"
 #include "Macro/Researching/Researching.h"
 #include "Main/Common.h"
+#include "Map/Stations/Stations.h"
 #include "Strategy/Spy/Spy.h"
 
 using namespace std;
@@ -23,8 +24,9 @@ namespace McRave::BuildOrder::Terran {
         transitionReady = false;
         planEarly       = false;
 
-        wallNat  = false;
-        wallMain = false;
+        wallNat   = Stations::getStations(PlayerState::Self).size() >= 2;
+        wallMain  = false;
+        wallThird = Stations::getStations(PlayerState::Self).size() >= 3;
     }
 
     void TvZ_Academy()
@@ -48,7 +50,7 @@ namespace McRave::BuildOrder::Terran {
         // Pumping
         terranUnitPump[Terran_SCV]    = true;
         terranUnitPump[Terran_Marine] = total(Terran_Marine) < 4 || total(Terran_Supply_Depot) >= 3;
-        terranUnitPump[Terran_Medic]  = com(Terran_Academy) > 0 && vis(Terran_Medic) < Terran_Marine * 2;
+        terranUnitPump[Terran_Medic]  = com(Terran_Academy) > 0 && vis(Terran_Medic) < vis(Terran_Marine) / 2;
     }
 
     void TvZ()

@@ -3,8 +3,8 @@
 #include "Builds/All/BuildOrder.h"
 #include "Info/Player/Players.h"
 #include "Info/Unit/Units.h"
-#include "Map/Grids.h"
-#include "Map/Stations.h"
+#include "Map/Grids/Grids.h"
+#include "Map/Stations/Stations.h"
 
 using namespace BWAPI;
 using namespace std;

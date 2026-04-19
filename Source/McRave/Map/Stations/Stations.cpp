@@ -8,8 +8,8 @@
 #include "Macro/Planning/Planning.h"
 #include "Macro/Planning/Pylons.h"
 #include "Main/Common.h"
-#include "Map/Grids.h"
-#include "Map/Terrain.h"
+#include "Map/Grids/Grids.h"
+#include "Map/Terrain/Terrain.h"
 #include "Map/Walls/Walls.h"
 #include "Strategy/Spy/Spy.h"
 

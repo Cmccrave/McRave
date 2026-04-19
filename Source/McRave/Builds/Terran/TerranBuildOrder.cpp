@@ -5,8 +5,8 @@
 #include "Macro/Planning/Planning.h"
 #include "Macro/Researching/Researching.h"
 #include "Macro/Upgrading/Upgrading.h"
-#include "Map/Stations.h"
-#include "Map/Terrain.h"
+#include "Map/Stations/Stations.h"
+#include "Map/Terrain/Terrain.h"
 #include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;
@@ -22,7 +22,8 @@ namespace McRave::BuildOrder::Terran {
 
         void queueDefenses()
         {
-            // Adding Station Defenses
+            // Adding station defenses
+            auto estimateBlockDefenses = 0;
             for (auto &station : Stations::getStations(PlayerState::Self)) {
                 auto airNeeded = Stations::needAirDefenses(station);
                 auto grdNeeded = Stations::needGroundDefenses(station);
@@ -35,6 +36,8 @@ namespace McRave::BuildOrder::Terran {
                 if (grdNeeded > 0)
                     buildQueue[Terran_Bunker] = vis(Terran_Bunker) + 1;
             }
+
+            // Adding block defenses
 
             // Add comsats
             if (com(Terran_Academy) > 0) {
@@ -226,6 +229,7 @@ namespace McRave::BuildOrder::Terran {
             techQueue[Cloaking_Field]     = isFocusUnit(Terran_Wraith);
             techQueue[Yamato_Gun]         = isFocusUnit(Terran_Battlecruiser);
             techQueue[Personnel_Cloaking] = isFocusUnit(Terran_Ghost);
+            techQueue[Irradiate]          = isFocusUnit(Terran_Science_Vessel) && Players::TvZ();
         }
     } // namespace
 

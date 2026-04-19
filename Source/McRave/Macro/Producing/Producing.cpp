@@ -6,8 +6,8 @@
 #include "Macro/Planning/Planning.h"
 #include "Macro/Researching/Researching.h"
 #include "Macro/Upgrading/Upgrading.h"
-#include "Map/Stations.h"
-#include "Map/Terrain.h"
+#include "Map/Stations/Stations.h"
+#include "Map/Terrain/Terrain.h"
 #include "Micro/Worker/Workers.h"
 #include "Strategy/Spy/Spy.h"
 

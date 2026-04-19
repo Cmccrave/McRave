@@ -4,9 +4,9 @@
 #include "Info/Player/Players.h"
 #include "Info/Unit/Units.h"
 #include "Main/Common.h"
-#include "Map/Grids.h"
-#include "Map/Stations.h"
-#include "Map/Terrain.h"
+#include "Map/Grids/Grids.h"
+#include "Map/Stations/Stations.h"
+#include "Map/Terrain/Terrain.h"
 #include "Strategy/Actions/Actions.h"
 #include "Strategy/Spy/Spy.h"
 
@@ -83,6 +83,36 @@ namespace McRave::Targets {
     }
 
     Priority htPriority(UnitInfo &unit, UnitInfo &target) { return Priority::Normal; }
+
+    Priority zealotPriority(UnitInfo &unit, UnitInfo &target)
+    {
+        if ((target.getType() == Terran_Vulture_Spider_Mine && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) < 2)      // Avoid mines without +2 to oneshot them
+            || ((target.getSpeed() > unit.getSpeed() || target.getType().isBuilding()) && !target.getType().isWorker() && BuildOrder::isRush())) // Avoid faster units when we're rushing
+            return Priority::Ignore;
+        return Priority::Normal;
+    }
+
+    // T
+    Priority medicPriority(UnitInfo &unit, UnitInfo &target)
+    {
+        if (target.isTargetedByType(Terran_Medic))
+            return Priority::Ignore;
+        if (target.getType() == Terran_Marine || target.getType() == Terran_Firebat || (target.getType() == Terran_Medic && target.getHealth() < target.getType().maxHitPoints()))
+            return Priority::Critical;
+        else if (target.getType() == Terran_SCV)
+            return Priority::Major;
+        else if (target.getType().isOrganic())
+            return Priority::Minor;
+        return Priority::Ignore;
+    }
+
+    Priority ghostPriority(UnitInfo &unit, UnitInfo &target)
+    {
+        // Ghost
+        if (!target.getType().isResourceDepot())
+            return Priority::Ignore;
+        return Priority::Normal;
+    }
 
     // Z
     Priority zerglingPriority(UnitInfo &unit, UnitInfo &target)
@@ -238,6 +268,7 @@ namespace McRave::Targets {
             }
         }
 
+        // Sort of hacky to prevent lings dogpiling one vulture for blocking
         if (unit.getType() == Zerg_Zergling && Util::getTime() < Time(5, 00)) {
             if (Players::ZvT() && target.getType() == Terran_Vulture && combatTargeters >= 2 && !unit.isWithinRange(target))
                 return Priority::Minor;
@@ -360,30 +391,6 @@ namespace McRave::Targets {
                 if (unit.isWithinRange(target) && !target.isHidden() && (vis(Zerg_Lurker) > 0 || vis(Protoss_Dark_Templar) > 0))
                     return Priority::Major;
             }
-
-            // Zealot
-            if (unit.getType() == Protoss_Zealot) {
-                if ((target.getType() == Terran_Vulture_Spider_Mine && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Protoss_Ground_Weapons) < 2)      // Avoid mines without +2 to oneshot them
-                    || ((target.getSpeed() > unit.getSpeed() || target.getType().isBuilding()) && !target.getType().isWorker() && BuildOrder::isRush())) // Avoid faster units when we're rushing
-                    return Priority::Ignore;
-            }
-
-            // Ghost
-            if (unit.getType() == Terran_Ghost) {
-                if (!target.getType().isResourceDepot())
-                    return Priority::Ignore;
-            }
-
-            // Medic
-            if (unit.getType() == Terran_Medic) {
-                if (target.getType() == Terran_Marine || target.getType() == Terran_Firebat || (target.getType() == Terran_Medic && target.getHealth() < target.getType().maxHitPoints()))
-                    return Priority::Critical;
-                else if (target.getType() == Terran_SCV)
-                    return Priority::Major;
-                else if (target.getType().isOrganic())
-                    return Priority::Minor;
-                return Priority::Ignore;
-            }
         }
 
         // P
@@ -391,6 +398,14 @@ namespace McRave::Targets {
             return dtPriority(unit, target);
         if (unit.getType() == Protoss_High_Templar)
             return htPriority(unit, target);
+        if (unit.getType() == Protoss_Zealot)
+            return zealotPriority(unit, target);
+
+        // T
+        if (unit.getType() == Terran_Medic)
+            return medicPriority(unit, target);
+        if (unit.getType() == Terran_Ghost)
+            return ghostPriority(unit, target);
 
         // Z
         if (unit.getType() == Zerg_Zergling)

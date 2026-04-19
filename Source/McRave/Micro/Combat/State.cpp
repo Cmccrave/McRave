@@ -3,8 +3,8 @@
 #include "Info/Player/Players.h"
 #include "Info/Unit/Units.h"
 #include "Macro/Upgrading/Upgrading.h"
-#include "Map/Stations.h"
-#include "Map/Terrain.h"
+#include "Map/Stations/Stations.h"
+#include "Map/Terrain/Terrain.h"
 #include "Strategy/Actions/Actions.h"
 #include "Strategy/Spy/Spy.h"
 
@@ -73,17 +73,26 @@ namespace McRave::Combat::State {
 
     void updateTStaticStates()
     {
+        // Lock barracks units except ghosts
         const auto lockBarracks = [&]() {
             staticRetreatTypes.push_back(Terran_Marine);
             staticRetreatTypes.push_back(Terran_Medic);
             staticRetreatTypes.push_back(Terran_Firebat);
         };
 
-        // Marines
+        // Lock factory units except vultures
+        const auto lockFactory = [&]() {
+            staticRetreatTypes.push_back(Terran_Siege_Tank_Tank_Mode);
+            staticRetreatTypes.push_back(Terran_Siege_Tank_Siege_Mode);
+            staticRetreatTypes.push_back(Terran_Goliath);
+        };
+
+        // Barracks
         if (!BuildOrder::isPressure(Terran_Marine) && unlockedOrVis(Terran_Marine)) {
             if (Players::TvZ()) {
                 auto stim = Players::getPlayerInfo(Broodwar->self())->hasTech(TechTypes::Stim_Packs);
-                if (!stim || Spy::enemyPressure())
+                auto enemyOneBase = !Spy::enemyFastExpand() && Util::getTime() < Time(8, 00);
+                if (!stim || Spy::enemyPressure() || enemyOneBase)
                     lockBarracks();
             }
             if (Players::TvP() || Players::TvT()) {
@@ -92,7 +101,7 @@ namespace McRave::Combat::State {
             }
         }
 
-        // Tanks / Goliaths
+        // Factory
         if (!BuildOrder::isPressure(Terran_Siege_Tank_Tank_Mode) && !BuildOrder::isPressure(Terran_Siege_Tank_Siege_Mode) &&
             (unlockedOrVis(Terran_Siege_Tank_Tank_Mode) || unlockedOrVis(Terran_Siege_Tank_Siege_Mode))) {
             if (Players::TvP()) {
@@ -101,6 +110,11 @@ namespace McRave::Combat::State {
                     staticRetreatTypes.push_back(Terran_Siege_Tank_Siege_Mode);
                     staticRetreatTypes.push_back(Terran_Goliath);
                 }
+            }
+
+            if (Players::TvT()) {
+                if (!Spy::enemyFastExpand() && Util::getTime() < Time(8, 00))
+                    lockFactory();
             }
         }
     }
@@ -213,7 +227,7 @@ namespace McRave::Combat::State {
                     const auto techAdvantage      = Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair, Zerg_Hydralisk_Den) == 0;
 
                     //
-                    const auto enemyHydraBuild = Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_1HatchHydra || Spy::getEnemyTransition() == Z_2HatchHydra;
+                    const auto enemyHydraBuild  = Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_1HatchHydra || Spy::getEnemyTransition() == Z_2HatchHydra;
                     const auto enemyTimingBuild = Spy::getEnemyTransition() == Z_2HatchSpeedling || Spy::getEnemyTransition() == Z_UpgradeLing;
                     if (!enemyHydraBuild) {
                         if (!lingAdvantage && (expansionAdvantage || hatchAdvatange || techAdvantage))

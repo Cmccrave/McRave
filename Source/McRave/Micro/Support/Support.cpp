@@ -2,8 +2,8 @@
 
 #include "Info/Player/Players.h"
 #include "Info/Unit/Units.h"
-#include "Map/Stations.h"
-#include "Map/Terrain.h"
+#include "Map/Stations/Stations.h"
+#include "Map/Terrain/Terrain.h"
 #include "Micro/All/Commands.h"
 #include "Micro/Combat/Combat.h"
 #include "Strategy/Spy/Spy.h"

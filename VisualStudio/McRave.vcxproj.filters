@@ -187,15 +187,6 @@
     <ClCompile Include="..\Source\McRave\Builds\All\Learning.cpp">
       <Filter>McRave\Builds\All</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\McRave\Map\Grids.cpp">
-      <Filter>McRave\Map</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Map\Stations.cpp">
-      <Filter>McRave\Map</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Source\McRave\Map\Terrain.cpp">
-      <Filter>McRave\Map</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\McRave\Info\Building\Buildings.cpp">
       <Filter>McRave\Info\Building</Filter>
     </ClCompile>
@@ -337,6 +328,15 @@
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvT\TvT_RaxFact.cpp">
       <Filter>McRave\Builds\Terran\TvT</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\Map\Grids\Grids.cpp">
+      <Filter>McRave\Map\Grids</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Map\Terrain\Terrain.cpp">
+      <Filter>McRave\Map\Terrain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Map\Stations\Stations.cpp">
+      <Filter>McRave\Map\Stations</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -459,15 +459,6 @@
     <ClInclude Include="..\Source\McRave\Builds\All\Learning.h">
       <Filter>McRave\Builds\All</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\McRave\Map\Grids.h">
-      <Filter>McRave\Map</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\Map\Stations.h">
-      <Filter>McRave\Map</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Source\McRave\Map\Terrain.h">
-      <Filter>McRave\Map</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\McRave\Info\Building\Buildings.h">
       <Filter>McRave\Info\Building</Filter>
     </ClInclude>
@@ -563,6 +554,15 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Info\Unit\UnitHistory.h">
       <Filter>McRave\Info\Unit</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Map\Grids\Grids.h">
+      <Filter>McRave\Map\Grids</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Map\Terrain\Terrain.h">
+      <Filter>McRave\Map\Terrain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Map\Stations\Stations.h">
+      <Filter>McRave\Map\Stations</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -712,6 +712,18 @@
     </Filter>
     <Filter Include="McRave\Builds\Terran\TvT">
       <UniqueIdentifier>{ba9f5156-96e0-4761-bbf0-2317e106140d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Map\Grids">
+      <UniqueIdentifier>{ae84559b-38ac-40c7-b9ae-63e6861af9cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Map\Stations">
+      <UniqueIdentifier>{0630f4c4-3b1f-40a1-9ffc-5aff29fc550e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Map\Terrain">
+      <UniqueIdentifier>{e9b68dd1-a1cf-423e-9a8f-667b74fc6844}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Map\Blocks">
+      <UniqueIdentifier>{3b7718df-9aa1-4328-ac90-af26d36b77b5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

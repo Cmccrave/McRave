@@ -4,7 +4,7 @@
 
 #include "Common.h"
 #include "Info/Unit/UnitInfo.h"
-#include "Map/Grids.h"
+#include "Map/Grids/Grids.h"
 #include "bwem.h"
 
 using namespace BWAPI;

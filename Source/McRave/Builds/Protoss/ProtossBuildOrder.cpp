@@ -6,8 +6,8 @@
 #include "Macro/Researching/Researching.h"
 #include "Macro/Upgrading/Upgrading.h"
 #include "Main/Common.h"
-#include "Map/Stations.h"
-#include "Map/Terrain.h"
+#include "Map/Stations/Stations.h"
+#include "Map/Terrain/Terrain.h"
 #include "Map/Walls/Walls.h"
 #include "Strategy/Spy/Spy.h"
 

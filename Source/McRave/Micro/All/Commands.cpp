@@ -2,9 +2,9 @@
 
 #include "Info/Player/Players.h"
 #include "Macro/Planning/Planning.h"
-#include "Map/Grids.h"
-#include "Map/Stations.h"
-#include "Map/Terrain.h"
+#include "Map/Grids/Grids.h"
+#include "Map/Stations/Stations.h"
+#include "Map/Terrain/Terrain.h"
 #include "Micro/Combat/Combat.h"
 #include "Micro/Worker/Workers.h"
 #include "Strategy/Actions/Actions.h"
@@ -502,7 +502,7 @@ namespace McRave::Command {
                     if (Players::ZvP() && target.getType() == Protoss_Zealot) {
                         if (Util::getTime() < Time(4, 30) && Players::ZvP() && unit.getHealth() <= 16 && com(Zerg_Sunken_Colony) > 0)
                             return true;
-                        if (Util::getTime() < Time(3, 30) && Players::ZvP() && unit.getHealth() <= 16)
+                        if (Util::getTime() < Time(3, 30) && Players::ZvP() && unit.getHealth() <= 16 && !unit.getUnitsTargetingThis().empty())
                             return true;
                     }
 

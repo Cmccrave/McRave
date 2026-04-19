@@ -1,7 +1,7 @@
 #include "Combat.h"
 #include "Info/Unit/Units.h"
-#include "Map/Stations.h"
-#include "Map/Terrain.h"
+#include "Map/Stations/Stations.h"
+#include "Map/Terrain/Terrain.h"
 
 using namespace BWAPI;
 using namespace std;

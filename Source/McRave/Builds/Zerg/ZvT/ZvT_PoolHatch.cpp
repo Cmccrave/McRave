@@ -1,7 +1,7 @@
 #include "Builds/Zerg/ZergBuildOrder.h"
 #include "Info/Player/Players.h"
 #include "Main/Common.h"
-#include "Map/Terrain.h"
+#include "Map/Terrain/Terrain.h"
 #include "Strategy/Spy/Spy.h"
 
 using namespace std;

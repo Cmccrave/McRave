@@ -5,9 +5,9 @@
 #include "Info/Resource/Resources.h"
 #include "Info/Unit/Units.h"
 #include "Main/Util.h"
-#include "Map/Grids.h"
-#include "Map/Stations.h"
-#include "Map/Terrain.h"
+#include "Map/Grids/Grids.h"
+#include "Map/Stations/Stations.h"
+#include "Map/Terrain/Terrain.h"
 #include "Micro/All/Commands.h"
 #include "Strategy/Spy/Spy.h"
 

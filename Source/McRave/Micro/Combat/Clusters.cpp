@@ -1,8 +1,8 @@
 #include "Combat.h"
 #include "Info/Player/Players.h"
 #include "Info/Unit/Units.h"
-#include "Map/Grids.h"
-#include "Map/Terrain.h"
+#include "Map/Grids/Grids.h"
+#include "Map/Terrain/Terrain.h"
 
 using namespace BWAPI;
 using namespace std;

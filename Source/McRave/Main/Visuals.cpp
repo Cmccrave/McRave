@@ -11,7 +11,7 @@
 #include "Macro/Planning/Planning.h"
 #include "Macro/Producing/Producing.h"
 #include "Macro/Upgrading/Upgrading.h"
-#include "Map/Stations.h"
+#include "Map/Stations/Stations.h"
 #include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;

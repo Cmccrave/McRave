@@ -1,9 +1,9 @@
 #include "Transports.h"
 
 #include "Info/Unit/Units.h"
-#include "Map/Grids.h"
-#include "Map/Stations.h"
-#include "Map/Terrain.h"
+#include "Map/Grids/Grids.h"
+#include "Map/Stations/Stations.h"
+#include "Map/Terrain/Terrain.h"
 #include "Micro/All/Commands.h"
 
 using namespace BWAPI;

@@ -5,8 +5,8 @@
 #include "Info/Unit/UnitInfo.h"
 #include "Info/Unit/Units.h"
 #include "Main/Common.h"
-#include "Map/Grids.h"
-#include "Map/Terrain.h"
+#include "Map/Grids/Grids.h"
+#include "Map/Terrain/Terrain.h"
 #include "Strategy/Spy/Spy.h"
 
 // All calculations involved here can be found here:
@@ -39,9 +39,9 @@ namespace McRave::Math {
             return cnt;
         }
 
-        const auto dps   = calcGroundDPS(unit);
-        const auto surv  = calcSurvivability(unit);
-        const auto eff   = calcGrdEffectiveness(unit);
+        const auto dps  = calcGroundDPS(unit);
+        const auto surv = calcSurvivability(unit);
+        const auto eff  = calcGrdEffectiveness(unit);
         return dps * surv * eff;
     }
 
@@ -70,9 +70,9 @@ namespace McRave::Math {
             return cnt;
         }
 
-        const auto dps   = calcAirDPS(unit);
-        const auto surv  = calcSurvivability(unit);
-        const auto eff   = calcAirEffectiveness(unit);
+        const auto dps  = calcAirDPS(unit);
+        const auto surv = calcSurvivability(unit);
+        const auto eff  = calcAirEffectiveness(unit);
         return dps * surv * eff;
     }
 
@@ -153,7 +153,13 @@ namespace McRave::Math {
         auto splash   = calcSplashModifier(unit);
         auto damage   = unit.getGroundDamage();
         auto cooldown = calcGroundCooldown(unit);
-        return (damage > 0.1 && cooldown > 0.0) ? splash * damage / cooldown : 0.0;
+        auto numHits  = unit.getType().groundWeapon().damageFactor();
+
+        if (unit.getType() == Terran_Bunker) {
+            numHits = 4;
+        }
+
+        return (damage > 0.1 && cooldown > 0.0) ? splash * damage * numHits / cooldown : 0.0;
     }
 
     double calcAirDPS(UnitInfo &unit)
@@ -161,7 +167,13 @@ namespace McRave::Math {
         auto splash   = calcSplashModifier(unit);
         auto damage   = unit.getAirDamage();
         auto cooldown = calcAirCooldown(unit);
-        return (damage > 0.1 && cooldown > 0.0) ? splash * damage / cooldown : 0.0;
+        auto numHits  = unit.getType().airWeapon().damageFactor();
+
+        if (unit.getType() == Terran_Bunker) {
+            numHits = 4;
+        }
+
+        return (damage > 0.1 && cooldown > 0.0) ? splash * damage * numHits / cooldown : 0.0;
     }
 
     double calcGroundCooldown(UnitInfo &unit)
@@ -241,13 +253,20 @@ namespace McRave::Math {
             return oppositeDamage / dmg;
         };
 
+        // Estimate value of speed vs average unit speed
+        const auto speed = [&]() {
+            auto value  = (unit.getSpeed() / avgUnitSpeed);
+            auto weight = 0.5;
+            return 1.0 + weight * value;
+        };
+
         // Estimate value of health vs average unit health
         const auto health = [&]() {
             auto value = (double(unit.getType().maxHitPoints() + unit.getType().maxShields())) / avgHealth;
             return value;
         };
 
-        return health() * armor();
+        return health() * armor() * speed();
     }
 
     double calcGroundRange(UnitInfo &unit)
@@ -312,12 +331,8 @@ namespace McRave::Math {
         if (unit.getType() == Terran_Medic)
             return 0.5;
 
-        auto attackCount = double(max(unit.getType().groundWeapon().damageFactor(), unit.getType().maxGroundHits()));
-        auto upLevel     = unit.getPlayer()->getUpgradeLevel(unit.getType().groundWeapon().upgradeType());
-
-        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
-        // auto reduction = Units::getDamageReductionGrd(state);
-
+        auto upLevel   = unit.getPlayer()->getUpgradeLevel(unit.getType().groundWeapon().upgradeType());
+        auto state     = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
         auto dmgPerHit = double(unit.getType().groundWeapon().damageAmount() + (unit.getType().groundWeapon().damageBonus() * upLevel));
 
         // TODO Check Reaver upgrade type functional here or if needed hardcoding
@@ -328,13 +343,11 @@ namespace McRave::Math {
         }
         // TODO: Check for bio damage upgrade
         if (unit.getType() == Terran_Bunker) {
-            attackCount = 4;
-            dmgPerHit   = 6;
+            dmgPerHit = 6;
         }
         if (unit.getType() == Protoss_High_Templar)
             return 112.0;
-
-        return attackCount * (dmgPerHit /*- reduction*/);
+        return dmgPerHit;
     }
 
     double calcAirDamage(UnitInfo &unit)
@@ -343,22 +356,17 @@ namespace McRave::Math {
         if (unit.getType() == Terran_Medic)
             return 0.5;
 
-        auto attackCount = double(max(unit.getType().airWeapon().damageFactor(), unit.getType().maxAirHits()));
-        auto upLevel     = unit.getPlayer()->getUpgradeLevel(unit.getType().airWeapon().upgradeType());
-
-        auto state = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
-        // auto reduction = Units::getDamageReductionAir(state);
-
+        auto upLevel   = unit.getPlayer()->getUpgradeLevel(unit.getType().airWeapon().upgradeType());
+        auto state     = (unit.getPlayer() == Broodwar->self()) ? PlayerState::Self : PlayerState::Enemy;
         auto dmgPerHit = double(unit.getType().airWeapon().damageAmount() + (unit.getType().airWeapon().damageBonus() * upLevel));
 
         // TODO: Check for bio damage upgrade
         if (unit.getType() == Terran_Bunker) {
-            attackCount = 4;
-            dmgPerHit   = 6;
+            dmgPerHit = 6;
         }
         if (unit.getType() == Protoss_High_Templar)
             return 112.0;
-        return attackCount * (dmgPerHit /*- reduction*/);
+        return dmgPerHit;
     }
 
     double calcMoveSpeed(UnitInfo &unit)
@@ -405,6 +413,10 @@ namespace McRave::Math {
             return 7;
         if (unitType == Zerg_Devourer)
             return 7;
+
+        // Sometimes seems they can cancel animations, 1 frame of buffer is fine
+        if (unitType == Terran_Marine || unitType == Zerg_Hydralisk)
+            return 1;
         return 0;
     }
 

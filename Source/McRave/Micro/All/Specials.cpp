@@ -3,9 +3,9 @@
 #include "Info/Player/Players.h"
 #include "Info/Resource/Resources.h"
 #include "Macro/Planning/Planning.h"
-#include "Map/Grids.h"
-#include "Map/Stations.h"
-#include "Map/Terrain.h"
+#include "Map/Grids/Grids.h"
+#include "Map/Stations/Stations.h"
+#include "Map/Terrain/Terrain.h"
 #include "Micro/Combat/Combat.h"
 #include "Strategy/Actions/Actions.h"
 

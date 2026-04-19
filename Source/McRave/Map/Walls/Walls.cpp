@@ -6,8 +6,8 @@
 #include "Info/Player/Players.h"
 #include "Info/Unit/Units.h"
 #include "Main/Common.h"
-#include "Map/Stations.h"
-#include "Map/Terrain.h"
+#include "Map/Stations/Stations.h"
+#include "Map/Terrain/Terrain.h"
 #include "Micro/Scout/Scouts.h"
 #include "Strategy/Spy/Spy.h"
 
@@ -80,7 +80,10 @@ namespace McRave::Walls {
                                      {Terran_Supply_Depot, Terran_Supply_Depot, Terran_Supply_Depot},
                                      {Terran_Supply_Depot, Terran_Supply_Depot}};
 
-                naturaltestingOrder = {{Terran_Barracks, Terran_Supply_Depot}};
+                if (Players::vZ())
+                    naturaltestingOrder = {{Terran_Supply_Depot, Terran_Supply_Depot}};
+                else
+                    naturaltestingOrder = {{Terran_Barracks, Terran_Supply_Depot}};
             }
 
             // Zerg wall parameters

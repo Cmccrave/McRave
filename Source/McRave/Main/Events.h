@@ -4,7 +4,7 @@
 #include "Info/Resource/Resources.h"
 #include "Macro/Planning/Planning.h"
 #include "Main/Common.h"
-#include "Map/Stations.h"
+#include "Map/Stations/Stations.h"
 
 // Information from: https://docs.google.com/document/d/1p7Rw4v56blhf5bzhSnFVfgrKviyrapDFHh9J4FNUXM0
 

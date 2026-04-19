@@ -6,8 +6,8 @@
 #include "Info/Unit/Units.h"
 #include "Macro/Expanding/Expanding.h"
 #include "Macro/Planning/Pylons.h"
-#include "Map/Stations.h"
-#include "Map/Terrain.h"
+#include "Map/Stations/Stations.h"
+#include "Map/Terrain/Terrain.h"
 #include "Map/Walls/Walls.h"
 #include "Micro/Worker/Workers.h"
 #include "Strategy/Spy/Spy.h"
@@ -1018,8 +1018,9 @@ namespace McRave::Planning {
 
     bool isWallType(UnitType building)
     {
-        return building == Protoss_Forge || building == Protoss_Gateway || building == Protoss_Pylon || building == Terran_Bunker || building == Terran_Barracks || building == Zerg_Spire ||
-               building == Zerg_Hydralisk_Den || building == Zerg_Evolution_Chamber || building == Zerg_Queens_Nest || building == Zerg_Hatchery;
+        return building == Protoss_Forge || building == Protoss_Gateway || building == Protoss_Pylon ||       //
+               building == Terran_Bunker || building == Terran_Barracks || building == Terran_Supply_Depot || //
+               building == Zerg_Spire || building == Zerg_Hydralisk_Den || building == Zerg_Evolution_Chamber || building == Zerg_Queens_Nest || building == Zerg_Hatchery;
     }
 
     map<TilePosition, UnitType> &getPlannedBuildings() { return buildingsPlanned; }

@@ -3,7 +3,7 @@
 #include "Info/Unit/UnitInfo.h"
 #include "Info/Unit/Units.h"
 #include "Main/Common.h"
-#include "Map/Stations.h"
+#include "Map/Stations/Stations.h"
 #include "Micro/Scout/Scouts.h"
 #include "Micro/Transport/Transports.h"
 #include "Micro/Worker/Workers.h"

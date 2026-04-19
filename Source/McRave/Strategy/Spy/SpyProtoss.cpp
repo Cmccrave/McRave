@@ -1,7 +1,7 @@
 #include "Info/Player/PlayerInfo.h"
 #include "Info/Player/Players.h"
 #include "Info/Unit/UnitInfo.h"
-#include "Map/Terrain.h"
+#include "Map/Terrain/Terrain.h"
 #include "Micro/Scout/Scouts.h"
 #include "Spy.h"
 
