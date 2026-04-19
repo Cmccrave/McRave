@@ -2,8 +2,10 @@
 
 #include "Builds/All/BuildOrder.h"
 #include "Info/Player/Players.h"
+#include "Info/Roles.h"
 #include "Info/Unit/Units.h"
 #include "Macro/Planning/Planning.h"
+#include "Macro/Researching/Researching.h"
 #include "Macro/Upgrading/Upgrading.h"
 #include "Map/Stations.h"
 #include "Map/Terrain.h"
@@ -38,7 +40,8 @@ namespace McRave::Goals {
             GoalTarget(){};
         };
 
-        template <class T> void assignNumberToGoal(T t, UnitType type, int count, GoalType gType = GoalType::None)
+        template <class T> //
+        void assignNumberToGoal(T t, UnitType type, int count, GoalType gType = GoalType::None)
         {
             const auto here = Position(t);
             if (!here.isValid())
@@ -94,7 +97,8 @@ namespace McRave::Goals {
             }
         }
 
-        template <class T> void assignPercentToGoal(T t, UnitType type, double percent, GoalType gType = GoalType::None)
+        template <class T> //
+        void assignPercentToGoal(T t, UnitType type, double percent, GoalType gType = GoalType::None)
         {
             const auto here  = Position(t);
             const auto count = int(percent * double(com(type)));
@@ -295,23 +299,19 @@ namespace McRave::Goals {
                     if (auto unit = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == type; }))
                         typeSpeed = unit->getSpeed();
 
-                    if (closestBuilder) {
-                        LOG_FAST("Drone looking to expand");
-                        // for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
-                        //    auto assignEscorter = enemy->getPosition().getDistance(closestBuilder->getPosition()) < 320.0 || enemy->getType() == Terran_Vulture; // Just assign vs vultures for now
-                        //    if (!enemy->isSuicidal() && assignEscorter)
-                        //        assignNumberToGoal(enemy->getPosition(), type, perEnemy, GoalType::Escort);
-                        //}
-                        if (Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
-                            assignNumberToGoal(closestBuilder->getPosition(), type, 1, GoalType::Escort);
-
-                        // TODO: If we had a predicate, we can do this easier
-                        for (auto &unit : Units::getUnits(PlayerState::Self)) {
-                            if (unit->isLightAir() && unit->saveUnit) {
-                                unit->setGoal(closestBuilder->getPosition());
-                                unit->setGoalType(GoalType::Defend);
-                            }
+                    // When attempting to expand, escort from vultures
+                    // Assign 1 to the worker
+                    // Assign 1 to each vulture nearby
+                    // Assign the rest to the worker
+                    if (closestBuilder && Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0) {
+                        LOG_FAST("Worker looking to expand");
+                        assignNumberToGoal(closestBuilder->getPosition(), type, 1, GoalType::Escort);
+                        for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
+                            auto assignEscorter = enemy->getPosition().getDistance(closestBuilder->getPosition()) < 640.0 && enemy->getType() == Terran_Vulture; // Just assign vs vultures for now
+                            if (!enemy->isSuicidal() && assignEscorter)
+                                assignNumberToGoal(enemy->getPosition(), type, perEnemy, GoalType::Escort);
                         }
+                        assignPercentToGoal(closestBuilder->getPosition(), type, 0.5, GoalType::Escort);
                     }
                 }
             }
@@ -401,6 +401,23 @@ namespace McRave::Goals {
                         assignNumberToGoal(tile, Terran_Barracks, 1, GoalType::Defend);
                 }
             }
+
+            // Place mines defensively
+            if (Researching::haveResearch(TechTypes::Spider_Mines)) {
+                for (auto &station : Stations::getStations(PlayerState::Self)) {
+                    if (!station->isMain()) {
+                        auto nodes = {Terrain::getNaturalChoke()->end1, Terrain::getNaturalChoke()->end2, Terrain::getNaturalChoke()->middle};
+                        for (auto &node : nodes) {
+                            auto pos         = (Position(Terrain::getNaturalChoke()->Pos(node)) + Position(Terrain::getNaturalChoke()->Center())) / 2;
+                            auto closestMine = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) { return u->getType() == Terran_Vulture_Spider_Mine; });
+                            if (!closestMine || closestMine->getPosition().getDistance(pos) >= 64.0) {
+                                auto shifted = Util::shiftTowards(pos, station->getBase()->Center(), -64.0);
+                                assignNumberToGoal(shifted, Terran_Vulture, 1, GoalType::Contain);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         void updateOverlordGoals()
@@ -450,6 +467,17 @@ namespace McRave::Goals {
 
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
             auto oldestTile    = Terrain::getOldestPosition(Terrain::getMainArea());
+
+            // Clear out for potential in base proxy
+            auto possibleProxyFact  = (Spy::enemyPossibleProxy() && Spy::getEnemyBuild() == T_RaxFact);
+            auto possibleCannonRush = (Spy::enemyPossibleProxy() && Players::getTotalCount(PlayerState::Enemy, Protoss_Probe) > 0);
+            if (Roles::getRoleCount(Role::Combat) == 0 && (possibleProxyFact || possibleCannonRush)) {
+                auto proxyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy(); });
+                if (proxyWorker)
+                    assignNumberToGoal(proxyWorker->getPosition(), Zerg_Drone, 1, GoalType::Explore);
+                else
+                    assignNumberToGoal(oldestTile, Zerg_Drone, 1, GoalType::Explore);
+            }
 
             // Clear out base early game
             auto proxyNeedsScouting = !Spy::enemyProxy() || Spy::getEnemyBuild() == P_CannonRush;

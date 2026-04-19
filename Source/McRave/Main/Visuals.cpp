@@ -87,14 +87,14 @@ namespace McRave::Visuals {
         };
         vector<FrameTest> frameTests;
 
-        bool commands    = false;
+        bool commands    = true;
         bool targets     = false;
         bool builds      = true;
         bool bweb        = false;
         bool strengths   = false;
         bool orders      = false;
         bool states      = false;
-        bool resources   = true;
+        bool resources   = false;
         bool timers      = false;
         bool scores      = true;
         bool roles       = false;
@@ -330,8 +330,10 @@ namespace McRave::Visuals {
                         Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, trainType);
                     }
                     else if (unit.unit() && unit.unit()->exists() && unit.unit()->isCompleted()) {
-                        if (unit.unit()->getOrder() != Orders::Nothing)
+                        if (unit.unit()->getOrder() != Orders::Nothing && unit.unit()->getOrderTarget()) {
+                            drawLine(unit.getPosition(), unit.unit()->getOrderTarget()->getPosition(), color);
                             Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, unit.unit()->getOrder().c_str());
+                        }
                         if (unit.unit()->getSecondaryOrder() != Orders::Nothing)
                             Broodwar->drawTextMap(unit.getPosition() + Position(width, -16), "%c%s", textColor, unit.unit()->getOrder().c_str());
                         if (unit.unit()->isUpgrading())

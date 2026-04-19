@@ -24,7 +24,6 @@ namespace McRave::Pathing {
                 return;
             }
 
-            auto distance = double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()));
             auto range    = (target.isFlying() ? unit.getAirRange() : unit.getGroundRange());
 
             // No need to calculate for units that don't move or are in range
@@ -40,10 +39,24 @@ namespace McRave::Pathing {
                     range = 64.0;
             }
 
+            // Special case: units that "swipe" attack will usually move a few pixels too close after their attack due to decel
+            if (unit.getType() == Zerg_Mutalisk || unit.getType() == Terran_Wraith)
+                range -= 48.0;
+
             // Create an air distance calculation for engage position
-            auto engagePosition = Util::shiftTowards(target.getPosition(), unit.getPosition(), min(distance, range));
-            unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
+            //auto distance       = double(Util::boxDistance(unit, target));
+            //auto engagePosition = Util::shiftTowards(target.getPosition(), unit.getPosition(), min(distance, range));
+            //unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
+            //unit.setEngagePosition(engagePosition);
+
+            auto distance = double(Util::boxDistance(unit, target));
+            auto moveDist = std::max(0.0, distance - range);
+            auto engagePosition = Util::shiftTowards(unit.getPosition(), target.getPosition(), moveDist);
             unit.setEngagePosition(engagePosition);
+            unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
+
+            if (unit.unit()->isSelected())
+                Visuals::drawCircle(engagePosition, 10, Colors::Purple);
         }
 
         void getInterceptPosition(UnitInfo &unit, UnitInfo &target)
@@ -114,7 +127,7 @@ namespace McRave::Pathing {
 
         void updateTrapPositions(UnitInfo &enemy)
         {
-            if (enemy.getType() != Terran_Vulture)
+            if (enemy.getType() != Terran_Vulture || enemy.getCurrentSpeed() == 0.0)
                 return;
 
             // Figure out how to trap the unit
@@ -123,7 +136,7 @@ namespace McRave::Pathing {
             if (closestStation && closestStation->isNatural()) {
                 auto closestMain = BWEB::Stations::getClosestMainStation(enemy.getPosition());
                 if (closestMain && Stations::ownedBy(closestMain) == PlayerState::Self)
-                    biasTowards = Stations::getDefendPosition(closestMain);
+                    biasTowards = Terrain::getMainRamp().entrance;
             }
 
             static set<UnitType> allowedTypes = {Zerg_Zergling, Protoss_Zealot};
@@ -140,7 +153,9 @@ namespace McRave::Pathing {
 
                 auto frames = clamp(unit.getPosition().getDistance(pos) / unit.getSpeed(), 2.0, 64.0);
 
-                double factor      = distToBias / (distToBias + 96.0);
+                auto percentSpeed = enemy.getCurrentSpeed() / enemy.getSpeed();
+
+                double factor      = distToBias / 64.0;
                 auto weightTowards = (frames + 12) * factor;
                 auto weightExpand  = (frames + 2);
                 auto finalPosition = pos + Position(int(dirx * weightTowards), int(diry * weightTowards)) + Position(int(expandx * weightExpand), int(expandy * weightExpand));

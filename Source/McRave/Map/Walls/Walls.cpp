@@ -399,6 +399,10 @@ namespace McRave::Walls {
             if (Spy::getEnemyTransition() == T_2PortWraith)
                 return (Util::getTime() > Time(5, 30));
 
+            // Need 2 sunkens to protect from speed vultures
+            if (Spy::getEnemyTransition() == T_2FactVulture)
+                return 2 * (Util::getTime() > Time(5, 30));
+
             // Need 3 sunkens to defend against tank timing
             if (Spy::getEnemyTransition() == T_1FactTanks)
                 return (Util::getTime() > Time(7, 45)) + (Util::getTime() > Time(8, 15)) + (Util::getTime() > Time(8, 45));
@@ -417,11 +421,9 @@ namespace McRave::Walls {
             auto mechKilled      = Players::getDeadCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode);
             auto buildingsKilled = Players::getDeadCount(PlayerState::Enemy, Terran_Barracks);
 
-            auto minimum = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 ? 1 : 0;
-
-            auto threeHatch = BuildOrder::getCurrentTransition().find("2Hatch") == string::npos;
-            auto expected   = max(ZvT_Opener(wall), ZvT_Transition(wall));
-            auto reduction  = (bioKilled / 16) + (mechKilled / 2) + buildingsKilled + (Spy::enemyFastExpand() && Spy::getEnemyBuild() != T_RaxCC);
+            auto minimum   = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 ? 1 : 0;
+            auto expected  = max(ZvT_Opener(wall), ZvT_Transition(wall));
+            auto reduction = (bioKilled / 16) + (mechKilled / 2) + buildingsKilled + (Spy::enemyFastExpand() && Spy::getEnemyBuild() != T_RaxCC);
 
             if (expected > 0)
                 minimum = 1;
@@ -472,7 +474,7 @@ namespace McRave::Walls {
                 continue;
 
             auto defendPos = Stations::getDefendPosition(&station);
-            if (defendPos.isValid() && station.getChokepoint()) {
+            if (defendPos.isValid()) {
                 auto defendChoke = Util::getClosestChokepoint(defendPos);
                 if (defendChoke && !BWEB::Walls::getWall(defendChoke)) {
                     generateWall(&station, defendChoke);

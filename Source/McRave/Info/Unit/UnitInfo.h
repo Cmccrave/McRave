@@ -164,7 +164,7 @@ namespace McRave {
 
         bool canMirrorCommander(UnitInfo &otherUnit)
         {
-            return gState != GlobalState::Retreat && !unit()->isIrradiated() && !isNearSuicide() && !attemptingRegroup() &&
+            return gState != GlobalState::Retreat && !unit()->isIrradiated() && !isNearSuicide() && !attemptingRegroup() && !attemptingAvoidance() &&
                    (getType() == otherUnit.getType() || lState != LocalState::Attack);
         }
 

@@ -45,10 +45,18 @@ namespace McRave::Combat::State {
 
         // Zealots / Dragoons
         if (!BuildOrder::isPressure(Protoss_Dragoon) && !BuildOrder::isPressure(Protoss_Zealot) && (unlockedOrVis(Protoss_Zealot) || unlockedOrVis(Protoss_Dragoon))) {
+
+            auto slowLots  = !Upgrading::haveUpgrade(UpgradeTypes::Leg_Enhancements);
+            auto rangeless = !Upgrading::haveUpgrade(UpgradeTypes::Singularity_Charge);
+
             if (Players::PvZ()) {
                 auto gateUnits = total(Protoss_Zealot) + total(Protoss_Dragoon);
                 if ((gateUnits < 12 && int(Stations::getStations(PlayerState::Enemy).size()) < 2) || gateUnits < 3)
                     lockGateways();
+                if (Spy::getEnemyBuild() == P_FFE) {
+                    if (slowLots && rangeless)
+                        lockGateways();
+                }
             }
             if (Players::PvP()) {
                 auto rush = Spy::getEnemyOpener() == P_9_9 || Spy::getEnemyOpener() == P_Proxy_9_9;
@@ -65,16 +73,22 @@ namespace McRave::Combat::State {
 
     void updateTStaticStates()
     {
+        const auto lockBarracks = [&]() {
+            staticRetreatTypes.push_back(Terran_Marine);
+            staticRetreatTypes.push_back(Terran_Medic);
+            staticRetreatTypes.push_back(Terran_Firebat);
+        };
+
         // Marines
         if (!BuildOrder::isPressure(Terran_Marine) && unlockedOrVis(Terran_Marine)) {
             if (Players::TvZ()) {
                 auto stim = Players::getPlayerInfo(Broodwar->self())->hasTech(TechTypes::Stim_Packs);
-                if (!stim)
-                    staticRetreatTypes.push_back(Terran_Marine);
+                if (!stim || Spy::enemyPressure())
+                    lockBarracks();
             }
             if (Players::TvP() || Players::TvT()) {
                 if (!BuildOrder::isRush())
-                    staticRetreatTypes.push_back(Terran_Marine);
+                    lockBarracks();
             }
         }
 
@@ -200,6 +214,7 @@ namespace McRave::Combat::State {
 
                     //
                     const auto enemyHydraBuild = Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_1HatchHydra || Spy::getEnemyTransition() == Z_2HatchHydra;
+                    const auto enemyTimingBuild = Spy::getEnemyTransition() == Z_2HatchSpeedling || Spy::getEnemyTransition() == Z_UpgradeLing;
                     if (!enemyHydraBuild) {
                         if (!lingAdvantage && (expansionAdvantage || hatchAdvatange || techAdvantage))
                             staticRetreatTypes.push_back(Zerg_Zergling);
@@ -216,7 +231,7 @@ namespace McRave::Combat::State {
                         }
 
                         // 2hm early
-                        if (BuildOrder::getCurrentTransition() == Z_2HatchMuta && Util::getTime() < Time(5, 30) && !Spy::enemyFastExpand() && !Spy::Zerg::enemySlowerSpeed()) {
+                        if (BuildOrder::getCurrentTransition() == Z_2HatchMuta && Util::getTime() < Time(4, 00) && !Spy::enemyFastExpand()) {
                             if (Spy::Zerg::enemyFasterPool() || Spy::Zerg::enemyEqualPool() || avoidDiceRoll || enemyDroneScouted)
                                 staticRetreatTypes.push_back(Zerg_Zergling);
                         }
@@ -243,10 +258,13 @@ namespace McRave::Combat::State {
 
     bool forceLocalHold(UnitInfo &unit)
     {
-        if (!unit.hasTarget())
+        if (!unit.hasTarget() || unit.isFlying())
             return false;
         auto &target = *unit.getTarget().lock();
-        if (isStaticRetreat(unit.getType()))
+
+        auto holdAtHome = Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && (unit.getGlobalState() == GlobalState::Retreat || unit.getGoalType() == GoalType::Defend);
+
+        if (holdAtHome)
             return true;
         return false;
     }
@@ -267,7 +285,7 @@ namespace McRave::Combat::State {
             return closestDefense && closestDefense->getPosition().getDistance(target.getPosition()) < 256.0;
         };
 
-        const auto nearMainRamp = [&]() { 
+        const auto nearMainRamp = [&]() {
             auto center = Terrain::getMainRamp().center;
             return center.isValid() && target.getPosition().getDistance(center) < 64.0;
         };
@@ -283,6 +301,7 @@ namespace McRave::Combat::State {
             return unit.getType() == Zerg_Broodling                                                                                                                                                //
                    || (unit.getType() == Zerg_Ultralisk && unit.unit()->isIrradiated())                                                                                                            //
                    || (unit.getSurroundPosition().isValid() && inRange)                                                                                                                            //
+                   || (unit.getType().isWorker() && target.getType().isWorker() && Util::getTime() < Time(2, 00))                                                                                  //
                    || (!target.isMelee() && Actions::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm))); //
         };
 
@@ -295,6 +314,10 @@ namespace McRave::Combat::State {
         auto harassAttack = [&]() {
             if (unit.getType() == Zerg_Mutalisk) {
                 if (Clusters::canDecimate(unit, target))
+                    return true;
+            }
+            if (unit.getType() == Terran_Vulture) {
+                if (target.isMelee() && Util::getTime() < Time(5, 00))
                     return true;
             }
             return false;
@@ -325,7 +348,6 @@ namespace McRave::Combat::State {
 
         // If inside self territory, likely forcing an attack is best
         auto atHomeAttack = [&]() {
-
             // If both sides are melee vs melee, we don't need to force engagement until something is in range
             if (target.isThreatening() && !target.isHidden()) {
                 if (unit.isMelee() && target.isMelee() && !target.hasAttackedRecently() && !unit.isWithinRange(target) && !Combat::isDefendNatural() && nearMainRamp())
@@ -390,9 +412,8 @@ namespace McRave::Combat::State {
                 return false;
 
             // Try to save Mutas that are low hp when the firepower isn't needed
-            const auto mutaSavingRequired = unit.getType() == Zerg_Mutalisk &&
-                                            (Players::ZvZ() ? (Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) == 0) : (Util::getTime() > Time(8, 00))) && !unit.isWithinRange(target) &&
-                                            unit.getHealth() <= 40 && !Terrain::inTerritory(PlayerState::Enemy, unit.getPosition());
+            const auto mutaSavingRequired = unit.getType() == Zerg_Mutalisk && (!Players::ZvZ() || Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) == 0) && !unit.isWithinRange(target) &&
+                                            unit.getHealth() <= 40;
 
             // Try to save scouts as they have high shield counts
             const auto scoutSavingRequired = unit.getType() == Protoss_Scout && !unit.isWithinRange(target) && unit.getHealth() + unit.getShields() <= 80;
@@ -449,13 +470,13 @@ namespace McRave::Combat::State {
                                     ? double(Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition()))
                                     : BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition());
 
-        const auto insideRetreatRadius = distSim < unit.getRetreatRadius();
+        const auto insideRetreatRadius = distSim < unit.getRetreatRadius() || unit.getGlobalState() == GlobalState::Retreat;
         const auto insideEngageRadius  = distSim < unit.getEngageRadius();
         const auto insideHoldRadius    = distSim >= unit.getRetreatRadius() || selfTerritory;
 
-        const auto localRetreat = unit.getSimState() == SimState::Loss && (!unit.attemptingRunby() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()));
-        const auto localEngage  = unit.getSimState() == SimState::Win && (unit.getGlobalState() == GlobalState::Attack || targetAtHome);
-        const auto localHold    = unit.getSimState() != SimState::Win && !unit.isLightAir() && selfTerritory && (unit.getGlobalState() == GlobalState::Retreat || unit.getGoalType() == GoalType::Defend);
+        const auto localRetreat = unit.getSimState() == SimState::Loss && insideRetreatRadius && (!unit.attemptingRunby() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()));
+        const auto localEngage  = unit.getSimState() == SimState::Win && insideEngageRadius && (unit.getGlobalState() == GlobalState::Attack || targetAtHome);
+        const auto localHold    = unit.getSimState() != SimState::Win && insideHoldRadius && !unit.isLightAir();
 
         // Regardless of any decision, determine if Unit is in danger and needs to retreat
         if (unit.inDanger && !unit.isTargetedBySuicide()) {
@@ -471,11 +492,11 @@ namespace McRave::Combat::State {
             unit.setLocalState(LocalState::Retreat);
 
         // If within local decision range
-        else if (insideEngageRadius && localEngage)
+        else if (localEngage)
             unit.setLocalState(LocalState::Attack);
-        else if (insideHoldRadius && localHold)
-            unit.setLocalState(LocalState::Hold);
-        else if (insideRetreatRadius && localRetreat)
+        // else if (localHold)
+        //    unit.setLocalState(LocalState::Hold);
+        else if (localRetreat)
             unit.setLocalState(LocalState::Retreat);
     }
 

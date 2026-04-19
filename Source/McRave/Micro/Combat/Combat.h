@@ -90,6 +90,7 @@ namespace McRave::Combat {
     BWAPI::Position getDefendPosition();
     BWAPI::Position getHarassPosition();
     bool isDefendNatural();
+    bool isHoldNatural();
 
     void onFrame();
     void onStart();

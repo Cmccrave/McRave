@@ -331,6 +331,12 @@
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZvFFA_PoolHatch.cpp">
       <Filter>McRave\Builds\Zerg\ZvFFA</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvT\TvT.cpp">
+      <Filter>McRave\Builds\Terran\TvT</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvT\TvT_RaxFact.cpp">
+      <Filter>McRave\Builds\Terran\TvT</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -703,6 +709,9 @@
     </Filter>
     <Filter Include="McRave\Builds\Terran\TvP">
       <UniqueIdentifier>{166561e7-c028-4604-9361-2273838157f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="McRave\Builds\Terran\TvT">
+      <UniqueIdentifier>{ba9f5156-96e0-4761-bbf0-2317e106140d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

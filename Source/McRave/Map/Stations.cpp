@@ -228,19 +228,11 @@ namespace McRave::Stations {
                 if (Spy::enemyInvis())
                     return 2 - groundCount;
             }
-            else {
-            }
             return 0;
         }
 
         int PvTgroundDef(const BWEB::Station *const station)
         {
-            if (station->isMain()) {
-            }
-            else if (station->isNatural()) {
-            }
-            else {
-            }
             return 0;
         }
 
@@ -256,8 +248,12 @@ namespace McRave::Stations {
                 if (Spy::getEnemyTransition().find("Muta") != string::npos)
                     return 2 - groundCount;
             }
-            else {
-            }
+            return 0;
+        }        
+        
+        int PvFFAgroundDef(const BWEB::Station *const station)
+        {
+            auto groundCount = getGroundDefenseCount(station);
             return 0;
         }
 
@@ -334,7 +330,7 @@ namespace McRave::Stations {
                         return 1 - groundCount;
 
                     // 3 Hatch
-                    if (Util::getTime() < Time(6, 30) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && com(Zerg_Spire) > 0)
+                    if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && com(Zerg_Spire) > 0)
                         return 4 - groundCount;
                     if (Spy::getEnemyTransition() == Z_3HatchSpeedling && com(Zerg_Spire) > 0)
                         return 4 - groundCount;
@@ -353,7 +349,7 @@ namespace McRave::Stations {
                         desiredDefenses = max(desiredDefenses, 1 + (vis(Zerg_Spire) > 0));
 
                     // 3 Hatch
-                    if (Util::getTime() < Time(5, 00) && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && vis(Zerg_Spire) > 0)
+                    if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && vis(Zerg_Spire) > 0)
                         return 4 - groundCount;
 
                     // Speedling all-in
@@ -392,8 +388,17 @@ namespace McRave::Stations {
         {
             auto groundCount = getGroundDefenseCount(station);
 
-            if (Players::ZvFFA() && !station->isMain() && !station->isNatural())
+            if (!station->isMain() && !station->isNatural())
                 return 2 - groundCount;
+            return 0;
+        }
+
+        int TvPgroundDef(const BWEB::Station *const station)
+        {
+            auto groundCount = getGroundDefenseCount(station);
+
+            if (station->isMain() && (Spy::getEnemyOpener() == P_9_9 || Spy::getEnemyOpener() == P_Proxy_9_9))
+                return 1 - groundCount;
             return 0;
         }
 
@@ -401,9 +406,16 @@ namespace McRave::Stations {
         {
             auto groundCount = getGroundDefenseCount(station);
 
-            if (Players::TvFFA() && station->isMain() && com(Terran_Marine) > 0)
+            if (station->isMain() && (Spy::getEnemyOpener() == Z_4Pool || Spy::getEnemyOpener() == Z_9Pool))
                 return 1 - groundCount;
-            if (Players::TvZ() && station->isMain() && (Spy::getEnemyOpener() == Z_4Pool || Spy::getEnemyOpener() == Z_9Pool))
+            return 0;
+        }
+        
+        int TvFFAgroundDef(const BWEB::Station *const station)
+        {
+            auto groundCount = getGroundDefenseCount(station);
+
+            if (station->isMain() && com(Terran_Marine) > 0)
                 return 1 - groundCount;
             return 0;
         }
@@ -561,14 +573,24 @@ namespace McRave::Stations {
             return PvTgroundDef(station);
         if (Players::PvZ())
             return PvZgroundDef(station);
+        if (Players::PvFFA())
+            return PvFFAgroundDef(station);
+
         if (Players::ZvP())
             return ZvPgroundDef(station);
         if (Players::ZvT())
             return ZvTgroundDef(station);
         if (Players::ZvZ())
             return ZvZgroundDef(station);
+        if (Players::ZvFFA())
+            return ZvFFAgroundDef(station);
+
+        if (Players::TvP())
+            return TvPgroundDef(station);
         if (Players::TvZ())
             return TvZgroundDef(station);
+        if (Players::TvFFA())
+            return TvFFAgroundDef(station);
         return 0;
     }
 
@@ -730,7 +752,7 @@ namespace McRave::Stations {
     bool isThreatened(const BWEB::Station *const station)
     {
         // Find self unit with losing sim state that is targeting a threatening unit near this station
-        const auto closestSelf = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) { 
+        const auto closestSelf = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) {
             if (u->getRole() != Role::Combat)
                 return false;
             return Terrain::inArea(station, u->getPosition());
@@ -744,9 +766,7 @@ namespace McRave::Stations {
         }
 
         // There's a threatening unit and nothing to support
-        const auto closestEnemy = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Enemy, [&](auto &u) {
-            return u->isThreatening() && Terrain::inArea(station, u->getPosition());
-        });
+        const auto closestEnemy = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Enemy, [&](auto &u) { return u->isThreatening() && Terrain::inArea(station, u->getPosition()); });
 
         return closestEnemy;
     }
@@ -781,7 +801,7 @@ namespace McRave::Stations {
                 return true;
             if (station->isMain() && !Terrain::isPocketNatural()) {
                 const auto closestNatural = BWEB::Stations::getClosestNaturalStation(station->getBase()->Location());
-                if (Stations::ownedBy(closestNatural) == PlayerState::Self)
+                if (Stations::ownedBy(closestNatural) == PlayerState::Self && Combat::isHoldNatural())
                     return true;
             }
             return false;
@@ -793,6 +813,9 @@ namespace McRave::Stations {
             auto defendPosition = station->getBase()->Center();
             auto distDefend     = defendPosition.getDistance(unit.getPosition());
             auto distCenter     = station->getBase()->Center().getDistance(unit.getPosition());
+
+            if (station->isNatural() && !Combat::isHoldNatural())
+                continue;
 
             if (distDefend < distBest && !ownForwardBase(station)) {
                 bestStation = station;

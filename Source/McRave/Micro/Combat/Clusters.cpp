@@ -351,22 +351,16 @@ namespace McRave::Combat::Clusters {
         if (!easilyKilled)
             return false;
 
-        set<weak_ptr<UnitInfo>> reachList;
-        for (auto t : target.getUnitsInReachOfThis())
-            reachList.insert(t);
-
         // Calculate the risk
         auto unitRange  = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
         auto dpsInRange = 0.0;
-        for (auto &e : reachList) {
-            if (e.expired())
-                continue;
-
-            auto &enemy = *e.lock();
+        for (auto u : Units::getUnits(PlayerState::Enemy)) {
+            auto &enemy = *u;
+            Visuals::drawLine(unit.getPosition(), enemy.getPosition(), Colors::Red);
             if (enemy.canAttackAir() && (!enemy.isStale() || enemy.getType().isBuilding())) {
 
                 // Have to check this estimate as engage position isn't set yet
-                if (enemy.getPosition().getDistance(target.getPosition()) + unitRange <= enemy.getAirReach()) {
+                if (enemy.getPosition().getDistance(target.getPosition()) <= enemy.getAirReach()) {
                     dpsInRange += enemy.getDpsAgainst(unit);
                 }
             }

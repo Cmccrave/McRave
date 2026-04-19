@@ -241,10 +241,12 @@ namespace McRave::BuildOrder::Terran {
         }
 
         terranUnitPump.clear();
-        if (Players::TvZ())
-            TvZ();
-        else
+        if (Players::TvP() || Players::TvFFA() || Players::TvTVB())
             TvP();
+        else if (Players::TvT())
+            TvT();
+        else if (Players::TvZ())
+            TvZ();
     }
 
     void tech()

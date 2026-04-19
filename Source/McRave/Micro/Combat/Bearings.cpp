@@ -54,6 +54,8 @@ namespace McRave::Combat::Bearings {
 
         if (retreat)
             unit.retreatPos = retreat->getBase()->Center();
+
+        //Visuals::drawLine(unit.getPosition(), unit.retreatPos, Colors::Red);
     }
 
     // What is the "forward" bearing for this unit
@@ -69,6 +71,8 @@ namespace McRave::Combat::Bearings {
         else {
             unit.marchPos = unit.getDestination();
         }
+
+        //Visuals::drawLine(unit.getPosition(), unit.marchPos, Colors::Green);
     }
 
     void updateDestination(UnitInfo &unit)
@@ -108,12 +112,15 @@ namespace McRave::Combat::Bearings {
         else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
             if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Defend) {
                 unit.setDestination(unit.getGoal());
+                unit.circle(Colors::Red);
             }
             else if (retreat) {
                 unit.setDestination(retreat->getBase()->Center());
+                unit.circle(Colors::Yellow);
             }
             else {
                 unit.setDestination(Position(Terrain::getMainChoke()->Center()));
+                unit.circle(Colors::Orange);
             }
         }
         else {
@@ -149,7 +156,7 @@ namespace McRave::Combat::Bearings {
             unit.marchPos = unit.getDestination();
         }
 
-        Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+        //Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
     }
 
     void onFrame()

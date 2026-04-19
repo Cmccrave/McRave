@@ -162,10 +162,10 @@ namespace McRave::Combat::Simulation {
             maxWinPercent += 0.10;
         }
 
-        // Override if target is threatening
-        if (target.isThreatening()) {
-            minWinPercent = 0.2;
-            maxWinPercent = 0.5;
+        // Adjust winrate if targeting a worker
+        if (target.getType().isWorker() || target.getType() == Zerg_Overlord) {
+            minWinPercent *= 2.0;
+            maxWinPercent *= 2.0;
         }
     }
 

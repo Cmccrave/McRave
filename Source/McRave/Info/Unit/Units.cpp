@@ -79,23 +79,6 @@ namespace McRave::Units {
                         enemyArmyCenter += unit.getPosition();
                         enemyArmyCount++;
                     }
-
-                    // Enemy units are assumed targets or order targets
-                    if (unit.unit()->exists() && unit.unit()->getOrderTarget()) {
-                        auto &targetInfo = getUnitInfo(unit.unit()->getOrderTarget());
-                        if (targetInfo) {
-                            unit.setTarget(&*targetInfo);
-                            targetInfo->addTargeter(unit);
-                        }
-                    }
-
-                    // Backup target closest self
-                    if (unit.getType() != Terran_Vulture_Spider_Mine && !unit.hasTarget()) {
-                        auto closest = Util::getClosestUnit(unit.getPosition(), PlayerState::Self,
-                                                            [&](auto &u) { return (u->isFlying() && unit.getAirDamage() > 0.0) || (!u->isFlying() && unit.getGroundDamage() > 0.0); });
-                        if (closest)
-                            unit.setTarget(&*closest);
-                    }
                 }
             }
 

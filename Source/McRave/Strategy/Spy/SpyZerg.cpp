@@ -124,7 +124,7 @@ namespace McRave::Spy::Zerg {
 
                 // 12Hatch
                 else if (completesBy(1, Zerg_Spawning_Pool, Time(3, 15)))
-                    theSpy.opener.name = Z_12Pool;
+                    theSpy.opener.name = Z_12Hatch;
             }
 
             // Ling timings

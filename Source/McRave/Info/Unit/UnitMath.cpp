@@ -18,9 +18,12 @@ using namespace UnitTypes;
 
 namespace McRave::Math {
 
+    static const auto avgUnitSpeed = 4.34;
+    static const auto avgHealth    = 161.05;
+
     double calcMaxGroundStrength(UnitInfo &unit)
     {
-        if (unit.getType() == Protoss_Scarab || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva)
+        if (unit.getGroundDamage() <= 0.0 || unit.getType() == Protoss_Scarab || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva)
             return 0.0;
 
         // Carrier is based on interceptor count
@@ -39,8 +42,7 @@ namespace McRave::Math {
         const auto dps   = calcGroundDPS(unit);
         const auto surv  = calcSurvivability(unit);
         const auto eff   = calcGrdEffectiveness(unit);
-        const auto range = log(unit.getGroundRange() / 4.0 + 16.0);
-        return dps * range * surv * eff;
+        return dps * surv * eff;
     }
 
     double calcVisibleGroundStrength(UnitInfo &unit)
@@ -52,6 +54,9 @@ namespace McRave::Math {
 
     double calcMaxAirStrength(UnitInfo &unit)
     {
+        if (unit.getAirDamage() <= 0.0 || unit.getType() == Protoss_Scarab || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Zerg_Egg || unit.getType() == Zerg_Larva)
+            return 0.0;
+
         // Carrier is based on interceptor count
         if (unit.getType() == Protoss_Carrier) {
             double cnt = 0.0;
@@ -68,8 +73,7 @@ namespace McRave::Math {
         const auto dps   = calcAirDPS(unit);
         const auto surv  = calcSurvivability(unit);
         const auto eff   = calcAirEffectiveness(unit);
-        const auto range = log(unit.getAirRange() / 4.0 + 16.0);
-        return dps * range * surv * eff;
+        return dps * surv * eff;
     }
 
     double calcVisibleAirStrength(UnitInfo &unit)
@@ -229,9 +233,6 @@ namespace McRave::Math {
         auto oppositeStrength = (unit.getPlayer() == Broodwar->self()) ? Players::getStrength(PlayerState::Enemy) : Players::getStrength(PlayerState::Self);
         auto oppositeDamage   = unit.isFlying() ? oppositeStrength.avgAirDamage : oppositeStrength.avgGroundDamage;
 
-        static const auto avgUnitSpeed = 4.34;
-        static const auto avgHealth    = 161.05;
-
         // Estimate how much damage reduction armor is currently applying vs opposite damage
         const auto armor = [&]() {
             double armorValue = double(unit.getType().armor()) + double(unit.getPlayer()->getUpgradeLevel(unit.getType().armorUpgrade())) +
@@ -240,19 +241,13 @@ namespace McRave::Math {
             return oppositeDamage / dmg;
         };
 
-        // Estimate value of speed vs average unit speed
-        const auto speed = [&]() {
-            auto value = (unit.getSpeed() + avgUnitSpeed) / avgUnitSpeed;
-            return pow(value, 0.5);
-        };
-
         // Estimate value of health vs average unit health
         const auto health = [&]() {
             auto value = (double(unit.getType().maxHitPoints() + unit.getType().maxShields())) / avgHealth;
-            return pow(value, 0.5);
+            return value;
         };
 
-        return health() * armor() * speed();
+        return health() * armor();
     }
 
     double calcGroundRange(UnitInfo &unit)

@@ -11,17 +11,25 @@ namespace McRave::BuildOrder::Protoss {
     void composition();
     void unlocks();
 
+    // PvP
+    void PvP();
     void PvP_1GC();
     void PvP_2G();
 
+    // PvT
+    void PvT();
     void PvT_1GC();
     void PvT_2G();
     void PvT_2B();
 
+    // PvZ
+    void PvZ();
     void PvZ_1GC();
     void PvZ_2G();
     void PvZ_FFE();
 
+    // PvFFA
+    void PvFFA();
     void PvFFA_1GC();
 
     int zealotsNeeded_PvFFA();
@@ -32,12 +40,4 @@ namespace McRave::BuildOrder::Protoss {
     bool goonRange();
     bool enemyMoreZealots();
     bool enemyMaybeDT();
-    void defaultPvP();
-    void defaultPvT();
-    void defaultPvZ();
-
-    void PvT();
-    void PvP();
-    void PvZ();
-    void PvFFA();
 }

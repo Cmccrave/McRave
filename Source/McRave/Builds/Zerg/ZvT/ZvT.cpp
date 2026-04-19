@@ -236,9 +236,6 @@ namespace McRave::BuildOrder::Zerg {
 
         auto secondGas = (Spy::enemyFastExpand() && vis(Zerg_Drone) >= 21) || (com(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 21);
 
-        if (!Spy::enemyProxy() && Spy::getEnemyBuild() == T_RaxFact)
-            wantThird = true;
-
         // Order
         unitOrder = mutalingdefiler;
         if (Spy::Terran::enemyMech())

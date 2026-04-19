@@ -142,7 +142,7 @@ namespace McRave::Combat::Navigation {
         }
 
         // If path is reachable, find a point n pixels away to set as new destination
-        auto dist = 160.0;
+        auto dist = unit.isFlying() ? 96.0 : 160.0;
         if (unit.getMarchPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > dist) {
             auto closestPoint   = unit.getDestination();
             auto closestDist    = DBL_MAX;
@@ -151,6 +151,54 @@ namespace McRave::Combat::Navigation {
             if (newDestination.isValid())
                 unit.setNavigation(newDestination);
         }
+    }
+
+    void updateAvoidance(UnitInfo &unit)
+    {
+        if (!unit.hasCommander() || !unit.hasTarget() || !unit.attemptingAvoidance())
+            return;
+
+        auto commander = unit.getCommander().lock();
+        auto target    = unit.getTarget().lock();
+
+        auto selfRange   = target->isFlying() ? unit.getAirRange() : unit.getGroundRange();
+        auto targetRange = unit.isFlying() ? target->getAirRange() : target->getGroundRange();
+        auto maxRange    = Util::boxDistance(*commander, *target); //max(selfRange, targetRange);
+
+        // Get a position away from splash
+        auto commanderAngle = BWEB::Map::getAngle(commander->getPosition(), target->getPosition());
+
+        const auto kiteRange = unit.getType().groundWeapon().damageCooldown() * unit.getType().topSpeed() + 64.0;
+
+        const auto angleDiff = [&](double a, double b) {
+            double d = fmod(a - b + M_PI, 2.0 * M_PI);
+            if (d < 0)
+                d += 2.0 * M_PI;
+            return abs(d - M_PI);
+        };
+
+        const auto threatCalc = [&](auto &p) {
+            auto threat  = double(Grids::getAirThreat(p, PlayerState::Enemy));
+            auto density = double(Grids::getAirDensity(p, PlayerState::Self));
+
+            Visuals::drawCircle(p, 2, Colors::Blue, true);
+            if (p.getDistance(commander->getPosition()) > 160.0)
+                return DBL_MAX;
+
+            if (unit.isTargetedByType(Terran_Valkyrie)) {
+                auto angle = BWEB::Map::getAngle(p, target->getPosition());
+                auto diff  = angleDiff(angle, commanderAngle);
+                if (diff > M_PI_D2)
+                    return pow(threat, 2.0);
+                return threat / diff;
+            }
+            if (unit.isRangedByType(Protoss_Corsair) || unit.isReachedByType(Protoss_Archon) || unit.isRangedByType(Zerg_Devourer)) {
+                return p.getDistance(unit.getFormation());
+            }
+            return threat;
+        };
+        auto calcPair = Util::findPointOnCircle(unit.getPosition(), target->getPosition(), maxRange, threatCalc);
+        unit.setNavigation(calcPair.second);
     }
 
     void updateSimPositions(UnitInfo &unit)
@@ -292,6 +340,10 @@ namespace McRave::Combat::Navigation {
                     unit->setNavigation(commander->getNavigation());
                     unit->setMarchPath(commander->getMarchPath());
                 }
+
+                // Testing this
+                updateAvoidance(*unit);
+                Visuals::drawLine(unit->getPosition(), unit->getNavigation(), Colors::Green);
             }
         }
     }

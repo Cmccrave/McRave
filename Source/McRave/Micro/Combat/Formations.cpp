@@ -1,6 +1,7 @@
 #include "Combat.h"
 #include "Map/Grids.h"
 #include "Map/Terrain.h"
+#include "Map/Stations.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -40,6 +41,7 @@ namespace McRave::Combat::Formations {
 
         // Hold at retreat
         if (formationWithBase) {
+            Visuals::drawCircle(cluster.retreatPosition, 6, Colors::Yellow, true);
             formation.center = cluster.marchPosition;
             formation.start  = cluster.retreatPosition;
             formation.radius = 96.0;
@@ -48,6 +50,7 @@ namespace McRave::Combat::Formations {
 
         // Hold with defender
         else if (formationWithDefender) {
+            closestDefender->circle(Colors::Yellow);
             formation.center = cluster.marchPosition;
             formation.start  = closestDefender->getPosition();
             formation.radius = 96.0;
@@ -73,12 +76,14 @@ namespace McRave::Combat::Formations {
                     badArea = true;
             }
 
+            Visuals::drawCircle(Position(closestChoke->Center()), 6, Colors::Yellow, true);
+
             auto maxRange = max(commander->getGroundRange(), double(Players::getStrength(PlayerState::Enemy).maxGroundRange));
             auto maxSize  = max(double(closestChoke->Width()), double(cluster.units.size() * commander->getType().width() * 0.5));
 
             if (closestChoke == Terrain::getMainChoke()) {
                 formation.angle  = BWEB::Map::getAngle(Terrain::getMainRamp().center, Terrain::getMainRamp().entrance);
-                formation.radius = max(maxRange, maxSize);
+                formation.radius = (Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::Self) ? maxSize : max(maxRange, maxSize);
                 formation.center = Terrain::getMainRamp().center;
                 formation.start  = Terrain::getMainRamp().entrance;
                 Visuals::drawCircle(Terrain::getMainRamp().entrance, 6, Colors::Purple, true);

@@ -20,4 +20,7 @@ namespace McRave::BuildOrder::Terran {
 
     void TvP();
     void TvP_RaxFact();
+
+    void TvT();
+    void TvT_RaxFact();
 }

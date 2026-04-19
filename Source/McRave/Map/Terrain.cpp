@@ -591,7 +591,7 @@ namespace McRave::Terrain {
 
     bool isChokepointGeo(Position here) //
     {
-        isChokepointGeo(WalkPosition(here));
+        return isChokepointGeo(WalkPosition(here));
     }
     bool isChokepointGeo(WalkPosition here)
     {
@@ -607,6 +607,7 @@ namespace McRave::Terrain {
                     return true;
             }
         }
+        return false;
     }
 
     bool inArea(const BWEM::Area *area, Position here) //
@@ -846,7 +847,8 @@ namespace McRave::Terrain {
 
     bool isAtHome(Position here)
     {
-        const auto dist           = clamp(96.0 + Util::getTime().minutes * 16.0, 160.0, 640.0);
+        const auto growthRate     = pow(Util::getTime().minutes, 2) * 8.0;
+        const auto dist           = clamp(96.0 + growthRate, 160.0, 640.0);
         const auto closestStation = Stations::getClosestStationAir(here, PlayerState::Self);
 
         const auto closestMain    = BWEB::Stations::getClosestMainStation(here);

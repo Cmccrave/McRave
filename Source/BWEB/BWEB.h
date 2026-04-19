@@ -1,20 +1,21 @@
 #pragma once
 #include <BWAPI.h>
+
 #include <bwem.h>
+
 #include "Block.h"
 #include "PathFind.h"
 #include "Station.h"
 #include "Wall.h"
 
-# define M_PI_D4 0.78539816339744830961
-# define M_PI_D2 1.57079632679489661923
-# define M_PI 3.14159265358979323846
-# define M_PI_T2 6.28318530717958647692
+#define M_PI_D4 0.78539816339744830961
+#define M_PI_D2 1.57079632679489661923
+#define M_PI 3.14159265358979323846
+#define M_PI_T2 6.28318530717958647692
 
-namespace BWEB::Map
-{
+namespace BWEB::Map {
     /// <summary> Global access of BWEM for BWEB. </summary>
-    inline BWEM::Map& mapBWEM = BWEM::Map::Instance();
+    inline BWEM::Map &mapBWEM = BWEM::Map::Instance();
 
     /// <summary> Draws all BWEB::Walls, BWEB::Stations, and BWEB::Blocks when called. Call this every frame if you need debugging information. </summary>
     void draw();
@@ -47,7 +48,7 @@ namespace BWEB::Map
     void removeUsed(BWAPI::TilePosition tile, int width, int height);
 
     /// <summary> Returns the first UnitType found in a section of BWAPI::TilePositions, if it is within BWEBs used grid. </summary>
-    BWAPI::UnitType isUsed(const BWAPI::TilePosition& here, const int& width = 1, const int& height = 1);
+    BWAPI::UnitType isUsed(const BWAPI::TilePosition &here, const int &width = 1, const int &height = 1);
 
     /// <summary> Returns true if a BWAPI::TilePosition is fully walkable. </summary>
     /// <param name="tile"> The BWAPI::TilePosition you want to check. </param>
@@ -65,25 +66,26 @@ namespace BWEB::Map
     double getGroundDistance(BWAPI::Position start, BWAPI::Position end);
 
     /// Returns the closest BWAPI::Position that makes up the geometry of a BWEM::ChokePoint to another BWAPI::Position.
-    BWAPI::Position getClosestChokeTile(const BWEM::ChokePoint * const, BWAPI::Position);
+    BWAPI::Position getClosestChokeTile(const BWEM::ChokePoint *const, BWAPI::Position);
 
     /// Returns two BWAPI::Positions perpendicular to a line at a given distance away in pixels.
     std::pair<BWAPI::Position, BWAPI::Position> perpendicularLine(std::pair<BWAPI::Position, BWAPI::Position>, double);
 
     /// Returns the angle of a pair of BWAPI::Point in degrees.
-    template <class T>
-    double getAngle(std::pair<T, T> p) {
+    template <class T> //
+    double getAngle(std::pair<T, T> p)
+    {
         return getAngle(p.first, p.second);
     }
 
-    template <class T>
-    double getAngle(T p1, T p2) {
-        auto dy = double(p2.y - p1.y);
-        auto dx = double(p2.x - p1.x);
-        if (std::abs(dx) > 1.0)
-            return fmod(std::atan2(-dy, dx) + M_PI_T2, M_PI_T2);
-        else if (p1.y < p2.y)
-            return M_PI + M_PI_D2;
-        return M_PI_D2;
+    template <class T> //
+    double getAngle(T p1, T p2)
+    {
+        double dy    = double(p2.y - p1.y);
+        double dx    = double(p2.x - p1.x);
+        double angle = std::atan2(-dy, dx);
+        if (angle < 0)
+            angle += M_PI_T2;
+        return angle;
     }
-}
+} // namespace BWEB::Map

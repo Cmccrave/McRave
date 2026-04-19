@@ -394,32 +394,6 @@ namespace BWEB {
             }
             return 0.0;
         };
-
-        // Non natural positions want an extra position for a hatchery
-        auto cnt = int(!natural);
-        for (int i = 0; i < cnt; i++) {
-            auto distBest = DBL_MAX;
-            auto tileBest = TilePositions::Invalid;
-            for (auto x = base->Location().x - 4; x <= base->Location().x + 4; x++) {
-                for (auto y = base->Location().y - 3; y <= base->Location().y + 3; y++) {
-                    auto tile   = TilePosition(x, y);
-                    auto center = Position(tile) + Position(64, 48);
-                    auto dist   = distCalc(center);
-                    if (natural && partnerBase && dist < 160.0)
-                        continue;
-
-                    if (dist < distBest && Map::isPlaceable(Broodwar->self()->getRace().getResourceDepot(), tile)) {
-                        distBest = dist;
-                        tileBest = tile;
-                    }
-                }
-            }
-
-            if (tileBest.isValid()) {
-                secondaryLocations.insert(tileBest);
-                Map::addUsed(tileBest, Broodwar->self()->getRace().getResourceDepot());
-            }
-        }
     }
 
     const void Station::testingDefenses() const
@@ -563,9 +537,6 @@ namespace BWEB {
                     Broodwar->drawLineMap(Position(choke->Center()), Position(validSecondChoke->Center()), Colors::Grey);
                 }
             }
-
-            Broodwar->drawLineMap(Position(choke->Pos(choke->end1)), Position(choke->Pos(choke->end2)), Colors::Grey);
-            Broodwar->drawLineMap(base->Center(), anglePosition, Colors::Grey);
         }
 
         Broodwar->drawCircleMap(resourceCentroid, 3, color, true);

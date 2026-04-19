@@ -343,8 +343,7 @@ namespace McRave {
         auto &target = *target_.lock();
 
         // Determine how close it is to strategic locations
-        const auto choke          = Combat::isDefendNatural() ? Terrain::getNaturalChoke() : Terrain::getMainChoke();
-        const auto area           = Combat::isDefendNatural() ? Terrain::getNaturalArea() : Terrain::getMainArea();
+        const auto choke          = (Combat::isDefendNatural() && Combat::isHoldNatural()) ? Terrain::getNaturalChoke() : Terrain::getMainChoke();
         const auto closestGeo     = BWEB::Map::getClosestChokeTile(choke, getPosition());
         const auto closestStation = Stations::getClosestStationAir(getPosition(), PlayerState::Self);
         const auto closestWall    = BWEB::Walls::getClosestWall(getPosition());
@@ -353,9 +352,10 @@ namespace McRave {
         auto threateningThisFrame = false;
 
         // If the unit is close to stations, defenses or resources owned by us
-        const auto atHome  = Terrain::isAtHome(getPosition());
-        const auto atChoke = getPosition().getDistance(closestGeo) <= rangeCheck;
-        const auto nearMe  = atHome || atChoke;
+        const auto inTerritory = Terrain::inTerritory(PlayerState::Self, getPosition());
+        const auto atHome      = Terrain::isAtHome(getPosition());
+        const auto atChoke     = getPosition().getDistance(closestGeo) <= rangeCheck;
+        const auto nearMe      = atHome || atChoke;
 
         // If the unit attacked defenders, workers or buildings
         const auto attackedDefender = hasAttackedRecently() && Terrain::inTerritory(PlayerState::Self, target.getPosition()) && target.getRole() == Role::Defender;
@@ -375,8 +375,7 @@ namespace McRave {
                 return atHome;
 
             if ((Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural() && Combat::holdAtChoke()) ||
-                (Terrain::inArea(Terrain::getMainArea(), position) && Combat::isDefendNatural() && !Terrain::isPocketNatural()) ||
-                (Roles::getRoleCount(Role::Defender) == 0 && Terrain::inArea(Terrain::getNaturalArea(), position) && Combat::isDefendNatural()))
+                (Terrain::inArea(Terrain::getMainArea(), position) && Combat::isDefendNatural() && !Terrain::isPocketNatural()))
                 return true;
 
             // If in a territory with a station/wall and there is no defenders, we will need to engage
@@ -393,7 +392,7 @@ namespace McRave {
 
             // Dangerous harassing units are always a threat in our area
             if (getType() == Protoss_Reaver || getType() == Protoss_High_Templar || getType() == Protoss_Dark_Templar || getType() == Terran_Vulture)
-                return atHome;
+                return inTerritory;
 
             return (Util::getTime() > Time(5, 00) && Terrain::inArea(Terrain::getMainArea(), position) && Stations::getGroundDefenseCount(Terrain::getMyMain()) == 0 &&
                     (!Walls::getMainWall() || Walls::getMainWall()->getGroundDefenseCount() == 0)) ||
@@ -559,6 +558,10 @@ namespace McRave {
     // Execute a command
     void UnitInfo::setCommand(UnitCommandType cmd, Position here)
     {
+        // Check if this is identical to last command
+        if (commandType == cmd && unit()->getLastCommand().getTargetPosition() == here && unit()->getLastCommandFrame() + 4 >= Broodwar->getFrameCount())
+            return;
+
         if (isCommandable()) {
             commandPosition = here;
             commandType     = cmd;
@@ -587,7 +590,7 @@ namespace McRave {
     void UnitInfo::setCommand(UnitCommandType cmd, UnitInfo &target)
     {
         // Check if this is identical to last command
-        if (commandType == cmd && unit()->getLastCommand().getTarget() == target.unit())
+        if (commandType == cmd && unit()->getLastCommand().getTarget() == target.unit() && unit()->getLastCommandFrame() + 4 >= Broodwar->getFrameCount())
             return;
 
         if (isCommandable()) {
@@ -604,7 +607,7 @@ namespace McRave {
     void UnitInfo::setCommand(UnitCommandType cmd)
     {
         // Check if this is identical to last command
-        if (commandType == cmd)
+        if (commandType == cmd && unit()->getLastCommandFrame() + 4 >= Broodwar->getFrameCount())
             return;
 
         if (isCommandable()) {
@@ -613,6 +616,8 @@ namespace McRave {
 
             if (cmd == UnitCommandTypes::Hold_Position)
                 unit()->holdPosition();
+            if (cmd == UnitCommandTypes::Stop)
+                unit()->stop();
         }
     }
 
@@ -725,7 +730,8 @@ namespace McRave {
 
         // Always important
         auto lagFrames           = Broodwar->getRemainingLatencyFrames();
-        auto anticipatedCooldown = turnFrames + arrivalFrames + celcelFrames + lagFrames;
+        auto randomFrames        = 2;
+        auto anticipatedCooldown = turnFrames + arrivalFrames + celcelFrames + lagFrames - randomFrames;
         auto cooldownReady       = cooldown <= anticipatedCooldown;
         return cooldownReady;
     }
@@ -870,11 +876,10 @@ namespace McRave {
                 return Util::boxDistance(getType(), getPosition(), otherUnit.getType(), otherUnit.getPosition()) <= 96.0;
         }
 
-        auto boxDistance = Util::boxDistance(getType(), getPosition(), otherUnit.getType(), otherUnit.getPosition());
+        auto boxDistance = Util::boxDistance(*this, otherUnit);
         auto range       = max(32.0, otherUnit.getType().isFlyer() ? getAirRange() : getGroundRange());
         auto latencyDist = (Broodwar->getLatencyFrames() * getSpeed()) - (Broodwar->getLatencyFrames() * otherUnit.getSpeed());
-        auto ff          = (!isHovering() && !isFlying()) ? 0.0 : -8.0;
-        return range + latencyDist + ff >= boxDistance;
+        return range + latencyDist >= boxDistance;
     }
 
     bool UnitInfo::isWithinAngle(UnitInfo &otherUnit)
@@ -992,6 +997,9 @@ namespace McRave {
     {
         if (!isLightAir())
             return false;
+
+        if (isRangedByType(Protoss_Corsair) || isRangedByType(Zerg_Devourer) || isReachedByType(Protoss_Archon) || isTargetedByType(Terran_Valkyrie))
+            circle(Colors::Red);
 
         return (isRangedByType(Protoss_Corsair) || isRangedByType(Zerg_Devourer) || isReachedByType(Protoss_Archon) || isTargetedByType(Terran_Valkyrie));
     }

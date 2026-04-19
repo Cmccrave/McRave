@@ -89,7 +89,7 @@ namespace McRave::Workers {
             // Check if current station is safe
             auto stationGrdOkay = false;
             auto stationAirOkay = false;
-            if (unit.hasResource()) {
+            if (unit.hasResource() && unit.isWithinGatherRange()) {
                 auto station   = unit.getResource().lock()->getStation();
                 stationGrdOkay = (Stations::getGroundDefenseCount(station) > 0 || Stations::getColonyCount(station) > 0);
                 stationAirOkay = (Stations::getAirDefenseCount(station) > 0 || Stations::getColonyCount(station) > 0);
@@ -118,8 +118,7 @@ namespace McRave::Workers {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
 
                     // If unit is close, it must be safe
-                    if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || mapBWEM.GetArea(unit.getTilePosition()) == station->getBase()->GetArea() ||
-                        Util::getTime() < Time(3, 30))
+                    if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || Terrain::inArea(station, unit.getPosition()) || Util::getTime() < Time(3, 30))
                         safeStations.push_back(station);
 
                     else {
@@ -151,6 +150,11 @@ namespace McRave::Workers {
             auto aroundDefenders = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) {
                 if (u->getRole() != Role::Combat && u->getRole() != Role::Defender)
                     return false;
+                if (u->getType() == Zerg_Zergling)
+                    return false;
+
+                if (u->getGoal().getDistance(unit.getPosition()) < 64.0 && u->getPosition().getDistance(unit.getPosition()) < 160.0)
+                    return true;
 
                 return (unit.getPosition().getDistance(u->getPosition()) < u->getGroundReach() && u->getPosition().getDistance(buildCenter) < u->getGroundReach()) ||
                        (mapBWEM.GetArea(unit.getTilePosition()) == mapBWEM.GetArea(unit.getBuildPosition()) && u->getPosition().getDistance(buildCenter) < u->getGroundReach());
@@ -358,10 +362,10 @@ namespace McRave::Workers {
             };
 
             // Check if we need gas units
-            if (needGas || !unit.hasResource() || threatened || excessAssigned) {
+            if (needGas || !unit.hasResource() || excessAssigned) {
                 for (auto &r : Resources::getMyGas()) {
                     auto &resource          = *r;
-                    auto allowedGatherCount = threatened ? 50 : resource.getWorkerCap();
+                    auto allowedGatherCount = resource.getWorkerCap();
 
                     if (!resourceReady(resource, allowedGatherCount) || (!transferStation && find(safeStations.begin(), safeStations.end(), resource.getStation()) == safeStations.end()) ||
                         (resource.isThreatened() && !threatened))

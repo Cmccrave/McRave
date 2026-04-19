@@ -215,14 +215,19 @@ namespace McRave::Command {
     {
         // Vulture spider mine burrowing
         if (unit.getType() == Terran_Vulture) {
-            if (Broodwar->self()->hasResearched(Spider_Mines) && unit.unit()->getSpiderMineCount() > 0 && unit.hasSimTarget() &&
-                unit.getPosition().getDistance(unit.getSimTarget().lock()->getPosition()) <= 400 &&
-                Broodwar->getUnitsInRadius(unit.getPosition(), 128, Filter::GetType == Terran_Vulture_Spider_Mine).size() <= 3) {
-                if (unit.unit()->getLastCommand().getTechType() != Spider_Mines || unit.unit()->getLastCommand().getTargetPosition().getDistance(unit.getPosition()) > 8) {
-                    unit.setCommand(Spider_Mines, unit.getPosition());
-                    unit.commandText = "Planting";
+            if (Broodwar->self()->hasResearched(Spider_Mines) && unit.unit()->getSpiderMineCount() > 0) {
+
+                auto canUseMines = (unit.hasSimTarget() && unit.getPosition().getDistance(unit.getSimTarget().lock()->getPosition()) <= 400) || //
+                                   (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Contain && unit.getPosition().getDistance(unit.getGoal()) <= 32);
+                auto minesInRange = Broodwar->getUnitsInRadius(unit.getPosition(), 128, Filter::GetType == Terran_Vulture_Spider_Mine).size();
+
+                if (canUseMines && !minesInRange) {
+                    if (unit.unit()->getLastCommand().getTechType() != Spider_Mines || unit.unit()->getLastCommand().getTargetPosition().getDistance(unit.getPosition()) > 8) {
+                        unit.setCommand(Spider_Mines, unit.getPosition());
+                        unit.commandText = "Planting";
+                    }
+                    return true;
                 }
-                return true;
             }
         }
 
@@ -613,6 +618,7 @@ namespace McRave::Command {
                 unit.unit()->getLastCommand().getType() != UnitCommandTypes::Return_Cargo) {
                 unit.unit()->returnCargo();
             }
+
             unit.commandText = "Return";
             return true;
         }
@@ -678,7 +684,7 @@ namespace McRave::Command {
 
         // If build position is fully visible and unit is close to it, start building as soon as possible
         if (fullyVisible && canAfford && unit.isWithinBuildRange()) {
-            if (unit.unit()->getLastCommandFrame() < Broodwar->getFrameCount() - 10 && unit.unit()->getOrder() != Orders::PlaceBuilding && !unit.unit()->isStuck()) {
+            if (unit.unit()->getLastCommandFrame() < Broodwar->getFrameCount() - 10) {
                 unit.unit()->build(unit.getBuildType(), unit.getBuildPosition());
             }
             unit.commandText = "Build";
@@ -698,8 +704,8 @@ namespace McRave::Command {
         if (!resource)
             return false;
 
-        auto boxDist              = Util::boxDistance(unit.getType(), unit.getPosition(), resource->getType(), resource->getPosition());
-        auto allowOptimisations   = Players::getSupply(PlayerState::Self, Races::None) <= 200;
+        auto boxDist            = Util::boxDistance(unit.getType(), unit.getPosition(), resource->getType(), resource->getPosition());
+        auto allowOptimisations = Players::getSupply(PlayerState::Self, Races::None) <= 200;
 
         const auto nearNonBlockingChoke = [&]() {
             auto closest = Util::getClosestChokepoint(unit.getPosition());
@@ -742,7 +748,7 @@ namespace McRave::Command {
 
         // These worker order timers are based off Stardust: https://github.com/bmnielsen/Stardust/blob/master/src/Workers/WorkerOrderTimer.cpp#L153
         // From what Bruce found, you can prevent what seems like ~7 frames of a worker "waiting" to mine
-        if (unit.hasResource() && Util::getTime() < Time(1, 30)) {
+        if (unit.hasResource() && Util::getTime() < Time(3, 00)) {
             auto boxDist = Util::boxDistance(unit.getType(), unit.getPosition(), unit.getResource().lock()->getType(), unit.getResource().lock()->getPosition());
             if (boxDist == 0) {
                 auto frame   = Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 11;
@@ -766,6 +772,7 @@ namespace McRave::Command {
         if (resource->unit()->exists()) {
             if (canGather(resource)) {
                 unit.unit()->gather(resource->unit());
+                unit.unit()->returnCargo(true);
                 unit.commandText = "Gather";
                 return true;
             }

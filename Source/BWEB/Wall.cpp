@@ -53,6 +53,14 @@ namespace BWEB {
 
     void Wall::initialize()
     {
+        for (int x = 0; x < Broodwar->mapWidth(); x++) {
+            for (int y = 0; y < Broodwar->mapHeight(); y++) {
+                if (wallReserveGrid[x][y]) {
+                    Broodwar << "reserved before wall started gen" << endl;
+                }
+            }
+        }
+
         // Set important terrain features
         pylonWall    = count(rawBuildings.begin(), rawBuildings.end(), BWAPI::UnitTypes::Protoss_Pylon) > 1;
         base         = !area->Bases().empty() ? &area->Bases().front() : nullptr;
@@ -87,46 +95,52 @@ namespace BWEB {
             if (main->getChokepoint()) {
                 auto mainChokeCenter = Position(main->getChokepoint()->Center());
                 auto natChokeCenter  = Position(choke->Center());
+                auto distNatToMainChoke = station->getBase()->Center().getDistance(mainChokeCenter);
+                auto distNatToNatChoke = station->getBase()->Center().getDistance(natChokeCenter);
 
-                // Check each point of geometry to see if it's close to the main choke
-                auto bypassCount = 0;
-                for (auto &geo : choke->Geometry()) {
-                    auto p = Position(geo) + Position(4, 4);
-                    if (p.getDistance(base->Center()) >= p.getDistance(mainChokeCenter))
-                        bypassCount++;
-                }
+                if (distNatToNatChoke >= 240.0 && distNatToMainChoke >= 240.0) {
 
-                // Wall is bypassable, need to change how it generates to defend the main as well
-                if (bypassCount >= int(choke->Geometry().size() / 2)) {
-                    bypassable          = true;
-                    defenseAngle        = BWEB::Map::getAngle(mainChokeCenter, natChokeCenter) + M_PI_D2;
-                    defenseArrangement  = int(round(defenseAngle / M_PI_D4)) % 4;
-                    auto mainChokeTile  = TilePosition(mainChokeCenter);
-                    auto baseCenterTile = TilePosition(base->Center());
-
-                    auto dx = 0;
-                    if (defenseArrangement == 0) {
-                        dx = mainChokeTile.x - baseCenterTile.x;
-                        if (dx >= 2)
-                            dx -= 2;
-                        if (dx <= -2)
-                            dx += 2;
+                    // Check each point of geometry to see if it's close to the main choke
+                    auto bypassCount = 0;
+                    for (auto &geo : choke->Geometry()) {
+                        auto p = Position(geo) + Position(4, 4);
+                        if (p.getDistance(base->Center()) >= p.getDistance(mainChokeCenter))
+                            bypassCount++;
                     }
 
-                    auto dy = 0;
-                    if (defenseArrangement == 2) {
-                        dy = mainChokeTile.y - baseCenterTile.y;
-                        if (dy >= 2)
-                            dy -= 2;
-                        if (dy <= -2)
-                            dy += 2;
+                    // Wall is bypassable, need to change how it generates to defend the main as well
+                    if (bypassCount >= int(choke->Geometry().size() / 4)) {
+                        bypassable          = true;
+                        auto mainChokeTile  = TilePosition(mainChokeCenter);
+                        auto baseCenterTile = TilePosition(base->Center());
+
+                        auto dx = 0;
+                        if (defenseArrangement == 0) {
+                            dx = mainChokeTile.x - baseCenterTile.x;
+                            if (dx >= 2)
+                                dx -= 2;
+                            if (dx <= -2)
+                                dx += 2;
+                        }
+
+                        auto dy = 0;
+                        if (defenseArrangement == 2) {
+                            dy = mainChokeTile.y - baseCenterTile.y;
+                            if (dy >= 2)
+                                dy -= 2;
+                            if (dy <= -2)
+                                dy += 2;
+                        }
+
+                        auto tiledx  = clamp(dx, -8, 8);
+                        auto tiledy  = clamp(dy, -8, 8);
+                        wallLocation = TilePosition(base->Location()) + TilePosition(tiledx, tiledy);
+
+                        defenseAngle       = BWEB::Map::getAngle(Position(wallLocation) + Position(16, 16), natChokeCenter) + M_PI_D2;
+                        defenseArrangement = int(round(defenseAngle / M_PI_D4)) % 4;
+
+                        testTiles[wallLocation] = Colors::Blue;
                     }
-
-                    auto tiledx  = clamp(dx, -4, 4);
-                    auto tiledy  = clamp(dy, -4, 4);
-                    wallLocation = TilePosition(base->Location()) + TilePosition(tiledx, tiledy);
-
-                    testTiles[wallLocation] = Colors::Blue;
                 }
             }
         }
@@ -155,13 +169,41 @@ namespace BWEB {
 
         // Other types only need 1 unique spot
         else {
-            static int i = 0;
+            bool firstPlacement = Broodwar->self()->getRace() == Races::Protoss || (largeTiles.empty() && mediumTiles.empty() && smallTiles.empty());
+            static int i        = 0;
             for (auto placement : tryOrder) {
-                auto tile       = wallLocation + placement;
-                //textTiles[tile] = std::to_string(i);
+                auto tile = wallLocation + placement;
+                // textTiles[tile] = std::to_string(i);
                 i++;
-                // testTiles[tile] = debugColor;
+                testTiles[tile] = debugColor;
 
+                // Must be adjacent to another piece or unwalkable terrain (look at only border edges)
+                auto valid = type == Protoss_Pylon;
+                for (int x = -1; x < type.tileWidth() + 1; x++) {
+                    for (int y = -1; y < type.tileHeight() + 1; y++) {
+
+                        // Not a border tile
+                        if (x >= 0 && x < type.tileWidth() && y >= 0 && y < type.tileHeight())
+                            continue;
+                        // A corner
+                        if ((x == -1 || x == type.tileWidth()) && (y == -1 || y == type.tileHeight()))
+                            continue;
+
+                        auto borderTile = tile + TilePosition(x, y);
+                        if (borderTile.isValid()) {
+                            auto notWalkable = !Broodwar->isBuildable(borderTile);
+                            auto reserved    = wallReserveGrid[borderTile.x][borderTile.y] > 0;
+
+                            if ((firstPlacement && notWalkable) || reserved) {
+                                valid = true;
+                            }
+                        }
+                    }
+                }
+                if (!valid)
+                    continue;
+
+                //
                 if (!isWallReserved(tile, type) && BWEB::Map::isPlaceable(type, tile) && !Map::isReserved(tile, type.tileWidth(), type.tileHeight())) {
                     insertList.insert(tile);
                     addWallReserve(tile, type);
@@ -190,8 +232,8 @@ namespace BWEB {
         auto maxIteration = 1;
 
         if (station->isNatural() && Broodwar->self()->getRace() == Races::Protoss) {
-            iteration    = 1;
-            maxIteration = 2;
+            iteration    = 0;
+            maxIteration = 1;
         }
 
         // If this isn't a natural or main
@@ -216,9 +258,9 @@ namespace BWEB {
             // 0/8 - Horizontal
             if (defenseArrangement == 0) {
                 flipVertical = base->Center().y < Position(choke->Center()).y;
-                lrgOrder     = {{-4, -5}, {-3, -5}, {-2, -5}, {-1, -5}, {0, -5}, {1, -5}, {2, -5}, {3, -5}, {4, -5}};
-                medOrder     = {{-6, -4}, {-5, -4}, {-4, -4}, {-3, -4}, {-2, -4}, {-1, -4}, {0, -4}, {1, -4}, {2, -4}, {3, -4}, {4, -4}, {5, -4}, {6, -4}};
-                smlOrder     = {{-2, -4}, {-1, -4}, {0, -4}, {1, -4}, {2, -4}, {3, -4}, {4, -4}, {5, -4}};
+                lrgOrder     = {{-6, -6}, {-5, -6}, {-4, -6}, {-3, -6}, {-2, -6}, {-1, -6}, {0, -6}, {1, -6}, {2, -6}, {3, -6}, {4, -6}, {5, -6}, {6, -6}};
+                medOrder     = {{-6, -5}, {-5, -5}, {-4, -5}, {-3, -5}, {-2, -5}, {-1, -5}, {0, -5}, {1, -5}, {2, -5}, {3, -5}, {4, -5}, {5, -5}, {6, -5}};
+                smlOrder     = {{-2, -5}, {-1, -5}, {0, -5}, {1, -5}, {2, -5}, {3, -5}, {4, -5}, {5, -5}};
                 pylOrder     = {{0, -2}, {2, -2}};
                 flipOrder    = station->isNatural() && mainChokeCenter.x > base->Center().x;
 
@@ -238,12 +280,12 @@ namespace BWEB {
             else if (defenseArrangement == 1 || defenseArrangement == 3) {
                 flipVertical   = base->Center().y < Position(choke->Center()).y;
                 flipHorizontal = base->Center().x < Position(choke->Center()).x;
-                lrgOrder       = {{0, -7}, {-2, -5}, {-4, -3}, {-6, -1}, {-8, 0}};
-                medOrder       = {{1, -6}, {-1, -4}, {-3, -2}, {-5, 0}};
+                lrgOrder       = {{0, -7}, {0, -6}, {-2, -5}, {-2, -4}, {-4, -3}, {-4, -2}, {-6, -1}, {-6, 0}, {-8, 1}, {-8, 2}};
+                medOrder       = {{1, -6}, {1, -5}, {-1, -4}, {-1, -3}, {-3, -2}, {-3, -1}, {-5, 0}, {-5, 1}};
                 smlOrder       = {{0, -4}, {-2, -2}, {-4, 0}};
                 pylOrder       = {{-2, 0}, {0, -2}};
 
-                // TODO: these flips don't really work as intended
+                // TODO: these flips don't always work as intended
                 flipOrder = (station->isNatural() && mainChokeCenter.x < base->Center().x && mainChokeCenter.y > base->Center().y) ||
                             (station->isNatural() && mainChokeCenter.x > base->Center().x && mainChokeCenter.y < base->Center().y) ||
                             (!station->isMain() && !station->isNatural() && station->getResourceCentroid().x < station->getBase()->Center().x);
@@ -271,9 +313,9 @@ namespace BWEB {
             // pi/2 - Vertical
             else if (defenseArrangement == 2) {
                 flipHorizontal = base->Center().x < Position(choke->Center()).x;
-                lrgOrder       = {{-6, -4}, {-6, -3}, {-6, -2}, {-6, -1}, {-6, 0}, {-6, 1}, {-6, 2}, {-6, 3}, {-6, 4}};
-                medOrder       = {{-5, -3}, {-5, -2}, {-5, -1}, {-5, 0}, {-5, 1}, {-5, 2}, {-5, 3}, {-5, 4}};
-                smlOrder       = {{-4, -3}, {-4, -2}, {-4, -1}, {-4, 0}, {-4, 1}, {-4, 2}, {-4, 3}, {-4, 4}};
+                lrgOrder       = {{-7, -4}, {-7, -3}, {-7, -2}, {-7, -1}, {-7, 0}, {-7, 1}, {-7, 2}, {-7, 3}, {-7, 4}};
+                medOrder       = {{-6, -3}, {-6, -2}, {-6, -1}, {-6, 0}, {-6, 1}, {-6, 2}, {-6, 3}, {-6, 4}};
+                smlOrder       = {{-5, -3}, {-5, -2}, {-5, -1}, {-5, 0}, {-5, 1}, {-5, 2}, {-5, 3}, {-5, 4}};
                 pylOrder       = {{-2, 0}, {-2, 2}};
 
                 flipOrder = station->isNatural() && mainChokeCenter.y > base->Center().y;
@@ -331,7 +373,7 @@ namespace BWEB {
                 std::reverse(lrgOrder.begin(), lrgOrder.end()); // Flip large order so that gateway is opposite of forge, center opening
                 tryLocations(medOrder, mediumTiles, Protoss_Forge);
                 tryLocations(lrgOrder, largeTiles, Protoss_Gateway);
-                //tryLocations(smlOrder, smallTiles, Protoss_Pylon);
+                // tryLocations(smlOrder, smallTiles, Protoss_Pylon);
                 tryLocations(pylOrder, smallTiles, Protoss_Pylon);
             }
 
@@ -353,6 +395,7 @@ namespace BWEB {
             if (Broodwar->self()->getRace() == Races::Protoss)
                 wallOffset = TilePosition(0, 0);
 
+            // If a wall is found, we're done
             if ((getSmallTiles().size() + getMediumTiles().size() + getLargeTiles().size()) == getRawBuildings().size())
                 break;
         }
@@ -378,7 +421,7 @@ namespace BWEB {
             dx = 1;
             dy = -1;
             oy = offset;
-            width-=2;
+            width -= 2;
         }
 
         const auto addToList = [&](int i) {
@@ -408,7 +451,8 @@ namespace BWEB {
         // Add wall defenses to the set
         for (auto &placement : wallPlacements) {
             auto tile = base->Location() + placement;
-            if (Map::isPlaceable(defenseType, tile) && !isWallReserved(tile, defenseType) && (layer == 1 || !Map::isReserved(tile, 2, 2) || station->getDefenses().find(tile) != station->getDefenses().end())) {
+            if (Map::isPlaceable(defenseType, tile) && !isWallReserved(tile, defenseType) &&
+                (layer == 1 || !Map::isReserved(tile, 2, 2) || station->getDefenses().find(tile) != station->getDefenses().end())) {
                 addWallReserve(tile, defenseType);
                 defenses[0].insert(tile);
                 defenses[layer].insert(tile);
@@ -534,13 +578,16 @@ namespace BWEB {
             }
         }
 
-        // Draw the line and angle of the ChokePoint
-        //auto p1 = choke->Pos(choke->end1);
-        //auto p2 = choke->Pos(choke->end2);
-        //Broodwar->drawTextMap(Position(choke->Center()), "%c%.2f", Text::Grey, defenseAngle);
-        //Broodwar->drawLineMap(Position(p1), Position(p2), Colors::Grey);
+        // Draw the line of the chokepoint
+        auto p1 = choke->Pos(choke->end1);
+        auto p2 = choke->Pos(choke->end2);
+        Broodwar->drawLineMap(Position(p1), Position(p2), Colors::Grey);
 
-        Broodwar->drawTextMap(Position(choke->Center()), "%d", Map::mapBWEM.GetTTile(choke->Center()).Altitude());
+        // Write the angle of the wall/chokepoint
+        auto chokeCenter = Position(choke->Center());
+        Broodwar->drawBoxMap(chokeCenter - Position(32, 16), chokeCenter + Position(32, 16), Colors::Black, true);
+        Broodwar->drawBoxMap(chokeCenter - Position(32, 16), chokeCenter + Position(32, 16), Colors::Grey);
+        Broodwar->drawTextMap(chokeCenter - Position(22, 8), "%c%.2f (%.2f)", Text::Grey, defenseAngle, station->getDefenseAngle());
     }
 } // namespace BWEB
 

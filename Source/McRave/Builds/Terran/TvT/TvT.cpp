@@ -10,7 +10,7 @@ using namespace UpgradeTypes;
 using namespace TechTypes;
 
 namespace McRave::BuildOrder::Terran {
-    void defaultTvP()
+    void defaultTvT()
     {
         inOpening       = true;
         inBookSupply    = true;
@@ -26,13 +26,11 @@ namespace McRave::BuildOrder::Terran {
         wallMain = false;
     }
 
-    void TvP_5Fact()
+    void TvT_5Fact()
     {
         inOpening    = Util::getTime() < Time(9, 00);
         inBookSupply = vis(Terran_Supply_Depot) < 3;
         rampType     = Terran_Factory;
-
-        auto firstShop = Spy::getEnemyBuild() == P_2Gate ? total(Terran_Vulture) >= 3 : vis(Terran_Factory) > 0 && total(Terran_Vulture) > 0;
 
         // Build
         buildQueue[Terran_Supply_Depot]     = 2 + (vis(Terran_Command_Center) >= 2);
@@ -44,7 +42,7 @@ namespace McRave::BuildOrder::Terran {
         buildQueue[Terran_Armory]           = (s >= 72) + vis(Terran_Science_Facility) > 0;
         buildQueue[Terran_Comsat_Station]   = 2 * (s >= 88);
         buildQueue[Terran_Factory]          = 1 + (s >= 88) + 3 * (s >= 94);
-        buildQueue[Terran_Machine_Shop]     = firstShop;
+        buildQueue[Terran_Machine_Shop]     = vis(Terran_Factory) > 0 && total(Terran_Vulture) > 0;
         buildQueue[Terran_Starport]         = vis(Terran_Command_Center) >= 3;
         buildQueue[Terran_Science_Facility] = com(Terran_Starport) > 0;
 
@@ -58,7 +56,8 @@ namespace McRave::BuildOrder::Terran {
 
         // Pumping
         terranUnitPump[Terran_SCV]                  = vis(Terran_SCV) < 45;
-        terranUnitPump[Terran_Siege_Tank_Tank_Mode] = true;
+        terranUnitPump[Terran_Goliath]              = vis(Terran_Goliath) < Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith);
+        terranUnitPump[Terran_Siege_Tank_Tank_Mode] = !terranUnitPump[Terran_Goliath];
         terranUnitPump[Terran_Vulture]              = true;
 
         // Gas
@@ -67,18 +66,18 @@ namespace McRave::BuildOrder::Terran {
             gasLimit = gasMax();
     }
 
-    void TvP()
+    void TvT()
     {
-        defaultTvP();
+        defaultTvT();
 
         // Builds
         if (currentBuild == T_RaxFact)
-            TvP_RaxFact();
+            TvT_RaxFact();
 
         // Transitions
         if (transitionReady) {
             if (currentTransition == T_5Fact)
-                TvP_5Fact();
+                TvT_5Fact();
         }
     }
 } // namespace McRave::BuildOrder::Terran

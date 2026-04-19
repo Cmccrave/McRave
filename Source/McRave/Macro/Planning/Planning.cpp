@@ -544,7 +544,7 @@ namespace McRave::Planning {
                 vector<int> desiredRowOrder = {1};
                 if (Players::ZvZ())
                     desiredRowOrder = {3, 2, 1};
-                else if (Spy::enemyRush() || Spy::enemyProxy() || wall.getGroundDefenseCount() > 0)
+                else if (Spy::enemyRush() || Spy::enemyProxy() || wall.getGroundDefenseCount() > 0 || wall.getDefenses(1).empty())
                     desiredRowOrder = {1, 2, 3};
 
                 // If this wall needs defenses
