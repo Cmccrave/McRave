@@ -73,7 +73,6 @@ namespace McRave::Spy {
         std::map<BWAPI::UpgradeType, UnitTimings> upgradeTimings;
         std::map<BWAPI::TechType, UnitTimings> researchTimings;
         int workersPulled   = 0;
-        int gasMined        = 0;
         int productionCount = 0;
         std::set<BWAPI::UnitType> typeUpgrading; // TODO: Better impl (doesn't look at current state)
 

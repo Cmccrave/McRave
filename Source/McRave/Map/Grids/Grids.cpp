@@ -294,7 +294,7 @@ namespace McRave::Grids {
                         }
                     }
 
-                    float density  = pow(float(walkable) / valid, 1.5);
+                    float density  = pow(float(walkable) * Util::fastReciprocal(valid), 1.5);
                     index.mobility = clamp(int(density * 10.0f), 1, 10);
 
                     // Island

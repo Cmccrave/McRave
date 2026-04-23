@@ -28,6 +28,17 @@ namespace McRave::Horizon {
             return true;
         }
 
+        void addBonus(UnitInfo &u, UnitInfo &t, double &simRatio)
+        {
+            if (u.isHidden() && u.isWithinRange(t))
+                simRatio *= 2.0;
+            if (!u.isFlying() && !t.isFlying() && u.getGroundRange() > 32.0 && Broodwar->getGroundHeight(u.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(t.getEngagePosition())))
+                simRatio *= 1.15;
+            if (u.getType().isWorker() && (!u.hasAttackedRecently() || BuildOrder::isRush()))
+                simRatio /= 10.0;
+            return;
+        }
+
         void addSimStrength(SimStrength &sim, UnitInfo &unit, double ratio)
         {
             auto grd = unit.getVisibleGroundStrength() * ratio;
@@ -42,20 +53,6 @@ namespace McRave::Horizon {
                 sim.groundToGround += grd;
                 sim.groundToAir += air;
             }
-        }
-
-        // TODO: Figure out how to utilize simulating enemies "intercepting" my units
-        double perpDist(Position p0, Position p1, Position p2) { return abs(double((p2.x - p1.x) * (p1.y - p0.y) - (p1.x - p0.x) * (p2.y - p1.y))) / p1.getDistance(p2); }
-
-        void addBonus(UnitInfo &u, UnitInfo &t, double &simRatio)
-        {
-            if (u.isHidden() && u.isWithinRange(t))
-                simRatio *= 2.0;
-            if (!u.isFlying() && !t.isFlying() && u.getGroundRange() > 32.0 && Broodwar->getGroundHeight(u.getTilePosition()) > Broodwar->getGroundHeight(TilePosition(t.getEngagePosition())))
-                simRatio *= 1.15;
-            if (u.getType().isWorker() && (!u.hasAttackedRecently() || BuildOrder::isRush()))
-                simRatio /= 10.0;
-            return;
         }
 
         double addPrepTime(UnitInfo &unit)
@@ -131,9 +128,6 @@ namespace McRave::Horizon {
             addBonus(enemy, *enemyTarget, simRatio);
             addSimStrength(simStrengthPerPlayer[enemy.getPlayer()], enemy, simRatio);
             addSimStrength(simStrengthPerState[PlayerState::Enemy], enemy, simRatio);
-
-            if (unit.unit()->isSelected())
-                Broodwar->drawTextMap(enemy.getPosition(), "%.2f", simRatio);
         }
 
         for (auto &a : Units::getUnits(PlayerState::Self)) {
@@ -149,9 +143,6 @@ namespace McRave::Horizon {
             const auto engageTime = max(0.0, ((distance - range) / speed) - unitToEngage);
             auto simRatio         = max(0.0, simulationTime - engageTime - addPrepTime(self));
 
-            // if (unit == self)
-            //    simRatio = simulationTime - unitToEngage;
-
             // If the unit doesn't affect this simulation
             if ((self.getSpeed() <= 0.0 && self.getEngDist() > -16.0) || (self.getEngagePosition().getDistance(unitTarget->getPosition()) > reach * 2) ||
                 (self.getGlobalState() == GlobalState::Retreat) || (Combat::State::isStaticRetreat(self.getType()) && !self.attemptingRunby() && !unitTarget->isThreatening()))
@@ -161,9 +152,6 @@ namespace McRave::Horizon {
             addBonus(self, *selfTarget, simRatio);
             addSimStrength(simStrengthPerPlayer[self.getPlayer()], self, simRatio);
             addSimStrength(simStrengthPerState[PlayerState::Self], self, simRatio);
-
-            if (unit.unit()->isSelected())
-                Broodwar->drawTextMap(self.getPosition(), "%.2f", simRatio);
         }
 
         for (auto &a : Units::getUnits(PlayerState::Ally)) {
@@ -189,11 +177,17 @@ namespace McRave::Horizon {
             addSimStrength(simStrengthPerState[PlayerState::Ally], ally, simRatio);
         }
 
+        auto enemyStrength = simStrengthPerState[PlayerState::Enemy];
+        auto selfStrength  = simStrengthPerState[PlayerState::Self];
+        auto allyStrength  = simStrengthPerState[PlayerState::Ally];
+
         // Determine sim value based on max of enemy forces and max of self/ally forces
         auto addForces = Broodwar->getGameType() == GameTypes::Top_vs_Bottom;
         if (addForces) {
+            // TODO
         }
         else {
+
 
             // Check if both raw engagement wins (flyer engages just a2a + g2a, ground engages just
             // a2g + g2g) Check if combined engagement wins If raw engagement is a stronger win than

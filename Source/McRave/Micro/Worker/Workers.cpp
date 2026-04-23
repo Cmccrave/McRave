@@ -153,7 +153,7 @@ namespace McRave::Workers {
                 if (u->getType() == Zerg_Zergling)
                     return false;
 
-                if (u->getGoal().getDistance(unit.getPosition()) < 64.0 && u->getPosition().getDistance(unit.getPosition()) < 160.0)
+                if (u->getGoal().getDistance(unit.getPosition()) < 160.0 && u->getPosition().getDistance(unit.getPosition()) < 160.0)
                     return true;
 
                 return (unit.getPosition().getDistance(u->getPosition()) < u->getGroundReach() && u->getPosition().getDistance(buildCenter) < u->getGroundReach()) ||
@@ -315,7 +315,7 @@ namespace McRave::Workers {
                     auto resourceTopLeft  = resource->getTilePosition();
                     auto resourceBotRight = resource->getTilePosition() + resource->getType().tileSize();
                     auto adjacentPlanning = Util::rectangleIntersect(buildingTopLeft, buildingBotRight, resourceTopLeft, resourceBotRight);
-                    auto nearby           = unit.getPosition().getDistance(center) < 160.0 && (unit.unit()->isCarryingMinerals() || unit.unit()->isCarryingGas());
+                    auto nearby           = unit.getPosition().getDistance(center) < 160.0;
 
                     if (builderClose && canAfford && (adjacentPlanning || nearby)) {
                         auto destination = Util::shiftTowards(center, unit.getPosition(), 160.0);
@@ -377,8 +377,8 @@ namespace McRave::Workers {
                             return u->getRole() == Role::Worker && !u->getBuildPosition().isValid() && (!u->hasResource() || u->getResource().lock()->getType().isMineralField());
                         });
 
-                        // If this is the closest unit and it's doing a return trip
-                        if (closestunit && (unit != *closestunit || !unit.unit()->isCarryingMinerals()))
+                        // If this is the closest unit and it's doing a return trip or moving to mine
+                        if (closestunit && (unit != *closestunit || !unit.unit()->isCarryingMinerals() || unit.unit()->getOrder() == Orders::MoveToMinerals))
                             continue;
                     }
 

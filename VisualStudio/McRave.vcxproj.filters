@@ -337,6 +337,9 @@
     <ClCompile Include="..\Source\McRave\Map\Stations\Stations.cpp">
       <Filter>McRave\Map\Stations</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\Map\Blocks\Blocks.cpp">
+      <Filter>McRave\Map\Blocks</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">
@@ -563,6 +566,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\McRave\Map\Stations\Stations.h">
       <Filter>McRave\Map\Stations</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Map\Blocks\Blocks.h">
+      <Filter>McRave\Map\Blocks</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

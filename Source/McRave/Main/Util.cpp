@@ -161,7 +161,7 @@ namespace McRave::Util {
             for (int y = WalkPosition(box.first).y; y <= WalkPosition(box.second).y; y++) {
                 auto walk = WalkPosition(x, y);
                 if (walk.isValid() && !mapBWEM.GetMiniTile(walk).Walkable())
-                    return false;
+                    return false;                
             }
         }
 
@@ -363,7 +363,7 @@ namespace McRave::Util {
                     }
                 }
             }
-        }        
+        }
 
         // Grab only the alpha characters from the map name to remove version numbers
         for (auto &c : Broodwar->mapFileName()) {

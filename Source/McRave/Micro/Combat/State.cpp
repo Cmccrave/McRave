@@ -69,6 +69,12 @@ namespace McRave::Combat::State {
                     lockGateways();
             }
         }
+
+        // Probes
+        if (!BuildOrder::isPressure(Protoss_Probe) && unlockedOrVis(Protoss_Probe)) {
+            if (!unlockedOrVis(Protoss_Zealot) || !staticRetreatTypes.empty())
+                staticRetreatTypes.push_back(Zerg_Drone);
+        }
     }
 
     void updateTStaticStates()
@@ -90,7 +96,7 @@ namespace McRave::Combat::State {
         // Barracks
         if (!BuildOrder::isPressure(Terran_Marine) && unlockedOrVis(Terran_Marine)) {
             if (Players::TvZ()) {
-                auto stim = Players::getPlayerInfo(Broodwar->self())->hasTech(TechTypes::Stim_Packs);
+                auto stim         = Players::getPlayerInfo(Broodwar->self())->hasTech(TechTypes::Stim_Packs);
                 auto enemyOneBase = !Spy::enemyFastExpand() && Util::getTime() < Time(8, 00);
                 if (!stim || Spy::enemyPressure() || enemyOneBase)
                     lockBarracks();
@@ -116,6 +122,12 @@ namespace McRave::Combat::State {
                 if (!Spy::enemyFastExpand() && Util::getTime() < Time(8, 00))
                     lockFactory();
             }
+        }
+
+        // SCVs
+        if (!BuildOrder::isPressure(Terran_SCV) && unlockedOrVis(Terran_SCV)) {
+            if (!unlockedOrVis(Terran_Marine) || !staticRetreatTypes.empty())
+                staticRetreatTypes.push_back(Terran_SCV);
         }
     }
 
@@ -259,6 +271,12 @@ namespace McRave::Combat::State {
                 }
             }
         }
+
+        // Drones
+        if (!BuildOrder::isPressure(Zerg_Drone) && unlockedOrVis(Zerg_Drone)) {
+            if (!unlockedOrVis(Zerg_Zergling) || !staticRetreatTypes.empty())
+                staticRetreatTypes.push_back(Zerg_Drone);
+        }
     }
 
     // Certain unit types are vulnerable under certain group sizes / lack of upgrades
@@ -308,23 +326,27 @@ namespace McRave::Combat::State {
         const auto atHome  = Terrain::isAtHome(target.getPosition());
         const auto inRange = unit.isWithinRange(target);
 
+        // If this unit is melee and forcing engagement is ideal
         auto meleeAttack = [&]() {
             if (!unit.isMelee())
                 return false;
 
-            return unit.getType() == Zerg_Broodling                                                                                                                                                //
-                   || (unit.getType() == Zerg_Ultralisk && unit.unit()->isIrradiated())                                                                                                            //
-                   || (unit.getSurroundPosition().isValid() && inRange)                                                                                                                            //
-                   || (unit.getType().isWorker() && target.getType().isWorker() && Util::getTime() < Time(2, 00))                                                                                  //
-                   || (!target.isMelee() && Actions::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm))); //
+            return unit.getType() == Zerg_Broodling                                                                                                                                               //
+                   || (unit.getType() == Zerg_Ultralisk && unit.unit()->isIrradiated())                                                                                                           //
+                   || (unit.getSurroundPosition().isValid() && inRange)                                                                                                                           //
+                   || (unit.getType().isWorker() && target.getType().isWorker() && Util::getTime() < Time(2, 00))                                                                                 //
+                   || (!target.isMelee() && Actions::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm))) //
+                   || (unit.isSuicidal() && !nearEnemyDefense());                                                                                                                                    //
         };
 
+        // Cargo that is dropped from a transport should engage
         auto cargoAttack = [&]() {
             return (unit.getType() == Protoss_Reaver && !unit.unit()->isLoaded() && unit.canStartAttack() && inRange)                                           //
                    || (unit.getType() == Protoss_High_Templar && !unit.unit()->isLoaded() && unit.canStartCast(TechTypes::Psionic_Storm, target.getPosition())) //
                    || (unit.getType() == Terran_Ghost && com(Terran_Nuclear_Missile) > 0 && unit.unit()->isLoaded());                                           //
         };
 
+        // Harassing units should engage when they can get value
         auto harassAttack = [&]() {
             if (unit.getType() == Zerg_Mutalisk) {
                 if (Clusters::canDecimate(unit, target))
@@ -337,6 +359,7 @@ namespace McRave::Combat::State {
             return false;
         };
 
+        // Units in range that can kite or want to kill something deadly should engage
         auto inRangeAttack = [&]() {
             if (!inRange)
                 return false;
@@ -344,19 +367,21 @@ namespace McRave::Combat::State {
             const auto vulnerableTarget = (target.isSiegeTank() || target.isLightAir() || target.isTransport() || target.getType() == Protoss_Reaver || target.getType() == Protoss_High_Templar);
 
             return (!unit.isFlying() && vulnerableTarget && unit.getType() != Zerg_Lurker)      //
+                   || atHome                                                                    //
                    || (unit.isTargetedBySuicide() && !unit.isFlying())                          //
                    || (target.getType() == Terran_Vulture_Spider_Mine && !target.isBurrowed()); //
         };
 
+        // Runby units should always engage once they've found workers
         auto runbyAttack = [&]() {
             const auto runbyVsWorker = (unit.attemptingRunby() && target.getType().isWorker() && (unit.getHealth() > 15 || Util::getTime() > Time(6, 00) || Players::ZvZ()));
 
             return runbyVsWorker;
         };
 
+        // Invis units should always engage when detection isnt present
         auto invisAttack = [&]() {
-            return (unit.isSuicidal() && !nearEnemyDefense())                                                                                                                                   //
-                   || (unit.isHidden() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))                                                               //
+            return (unit.isHidden() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))                                                                  //
                    || (unit.getType() == Zerg_Lurker && unit.isBurrowed() && !Spy::enemyDetection() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy)); //
         };
 
@@ -364,10 +389,13 @@ namespace McRave::Combat::State {
         auto atHomeAttack = [&]() {
             // If both sides are melee vs melee, we don't need to force engagement until something is in range
             if (target.isThreatening() && !target.isHidden()) {
-                if (unit.isMelee() && target.isMelee() && !target.hasAttackedRecently() && !unit.isWithinRange(target) && !Combat::isDefendNatural() && nearMainRamp())
+                if (unit.isMelee() && target.isMelee() && !target.hasAttackedRecently() && !inRange && !Combat::isDefendNatural() && nearMainRamp())
                     return false;
                 return true;
             }
+
+            if (unit.getType() == Zerg_Zergling && target.getType() == Terran_Vulture && !inRange)
+                return false;
 
             if (!atHome)
                 return false;
@@ -418,6 +446,12 @@ namespace McRave::Combat::State {
 
     bool forceGlobalRetreat(UnitInfo &unit)
     {
+        if (unit.getGoalType() == GoalType::Escort || unit.attemptingRunby())
+            return false;
+
+        if (isStaticRetreat(unit.getType()))
+            return true;
+
         if (unit.hasTarget()) {
             auto &target = *unit.getTarget().lock();
 
@@ -427,7 +461,7 @@ namespace McRave::Combat::State {
 
             // Try to save Mutas that are low hp when the firepower isn't needed
             const auto mutaSavingRequired = unit.getType() == Zerg_Mutalisk && (!Players::ZvZ() || Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk) == 0) && !unit.isWithinRange(target) &&
-                                            unit.getHealth() <= 40;
+                                            !Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) && unit.getHealth() <= 40;
 
             // Try to save scouts as they have high shield counts
             const auto scoutSavingRequired = unit.getType() == Protoss_Scout && !unit.isWithinRange(target) && unit.getHealth() + unit.getShields() <= 80;
@@ -462,13 +496,7 @@ namespace McRave::Combat::State {
 
     void updateLocalState(UnitInfo &unit)
     {
-        if (!unit.hasSimTarget() || !unit.hasTarget()) {
-            if (unit.getGlobalState() == GlobalState::Retreat)
-                unit.setLocalState(LocalState::Hold);
-            return;
-        }
-
-        if (unit.getLocalState() != LocalState::None)
+        if (!unit.hasSimTarget() || !unit.hasTarget() || unit.getLocalState() != LocalState::None)
             return;
 
         auto &simTarget          = *unit.getSimTarget().lock();
@@ -519,7 +547,7 @@ namespace McRave::Combat::State {
         if (unit.getGlobalState() != GlobalState::None)
             return;
 
-        if (forceGlobalRetreat(unit) || (isStaticRetreat(unit.getType()) && !unit.attemptingRunby() && !Units::enemyThreatening()))
+        if (forceGlobalRetreat(unit))
             unit.setGlobalState(GlobalState::Retreat);
         else
             unit.setGlobalState(GlobalState::Attack);

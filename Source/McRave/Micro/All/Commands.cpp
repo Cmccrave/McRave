@@ -41,7 +41,7 @@ namespace McRave::Command {
 
         double altitude(ScoreContext &context) //
         {
-            return context.unit->isFlying() ? Util::log10(1 + mapBWEM.GetMiniTile(context.w).Altitude()) : 1.0;
+            return context.unit->isFlying() ? Util::log10(100 + mapBWEM.GetMiniTile(context.w).Altitude()) : 1.0;
         }
 
         double threat(ScoreContext &context)
@@ -72,6 +72,13 @@ namespace McRave::Command {
             context.target    = unit.hasTarget() ? unit.getTarget().lock() : nullptr;
             context.commander = unit.hasCommander() ? unit.getCommander().lock() : nullptr;
 
+            const auto penalizeEdge   = [&](auto &p) { return clamp(nearestEdge.getDistance(p) / 96.0, 1.0, 5.00); };
+            const auto penalizeCorner = [&](auto &p) { return clamp(nearestCorner.getDistance(p) / 160.0, 1.0, 5.00); };
+
+            // Pre calculate existing costs
+            auto existingEdgeCost = max(penalizeEdge(unit.getPosition()), penalizeEdge(unit.getNavigation()));
+            auto existingCornerCost = max(penalizeCorner(unit.getPosition()), penalizeCorner(unit.getNavigation()));
+
             // Check if this is a viable position for movement
             const auto viablePosition = [&](Position p) {
                 if (!unit.getType().isFlyer()) {
@@ -90,8 +97,8 @@ namespace McRave::Command {
                 auto current = scoreFunc(context);
 
                 if (unit.isLightAir()) {
-                    auto edgePush   = clamp(nearestEdge.getDistance(p) / 96.0, 1.0, 5.00);
-                    auto cornerPush = clamp(nearestCorner.getDistance(p) / 160.0, 1.0, 5.00);
+                    auto edgePush   = max(1.0, penalizeEdge(p) - existingEdgeCost);
+                    auto cornerPush = max(1.0, penalizeCorner(p) - existingCornerCost);
                     current         = current * cornerPush * edgePush;
                 }
                 return current;
@@ -389,6 +396,7 @@ namespace McRave::Command {
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
+                Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Purple);
                 unit.commandText = "Move_B";
                 return true;
             }
@@ -416,7 +424,7 @@ namespace McRave::Command {
 
         auto selfRange   = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
         auto targetRange = unit.isFlying() ? target.getAirRange() : target.getGroundRange();
-        auto maxRange    = max(selfRange, targetRange);
+        auto maxRange    = unit.isFlying() ? Players::getStrength(PlayerState::Enemy).maxAirRange : Players::getStrength(PlayerState::Enemy).maxGroundRange;
 
         // Get a position away from splash
         if (kiteAvoidance) {
@@ -428,7 +436,7 @@ namespace McRave::Command {
         else if (kiteFromThreat) {
 
             const auto threatCalc = [&](auto &p) {
-                auto threat = double(Grids::getAirThreat(p, PlayerState::Enemy));
+                auto threat = unit.isFlying() ? Grids::getAirThreat(p, PlayerState::Enemy) : Grids::getGroundThreat(p, PlayerState::Enemy);
                 return threat;
             };
 

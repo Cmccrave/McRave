@@ -402,9 +402,9 @@ namespace McRave::Walls {
             if (Spy::getEnemyTransition() == T_2PortWraith)
                 return (Util::getTime() > Time(5, 30));
 
-            // Need 2 sunkens to protect from speed vultures
+            // Need 1 sunken to protect from speed vultures
             if (Spy::getEnemyTransition() == T_2FactVulture)
-                return 2 * (Util::getTime() > Time(5, 30));
+                return 1;
 
             // Need 3 sunkens to defend against tank timing
             if (Spy::getEnemyTransition() == T_1FactTanks)
@@ -565,7 +565,7 @@ namespace McRave::Walls {
         }
 
         // (Zv) If the natural is narrow, it's fair to skip one after we hit 2
-        if (Broodwar->self()->getRace() == Races::Zerg && Terrain::isNarrowNatural() && wall.getGroundDefenseCount() >= 2) {
+        if (Broodwar->self()->getRace() == Races::Zerg && wall.getStation() && wall.getStation()->isNatural() && Terrain::isNarrowNatural() && wall.getGroundDefenseCount() >= 2) {
             groundCount++;
         }
 

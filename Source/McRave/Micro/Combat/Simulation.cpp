@@ -167,6 +167,8 @@ namespace McRave::Combat::Simulation {
             minWinPercent *= 2.0;
             maxWinPercent *= 2.0;
         }
+
+        // Adjust winrate if anything along the path wouldn't fit the width of units to simulate
     }
 
     void onFrame()

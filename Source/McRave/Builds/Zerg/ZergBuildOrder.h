@@ -17,6 +17,7 @@ namespace McRave::BuildOrder::Zerg {
     inline const std::vector<BWAPI::UnitType> mutalingdefiler = {BWAPI::UnitTypes::Zerg_Mutalisk, BWAPI::UnitTypes::Zerg_Zergling, BWAPI::UnitTypes::Zerg_Defiler};
     inline const std::vector<BWAPI::UnitType> ultraling       = {BWAPI::UnitTypes::Zerg_Mutalisk, BWAPI::UnitTypes::Zerg_Ultralisk, BWAPI::UnitTypes::Zerg_Zergling, BWAPI::UnitTypes::Zerg_Defiler};
     inline const std::vector<BWAPI::UnitType> defilerling     = {BWAPI::UnitTypes::Zerg_Mutalisk, BWAPI::UnitTypes::Zerg_Defiler, BWAPI::UnitTypes::Zerg_Zergling, BWAPI::UnitTypes::Zerg_Ultralisk};
+    inline const std::vector<BWAPI::UnitType> hydradefiler    = {BWAPI::UnitTypes::Zerg_Hydralisk, BWAPI::UnitTypes::Zerg_Defiler};
 
     void opener();
     void tech();

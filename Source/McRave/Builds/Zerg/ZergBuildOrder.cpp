@@ -4,6 +4,7 @@
 #include "Info/Resource/Resources.h"
 #include "Info/Roles.h"
 #include "Info/Unit/Units.h"
+#include "Macro/Expanding/Expanding.h"
 #include "Macro/Planning/Planning.h"
 #include "Macro/Researching/Researching.h"
 #include "Macro/Upgrading/Upgrading.h"
@@ -33,23 +34,27 @@ namespace McRave::BuildOrder::Zerg {
 
         void switchComposition()
         {
-            static auto lastSwitchTime                  = Time(10, 00);
+            static auto lastSwitchTime                  = Time(9, 00);
             static vector<UnitType> switchedComposition = {};
 
             // For certain switches, we don't want to start producing anything until we're actually ready
             if (!switchedComposition.empty()) {
                 auto ready = false;
-                if (switchedComposition == hydralurk) {
+                if (switchedComposition == hydralurk || switchedComposition == hydradefiler) {
                     ready = Upgrading::haveUpgrade(Grooved_Spines) && Upgrading::haveUpgrade(Muscular_Augments);
                 }
 
                 if (switchedComposition == mutaling) {
                     ready = com(Zerg_Spire) > 0;
                 }
-                if (ready)
-                    unitOrder = switchedComposition;
-            }
 
+                if (ready) {
+                    LOG_ONCE("Switched composition ready");
+                    unitOrder = switchedComposition;
+                }
+            }
+            
+            // TODO: Allow faster switching if we have the tech already
             if (Util::getTime() - lastSwitchTime < Time(2, 30))
                 return;
 
@@ -61,31 +66,41 @@ namespace McRave::BuildOrder::Zerg {
                 auto enemyWeakToHydra = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair, Protoss_Archon) >
                                         Players::getVisibleCount(PlayerState::Enemy, Protoss_High_Templar, Protoss_Reaver);
 
-                const auto stringCount = [&](auto t) { return to_string(Players::getVisibleCount(PlayerState::Enemy, t)); };
-
-                auto typesToLog = "Corsair: " + stringCount(Protoss_Corsair) +  //
-                                  " Archon: " + stringCount(Protoss_Archon) +   //
-                                  " HT: " + stringCount(Protoss_High_Templar) + //
-                                  " Reaver: " + stringCount(Protoss_Reaver);
-
                 if (enemyWeakToHydra) {
                     switchedComposition = hydralurk;
                     lastSwitchTime      = Util::getTime();
                     focusUnits.insert(Zerg_Hydralisk);
                     focusUnits.insert(Zerg_Lurker);
-                    LOG("Desired switch to hydralurk - ", typesToLog);
+                    LOG("Desired switch to hydralurk");
                 }
 
                 if (enemyWeakToMuta) {
                     switchedComposition = mutaling;
                     lastSwitchTime      = Util::getTime();
                     focusUnits.insert(Zerg_Mutalisk);
-                    LOG("Desired switch to mutaling - ", typesToLog);
+                    LOG("Desired switch to mutaling");
                 }
             }
 
             if (Players::ZvT()) {
-                // Switch between mutas and ultras
+                auto enemyWeakToHydras = Spy::Terran::enemyMech() && Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith, Terran_Valkyrie) >
+                                                                         Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode, Terran_Goliath);
+                auto enemyWeakToMuta = Spy::Terran::enemyMech() && Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith, Terran_Valkyrie, Terran_Goliath) <
+                                                                       Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode);
+
+                if (enemyWeakToHydras && isFocusUnit(Zerg_Mutalisk)) {
+                    switchedComposition = hydradefiler;
+                    lastSwitchTime      = Util::getTime();
+                    focusUnits.insert(Zerg_Hydralisk);
+                    LOG("Desired switch to hydradefiler");
+                }
+
+                if (enemyWeakToMuta && isFocusUnit(Zerg_Hydralisk)) {
+                    switchedComposition = mutaling;
+                    lastSwitchTime      = Util::getTime();
+                    focusUnits.insert(Zerg_Mutalisk);
+                    LOG("Desired switch to mutaling");
+                }
             }
         }
 
@@ -303,7 +318,9 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueExpansions()
         {
-            expandDesired = false;
+            auto lastExpandDesiredState = expandDesired;
+            expandDesired               = false;
+
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
                 const auto availableGas      = Broodwar->self()->gas() - BuildOrder::getGasQueued();
@@ -317,9 +334,6 @@ namespace McRave::BuildOrder::Zerg {
                 auto selfCount  = Stations::getStations(PlayerState::Self).size();
                 auto enemyCount = Stations::getStations(PlayerState::Enemy).size();
 
-                // Gas matters more, mineral bases are "free"
-                Stations::getGasingStationsCount();
-
                 if (Players::ZvZ()) {
                     expandDesired = (Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony) > 0 && selfCount < enemyCount && availableMinerals > waitForMinerals && availableGas < 150) //
                                     || (excessResources && productionSat);
@@ -330,6 +344,16 @@ namespace McRave::BuildOrder::Zerg {
                                     || (selfCount >= 4 && Stations::getMiningStationsCount() <= 2)                       //
                                     || (selfCount >= 4 && Stations::getGasingStationsCount() <= 1)                       //
                                     || (Stations::getMiningStationsCount() < 2 && Util::getTime() > Time(12, 00));
+                }
+
+                // Check if a worker is already there, continue trying to expand
+                if (lastExpandDesiredState && Planning::getCurrentExpansion()) {
+                    auto currentExpansion = Planning::getCurrentExpansion()->getBase()->Center();
+                    auto closestWorker    = Util::getClosestUnit(currentExpansion, PlayerState::Self, [&](auto &u) { return u->getType().isWorker(); });
+                    if (closestWorker) {
+                        if (closestWorker->isWithinBuildRange() || closestWorker->getPosition().getDistance(currentExpansion) < 160.0)
+                            expandDesired = true;
+                    }
                 }
 
                 buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + expandDesired);
@@ -365,7 +389,7 @@ namespace McRave::BuildOrder::Zerg {
                 auto current           = clamp(int(Stations::getStations(PlayerState::Self).size()), 1, 4);
                 auto desiredProduction = hatchPerBase[current];
 
-                if (isFocusUnit(Zerg_Zergling))
+                if (isFocusUnit(Zerg_Zergling) && current == 4)
                     desiredProduction = round(double(desiredProduction) * 1.5);
 
                 productionSat = hatchCount() >= min(7, desiredProduction);
@@ -376,7 +400,7 @@ namespace McRave::BuildOrder::Zerg {
                 const auto waitForMinerals   = 200 + (200 * incompleteHatch);
 
                 const auto resourceSat     = (availableMinerals >= waitForMinerals && Resources::isHalfMineralSaturated() && Resources::isGasSaturated() && vis(Zerg_Larva) <= 3);
-                const auto excessResources = (availableMinerals >= waitForMinerals * 2 && vis(Zerg_Larva) <= 3);
+                const auto excessResources = (availableMinerals >= waitForMinerals * 3);
                 const auto larvaBankrupt   = (availableMinerals >= waitForMinerals && (vis(Zerg_Larva) + (incompleteHatch)) < min(3, hatchCount()));
 
                 const auto allowMultiple = !Players::ZvZ();
@@ -384,6 +408,8 @@ namespace McRave::BuildOrder::Zerg {
                 if (!productionSat && (incompleteHatch == 0 || allowMultiple)) {
                     rampDesired               = resourceSat || excessResources || larvaBankrupt;
                     buildQueue[Zerg_Hatchery] = max(buildQueue[Zerg_Hatchery], hatchCount() + rampDesired);
+                    if (rampDesired)
+                        LOG_SLOW("Adding production");
                 }
             }
 
@@ -402,7 +428,7 @@ namespace McRave::BuildOrder::Zerg {
             if (expandDesired && expansionDenied && hatchCount() < 5) {
                 expandDesired = false;
                 rampDesired   = true;
-                LOG_SLOW("Ramping instead of expanding due to denial");
+                LOG_SLOW("Adding production instead of expanding due to denial");
             }
         }
 
@@ -781,7 +807,7 @@ namespace McRave::BuildOrder::Zerg {
             zergUnitPump[Zerg_Drone] |= zergUnitPump[Zerg_Defiler] || zergUnitPump[Zerg_Scourge] || zergUnitPump[Zerg_Mutalisk] || zergUnitPump[Zerg_Hydralisk];
 
             // Unit based
-            if (zergUnitPump[Zerg_Lurker] && availGas > 100 && com(Zerg_Hydralisk) > 0)
+            if (zergUnitPump[Zerg_Lurker] && availGas > 100 && com(Zerg_Hydralisk) > 0 && Researching::haveResearch(TechTypes::Lurker_Aspect))
                 armyComposition[Zerg_Lurker] = 1.00;
 
             // Larva based
@@ -859,7 +885,8 @@ namespace McRave::BuildOrder::Zerg {
                 else if (unitOrder == ultraling || unitOrder == defilerling) {
                     priorityOrder = {
                         {Zerg_Drone, 30},    {Zerg_Mutalisk, 16}, {Zerg_Ultralisk, 4},  {Zerg_Defiler, 1}, //
-                        {Zerg_Drone, 45},    {Zerg_Mutalisk, 16}, {Zerg_Ultralisk, 8},  {Zerg_Defiler, 2}, //
+                        {Zerg_Drone, 40},    {Zerg_Mutalisk, 24}, {Zerg_Ultralisk, 8},  {Zerg_Defiler, 2}, //
+                        {Zerg_Drone, 50},    {Zerg_Mutalisk, 32}, {Zerg_Ultralisk, 10},  {Zerg_Defiler, 2}, //
                         {Zerg_Drone, 60},    {Zerg_Mutalisk, 48}, {Zerg_Ultralisk, 12}, {Zerg_Defiler, 2}, //
                         {Zerg_Mutalisk, 100}                                                               //
                     };
@@ -890,6 +917,14 @@ namespace McRave::BuildOrder::Zerg {
                         {Zerg_Drone, 45},     {Zerg_Mutalisk, 18}, {Zerg_Hydralisk, 8},  {Zerg_Lurker, 8},  //
                         {Zerg_Drone, 60},     {Zerg_Mutalisk, 24}, {Zerg_Hydralisk, 16}, {Zerg_Lurker, 16}, //
                         {Zerg_Mutalisk, 100},                                                               //
+                    };
+                }
+                else if (unitOrder == hydradefiler) {
+                    priorityOrder = {
+                        {Zerg_Drone, 30},      {Zerg_Hydralisk, 24}, {Zerg_Defiler, 2}, //
+                        {Zerg_Drone, 44},      {Zerg_Hydralisk, 36}, {Zerg_Lurker, 4},  //
+                        {Zerg_Drone, 60},      {Zerg_Hydralisk, 96}, {Zerg_Lurker, 6},  //
+                        {Zerg_Hydralisk, 200},                                          //
                     };
                 }
             }

@@ -101,7 +101,7 @@ namespace McRave::Units {
                     unit.update();
                     auto validRole = unit.getRole() == Role::Combat || unit.getRole() == Role::Defender || unit.getRole() == Role::Scout || unit.getRole() == Role::Support ||
                                      unit.getRole() == Role::Transport || unit.getRole() == Role::Worker;
-                    if (!validRole)
+                    if (!validRole || unit.isToken())
                         continue;
 
                     auto frames = 6;

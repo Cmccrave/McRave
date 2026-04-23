@@ -141,8 +141,15 @@ namespace McRave::Combat::Navigation {
             return;
         }
 
-        // If path is reachable, find a point n pixels away to set as new destination
         auto dist = unit.isFlying() ? 96.0 : 160.0;
+
+        // Within a certain distance, it's better to just navigate to the destination
+        if (unit.getPosition().getDistance(unit.getDestination()) < 160.0) {
+            unit.setNavigation(unit.getDestination());
+            return;
+        }
+
+        // If path is reachable, find a point n pixels away to set as new destination
         if (unit.getMarchPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > dist) {
             auto closestPoint   = unit.getDestination();
             auto closestDist    = DBL_MAX;
@@ -203,9 +210,6 @@ namespace McRave::Combat::Navigation {
 
     void updateSimPositions(UnitInfo &unit)
     {
-        if (!unit.isLightAir())
-            return;
-
         auto &simUnits = lastSimUnits[&unit];
         for (auto itr = simUnits.begin(); itr != simUnits.end();) {
             if (itr->first.expired() || Broodwar->getFrameCount() >= itr->second)
@@ -274,6 +278,7 @@ namespace McRave::Combat::Navigation {
 
         if (harassingCommander) {
             auto &unit = *harassingCommander;
+            updateSimPositions(unit);
 
             if (flyerHarassPath.getSource() == TilePosition(unit.getDestination()) && flyerHarassPath.getTarget() == TilePosition(unit.getPosition()))
                 return;
@@ -292,9 +297,9 @@ namespace McRave::Combat::Navigation {
 
             const auto flyerAttack = [&](const TilePosition &t) {
                 const auto center = Position(t) + offset;
-                auto d            = center.getApproxDistance(simPosition);
+                auto d            = center.getApproxDistance(simPosition) - 32;
                 for (auto &pos : simPositions)
-                    d = min(d, center.getApproxDistance(pos));
+                    d = min(d, center.getApproxDistance(pos) - 32);
 
                 auto dist = max(0.01, double(d) - cachedDist);
                 auto vis  = clamp(double(frameNow - Grids::getLastVisibleFrame(t)) * 0.0002, 0.05, 0.5);
@@ -317,7 +322,6 @@ namespace McRave::Combat::Navigation {
             // Update the commander first
             auto commander = cluster.commander.lock();
             if (commander) {
-                updateSimPositions(*commander);
                 updatePath(*commander);
                 updateNavigation(*commander);
             }
@@ -329,7 +333,6 @@ namespace McRave::Combat::Navigation {
 
                 // Determine if this is a shared decision
                 auto sharedDecision = cluster.commandShare == CommandShare::Exact && unit->canMirrorCommander(*commander);
-                updateSimPositions(*unit);
 
                 // If it's not a shared decision, indepdently update pathing and navigation waypoint
                 if (!sharedDecision) {

@@ -7,6 +7,7 @@
 #include "Macro/Planning/Planning.h"
 #include "Macro/Researching/Researching.h"
 #include "Macro/Upgrading/Upgrading.h"
+#include "Map/Grids/Grids.h"
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
 #include "Map/Walls/Walls.h"
@@ -40,6 +41,32 @@ namespace McRave::Goals {
             GoalTarget(){};
         };
 
+        bool canAssignGoal(const shared_ptr<UnitInfo> unit, GoalType gType)
+        {
+            if (gType == GoalType::Attack && Combat::State::isStaticRetreat(unit->getType()))
+                return false;
+            if (unit->getRole() == Role::Scout || unit->getLocalState() == LocalState::Attack || unit->getGoal().isValid())
+                return false;
+            return true;
+        }
+
+        template <class T, class P> //
+        void assignNumberToGoal(T t, P pred, int count, GoalType gType = GoalType::None)
+        {
+            const auto here = Position(t);
+            if (!here.isValid())
+                return;
+
+            // TODO: Caching
+            for (int current = 0; current < count; current++) {
+                const auto closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) { return canAssignGoal(u, gType) && pred(u); });
+                if (closest) {
+                    closest->setGoal(here);
+                    closest->setGoalType(gType);
+                }
+            }
+        }
+
         template <class T> //
         void assignNumberToGoal(T t, UnitType type, int count, GoalType gType = GoalType::None)
         {
@@ -65,6 +92,8 @@ namespace McRave::Goals {
             for (int current = 0; current < count; current++) {
                 if (type.isFlyer()) {
                     const auto closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
+                        if (!u->isAvailable())
+                            return false;
                         if (gType == GoalType::Attack && Combat::State::isStaticRetreat(type))
                             return false;
                         if (u->getRole() == Role::Scout)
@@ -82,6 +111,8 @@ namespace McRave::Goals {
 
                 else {
                     const auto closest = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
+                        if (!u->isAvailable())
+                            return false;
                         if (gType == GoalType::Attack && Combat::State::isStaticRetreat(type))
                             return false;
                         if (u->getLocalState() == LocalState::Attack)
@@ -300,28 +331,17 @@ namespace McRave::Goals {
                         typeSpeed = unit->getSpeed();
 
                     // When attempting to expand, escort from vultures
-                    // Assign 1 to the worker
-                    // Assign 1 to each vulture nearby
-                    // Assign the rest to the worker
-                    if (closestBuilder && Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0) {
+                    if (closestBuilder && !closestBuilder->isWithinBuildRange()) {
                         LOG_FAST("Worker looking to expand");
-                        assignNumberToGoal(closestBuilder->getPosition(), type, 1, GoalType::Escort);
-                        for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
-                            auto assignEscorter = enemy->getPosition().getDistance(closestBuilder->getPosition()) < 640.0 && enemy->getType() == Terran_Vulture; // Just assign vs vultures for now
-                            if (!enemy->isSuicidal() && assignEscorter)
-                                assignNumberToGoal(enemy->getPosition(), type, perEnemy, GoalType::Escort);
-                        }
-                        assignPercentToGoal(closestBuilder->getPosition(), type, 0.5, GoalType::Escort);
-                    }
-                }
-            }
+                        assignNumberToGoal(closestBuilder->getPosition(), type, 2, GoalType::Escort);
 
-            // Escort workers when they can't transfer
-            auto type = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
-            for (auto &unit : Units::getUnits(PlayerState::Self)) {
-                if (unit->hasResource(); auto resource = unit->getResource().lock()) {
-                    if (!resource->getType().isMineralField() && !unit->isWithinGatherRange() && !Terrain::inTerritoryPath(PlayerState::Self, unit->getPosition(), resource->getPosition()))
-                        assignNumberToGoal(unit->getPosition(), type, 1, GoalType::Escort);
+                        for (auto &e : closestBuilder->getUnitsInReachOfThis()) {
+                            if (auto enemy = e.lock()) {
+                                if (enemy->getType() == Terran_Vulture)
+                                    assignNumberToGoal(enemy->getPosition(), type, 1, GoalType::Escort);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -458,6 +478,49 @@ namespace McRave::Goals {
                     }
                 }
             }
+
+            // Assign an Overlord to watch for drops
+            if (Terrain::getEnemyStartingPosition().isValid()) {
+                auto edgeEnemy = Terrain::getClosestMapEdge(Terrain::getEnemyStartingPosition());
+                auto edgeSelf  = Terrain::getClosestMapEdge(Terrain::getMainPosition());
+                auto width     = Broodwar->mapWidth();
+                auto height    = Broodwar->mapHeight();
+                vector<TilePosition> claimedCorner;
+
+                // Each path can claim a corner once, to try and create both boundary paths
+                auto pathEdge = [&](auto &t) {
+                    if (Util::contains(claimedCorner, t))
+                        return false;
+                    return t.x == 0 || t.y == 0 || t.x == width - 1 || t.y == height - 1;
+                };
+
+                BWEB::Path newPathA(edgeSelf, edgeEnemy, Zerg_Overlord, false, false);
+                newPathA.generateJPS(pathEdge);
+
+                for (auto &t : newPathA.getTiles()) {
+                    if (t != newPathA.getSource() && t != newPathA.getTarget())
+                        claimedCorner.push_back(t);
+                }
+
+                BWEB::Path newPathB(edgeSelf, edgeEnemy, Zerg_Overlord, false, false);
+                newPathB.generateJPS(pathEdge);
+
+                auto overlordSpot = [&](auto &p) {
+                    auto closestStation = Stations::getClosestStationAir(p, PlayerState::Enemy);
+                    if (closestStation && p.getDistance(closestStation->getBase()->Center()) < 960.0) {
+                        return true;
+                    }
+                };
+
+                auto pointA = Util::findPointOnPath(newPathA, overlordSpot);
+                auto pointB = Util::findPointOnPath(newPathB, overlordSpot);
+
+                assignNumberToGoal(pointA, Zerg_Overlord, 1, GoalType::Explore);
+                assignNumberToGoal(pointB, Zerg_Overlord, 1, GoalType::Explore);
+
+                Visuals::drawPath(newPathA);
+                Visuals::drawPath(newPathB);
+            }
         }
 
         void updateZergGoals()
@@ -465,17 +528,21 @@ namespace McRave::Goals {
             if (Broodwar->self()->getRace() != Races::Zerg)
                 return;
 
-            auto enemyStrength = Players::getStrength(PlayerState::Enemy);
-            auto oldestTile    = Terrain::getOldestPosition(Terrain::getMainArea());
+            auto outlines      = Terrain::getAreaOutline(Terrain::getMainArea());
+            auto oldestTile    = TilePositions::Invalid;
+            for (auto &w : outlines) {
+                auto tile = TilePosition(w);
+                if (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(tile) >= 720)
+                    oldestTile = tile;
+            }
 
             // Clear out for potential in base proxy
             auto possibleProxyFact  = (Spy::enemyPossibleProxy() && Spy::getEnemyBuild() == T_RaxFact);
             auto possibleCannonRush = (Spy::enemyPossibleProxy() && Players::getTotalCount(PlayerState::Enemy, Protoss_Probe) > 0);
             if (Roles::getRoleCount(Role::Combat) == 0 && (possibleProxyFact || possibleCannonRush)) {
+                LOG_FAST("Need to scout for proxy");
                 auto proxyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy(); });
-                if (proxyWorker)
-                    assignNumberToGoal(proxyWorker->getPosition(), Zerg_Drone, 1, GoalType::Explore);
-                else
+                if (!proxyWorker->unit()->exists())
                     assignNumberToGoal(oldestTile, Zerg_Drone, 1, GoalType::Explore);
             }
 
@@ -483,10 +550,31 @@ namespace McRave::Goals {
             auto proxyNeedsScouting = !Spy::enemyProxy() || Spy::getEnemyBuild() == P_CannonRush;
             if (Util::getTime() < Time(4, 00) && !BuildOrder::isRush() && proxyNeedsScouting && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() &&
                 Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
-
                 if (oldestTile.isValid())
                     assignNumberToGoal(oldestTile, Zerg_Zergling, 1, GoalType::Explore);
             }
+
+            // Vultures on the map can be chased by low hp mutalisks
+            if (Players::ZvT()) {
+                auto usefulMuta = [&](auto &u) { return u->isLightAir() && u->saveUnit; };
+                auto numMutas   = count_if(Units::getUnits(PlayerState::Self).begin(), Units::getUnits(PlayerState::Self).end(), [&](auto &u) { return usefulMuta(u); });
+                vector<shared_ptr<UnitInfo>> assigned;
+                for (int i = 0; i < numMutas; i++) {
+                    auto closestVulture = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy,
+                                                               [&](auto &u) { return u->getType() == Terran_Vulture && !Util::contains(assigned, u); });
+                    if (closestVulture) {
+                        assignNumberToGoal(closestVulture->getPosition(), usefulMuta, 1, GoalType::Escort);
+                        assigned.push_back(closestVulture->shared_from_this());
+                    }
+                }
+            }
+
+            //// Send a worker to bypass a contain
+            // if (Players::ZvT()) {
+            //    if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && Stations::getStations(PlayerState::Self).size() < 3) {
+            //        assignNumberToGoal(Planning::getCurrentExpansion()->getBase()->Center(), Zerg_Drone, 1, GoalType::Explore);
+            //    }
+            //}
 
             // Before we have a spore, we need to defend overlords
             auto &stations    = Stations::getStations(PlayerState::Self);
@@ -540,9 +628,9 @@ namespace McRave::Goals {
                     }
                 }
                 if (posBest.isValid()) {
-                    assignPercentToGoal(posBest, Zerg_Zergling, 1.00, GoalType::Explore);
+                    assignPercentToGoal(posBest, Zerg_Zergling, 1.00, GoalType::Attack);
                     if (Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) && Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments))
-                        assignPercentToGoal(posBest, Zerg_Hydralisk, 0.50, GoalType::Explore);
+                        assignPercentToGoal(posBest, Zerg_Hydralisk, 0.50, GoalType::Attack);
                 }
             }
 

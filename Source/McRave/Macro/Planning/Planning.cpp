@@ -6,6 +6,7 @@
 #include "Info/Unit/Units.h"
 #include "Macro/Expanding/Expanding.h"
 #include "Macro/Planning/Pylons.h"
+#include "Map/Blocks/Blocks.h"
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
 #include "Map/Walls/Walls.h"
@@ -20,9 +21,8 @@ namespace McRave::Planning {
     namespace {
 
         int plannedMineral, plannedGas;
-        map<TilePosition, UnitType> buildingsPlanned;
+        map<TilePosition, UnitType> buildingsPlanned, morphsPlanned;
         map<TilePosition, int> buildingTimer;
-        set<TilePosition> plannedGround, plannedAir;
         bool expansionPlanned                 = false;
         const BWEB::Station *currentExpansion = nullptr;
         const BWEB::Station *nextExpansion    = nullptr;
@@ -322,7 +322,7 @@ namespace McRave::Planning {
                         }
 
                         // Discount block if it has lots of open space
-                        if (!block.getPlacements(building).empty()) {
+                        if (!block.getPlacements(building).empty() && vis(Protoss_Pylon) >= 3) {
                             cost = 1.0 / double(1 + block.getLargeTiles().size() + block.getMediumTiles().size());
                         }
                     }
@@ -469,24 +469,6 @@ namespace McRave::Planning {
             if (!isDefensiveType(building))
                 return false;
 
-            // Place spire as close to the Lair in case we're hiding it
-            if (false && building == Zerg_Spire && BuildOrder::isHideTech()) {
-                auto closestLair = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Lair; });
-
-                if (closestLair) {
-                    auto closestStation = Stations::getClosestStationAir(closestLair->getPosition(), PlayerState::Self);
-                    if (closestStation) {
-                        placement = returnFurthest(building, closestStation->getDefenses(), Position(Terrain::getMainChoke()->Center()));
-                        if (placement.isValid())
-                            return true;
-                    }
-                }
-
-                placement = returnFurthest(building, Terrain::getMyMain()->getDefenses(), Position(Terrain::getMainChoke()->Center()));
-                if (placement.isValid())
-                    return true;
-            }
-
             // Nydus canals are placed at natural locations only
             if (building == Zerg_Nydus_Canal) {
                 placement = returnClosest(building, Walls::getNaturalWall()->getDefenses(), Position(BWEB::Stations::getStartingMain()->getChokepoint()->Center()));
@@ -502,7 +484,7 @@ namespace McRave::Planning {
             // Defense placements near stations
             for (auto &station : Stations::getStations(PlayerState::Self)) {
 
-                // Place sunkens closest to the resources by default
+                // Place defenses closest to the resources by default
                 auto colonies          = Stations::getColonyCount(station);
                 auto needGrd           = Stations::needGroundDefenses(station) > colonies;
                 auto needAir           = Stations::needAirDefenses(station) > colonies;
@@ -512,6 +494,8 @@ namespace McRave::Planning {
                 if (needGrd) {
                     if (isPlannable(Zerg_Creep_Colony, station->getPocketDefense()) && isBuildable(Zerg_Creep_Colony, station->getPocketDefense())) {
                         placement = station->getPocketDefense();
+                        if (building == Zerg_Creep_Colony)
+                            morphsPlanned[placement] = Zerg_Sunken_Colony;
                         return true;
                     }
                 }
@@ -519,8 +503,13 @@ namespace McRave::Planning {
                 // If we need defenses
                 if (needGrd || needAir) {
                     placement = returnClosest(building, station->getDefenses(), desiredCenter);
-                    if (placement.isValid())
+                    if (placement.isValid()) {
+                        if (building == Zerg_Creep_Colony)
+                            morphsPlanned[placement] = Zerg_Sunken_Colony;
+                        if (building == Zerg_Creep_Colony)
+                            morphsPlanned[placement] = Zerg_Spore_Colony;
                         return true;
+                    }
                 }
             }
 
@@ -555,7 +544,8 @@ namespace McRave::Planning {
                         for (auto i : desiredRowOrder) {
                             placement = returnClosest(building, wall.getDefenses(i), desiredCenter, false, true);
                             if (placement.isValid()) {
-                                plannedGround.insert(placement);
+                                if (building == Zerg_Creep_Colony)
+                                    morphsPlanned[placement] = Zerg_Sunken_Colony;
                                 return true;
                             }
                         }
@@ -565,7 +555,8 @@ namespace McRave::Planning {
                     else {
                         placement = returnClosest(building, wall.getDefenses(0), desiredCenter);
                         if (placement.isValid()) {
-                            plannedGround.insert(placement);
+                            if (building == Zerg_Creep_Colony)
+                                morphsPlanned[placement] = Zerg_Sunken_Colony;
                             return true;
                         }
                     }
@@ -577,7 +568,8 @@ namespace McRave::Planning {
                     for (int i = 2; i <= 2; i++) {
                         placement = returnClosest(building, wall.getDefenses(i), desiredCenter);
                         if (placement.isValid()) {
-                            plannedAir.insert(placement);
+                            if (building == Zerg_Creep_Colony)
+                                morphsPlanned[placement] = Zerg_Spore_Colony;
                             return true;
                         }
                     }
@@ -585,9 +577,20 @@ namespace McRave::Planning {
                     // Resort to just placing a defense in the wall
                     placement = returnClosest(building, wall.getDefenses(0), desiredCenter);
                     if (placement.isValid()) {
-                        plannedAir.insert(placement);
+                        if (building == Zerg_Creep_Colony)
+                            morphsPlanned[placement] = Zerg_Spore_Colony;
                         return true;
                     }
+                }
+            }
+
+            // Defense placements near blocks
+            for (auto &block : BWEB::Blocks::getBlocks()) {
+                auto airneeded = Blocks::needAirDefenses(&block);
+                if (airneeded > 0) {
+                    placement = returnClosest(building, block.getSmallTiles(), block.getCenter());
+                    if (placement.isValid())
+                        return true;
                 }
             }
             return false;
@@ -962,13 +965,9 @@ namespace McRave::Planning {
         auto itr = buildingsPlanned.find(here);
         if (itr != buildingsPlanned.end())
             return itr->second;
-
-        // Since Zerg buildings can morph from a colony, we need to differentiate which type we planned for when placing
-        if (plannedGround.find(here) != plannedGround.end())
-            return Zerg_Sunken_Colony;
-        if (plannedAir.find(here) != plannedAir.end())
-            return Zerg_Spore_Colony;
-
+        itr = morphsPlanned.find(here);
+        if (itr != morphsPlanned.end())
+            return itr->second;
         return None;
     }
 

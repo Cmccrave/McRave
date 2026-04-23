@@ -49,8 +49,6 @@ namespace BWEB {
             cleanup();
         }
 
-        const void testingDefenses() const;
-
         /// <summary> Returns the central position of the resources associated with this Station including geysers. </summary>
         const BWAPI::Position getResourceCentroid() const { return resourceCentroid; }
 

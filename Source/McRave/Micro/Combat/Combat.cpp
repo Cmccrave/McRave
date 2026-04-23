@@ -109,8 +109,11 @@ namespace McRave::Combat {
                 sixLings = true;
 
             // When we don't want to defend our natural
-            if (Players::ZvT() && Combat::State::isStaticRetreat(Zerg_Zergling) && (Spy::enemyRush() || Spy::getEnemyBuild() == T_RaxFact || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)) {
+            if (Players::ZvT() && Combat::State::isStaticRetreat(Zerg_Zergling) &&
+                (Spy::enemyRush() || Spy::getEnemyBuild() == T_RaxFact || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)) {
                 holdNatural = false;
+                if (vis(Zerg_Ultralisk) > 0 || vis(Zerg_Lurker) > 0 || vis(Zerg_Hydralisk) > 0)
+                    holdNatural = true;
             }
 
             // ZvP
@@ -162,10 +165,15 @@ namespace McRave::Combat {
         void findHarassPosition()
         {
             auto oldHarass = harassPosition;
+            harassPosition = Positions::Invalid;
             if (!Terrain::getEnemyMain() || (com(Zerg_Mutalisk) == 0 && com(Protoss_Corsair) == 0))
                 return;
-            harassPosition                         = Positions::Invalid;
             vector<const BWEB::Station *> stations = Stations::getStations(PlayerState::Enemy);
+
+            const auto commanderInRange = [&](Position here) {
+                auto commander = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) { return u->isLightAir(); });
+                return commander && commander->getPosition().getDistance(here) < 256.0;
+            };
 
             // Threatening unit with nothing fighting it
             for (auto &station : Stations::getStations(PlayerState::Self)) {
@@ -188,12 +196,13 @@ namespace McRave::Combat {
                 }
             }
 
-            // Inbound tank targeting
-            if (Players::ZvT()) {
-                const auto closestTank = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) { return Units::inBoundUnit(*u, 15) && u->isSiegeTank(); });
-                if (closestTank) {
-                    harassPosition = closestTank->getPosition();
-                    LOG_SLOW("Harassing inbound units, closest is a ", closestTank->getType().c_str());
+            // Inbound siege unit or transport unit targeting
+            if (Players::ZvT() || Players::ZvP()) {
+                const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy,
+                                                          [&](auto &u) { return Units::inBoundUnit(*u, 15) && (u->isSiegeTank() || u->getType() == Protoss_Reaver || u->isTransport()); });
+                if (closest) {
+                    harassPosition = closest->getPosition();
+                    LOG_SLOW("Harassing inbound units, closest is a ", closest->getType().c_str());
                     return;
                 }
             }
@@ -201,16 +210,19 @@ namespace McRave::Combat {
             // In FFA just hit closest base to us
             if (Players::vFFA() && attackPosition.isValid()) {
                 harassPosition = attackPosition;
+                LOG_SLOW("Harassing attack position");
                 return;
             }
 
             // Check if enemy lost all bases
+            Broodwar << Stations::getStations(PlayerState::Enemy).size() << endl;
             auto lostAll = Stations::getStations(PlayerState::Enemy).empty();
             for (auto &station : Stations::getStations(PlayerState::Enemy)) {
                 if (!Stations::isBaseExplored(station) || BWEB::Map::isUsed(station->getBase()->Location()) != UnitTypes::None)
                     lostAll = false;
             }
             if (lostAll) {
+                LOG_SLOW("Harassing nothing");
                 harassPosition = Positions::Invalid;
                 return;
             }
@@ -248,11 +260,6 @@ namespace McRave::Combat {
                     stations.push_back(station);
             }
 
-            const auto commanderInRange = [&](Position here) {
-                auto commander = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Mutalisk; });
-                return commander && commander->getPosition().getDistance(here) < 160.0;
-            };
-
             // Harass all stations by last visited
             auto best                          = -1.0;
             const BWEB::Station *harassStation = nullptr;
@@ -279,8 +286,8 @@ namespace McRave::Combat {
         {
             // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss && Players::getSupply(PlayerState::Self, Races::None) > 40) {
-                holdChoke = vis(Protoss_Dragoon) > 0 || com(Protoss_Shield_Battery) > 0 || (BuildOrder::isHideTech() && !Spy::enemyRush()) ||
-                            Players::getSupply(PlayerState::Self, Races::None) > 60 || Players::vT();
+                holdChoke = vis(Protoss_Dragoon) > 0 || com(Protoss_Shield_Battery) > 0 || (BuildOrder::isHideTech() && !Spy::enemyRush()) || Players::getSupply(PlayerState::Self, Races::None) > 60 ||
+                            Players::vT();
                 if (defendNatural)
                     holdChoke = false;
             }

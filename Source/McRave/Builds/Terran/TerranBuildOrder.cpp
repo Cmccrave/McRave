@@ -5,6 +5,7 @@
 #include "Macro/Planning/Planning.h"
 #include "Macro/Researching/Researching.h"
 #include "Macro/Upgrading/Upgrading.h"
+#include "Map/Blocks/Blocks.h"
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
 #include "Strategy/Spy/Spy.h"
@@ -38,6 +39,21 @@ namespace McRave::BuildOrder::Terran {
             }
 
             // Adding block defenses
+            for (auto &block : BWEB::Blocks::getBlocks()) {
+                auto airneeded = Blocks::needAirDefenses(&block);
+                if (airneeded > 0)
+                    buildQueue[Terran_Missile_Turret] = vis(Terran_Missile_Turret) + 1;
+            }
+
+            // TvZ anticipate muta timing
+            if (Players::TvZ()) {
+                if (Spy::getEnemyTransition() == Z_2HatchMuta && Util::getTime() > Time(5, 15))
+                    needTurrets = true;
+                if (Spy::getEnemyTransition() == Z_3HatchMuta && Util::getTime() > Time(5, 45))
+                    needTurrets = true;
+                if (Spy::enemyFastExpand() && !Spy::enemyPressure() && !Spy::enemyRush() && Util::getTime() > Time(5, 30))
+                    needTurrets = true;
+            }
 
             // Add comsats
             if (com(Terran_Academy) > 0) {
@@ -388,12 +404,14 @@ namespace McRave::BuildOrder::Terran {
 
             if (rampType == Terran_Barracks) {
                 priorityOrder = {
-                    {Terran_SCV, 60},                              // CC
-                    {Terran_Marine, 5},        {Terran_Medic, 2},  // Rax
-                    {Terran_Marine, 20},       {Terran_Medic, 6},  //
-                    {Terran_Marine, 40},       {Terran_Medic, 8},  //
-                    {Terran_Marine, 80},       {Terran_Medic, 12}, //
-                    {Terran_Science_Vessel, 6}                     // Starport
+                    {Terran_SCV, 60},                                                    // CC
+                    {Terran_Marine, 5},        {Terran_Medic, 3},  {Terran_Firebat, 3},  // Rax
+                    {Terran_Marine, 10},       {Terran_Medic, 6},  {Terran_Firebat, 6},  // Rax
+                    {Terran_Marine, 20},       {Terran_Medic, 9},  {Terran_Firebat, 9},  //
+                    {Terran_Marine, 20},       {Terran_Medic, 12}, {Terran_Firebat, 12}, //
+                    {Terran_Marine, 40},       {Terran_Medic, 15}, {Terran_Firebat, 15}, //
+                    {Terran_Marine, 80},       {Terran_Medic, 18}, {Terran_Firebat, 18}, //
+                    {Terran_Science_Vessel, 6}                                           // Starport
                 };
             }
 

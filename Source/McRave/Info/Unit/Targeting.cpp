@@ -68,6 +68,132 @@ namespace McRave::Targets {
         return allowed;
     }
 
+    // Role
+    optional<Priority> combatPriority(UnitInfo &unit, UnitInfo &target)
+    {
+        bool targetCanAttack = !unit.isHidden() && (((unit.getType().isFlyer() && target.canAttackAir()) || (!unit.getType().isFlyer() && target.canAttackGround()) ||
+                                                     (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine)));
+        bool unitCanAttack   = !target.isHidden() && ((target.isFlying() && unit.canAttackAir()) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));
+
+        auto unitRange = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
+        auto targetRange = unit.isFlying() ? target.getAirRange() : target.getGroundRange();
+
+        if (target.movedFlag || !unitCanAttack)
+            return Priority::Ignore;
+
+        // Check if the target is important right now to attack
+        auto anyTime = Time(6, 00);
+        if (BuildOrder::isRush())
+            anyTime = Time(7, 00);
+
+        bool targetMatters = (target.canAttackAir() && selfHasAir) || (target.canAttackGround() && selfHasGround) || (target.getType().spaceProvided() > 0) || (target.getType().isDetector()) ||
+                             (!target.canAttackAir() && !target.canAttackGround() && !unit.hasTransport()) || (!enemyHasGround && !enemyHasAir) ||
+                             (target.getType() == Terran_Bunker && !target.isCompleted()) || (Players::ZvZ() && Spy::enemyFastExpand()) || Util::getTime() > anyTime || Spy::enemyGreedy();
+
+        // Ignore if we need to runby
+        if (unit.attemptingRunby() && Players::getDeadCount(PlayerState::Enemy, Broodwar->enemy()->getRace().getWorker()) < 8) {
+            if (Players::ZvZ()) {
+                if (!target.getType().isWorker())
+                    return Priority::Ignore;
+                return Priority::Critical;
+            }
+            if (target.getType().isBuilding() && !target.canAttackGround() && target.getUnitsInRangeOfThis().empty() && unit.getHealth() < unit.getType().maxHitPoints())
+                return Priority::Critical;
+            if (target.getType() != Terran_Marine && !target.hasAttackedRecently() && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
+                return Priority::Ignore;
+            if (target.getPosition().isValid() && Grids::getGroundThreat(target.getPosition(), PlayerState::Enemy) <= 0.1f && Util::getTime() < Time(7, 30))
+                return Priority::Major;
+            if (!Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), target.getPosition()) && Util::getTime() < Time(7, 30))
+                return Priority::Ignore;
+        }
+
+        if (target.getType().isWorker() && !allowWorkerTarget(unit, target))
+            return Priority::Ignore;
+
+        // Vulnerable important units
+        if (target.getType() == Protoss_Reaver && unit.isWithinRange(target))
+            return Priority::Critical;
+
+        // Proxy worker
+        if (target.isProxy() && target.getType().isWorker() && target.unit()->exists() && !BuildOrder::isRush()) {
+            if (target.unit()->isConstructing())
+                return Priority::Critical;
+            else if (unit.isWithinReach(target) && !Spy::enemyRush() && Spy::getEnemyBuild() != P_2Gate)
+                return Priority::Major;
+        }
+
+        // Proxy building
+        if (target.isProxy() && target.getType().isBuilding() && Spy::enemyProxy() && unit.getType() != Zerg_Mutalisk) {
+            Visuals::drawCircle(target.getPosition(), 5, Colors::Yellow);
+            if ((target.unit()->exists() && target.unit()->getBuildUnit()) || (target.getType().getRace() == Races::Terran && !target.isCompleted()))
+                return Priority::Minor;
+            else if (target.getType() == Protoss_Photon_Cannon && target.frameCompletesWhen() <= earliest)
+                return Priority::Critical;
+            else if (target.getType() == Protoss_Pylon && Spy::getEnemyOpener() == P_Horror_9_9)
+                return Priority::Critical;
+            else if (proxyTargeting.find(target.getType()) != proxyTargeting.end() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 &&
+                     Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) == 0 && Players::getCompleteCount(PlayerState::Enemy, Protoss_Zealot) == 0)
+                return Priority::Major;
+            else if (target.canAttackGround())
+                return Priority::Major;
+            else
+                return Priority::Ignore;
+        }
+
+        // Threatening priority
+        if (target.isThreatening() && (unit.isWithinReach(target) || Util::getTime() < Time(5, 00) || Terrain::inTerritoryPath(PlayerState::Self, unit.getPosition(), target.getPosition()))) {
+            if (unit.getSpeed() < target.getSpeed() && unitRange < targetRange)
+                return Priority::Minor;
+            if (!unit.getType().isWorker() && !target.getType().isWorker() && unit.isFlying() == target.isFlying())
+                return Priority::Major;
+            if (target.getType().isWorker() && target.isThreatening())
+                return Priority::Critical;
+        }
+
+        // Sacrifice unit away from army
+        if (unit.isTargetedBySuicide() && (target.isTransport() || target.getType() == Protoss_Reaver || target.getType() == Protoss_High_Templar))
+            return Priority::Critical;
+
+        // Handle photon cannons when in range
+        if (!unit.isMelee() && unit.isWithinRange(target)) {
+            if (target.getType() == Protoss_Photon_Cannon && target.hasAttackedRecently())
+                return Priority::Critical;
+            if (target.getType() == Protoss_Photon_Cannon)
+                return Priority::Major;
+        }
+
+        // Handle detector sniping
+        if (target.getType().isDetector() || target.getType() == Terran_Comsat_Station) {
+            if (unit.isWithinRange(target) && !target.isHidden() && (vis(Zerg_Lurker) > 0 || vis(Protoss_Dark_Templar) > 0))
+                return Priority::Major;
+        }
+
+        // Generic trivial
+        if (!targetMatters || (target.getType() == Zerg_Egg) || (target.getType() == Zerg_Larva))
+            return Priority::Trivial;
+
+        // Generic ignore
+        if (target.getType().isSpell()                                                                                                     //
+            || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getUnitsTargetingThis().size()) >= 4 && !target.isBurrowed()) // Don't over target spider mines
+            || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                // Don't target interceptors as a flying unit
+            || (target.getType() == Protoss_Corsair && !unit.isFlying() && !target.isThreatening() && !target.hasAttackedRecently() && !unit.isWithinRange(target)) //
+            || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) &&
+                !unit.getType().isDetector()) // Don't target if invisible and can't attack this unit or we have no detectors in PvP
+            || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))) // Don't target flyers that we can't reach
+            return Priority::Ignore;
+
+        return std::nullopt;
+    }
+
+    optional<Priority> supportPriority(UnitInfo &unit, UnitInfo &target)
+    {
+        if (target.isHidden() && (unit.getType().isDetector() || unit.getType() == Terran_Comsat_Station))
+            return Priority::Critical;
+        if (unit.getType() == Terran_Comsat_Station)
+            return Priority::Ignore;
+        return std::nullopt;
+    }
+
     // P
     Priority dtPriority(UnitInfo &unit, UnitInfo &target)
     {
@@ -274,123 +400,18 @@ namespace McRave::Targets {
                 return Priority::Minor;
         }
 
-        bool targetCanAttack = !unit.isHidden() && (((unit.getType().isFlyer() && target.canAttackAir()) || (!unit.getType().isFlyer() && target.canAttackGround()) ||
-                                                     (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine)));
-        bool unitCanAttack   = !target.isHidden() && ((target.isFlying() && unit.canAttackAir()) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));
-
-        if (unit.getRole() != Role::Support && (target.movedFlag || !unitCanAttack))
-            return Priority::Ignore;
-
-        // Check if the target is important right now to attack
-        auto anyTime = Time(6, 00);
-        if (BuildOrder::isRush())
-            anyTime = Time(7, 00);
-
-        bool targetMatters = (target.canAttackAir() && selfHasAir) || (target.canAttackGround() && selfHasGround) || (target.getType().spaceProvided() > 0) || (target.getType().isDetector()) ||
-                             (!target.canAttackAir() && !target.canAttackGround() && !unit.hasTransport()) || (!enemyHasGround && !enemyHasAir) ||
-                             (target.getType() == Terran_Bunker && !target.isCompleted()) || (Players::ZvZ() && Spy::enemyFastExpand()) || Util::getTime() > anyTime || Spy::enemyGreedy();
-
         // Support Role
         if (unit.getRole() == Role::Support) {
-            if (target.isHidden() && (unit.getType().isDetector() || unit.getType() == Terran_Comsat_Station))
-                return Priority::Critical;
-            if (unit.getType() == Terran_Comsat_Station)
-                return Priority::Ignore;
+            auto prio = supportPriority(unit, target);
+            if (prio)
+                return prio.value();
         }
 
         // Combat Role
         if (unit.getRole() == Role::Combat) {
-
-            // Ignore if we need to runby
-            if (unit.attemptingRunby() && Players::getDeadCount(PlayerState::Enemy, Broodwar->enemy()->getRace().getWorker()) < 8) {
-                if (Players::ZvZ()) {
-                    if (!target.getType().isWorker())
-                        return Priority::Ignore;
-                    return Priority::Critical;
-                }
-                if (target.getType().isBuilding() && !target.canAttackGround() && target.getUnitsInRangeOfThis().empty() && unit.getHealth() < unit.getType().maxHitPoints())
-                    return Priority::Critical;
-                if (target.getType() != Terran_Marine && !target.hasAttackedRecently() && (!target.getType().isWorker() || !Terrain::inTerritory(PlayerState::Enemy, target.getPosition())))
-                    return Priority::Ignore;
-                if (target.getPosition().isValid() && Grids::getGroundThreat(target.getPosition(), PlayerState::Enemy) <= 0.1f && Util::getTime() < Time(7, 30))
-                    return Priority::Major;
-                if (!Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), target.getPosition()) && Util::getTime() < Time(7, 30))
-                    return Priority::Ignore;
-            }
-
-            if (target.getType().isWorker() && !allowWorkerTarget(unit, target))
-                return Priority::Ignore;
-
-            // Vulnerable important units
-            if (target.getType() == Protoss_Reaver && unit.isWithinRange(target))
-                return Priority::Critical;
-
-            // Generic trivial
-            if (!targetMatters || (target.getType() == Zerg_Egg) || (target.getType() == Zerg_Larva))
-                return Priority::Trivial;
-
-            // Proxy worker
-            if (target.isProxy() && target.getType().isWorker() && target.unit()->exists() && !BuildOrder::isRush()) {
-                if (target.unit()->isConstructing())
-                    return Priority::Critical;
-                else if (unit.isWithinReach(target) && !Spy::enemyRush() && Spy::getEnemyBuild() != P_2Gate)
-                    return Priority::Major;
-            }
-
-            // Proxy building
-            if (target.isProxy() && target.getType().isBuilding() && Spy::enemyProxy() && unit.getType() != Zerg_Mutalisk) {
-                Visuals::drawCircle(target.getPosition(), 5, Colors::Yellow);
-                if ((target.unit()->exists() && target.unit()->getBuildUnit()) || (target.getType().getRace() == Races::Terran && !target.isCompleted()))
-                    return Priority::Minor;
-                else if (target.getType() == Protoss_Photon_Cannon && target.frameCompletesWhen() <= earliest)
-                    return Priority::Critical;
-                else if (target.getType() == Protoss_Pylon && Spy::getEnemyOpener() == P_Horror_9_9)
-                    return Priority::Critical;
-                else if (proxyTargeting.find(target.getType()) != proxyTargeting.end() && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 &&
-                         Players::getCompleteCount(PlayerState::Enemy, Terran_Marine) == 0 && Players::getCompleteCount(PlayerState::Enemy, Protoss_Zealot) == 0)
-                    return Priority::Major;
-                else if (target.canAttackGround())
-                    return Priority::Major;
-                else
-                    return Priority::Ignore;
-            }
-
-            // Threatening priority
-            if (target.isThreatening() && (unit.isWithinReach(target) || Util::getTime() < Time(5, 00) || Terrain::inTerritoryPath(PlayerState::Self, unit.getPosition(), target.getPosition()))) {
-                if (!unit.getType().isWorker() && !target.getType().isWorker() && unit.isFlying() == target.isFlying())
-                    return Priority::Major;
-                if (target.getType().isWorker() && target.isThreatening())
-                    return Priority::Critical;
-            }
-
-            // Sacrifice unit away from army
-            if (unit.isTargetedBySuicide() && (target.isTransport() || target.getType() == Protoss_Reaver || target.getType() == Protoss_High_Templar))
-                return Priority::Critical;
-
-            // Generic ignore
-            if (target.getType().isSpell()                                                                                                     //
-                || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getUnitsTargetingThis().size()) >= 4 && !target.isBurrowed()) // Don't over target spider mines
-                || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                // Don't target interceptors as a flying unit
-                || (target.getType() == Protoss_Corsair && !unit.isFlying() && !target.isThreatening() && !target.hasAttackedRecently() && !unit.isWithinRange(target)) //
-                || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) &&
-                    !unit.getType().isDetector()) // Don't target if invisible and can't attack this unit or we have no detectors in PvP
-                ||
-                (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))) // Don't target flyers that we can't reach
-                return Priority::Ignore;
-
-            // Handle photon cannons when in range
-            if (!unit.isMelee() && unit.isWithinRange(target)) {
-                if (target.getType() == Protoss_Photon_Cannon && target.hasAttackedRecently())
-                    return Priority::Critical;
-                if (target.getType() == Protoss_Photon_Cannon)
-                    return Priority::Major;
-            }
-
-            // Handle detector sniping
-            if (target.getType().isDetector() || target.getType() == Terran_Comsat_Station) {
-                if (unit.isWithinRange(target) && !target.isHidden() && (vis(Zerg_Lurker) > 0 || vis(Protoss_Dark_Templar) > 0))
-                    return Priority::Major;
-            }
+            auto prio = combatPriority(unit, target);
+            if (prio)
+                return prio.value();
         }
 
         // P
@@ -524,7 +545,7 @@ namespace McRave::Targets {
             return healthScore(unit, target) * priorityScore(unit, target);
 
         // Proximity targeting (targetScore not used)
-        else if (unit.getType().isWorker() || unit.getType() == Protoss_Reaver || unit.getType() == Zerg_Queen || unit.isLightAir() || unit.getType() == Zerg_Guardian ||
+        else if (unit.getType().isWorker() || unit.getType() == Protoss_Reaver || unit.getType() == Zerg_Queen || unit.getType() == Zerg_Guardian ||
                  (unit.getType() == Zerg_Lurker && unit.isBurrowed())) {
             if (target.getType().isBuilding() && !target.canAttackGround() && !target.canAttackAir())
                 return 0.1 / dist;

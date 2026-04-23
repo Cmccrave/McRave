@@ -125,6 +125,8 @@ namespace McRave::Producing {
                     lastProduceFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4 || (Planning::overlapsPlan(larva, larva.getPosition()) && Util::getTime() > Time(4, 00)))
                     return false;
 
+                auto closestStation = Stations::getClosestStationAir(larva.getPosition(), PlayerState::Self);
+
                 // Strategic checks
                 if (Players::ZvP() && Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::Self) {
                     auto time = (Spy::getEnemyBuild() != P_FFE) ? Time(4, 00) : Time(6, 00);
@@ -132,7 +134,11 @@ namespace McRave::Producing {
                         return false;
                 }
 
-                auto closestStation = Stations::getClosestStationAir(larva.getPosition(), PlayerState::Self);
+                if (Players::ZvT() && Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters)) {
+                    if (closestStation && bestType.isWorker() && Stations::getSaturationRatio(closestStation) >= 2.0)
+                        return false;
+                }
+
                 return closestStation && station == closestStation;
             };
 

@@ -115,5 +115,4 @@ namespace McRave::Spy {
     bool enemyTurtle() { return theSpy.turtle.likely; }
     bool enemyFortress() { return theSpy.fortress.likely; }
     int getWorkersPulled() { return theSpy.workersPulled; }
-    int getEnemyGasMined() { return theSpy.gasMined; }
 }

@@ -41,16 +41,18 @@ namespace McRave {
             return;
 
         // Determine if this resource is threatened based on a substantial threat nearby
-        for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
-            if (enemy->getType().isWorker())
-                continue;
+        if (type.isMineralField()) {
+            for (auto &enemy : Units::getUnits(PlayerState::Enemy)) {
+                if (enemy->getType().isWorker())
+                    continue;
 
-            if (!enemy->hasTarget() || (!Players::ZvZ() && !enemy->getTarget().lock()->getType().isWorker()) || !enemy->isCompleted() || !enemy->canAttackGround())
-                continue;
+                if (!enemy->hasTarget() || (!Players::ZvZ() && !enemy->getTarget().lock()->getType().isWorker()) || !enemy->isCompleted() || !enemy->canAttackGround())
+                    continue;
 
-            const auto inRangeOfResource = enemy->getPosition().getDistance(position) < max(200.0, enemy->getGroundReach());
-            if (inRangeOfResource && enemy->isThreatening())
-                threatened = true;
+                const auto inRangeOfResource = enemy->getPosition().getDistance(position) < max(200.0, enemy->getGroundReach());
+                if (inRangeOfResource && enemy->isThreatening())
+                    threatened = true;
+            }
         }
 
         // Sometimes we need to just not mine minerals that would just lose workers

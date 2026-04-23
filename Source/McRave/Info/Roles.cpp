@@ -161,6 +161,11 @@ namespace McRave::Roles {
                 if (proxyCombatUnit && Terrain::inTerritory(PlayerState::Self, proxyCombatUnit->getPosition()))
                     forceCombatWorker(2);
             }
+
+            if (Players::TvZ()) {
+                if (proxyCombatUnit && Spy::getEnemyOpener() == Z_4Pool)
+                    forceCombatWorker(5);
+            }
         }
 
         void zPullWorker()
@@ -255,7 +260,7 @@ namespace McRave::Roles {
                 if (proxyDangerousBuilding)
                     count += 3;
 
-                auto closestMarine = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy, [&](auto &u) { return u->getType() = Terran_Marine; });
+                auto closestMarine = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy, [&](auto &u) { return u->getType() == Terran_Marine; });
 
                 static bool marineEngaged = false;
                 if (closestMarine && Terrain::inTerritory(PlayerState::Self, closestMarine->getPosition()))
@@ -275,12 +280,6 @@ namespace McRave::Roles {
                     // Bunker being built, 3 drones per marine and 3 extra for the bunker
                     if (proxyDangerousBuilding && !proxyDangerousBuilding->isCompleted() && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8) {
                         LOG_ONCE("Proxy bunker, pull drones");
-                        forceCombatWorker(count);
-                    }
-
-                    // Proxy, 3 drones per marine
-                    else if (marineEngaged && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8) {
-                        LOG_ONCE("Marine arrived before lings, pull drones");
                         forceCombatWorker(count);
                     }
 

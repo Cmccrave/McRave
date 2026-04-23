@@ -26,7 +26,7 @@ namespace McRave::BuildOrder::Zerg {
         inOpening    = true;
         inBookSupply = true;
 
-        wallNat  = Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled();
+        wallNat  = hatchCount() >= 3 && (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled());
         wallMain = false;
 
         wantNatural = hatchCount() >= 3 || (Spy::getEnemyTransition() != U_WorkerRush);
@@ -83,7 +83,7 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyBuild() == T_2Rax) {
             initialValue = 6;
             if (Spy::getEnemyOpener() == T_BBS)
-                initialValue = 10;
+                initialValue = 12;
             if (Spy::getEnemyOpener() == T_11_13)
                 initialValue = 4;
         }
@@ -95,9 +95,9 @@ namespace McRave::BuildOrder::Zerg {
 
         // RaxFact
         if (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled() || Spy::getEnemyBuild() == "Unknown") {
-            initialValue = 4;
+            initialValue = 2;
             if (Spy::getEnemyOpener() == T_1FactFE || Spy::getEnemyOpener() == T_2FactFE || Util::getTime() > Time(4, 00))
-                initialValue = 6;
+                initialValue = 4;
         }
 
         // TODO: Fix T spy
@@ -110,7 +110,7 @@ namespace McRave::BuildOrder::Zerg {
         transitionLings = min(initialValue, 8);
 
         // Minimum lings
-        auto minimumLings = (Util::getTime() > Time(4, 00) && Spy::getEnemyBuild() == T_RaxFact) ? 6 : 2;
+        auto minimumLings = (Util::getTime() > Time(4, 00) && Spy::getEnemyBuild() == T_RaxFact) ? 4 : 2;
         if (vis(Zerg_Zergling) < minimumLings)
             return minimumLings;
 
@@ -169,11 +169,11 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit    = Zerg_Mutalisk;
         reserveLarva = 6;
 
-        auto thirdHatch  = (com(Zerg_Spire) == 0 && s >= 48 && vis(Zerg_Drone) >= 20) || (com(Zerg_Spire) == 1 && total(Zerg_Mutalisk) >= 6 && vis(Zerg_Drone) >= 20);
+        auto thirdHatch  = Spy::enemyFastExpand() && com(Zerg_Spire) == 0 && s >= 48 && vis(Zerg_Drone) >= 20;
         auto fourthHatch = com(Zerg_Mutalisk) > 0;
 
         auto firstGas  = (hatchCount() >= 2 && vis(Zerg_Drone) >= 10 && vis(Zerg_Spawning_Pool) > 0);
-        auto secondGas = (Spy::enemyFastExpand() && vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 20) || (atPercent(Zerg_Spire, 0.5) && vis(Zerg_Drone) >= 18);
+        auto secondGas = (Spy::enemyFastExpand() && vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 20) || (atPercent(Zerg_Spire, 0.25) && vis(Zerg_Drone) >= 18);
 
         // Order
         unitOrder = mutalingdefiler;
@@ -194,8 +194,8 @@ namespace McRave::BuildOrder::Zerg {
         techQueue[Lurker_Aspect] = com(Zerg_Hydralisk_Den) > 0;
 
         auto softDroneCap     = 28;
-        auto firstScourgePump = com(Zerg_Spire) > 0 && total(Zerg_Mutalisk) < 5 && Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > vis(Zerg_Scourge);
-        auto firstMutaPump    = com(Zerg_Spire) > 0 && !firstScourgePump && (total(Zerg_Mutalisk) < 9 || unitPressure[Zerg_Mutalisk]);
+        auto firstScourgePump = com(Zerg_Spire) > 0 && total(Zerg_Mutalisk) < 5 && Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > vis(Zerg_Scourge) / 2;
+        auto firstMutaPump    = com(Zerg_Spire) > 0 && !firstScourgePump && (total(Zerg_Mutalisk) < 12 || unitPressure[Zerg_Mutalisk]);
         auto secondMutaPump   = com(Zerg_Spire) > 0 && vis(Zerg_Drone) >= softDroneCap;
         auto firstHydraPump   = com(Zerg_Hydralisk_Den) > 0 && total(Zerg_Hydralisk) < 2 && Researching::haveOrResearching(Lurker_Aspect);
 
@@ -209,7 +209,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Gas
         gasLimit = gasMax();
-        if (!Spy::enemyFastExpand()) {
+        if (!Spy::enemyFastExpand() && !minerals(400)) {
             auto dropGasLowDrone  = vis(Zerg_Drone) + vis(Zerg_Extractor) < 10;
             auto dropGasEarly     = (Spy::enemyProxy() || Spy::getEnemyOpener() == T_BBS) && Util::getTime() < Time(3, 00);
             auto dropGasAfterLair = vis(Zerg_Lair) > 0 && Spy::getEnemyBuild() == T_2Rax && Util::getTime() < Time(4, 00);
@@ -234,7 +234,7 @@ namespace McRave::BuildOrder::Zerg {
         auto thirdHatch  = (s >= 26 && vis(Zerg_Drone) >= 11 && total(Zerg_Zergling) >= transitionLings);
         auto fourthHatch = (Spy::getEnemyBuild() == T_RaxFact || !Spy::enemyFastExpand()) ? com(Zerg_Mutalisk) > 0 : (vis(Zerg_Spire) > 0 && s >= 66);
 
-        auto secondGas = (Spy::enemyFastExpand() && vis(Zerg_Drone) >= 21) || (com(Zerg_Lair) > 0 && vis(Zerg_Drone) >= 21);
+        auto secondGas = (Spy::enemyFastExpand() && vis(Zerg_Drone) >= 20) || (atPercent(Zerg_Lair, 0.5) && vis(Zerg_Drone) >= 20);
 
         // Order
         unitOrder = mutalingdefiler;
@@ -261,8 +261,8 @@ namespace McRave::BuildOrder::Zerg {
 
         auto softDroneCap     = 35;
         auto firstLingPump    = lingsNeeded_ZvT() > vis(Zerg_Zergling);
-        auto firstScourgePump = com(Zerg_Spire) > 0 && total(Zerg_Mutalisk) < 5 && Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > vis(Zerg_Scourge);
-        auto firstMutaPump    = com(Zerg_Spire) > 0 && !firstScourgePump && (total(Zerg_Mutalisk) < 9 || unitPressure[Zerg_Mutalisk]);
+        auto firstScourgePump = com(Zerg_Spire) > 0 && total(Zerg_Mutalisk) < 5 && Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) > vis(Zerg_Scourge) / 2;
+        auto firstMutaPump    = com(Zerg_Spire) > 0 && !firstScourgePump && (total(Zerg_Mutalisk) < 12 || unitPressure[Zerg_Mutalisk]);
         auto secondMutaPump   = com(Zerg_Spire) > 0 && vis(Zerg_Drone) >= softDroneCap;
         auto firstHydraPump   = com(Zerg_Hydralisk_Den) > 0 && total(Zerg_Hydralisk) < 2 && Researching::haveOrResearching(Lurker_Aspect);
         auto firstLurkerPump  = com(Zerg_Hydralisk) > 0 && Researching::haveResearch(Lurker_Aspect);
@@ -277,7 +277,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Gas
         gasLimit = gasMax();
-        if (!Spy::enemyFastExpand()) {
+        if (!Spy::enemyFastExpand() && !minerals(400)) {
             auto dropGasEarly     = vis(Zerg_Drone) + vis(Zerg_Extractor) < 10;
             auto dropGasImmediate = (Spy::enemyProxy() || Spy::getEnemyOpener() == T_BBS) && Util::getTime() < Time(3, 30);
             auto dropGasAfterLair = vis(Zerg_Lair) > 0 && Spy::getEnemyBuild() == T_2Rax && Util::getTime() < Time(4, 30);

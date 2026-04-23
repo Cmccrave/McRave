@@ -48,9 +48,10 @@ namespace McRave::BuildOrder::Terran {
         upgradeQueue[U_238_Shells] = Researching::haveOrResearching(Stim_Packs);
 
         // Pumping
-        terranUnitPump[Terran_SCV]    = true;
-        terranUnitPump[Terran_Marine] = total(Terran_Marine) < 4 || total(Terran_Supply_Depot) >= 3;
-        terranUnitPump[Terran_Medic]  = com(Terran_Academy) > 0 && vis(Terran_Medic) < vis(Terran_Marine) / 2;
+        terranUnitPump[Terran_SCV]     = true;
+        terranUnitPump[Terran_Marine]  = total(Terran_Marine) < 4 || total(Terran_Supply_Depot) >= 3;
+        terranUnitPump[Terran_Medic]   = com(Terran_Academy) > 0 && vis(Terran_Medic) < vis(Terran_Marine) / 1.5;
+        terranUnitPump[Terran_Firebat] = com(Terran_Academy) > 0 && vis(Terran_Medic) < vis(Terran_Marine) / 1.5;
     }
 
     void TvZ()

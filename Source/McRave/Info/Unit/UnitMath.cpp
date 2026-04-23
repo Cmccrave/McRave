@@ -143,7 +143,7 @@ namespace McRave::Math {
     {
         if (unit.getType() == Terran_Firebat)
             return 1.25;
-        if (unit.isSiegeTank() || unit.getType() == Protoss_High_Templar || unit.getType() == Zerg_Lurker || unit.getType() == Terran_Valkyrie)
+        if (unit.isSiegeTank() || unit.getType() == Protoss_High_Templar || unit.getType() == Zerg_Lurker)
             return 2.00;
         return 1.00;
     }
@@ -263,10 +263,14 @@ namespace McRave::Math {
         // Estimate value of health vs average unit health
         const auto health = [&]() {
             auto value = (double(unit.getType().maxHitPoints() + unit.getType().maxShields())) / avgHealth;
-            return value;
+            return pow(value, 0.5);
         };
 
-        return health() * armor() * speed();
+        auto wH = 0.5;
+        auto wA = 0.3;
+        auto wS = 0.2;
+
+        return 1.0 + wH * (health()) + wA * (armor()) + wS * (speed());
     }
 
     double calcGroundRange(UnitInfo &unit)
@@ -410,7 +414,7 @@ namespace McRave::Math {
     {
         // Attack animation frames below
         if (unitType == Protoss_Dragoon)
-            return 7;
+            return 9;
         if (unitType == Zerg_Devourer)
             return 7;
 

@@ -44,7 +44,7 @@ namespace McRave::Spy::Terran {
                            Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Tank_Mode) > 0 || Players::getVisibleCount(PlayerState::Enemy, Terran_Goliath) > 0;
 
             // 2Rax
-            if (theSpy.opener.name != T_8Rax) {
+            if (theSpy.opener.name != T_8Rax && theSpy.opener.name != T_Proxy_8Rax) {
                 if ((theSpy.rushArrivalTime < Time(3, 10) && Util::getTime() < Time(3, 25) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 3) ||
                     (Util::getTime() < Time(2, 55) && Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) >= 2) ||
                     (Util::getTime() < Time(3, 10) && Players::getTotalCount(PlayerState::Enemy, Terran_Marine) >= 2) ||
@@ -72,8 +72,10 @@ namespace McRave::Spy::Terran {
             }
 
             // Rax/Gas/Rax estimation - consider 2Rax
-            if (completesBy(1, Terran_Academy, Time(3, 30)) || arrivesBy(1, Terran_Medic, Time(5, 30))) {
-                theSpy.build.name = T_2Rax;
+            if (Players::getVisibleCount(PlayerState::Enemy, Terran_Marine) >= 6) {
+                if (completesBy(1, Terran_Academy, Time(3, 30)) || arrivesBy(1, Terran_Medic, Time(5, 30))) {
+                    theSpy.build.name = T_2Rax;
+                }
             }
         }
 
@@ -205,7 +207,7 @@ namespace McRave::Spy::Terran {
 
     void updateTerran(StrategySpy &theSpy)
     {
-        totalMechUnits = Players::getTotalCount(PlayerState::Enemy, Terran_Goliath, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode);
+        totalMechUnits = Players::getTotalCount(PlayerState::Enemy, Terran_Goliath, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode, Terran_Vulture);
         totalBioUnits  = Players::getTotalCount(PlayerState::Enemy, Terran_Marine, Terran_Firebat, Terran_Medic);
 
         for (auto &p : Players::getPlayers()) {

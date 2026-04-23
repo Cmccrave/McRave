@@ -28,6 +28,8 @@ namespace McRave::Terrain {
         set<TilePosition> bannedStart;
 
         // Map
+        map<const BWEM::Area *, vector<WalkPosition>> areaGeometry;
+        map<const BWEM::Area *, vector<WalkPosition>> areaOutlines;
         map<WalkPosition, pair<const BWEM::Area *, const BWEM::Area *>> areaChokeGeometry;
         map<const BWEM::Area *, vector<const BWEM::Area *>> sharedArea;
         set<const Base *> allBases;
@@ -562,33 +564,6 @@ namespace McRave::Terrain {
         return closestCorner;
     }
 
-    Position getOldestPosition(const Area *area)
-    {
-        auto oldest         = DBL_MAX;
-        auto oldestTile     = TilePositions::Invalid;
-        auto start          = getMainArea()->TopLeft();
-        auto end            = getMainArea()->BottomRight();
-        auto closestStation = Stations::getClosestStationGround(Position(area->Top()), PlayerState::Self);
-
-        for (int x = start.x; x < end.x; x++) {
-            for (int y = start.y; y < end.y; y++) {
-                auto t = TilePosition(x, y);
-                auto p = Position(t) + Position(16, 16);
-                if (!t.isValid() || mapBWEM.GetArea(t) != area || Broodwar->isVisible(t) || (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(t) < 480) ||
-                    !Broodwar->isBuildable(t + TilePosition(-1, 0)) || !Broodwar->isBuildable(t + TilePosition(1, 0)) || !Broodwar->isBuildable(t + TilePosition(0, -1)) ||
-                    !Broodwar->isBuildable(t + TilePosition(0, 1)))
-                    continue;
-
-                auto visible = closestStation ? Grids::getLastVisibleFrame(t) / p.getDistance(closestStation->getBase()->Center()) : Grids::getLastVisibleFrame(t);
-                if (visible < oldest) {
-                    oldest     = visible;
-                    oldestTile = t;
-                }
-            }
-        }
-        return Position(oldestTile) + Position(16, 16);
-    }
-
     bool isChokepointGeo(Position here) //
     {
         return isChokepointGeo(WalkPosition(here));
@@ -765,6 +740,91 @@ namespace McRave::Terrain {
         }
     }
 
+    void createAreaCache()
+    {
+        // Cache area geometry
+        for (int x = 0; x < Broodwar->mapWidth() * 4; x++) {
+            for (int y = 0; y < Broodwar->mapHeight() * 4; y++) {
+                auto w = WalkPosition(x, y);
+                if (w.isValid()) {
+                    auto area = mapBWEM.GetArea(w);
+                    if (area)
+                        areaGeometry[area].push_back(w);
+                }
+            }
+        }
+
+        auto isBoundary = [&](const WalkPosition &w, const BWEM::Area *area) {
+            static const vector<WalkPosition> dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+
+            for (auto &d : dirs) {
+                WalkPosition n = w + d;
+                if (!n.isValid() || mapBWEM.GetArea(n) != area)
+                    return true;
+            }
+            return false;
+        };
+
+        // Sort outline, first position is closest to map center for consistency
+        Position mapCenter(Broodwar->mapWidth() * 16, Broodwar->mapHeight() * 16);
+        auto getStart = [&](vector<WalkPosition> &remaining) {
+            Position center(Broodwar->mapWidth() * 16, Broodwar->mapHeight() * 16);
+
+            WalkPosition best;
+            double bestDist = DBL_MAX;
+
+            for (auto &w : remaining) {
+                double dist = Position(w).getDistance(center);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    best     = w;
+                }
+            }
+            return best;
+        };
+
+        auto traceOutline = [&](vector<WalkPosition> &outline) {
+            vector<WalkPosition> result;
+            auto current = getStart(outline);
+
+            for (auto _ : outline) {
+                auto distBest = DBL_MAX;
+                auto walkBest = WalkPositions::Invalid;
+                for (auto &w : outline) {
+                    if (!Util::contains(result, w)) {
+                        auto dist = Position(w).getDistance(Position(current));
+                        if (dist < distBest) {
+                            distBest = dist;
+                            walkBest = w;
+                        }
+                    }
+                }
+                if (walkBest.isValid()) {
+                    current = walkBest;
+                    result.push_back(walkBest);
+                }
+            }
+            return result;
+        };
+
+        // Make an outline for main areas for now
+        for (auto &station : BWEB::Stations::getStations()) {
+            if (station.isMain()) {
+                auto area = station.getBase()->GetArea();
+                auto geos = areaGeometry[area]; 
+                
+                // Get boundary tiles
+                vector<WalkPosition> boundarySet;
+                for (auto &w : geos) {
+                    if (isBoundary(w, area)) {
+                        boundarySet.push_back(w);
+                    }
+                }
+                areaOutlines[area] = traceOutline(boundarySet);
+            }
+        }
+    }
+
     void onStart()
     {
         // Initialize BWEM and BWEB
@@ -799,6 +859,8 @@ namespace McRave::Terrain {
                     areaChokeGeometry[walk] = choke->GetAreas();
             }
         }
+
+        createAreaCache();
 
         // Check if we have a pocket natural
         if (Terrain::getMyNatural()) {
@@ -881,6 +943,22 @@ namespace McRave::Terrain {
         if (itr != chokeCenters.end())
             return (*itr).second;
         return Positions::Invalid;
+    }
+
+    // Area information
+    vector<WalkPosition> getAreaGeometry(const BWEM::Area *area)
+    {
+        if (area) {
+            return areaGeometry[area];
+        }
+        return {};
+    }
+    vector<WalkPosition> getAreaOutline(const BWEM::Area *area) 
+    {
+        if (area) {
+            return areaOutlines[area];
+        }
+        return {};
     }
 
     double getChokepointAngle(const BWEM::ChokePoint *chokepoint)

@@ -53,14 +53,6 @@ namespace BWEB {
 
     void Wall::initialize()
     {
-        for (int x = 0; x < Broodwar->mapWidth(); x++) {
-            for (int y = 0; y < Broodwar->mapHeight(); y++) {
-                if (wallReserveGrid[x][y]) {
-                    Broodwar << "reserved before wall started gen" << endl;
-                }
-            }
-        }
-
         // Set important terrain features
         pylonWall    = count(rawBuildings.begin(), rawBuildings.end(), BWAPI::UnitTypes::Protoss_Pylon) > 1;
         base         = !area->Bases().empty() ? &area->Bases().front() : nullptr;
@@ -93,12 +85,27 @@ namespace BWEB {
             auto bypassable = false;
             auto main       = Stations::getClosestMainStation(base->Center());
             if (main->getChokepoint()) {
-                auto mainChokeCenter = Position(main->getChokepoint()->Center());
-                auto natChokeCenter  = Position(choke->Center());
+                auto mainChokeCenter    = Position(main->getChokepoint()->Center());
+                auto natChokeCenter     = Position(choke->Center());
                 auto distNatToMainChoke = station->getBase()->Center().getDistance(mainChokeCenter);
-                auto distNatToNatChoke = station->getBase()->Center().getDistance(natChokeCenter);
+                auto distNatToNatChoke  = station->getBase()->Center().getDistance(natChokeCenter);
 
-                if (distNatToNatChoke >= 240.0 && distNatToMainChoke >= 240.0) {
+                // Check if main choke points towards nat choke
+                auto dist               = mainChokeCenter.getDistance(natChokeCenter);
+                auto halfDist           = dist / 2.0;
+                auto mainChoke          = main->getChokepoint();
+                auto mainChokeAnglePerp = Map::getAngle(make_pair(Position(mainChoke->Pos(mainChoke->end1)), Position(mainChoke->Pos(mainChoke->end2)))) + M_PI_D2;
+
+                // Check if a perpendicular point is closer to the natural by half the dist
+                Position perpVector(cos(mainChokeAnglePerp), sin(mainChokeAnglePerp));
+                perpVector      = perpVector * dist;
+                auto perpPoint1 = mainChokeCenter + perpVector;
+                auto perpPoint2 = mainChokeCenter - perpVector;
+                auto dist1               = natChokeCenter.getDistance(perpPoint1);
+                auto dist2               = natChokeCenter.getDistance(perpPoint2);
+                auto mainPointsToNatural = dist1 < halfDist || dist2 < halfDist;
+
+                if ((distNatToNatChoke >= 240.0 && distNatToMainChoke >= 240.0) || mainPointsToNatural) {
 
                     // Check each point of geometry to see if it's close to the main choke
                     auto bypassCount = 0;

@@ -528,6 +528,8 @@ namespace McRave::Visuals {
 
                     next = tile;
                 }
+                Visuals::drawLine(Position(next) + Position(16, 16), Position(path.getTarget()) + Position(16, 16), color);
+                Visuals::drawCircle(Position(path.getTarget()) + Position(16, 16), 4, color, true);
             }
         }
     }

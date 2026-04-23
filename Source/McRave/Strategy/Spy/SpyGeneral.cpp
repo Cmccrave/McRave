@@ -120,12 +120,10 @@ namespace McRave::Spy::General {
                         theSpy.workersPulled++;
                 }
 
-                // Monitor gas intake or gas steal
+                // Monitor gas steal
                 if (unit.getType().isRefinery() && unit.unit()->exists()) {
                     if (Terrain::inTerritory(PlayerState::Self, unit.getPosition()))
                         theSpy.steal.possible = true;
-                    else
-                        theSpy.gasMined = unit.unit()->getInitialResources() - unit.unit()->getResources();
                 }
 
                 // Monitor for any upgrades coming

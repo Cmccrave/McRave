@@ -4,22 +4,23 @@
 namespace McRave {
     class UnitFrames {
     protected:
-        int lastAttackFrame      = -999;
-        int lastRepairFrame      = -999;
-        int lastVisibleFrame     = -999;
-        int lastMoveFrame        = -999;
-        int lastStuckFrame       = 0;
-        int lastStimFrame        = 0;
-        int lastStateChangeFrame = 0;
-        int lastCommandFrame     = 0;
+        int lastAttackFrame  = -999;
+        int lastRepairFrame  = -999;
+        int lastVisibleFrame = -999;
+        int lastMoveFrame    = -999;
+        int lastStuckFrame   = 0;
+        int lastStimFrame    = 0;
+        int lastCommandFrame = 0;
+        int lastBurrowFrame  = 0;
+        int lastSiegeFrame   = 0;
 
-        int threateningFrames    = 0;
-        int resourceHeldFrames   = -999;
-        int remainingTrainFrame  = -999;
-        int startedFrame         = -999;
-        int completeFrame        = -999;
-        int arriveFrame          = -999;
-        int minStopFrame         = 0;
+        int threateningFrames   = 0;
+        int resourceHeldFrames  = -999;
+        int remainingTrainFrame = -999;
+        int startedFrame        = -999;
+        int completeFrame       = -999;
+        int arriveFrame         = -999;
+        int minStopFrame        = 0;
 
     public:
         void setRemainingTrainFrame(int newFrame) { remainingTrainFrame = newFrame; }
@@ -31,8 +32,8 @@ namespace McRave {
 
         bool hasAttackedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 120); }
         bool hasRepairedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastRepairFrame < 120); }
-
-        bool changedStateRecently() { return BWAPI::Broodwar->getFrameCount() - lastStateChangeFrame < 60; }
+        bool hasBurrowedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastBurrowFrame < 120); }
+        bool hasSiegedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastSiegeFrame < 120); }
 
         bool isStale() { return BWAPI::Broodwar->getFrameCount() - lastVisibleFrame > 480; }
         bool isStimmed() { return BWAPI::Broodwar->getFrameCount() - lastStimFrame < 300; }

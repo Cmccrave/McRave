@@ -14,7 +14,6 @@ namespace McRave::Terrain {
 
     BWAPI::Position getClosestMapCorner(BWAPI::Position);
     BWAPI::Position getClosestMapEdge(BWAPI::Position);
-    BWAPI::Position getOldestPosition(const BWEM::Area *);
     void onStart();
     void onFrame();
 
@@ -67,6 +66,10 @@ namespace McRave::Terrain {
     bool isChokepointGeo(BWAPI::Position);
     bool isChokepointGeo(BWAPI::WalkPosition);
     bool isChokepointGeo(BWAPI::TilePosition);
+
+    // Area information
+    std::vector<BWAPI::WalkPosition> getAreaGeometry(const BWEM::Area *);
+    std::vector<BWAPI::WalkPosition> getAreaOutline(const BWEM::Area *);
 
     // Checks if "here" is in area
     bool inArea(const BWEM::Area *area, BWAPI::Position here);

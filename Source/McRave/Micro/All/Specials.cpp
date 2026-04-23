@@ -151,8 +151,6 @@ namespace McRave::Command {
 
     bool siege(UnitInfo &unit)
     {
-        auto targetDist = unit.hasTarget() ? unit.getPosition().getDistance(unit.getTarget().lock()->getPosition()) : 0.0;
-
         // Don't siege next to a tank that is already sieged
         if (!unit.unit()->isSieged()) {
             auto nearestSiegedFriend = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) { return unit != *u && u->getType() == Terran_Siege_Tank_Siege_Mode; });
@@ -161,17 +159,22 @@ namespace McRave::Command {
                 return false;
         }
 
-        auto siege = (unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(Combat::getDefendPosition()) < 280.0) ||
-                     (unit.hasTarget() && targetDist <= 520.0 && unit.getLocalState() != LocalState::Retreat);
-        auto unsiege = unit.hasTarget() && targetDist > 320.0;
+        if (unit.hasTarget(); auto target = unit.getTarget().lock()) {
+            auto targetDist   = Util::boxDistance(unit, *target);
+            auto siegeLimit   = target->getSpeed() > 0.0 ? 500 : 384;
+            auto unsiegeLimit = target->getSpeed() > 0.0 ? 400 : 384;
 
-        // Siege Tanks - Siege
-        if (unit.getType() == Terran_Siege_Tank_Tank_Mode || unit.getType() == Terran_Siege_Tank_Siege_Mode) {
-            if (siege) {
+            auto siege = (unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(Combat::getDefendPosition()) < 280.0) //
+                         || (targetDist <= siegeLimit && unit.getLocalState() != LocalState::Retreat)                                           //
+                         || (unit.getLocalState() == LocalState::Hold);                                                                         //
+            auto unsiege = targetDist > unsiegeLimit && (unit.getLocalState() == LocalState::Retreat || !unit.hasSiegedRecently());
+
+            // Siege Tanks - Siege
+            if (unit.getType() == Terran_Siege_Tank_Tank_Mode && siege) {
                 unit.unit()->siege();
                 unit.commandText = "Siege";
             }
-            else if (unsiege) {
+            else if (unit.getType() == Terran_Siege_Tank_Siege_Mode && unsiege) {
                 unit.unit()->unsiege();
                 unit.commandText = "Unsiege";
             }
@@ -233,21 +236,23 @@ namespace McRave::Command {
 
         // Lurker burrowing
         else if (unit.getType() == Zerg_Lurker) {
-            auto targetDist = unit.hasTarget() ? unit.getPosition().getDistance(unit.getTarget().lock()->getPosition()) : 0.0;
-            auto burrow     = (unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(Combat::getDefendPosition()) < 280.0) ||
-                          (unit.hasTarget() && unit.isWithinRange(*unit.getTarget().lock()) && unit.getLocalState() == LocalState::Attack) ||
-                          (unit.hasTarget() && targetDist <= 275.0 && unit.getLocalState() == LocalState::Hold);
-            auto unburrow = (unit.hasTarget() && targetDist > 320.0);
+            if (unit.hasTarget(); auto target = unit.getTarget().lock()) {
+                auto targetDist = unit.getPosition().getDistance(target->getPosition());
+                auto burrow     = (unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(Combat::getDefendPosition()) < 280.0) //
+                              || (unit.isWithinRange(*target) && unit.getLocalState() == LocalState::Attack)                                             //
+                              || (targetDist <= 275.0 && unit.getLocalState() == LocalState::Hold);                                                      //
+                auto unburrow = targetDist > 320.0 && (unit.getLocalState() == LocalState::Retreat || !unit.hasBurrowedRecently());
 
-            if (!unit.isBurrowed() && burrow) {
-                unit.setCommand(Burrow, unit.getPosition());
-                unit.commandText = "Burrowing";
-                return true;
-            }
-            else if (unit.isBurrowed() && unburrow) {
-                unit.setCommand(Unburrow, unit.getPosition());
-                unit.commandText = "Unburrowing";
-                return true;
+                if (!unit.isBurrowed() && burrow) {
+                    unit.setCommand(Burrow, unit.getPosition());
+                    unit.commandText = "Burrowing";
+                    return true;
+                }
+                else if (unit.isBurrowed() && unburrow) {
+                    unit.setCommand(Unburrow, unit.getPosition());
+                    unit.commandText = "Unburrowing";
+                    return true;
+                }
             }
         }
 
@@ -455,10 +460,10 @@ namespace McRave::Command {
             auto selfMoreMelee  = vis(Zerg_Zergling) + vis(Zerg_Ultralisk) > vis(Zerg_Hydralisk);
             auto enemyLessMelee = (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot)) || (Players::ZvT());
 
-            auto castSwarm = selfMoreMelee && enemyLessMelee && (target.getType() == Terran_Marine || target.getType() == Terran_Medic || target.isSiegeTank());
+            auto castSwarmTarget = selfMoreMelee && enemyLessMelee && (target.getType() == Terran_Marine || target.getType() == Terran_Medic || target.isSiegeTank());
 
             // If close to target and can cast Plague
-            if (!unit.targetsFriendly() && !castSwarm && unit.getLocalState() != LocalState::None && unit.canStartCast(Plague, target.getPosition())) {
+            if (!unit.targetsFriendly() && !castSwarmTarget && unit.getLocalState() != LocalState::None && unit.canStartCast(Plague, target.getPosition())) {
                 unit.setCommand(Plague, target.getPosition());
                 unit.commandText = "Plague";
                 Actions::addAction(unit.unit(), target.getPosition(), Plague, PlayerState::Neutral, Util::getCastRadius(Plague));
@@ -466,15 +471,15 @@ namespace McRave::Command {
             }
 
             // If close to target and can cast Dark Swarm
-            if (!unit.targetsFriendly() && castSwarm && unit.getPosition().getDistance(target.getPosition()) <= 400 && unit.canStartCast(Dark_Swarm, target.getPosition())) {
+            if (!unit.targetsFriendly() && castSwarmTarget && unit.getPosition().getDistance(target.getPosition()) <= 400 && unit.canStartCast(Dark_Swarm, target.getPosition())) {
                 unit.setCommand(Dark_Swarm, target.getPosition());
                 unit.commandText = "DarkSwarm";
                 Actions::addAction(unit.unit(), target.getPosition(), Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
                 return true;
             }
 
-            // If within range of an intermediate point within engaging distance of a tank
-            if (!unit.targetsFriendly() && vis(Zerg_Zergling) + vis(Zerg_Ultralisk) > vis(Zerg_Hydralisk) && target.isSiegeTank()) {
+            // If within range of an intermediate point within engaging distance
+            if (!unit.targetsFriendly()) {
                 for (auto &tile : unit.getMarchPath().getTiles()) {
                     auto center = Position(tile) + Position(16, 16);
 
@@ -701,7 +706,7 @@ namespace McRave::Command {
         const auto hasMineableResource = unit.hasResource() && (unit.getResource().lock()->getResourceState() == ResourceState::Mineable || Util::getTime() < Time(4, 00)) &&
                                          unit.getResource().lock()->unit()->exists();
         auto resource = unit.hasResource() ? &*unit.getResource().lock() : Resources::getClosestMineral(unit.getPosition(), [&](auto &m) { return true; });
-        if (!resource)
+        if (!resource || unit.getGoal().isValid())
             return false;
 
         auto boxDist            = Util::boxDistance(unit.getType(), unit.getPosition(), resource->getType(), resource->getPosition());

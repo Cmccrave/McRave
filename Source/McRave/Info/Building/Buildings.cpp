@@ -24,6 +24,7 @@ namespace McRave::Buildings {
     namespace {
         set<Position> larvaPositions, eggPositions;
         set<TilePosition> unpoweredPositions;
+        map<TilePosition, UnitType> morphPlanning;
         int lastMorphFrame = -999;
 
         bool willDieToAttacks(UnitInfo &building)
@@ -116,9 +117,9 @@ namespace McRave::Buildings {
                 building.unit()->cancelConstruction();
             }
 
-            // Cancelling hatchery if against an all-in worker rush
-            auto workerRush = Spy::getEnemyBuild() != T_2Rax && Spy::getEnemyTransition() == U_WorkerRush;
-            if (naturalHatch && workerRush) {
+            // Cancelling any hatchery if against an all-in worker rush
+            auto workerRush = Spy::getEnemyTransition() == U_WorkerRush;
+            if (building.getType() == Zerg_Hatchery && workerRush && BuildOrder::buildCount(Zerg_Hatchery) < vis(Zerg_Hatchery)) {
                 Events::onUnitCancelBecauseBWAPISucks(building);
                 building.unit()->cancelConstruction();
             }
@@ -141,8 +142,7 @@ namespace McRave::Buildings {
                 return;
 
             // Lair morphing
-            if (building.getType() == Zerg_Hatchery && station && station->isMain() && !willDieToAttacks(building) &&
-                BuildOrder::buildCount(Zerg_Lair) > vis(Zerg_Lair) + vis(Zerg_Hive)) {
+            if (building.getType() == Zerg_Hatchery && station && station->isMain() && !willDieToAttacks(building) && BuildOrder::buildCount(Zerg_Lair) > vis(Zerg_Lair) + vis(Zerg_Hive)) {
                 if ((Util::getTime() >= Time(2, 31) && BuildOrder::getCurrentTransition().find("1Hatch") != string::npos) ||
                     (Util::getTime() >= Time(3, 02) && BuildOrder::getCurrentTransition().find("2Hatch") != string::npos) || Util::getTime() >= Time(3, 31) || Players::ZvZ())
                     morphType = Zerg_Lair;
@@ -161,29 +161,26 @@ namespace McRave::Buildings {
                 auto wallDefense    = wall && wall->getDefenses().find(building.getTilePosition()) != wall->getDefenses().end();
                 auto stationDefense = station && (station->getDefenses().find(building.getTilePosition()) != station->getDefenses().end() || building.getTilePosition() == station->getPocketDefense());
 
-                // If we planned already
-                if (plannedType == Zerg_Sunken_Colony)
-                    morphType = Zerg_Sunken_Colony;
-                else if (plannedType == Zerg_Spore_Colony)
-                    morphType = Zerg_Spore_Colony;
-
                 // If this is a Station defense
-                else if (stationDefense && Stations::needGroundDefenses(station) > 0 && com(Zerg_Spawning_Pool) > 0)
+                if (stationDefense && Stations::needGroundDefenses(station) > 0 && com(Zerg_Spawning_Pool) > 0)
                     morphType = Zerg_Sunken_Colony;
                 else if (stationDefense && Stations::needAirDefenses(station) > 0 && com(Zerg_Evolution_Chamber) > 0)
                     morphType = Zerg_Spore_Colony;
 
                 // If this is a Wall defense
-                else if (wallDefense && Walls::needAirDefenses(*wall) > 0 && plannedType == Zerg_Spore_Colony && com(Zerg_Evolution_Chamber) > 0)
+                else if (wallDefense && Walls::needAirDefenses(*wall) > 0 && plannedType == Zerg_Sunken_Colony && com(Zerg_Evolution_Chamber) > 0)
                     morphType = Zerg_Spore_Colony;
-                else if (wallDefense && Walls::needGroundDefenses(*wall) > 0 && plannedType == Zerg_Sunken_Colony && com(Zerg_Spawning_Pool) > 0)
+                else if (wallDefense && Walls::needGroundDefenses(*wall) > 0 && plannedType == Zerg_Spore_Colony && com(Zerg_Spawning_Pool) > 0)
                     morphType = Zerg_Sunken_Colony;
             }
 
             // Morph
-            if (morphType != UnitTypes::None && building.isCompleted()) {
-                building.unit()->morph(morphType);
-                lastMorphFrame = Broodwar->getFrameCount();
+            if (morphType != UnitTypes::None) {
+                morphPlanning[building.getTilePosition()] = morphType;
+                if (building.isCompleted()) {
+                    building.unit()->morph(morphType);
+                    lastMorphFrame = Broodwar->getFrameCount();
+                }
             }
         }
 

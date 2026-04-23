@@ -95,6 +95,7 @@
     <ClCompile Include="..\Source\McRave\Main\McRave.cpp" />
     <ClCompile Include="..\Source\McRave\Main\Util.cpp" />
     <ClCompile Include="..\Source\McRave\Main\Visuals.cpp" />
+    <ClCompile Include="..\Source\McRave\Map\Blocks\Blocks.cpp" />
     <ClCompile Include="..\Source\McRave\Map\Grids\Grids.cpp" />
     <ClCompile Include="..\Source\McRave\Map\Stations\Stations.cpp" />
     <ClCompile Include="..\Source\McRave\Map\Terrain\Terrain.cpp" />
@@ -184,6 +185,7 @@
     <ClInclude Include="..\Source\McRave\Main\Time.h" />
     <ClInclude Include="..\Source\McRave\Main\Util.h" />
     <ClInclude Include="..\Source\McRave\Main\Visuals.h" />
+    <ClInclude Include="..\Source\McRave\Map\Blocks\Blocks.h" />
     <ClInclude Include="..\Source\McRave\Map\Grids\Grids.h" />
     <ClInclude Include="..\Source\McRave\Map\Stations\Stations.h" />
     <ClInclude Include="..\Source\McRave\Map\Terrain\Terrain.h" />

@@ -41,15 +41,15 @@ namespace BWEB::Blocks {
 
     namespace {
         vector<Block> allBlocks;
-        int blockGrid[256][256];
+        BlockType blockGrid[256][256];
         vector<TilePosition> availableTiles;
         TilePosition firstSupplyBlock;
 
-        void addToBlockGrid(TilePosition start, TilePosition end)
+        void addToBlockGrid(TilePosition start, TilePosition end, BlockType type)
         {
             for (int x = start.x; x < end.x; x++) {
                 for (int y = start.y; y < end.y; y++)
-                    blockGrid[x][y] = 1;
+                    blockGrid[x][y] = type;
             }
         }
 
@@ -248,27 +248,6 @@ namespace BWEB::Blocks {
 
     bool canAddBlock(const TilePosition here, const int width, const int height, multimap<TilePosition, Piece> &pieces, BlockType type)
     {
-        const auto blockWalkable = [&](const TilePosition &t) {
-            return (t.x < here.x || t.x > here.x + width || t.y < here.y || t.y > here.y + height) && !blockGrid[t.x][t.y] && !BWEB::Map::isReserved(t);
-        };
-
-        const auto blockExists = [&](const TilePosition &t) { return blockGrid[t.x][t.y + 3]; };
-
-        const auto productionReachable = [&](TilePosition start) {
-            if (!Map::mapBWEM.GetArea(here))
-                return false;
-            for (auto &choke : Map::mapBWEM.GetArea(here)->ChokePoints()) {
-                auto path    = BWEB::Path(start + TilePosition(0, 3), TilePosition(choke->Center()), UnitTypes::Protoss_Dragoon, false, false);
-                auto maxDist = path.getSource().getDistance(path.getTarget());
-                auto maxDim  = max(width, height);
-                path.generateJPS([&](const TilePosition &t) { return path.terrainWalkable(t) && blockWalkable(t) && t.getDistance(path.getTarget()) < maxDist + 5; });
-                Pathfinding::clearCacheFully();
-                if (!path.isReachable())
-                    return false;
-            }
-            return true;
-        };
-
         // Check if placing a Hatchery within this Block cannot be done due to resources around it
         for (auto &[tile, piece] : pieces) {
             if (piece == Piece::Large && Broodwar->self()->getRace() == BWAPI::Races::Zerg && !Broodwar->canBuildHere(tile, UnitTypes::Zerg_Hatchery))
@@ -285,7 +264,7 @@ namespace BWEB::Blocks {
                     return false;
                 if (type == BlockType::Supply && Map::mapBWEM.GetTile(t).MinAltitude() > 170)
                     return false;
-                if (!Map::mapBWEM.GetTile(t).Buildable() || Map::isReserved(t))
+                if (!Map::mapBWEM.GetTile(t).Buildable() || Map::isReserved(t) || blockGrid[x][y] != BlockType::None)
                     return false;
             }
         }
@@ -305,7 +284,7 @@ namespace BWEB::Blocks {
         Block newBlock(here, pieceLayout, width, height, type);
         const auto &area = Map::mapBWEM.GetArea(here);
         allBlocks.push_back(newBlock);
-        addToBlockGrid(here, here + TilePosition(width, height));
+        addToBlockGrid(here, here + TilePosition(width, height), type);
         for (auto &[_, piece] : pieceLayout)
             piecePerArea[area].pieces[piece]++;
 
@@ -336,21 +315,21 @@ namespace BWEB::Blocks {
     void initialize()
     {
         for (auto &station : Stations::getStations()) {
-            addToBlockGrid(station.getBase()->Location(), station.getBase()->Location() + TilePosition(4, 3));
+            addToBlockGrid(station.getBase()->Location(), station.getBase()->Location() + TilePosition(4, 3), BlockType::Start);
 
             if (station.isMain())
                 Map::addReserve(station.getBase()->Location() - TilePosition(1, 1), 6, 5);
 
             for (auto &secondary : station.getSecondaryLocations()) {
-                addToBlockGrid(secondary, secondary + TilePosition(4, 3));
+                addToBlockGrid(secondary, secondary + TilePosition(4, 3), BlockType::Production);
                 if (station.isMain())
                     Map::addReserve(secondary - TilePosition(1, 1), 6, 5);
             }
             for (auto &def : station.getDefenses())
-                addToBlockGrid(def, def + TilePosition(2, 2));
+                addToBlockGrid(def, def + TilePosition(2, 2), BlockType::Defensive);
             for (auto &mineral : station.getBase()->Minerals()) {
                 auto halfway = (mineral->Pos() + station.getBase()->Center()) / 2;
-                addToBlockGrid(TilePosition(halfway) - TilePosition(1, 1), TilePosition(halfway) + TilePosition(1, 1));
+                addToBlockGrid(TilePosition(halfway) - TilePosition(1, 1), TilePosition(halfway) + TilePosition(1, 1), BlockType::Start);
             }
         }
     }
@@ -469,7 +448,7 @@ namespace BWEB::Blocks {
             // Protoss caps large pieces in the main at 16 if we don't have necessary medium pieces
             if (race == Races::Protoss) {
                 if ((largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 16 && piecePerArea[area].pieces[Piece::Medium] < 8) ||
-                    (mediumCount > 0 && piecePerArea[area].pieces[Piece::Medium] >= 9) || (smallCount > 0 && mediumCount == 0 && largeCount == 0) ||
+                    (mediumCount > 0 && piecePerArea[area].pieces[Piece::Medium] >= 12) || (smallCount > 0 && mediumCount == 0 && largeCount == 0) ||
                     (largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 12))
                     return false;
             }
@@ -509,6 +488,15 @@ namespace BWEB::Blocks {
 
                 while (findBlock(station.getBase()->Center(), BlockType::Production, 20, 20, tilesDistMain, productionOk, successCallback))
                     ;
+
+                // Create a path that prevents blocking units inside
+                BWEB::Path prodPath = BWEB::Path(station.getBase()->Center(), Position(station.getChokepoint()->Center()), UnitTypes::Protoss_Dragoon, false, false);
+                auto walkable       = [&](auto &t) { return prodPath.terrainWalkable(t) /*&& blockGrid[t.x][t.y] == 0*/; };
+                prodPath.generateAS_w(walkable);
+                for (auto &tile : prodPath.getTiles()) {
+                    blockGrid[tile.x][tile.y] = BlockType::Production;
+                    debugTiles.insert(tile);
+                }
             }
         }
     }
@@ -525,7 +513,20 @@ namespace BWEB::Blocks {
 
         const auto supplyOk = [&](TilePosition tile, const std::vector<BWEB::Piece> pieces) {
             const auto &area = Map::mapBWEM.GetArea(tile);
-            if ((supplyWidth == 2 && piecePerArea[area].pieces[Piece::Small] >= 10) || (supplyWidth == 3 && piecePerArea[area].pieces[Piece::Medium] >= 25))
+
+            // Terran depots are allowed to be placed against map edges or fully buildable tiles to not trap workers
+            if (race == Races::Terran) {
+                for (auto x = tile.x - 1; x < tile.x + supplyWidth + 1; x++) {
+                    for (auto y = tile.y - 1; y < tile.y + 3; y++) {
+                        auto adjTile = TilePosition(x, y);
+                        if (adjTile.isValid() && (!Broodwar->isBuildable(adjTile) || (blockGrid[x][y] != BlockType::None && blockGrid[x][y] != BlockType::Supply))) {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            if ((supplyWidth == 2 && piecePerArea[area].pieces[Piece::Small] >= 16) || (supplyWidth == 3 && piecePerArea[area].pieces[Piece::Medium] >= 25))
                 return false;
             return true;
         };

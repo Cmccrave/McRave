@@ -189,6 +189,8 @@ namespace McRave {
             minStopFrame        = Math::stopAnimationFrames(t);
             lastStimFrame       = unit()->isStimmed() ? Broodwar->getFrameCount() : lastStimFrame;
             lastVisibleFrame    = Broodwar->getFrameCount();
+            lastBurrowFrame     = unit()->getOrder() == Orders::Burrowing ? Broodwar->getFrameCount() : lastBurrowFrame;
+            lastSiegeFrame      = unit()->getOrder() == Orders::Sieging ? Broodwar->getFrameCount() : lastSiegeFrame;
             framesVisible++;
 
             checkHidden();
@@ -337,10 +339,8 @@ namespace McRave {
 
     void UnitInfo::checkThreatening()
     {
-        if (!getPlayer()->isEnemy(Broodwar->self()) || getType() == Zerg_Overlord || !hasTarget())
+        if (!getPlayer()->isEnemy(Broodwar->self()) || getType() == Zerg_Overlord)
             return;
-
-        auto &target = *target_.lock();
 
         // Determine how close it is to strategic locations
         const auto choke          = (Combat::isDefendNatural() && Combat::isHoldNatural()) ? Terrain::getNaturalChoke() : Terrain::getMainChoke();
@@ -357,11 +357,15 @@ namespace McRave {
         const auto atChoke     = getPosition().getDistance(closestGeo) <= rangeCheck;
         const auto nearMe      = atHome || atChoke;
 
-        // If the unit attacked defenders, workers or buildings
-        const auto attackedDefender = hasAttackedRecently() && Terrain::inTerritory(PlayerState::Self, target.getPosition()) && target.getRole() == Role::Defender;
-        const auto attackedWorkers  = hasAttackedRecently() && Terrain::inTerritory(PlayerState::Self, target.getPosition()) && (target.getRole() == Role::Worker || target.getRole() == Role::Support);
-        const auto attackedBuildings = hasAttackedRecently() && target.getType().isBuilding();
+        // Check if enemy has attacked a worker
+        auto attackedWorkers = [&]() {
+            if (hasTarget(); auto target = getTarget().lock()) {
+                return hasAttackedRecently() && Terrain::inTerritory(PlayerState::Self, target->getPosition()) && (target->getRole() == Role::Worker || target->getRole() == Role::Support);
+            }
+            return false;
+        };
 
+        // Check if enemy is possibly denying resources
         auto nearResources = [&]() {
             auto closestMineral = Resources::getClosestMineral(position, [&](auto &r) { return r->getResourceState() == ResourceState::Mineable; });
             if (closestMineral && closestMineral->getPosition().getDistance(position) < max(200.0, getGroundRange()))
@@ -429,15 +433,12 @@ namespace McRave {
                                                            [&](auto &u) { return u->getRole() == Role::Worker && u->getBuildPosition().isValid() && u->getBuildType().isValid(); });
                 if (closestBuilder) {
                     auto center = Position(closestBuilder->getBuildPosition()) + Position(closestBuilder->getBuildType().tileWidth() * 16, closestBuilder->getBuildType().tileHeight() * 16);
-                    if (Util::boxDistance(getType(), getPosition(), closestBuilder->getBuildType(), center) < proximityCheck ||
-                        (attackedWorkers && Util::boxDistance(getType(), getPosition(), closestBuilder->getType(), closestBuilder->getPosition()) < rangeCheck))
+                    if (Util::boxDistance(getType(), getPosition(), closestBuilder->getBuildType(), center) < proximityCheck)
                         return true;
                 }
             }
             return false;
         };
-
-        const auto constructing = unit()->exists() && (unit()->isConstructing() || unit()->getOrder() == Orders::ConstructingBuilding || unit()->getOrder() == Orders::PlaceBuilding);
 
         // Building
         if (getType().isBuilding()) {
@@ -446,18 +447,22 @@ namespace McRave {
         }
 
         // Worker
-        else if (getType().isWorker())
-            threateningThisFrame = atHome && (constructing || hasAttackedRecently());
+        else if (getType().isWorker()) {
+            const auto constructing = unit()->exists() && (unit()->isConstructing() || unit()->getOrder() == Orders::ConstructingBuilding || unit()->getOrder() == Orders::PlaceBuilding);
+            threateningThisFrame    = atHome && (constructing || hasAttackedRecently());
+        }
 
         // Unit
-        else
-            threateningThisFrame = attackedWorkers || nearResources() || nearTerritory() || nearFragileBuilding() || nearBuildPosition() || nearDefenders();
+        else {
+            // Specific case: Marine near a proxy bunker
+            if (getType() == Terran_Marine && Util::getTime() < Time(5, 00)) {
+                auto closestThreateningBunker = Util::getClosestUnit(getPosition(), PlayerState::Enemy, [&](auto &u) { return u->isThreatening() && u->getType() == Terran_Bunker; });
+                if (closestThreateningBunker && closestThreateningBunker->getPosition().getDistance(getPosition()) < 160.0)
+                    threateningThisFrame = true;
+            }
 
-        // Specific case: Marine near a proxy bunker
-        if (getType() == Terran_Marine && Util::getTime() < Time(5, 00)) {
-            auto closestThreateningBunker = Util::getClosestUnit(getPosition(), PlayerState::Enemy, [&](auto &u) { return u->isThreatening() && u->getType() == Terran_Bunker; });
-            if (closestThreateningBunker && closestThreateningBunker->getPosition().getDistance(getPosition()) < 160.0)
-                threateningThisFrame = true;
+            //
+            threateningThisFrame = attackedWorkers() || nearResources() || nearTerritory() || nearFragileBuilding() || nearBuildPosition() || nearDefenders();
         }
 
         // Determine if this unit is threatening
@@ -470,10 +475,9 @@ namespace McRave {
             lastThreateningFrame = Broodwar->getFrameCount();
 
         // Linger threatening
-        // auto lingerFrames = min(4 + ((Util::getTime().minutes - 6) * 24), 120);
         threatening = Broodwar->getFrameCount() - lastThreateningFrame <= 4;
 
-        // Apply to others
+        // Apply to others nearby to prevent exclusive targeting
         if (threatening && threateningFrames > 4) {
             for (auto unit : Units::getUnits(PlayerState::Enemy)) {
                 if (*unit != *this) {
@@ -923,6 +927,9 @@ namespace McRave {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         const auto frameSinceAttack = Broodwar->getFrameCount() - getLastAttackFrame();
         const auto cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
+
+        if (cancelAttackRisk)
+            circle(Colors::Red);
 
         // Allows skipping the command but still printing the result to screen
         return !cancelAttackRisk;

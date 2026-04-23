@@ -51,11 +51,18 @@ namespace McRave::Combat::Clusters {
 
         bool generateCluster(ClusterNode &root, int id, int minsize, int maxsize)
         {
-            // Calculate eps
+            // Calculate a time scalar, larger acceptance criteria early
+            double t          = clamp((Util::getTime().minutes - 4) / 8.0, 0.0, 1.0);
+            double timeScalar = 3.0 - 2.0 * double(t);
+
+            // Calculate a density scalar, larger acceptance criteria with higher density
             double clusterNearby = root.unit->isFlying() ? Grids::getAirDensity(root.position, PlayerState::Self) : Grids::getGroundDensity(root.position, PlayerState::Self);
-            double baseEps       = 96.0 + clusterNearby * 16.0;
-            double eps           = baseEps * 1.5;
-            eps                  = std::min(eps, 200.0);
+            double densityScalar = 1.0 + (clusterNearby * 0.15);
+
+            // Calculate eps
+            double baseEps = 96.0;
+            double eps     = baseEps * densityScalar * timeScalar;
+            eps            = std::min(eps, 256.0);
 
             auto matching = [&](auto &parent, auto &child) {
                 if (child.unit->getType() == Zerg_Queen)
@@ -156,8 +163,9 @@ namespace McRave::Combat::Clusters {
             cluster.retreatPath = commander->getRetreatPath();
 
             const auto validPathPoint = [&](auto &p) {
+                auto altitude  = max(0.0, (cluster.units.size() * 8.0) - mapBWEM.GetMiniTile(WalkPosition(p)).Altitude());
                 auto distExtra = (!Util::isAdjacentUsed(p, 3) * 32.0) + (!Util::isAdjacentUnwalkable(p, 3) * 32.0);
-                return p.getDistance(commander->getPosition()) >= dist + distExtra;
+                return p.getDistance(commander->getPosition()) >= dist + distExtra + altitude;
             };
 
             // If path is reachable, find a point n pixels away to set as new destination;
@@ -342,7 +350,7 @@ namespace McRave::Combat::Clusters {
             return false;
 
         // Estimate damage, padded by expected losses before we land an attack
-        clusterSize -= (Util::getTime() > Time(10, 00)) + (Util::getTime() > Time(12, 00)) + (Util::getTime() > Time(14, 00));
+        clusterSize -= (Util::getTime() > Time(8, 00)) + (Util::getTime() > Time(10, 00)) + (Util::getTime() > Time(12, 00));
         auto damageEstimate = clusterSize * multiplier;
 
         // One shotting units for free / two shotting important units
@@ -356,7 +364,6 @@ namespace McRave::Combat::Clusters {
         auto dpsInRange = 0.0;
         for (auto u : Units::getUnits(PlayerState::Enemy)) {
             auto &enemy = *u;
-            Visuals::drawLine(unit.getPosition(), enemy.getPosition(), Colors::Red);
             if (enemy.canAttackAir() && (!enemy.isStale() || enemy.getType().isBuilding())) {
 
                 // Have to check this estimate as engage position isn't set yet
@@ -371,14 +378,16 @@ namespace McRave::Combat::Clusters {
             LOG_FAST("Target is ", target.getType().c_str(), " at ", target.getPosition());
         }
 
-        if (unit.getLocalState() == LocalState::Attack)
+        // Once engaged, lower the dps requirement to encourage staying
+        if (unit.getLastLocalState() == LocalState::Attack)
             dpsInRange /= 2.0;
 
+        // Check for low DPS to start the dive
         if ((dpsInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker())                      //
-            || (dpsInRange <= 2.0 && Util::getTime() < Time(8, 00))                                    //
-            || (dpsInRange <= 3.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))  //
-            || (dpsInRange <= 4.0 && Util::getTime() > Time(12, 00) && Util::getTime() < Time(16, 00)) //
-            || (dpsInRange <= 5.0 && Util::getTime() > Time(16, 00)))                                  //
+            || (dpsInRange <= 1.0 && Util::getTime() < Time(8, 00))                                    //
+            || (dpsInRange <= 2.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))  //
+            || (dpsInRange <= 3.0 && Util::getTime() > Time(12, 00) && Util::getTime() < Time(16, 00)) //
+            || (dpsInRange <= 4.0 && Util::getTime() > Time(16, 00)))                                  //
             return true;
 
         // If already in range and haven't attack recently, it's fine to swing once, this helps for recalculations done once in range

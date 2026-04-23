@@ -609,7 +609,7 @@ namespace McRave::Scouts {
             // No threat at home, we should use a ling to scout the enemy
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 auto time = Time(2, 30);
-                if (Spy::enemyRush() || Spy::getEnemyBuild() == P_2Gate || Spy::getEnemyBuild() == P_1GateCore || Spy::enemyProxy() || total(Zerg_Zergling) <= 2)
+                if (Spy::enemyRush() || Spy::getEnemyBuild() == P_2Gate || Spy::getEnemyBuild() == P_1GateCore || Spy::enemyProxy() || total(Zerg_Zergling) < 2)
                     time = Time(3, 45);
                 if (Players::ZvZ())
                     time = Time(4, 00);

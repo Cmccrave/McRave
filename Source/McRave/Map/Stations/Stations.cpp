@@ -291,8 +291,8 @@ namespace McRave::Stations {
             if (station->isMain()) {
                 if (Players::getTotalCount(PlayerState::Enemy, Terran_Dropship) > 0)
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
-                if (Players::ZvT() && Spy::getEnemyBuild() != T_2Rax && Spy::getEnemyTransition() == U_WorkerRush)
-                    return 1 - groundCount;
+                if (Stations::ownedBy(Terrain::getMyNatural()) != PlayerState::Self && (Spy::getEnemyTransition() == U_WorkerRush || Spy::getEnemyTransition() == T_Rush))
+                    return 2 - groundCount;
                 if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(9, 00))
                     return 1 - groundCount;
             }
@@ -562,11 +562,6 @@ namespace McRave::Stations {
     {
         if (BuildOrder::isRush() || BuildOrder::isPressure() || Spy::getEnemyTransition() == P_Carrier || isPocket(station))
             return 0;
-
-        // We don't want to pull workers to build things if none are nearby
-        if (getSaturationRatio(station) == 0.0 && getColonyCount(station) == 0)
-            return 0;
-
         if (Players::PvP())
             return PvPgroundDef(station);
         if (Players::PvT())
@@ -674,11 +669,25 @@ namespace McRave::Stations {
                 return 1 - airCount;
         }
 
+
+        if (Players::TvZ()) {
+            
+            // 2hm
+            if (Spy::getEnemyTransition() == Z_2HatchMuta && Util::getTime() > Time(5, 45))
+                return 2 - airCount;
+
+            // 3hm
+            if (Spy::getEnemyTransition() == Z_3HatchMuta && Util::getTime() > Time(6, 15))
+                return 2 - airCount;
+
+            // Fallback
+            if (Spy::enemyFastExpand() && !Spy::enemyPressure() && !Spy::enemyRush() && Util::getTime() > Time(6, 30))
+                return 2 - airCount;
+        }
+
         if (Broodwar->self()->getRace() == Races::Terran) {
             if (Spy::enemyInvis())
-                return 2 - airCount;
-            if (Players::TvZ() && Util::getTime() > Time(4, 30))
-                return 3 - airCount;
+                return 1 - airCount;
         }
 
         return 0;
@@ -753,7 +762,7 @@ namespace McRave::Stations {
     {
         // Find self unit with losing sim state that is targeting a threatening unit near this station
         const auto closestSelf = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) {
-            if (u->getRole() != Role::Combat)
+            if (u->getRole() != Role::Combat || !u->isCompleted())
                 return false;
             return Terrain::inArea(station, u->getPosition());
         });

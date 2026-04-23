@@ -396,68 +396,6 @@ namespace BWEB {
         };
     }
 
-    const void Station::testingDefenses() const
-    {
-        // TODO: Determine if workers can fit through (P/Z/T are diff sizes, assume worse case for now - zerg)
-
-        // count how many tiles avail
-        // nullopt ? val : min(thing, val);
-        // place, check adjacent tiles (not diagonal), if 1, it's blocking
-
-        // 1. Find mining spots
-        map<TilePosition, optional<int>> spacePerTile;
-        for (auto &geyser : base->Geysers()) {
-            for (int x = -1; x < 5; x++) {
-                for (int y = -1; y < 3; y++) {
-                    auto tile = geyser->TopLeft() + TilePosition(x, y);
-                    if (Map::isUsed(tile) == UnitTypes::None)
-                        spacePerTile[tile] = 1;
-                }
-            }
-        }
-
-        // For each mineral, find how many tiles of space it has
-        for (auto &mineral : base->Minerals()) {
-            vector<TilePosition> miningTiles;
-            int cnt = 0;
-            for (int x = -1; x < 3; x++) {
-                for (int y = -1; y < 2; y++) {
-                    auto tile = mineral->TopLeft() + TilePosition(x, y);
-                    auto br   = tile + TilePosition(1, 1);
-
-                    auto center = Position(tile) + Position(16, 16);
-                    if (center.getDistance(base->Center()) <= mineral->Pos().getDistance(base->Center()) - 8 && Map::isUsed(tile) == UnitTypes::None) {
-                        Broodwar->drawLineMap(center, mineral->Pos(), Colors::Yellow);
-                        miningTiles.push_back(tile);
-                        cnt++;
-                    }
-                }
-            }
-
-            // For each tile, store the space as the minimum value
-            for (auto &tile : miningTiles) {
-                auto &val = spacePerTile[tile];
-                val       = val.has_value() ? min(spacePerTile[tile].value(), cnt) : cnt;
-            }
-        }
-
-        vector<TilePosition> adjacents = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
-        for (auto &[tile, val] : spacePerTile) {
-            if (val >= 3) {
-                auto placeable = true;
-                for (auto &adj : adjacents) {
-                    auto adjTile = tile + adj;
-                    auto adjVal  = spacePerTile[adjTile];
-                    if (adjVal.has_value() && adjVal.value() <= 2)
-                        placeable = false;
-                }
-
-                // if (placeable)
-                //    Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(32,32), Colors::Yellow, false);
-            }
-        }
-    }
-
     void Station::findDefenses()
     {
         vector<TilePosition> basePlacements = {{-2, -2}, {-2, 1}, {1, -2}};
@@ -699,7 +637,6 @@ namespace BWEB::Stations {
     {
         for (auto &station : Stations::getStations()) {
             station.draw();
-            station.testingDefenses();
         }
     }
 
