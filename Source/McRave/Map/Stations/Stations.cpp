@@ -231,10 +231,7 @@ namespace McRave::Stations {
             return 0;
         }
 
-        int PvTgroundDef(const BWEB::Station *const station)
-        {
-            return 0;
-        }
+        int PvTgroundDef(const BWEB::Station *const station) { return 0; }
 
         int PvZgroundDef(const BWEB::Station *const station)
         {
@@ -249,8 +246,8 @@ namespace McRave::Stations {
                     return 2 - groundCount;
             }
             return 0;
-        }        
-        
+        }
+
         int PvFFAgroundDef(const BWEB::Station *const station)
         {
             auto groundCount = getGroundDefenseCount(station);
@@ -402,6 +399,13 @@ namespace McRave::Stations {
             return 0;
         }
 
+        int TvTgroundDef(const BWEB::Station *const station)
+        {
+            auto groundCount = getGroundDefenseCount(station);
+
+            return 0;
+        }
+
         int TvZgroundDef(const BWEB::Station *const station)
         {
             auto groundCount = getGroundDefenseCount(station);
@@ -410,7 +414,7 @@ namespace McRave::Stations {
                 return 1 - groundCount;
             return 0;
         }
-        
+
         int TvFFAgroundDef(const BWEB::Station *const station)
         {
             auto groundCount = getGroundDefenseCount(station);
@@ -435,6 +439,18 @@ namespace McRave::Stations {
                 if (closestEnemy && closestEnemy->getPosition().getDistance(station.getBase()->Center()) < 96.0) {
                     enemyStations.push_back(&station);
                 }
+            }
+        }
+
+        void drawStations()
+        {
+            if (!Visuals::isDrawingEnabled(DrawingType::Stations))
+                return;
+
+            for (auto &station : Stations::getStations(PlayerState::Self)) {
+                auto topLeft = Position(station->getBase()->Location());
+                Broodwar->drawTextMap(topLeft, "%d", Stations::needGroundDefenses(station));
+                Broodwar->drawTextMap(topLeft + Position(0, 16), "%d", Stations::needAirDefenses(station));
             }
         }
     } // namespace
@@ -584,6 +600,8 @@ namespace McRave::Stations {
             return TvPgroundDef(station);
         if (Players::TvZ())
             return TvZgroundDef(station);
+        if (Players::TvT())
+            return TvTgroundDef(station);
         if (Players::TvFFA())
             return TvFFAgroundDef(station);
         return 0;
@@ -669,20 +687,31 @@ namespace McRave::Stations {
                 return 1 - airCount;
         }
 
-
         if (Players::TvZ()) {
-            
+
             // 2hm
-            if (Spy::getEnemyTransition() == Z_2HatchMuta && Util::getTime() > Time(5, 45))
-                return 2 - airCount;
+            if (Spy::getEnemyTransition() == Z_2HatchMuta && Util::getTime() > Time(5, 45)) {
+                auto amount = station->isNatural() ? 4 : 2;
+                return amount - airCount;
+            }
 
             // 3hm
-            if (Spy::getEnemyTransition() == Z_3HatchMuta && Util::getTime() > Time(6, 15))
-                return 2 - airCount;
+            if (Spy::getEnemyTransition() == Z_3HatchMuta && Util::getTime() > Time(6, 15)) {
+                auto amount = station->isNatural() ? 4 : 2;
+                return amount - airCount;
+            }
 
-            // Fallback
-            if (Spy::enemyFastExpand() && !Spy::enemyPressure() && !Spy::enemyRush() && Util::getTime() > Time(6, 30))
-                return 2 - airCount;
+            // Make mutas as we see them, and at least 1 if there is lurkers
+            auto lurkerBuild = Spy::getEnemyTransition().find("Lurker") != string::npos || Spy::getEnemyTransition().find("Hydra") != string::npos ||
+                               Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk, Zerg_Hydralisk_Den, Zerg_Lurker) > 0;
+            auto mutaBuild = Spy::getEnemyTransition().find("Muta") != string::npos ||
+                             Players::getTotalCount(PlayerState::Enemy, Zerg_Spire, Zerg_Mutalisk, Zerg_Scourge, Zerg_Greater_Spire, Zerg_Guardian, Zerg_Devourer) > 0;
+            if (Spy::enemyFastExpand() && !Spy::enemyPressure() && !Spy::enemyRush()) {
+                if (mutaBuild && Util::getTime() > Time(6, 30))
+                    return 2 - airCount;
+                else if (lurkerBuild && Util::getTime() > Time(6, 30))
+                    return 1 - airCount;
+            }
         }
 
         if (Broodwar->self()->getRace() == Races::Terran) {

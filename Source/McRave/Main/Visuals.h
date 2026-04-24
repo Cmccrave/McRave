@@ -2,8 +2,15 @@
 #include "BWEB.h"
 #include "Main/Common.h"
 
-namespace McRave::Visuals {
+namespace McRave {
+    enum class DrawingType { None, Commands, Targets, Builds, BWEB, Strengths, Orders, States, Resources, Timers, Scores, Roles, Stations, Clusters, Formations };
+}
 
+namespace McRave::Visuals {
+    bool isDrawingEnabled(DrawingType);
+    BWAPI::Text::Enum getTextColor();
+
+    void onStart();
     void onFrame();
     void startPerfTest();
     void endPerfTest(std::string);
@@ -11,8 +18,6 @@ namespace McRave::Visuals {
     void drawPath(BWEB::Path &);
 
     void centerCameraOn(BWAPI::Position);
-
-    void drawDiagnostic(Diagnostic, BWAPI::Position);
 
     void drawTextBox(BWAPI::Position, std::vector<std::string>);
 

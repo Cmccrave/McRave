@@ -98,9 +98,9 @@ namespace BWEB {
 
                 // Check if a perpendicular point is closer to the natural by half the dist
                 Position perpVector(cos(mainChokeAnglePerp), sin(mainChokeAnglePerp));
-                perpVector      = perpVector * dist;
-                auto perpPoint1 = mainChokeCenter + perpVector;
-                auto perpPoint2 = mainChokeCenter - perpVector;
+                perpVector               = perpVector * dist;
+                auto perpPoint1          = mainChokeCenter + perpVector;
+                auto perpPoint2          = mainChokeCenter - perpVector;
                 auto dist1               = natChokeCenter.getDistance(perpPoint1);
                 auto dist2               = natChokeCenter.getDistance(perpPoint2);
                 auto mainPointsToNatural = dist1 < halfDist || dist2 < halfDist;
@@ -287,7 +287,7 @@ namespace BWEB {
             else if (defenseArrangement == 1 || defenseArrangement == 3) {
                 flipVertical   = base->Center().y < Position(choke->Center()).y;
                 flipHorizontal = base->Center().x < Position(choke->Center()).x;
-                lrgOrder       = {{0, -7}, {0, -6}, {-2, -5}, {-2, -4}, {-4, -3}, {-4, -2}, {-6, -1}, {-6, 0}, {-8, 1}, {-8, 2}};
+                lrgOrder       = {{0, -7}, {-2, -5}, {-4, -3}, {-6, -1}, {-8, 1}, {0, -5}, {-2, -3}, {-4, -1}, {-6, 1}, {-8, 3}, {-2, -7}, {-4, -5}, {-6, -3}, {-8, -1}};
                 medOrder       = {{1, -6}, {1, -5}, {-1, -4}, {-1, -3}, {-3, -2}, {-3, -1}, {-5, 0}, {-5, 1}};
                 smlOrder       = {{0, -4}, {-2, -2}, {-4, 0}};
                 pylOrder       = {{-2, 0}, {0, -2}};
@@ -428,7 +428,7 @@ namespace BWEB {
             dx = 1;
             dy = -1;
             oy = offset;
-            width -= 2;
+            width -= 1;
         }
 
         const auto addToList = [&](int i) {
@@ -438,7 +438,7 @@ namespace BWEB {
         };
 
         // First priority placements (center out)
-        for (int i = 0; i <= width; i++) {
+        for (int i = 0; i < width; i++) {
             addToList(i);
         }
         for (int i = 0; i >= -width; i--) {

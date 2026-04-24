@@ -77,7 +77,8 @@ namespace McRave::Command {
         // Bunker - Loading / Unloading
         else if (unit.getType() == Terran_Marine && vis(Terran_Bunker) > 0) {
 
-            auto bunker = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) { return (u->getType() == Terran_Bunker && u->unit()->getSpaceRemaining() > 0); });
+            auto bunker = Util::getClosestUnit(unit.getPosition(), PlayerState::Self,
+                                               [&](auto &u) { return (u->getType() == Terran_Bunker && u->isCompleted() && u->unit()->getSpaceRemaining() > 0); });
 
             auto loadBunker   = false;
             auto unloadBunker = false;
@@ -166,12 +167,12 @@ namespace McRave::Command {
 
             auto siege = (unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(Combat::getDefendPosition()) < 280.0) //
                          || (targetDist <= siegeLimit && unit.getLocalState() != LocalState::Retreat)                                           //
-                         || (unit.getLocalState() == LocalState::Hold);                                                                         //
-            auto unsiege = targetDist > unsiegeLimit && (unit.getLocalState() == LocalState::Retreat || !unit.hasSiegedRecently());
+                         || (unit.getGlobalState() == GlobalState::Attack && unit.getLocalState() == LocalState::Hold);                         //
+            auto unsiege = !siege && targetDist > unsiegeLimit && (unit.getLocalState() == LocalState::Retreat || !unit.hasSiegedRecently());
 
             // Siege Tanks - Siege
             if (unit.getType() == Terran_Siege_Tank_Tank_Mode && siege) {
-                unit.unit()->siege();
+                unit.setCommand(Siege);
                 unit.commandText = "Siege";
             }
             else if (unit.getType() == Terran_Siege_Tank_Siege_Mode && unsiege) {
@@ -220,13 +221,20 @@ namespace McRave::Command {
         if (unit.getType() == Terran_Vulture) {
             if (Broodwar->self()->hasResearched(Spider_Mines) && unit.unit()->getSpiderMineCount() > 0) {
 
-                auto canUseMines = (unit.hasSimTarget() && unit.getPosition().getDistance(unit.getSimTarget().lock()->getPosition()) <= 400) || //
-                                   (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Contain && unit.getPosition().getDistance(unit.getGoal()) <= 32);
+                auto canUseMines  = (unit.hasSimTarget() && unit.getPosition().getDistance(unit.getSimTarget().lock()->getPosition()) <= 400);
                 auto minesInRange = Broodwar->getUnitsInRadius(unit.getPosition(), 128, Filter::GetType == Terran_Vulture_Spider_Mine).size();
-
                 if (canUseMines && !minesInRange) {
                     if (unit.unit()->getLastCommand().getTechType() != Spider_Mines || unit.unit()->getLastCommand().getTargetPosition().getDistance(unit.getPosition()) > 8) {
                         unit.setCommand(Spider_Mines, unit.getPosition());
+                        unit.commandText = "Planting";
+                    }
+                    return true;
+                }
+
+                auto minesGoal = (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Contain && unit.getPosition().getDistance(unit.getGoal()) <= 64);
+                if (minesGoal) {
+                    if (unit.unit()->getLastCommand().getTechType() != Spider_Mines || unit.unit()->getLastCommand().getTargetPosition().getDistance(unit.getGoal()) > 8) {
+                        unit.setCommand(Spider_Mines, unit.getGoal());
                         unit.commandText = "Planting";
                     }
                     return true;
@@ -244,12 +252,12 @@ namespace McRave::Command {
                 auto unburrow = targetDist > 320.0 && (unit.getLocalState() == LocalState::Retreat || !unit.hasBurrowedRecently());
 
                 if (!unit.isBurrowed() && burrow) {
-                    unit.setCommand(Burrow, unit.getPosition());
+                    unit.setCommand(Burrow);
                     unit.commandText = "Burrowing";
                     return true;
                 }
                 else if (unit.isBurrowed() && unburrow) {
-                    unit.setCommand(Unburrow, unit.getPosition());
+                    unit.setCommand(Unburrow);
                     unit.commandText = "Unburrowing";
                     return true;
                 }
@@ -288,12 +296,12 @@ namespace McRave::Command {
 
             // Burrow/unburrow as needed
             if (!unit.isBurrowed() && burrowUnit) {
-                unit.setCommand(Burrow, unit.getPosition());
+                unit.setCommand(Burrow);
                 unit.commandText = "Burrowing";
                 return true;
             }
             else if (unit.isBurrowed() && !burrowUnit) {
-                unit.setCommand(Unburrow, unit.getPosition());
+                unit.setCommand(Unburrow);
                 unit.commandText = "Unburrowing";
                 return true;
             }
@@ -305,13 +313,13 @@ namespace McRave::Command {
 
             if (!unit.isBurrowed() && unit.getGoalType() == GoalType::Contain && !Planning::overlapsPlan(unit, unit.getPosition()) && unit.getGoal().getDistance(unit.getPosition()) < 16.0 &&
                 !Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Enemy)) {
-                unit.setCommand(Burrow, unit.getPosition());
+                unit.setCommand(Burrow);
                 unit.commandText = "Burrowing";
                 return true;
             }
             if (unit.isBurrowed() && (unit.getGoalType() != GoalType::Contain || Planning::overlapsPlan(unit, unit.getPosition()) || unit.getGoal().getDistance(unit.getPosition()) > 16.0 ||
                                       Actions::overlapsDetection(unit.unit(), unit.getPosition(), PlayerState::Enemy))) {
-                unit.setCommand(Unburrow, unit.getPosition());
+                unit.setCommand(Unburrow);
                 unit.commandText = "Burrowing";
                 return true;
             }
@@ -332,12 +340,24 @@ namespace McRave::Command {
         }
 
         // Science Vessel - Defensive Matrix
-        else if (unit.getType() == Terran_Science_Vessel && unit.getEnergy() >= Defensive_Matrix.energyCost()) {
-            auto ally = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) { return (u->unit()->isUnderAttack()); });
-            if (ally && ally->getPosition().getDistance(unit.getPosition()) < 640) {
-                unit.setCommand(Defensive_Matrix, *ally);
-                unit.commandText = "DefenseMatrix";
-                return true;
+        else if (unit.getType() == Terran_Science_Vessel) {
+            if (unit.getEnergy() >= Irradiate.energyCost() && Players::hasResearched(PlayerState::Self, Irradiate)) {
+                static const vector<UnitType> types = {Zerg_Lurker, Zerg_Defiler, Zerg_Ultralisk, Zerg_Guardian, Protoss_High_Templar};
+                auto enemy                          = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) { return Util::contains(types, u->getType()); });
+                if (enemy && enemy->getPosition().getDistance(unit.getPosition()) < 320) {
+                    unit.setCommand(Irradiate, *enemy);
+                    unit.commandText = "DefenseMatrix";
+                    return true;
+                }
+            }
+
+            if (unit.getEnergy() >= Defensive_Matrix.energyCost() && Players::hasResearched(PlayerState::Self, Defensive_Matrix)) {
+                auto ally = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) { return (u->unit()->isUnderAttack()); });
+                if (ally && ally->getPosition().getDistance(unit.getPosition()) < 320) {
+                    unit.setCommand(Defensive_Matrix, *ally);
+                    unit.commandText = "DefenseMatrix";
+                    return true;
+                }
             }
         }
 
@@ -642,21 +662,17 @@ namespace McRave::Command {
         // Find boulders to clear
         for (auto &b : Resources::getMyBoulders()) {
             ResourceInfo &boulder = *b;
-            if (!boulder.unit() || !boulder.unit()->exists())
+            if (!boulder.unit() || !boulder.unit()->exists() || unit.getPosition().getDistance(boulder.getPosition()) > 96.0)
                 continue;
-            if ((unit.getPosition().getDistance(boulder.getPosition()) <= 320.0 && boulder.getGathererCount() == 0) ||
-                (unit.unit()->isGatheringMinerals() && unit.unit()->getOrderTarget() == boulder.unit())) {
+            auto closestWorker = Util::getClosestUnit(boulder.getPosition(), PlayerState::Self,
+                                                      [&](auto &u) { return *u != unit && u->unit()->getOrderTarget() == boulder.unit() && u->getRole() == Role::Worker; });
+            if (closestWorker)
+                continue;
 
-                auto closestWorker = Util::getClosestUnit(boulder.getPosition(), PlayerState::Self, [&](auto &u) { return u->getRole() == Role::Worker; });
-
-                if (closestWorker && *closestWorker != unit && closestWorker->unit()->getOrderTarget() == boulder.unit())
-                    continue;
-
-                if (unit.unit()->getOrderTarget() != boulder.unit())
-                    unit.unit()->gather(boulder.unit());
-                unit.commandText = "Bouldering";
-                return true;
-            }
+            if (unit.unit()->getOrderTarget() != boulder.unit())
+                unit.unit()->gather(boulder.unit());
+            unit.commandText = "Bouldering";
+            return true;
         }
         return false;
     }

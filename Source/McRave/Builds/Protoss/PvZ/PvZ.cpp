@@ -9,22 +9,35 @@ using namespace McRave::BuildOrder::All;
 
 namespace McRave::BuildOrder::Protoss {
 
-    void defaultPvZ() {
-        inOpening =                                     true;
-        inBookSupply =                                  vis(Protoss_Pylon) < 2;
-        wallNat =                                       vis(Protoss_Nexus) >= 2;
-        wallMain =                                      false;
-        scout =                                         vis(Protoss_Gateway) > 0;
-        wantNatural =                                   false;
-        wantThird =                                     false;
-        proxy =                                         false;
-        hideTech =                                      false;
-        rush =                                          false;
-        transitionReady =                               false;
+    void defaultPvZ()
+    {
+        inOpening       = true;
+        inBookSupply    = vis(Protoss_Pylon) < 2;
+        wallNat         = vis(Protoss_Nexus) >= 2;
+        wallMain        = false;
+        scout           = vis(Protoss_Gateway) > 0;
+        wantNatural     = false;
+        wantThird       = false;
+        proxy           = false;
+        hideTech        = false;
+        rush            = false;
+        transitionReady = false;
 
-        gasLimit =                                      INT_MAX;
+        gasLimit = INT_MAX;
 
-        focusUnit =                                     UnitTypes::None;
+        focusUnit = UnitTypes::None;
+    }
+
+    int zealotsNeeded_PvZ()
+    {
+        if (Spy::enemyRush())
+            return 5;
+
+        if (currentOpener == P_ZCore)
+            return 1;
+        if (currentOpener == P_ZZCore)
+            return 2;
+        return 0;
     }
 
     void PvZ()
@@ -39,4 +52,4 @@ namespace McRave::BuildOrder::Protoss {
         if (currentBuild == P_FFE)
             PvZ_FFE();
     }
-}
+} // namespace McRave::BuildOrder::Protoss

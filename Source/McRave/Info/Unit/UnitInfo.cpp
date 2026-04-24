@@ -26,7 +26,8 @@ namespace McRave {
 
     namespace {
 
-        static map<Color, int> colorWidth = {{Colors::Red, -3}, {Colors::Orange, -2}, {Colors::Yellow, -1}, {Colors::Green, 0}, {Colors::Blue, 1}, {Colors::Purple, 2}};
+        static map<Color, int> colorWidth = {{Colors::Red, -3},   {Colors::Orange, -2}, {Colors::Yellow, -1}, {Colors::Green, 0}, {Colors::Blue, 1},
+                                             {Colors::Purple, 2}, {Colors::Black, 3},   {Colors::Grey, 4},    {Colors::White, 5}};
 
         Position getOvershootPosition(UnitInfo *unit, Position here)
         {
@@ -562,67 +563,64 @@ namespace McRave {
     // Execute a command
     void UnitInfo::setCommand(UnitCommandType cmd, Position here)
     {
+        // Try adding overshoot to non air units if they aren't pixel perfect, this seems to work great
+        if (!isFlying() && getPosition().getDistance(here) >= 2.0) {
+            auto dist = 2 + int(getPosition().getDistance(here) / 8.0);
+            here      = Util::shiftTowards(getPosition(), here, getPosition().getDistance(here) + dist);
+        }
+
         // Check if this is identical to last command
-        if (commandType == cmd && unit()->getLastCommand().getTargetPosition() == here && unit()->getLastCommandFrame() + 4 >= Broodwar->getFrameCount())
+        if ((commandType == cmd && commandPosition == here) || (unit()->getOrder() == Orders::Move && unit()->getOrderTargetPosition() == here))
             return;
 
-        if (isCommandable()) {
-            commandPosition = here;
-            commandType     = cmd;
+        commandPosition = here;
+        commandType     = cmd;
 
-            // Try adding overshoot to non air units if they aren't pixel perfect, this seems to work great
-            if (!isFlying() && getPosition().getDistance(here) >= 2.0) {
-                auto dist = 2 + int(getPosition().getDistance(here) / 8.0);
-                here      = Util::shiftTowards(getPosition(), here, getPosition().getDistance(here) + dist);
-            }
-
-            if (cmd == UnitCommandTypes::Move) {
-                here = getOvershootPosition(this, here);
-                unit()->move(here);
-            }
-            if (cmd == UnitCommandTypes::Right_Click_Position)
-                unit()->move(here);
-            if (cmd == UnitCommandTypes::Stop)
-                unit()->stop();
-            if (cmd == UnitCommandTypes::Burrow)
-                unit()->burrow();
-            if (cmd == UnitCommandTypes::Unburrow)
-                unit()->unburrow();
+        // Send a new command
+        if (cmd == UnitCommandTypes::Move) {
+            here = getOvershootPosition(this, here);
+            unit()->move(here);
         }
+        if (cmd == UnitCommandTypes::Right_Click_Position)
+            unit()->move(here);
     }
 
     void UnitInfo::setCommand(UnitCommandType cmd, UnitInfo &target)
     {
         // Check if this is identical to last command
-        if (commandType == cmd && unit()->getLastCommand().getTarget() == target.unit() && unit()->getLastCommandFrame() + 4 >= Broodwar->getFrameCount())
+        if ((commandType == cmd && commandTarget == target.unit()) || (unit()->getOrder() == Orders::AttackUnit && unit()->getOrderTarget() == target.unit()))
             return;
 
-        if (isCommandable()) {
-            commandPosition = target.getPosition();
-            commandType     = cmd;
+        commandTarget = target.unit();
+        commandType   = cmd;
 
-            if (cmd == UnitCommandTypes::Attack_Unit)
-                unit()->attack(target.unit());
-            else if (cmd == UnitCommandTypes::Right_Click_Unit)
-                unit()->rightClick(target.unit());
-        }
+        // Send a new command
+        if (cmd == UnitCommandTypes::Attack_Unit)
+            unit()->attack(target.unit());
+        else if (cmd == UnitCommandTypes::Right_Click_Unit)
+            unit()->rightClick(target.unit());
     }
 
     void UnitInfo::setCommand(UnitCommandType cmd)
     {
         // Check if this is identical to last command
-        if (commandType == cmd && unit()->getLastCommandFrame() + 4 >= Broodwar->getFrameCount())
+        if (commandType == cmd)
             return;
+        commandType = cmd;
 
-        if (isCommandable()) {
-            commandPosition = position;
-            commandType     = cmd;
-
-            if (cmd == UnitCommandTypes::Hold_Position)
-                unit()->holdPosition();
-            if (cmd == UnitCommandTypes::Stop)
-                unit()->stop();
-        }
+        // Send a new command
+        if (cmd == UnitCommandTypes::Hold_Position)
+            unit()->holdPosition();
+        if (cmd == UnitCommandTypes::Stop)
+            unit()->stop();
+        if (cmd == UnitCommandTypes::Burrow)
+            unit()->burrow();
+        if (cmd == UnitCommandTypes::Unburrow)
+            unit()->unburrow();
+        if (cmd == UnitCommandTypes::Siege)
+            unit()->siege();
+        if (cmd == UnitCommandTypes::Unsiege)
+            unit()->unsiege();
     }
 
     void UnitInfo::setCommand(TechType tech, Position here)
@@ -662,7 +660,7 @@ namespace McRave {
     // Check for ability to execute a command
     bool UnitInfo::canStartAttack()
     {
-        if (!hasTarget() || (!targetsFriendly() && getGroundDamage() == 0 && getAirDamage() == 0) || (getType() == UnitTypes::Zerg_Lurker && !isBurrowed()))
+        if (!hasTarget() || isSpellcaster() || (!targetsFriendly() && getGroundDamage() == 0 && getAirDamage() == 0) || (getType() == UnitTypes::Zerg_Lurker && !isBurrowed()))
             return false;
         auto &target = *getTarget().lock();
 

@@ -86,25 +86,11 @@ namespace McRave::Visuals {
             }
         };
         vector<FrameTest> frameTests;
-
-        bool commands    = true;
-        bool targets     = false;
-        bool builds      = true;
-        bool bweb        = false;
-        bool strengths   = false;
-        bool orders      = false;
-        bool states      = false;
-        bool resources   = false;
-        bool timers      = false;
-        bool scores      = true;
-        bool roles       = false;
-        bool stations    = false;
+        vector<DrawingType> enabledDrawings;
         bool gameFocused = false;
         bool bo_switch   = false;
-        bool clusters    = false;
-        bool formations  = false;
 
-        Diagnostic currentDiagnostic = Diagnostic::None;
+        Text::Enum textColor;
 
         double calculateFrameTime()
         {
@@ -128,33 +114,8 @@ namespace McRave::Visuals {
             return max(0.0, frameSum / double(frames)) / 1000.0;
         }
 
-        void drawStates(UnitInfo &unit)
-        {
-            int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-            width += -32;
-
-            if (unit.getRole() == Role::Combat) {
-                auto color = unit.getLocalState() == LocalState::Attack ? Text::Green : Text::Red;
-                Broodwar->drawTextMap(unit.getPosition() + Position(-width, -8), "L: %c%d", color, unit.getLocalState());
-            }
-
-            if (unit.getRole() == Role::Combat) {
-                auto color = unit.getGlobalState() == GlobalState::Attack ? Text::Green : Text::Red;
-                Broodwar->drawTextMap(unit.getPosition() + Position(-width, 0), "G: %c%d", color, unit.getGlobalState());
-            }
-
-            if (unit.getRole() == Role::Combat) {
-                auto color = unit.getSimState() == SimState::Win ? Text::Green : Text::Red;
-                Broodwar->drawTextMap(unit.getPosition() + Position(-width, 8), "S: %c%.2f", color, unit.getSimValue());
-            }
-        }
-
         void drawInformation()
         {
-            // BWAPIs green text doesn't point to the right color so this will be seen occasionally
-            int color     = Broodwar->self()->getColor();
-            int textColor = color == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
-
             // Reset the screenOffset for the performance tests
             screenOffset = 0;
 
@@ -165,97 +126,30 @@ namespace McRave::Visuals {
             Broodwar->drawTextScreen(472, 36, "%c%d:%02d", Text::Grey, minutes, seconds);
             Broodwar->drawTextScreen(512, 36, "%c%.2f", Text::Grey, calculateFrameTime());
 
-            // Builds
-            if (builds) {
-                Broodwar->drawTextScreen(432, 16, "%c%s: %c%s %s", Text::White, BuildOrder::getCurrentBuild().c_str(), Text::Grey, BuildOrder::getCurrentOpener().c_str(),
-                                         BuildOrder::getCurrentTransition().c_str());
-                Broodwar->drawTextScreen(432, 26, "%c%s: %c%s %s", Text::White, Spy::getEnemyBuild().c_str(), Text::Grey, Spy::getEnemyOpener().c_str(), Spy::getEnemyTransition().c_str());
-                Broodwar->drawTextScreen(160, 0, "%cExpanding", BuildOrder::shouldExpand() ? Text::White : Text::Grey);
-                Broodwar->drawTextScreen(160, 10, "%cRamping", BuildOrder::shouldRamp() ? Text::White : Text::Grey);
-                Broodwar->drawTextScreen(160, 20, "%cTeching", BuildOrder::getFirstFocusUnit() != UnitTypes::None ? Text::White : Text::Grey);
-            }
-
-            // Scores
-            if (scores) {
-                int offset = 0;
-                for (auto &type : UnitTypes::allUnitTypes()) {
-                    auto raceLen  = int(std::strlen(type.getRace().c_str())) + 1;
-                    auto shortStr = type.toString();
-                    shortStr.erase(0, raceLen);
-                    auto typeColor = BuildOrder::isUnitUnlocked(type) ? Text::White : Text::Grey;
-                    if (BuildOrder::isFocusUnit(type))
-                        typeColor = Text::Cyan;
-
-                    if ((total(type) > 0 && !type.isBuilding()) || BuildOrder::getCompositionPercentage(type) > 0.00) {
-                        Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d  %.2f [%d]", typeColor, shortStr.c_str(), vis(type), total(type), BuildOrder::getCompositionPercentage(type),
-                                                 BuildOrder::isUnitUnlocked(type));
-                        offset += 10;
-                    }
-                }
-                Broodwar->drawTextScreen(0, offset, "%c%s", Text::Grey, BuildOrder::getFirstFocusUnit().c_str());
-            }
-
             // Timers
-            if (timers) {
-                sort(frameTests.begin(), frameTests.end(), [&](auto &left, auto &right) { return left.average > right.average; });
+            sort(frameTests.begin(), frameTests.end(), [&](auto &left, auto &right) { return left.average > right.average; });
 
-                auto overall = 0.0;
-                for (auto &test : frameTests) {
-                    if (test.average > 0.25 || test.current > 10.0 || test.maximum > 25.0) {
-                        Broodwar->drawTextScreen(230, screenOffset, "%c%s", Text::White, test.name.c_str());
-                        Broodwar->drawTextScreen(322, screenOffset, "%c%.1fms, %.1fms, %.1fms", Text::White, test.average, test.current, test.maximum);
-                        screenOffset += 10;
-                    }
-                    overall += test.current;
+            auto overall = 0.0;
+            for (auto &test : frameTests) {
+                if (test.average > 0.25 || test.current > 10.0 || test.maximum > 25.0) {
+                    Broodwar->drawTextScreen(230, screenOffset, "%c%s", Text::White, test.name.c_str());
+                    Broodwar->drawTextScreen(322, screenOffset, "%c%.1fms, %.1fms, %.1fms", Text::White, test.average, test.current, test.maximum);
+                    screenOffset += 10;
                 }
-
-                if (overall > 10000) {
-                    Broodwar << "10s DQ at: " << Util::getTime() << endl;
-                    LOG("10s DQ");
-                }
-                else if (overall > 1000) {
-                    Broodwar << "1s DQ at: " << Util::getTime() << endl;
-                    LOG("1s DQ");
-                }
-                else if (overall > 55) {
-                    Broodwar << "55ms DQ at: " << Util::getTime() << endl;
-                    LOG("55ms DQ");
-                }
+                overall += test.current;
             }
 
-            // Resource
-            if (resources) {
-                for (auto &r : Resources::getMyMinerals()) {
-                    auto &resource = *r;
-                    if (resource.isThreatened())
-                        drawCircle(resource.getPosition(), 5, Colors::Red);
-                    Broodwar->drawTextMap(resource.getPosition() + Position(-8, 8), "%c%d", Text::GreyBlue, (*r).getRemainingResources());
-                    Broodwar->drawTextMap(resource.getPosition() - Position(32, 8), "%cGatherers: %d", textColor, resource.getGathererCount());
-                    Broodwar->drawTextMap(resource.getPosition() - Position(32, 16), "%cState: %d", textColor, (int)resource.getResourceState());
-                    Broodwar->drawLineMap(resource.getPosition(), resource.getStation()->getBase()->Center(), Colors::Blue);
-                }
-                for (auto &r : Resources::getMyGas()) {
-                    auto &resource = *r;
-                    if (resource.isThreatened())
-                        drawCircle(resource.getPosition(), 5, Colors::Red);
-                    Broodwar->drawTextMap(resource.getPosition() + Position(-8, 8), "%c%d", Text::Green, (*r).getRemainingResources());
-                    Broodwar->drawTextMap(resource.getPosition() - Position(32, 8), "%cGatherers: %d", textColor, resource.getGathererCount());
-                    Broodwar->drawTextMap(resource.getPosition() - Position(32, 16), "%cState: %d", textColor, (int)resource.getResourceState());
-                    Broodwar->drawLineMap(resource.getPosition(), resource.getStation()->getBase()->Center(), Colors::Green);
-                }
-
-                Broodwar->drawTextScreen(Position(0, 80), "%cReserved: %d", Text::GreyBlue, Producing::getReservedMineral());
-                Broodwar->drawTextScreen(Position(0, 90), "%cReserved: %d", Text::Green, Producing::getReservedGas());
-                Broodwar->drawTextScreen(Position(0, 100), "%cPlanned: %d", Text::GreyBlue, Planning::getPlannedMineral());
-                Broodwar->drawTextScreen(Position(0, 110), "%cPlanned: %d", Text::Green, Planning::getPlannedGas());
-                Broodwar->drawTextScreen(Position(0, 120), "%cUpgrading: %d", Text::GreyBlue, Upgrading::getReservedMineral());
-                Broodwar->drawTextScreen(Position(0, 130), "%cUpgrading: %d", Text::Green, Upgrading::getReservedGas());
-
-                int offset = 0;
-                for (auto &building : Planning::getPlannedBuildings()) {
-                    Broodwar->drawTextScreen(Position(0, 120 + offset), "%s", building.second.c_str());
-                    offset += 10;
-                }
+            if (overall > 10000) {
+                Broodwar << "10s DQ at: " << Util::getTime() << endl;
+                LOG("10s DQ");
+            }
+            else if (overall > 1000) {
+                Broodwar << "1s DQ at: " << Util::getTime() << endl;
+                LOG("1s DQ");
+            }
+            else if (overall > 55) {
+                Broodwar << "55ms DQ at: " << Util::getTime() << endl;
+                LOG("55ms DQ");
             }
 
             if (bo_switch) {
@@ -275,123 +169,54 @@ namespace McRave::Visuals {
             }
 
             // BWEB
-            if (bweb) {
+            if (isDrawingEnabled(DrawingType::BWEB)) {
                 BWEB::Map::draw();
             }
         }
 
-        void drawAllyInfo()
+        void drawOrdersAndCommands()
         {
-            for (auto &u : Units::getUnits(PlayerState::Self)) {
-                UnitInfo &unit = *u;
+            for (auto &state : {PlayerState::Self, PlayerState::Enemy, PlayerState::Ally}) {
+                for (auto &u : Units::getUnits(state)) {
+                    UnitInfo &unit = *u;
 
-                int color     = unit.getPlayer()->getColor();
-                int textColor = color == 185 ? textColor = Text::DarkGreen : unit.getPlayer()->getTextColor();
+                    int color     = unit.getPlayer()->getColor();
+                    int textColor = color == 185 ? textColor = Text::DarkGreen : unit.getPlayer()->getTextColor();
 
-                if (unit.unit()->isLoaded())
-                    continue;
+                    if (unit.unit()->isLoaded())
+                        continue;
 
-                if (states)
-                    drawStates(unit);
-
-                if (targets) {
-                    if (unit.hasTarget())
-                        Visuals::drawLine(unit.getTarget().lock()->getPosition(), unit.getPosition(), color);
-                }
-
-                if (resources) {
-                    if (unit.hasResource())
-                        Visuals::drawLine(unit.getResource().lock()->getPosition(), unit.getPosition(), color);
-                }
-
-                if (strengths) {
-                    if (unit.getVisibleGroundStrength() > 0.0 || unit.getVisibleAirStrength() > 0.0) {
-                        Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "Grd: %c %.2f", Text::Brown, unit.getVisibleGroundStrength());
-                        Broodwar->drawTextMap(unit.getPosition() + Position(5, 2), "Air: %c %.2f", Text::Blue, unit.getVisibleAirStrength());
-                    }
-                }
-
-                if (commands) {
-                    if (unit.commandText != "") {
-                        const auto color  = Text::White;
-                        const auto height = unit.getType().height() / 2;
-                        const auto pText  = unit.getPosition() + Position(-4 * int(unit.commandText.length() / 2), height);
-                        Broodwar->drawTextMap(pText, "%c%s", color, unit.commandText.c_str());
-                        drawLine(unit.getPosition(), unit.getCommandPosition(), color);
-                    }
-                }
-
-                if (orders) {
-                    int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-                    if (unit.getRole() == Role::Production && (unit.getType() == UnitTypes::Zerg_Egg || (unit.unit()->isTraining() && !unit.unit()->getTrainingQueue().empty()))) {
-                        auto trainType  = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType().c_str() : unit.unit()->getTrainingQueue().front().c_str();
-                        auto trainOrder = unit.getType() == UnitTypes::Zerg_Egg ? "Morphing" : "Training";
-                        Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, trainOrder);
-                        Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, trainType);
-                    }
-                    else if (unit.unit() && unit.unit()->exists() && unit.unit()->isCompleted()) {
-                        if (unit.unit()->getOrder() != Orders::Nothing && unit.unit()->getOrderTarget()) {
-                            drawLine(unit.getPosition(), unit.unit()->getOrderTarget()->getPosition(), color);
-                            Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, unit.unit()->getOrder().c_str());
+                    if (isDrawingEnabled(DrawingType::Commands)) {
+                        if (unit.commandText != "") {
+                            const auto color  = Text::White;
+                            const auto height = unit.getType().height() / 2;
+                            const auto pText  = unit.getPosition() + Position(-4 * int(unit.commandText.length() / 2), height);
+                            Broodwar->drawTextMap(pText, "%c%s", color, unit.commandText.c_str());
+                            drawLine(unit.getPosition(), unit.getCommandPosition(), color);
                         }
-                        if (unit.unit()->getSecondaryOrder() != Orders::Nothing)
-                            Broodwar->drawTextMap(unit.getPosition() + Position(width, -16), "%c%s", textColor, unit.unit()->getOrder().c_str());
-                        if (unit.unit()->isUpgrading())
-                            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, unit.unit()->getUpgrade().c_str());
-                        else if (unit.unit()->isResearching())
-                            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, unit.unit()->getTech().c_str());
                     }
-                }
 
-                if (roles) {
-                    int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-                    Broodwar->drawTextMap(unit.getPosition() + Position(width, 16), "%c%d", Text::White, unit.getRole());
-                }
-
-                if (clusters) {
-                    Combat::Clusters::drawClusters();
-                }
-
-                if (formations) {
-                    Combat::Formations::drawFormations();
-                }
-            }
-        }
-
-        void drawEnemyInfo()
-        {
-            for (auto &u : Units::getUnits(PlayerState::Enemy)) {
-                UnitInfo &unit = *u;
-
-                int color     = unit.getPlayer()->getColor();
-                int textColor = color == 185 ? textColor = Text::DarkGreen : unit.getPlayer()->getTextColor();
-
-                if (targets) {
-                    if (unit.hasTarget())
-                        Visuals::drawLine(unit.getTarget().lock()->getPosition(), unit.getPosition(), color);
-                }
-
-                if (strengths) {
-                    if (unit.getVisibleGroundStrength() > 0.0 || unit.getVisibleAirStrength() > 0.0) {
-                        Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "Grd: %c %.2f", Text::Brown, unit.getVisibleGroundStrength());
-                        Broodwar->drawTextMap(unit.getPosition() + Position(5, 2), "Air: %c %.2f", Text::Blue, unit.getVisibleAirStrength());
+                    if (isDrawingEnabled(DrawingType::Orders)) {
+                        int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
+                        if (unit.getRole() == Role::Production && (unit.getType() == UnitTypes::Zerg_Egg || (unit.unit()->isTraining() && !unit.unit()->getTrainingQueue().empty()))) {
+                            auto trainType  = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType().c_str() : unit.unit()->getTrainingQueue().front().c_str();
+                            auto trainOrder = unit.getType() == UnitTypes::Zerg_Egg ? "Morphing" : "Training";
+                            Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, trainOrder);
+                            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, trainType);
+                        }
+                        else if (unit.unit() && unit.unit()->exists() && unit.unit()->isCompleted()) {
+                            if (unit.unit()->getOrder() != Orders::Nothing && unit.unit()->getOrderTarget()) {
+                                drawLine(unit.getPosition(), unit.unit()->getOrderTarget()->getPosition(), color);
+                                Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, unit.unit()->getOrder().c_str());
+                            }
+                            if (unit.unit()->getSecondaryOrder() != Orders::Nothing)
+                                Broodwar->drawTextMap(unit.getPosition() + Position(width, -16), "%c%s", textColor, unit.unit()->getOrder().c_str());
+                            if (unit.unit()->isUpgrading())
+                                Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, unit.unit()->getUpgrade().c_str());
+                            else if (unit.unit()->isResearching())
+                                Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, unit.unit()->getTech().c_str());
+                        }
                     }
-                }
-
-                if (orders) {
-                    if (unit.unit() && unit.unit()->exists())
-                        Broodwar->drawTextMap(unit.getPosition(), "%c%s", textColor, unit.unit()->getOrder().c_str());
-                }
-            }
-        }
-
-        void drawStations()
-        {
-            if (stations) {
-                for (auto &station : Stations::getStations(PlayerState::Self)) {
-                    auto topLeft = Position(station->getBase()->Location());
-                    Broodwar->drawTextMap(topLeft, "%d", Stations::needGroundDefenses(station));
-                    Broodwar->drawTextMap(topLeft + Position(0, 16), "%d", Stations::needAirDefenses(station));
                 }
             }
         }
@@ -437,15 +262,28 @@ namespace McRave::Visuals {
         }
     } // namespace
 
+    bool isDrawingEnabled(DrawingType type) { return Util::contains(enabledDrawings, type); }
+
+    Text::Enum getTextColor() {}
+
     void centerCameraOn(Position here) { Broodwar->setScreenPosition(here - Position(320, 180)); }
+
+    void onStart()
+    {
+        // TODO: This is obviously not doing anything, but I wrote it at some point for "fixing" dark green, but this doesn't work
+        // BWAPIs green text doesn't point to the right color so this will be seen occasionally
+        int color     = Broodwar->self()->getColor();
+        int textColor = color == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
+
+        enabledDrawings.push_back(DrawingType::Builds);
+        enabledDrawings.push_back(DrawingType::Scores);
+    }
 
     void onFrame()
     {
         getCurrentWindow();
         drawInformation();
-        drawAllyInfo();
-        drawEnemyInfo();
-        drawStations();
+        drawOrdersAndCommands();
         checkSpeed();
     }
 
@@ -466,6 +304,16 @@ namespace McRave::Visuals {
 
     void startPerfTest() { start = chrono::high_resolution_clock::now(); }
 
+    void toggleDrawing(DrawingType type)
+    {
+        auto itr = Util::find(enabledDrawings, type);
+        if (itr != enabledDrawings.end()) {
+            enabledDrawings.erase(itr);
+        }
+        else
+            enabledDrawings.push_back(type);
+    }
+
     void onSendText(string text)
     {
         if (bo_switch) {
@@ -484,31 +332,31 @@ namespace McRave::Visuals {
         }
 
         if (text == "/commands")
-            commands = !commands;
+            toggleDrawing(DrawingType::Commands);
         else if (text == "/targets")
-            targets = !targets;
+            toggleDrawing(DrawingType::Targets);
         else if (text == "/states")
-            states = !states;
+            toggleDrawing(DrawingType::States);
         else if (text == "/strengths")
-            strengths = !strengths;
+            toggleDrawing(DrawingType::Strengths);
         else if (text == "/builds")
-            builds = !builds;
+            toggleDrawing(DrawingType::Builds);
         else if (text == "/bweb")
-            bweb = !bweb;
+            toggleDrawing(DrawingType::BWEB);
         else if (text == "/orders")
-            orders = !orders;
+            toggleDrawing(DrawingType::Orders);
         else if (text == "/resources")
-            resources = !resources;
+            toggleDrawing(DrawingType::Resources);
         else if (text == "/timers")
-            timers = !timers;
+            toggleDrawing(DrawingType::Timers);
         else if (text == "/roles")
-            roles = !roles;
+            toggleDrawing(DrawingType::Roles);
+        else if (text == "/clusters")
+            toggleDrawing(DrawingType::Clusters);
+        else if (text == "/formations")
+            toggleDrawing(DrawingType::Formations);
         else if (text == "/bo")
             bo_switch = !bo_switch;
-        else if (text == "/clusters")
-            clusters = !clusters;
-        else if (text == "/formations")
-            formations = !formations;
         else
             Broodwar->sendText("%s", text.c_str());
         return;
@@ -533,8 +381,6 @@ namespace McRave::Visuals {
             }
         }
     }
-
-    void drawDiagnostic(Diagnostic diagnostic, Position p) {}
 
     void drawTextBox(Position here, vector<string> text)
     {

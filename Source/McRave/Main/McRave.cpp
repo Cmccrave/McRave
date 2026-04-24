@@ -41,6 +41,7 @@ using namespace McRave;
 
 void McRaveModule::onStart()
 {
+    Visuals::onStart();
     Util::onStart();
     Players::onStart();
     Terrain::onStart();

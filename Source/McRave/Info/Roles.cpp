@@ -33,7 +33,7 @@ namespace McRave::Roles {
         UnitInfo *proxyCombatUnit;
         UnitInfo *proxyThreateningUnit;
 
-        bool validCombatWorker(const shared_ptr<UnitInfo>& unit)
+        bool validCombatWorker(const shared_ptr<UnitInfo> &unit)
         {
             if (unit->getBuildPosition().isValid()) {
                 return false;
@@ -299,7 +299,7 @@ namespace McRave::Roles {
 
             // Proxy structures
             proxyBuilding          = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy,
-                                                      [&](auto &u) { return u->isProxy() && u->getType().isBuilding() && !u->canAttackGround() && !u->canAttackAir(); });
+                                                 [&](auto &u) { return u->isProxy() && u->getType().isBuilding() && !u->canAttackGround() && !u->canAttackAir(); });
             proxyDangerousBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) {
                 return u->isProxy() && proxyTargeting.find(u->getType()) != proxyTargeting.end() &&
                        (u->canAttackGround() || u->canAttackAir() || Terrain::inTerritory(PlayerState::Self, u->getPosition()));
@@ -315,7 +315,7 @@ namespace McRave::Roles {
 
             // Non worker proxy units
             proxyCombatUnit      = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy,
-                                                        [&](auto &u) { return u->isProxy() && !u->getType().isWorker() && !u->getType().isBuilding() && u->canAttackGround(); });
+                                                   [&](auto &u) { return u->isProxy() && !u->getType().isWorker() && !u->getType().isBuilding() && u->canAttackGround(); });
             proxyThreateningUnit = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy, [&](auto &u) { return u->isThreatening() && u->canAttackGround(); });
 
             // Pull workers
@@ -407,9 +407,25 @@ namespace McRave::Roles {
             updateDefaultRoles();
             updateForcedRoles();
         }
+
+        void drawRoles()
+        {
+            if (!Visuals::isDrawingEnabled(DrawingType::Roles))
+                return;
+
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &unit = *u;
+                int width      = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
+                Broodwar->drawTextMap(unit.getPosition() + Position(width, 16), "%c%d", Text::White, unit.getRole());
+            }
+        }
     } // namespace
 
-    void onFrame() { updateSelf(); }
+    void onFrame()
+    {
+        updateSelf();
+        drawRoles();
+    }
 
     int getRoleCount(Role role) { return myRoles[role]; }
 } // namespace McRave::Roles

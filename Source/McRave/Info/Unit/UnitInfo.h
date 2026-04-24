@@ -76,7 +76,6 @@ namespace McRave {
         Position formation          = Positions::Invalid;
         Position navigation         = Positions::Invalid;
         Position goal               = Positions::Invalid;
-        Position commandPosition    = Positions::Invalid;
         Position surroundPosition   = Positions::Invalid;
         Position interceptPosition  = Positions::Invalid;
         Position trapPosition       = Positions::Invalid;
@@ -84,6 +83,9 @@ namespace McRave {
         WalkPosition walkPosition   = WalkPositions::Invalid;
         TilePosition tilePosition   = TilePositions::Invalid;
         TilePosition buildPosition  = TilePositions::Invalid;
+
+        Unit commandTarget          = nullptr;
+        Position commandPosition    = Positions::Invalid;
         UnitCommandType commandType = UnitCommandTypes::None;
 
         BWEB::Path marchPath;
@@ -96,6 +98,7 @@ namespace McRave {
         void checkThreatening();
         void checkProxy();
         void checkCompletion();
+        bool canRepeatCommand();
 
     public:
         UnitInfo();

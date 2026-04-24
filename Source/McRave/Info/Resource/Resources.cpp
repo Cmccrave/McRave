@@ -2,6 +2,9 @@
 
 #include "Info/Resource/ResourceInfo.h"
 #include "Info/Unit/UnitInfo.h"
+#include "Macro/Planning/Planning.h"
+#include "Macro/Producing/Producing.h"
+#include "Macro/Upgrading/Upgrading.h"
 #include "Main/Common.h"
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
@@ -176,6 +179,58 @@ namespace McRave::Resources {
             // Reset to far if no threat
             if (!threat)
                 drillFar = false;
+        }
+
+        void updateDrawing()
+        {
+            if (!Visuals::isDrawingEnabled(DrawingType::Resources))
+                return;
+
+            auto textColor = Broodwar->self()->getTextColor();
+
+            // Draw information of each mineral
+            for (auto &r : Resources::getMyMinerals()) {
+                auto &resource = *r;
+                if (resource.isThreatened())
+                    Visuals::drawCircle(resource.getPosition(), 5, Colors::Red);
+                Broodwar->drawTextMap(resource.getPosition() + Position(-8, 8), "%c%d", Text::GreyBlue, (*r).getRemainingResources());
+                Broodwar->drawTextMap(resource.getPosition() - Position(32, 8), "%cGatherers: %d", textColor, resource.getGathererCount());
+                Broodwar->drawTextMap(resource.getPosition() - Position(32, 16), "%cState: %d", textColor, (int)resource.getResourceState());
+                Broodwar->drawLineMap(resource.getPosition(), resource.getStation()->getBase()->Center(), Colors::Blue);
+            }
+
+            // Draw information of each gas
+            for (auto &r : Resources::getMyGas()) {
+                auto &resource = *r;
+                if (resource.isThreatened())
+                    Visuals::drawCircle(resource.getPosition(), 5, Colors::Red);
+                Broodwar->drawTextMap(resource.getPosition() + Position(-8, 8), "%c%d", Text::Green, (*r).getRemainingResources());
+                Broodwar->drawTextMap(resource.getPosition() - Position(32, 8), "%cGatherers: %d", textColor, resource.getGathererCount());
+                Broodwar->drawTextMap(resource.getPosition() - Position(32, 16), "%cState: %d", textColor, (int)resource.getResourceState());
+                Broodwar->drawLineMap(resource.getPosition(), resource.getStation()->getBase()->Center(), Colors::Green);
+            }
+
+            // Draw resource reservations
+            Broodwar->drawTextScreen(Position(0, 80), "%cReserved: %d", Text::GreyBlue, Producing::getReservedMineral());
+            Broodwar->drawTextScreen(Position(0, 90), "%cReserved: %d", Text::Green, Producing::getReservedGas());
+            Broodwar->drawTextScreen(Position(0, 100), "%cPlanned: %d", Text::GreyBlue, Planning::getPlannedMineral());
+            Broodwar->drawTextScreen(Position(0, 110), "%cPlanned: %d", Text::Green, Planning::getPlannedGas());
+            Broodwar->drawTextScreen(Position(0, 120), "%cUpgrading: %d", Text::GreyBlue, Upgrading::getReservedMineral());
+            Broodwar->drawTextScreen(Position(0, 130), "%cUpgrading: %d", Text::Green, Upgrading::getReservedGas());
+
+            // Move this to planning drawings at some point
+            int offset = 0;
+            for (auto &building : Planning::getPlannedBuildings()) {
+                Broodwar->drawTextScreen(Position(0, 120 + offset), "%s", building.second.c_str());
+                offset += 10;
+            }
+
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                UnitInfo &unit = *u;
+                int color      = unit.getPlayer()->getColor();
+                if (unit.hasResource())
+                    Visuals::drawLine(unit.getResource().lock()->getPosition(), unit.getPosition(), color);
+            }
         }
     } // namespace
 

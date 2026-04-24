@@ -327,6 +327,9 @@ namespace McRave::Combat {
                         holdChoke = false;
                 }
             }
+
+            if (Spy::getEnemyTransition() == U_WorkerRush)
+                holdChoke = true;
         }
     } // namespace
 

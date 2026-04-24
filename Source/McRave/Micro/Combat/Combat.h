@@ -1,46 +1,43 @@
 #pragma once
-#include "Main/Common.h"
 #include "BWEB.h"
+#include "Main/Common.h"
 
 namespace McRave::Combat {
 
-    enum class Shape {
-        None, Concave, Line, Box, Choke
-    };
+    enum class Shape { None, Concave, Line, Box, Choke };
 
-    enum class CommandShare {
-        None, Exact, Parallel
-    };
+    enum class CommandShare { None, Exact, Parallel };
 
     struct ClusterNode {
-        int id = 0;
+        int id                   = 0;
         BWAPI::Position position = BWAPI::Positions::Invalid;
-        UnitInfo * unit;
+        UnitInfo *unit;
     };
 
     struct Cluster {
         BWAPI::Position avgPosition, marchPosition, retreatPosition, marchNavigation, retreatNavigation;
         std::map<BWAPI::UnitType, int> typeCounts;
-        std::vector<UnitInfo*> units;
+        std::vector<UnitInfo *> units;
         std::weak_ptr<UnitInfo> commander;
         CommandShare commandShare;
         LocalState state;
         Shape shape;
         double spacing = 32.0;
-        double radius = 320.0;
+        double radius  = 320.0;
         BWAPI::Color color;
         BWEB::Path marchPath, retreatPath;
 
-        Cluster(BWAPI::Position _avg, BWAPI::Position _march, BWAPI::Position _retreat, BWAPI::UnitType _t) {
-            marchPosition = _march;
+        Cluster(BWAPI::Position _avg, BWAPI::Position _march, BWAPI::Position _retreat, BWAPI::UnitType _t)
+        {
+            marchPosition   = _march;
             retreatPosition = _retreat;
-            typeCounts[_t] = 1;
+            typeCounts[_t]  = 1;
         }
-        Cluster() {};
+        Cluster(){};
     };
 
     struct Formation {
-        Cluster* cluster;
+        Cluster *cluster;
         BWAPI::Position center;
         BWAPI::Position start;
         double radius, leash, angle;
@@ -51,15 +48,13 @@ namespace McRave::Combat {
 
     namespace Formations {
         void onFrame();
-        std::vector<Formation>& getFormations();
-        void drawFormations();
-    }
+        std::vector<Formation> &getFormations();
+    } // namespace Formations
     namespace Clusters {
         void onFrame();
-        std::vector<Cluster>& getClusters();
-        bool canDecimate(UnitInfo& unit, UnitInfo& target, bool logData = false);
-        void drawClusters();
-    }
+        std::vector<Cluster> &getClusters();
+        bool canDecimate(UnitInfo &unit, UnitInfo &target, bool logData = false);
+    } // namespace Clusters
 
     namespace Simulation {
         void onFrame();
@@ -68,7 +63,7 @@ namespace McRave::Combat {
     namespace State {
         void onFrame();
         bool isStaticRetreat(BWAPI::UnitType);
-    }
+    } // namespace State
 
     namespace Decision {
         void onFrame();
@@ -82,9 +77,9 @@ namespace McRave::Combat {
         void onFrame();
     }
 
-    const BWEM::ChokePoint * getDefendChoke();
-    const BWEM::Area * getDefendArea();
-    const BWEB::Station * getDefendStation();
+    const BWEM::ChokePoint *getDefendChoke();
+    const BWEM::Area *getDefendArea();
+    const BWEB::Station *getDefendStation();
 
     BWAPI::Position getAttackPosition();
     BWAPI::Position getDefendPosition();
@@ -95,4 +90,4 @@ namespace McRave::Combat {
     void onFrame();
     void onStart();
     bool holdAtChoke();
-}
+} // namespace McRave::Combat

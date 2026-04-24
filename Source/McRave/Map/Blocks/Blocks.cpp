@@ -61,9 +61,13 @@ namespace McRave::Blocks {
             if (Spy::getEnemyTransition() == Z_3HatchMuta && Util::getTime() > Time(6, 15))
                 return 2 - count;
 
-            // Fallback
-            if (Spy::enemyFastExpand() && !Spy::enemyPressure() && !Spy::enemyRush() && Util::getTime() > Time(6, 30))
-                return 2 - count;
+            // Make mutas as we see them
+            auto mutaBuild = Spy::getEnemyTransition().find("Muta") != string::npos ||
+                             Players::getTotalCount(PlayerState::Enemy, Zerg_Spire, Zerg_Mutalisk, Zerg_Scourge, Zerg_Greater_Spire, Zerg_Guardian, Zerg_Devourer) > 0;
+            if (Spy::enemyFastExpand() && !Spy::enemyPressure() && !Spy::enemyRush()) {
+                if (mutaBuild && Util::getTime() > Time(6, 30))
+                    return 2 - count;
+            }
         }
         return 0;
     }

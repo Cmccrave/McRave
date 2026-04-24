@@ -67,6 +67,13 @@ namespace McRave::Combat::Clusters {
             auto matching = [&](auto &parent, auto &child) {
                 if (child.unit->getType() == Zerg_Queen)
                     return false;
+                if (child.unit->getType() == Terran_Medic) {
+                    if (child.unit->hasTarget(); auto target = child.unit->getTarget().lock()) {
+                        if (parent.unit == &*target)
+                            return true;
+                    }
+                    return false;
+                }
 
                 auto matchedGoal  = parent.unit->getGoal() == child.unit->getGoal();
                 auto matchedStrat = parent.unit->getGlobalState() == child.unit->getGlobalState();
@@ -133,8 +140,8 @@ namespace McRave::Combat::Clusters {
         {
             // Check if a commander previously existed within a similar cluster for flying units
             auto nextCommander = Util::getClosestUnit(cluster.avgPosition, PlayerState::Self, [&](auto &u) {
-                return u->isFlying() && !u->getType().isBuilding() && !u->getType().isWorker() && find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() &&
-                       find(previousCommanders.begin(), previousCommanders.end(), u) != previousCommanders.end();
+                return u->isFlying() && !u->targetsFriendly() && !u->getType().isBuilding() && !u->getType().isWorker() &&
+                       find(cluster.units.begin(), cluster.units.end(), &*u) != cluster.units.end() && find(previousCommanders.begin(), previousCommanders.end(), u) != previousCommanders.end();
             });
 
             // Get closest unit to centroid
@@ -162,11 +169,7 @@ namespace McRave::Combat::Clusters {
             cluster.marchPath   = commander->getMarchPath();
             cluster.retreatPath = commander->getRetreatPath();
 
-            const auto validPathPoint = [&](auto &p) {
-                auto altitude  = max(0.0, (cluster.units.size() * 8.0) - mapBWEM.GetMiniTile(WalkPosition(p)).Altitude());
-                auto distExtra = (!Util::isAdjacentUsed(p, 3) * 32.0) + (!Util::isAdjacentUnwalkable(p, 3) * 32.0);
-                return p.getDistance(commander->getPosition()) >= dist + distExtra + altitude;
-            };
+            const auto validPathPoint = [&](auto &p) { return p.getDistance(commander->getPosition()) >= dist; };
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.marchNavigation = cluster.marchPosition;
@@ -183,6 +186,11 @@ namespace McRave::Combat::Clusters {
             // Remove the center to the tile from Util function above
             cluster.marchNavigation -= Position(16, 16);
             cluster.retreatNavigation -= Position(16, 16);
+
+            // Offset by commander?
+            auto pixelDiff = (commander->getPosition() % 32);
+            cluster.marchNavigation += pixelDiff;
+            cluster.retreatNavigation += pixelDiff;
         }
 
         void fixNavigations() {}
@@ -282,6 +290,35 @@ namespace McRave::Combat::Clusters {
                 }
             }
         }
+
+        void drawClusters()
+        {
+            if (!Visuals::isDrawingEnabled(DrawingType::Clusters))
+                return;
+
+            for (auto &cluster : clusters) {
+                if (cluster.commander.expired())
+                    continue;
+
+                if (auto cmder = cluster.commander.lock()) {
+                    for (auto &unit : cluster.units) {
+                        Visuals::drawLine(unit->getPosition(), cmder->getPosition(), cluster.color);
+                        unit->circle(cluster.color);
+                    }
+                }
+
+                Visuals::drawPath(cluster.marchPath);
+                Visuals::drawPath(cluster.retreatPath);
+
+                // March
+                Visuals::drawCircle(cluster.marchNavigation, 8, Colors::Green);
+                Visuals::drawLine(cluster.marchNavigation, cluster.marchPosition, Colors::Green);
+
+                // Retreat
+                Visuals::drawCircle(cluster.retreatNavigation, 6, Colors::Red);
+                Visuals::drawLine(cluster.retreatNavigation, cluster.retreatPosition, Colors::Red);
+            }
+        }
     } // namespace
 
     void onFrame()
@@ -292,31 +329,7 @@ namespace McRave::Combat::Clusters {
         shapeClusters();
         finishClusters();
         fixNavigations();
-    }
-
-    void drawClusters()
-    {
-        for (auto &cluster : clusters) {
-            if (auto cmder = cluster.commander.lock()) {
-                for (auto &unit : cluster.units) {
-                    Visuals::drawLine(unit->getPosition(), cmder->getPosition(), cluster.color);
-                    unit->circle(cluster.color);
-                }
-            }
-
-            Visuals::drawPath(cluster.marchPath);
-            Visuals::drawPath(cluster.retreatPath);
-
-            // March
-            Visuals::drawCircle(cluster.marchNavigation, 8, Colors::Green);
-            Visuals::drawLine(cluster.marchNavigation, cluster.marchPosition, Colors::Green);
-
-            // Retreat
-            Visuals::drawCircle(cluster.retreatNavigation, 6, Colors::Red);
-            Visuals::drawLine(cluster.retreatNavigation, cluster.retreatPosition, Colors::Red);
-
-            // Broodwar->drawTextMap(cluster.marchNavigation, "%d", mapBWEM.GetMiniTile(WalkPosition(cluster.marchNavigation)).Altitude());
-        }
+        drawClusters();
     }
 
     vector<Cluster> &getClusters() { return clusters; }

@@ -33,8 +33,8 @@ namespace McRave::BuildOrder::Protoss {
         // Pumping
         protossUnitPump[Protoss_Probe]        = true;
         protossUnitPump[Protoss_Zealot]       = total(Protoss_Zealot) < zealotsNeeded_PvP();
-        protossUnitPump[Protoss_Dragoon]      = true;
-        protossUnitPump[Protoss_Dark_Templar] = com(Protoss_Gateway) > 0 && com(Protoss_Templar_Archives) > 0 && total(Protoss_Dark_Templar) < 2;
+        protossUnitPump[Protoss_Dragoon]      = com(Protoss_Templar_Archives) == 0 || total(Protoss_Dark_Templar) >= 4;
+        protossUnitPump[Protoss_Dark_Templar] = total(Protoss_Dark_Templar) < 4;
     }
 
     void PvP_2G_Robo()

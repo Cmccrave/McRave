@@ -54,6 +54,18 @@ namespace McRave::BuildOrder {
                 Zerg::unlocks();
             }
         }
+
+        void updateDrawing()
+        {
+            if (!Visuals::isDrawingEnabled(DrawingType::Builds))
+                return;
+
+            Broodwar->drawTextScreen(432, 16, "%c%s: %c%s %s", Text::White, currentBuild.c_str(), Text::Grey, currentOpener.c_str(), currentTransition.c_str());
+            Broodwar->drawTextScreen(432, 26, "%c%s: %c%s %s", Text::White, Spy::getEnemyBuild().c_str(), Text::Grey, Spy::getEnemyOpener().c_str(), Spy::getEnemyTransition().c_str());
+            Broodwar->drawTextScreen(160, 0, "%cExpanding", expandDesired ? Text::White : Text::Grey);
+            Broodwar->drawTextScreen(160, 10, "%cRamping", rampDesired ? Text::White : Text::Grey);
+            Broodwar->drawTextScreen(160, 20, "%cTeching", focusUnit != UnitTypes::None ? Text::White : Text::Grey);
+        }
     } // namespace
 
     int getGasQueued()
@@ -318,6 +330,7 @@ namespace McRave::BuildOrder {
     {
         Visuals::startPerfTest();
         updateBuild();
+        updateDrawing();
         Visuals::endPerfTest("BuildOrder");
     }
 

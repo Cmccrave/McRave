@@ -180,17 +180,6 @@ namespace McRave::Command {
                 return true;
             }
         }
-
-        // Block vulture runby
-        // else if (unit.getType() == Zerg_Zergling && Combat::State::isStaticRetreat(Zerg_Zergling)) {
-        //    Visuals::drawLine(unit.getPosition(), unit.getFormation(), Colors::Green);
-        //    if (unit.hasTarget(); auto target = unit.getTarget().lock()) {
-        //        if (target->getType() == Terran_Vulture && target->isThreatening() && !target->isWithinRange(unit)) {
-        //            unit.setCommand(Hold_Position);
-        //            return true;
-        //        }
-        //    }
-        //}
         return false;
     }
 
@@ -379,7 +368,6 @@ namespace McRave::Command {
             auto clickToTrap = unit.attemptingTrap() && unit.getPosition().getDistance(unit.getTrapPosition()) < 160.0;
             if (clickToTrap) {
                 unit.setCommand(Move, unit.getTrapPosition());
-                Visuals::drawCircle(unit.getTrapPosition(), 8, Colors::Purple, true);
                 unit.commandText = "Move_T";
                 return true;
             }
@@ -387,7 +375,6 @@ namespace McRave::Command {
             auto clickToSurround = unit.attemptingSurround() && unit.getPosition().getDistance(unit.getSurroundPosition()) < 160.0;
             if (clickToSurround) {
                 unit.setCommand(Move, unit.getSurroundPosition());
-                Visuals::drawLine(unit.getPosition(), unit.getSurroundPosition(), Colors::Orange);
                 unit.commandText = "Move_S";
                 return true;
             }
@@ -396,7 +383,6 @@ namespace McRave::Command {
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
-                Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Purple);
                 unit.commandText = "Move_B";
                 return true;
             }
@@ -429,7 +415,6 @@ namespace McRave::Command {
         // Get a position away from splash
         if (kiteAvoidance) {
             kiteTowards = unit.getNavigation();
-            // Visuals::drawLine(unit.getPosition(), kiteTowards, Colors::Purple);
         }
 
         // Get a position away from the target

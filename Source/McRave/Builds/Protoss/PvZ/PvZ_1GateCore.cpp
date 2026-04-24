@@ -28,8 +28,8 @@ namespace McRave::BuildOrder::Protoss {
 
         // Pumping
         protossUnitPump[Protoss_Probe]        = true;
-        protossUnitPump[Protoss_Zealot]       = com(Protoss_Gateway) > 0;
-        protossUnitPump[Protoss_Dark_Templar] = com(Protoss_Gateway) > 0 && com(Protoss_Templar_Archives) > 0;
+        protossUnitPump[Protoss_Zealot]       = true;
+        protossUnitPump[Protoss_Dark_Templar] = true;
     }
 
     void PvZ_1GC_ZCore()
@@ -47,7 +47,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // Pumping
         protossUnitPump[Protoss_Probe]  = true;
-        protossUnitPump[Protoss_Zealot] = com(Protoss_Gateway) > 0;
+        protossUnitPump[Protoss_Zealot] = true;
     }
 
     void PvZ_1GC_ZZCore()
@@ -65,7 +65,7 @@ namespace McRave::BuildOrder::Protoss {
 
         // Pumping
         protossUnitPump[Protoss_Probe]  = true;
-        protossUnitPump[Protoss_Zealot] = com(Protoss_Gateway) > 0;
+        protossUnitPump[Protoss_Zealot] = true;
     }
 
     void PvZ_1GC()

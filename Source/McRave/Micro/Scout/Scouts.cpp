@@ -674,12 +674,21 @@ namespace McRave::Scouts {
             if (Players::ZvT() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0)
                 return;
 
+            // Choose the type to scout
+            auto type = Broodwar->self()->getRace().getWorker();
+            if (vis(Terran_Vulture) > 0 && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Ion_Thrusters))
+                type = Terran_Vulture;
+            else if (vis(Zerg_Zergling) > 0 && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost))
+                type = Zerg_Zergling;
+            else if (vis(Protoss_Zealot) > 0 && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Leg_Enhancements))
+                type = Protoss_Zealot;
+
             auto &expansion                            = scoutTargets[ScoutType::Expansion];
-            expansion.desiredTypeCounts[Zerg_Zergling] = 1;
+            expansion.desiredTypeCounts[type] = 1;
 
             // If we keep seeing workers outside their territory, we need to look, they might be transferring
             if (Util::getTime() >= Time(7, 00) && Spy::getWorkersPulled() >= 5) {
-                expansion.desiredTypeCounts[Zerg_Zergling] = 2;
+                expansion.desiredTypeCounts[type] = 2;
             }
 
             for (auto &station : Stations::getStations(PlayerState::None)) {

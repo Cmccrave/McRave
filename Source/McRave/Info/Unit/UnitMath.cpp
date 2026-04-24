@@ -414,13 +414,9 @@ namespace McRave::Math {
     {
         // Attack animation frames below
         if (unitType == Protoss_Dragoon)
-            return 9;
+            return 5;
         if (unitType == Zerg_Devourer)
             return 7;
-
-        // Sometimes seems they can cancel animations, 1 frame of buffer is fine
-        if (unitType == Terran_Marine || unitType == Zerg_Hydralisk)
-            return 1;
         return 0;
     }
 

@@ -13,6 +13,12 @@ namespace McRave::Util {
         return std::find(container.begin(), container.end(), item) != container.end();
     }
 
+    template <typename C, typename T> //
+    inline auto find(C &container, const T &item)
+    {
+        return std::find(container.begin(), container.end(), item);
+    }
+
     // Broodwar utility
     const BWEM::ChokePoint *getClosestChokepoint(BWAPI::Position);
 

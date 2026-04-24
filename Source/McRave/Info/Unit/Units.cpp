@@ -101,7 +101,7 @@ namespace McRave::Units {
                     unit.update();
                     auto validRole = unit.getRole() == Role::Combat || unit.getRole() == Role::Defender || unit.getRole() == Role::Scout || unit.getRole() == Role::Support ||
                                      unit.getRole() == Role::Transport || unit.getRole() == Role::Worker;
-                    if (!validRole || unit.isToken())
+                    if (!validRole || unit.isToken() || !unit.isCommandable())
                         continue;
 
                     auto frames = 6;
@@ -243,6 +243,22 @@ namespace McRave::Units {
             updateAllies();
             updateNeutrals();
             updateSelf();
+        }
+
+        void drawStrengths()
+        {
+            for (auto &state : {PlayerState::Self, PlayerState::Enemy, PlayerState::Ally}) {
+                for (auto &u : Units::getUnits(state)) {
+                    UnitInfo &unit = *u;
+                    if (!unit.isAvailable() || unit.unit()->isLoaded())
+                        continue;
+
+                    if (unit.getVisibleGroundStrength() > 0.0 || unit.getVisibleAirStrength() > 0.0) {
+                        Broodwar->drawTextMap(unit.getPosition() + Position(5, -10), "Grd: %c %.2f", Text::Brown, unit.getVisibleGroundStrength());
+                        Broodwar->drawTextMap(unit.getPosition() + Position(5, 2), "Air: %c %.2f", Text::Blue, unit.getVisibleAirStrength());
+                    }
+                }
+            }
         }
     } // namespace
 

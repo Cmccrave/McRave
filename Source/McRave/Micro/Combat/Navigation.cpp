@@ -346,7 +346,7 @@ namespace McRave::Combat::Navigation {
 
                 // Testing this
                 updateAvoidance(*unit);
-                Visuals::drawLine(unit->getPosition(), unit->getNavigation(), Colors::Green);
+                //Visuals::drawLine(unit->getPosition(), unit->getNavigation(), Colors::Green);
             }
         }
     }

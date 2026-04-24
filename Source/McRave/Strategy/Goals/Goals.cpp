@@ -425,10 +425,10 @@ namespace McRave::Goals {
             // Place mines defensively
             if (Researching::haveResearch(TechTypes::Spider_Mines)) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
-                    if (!station->isMain()) {
-                        auto nodes = {Terrain::getNaturalChoke()->end1, Terrain::getNaturalChoke()->end2, Terrain::getNaturalChoke()->middle};
+                    if (!station->isMain() && station->getChokepoint()) {
+                        auto nodes = {station->getChokepoint()->end1, station->getChokepoint()->end2, station->getChokepoint()->middle};
                         for (auto &node : nodes) {
-                            auto pos         = (Position(Terrain::getNaturalChoke()->Pos(node)) + Position(Terrain::getNaturalChoke()->Center())) / 2;
+                            auto pos         = (Position(station->getChokepoint()->Pos(node)) + Position(station->getChokepoint()->Center())) / 2;
                             auto closestMine = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) { return u->getType() == Terran_Vulture_Spider_Mine; });
                             if (!closestMine || closestMine->getPosition().getDistance(pos) >= 64.0) {
                                 auto shifted = Util::shiftTowards(pos, station->getBase()->Center(), -64.0);
@@ -532,7 +532,7 @@ namespace McRave::Goals {
             auto oldestTile    = TilePositions::Invalid;
             for (auto &w : outlines) {
                 auto tile = TilePosition(w);
-                if (Broodwar->getFrameCount() - Grids::getLastVisibleFrame(tile) >= 720)
+                if (tile.isValid() && Broodwar->getFrameCount() - Grids::getLastVisibleFrame(tile) >= 720)
                     oldestTile = tile;
             }
 
@@ -542,7 +542,7 @@ namespace McRave::Goals {
             if (Roles::getRoleCount(Role::Combat) == 0 && (possibleProxyFact || possibleCannonRush)) {
                 LOG_FAST("Need to scout for proxy");
                 auto proxyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy(); });
-                if (!proxyWorker->unit()->exists())
+                if (proxyWorker && !proxyWorker->unit()->exists())
                     assignNumberToGoal(oldestTile, Zerg_Drone, 1, GoalType::Explore);
             }
 

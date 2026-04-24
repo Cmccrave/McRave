@@ -75,7 +75,7 @@ namespace McRave::Targets {
                                                      (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine)));
         bool unitCanAttack   = !target.isHidden() && ((target.isFlying() && unit.canAttackAir()) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));
 
-        auto unitRange = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
+        auto unitRange   = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
         auto targetRange = unit.isFlying() ? target.getAirRange() : target.getGroundRange();
 
         if (target.movedFlag || !unitCanAttack)
@@ -782,9 +782,26 @@ namespace McRave::Targets {
         selfCanHitGround = myStrength.groundToGround > 0.0 || myStrength.airToGround > 0.0 || myStrength.groundDefense > 0.0;
     }
 
+    void drawTargeting()
+    {
+        if (!Visuals::isDrawingEnabled(DrawingType::Targets))
+            return;
+
+        for (auto &state : {PlayerState::Self, PlayerState::Enemy, PlayerState::Ally}) {
+            for (auto &u : Units::getUnits(state)) {
+                UnitInfo &unit = *u;
+                if (!unit.isAvailable() || unit.unit()->isLoaded() || !unit.hasTarget())
+                    continue;
+                int color = unit.getPlayer()->getColor();
+                Visuals::drawLine(unit.getTarget().lock()->getPosition(), unit.getPosition(), color);
+            }
+        }
+    }
+
     void onFrame()
     {
         updateStatistics();
         updateTargets();
+        drawTargeting();
     }
 } // namespace McRave::Targets

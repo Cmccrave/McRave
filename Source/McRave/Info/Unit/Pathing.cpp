@@ -160,8 +160,8 @@ namespace McRave::Pathing {
                 auto weightExpand  = (frames + 2);
                 auto finalPosition = pos + Position(int(dirx * weightTowards), int(diry * weightTowards)) + Position(int(expandx * weightExpand), int(expandy * weightExpand));
 
-                Visuals::drawLine(unit.getPosition(), finalPosition, Colors::Green);
-                Visuals::drawCircle(finalPosition, 4, Colors::Green);
+                //Visuals::drawLine(unit.getPosition(), finalPosition, Colors::Green);
+                //Visuals::drawCircle(finalPosition, 4, Colors::Green);
 
                 if (Util::findWalkable(unit, finalPosition))
                     unit.setTrapPosition(finalPosition);

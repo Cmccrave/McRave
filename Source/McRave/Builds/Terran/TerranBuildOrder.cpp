@@ -411,7 +411,7 @@ namespace McRave::BuildOrder::Terran {
                     {Terran_Marine, 20},       {Terran_Medic, 12}, {Terran_Firebat, 12}, //
                     {Terran_Marine, 40},       {Terran_Medic, 15}, {Terran_Firebat, 15}, //
                     {Terran_Marine, 80},       {Terran_Medic, 18}, {Terran_Firebat, 18}, //
-                    {Terran_Science_Vessel, 6}                                           // Starport
+                    {Terran_Science_Vessel, 8}                                           // Starport
                 };
             }
 

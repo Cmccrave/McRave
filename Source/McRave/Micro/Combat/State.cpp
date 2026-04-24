@@ -336,7 +336,7 @@ namespace McRave::Combat::State {
                    || (unit.getSurroundPosition().isValid() && inRange)                                                                                                                           //
                    || (unit.getType().isWorker() && target.getType().isWorker() && Util::getTime() < Time(2, 00))                                                                                 //
                    || (!target.isMelee() && Actions::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm))) //
-                   || (unit.isSuicidal() && !nearEnemyDefense());                                                                                                                                    //
+                   || (unit.isSuicidal() && !nearEnemyDefense());                                                                                                                                 //
         };
 
         // Cargo that is dropped from a transport should engage
@@ -553,9 +553,8 @@ namespace McRave::Combat::State {
             unit.setGlobalState(GlobalState::Attack);
     }
 
-    void onFrame()
+    void updateStates()
     {
-        updateStaticStates();
         for (auto &u : Units::getUnits(PlayerState::Self)) {
             auto &unit = *u;
             if (unit.getRole() == Role::Combat) {
@@ -563,6 +562,40 @@ namespace McRave::Combat::State {
                 updateLocalState(unit);
             }
         }
+    }
+
+    void drawStates()
+    {
+        if (!Visuals::isDrawingEnabled(DrawingType::States))
+            return;
+
+        for (auto &u : Units::getUnits(PlayerState::Self)) {
+            auto &unit = *u;
+            int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
+            width += -32;
+
+            if (unit.getRole() == Role::Combat) {
+                auto color = unit.getLocalState() == LocalState::Attack ? Text::Green : Text::Red;
+                Broodwar->drawTextMap(unit.getPosition() + Position(-width, -8), "L: %c%d", color, unit.getLocalState());
+            }
+
+            if (unit.getRole() == Role::Combat) {
+                auto color = unit.getGlobalState() == GlobalState::Attack ? Text::Green : Text::Red;
+                Broodwar->drawTextMap(unit.getPosition() + Position(-width, 0), "G: %c%d", color, unit.getGlobalState());
+            }
+
+            if (unit.getRole() == Role::Combat) {
+                auto color = unit.getSimState() == SimState::Win ? Text::Green : Text::Red;
+                Broodwar->drawTextMap(unit.getPosition() + Position(-width, 8), "S: %c%.2f", color, unit.getSimValue());
+            }
+        }
+    }
+
+    void onFrame()
+    {
+        updateStaticStates();
+        updateStates();
+        drawStates();
     }
 
     bool isStaticRetreat(UnitType type)

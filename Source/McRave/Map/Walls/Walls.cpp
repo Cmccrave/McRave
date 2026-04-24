@@ -177,6 +177,31 @@ namespace McRave::Walls {
             return max(minimum, expected - reduction);
         }
 
+        // TvP
+        int TvP_Opener(BWEB::Wall &wall) { return 0; }
+
+        int TvP_Transition(BWEB::Wall &wall) { return 0; }
+
+        int TvP_Defenses(BWEB::Wall &wall) { return 1; }
+
+        // TvT
+        int TvT_Opener(BWEB::Wall &wall) { return 0; }
+
+        int TvT_Transition(BWEB::Wall &wall) { return 0; }
+
+        int TvT_Defenses(BWEB::Wall &wall) { return 0; }
+
+        // TvZ
+        int TvZ_Opener(BWEB::Wall &wall) { return 0; }
+
+        int TvZ_Transition(BWEB::Wall &wall) { return 0; }
+
+        int TvZ_Defenses(BWEB::Wall &wall) {
+            if (Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_2HatchLurker)
+                return 2;
+            return 0; 
+        }
+
         // ZvP
         int ZvP_Opener(BWEB::Wall &wall)
         {
@@ -586,6 +611,14 @@ namespace McRave::Walls {
         }
 
         // Terran
+        if (Broodwar->self()->getRace() == Races::Terran) {
+            if (Players::TvZ())
+                return TvZ_Defenses(wall) - groundCount;
+            if (Players::TvZ())
+                return TvZ_Defenses(wall) - groundCount;
+            if (Players::TvZ())
+                return TvZ_Defenses(wall) - groundCount;
+        }
 
         // Zerg
         if (Broodwar->self()->getRace() == Races::Zerg) {

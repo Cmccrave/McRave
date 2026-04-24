@@ -136,7 +136,7 @@ namespace McRave::Buildings {
             auto morphType   = UnitTypes::None;
             auto station     = BWEB::Stations::getClosestStation(building.getTilePosition());
             auto wall        = BWEB::Walls::getClosestWall(building.getPosition());
-            auto plannedType = Planning::whatPlannedHere(building.getTilePosition());
+            auto plannedType = Planning::whatMorphsHere(building.getTilePosition());
 
             if (lastMorphFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4)
                 return;
@@ -168,9 +168,9 @@ namespace McRave::Buildings {
                     morphType = Zerg_Spore_Colony;
 
                 // If this is a Wall defense
-                else if (wallDefense && Walls::needAirDefenses(*wall) > 0 && plannedType == Zerg_Sunken_Colony && com(Zerg_Evolution_Chamber) > 0)
+                else if (wallDefense && Walls::needAirDefenses(*wall) > 0 && plannedType == Zerg_Spore_Colony && com(Zerg_Evolution_Chamber) > 0)
                     morphType = Zerg_Spore_Colony;
-                else if (wallDefense && Walls::needGroundDefenses(*wall) > 0 && plannedType == Zerg_Spore_Colony && com(Zerg_Spawning_Pool) > 0)
+                else if (wallDefense && Walls::needGroundDefenses(*wall) > 0 && plannedType == Zerg_Sunken_Colony && com(Zerg_Spawning_Pool) > 0)
                     morphType = Zerg_Sunken_Colony;
             }
 

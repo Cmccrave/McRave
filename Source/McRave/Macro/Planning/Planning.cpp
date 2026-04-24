@@ -618,6 +618,10 @@ namespace McRave::Planning {
                 if (building.isResourceDepot() && BuildOrder::shouldExpand())
                     continue;
 
+                // Specifically don't place a depot in a wall if we have marines and they're staying home
+                if (!Players::TvZ() && Combat::State::isStaticRetreat(Terran_Marine) && wall.getStation()->isNatural() && building == Terran_Supply_Depot)
+                    continue;
+
                 // Setup placements
                 if (building.tileWidth() == 4)
                     placements.insert(wall.getLargeTiles().begin(), wall.getLargeTiles().end());
@@ -965,7 +969,12 @@ namespace McRave::Planning {
         auto itr = buildingsPlanned.find(here);
         if (itr != buildingsPlanned.end())
             return itr->second;
-        itr = morphsPlanned.find(here);
+        return None;
+    }    
+    
+    UnitType whatMorphsHere(TilePosition here)
+    {
+        auto itr = morphsPlanned.find(here);
         if (itr != morphsPlanned.end())
             return itr->second;
         return None;

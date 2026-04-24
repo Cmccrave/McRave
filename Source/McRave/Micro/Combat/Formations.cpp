@@ -117,7 +117,7 @@ namespace McRave::Combat::Formations {
     void marchFormation(Formation &formation, Cluster &cluster)
     {
         auto commander   = cluster.commander.lock();
-        auto minMobility = min(Grids::getMobility(commander->getPosition()), Grids::getMobility(cluster.avgPosition));
+        auto minMobility = min(Grids::getMobility(commander->getPosition()), Grids::getMobility(cluster.marchNavigation));
         auto expSpacing  = max(commander->getType().width(), commander->getType().height()) + 2;
 
         formation.lState = LocalState::Attack;
@@ -127,14 +127,14 @@ namespace McRave::Combat::Formations {
         // March concave
         if (cluster.shape == Shape::Concave) {
             auto shift = max(160.0, formation.radius) + 32.0;
-            shift += max(0, 5 - minMobility) * 16.0;
+            shift += max(0, 5 - minMobility) * 32.0;
             formation.stepPerUnit = double(expSpacing) / formation.radius;
             formation.start       = Util::shiftTowards(commander->getPosition(), cluster.marchNavigation, shift);
         }
 
         // March line
         if (cluster.shape == Shape::Line) {
-            auto shift            = 96.0 + max(0, 5 - minMobility) * 16.0;
+            auto shift            = 96.0 + max(0, 5 - minMobility) * 32.0;
             formation.stepPerUnit = expSpacing + 8;
             formation.start       = Util::shiftTowards(commander->getPosition(), cluster.marchNavigation, shift);
         }
@@ -151,7 +151,7 @@ namespace McRave::Combat::Formations {
     void retreatFormation(Formation &formation, Cluster &cluster)
     {
         auto commander   = cluster.commander.lock();
-        auto minMobility = min(Grids::getMobility(commander->getPosition()), Grids::getMobility(cluster.avgPosition));
+        auto minMobility = min(Grids::getMobility(commander->getPosition()), Grids::getMobility(cluster.marchNavigation));
         auto expSpacing  = max(commander->getType().width(), commander->getType().height()) + 2;
 
         formation.lState = LocalState::Retreat;
@@ -161,14 +161,14 @@ namespace McRave::Combat::Formations {
         // Retreat concave
         if (cluster.shape == Shape::Concave) {
             auto shift = max(160.0, formation.radius) + 32.0;
-            shift += max(0, 5 - minMobility) * 16.0;
+            shift += max(0, 5 - minMobility) * 32.0;
             formation.stepPerUnit = double(expSpacing) / formation.radius;
             formation.start       = Util::shiftTowards(commander->getPosition(), cluster.retreatNavigation, shift);
         }
 
         // Retreat line
         if (cluster.shape == Shape::Line) {
-            auto shift            = 96.0 + max(0, 5 - minMobility) * 16.0;
+            auto shift            = 96.0 + max(0, 5 - minMobility) * 32.0;
             formation.stepPerUnit = expSpacing + 8;
             formation.start       = Util::shiftTowards(commander->getPosition(), cluster.retreatNavigation, shift);
         }
@@ -305,7 +305,7 @@ namespace McRave::Combat::Formations {
         const auto wrapFunc = [&](auto skipAll) {
             if (skipAll || count * formation.stepPerUnit > formation.radius) {
                 count           = 0;
-                formation.start = Util::shiftTowards(formation.center, formation.start, startCenterDist + formation.stepPerUnit);
+                formation.start = Util::shiftTowards(formation.start, formation.center, formation.stepPerUnit);
                 return true;
             }
             return false;
@@ -408,6 +408,9 @@ namespace McRave::Combat::Formations {
 
     void drawFormations()
     {
+        if (!Visuals::isDrawingEnabled(DrawingType::Formations))
+            return;
+
         for (auto &formation : formations) {
 
             auto color = Colors::White;
@@ -450,6 +453,7 @@ namespace McRave::Combat::Formations {
     {
         formations.clear();
         createFormations();
+        drawFormations();
     }
 
     vector<Formation> &getFormations() { return formations; }
