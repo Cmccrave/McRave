@@ -573,6 +573,22 @@ namespace McRave {
         if ((commandType == cmd && commandPosition == here) || (unit()->getOrder() == Orders::Move && unit()->getOrderTargetPosition() == here))
             return;
 
+        // TESTING:
+        // First glance this looks very helpful, sometimes the worker starts in the wrong direction however, it should be closer to the cmd than the worker is?
+        // If this is a worker, attempt to get its movement going with a gather command
+        if (getType().isWorker() && getCurrentSpeed() < 2.0) {
+            auto bestNeutral = Util::getClosestUnit(here, PlayerState::Neutral, [&](auto &u) {
+                auto dist = u->getPosition().getDistance(getPosition());
+                return dist >= 160;
+            });
+            if (bestNeutral) {
+                if (unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit || unit()->getLastCommand().getTarget() != bestNeutral->unit())
+                    unit()->rightClick(bestNeutral->unit());
+                Visuals::drawLine(getPosition(), bestNeutral->getPosition(), Colors::Yellow);
+                return;
+            }
+        }
+
         commandPosition = here;
         commandType     = cmd;
 

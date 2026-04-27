@@ -507,7 +507,7 @@ namespace McRave::Goals {
 
                 auto overlordSpot = [&](auto &p) {
                     auto closestStation = Stations::getClosestStationAir(p, PlayerState::Enemy);
-                    if (closestStation && p.getDistance(closestStation->getBase()->Center()) < 960.0) {
+                    if (closestStation && p.getDistance(closestStation->getBase()->Center()) < 1600.0) {
                         return true;
                     }
                 };

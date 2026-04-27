@@ -33,10 +33,10 @@ namespace McRave::BuildOrder::Zerg {
     void ZvT_PH_Overpool()
     {
         // 9o 9p
-        transitionReady = Spy::getEnemyTransition() == U_WorkerRush ? com(Zerg_Sunken_Colony) > 0 : hatchCount() >= 2;
+        transitionReady = hatchCount() >= 2;
         scout           = scout || (hatchCount() >= 2);
 
-        auto secondHatch = Spy::getEnemyTransition() == U_WorkerRush ? com(Zerg_Zergling) >= 4 : (s >= 22);
+        auto secondHatch = Spy::getEnemyTransition() == U_WorkerRush ? (com(Zerg_Zergling) >= 12 || minerals(400)) : (s >= 22);
 
         // Buildings
         buildQueue[Zerg_Hatchery]      = 1 + secondHatch;

@@ -304,7 +304,7 @@ namespace McRave::Workers {
 
             // Check if we're trying to build a structure near this worker
             else if (resource) {
-                if (auto builder = Util::getClosestUnit(resource->getPosition(), PlayerState::Self, [&](auto &u) { return *u != unit && u->getBuildType() != UnitTypes::None; })) {
+                if (auto builder = Util::getClosestUnit(resource->getPosition(), PlayerState::Self, [&](auto &u) { return *u != unit && u->getBuildType() != UnitTypes::None && !u->getBuildType().isRefinery(); })) {
                     auto center       = Position(builder->getBuildPosition()) + Position(builder->getBuildType().tileWidth() * 32, builder->getBuildType().tileHeight() * 32);
                     auto canAfford    = Broodwar->self()->minerals() >= builder->getBuildType().mineralPrice() && Broodwar->self()->gas() >= builder->getBuildType().gasPrice();
                     auto builderClose = builder->getPosition().getDistance(center) < 96.0;
@@ -315,10 +315,10 @@ namespace McRave::Workers {
                     auto resourceTopLeft  = resource->getTilePosition();
                     auto resourceBotRight = resource->getTilePosition() + resource->getType().tileSize();
                     auto adjacentPlanning = Util::rectangleIntersect(buildingTopLeft, buildingBotRight, resourceTopLeft, resourceBotRight);
-                    auto nearby           = unit.getPosition().getDistance(center) < 160.0;
+                    auto nearby           = Util::boxDistance(unit.getType(), unit.getPosition(), builder->getBuildType(), center) < 8.0;
 
                     if (builderClose && canAfford && (adjacentPlanning || nearby)) {
-                        auto destination = Util::shiftTowards(center, unit.getPosition(), 160.0);
+                        auto destination = Util::shiftTowards(center, unit.getPosition(), 96.0);
                         unit.setDestination(destination);
                         Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Green);
                     }
@@ -403,9 +403,8 @@ namespace McRave::Workers {
 
                         auto stationDist  = unit.getPosition().getDistance(resource.getStation()->getBase()->Center());
                         auto workerDist   = unit.getPosition().getDistance(resource.getPosition());
-                        auto resourceDist = Util::boxDistance(UnitTypes::Resource_Mineral_Field, resource.getPosition(), Broodwar->self()->getRace().getResourceDepot(),
-                                                              resource.getStation()->getBase()->Center());
-                        auto dist         = Util::getTime() < Time(4, 00) ? workerDist : stationDist * resourceDist;
+                        auto resourceDist = Util::boxDistance(resource.getType(), resource.getPosition(), Broodwar->self()->getRace().getResourceDepot(), resource.getStation()->getBase()->Center());
+                        auto dist         = Util::getTime() < Time(4, 00) ? resourceDist : stationDist * resourceDist;
                         Broodwar->drawTextMap(resource.getPosition(), "%.2f", dist);
 
                         if ((dist < distBest && !threatened) || (dist > distBest && threatened)) {

@@ -325,6 +325,7 @@ namespace McRave::Combat::State {
         // General commonly used checks
         const auto atHome  = Terrain::isAtHome(target.getPosition());
         const auto inRange = unit.isWithinRange(target);
+        const auto targetInRange = target.isWithinRange(unit);
 
         // If this unit is melee and forcing engagement is ideal
         auto meleeAttack = [&]() {
@@ -391,11 +392,10 @@ namespace McRave::Combat::State {
             if (target.isThreatening() && !target.isHidden()) {
                 if (unit.isMelee() && target.isMelee() && !target.hasAttackedRecently() && !inRange && !Combat::isDefendNatural() && nearMainRamp())
                     return false;
+                if (unit.getType() == Zerg_Zergling && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && !inRange)
+                    return false;
                 return true;
             }
-
-            if (unit.getType() == Zerg_Zergling && target.getType() == Terran_Vulture && !inRange)
-                return false;
 
             if (!atHome)
                 return false;
@@ -446,7 +446,7 @@ namespace McRave::Combat::State {
 
     bool forceGlobalRetreat(UnitInfo &unit)
     {
-        if (unit.getGoalType() == GoalType::Escort || unit.attemptingRunby())
+        if (unit.getGoalType() == GoalType::Escort || unit.getGoalType() == GoalType::Runby)
             return false;
 
         if (isStaticRetreat(unit.getType()))

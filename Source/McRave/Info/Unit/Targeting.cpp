@@ -17,10 +17,25 @@ using namespace UnitTypes;
 namespace McRave::Targets {
 
     struct Context {
-        shared_ptr<UnitInfo> unit, target;
+        const std::shared_ptr<UnitInfo>& unit, target;
         double dist;
-        double enemyRange, enemyReach, selfRange, selfReach;
-        double wH, wF, wP;
+        double targetRange, targetReach, unitRange, unitReach;
+        bool unitInRange, targetInRange;
+
+        Context(const std::shared_ptr<UnitInfo> &unit_ref, const std::shared_ptr<UnitInfo> &target_ref) : unit(unit_ref), target(target_ref)
+        {
+            if (unit && target) {
+                dist = unit->getPosition().getDistance(target->getPosition());
+
+                targetRange = unit->isFlying() ? target->getAirRange() : target->getGroundRange();
+                targetReach = unit->isFlying() ? target->getAirReach() : target->getGroundReach();
+                targetInRange = target->isWithinRange(*unit);
+
+                unitRange     = target->isFlying() ? unit->getAirRange() : unit->getGroundRange();
+                unitReach     = target->isFlying() ? unit->getAirReach() : unit->getGroundReach();
+                unitInRange   = unit->isWithinRange(*unit);
+            }
+        };
     };
 
     set<UnitType> cancelPriority = {Terran_Missile_Turret, Terran_Barracks, Terran_Bunker, Terran_Factory, Terran_Starport, Terran_Armory, Terran_Bunker};
@@ -219,6 +234,13 @@ namespace McRave::Targets {
     }
 
     // T
+    Priority marinePriority(UnitInfo &unit, UnitInfo &target)
+    {
+        if (target.isSuicidal() && unit.isWithinRange(target))
+            return Priority::Critical;
+        return Priority::Normal;
+    }
+
     Priority medicPriority(UnitInfo &unit, UnitInfo &target)
     {
         if (target.isTargetedByType(Terran_Medic))
@@ -423,6 +445,8 @@ namespace McRave::Targets {
             return zealotPriority(unit, target);
 
         // T
+        if (unit.getType() == Terran_Marine)
+            return marinePriority(unit, target);
         if (unit.getType() == Terran_Medic)
             return medicPriority(unit, target);
         if (unit.getType() == Terran_Ghost)

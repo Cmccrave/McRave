@@ -169,7 +169,11 @@ namespace McRave::Combat::Clusters {
             cluster.marchPath   = commander->getMarchPath();
             cluster.retreatPath = commander->getRetreatPath();
 
-            const auto validPathPoint = [&](auto &p) { return p.getDistance(commander->getPosition()) >= dist; };
+            const auto validPathPoint = [&](auto &p) {
+                auto mobility = (10 - Grids::getMobility(p)) * 16;
+                auto value    = mobility + dist;
+                return p.getDistance(commander->getPosition()) >= value;
+            };
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.marchNavigation = cluster.marchPosition;
@@ -192,8 +196,6 @@ namespace McRave::Combat::Clusters {
             cluster.marchNavigation += pixelDiff;
             cluster.retreatNavigation += pixelDiff;
         }
-
-        void fixNavigations() {}
 
         void finishClusters()
         {
@@ -328,7 +330,6 @@ namespace McRave::Combat::Clusters {
         createClusters();
         shapeClusters();
         finishClusters();
-        fixNavigations();
         drawClusters();
     }
 

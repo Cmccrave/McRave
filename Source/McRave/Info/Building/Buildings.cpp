@@ -68,11 +68,11 @@ namespace McRave::Buildings {
             auto isStation = BWEB::Stations::getClosestStation(building.getTilePosition())->getBase()->Location() == building.getTilePosition();
 
             // We don't cancel anything else right now and we don't do very good checks here for larva
-            if (!building.getType().isBuilding() || building.getType() == Zerg_Larva)
+            if (!building.getType().isBuilding() || building.getType() == Zerg_Larva || building.isCompleted())
                 return;
 
             // Cancelling refineries for our gas trick
-            if (BuildOrder::isGasTrick() && building.getType().isRefinery() && !building.unit()->isCompleted() && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
+            if (BuildOrder::isGasTrick() && building.getType().isRefinery() && BuildOrder::buildCount(building.getType()) < vis(building.getType())) {
                 BWEB::Map::removeUsed(building.getTilePosition(), 4, 2);
                 building.unit()->cancelMorph();
             }
@@ -85,7 +85,7 @@ namespace McRave::Buildings {
             }
 
             // Cancelling buildings that are being built/morphed but will be dead
-            if (!building.unit()->isCompleted() && willDieToAttacks(building) && building.getType() != Zerg_Sunken_Colony && building.getType() != Zerg_Spore_Colony) {
+            if (willDieToAttacks(building) && building.getType() != Zerg_Sunken_Colony && building.getType() != Zerg_Spore_Colony) {
                 Events::onUnitCancelBecauseBWAPISucks(building);
                 building.unit()->cancelConstruction();
             }

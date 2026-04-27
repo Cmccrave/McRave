@@ -341,7 +341,7 @@ namespace McRave::Terrain {
                 for (int x = 0; x < 25; x++) {
                     for (auto &dir : directions) {
                         auto pos = walk + dir * x;
-                        if (pos.isValid() && mapBWEM.GetMiniTile(pos).Walkable()) {
+                        if (pos.isValid() && Broodwar->isWalkable(WalkPosition(pos))) {
                             // Visuals::drawBox(pos, pos + WalkPosition(1, 1), Colors::Green);
                             scores[dir]++;
                             scores[dir * -1]++;

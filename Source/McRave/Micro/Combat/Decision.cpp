@@ -27,13 +27,13 @@ namespace McRave::Combat::Decision {
     {
         // Determine if we need to slightly nudge the command to better overlap units
         auto cmdPos = commander.getCommandPosition();
-        if (unit.isLightAir() && unit.getPosition().getDistance(commander.getPosition()) > 8.0) {
+        if (unit.isLightAir()) {
             double dx = commander.getPosition().x - unit.getPosition().x;
             double dy = commander.getPosition().y - unit.getPosition().y;
-            double uv = std::sqrt(dx * dx + dy * dy);
+            double uv = commander.getPosition().getDistance(unit.getPosition());
 
             if (uv > 0.0) {
-                double nudgeAmount = 32.0 / uv;
+                double nudgeAmount = uv / 32.0;
                 cmdPos             = Position(int(cmdPos.x + dx * nudgeAmount), int(cmdPos.y + dy * nudgeAmount));
             }
         }

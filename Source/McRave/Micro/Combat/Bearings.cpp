@@ -84,11 +84,7 @@ namespace McRave::Combat::Bearings {
 
         // If attacking and target is close, set as destination
         if (unit.getLocalState() == LocalState::Attack) {
-            if (unit.attemptingRunby()) {
-                unit.setDestination(unit.getEngagePosition());
-                // Broodwar->drawTextMap(unit.getPosition(), "a_runby");
-            }
-            else if (unit.attemptingRegroup()) {
+            if (unit.attemptingRegroup()) {
                 unit.setDestination(unit.getCommander().lock()->getPosition());
             }
             else if (unit.getInterceptPosition().isValid()) {
@@ -121,11 +117,7 @@ namespace McRave::Combat::Bearings {
             }
         }
         else {
-            if (Terrain::getEnemyStartingPosition().isValid() && unit.attemptingRunby()) {
-                unit.setDestination(Terrain::getEnemyStartingPosition());
-                unit.circle(Colors::Green);
-            }
-            else if (unit.getGoal().isValid()) {
+            if (unit.getGoal().isValid()) {
                 unit.setDestination(unit.getGoal());
                 // Visuals::drawLine(unit.getPosition(), unit.getGoal(), Colors::Cyan);
                 Broodwar->drawTextMap(unit.getPosition(), "z_goal");

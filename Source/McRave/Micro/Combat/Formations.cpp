@@ -87,7 +87,7 @@ namespace McRave::Combat::Formations {
 
             if (closestChoke == Terrain::getMainChoke()) {
                 formation.angle       = BWEB::Map::getAngle(Terrain::getMainRamp().center, Terrain::getMainRamp().entrance);
-                formation.radius      = (Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::Self) ? expSpacing : max(maxRange, expSpacing);
+                formation.radius      = (Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::Self) ? (expSpacing + 32.0) : max(maxRange, expSpacing);
                 formation.stepPerUnit = max(minSpacing, expSpacing);
                 formation.center      = Terrain::getMainRamp().center;
                 formation.start       = Terrain::getMainRamp().entrance;
@@ -109,16 +109,16 @@ namespace McRave::Combat::Formations {
 
         // Hold with commander
         else if (formationWithCommander) {
-            formation.start = commander->getPosition();
-            formation.angle = BWEB::Map::getAngle(cluster.marchNavigation, cluster.retreatNavigation);
+            formation.radius = clamp((cluster.units.size() * cluster.spacing / 1.3), 64.0, 640.0);
+            formation.start  = commander->getPosition();
+            formation.angle  = BWEB::Map::getAngle(cluster.marchNavigation, cluster.retreatNavigation);
         }
     }
 
     void marchFormation(Formation &formation, Cluster &cluster)
     {
-        auto commander   = cluster.commander.lock();
-        auto minMobility = min(Grids::getMobility(commander->getPosition()), Grids::getMobility(cluster.marchNavigation));
-        auto expSpacing  = max(commander->getType().width(), commander->getType().height()) + 2;
+        auto commander  = cluster.commander.lock();
+        auto expSpacing = max(commander->getType().width(), commander->getType().height()) + 2;
 
         formation.lState = LocalState::Attack;
         formation.center = cluster.marchNavigation;
@@ -126,17 +126,16 @@ namespace McRave::Combat::Formations {
 
         // March concave
         if (cluster.shape == Shape::Concave) {
-            auto shift = max(160.0, formation.radius) + 32.0;
-            shift += max(0, 5 - minMobility) * 32.0;
+            formation.radius      = clamp((cluster.units.size() * cluster.spacing / 1.3), 64.0, 640.0);
             formation.stepPerUnit = double(expSpacing) / formation.radius;
-            formation.start       = Util::shiftTowards(commander->getPosition(), cluster.marchNavigation, shift);
+            formation.start       = cluster.marchNavigation;
         }
 
         // March line
         if (cluster.shape == Shape::Line) {
-            auto shift            = 96.0 + max(0, 5 - minMobility) * 32.0;
+            formation.radius      = clamp((cluster.units.size() * cluster.spacing / 5.0), 64.0, 640.0);
             formation.stepPerUnit = expSpacing + 8;
-            formation.start       = Util::shiftTowards(commander->getPosition(), cluster.marchNavigation, shift);
+            formation.start       = cluster.marchNavigation;
         }
 
         // Flying formations - mostly just avoiding splash with a circle
@@ -150,9 +149,8 @@ namespace McRave::Combat::Formations {
 
     void retreatFormation(Formation &formation, Cluster &cluster)
     {
-        auto commander   = cluster.commander.lock();
-        auto minMobility = min(Grids::getMobility(commander->getPosition()), Grids::getMobility(cluster.marchNavigation));
-        auto expSpacing  = max(commander->getType().width(), commander->getType().height()) + 2;
+        auto commander  = cluster.commander.lock();
+        auto expSpacing = max(commander->getType().width(), commander->getType().height()) + 2;
 
         formation.lState = LocalState::Retreat;
         formation.center = cluster.retreatNavigation;
@@ -160,17 +158,16 @@ namespace McRave::Combat::Formations {
 
         // Retreat concave
         if (cluster.shape == Shape::Concave) {
-            auto shift = max(160.0, formation.radius) + 32.0;
-            shift += max(0, 5 - minMobility) * 32.0;
+            formation.radius      = clamp((cluster.units.size() * cluster.spacing / 1.3), 64.0, 640.0);
             formation.stepPerUnit = double(expSpacing) / formation.radius;
-            formation.start       = Util::shiftTowards(commander->getPosition(), cluster.retreatNavigation, shift);
+            formation.start       = cluster.retreatNavigation;
         }
 
         // Retreat line
         if (cluster.shape == Shape::Line) {
-            auto shift            = 96.0 + max(0, 5 - minMobility) * 32.0;
+            formation.radius      = clamp((cluster.units.size() * cluster.spacing / 2.0), 64.0, 640.0);
             formation.stepPerUnit = expSpacing + 8;
-            formation.start       = Util::shiftTowards(commander->getPosition(), cluster.retreatNavigation, shift);
+            formation.start       = cluster.retreatNavigation;
         }
     }
 
@@ -304,8 +301,8 @@ namespace McRave::Combat::Formations {
         // Wrap function
         const auto wrapFunc = [&](auto skipAll) {
             if (skipAll || count * formation.stepPerUnit > formation.radius) {
-                count           = 0;
-                formation.start = Util::shiftTowards(formation.start, formation.center, formation.stepPerUnit);
+                count     = 0;
+                formation.start -= Position(int(yStepPer), int(xStepPer));
                 return true;
             }
             return false;
@@ -381,6 +378,7 @@ namespace McRave::Combat::Formations {
         // Create formations of each cluster
         // Each cluster has a UnitType and count, make a formation that considers each
         // TODO: For now we only make a concave of 1 size and ignore types, eventually want to size the concaves based on unittype counts
+        formations.clear();
         for (auto &cluster : Clusters::getClusters()) {
             auto commander = cluster.commander.lock();
             if (!commander || commander->getGoalType() == GoalType::Block)
@@ -390,9 +388,7 @@ namespace McRave::Combat::Formations {
 
             // Create a concave
             Formation formation;
-            formation.leash  = 640.0;
-            formation.radius = clamp((cluster.units.size() * cluster.spacing / 1.3), 64.0, 640.0);
-            // formation.spacing = max(commander->getType().width(), commander->getType().height()) + 6; this breaks things for some reason???
+            formation.leash = 640.0;
             formation.cluster = &cluster;
 
             if (cluster.shape == Shape::Concave)
@@ -451,7 +447,6 @@ namespace McRave::Combat::Formations {
 
     void onFrame()
     {
-        formations.clear();
         createFormations();
         drawFormations();
     }

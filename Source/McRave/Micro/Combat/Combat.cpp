@@ -215,7 +215,6 @@ namespace McRave::Combat {
             }
 
             // Check if enemy lost all bases
-            Broodwar << Stations::getStations(PlayerState::Enemy).size() << endl;
             auto lostAll = Stations::getStations(PlayerState::Enemy).empty();
             for (auto &station : Stations::getStations(PlayerState::Enemy)) {
                 if (!Stations::isBaseExplored(station) || BWEB::Map::isUsed(station->getBase()->Location()) != UnitTypes::None)

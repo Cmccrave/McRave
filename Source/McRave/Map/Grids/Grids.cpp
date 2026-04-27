@@ -142,27 +142,33 @@ namespace McRave::Grids {
             const auto groundAura = max(96.0, unit.getGroundRange());
             const auto airAura    = max(96.0, unit.getAirRange());
 
+            const auto invGrdReach = 1.0 / unit.getGroundReach();
+            const auto invAirReach = 1.0 / unit.getAirReach();
+
+            const auto invGrdReachDiff = 1.0 / (unit.getGroundReach() - unit.getGroundRange());
+            const auto invAirReachDiff = 1.0 / (unit.getAirReach() - unit.getAirRange());
+
             if (addSplash) {
-                auto splashRadius = ceil(unit.getSplashRadius() / 8.0);
-                auto target       = unit.getTarget().lock();
-                for (auto &w : Util::getWalkCircle(splashRadius)) {
-                    auto walk = target->getWalkPosition() + w;
-                    if (!walk.isValid())
-                        continue;
+                // auto splashRadius = ceil(unit.getSplashRadius() / 8.0);
+                // auto target       = unit.getTarget().lock();
+                // for (auto &w : Util::getWalkCircle(splashRadius)) {
+                //    auto walk = target->getWalkPosition() + w;
+                //    if (!walk.isValid())
+                //        continue;
 
-                    auto &index     = grid[gridWalkScale * walk.y + walk.x];
-                    const auto dist = Util::fastDistance(x1, y1, (walk.x * 8) + 4, (walk.y * 8) + 4) + 8;
-                    if (index.lastUpdateFrame != currentGridFrame) {
-                        index.wipe();
-                        index.lastUpdateFrame = currentGridFrame;
-                    }
+                //    auto &index     = grid[gridWalkScale * walk.y + walk.x];
+                //    const auto dist = Util::fastDistance(x1, y1, (walk.x * 8) + 4, (walk.y * 8) + 4) + 8;
+                //    if (index.lastUpdateFrame != currentGridFrame) {
+                //        index.wipe();
+                //        index.lastUpdateFrame = currentGridFrame;
+                //    }
 
-                    // Threat
-                    if (allowAir) {
-                        const auto rangeDiff = 0.015625 * max(1.0, dist - double(unit.getSplashRadius())); // This is just 1/64 so it decays over 2 tiles
-                        index.airThreat += (dist <= 104.0 ? float(unit.getVisibleAirStrength()) : float(unit.getVisibleAirStrength() * rangeDiff));
-                    }
-                }
+                //    // Threat
+                //    if (allowAir) {
+                //        const auto rangeDiff = 0.015625 * max(1.0, dist - double(unit.getSplashRadius())); // This is just 1/64 so it decays over 2 tiles
+                //        index.airThreat += (dist <= 104.0 ? float(unit.getVisibleAirStrength()) : float(unit.getVisibleAirStrength() * rangeDiff));
+                //    }
+                //}
             }
 
             if (radius > 0 && (!unit.getType().isBuilding() || unit.canAttackAir() || unit.canAttackGround())) {
@@ -186,12 +192,16 @@ namespace McRave::Grids {
 
                     // Threat
                     if (allowGround) {
-                        const auto rangeDiff = 0.125 * max(1.0, unit.getGroundReach() - dist); // This is just 1/8
-                        index.groundThreat += float(unit.getVisibleGroundStrength() * groundAura * Util::fastReciprocal(dist));
+                        const auto threat = unit.getVisibleGroundStrength() * 100.0;
+                        const auto limit  = clamp(1.0 - (dist - unit.getGroundRange()) * invGrdReachDiff, 0.0, 1.0);
+                        const auto decay  = 1.0f - 0.3f * (dist * invGrdReach);
+                        index.groundThreat += float(threat * limit * decay);
                     }
                     if (allowAir) {
-                        const auto rangeDiff = 0.125 * max(1.0, unit.getAirReach() - dist); // This is just 1/8
-                        index.airThreat += float(unit.getVisibleAirStrength() * airAura * Util::fastReciprocal(dist));
+                        const auto threat = unit.getVisibleAirStrength() * 100.0;
+                        const auto limit  = clamp(1.0 - (dist - unit.getAirRange()) * invAirReachDiff, 0.0, 1.0);
+                        const auto decay  = 1.0f - 0.3f * (dist * invAirReach);
+                        index.airThreat += float(threat * limit * decay);
                     }
                 }
             }
@@ -211,8 +221,8 @@ namespace McRave::Grids {
 
             // Don't add to any grid under these conditions
             const auto canAddToGrid = [&](auto &unit) {
-                if ((unit.unit()->exists() && (unit.unit()->isStasised() || unit.unit()->isMaelstrommed() || unit.unit()->isLoaded())) || !unit.getPosition().isValid() ||
-                    unit.getType() == Protoss_Interceptor || unit.getType().isSpell() || unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Protoss_Scarab ||
+                if ((unit.unit()->exists() && !unit.isAvailable()) || !unit.getPosition().isValid() ||
+                    unit.getType() == Protoss_Interceptor || unit.getType().isSpell() || unit.isToken() ||
                     (unit.getPlayer() == Broodwar->self() && !unit.getType().isBuilding() && !unit.unit()->isCompleted()))
                     return false;
 
@@ -258,47 +268,46 @@ namespace McRave::Grids {
         {
             auto &grid = neutralGrid;
             for (auto &gas : Broodwar->getGeysers()) {
-                auto t = WalkPosition(gas->getTilePosition());
-                for (int x = t.x; x < t.x + gas->getType().tileWidth() * 4; x++) {
-                    for (int y = t.y; y < t.y + gas->getType().tileHeight() * 4; y++) {
-                        neutralGrid[gridWalkScale * y + x].mobility = -1;
+                auto t = gas->getTilePosition();
+                for (int x = t.x; x < t.x + gas->getType().tileWidth(); x++) {
+                    for (int y = t.y; y < t.y + gas->getType().tileHeight(); y++) {
+                        neutralGrid[gridTileScale * y + x].mobility = -1;
                     }
                 }
             }
 
-            for (int x = 0; x < Broodwar->mapWidth() * 4; x++) {
-                for (int y = 0; y < Broodwar->mapHeight() * 4; y++) {
-                    auto &index = neutralGrid[gridWalkScale * y + x];
+            for (int x = 0; x < Broodwar->mapWidth(); x++) {
+                for (int y = 0; y < Broodwar->mapHeight(); y++) {
+                    auto &index = neutralGrid[gridTileScale * y + x];
 
-                    WalkPosition w(x, y);
-                    if (!w.isValid() || index.mobility != 0)
+                    TilePosition t(x, y);
+                    if (!t.isValid() || index.mobility != 0)
                         continue;
 
-                    if (!Broodwar->isWalkable(w)) {
+                    if (!BWEB::Map::isWalkable(t)) {
                         index.mobility = -1;
                         continue;
                     }
 
                     auto valid    = 0;
                     auto walkable = 0;
-                    for (int i = -12; i < 12; i++) {
-                        for (int j = -12; j < 12; j++) {
-                            WalkPosition w2(x + i, y + j);
+                    for (auto &offset : Util::getTileCircle(5)) {
+                        TilePosition t2 = offset + t;
+                        if (!t2.isValid())
+                            continue;
 
-                            if (!w2.isValid())
-                                continue;
-
-                            valid++;
-                            if (mapBWEM.GetMiniTile(w2).Walkable() && index.mobility != -1)
-                                walkable++;
-                        }
+                        valid++;
+                        if (BWEB::Map::isWalkable(t2))
+                            walkable++;
+                        else
+                            walkable--;
                     }
 
-                    float density  = pow(float(walkable) * Util::fastReciprocal(valid), 1.5);
-                    index.mobility = clamp(int(density * 10.0f), 1, 10);
+                    float percentWalkable = float(walkable) * float(Util::fastReciprocal(valid));
+                    index.mobility        = int(round(clamp(percentWalkable * 10.0f, 1.0f, 10.0f)));
 
                     // Island
-                    if (mapBWEM.GetArea(w) && mapBWEM.GetArea(w)->AccessibleNeighbours().size() == 0)
+                    if (mapBWEM.GetArea(t) && mapBWEM.GetArea(t)->AccessibleNeighbours().size() == 0)
                         index.mobility = -1;
                 }
             }
@@ -494,9 +503,11 @@ namespace McRave::Grids {
         return 0;
     }
 
-    int getMobility(WalkPosition here) { return neutralGrid[gridWalkScale * here.y + here.x].mobility; }
-    int getMobility(Position here) { return neutralGrid[gridWalkScale * (here.y / 8) + (here.x / 8)].mobility; }
+    int getMobility(Position here) { return neutralGrid[gridTileScale * (here.y / 32) + (here.x / 32)].mobility; }
+    int getMobility(WalkPosition here) { return neutralGrid[gridTileScale * (here.y / 4) + (here.x / 4)].mobility; }
+    int getMobility(TilePosition here) { return neutralGrid[gridTileScale * here.y + here.x].mobility; }
 
     int getLastVisibleFrame(Position here) { return selfGrid[gridTileScale * (here.y / 32) + (here.x / 32)].visible; }
+    int getLastVisibleFrame(WalkPosition here) { return selfGrid[gridTileScale * (here.y / 4) + (here.x / 4)].visible; }
     int getLastVisibleFrame(TilePosition here) { return selfGrid[gridTileScale * here.y + here.x].visible; }
 } // namespace McRave::Grids

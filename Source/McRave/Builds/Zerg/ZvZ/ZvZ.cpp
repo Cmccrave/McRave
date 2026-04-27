@@ -25,6 +25,9 @@ namespace McRave::BuildOrder::Zerg {
         if (Players::hasUpgraded(PlayerState::Enemy, Zerg_Melee_Attacks, 1))
             trackables[Zerg_Zergling] += 0.2;
 
+        // Make more if we have a drone lead
+        auto droneDiff = vis(Zerg_Drone) - Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone);
+
         // Economic estimate (have information on army, they aren't close):
         // For each unit, assume it arrives with enough time for us to create defenders
         auto arrivalValue = 0.0;
@@ -34,7 +37,7 @@ namespace McRave::BuildOrder::Zerg {
             auto idx = trackables.find(unit.getType());
             if (idx != trackables.end()) {
                 arrivalValue += idx->second * 0.9;
-                if (Units::inBoundUnit(unit))
+                if (Units::inBoundUnit(unit) || droneDiff >= 3)
                     arrivalValue += idx->second * 0.4;
             }
         }
@@ -44,12 +47,6 @@ namespace McRave::BuildOrder::Zerg {
             arrivalValue -= vis(Zerg_Hydralisk);
             arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 6.0;
         }
-
-        // Make more if we have a drone lead
-        auto droneDiff = vis(Zerg_Drone) > Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone);
-        if (droneDiff >= 3) {
-            arrivalValue *= 1.25;
-        }
         return int(arrivalValue);
     }
 
@@ -58,11 +55,6 @@ namespace McRave::BuildOrder::Zerg {
         auto initialValue = 10;
         if (com(Zerg_Spawning_Pool) == 0)
             return 0;
-
-        auto macroHatch      = (currentBuild == Z_PoolHatch || currentBuild == Z_HatchPool) ? 1 : 0;
-        auto enemyDrones     = Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone);
-        auto enemyProduction = max(1, Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery, Zerg_Lair, Zerg_Hive) - 1);
-        auto minDrones       = max(enemyDrones + 1, (Stations::getGasingStationsCount() * 8) + int(macroHatch * 3));
 
         // 1Hatch builds can't make too many lings
         if (currentTransition == Z_1HatchMuta && total(Zerg_Mutalisk) == 0) {

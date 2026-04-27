@@ -221,7 +221,7 @@ namespace McRave::Resources {
             // Move this to planning drawings at some point
             int offset = 0;
             for (auto &building : Planning::getPlannedBuildings()) {
-                Broodwar->drawTextScreen(Position(0, 120 + offset), "%s", building.second.c_str());
+                Broodwar->drawTextScreen(Position(0, 150 + offset), "%c%s", Text::White, building.second.c_str());
                 offset += 10;
             }
 
@@ -260,6 +260,7 @@ namespace McRave::Resources {
         Visuals::startPerfTest();
         updateResources();
         updateDrilling();
+        updateDrawing();
         Visuals::endPerfTest("Resources");
     }
 

@@ -94,18 +94,20 @@ namespace BWEB {
                 auto dist               = mainChokeCenter.getDistance(natChokeCenter);
                 auto halfDist           = dist / 2.0;
                 auto mainChoke          = main->getChokepoint();
-                auto mainChokeAnglePerp = Map::getAngle(make_pair(Position(mainChoke->Pos(mainChoke->end1)), Position(mainChoke->Pos(mainChoke->end2)))) + M_PI_D2;
+                auto mainChokeAnglePerp = Map::getAngle(make_pair(Position(mainChoke->Pos(mainChoke->end1)), Position(mainChoke->Pos(mainChoke->end2))));
 
                 // Check if a perpendicular point is closer to the natural by half the dist
-                Position perpVector(cos(mainChokeAnglePerp), sin(mainChokeAnglePerp));
-                perpVector               = perpVector * dist;
+                Position perpVector(cos(mainChokeAnglePerp) * dist, sin(mainChokeAnglePerp) * dist);
                 auto perpPoint1          = mainChokeCenter + perpVector;
                 auto perpPoint2          = mainChokeCenter - perpVector;
                 auto dist1               = natChokeCenter.getDistance(perpPoint1);
                 auto dist2               = natChokeCenter.getDistance(perpPoint2);
                 auto mainPointsToNatural = dist1 < halfDist || dist2 < halfDist;
 
-                if ((distNatToNatChoke >= 240.0 && distNatToMainChoke >= 240.0) || mainPointsToNatural) {
+                testTiles[TilePosition(perpPoint1)] = Colors::Purple;
+                testTiles[TilePosition(perpPoint2)] = Colors::Orange;
+
+                if (mainPointsToNatural) {
 
                     // Check each point of geometry to see if it's close to the main choke
                     auto bypassCount = 0;

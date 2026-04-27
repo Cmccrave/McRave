@@ -29,7 +29,7 @@ namespace McRave::BuildOrder::Zerg {
         wallNat  = hatchCount() >= 3 && (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled());
         wallMain = false;
 
-        wantNatural = hatchCount() >= 3 || (Spy::getEnemyTransition() != U_WorkerRush);
+        wantNatural = hatchCount() >= 3 || (Spy::getEnemyTransition() != U_WorkerRush && hatchCount() < 2);
         wantThird   = hatchCount() >= 3 || (Spy::getEnemyBuild() == T_RaxCC);
 
         mineralThird    = false;
@@ -95,9 +95,11 @@ namespace McRave::BuildOrder::Zerg {
 
         // RaxFact
         if (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled() || Spy::getEnemyBuild() == "Unknown") {
-            initialValue = 2;
+            initialValue = 4;
             if (Spy::getEnemyOpener() == T_1FactFE || Spy::getEnemyOpener() == T_2FactFE || Util::getTime() > Time(4, 00))
                 initialValue = 4;
+            if (Spy::getEnemyOpener() == T_2FactVulture || Players::hasUpgraded(PlayerState::Enemy, Ion_Thrusters)) 
+                initialValue = 6;
         }
 
         // TODO: Fix T spy

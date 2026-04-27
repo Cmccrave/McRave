@@ -194,6 +194,12 @@ namespace McRave::BuildOrder::Zerg {
                 }
             }
 
+            // Reserve resources
+            if (needSunks && com(Zerg_Creep_Colony) > 0)
+                buildQueue[Zerg_Sunken_Colony] = vis(Zerg_Sunken_Colony) + 1;
+            if (needSpores && com(Zerg_Creep_Colony) > 0)
+                buildQueue[Zerg_Spore_Colony] = vis(Zerg_Spore_Colony) + 1;
+
             // Prepare evo chamber just in case and not a hydra build
             if (focusUnit != Zerg_Hydralisk && focusUnit != Zerg_Lurker) {
 

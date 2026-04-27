@@ -153,7 +153,7 @@ namespace McRave::Math {
         auto splash   = calcSplashModifier(unit);
         auto damage   = unit.getGroundDamage();
         auto cooldown = calcGroundCooldown(unit);
-        auto numHits  = unit.getType().groundWeapon().damageFactor();
+        auto numHits  = max(unit.getType().maxGroundHits(), unit.getType().groundWeapon().damageFactor());
 
         if (unit.getType() == Terran_Bunker) {
             numHits = 4;
@@ -167,7 +167,7 @@ namespace McRave::Math {
         auto splash   = calcSplashModifier(unit);
         auto damage   = unit.getAirDamage();
         auto cooldown = calcAirCooldown(unit);
-        auto numHits  = unit.getType().airWeapon().damageFactor();
+        auto numHits  = max(unit.getType().maxAirHits(), unit.getType().airWeapon().damageFactor());
 
         if (unit.getType() == Terran_Bunker) {
             numHits = 4;
@@ -255,22 +255,22 @@ namespace McRave::Math {
 
         // Estimate value of speed vs average unit speed
         const auto speed = [&]() {
-            auto value  = (unit.getSpeed() / avgUnitSpeed);
-            auto weight = 0.5;
-            return 1.0 + weight * value;
+            auto value = (unit.getSpeed() / avgUnitSpeed);
+            return value;
         };
 
         // Estimate value of health vs average unit health
         const auto health = [&]() {
             auto value = (double(unit.getType().maxHitPoints() + unit.getType().maxShields())) / avgHealth;
-            return pow(value, 0.5);
+            return value;
         };
 
-        auto wH = 0.5;
-        auto wA = 0.3;
-        auto wS = 0.2;
+        auto wH = 0.9;
+        auto wS = 0.1;
 
-        return 1.0 + wH * (health()) + wA * (armor()) + wS * (speed());
+        auto EHP  = (health()) * (armor());
+        auto surv = wH * EHP + wS * (speed());
+        return surv;
     }
 
     double calcGroundRange(UnitInfo &unit)
@@ -414,7 +414,7 @@ namespace McRave::Math {
     {
         // Attack animation frames below
         if (unitType == Protoss_Dragoon)
-            return 5;
+            return 9;
         if (unitType == Zerg_Devourer)
             return 7;
         return 0;

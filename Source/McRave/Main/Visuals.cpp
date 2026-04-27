@@ -129,6 +129,20 @@ namespace McRave::Visuals {
             // Timers
             sort(frameTests.begin(), frameTests.end(), [&](auto &left, auto &right) { return left.average > right.average; });
 
+            // Scores
+            int offset = 0;
+            for (auto &type : UnitTypes::allUnitTypes()) {
+                auto raceLen  = int(std::strlen(type.getRace().c_str())) + 1;
+                auto shortStr = type.toString();
+                shortStr.erase(0, raceLen);
+
+                auto typeColor = Text::White;
+                if (total(type) > 0 && !type.isBuilding()) {
+                    Broodwar->drawTextScreen(0, offset, "%c%s  %d/%d", typeColor, shortStr.c_str(), vis(type), total(type));
+                    offset += 10;
+                }
+            }
+
             auto overall = 0.0;
             for (auto &test : frameTests) {
                 if (test.average > 0.25 || test.current > 10.0 || test.maximum > 25.0) {
@@ -171,53 +185,6 @@ namespace McRave::Visuals {
             // BWEB
             if (isDrawingEnabled(DrawingType::BWEB)) {
                 BWEB::Map::draw();
-            }
-        }
-
-        void drawOrdersAndCommands()
-        {
-            for (auto &state : {PlayerState::Self, PlayerState::Enemy, PlayerState::Ally}) {
-                for (auto &u : Units::getUnits(state)) {
-                    UnitInfo &unit = *u;
-
-                    int color     = unit.getPlayer()->getColor();
-                    int textColor = color == 185 ? textColor = Text::DarkGreen : unit.getPlayer()->getTextColor();
-
-                    if (unit.unit()->isLoaded())
-                        continue;
-
-                    if (isDrawingEnabled(DrawingType::Commands)) {
-                        if (unit.commandText != "") {
-                            const auto color  = Text::White;
-                            const auto height = unit.getType().height() / 2;
-                            const auto pText  = unit.getPosition() + Position(-4 * int(unit.commandText.length() / 2), height);
-                            Broodwar->drawTextMap(pText, "%c%s", color, unit.commandText.c_str());
-                            drawLine(unit.getPosition(), unit.getCommandPosition(), color);
-                        }
-                    }
-
-                    if (isDrawingEnabled(DrawingType::Orders)) {
-                        int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
-                        if (unit.getRole() == Role::Production && (unit.getType() == UnitTypes::Zerg_Egg || (unit.unit()->isTraining() && !unit.unit()->getTrainingQueue().empty()))) {
-                            auto trainType  = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType().c_str() : unit.unit()->getTrainingQueue().front().c_str();
-                            auto trainOrder = unit.getType() == UnitTypes::Zerg_Egg ? "Morphing" : "Training";
-                            Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, trainOrder);
-                            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, trainType);
-                        }
-                        else if (unit.unit() && unit.unit()->exists() && unit.unit()->isCompleted()) {
-                            if (unit.unit()->getOrder() != Orders::Nothing && unit.unit()->getOrderTarget()) {
-                                drawLine(unit.getPosition(), unit.unit()->getOrderTarget()->getPosition(), color);
-                                Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, unit.unit()->getOrder().c_str());
-                            }
-                            if (unit.unit()->getSecondaryOrder() != Orders::Nothing)
-                                Broodwar->drawTextMap(unit.getPosition() + Position(width, -16), "%c%s", textColor, unit.unit()->getOrder().c_str());
-                            if (unit.unit()->isUpgrading())
-                                Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, unit.unit()->getUpgrade().c_str());
-                            else if (unit.unit()->isResearching())
-                                Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, unit.unit()->getTech().c_str());
-                        }
-                    }
-                }
             }
         }
 
@@ -283,7 +250,6 @@ namespace McRave::Visuals {
     {
         getCurrentWindow();
         drawInformation();
-        drawOrdersAndCommands();
         checkSpeed();
     }
 

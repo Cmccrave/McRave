@@ -289,7 +289,7 @@ namespace McRave::Stations {
                 if (Players::getTotalCount(PlayerState::Enemy, Terran_Dropship) > 0)
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
                 if (Stations::ownedBy(Terrain::getMyNatural()) != PlayerState::Self && (Spy::getEnemyTransition() == U_WorkerRush || Spy::getEnemyTransition() == T_Rush))
-                    return 2 - groundCount;
+                    return 1 - groundCount;
                 if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(9, 00))
                     return 1 - groundCount;
             }
@@ -525,13 +525,16 @@ namespace McRave::Stations {
     // TODO: Eventually remove this
     void storeStation(Unit unit) { storeStation(unit->getPosition(), Players::getPlayerState(unit)); }
 
-    void removeStation(BWAPI::Point<int> here, PlayerState player)
+    void removeStation(Position here, PlayerState player)
     {
         auto station    = BWEB::Stations::getClosestStation(TilePosition(here));
         auto stationptr = stations.find(station);
 
         if (!station || here.getDistance(station->getBase()->Center()) > 96.0 || stationptr == stations.end() || stationptr->second == PlayerState::None)
             return;
+
+        Broodwar << "remove called" << endl;
+        Broodwar << here << endl;
 
         // Remove workers from any resources on this station
         for (auto &mineral : Resources::getMyMinerals()) {

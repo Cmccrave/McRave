@@ -265,6 +265,8 @@ namespace McRave {
         bool isStunned() { return stunned; }
         bool isHidden() { return hidden; }
         bool isCloaked() { return cloaked; }
+
+        // Returns true if the unit is completed and not morphing
         bool isCompleted() { return completed; }
         bool isInvincible() { return invincible; }
         bool isNearSplash() { return nearSplash; }

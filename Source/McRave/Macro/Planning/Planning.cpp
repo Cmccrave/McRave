@@ -970,8 +970,8 @@ namespace McRave::Planning {
         if (itr != buildingsPlanned.end())
             return itr->second;
         return None;
-    }    
-    
+    }
+
     UnitType whatMorphsHere(TilePosition here)
     {
         auto itr = morphsPlanned.find(here);

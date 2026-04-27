@@ -22,9 +22,13 @@ namespace McRave::Command {
     struct ScoreContext {
         Position p;
         WalkPosition w;
-        std::shared_ptr<UnitInfo> unit;
-        std::shared_ptr<UnitInfo> target;
-        std::shared_ptr<UnitInfo> commander;
+        std::shared_ptr<UnitInfo> unit, target, commander;
+
+        ScoreContext(const std::shared_ptr<UnitInfo> &unit_ref) : unit(unit_ref)
+        {
+            target    = unit->hasTarget() ? unit->getTarget().lock() : nullptr;
+            commander = unit->hasCommander() ? unit->getCommander().lock() : nullptr;
+        }
     };
 
     namespace {
@@ -36,7 +40,7 @@ namespace McRave::Command {
 
         double mobility(ScoreContext &context) //
         {
-            return context.unit->isFlying() ? 1.0 : Util::log10(1 + Grids::getMobility(context.w));
+            return context.unit->isFlying() ? 1.0 : Util::log10(10 + Grids::getMobility(context.w));
         }
 
         double altitude(ScoreContext &context) //
@@ -67,16 +71,12 @@ namespace McRave::Command {
             priority_queue<pair<double, Position>> posQueue;
 
             // Create the score context
-            ScoreContext context;
-            context.unit      = unit.shared_from_this();
-            context.target    = unit.hasTarget() ? unit.getTarget().lock() : nullptr;
-            context.commander = unit.hasCommander() ? unit.getCommander().lock() : nullptr;
-
+            ScoreContext context(unit.shared_from_this());
             const auto penalizeEdge   = [&](auto &p) { return clamp(nearestEdge.getDistance(p) / 96.0, 1.0, 5.00); };
             const auto penalizeCorner = [&](auto &p) { return clamp(nearestCorner.getDistance(p) / 160.0, 1.0, 5.00); };
 
             // Pre calculate existing costs
-            auto existingEdgeCost = max(penalizeEdge(unit.getPosition()), penalizeEdge(unit.getNavigation()));
+            auto existingEdgeCost   = max(penalizeEdge(unit.getPosition()), penalizeEdge(unit.getNavigation()));
             auto existingCornerCost = max(penalizeCorner(unit.getPosition()), penalizeCorner(unit.getNavigation()));
 
             // Check if this is a viable position for movement
@@ -105,7 +105,7 @@ namespace McRave::Command {
             };
 
             // Clear the vector and keep the space reserved
-            auto radius           = 20;
+            auto radius           = 4.0 + (unit.getSpeed() * 2);
             const auto vectorSize = size_t(radius * radius);
             positionsByCost.clear();
             positionsByCost.reserve(vectorSize);
@@ -408,9 +408,9 @@ namespace McRave::Command {
         auto kiteFromTarget = !kiteFromThreat;
         auto kiteAvoidance  = unit.attemptingAvoidance() && unit.hasCommander();
 
-        auto selfRange   = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
-        auto targetRange = unit.isFlying() ? target.getAirRange() : target.getGroundRange();
-        auto maxRange    = unit.isFlying() ? Players::getStrength(PlayerState::Enemy).maxAirRange : Players::getStrength(PlayerState::Enemy).maxGroundRange;
+        auto selfRange     = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
+        auto targetRange   = unit.isFlying() ? target.getAirRange() : target.getGroundRange();
+        auto maxEnemyRange = unit.isFlying() ? Players::getStrength(PlayerState::Enemy).maxAirRange : Players::getStrength(PlayerState::Enemy).maxGroundRange;
 
         // Get a position away from splash
         if (kiteAvoidance) {
@@ -421,12 +421,18 @@ namespace McRave::Command {
         else if (kiteFromThreat) {
 
             const auto threatCalc = [&](auto &p) {
+                if (!unit.isFlying() && !Util::findTerrainWalkable(p, unit.getType()))
+                    return FLT_MAX;
                 auto threat = unit.isFlying() ? Grids::getAirThreat(p, PlayerState::Enemy) : Grids::getGroundThreat(p, PlayerState::Enemy);
                 return threat;
             };
 
-            auto calcPair = Util::findPointOnCircle(unit.getPosition(), target.getPosition(), maxRange, threatCalc);
-            kiteTowards   = calcPair.second;
+            auto cd        = target.isFlying() ? unit.getType().airWeapon().damageCooldown() : unit.getType().groundWeapon().damageCooldown();
+            auto kiteRange = (unit.getSpeed() * cd) + selfRange;
+            auto maxRange  = max(kiteRange, maxEnemyRange);
+            auto calcPair  = Util::findPointOnCircle(unit.getPosition(), unit.getPosition(), maxRange, threatCalc);
+            kiteTowards    = calcPair.second;
+            Visuals::drawLine(unit.getPosition(), kiteTowards, Colors::Purple);
         }
 
         const auto scoreFunction = [&](ScoreContext &context) {
@@ -505,7 +511,7 @@ namespace McRave::Command {
 
                 // Special Case: runby units try to stay alive
                 if (unit.getType() == Zerg_Zergling && (Players::ZvT() || Players::ZvP())) {
-                    if (unit.attemptingRunby() && unit.getHealth() < 16 && !unit.getUnitsTargetingThis().empty())
+                    if (unit.getGoalType() == GoalType::Runby && unit.getHealth() < 16 && !unit.getUnitsTargetingThis().empty())
                         return true;
                 }
 
@@ -571,7 +577,7 @@ namespace McRave::Command {
     {
         const auto canDefend    = unit.getRole() == Role::Combat;
         const auto shouldDefend = unit.getFormation().isValid() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && unit.getGlobalState() != GlobalState::Attack &&
-                                  unit.getLocalState() != LocalState::Attack && !unit.isLightAir() && !unit.attemptingRunby();
+                                  unit.getLocalState() != LocalState::Attack && !unit.isLightAir();
 
         if (canDefend && shouldDefend) {
             unit.setCommand(Move, unit.getFormation());

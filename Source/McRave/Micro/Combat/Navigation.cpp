@@ -25,11 +25,6 @@ namespace McRave::Combat::Navigation {
         auto newPathAllowed = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) ||
                               mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)));
 
-        if (unit.attemptingRunby()) {
-            unit.setMarchPath(groundHarassPath);
-            return;
-        }
-
         if (newPathAllowed && !unit.hasSameMarchPath(unit.getPosition(), pathPoint)) {
             BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
             newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
@@ -130,14 +125,8 @@ namespace McRave::Combat::Navigation {
     {
         unit.setNavigation(unit.getDestination());
 
-        if (unit.getFormation().isValid() && !unit.attemptingRunby() && unit.getLocalState() != LocalState::Attack) {
+        if (unit.getFormation().isValid() && unit.getLocalState() != LocalState::Attack) {
             unit.setNavigation(unit.getFormation());
-            return;
-        }
-
-        if (unit.getFormation().isValid() && !unit.attemptingRunby() && unit.getLocalState() == LocalState::Attack) {
-            auto dist          = unit.getPosition().getDistance(unit.getDestination());
-            auto shiftToTarget = Util::shiftTowards(unit.getFormation(), unit.getDestination(), max(dist, 32.0));
             return;
         }
 
@@ -301,7 +290,7 @@ namespace McRave::Combat::Navigation {
                 for (auto &pos : simPositions)
                     d = min(d, center.getApproxDistance(pos) - 32);
 
-                auto dist = max(0.01, double(d) - cachedDist);
+                auto dist = max(0.00001, double(d) - cachedDist);
                 auto vis  = clamp(double(frameNow - Grids::getLastVisibleFrame(t)) * 0.0002, 0.05, 0.5);
                 return Util::fastReciprocal(dist * vis);
             };

@@ -189,9 +189,9 @@ namespace McRave::Roles {
                 if (Players::ZvP() && sixLings && com(Zerg_Sunken_Colony) == 0 && Combat::isDefendNatural() && proxyWorker && proxyCombatUnit) {
                     forceCombatWorker(12);
                 }
-                // if (Players::ZvT() && com(Zerg_Sunken_Colony) == 0 && proxyCombatWorker) {
-                //    forceCombatWorker(Spy::getWorkersPulled() + 1, Positions::Invalid, LocalState::Attack, GlobalState::Retreat);
-                //}
+                 if (Players::ZvT() && com(Zerg_Sunken_Colony) == 0 && com(Zerg_Spawning_Pool) > 0 && vis(Zerg_Creep_Colony) > 0 && proxyCombatWorker) {
+                    forceCombatWorker(vis(Zerg_Drone));
+                }
                 return;
             }
 

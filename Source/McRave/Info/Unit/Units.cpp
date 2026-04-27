@@ -247,6 +247,9 @@ namespace McRave::Units {
 
         void drawStrengths()
         {
+            if (!Visuals::isDrawingEnabled(DrawingType::Strengths))
+                return;
+
             for (auto &state : {PlayerState::Self, PlayerState::Enemy, PlayerState::Ally}) {
                 for (auto &u : Units::getUnits(state)) {
                     UnitInfo &unit = *u;
@@ -260,6 +263,74 @@ namespace McRave::Units {
                 }
             }
         }
+
+        void drawOrders()
+        {
+            if (!Visuals::isDrawingEnabled(DrawingType::Orders))
+                return;
+
+            for (auto &state : {PlayerState::Self, PlayerState::Enemy, PlayerState::Ally}) {
+                for (auto &u : Units::getUnits(state)) {
+                    UnitInfo &unit = *u;
+
+                    if (unit.unit()->isLoaded())
+                        continue;
+
+                    int color     = unit.getPlayer()->getColor();
+                    int textColor = color == 185 ? textColor = Text::DarkGreen : unit.getPlayer()->getTextColor();
+
+                    int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
+                    if (unit.getRole() == Role::Production && (unit.getType() == UnitTypes::Zerg_Egg || (unit.unit()->isTraining() && !unit.unit()->getTrainingQueue().empty()))) {
+                        auto trainType  = unit.getType() == UnitTypes::Zerg_Egg ? unit.unit()->getBuildType().c_str() : unit.unit()->getTrainingQueue().front().c_str();
+                        auto trainOrder = unit.getType() == UnitTypes::Zerg_Egg ? "Morphing" : "Training";
+                        Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, trainOrder);
+                        Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, trainType);
+                    }
+                    else if (unit.unit() && unit.unit()->exists() && unit.unit()->isCompleted()) {
+                        if (unit.unit()->getOrder() != Orders::Nothing && unit.unit()->getOrderTarget()) {
+                            Visuals::drawLine(unit.getPosition(), unit.unit()->getOrderTarget()->getPosition(), color);
+                            Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, unit.unit()->getOrder().c_str());
+                        }
+                        else if (unit.unit()->getOrder() != Orders::Nothing && unit.unit()->getOrderTargetPosition().isValid()) {
+                            Visuals::drawLine(unit.getPosition(), unit.unit()->getOrderTargetPosition(), color);
+                            Broodwar->drawTextMap(unit.getPosition() + Position(width, -8), "%c%s", textColor, unit.unit()->getOrder().c_str());
+                        }
+
+                        if (unit.unit()->getSecondaryOrder() != Orders::Nothing)
+                            Broodwar->drawTextMap(unit.getPosition() + Position(width, -16), "%c%s", textColor, unit.unit()->getOrder().c_str());
+
+                        if (unit.unit()->isUpgrading())
+                            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, unit.unit()->getUpgrade().c_str());
+                        else if (unit.unit()->isResearching())
+                            Broodwar->drawTextMap(unit.getPosition() + Position(width, 0), "%c%s", textColor, unit.unit()->getTech().c_str());
+                    }
+                }
+            }
+        }
+
+        void drawCommands()
+        {
+            if (!Visuals::isDrawingEnabled(DrawingType::Commands))
+                return;
+
+            for (auto &state : {PlayerState::Self, PlayerState::Enemy, PlayerState::Ally}) {
+                for (auto &u : Units::getUnits(state)) {
+                    UnitInfo &unit = *u;
+
+                    if (unit.unit()->isLoaded())
+                        continue;
+
+                    if (unit.commandText != "") {
+                        const auto color  = Text::White;
+                        const auto height = unit.getType().height() / 2;
+                        const auto pText  = unit.getPosition() + Position(-4 * int(unit.commandText.length() / 2), height);
+                        Broodwar->drawTextMap(pText, "%c%s", color, unit.commandText.c_str());
+                        Visuals::drawLine(unit.getPosition(), unit.getCommandPosition(), color);
+                    }
+                }
+            }
+        }
+
     } // namespace
 
     void onFrame()
@@ -267,6 +338,9 @@ namespace McRave::Units {
         Visuals::startPerfTest();
         updateCounters();
         updateUnits();
+        drawStrengths();
+        drawOrders();
+        drawCommands();
         Visuals::endPerfTest("Units");
     }
 
