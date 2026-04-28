@@ -118,17 +118,17 @@ namespace McRave::BuildOrder::Zerg {
             if (total(Zerg_Extractor) > 0 && vis(Zerg_Drone) >= 9)
                 madeTenthDrone = true;
 
-            static auto cancelled = false;
-            if (vis(Zerg_Extractor) == 0 && vis(Zerg_Drone) >= 10)
-                cancelled = true;
-
             auto readyToCancel = extractorMade && madeTenthDrone;
             if (!readyToCancel) {
                 buildQueue[Zerg_Extractor] = (vis(Zerg_Drone) >= 9 && Broodwar->self()->minerals() >= 80) || extractorMade;
             }
-
-            if (cancelled)
-                gasTrick = false;
+            else {
+                static auto cancelled = false;
+                if (vis(Zerg_Extractor) == 0 && vis(Zerg_Drone) >= 10)
+                    cancelled = true;
+                if (cancelled)
+                    gasTrick = false;            
+            }
         }
 
         void queueDefenses()
@@ -203,8 +203,8 @@ namespace McRave::BuildOrder::Zerg {
             // Prepare evo chamber just in case and not a hydra build
             if (focusUnit != Zerg_Hydralisk && focusUnit != Zerg_Lurker) {
 
-                // ZvT anticipate wraith timing on 1 base
-                if (Players::ZvT() && !Spy::enemyFastExpand() && (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled()) && Util::getTime() > Time(4, 15)) {
+                // ZvT anticipate wraith timing on 1 base, can get it late since burrow is sufficient
+                if (Players::ZvT() && !Spy::enemyFastExpand() && (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled()) && Util::getTime() > Time(4, 45)) {
                     needSpores = true;
                     wallNat    = true;
                 }
@@ -290,7 +290,7 @@ namespace McRave::BuildOrder::Zerg {
                 auto minDronesPerGas = 10 + (4 * vis(Zerg_Extractor));
                 auto takeAllGeysers  = com(Zerg_Drone) >= minDronesAllGas;
                 auto allowNewGeyser  = com(Zerg_Drone) >= minDronesPerGas && (Resources::isHalfMineralSaturated() || productionSat || takeAllGeysers);
-                auto needGeyser      = gasLimit > vis(Zerg_Extractor) * 3;
+                auto needGeyser      = gasLimit >= vis(Zerg_Extractor) * 3;
                 gasDesired           = allowNewGeyser && needGeyser;
 
                 buildQueue[Zerg_Extractor] = min(vis(Zerg_Extractor) + gasDesired, Resources::getGasCount());

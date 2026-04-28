@@ -65,8 +65,9 @@ namespace McRave::Pathing {
             if (!target.unit()->exists() || unit.getSpeed() == 0.0 || target.getSpeed() == 0.0 || !target.getPosition().isValid())
                 return;
 
-            // Only generate for light air for now
-            if (!unit.isLightAir() || unit.isWithinRange(target))
+            // Light air and scout ejection
+            auto allowedToIntercept = unit.isLightAir() || (unit.isMelee() && target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target.getPosition()));
+            if (!allowedToIntercept || unit.isWithinRange(target))
                 return;
 
             auto toTarget  = target.getPosition() - unit.getPosition();

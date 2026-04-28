@@ -88,20 +88,10 @@ namespace McRave::Walls {
 
             // Zerg wall parameters
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                tight    = false;
-                defenses = {Zerg_Sunken_Colony};
-
-                if (Players::ZvT()) {
-                    naturaltestingOrder = {{Zerg_Evolution_Chamber, Zerg_Spire},
-                                           {Zerg_Evolution_Chamber},
-                                           {Zerg_Hatchery, Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
-                                           {Zerg_Evolution_Chamber, Zerg_Evolution_Chamber},
-                                           {}};
-                }
-                else {
-                    naturaltestingOrder = {{Zerg_Evolution_Chamber, Zerg_Hatchery}, {Zerg_Hatchery, Zerg_Evolution_Chamber}, {Zerg_Evolution_Chamber, Zerg_Evolution_Chamber}, {}};
-                }
-                thirdTestingOrder = naturaltestingOrder;
+                tight               = false;
+                defenses            = {Zerg_Sunken_Colony};
+                naturaltestingOrder = {{Zerg_Evolution_Chamber, Zerg_Hatchery}, {Zerg_Hatchery, Zerg_Evolution_Chamber}, {Zerg_Evolution_Chamber, Zerg_Evolution_Chamber}, {}};
+                thirdTestingOrder   = naturaltestingOrder;
             }
         }
 
@@ -196,10 +186,11 @@ namespace McRave::Walls {
 
         int TvZ_Transition(BWEB::Wall &wall) { return 0; }
 
-        int TvZ_Defenses(BWEB::Wall &wall) {
+        int TvZ_Defenses(BWEB::Wall &wall)
+        {
             if (Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_2HatchLurker)
                 return 2;
-            return 0; 
+            return 0;
         }
 
         // ZvP
@@ -390,12 +381,12 @@ namespace McRave::Walls {
             }
 
             // RaxFact
-            if (Spy::getEnemyBuild() == T_RaxFact || Spy::getEnemyBuild() == "Unknown") {
-                return 1;
+            if (Spy::getEnemyBuild() == T_RaxFact) {
+                return Util::getTime() > Time(3, 30);
             }
 
             //
-            if (Scouts::enemyDeniedScout() || Spy::enemyWalled())
+            if (Scouts::enemyDeniedScout() || Spy::enemyWalled() || Spy::getEnemyBuild() == "Unknown")
                 return 1;
 
             // Fall through unknown opener
@@ -595,8 +586,9 @@ namespace McRave::Walls {
         }
 
         // If they're only at home and not proxying units, don't make any defenses for a bit
-        auto minimumColonyNeeded = Util::getTime() > Time(6, 00) ? 2 : 1;
-        if (!Players::vFFA() && !Spy::enemyProxy() && (wall.getGroundDefenseCount() >= minimumColonyNeeded || getColonyCount(&wall) >= minimumColonyNeeded)) {
+        auto minimumColonyNeeded = (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(6, 00));
+        auto morphAlways         = (Spy::getEnemyBuild() == T_RaxFact && wall.getGroundDefenseCount() == 0) || Players::vFFA() || Spy::enemyProxy();
+        if (!morphAlways && (wall.getGroundDefenseCount() >= minimumColonyNeeded || getColonyCount(&wall) >= minimumColonyNeeded)) {
             auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) { return Units::inBoundUnit(*u) && !u->getType().isWorker(); });
             if (!closestUnit)
                 return 0;

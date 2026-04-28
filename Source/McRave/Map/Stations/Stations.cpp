@@ -288,7 +288,7 @@ namespace McRave::Stations {
             if (station->isMain()) {
                 if (Players::getTotalCount(PlayerState::Enemy, Terran_Dropship) > 0)
                     return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
-                if (Stations::ownedBy(Terrain::getMyNatural()) != PlayerState::Self && (Spy::getEnemyTransition() == U_WorkerRush || Spy::getEnemyTransition() == T_Rush))
+                if (Stations::ownedBy(Terrain::getMyNatural()) != PlayerState::Self && Spy::getEnemyTransition() == T_Rush)
                     return 1 - groundCount;
                 if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(9, 00))
                     return 1 - groundCount;

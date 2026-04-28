@@ -29,10 +29,10 @@ namespace McRave::BuildOrder::Zerg {
     void ZvP_HP_10Hatch()
     {
         // 10h 9p
-        transitionReady = vis(Zerg_Spawning_Pool) > 0;
+        transitionReady = vis(Zerg_Spawning_Pool) > 0 && vis(Zerg_Drone) >= 11;
         scout           = scout || (hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150);
         planEarly       = !Spy::enemyProxy() && hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150;
-        gasTrick        = true;
+        gasTrick        = com(Zerg_Overlord) < 2;
 
         // Buildings
         buildQueue[Zerg_Hatchery]      = 1 + (s >= 20);

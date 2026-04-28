@@ -311,7 +311,7 @@ namespace McRave::Learning {
                 PoolHatch.setOpeners({Z_Overpool});
                 PoolHatch.setTransitions({Z_2HatchMuta, Z_3HatchMuta, Z_3HatchHydra, Z_4HatchHydra, Z_6HatchHydra});
 
-                HatchPool.setOpeners({/*Z_10Hatch,*/ Z_12Hatch});
+                HatchPool.setOpeners({Z_10Hatch, Z_12Hatch});
                 HatchPool.setTransitions({Z_2HatchMuta, Z_3HatchMuta, Z_3HatchHydra, Z_4HatchHydra, Z_6HatchHydra});
 
                 myBuilds = {PoolHatch, HatchPool};

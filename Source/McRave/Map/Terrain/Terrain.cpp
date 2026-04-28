@@ -28,7 +28,7 @@ namespace McRave::Terrain {
         set<TilePosition> bannedStart;
 
         // Map
-        map<const BWEM::Area *, vector<WalkPosition>> areaGeometry;
+        map<const BWEM::Area *, AreaGeometry> areaGeometry;
         map<const BWEM::Area *, vector<WalkPosition>> areaOutlines;
         map<WalkPosition, pair<const BWEM::Area *, const BWEM::Area *>> areaChokeGeometry;
         map<const BWEM::Area *, vector<const BWEM::Area *>> sharedArea;
@@ -743,13 +743,27 @@ namespace McRave::Terrain {
     void createAreaCache()
     {
         // Cache area geometry
-        for (int x = 0; x < Broodwar->mapWidth() * 4; x++) {
-            for (int y = 0; y < Broodwar->mapHeight() * 4; y++) {
-                auto w = WalkPosition(x, y);
-                if (w.isValid()) {
-                    auto area = mapBWEM.GetArea(w);
-                    if (area)
-                        areaGeometry[area].push_back(w);
+        for (int x = 0; x < Broodwar->mapWidth(); x++) {
+            for (int y = 0; y < Broodwar->mapHeight(); y++) {
+                auto t = TilePosition(x, y);
+
+                if (t.isValid()) {
+                    auto area = mapBWEM.GetArea(t);
+                    if (area) {
+                        areaGeometry[area].tiles.push_back(t);
+                    }
+                }
+
+                for (int i = 0; i < 4; i++) {
+                    for (int j = 0; j < 4; j++) {
+                        auto w = WalkPosition(t) + WalkPosition(i, j);
+                        if (w.isValid()) {
+                            auto area = mapBWEM.GetArea(w);
+                            if (area) {
+                                areaGeometry[area].walks.push_back(w);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -811,8 +825,8 @@ namespace McRave::Terrain {
         for (auto &station : BWEB::Stations::getStations()) {
             if (station.isMain()) {
                 auto area = station.getBase()->GetArea();
-                auto geos = areaGeometry[area]; 
-                
+                auto geos = areaGeometry[area].walks;
+
                 // Get boundary tiles
                 vector<WalkPosition> boundarySet;
                 for (auto &w : geos) {
@@ -946,14 +960,14 @@ namespace McRave::Terrain {
     }
 
     // Area information
-    vector<WalkPosition> getAreaGeometry(const BWEM::Area *area)
+    AreaGeometry* getAreaGeometry(const BWEM::Area *area)
     {
         if (area) {
-            return areaGeometry[area];
+            return &areaGeometry[area];
         }
-        return {};
+        return nullptr;
     }
-    vector<WalkPosition> getAreaOutline(const BWEM::Area *area) 
+    vector<WalkPosition> getAreaOutline(const BWEM::Area *area)
     {
         if (area) {
             return areaOutlines[area];

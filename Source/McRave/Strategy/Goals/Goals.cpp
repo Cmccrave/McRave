@@ -448,13 +448,6 @@ namespace McRave::Goals {
             auto watchChoke = Terrain::getNaturalChoke() && !Spy::enemyRush() && !Spy::enemyProxy() && //
                               (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) == 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0);
 
-            auto watchNatural = Spy::getEnemyTransition() == U_WorkerRush;
-
-            // Assign an Overlord to give drones a drill
-            if (watchNatural) {
-                assignNumberToGoal(Terrain::getNaturalPosition(), Zerg_Overlord, 1, GoalType::Escort);
-            }
-
             // Assign an Overlord to watch our Choke early on
             if (watchChoke) {
                 const auto natSpot = Position(Terrain::getNaturalChoke()->Center());
@@ -477,6 +470,15 @@ namespace McRave::Goals {
                             assignNumberToGoal(station->getChokepoint()->Center(), Zerg_Overlord, 1, GoalType::Escort);
                     }
                 }
+            }
+
+            // Always assign an Overlord to the natural
+            if (Util::getTime() > Time(4, 00))
+                assignNumberToGoal(Terrain::getNaturalPosition(), Zerg_Overlord, 1, GoalType::Defend);
+
+            // Assign an overlord to the main if we see a drop coming
+            if (Spy::getEnemyTransition() == P_Robo || Spy::getEnemyTransition() == P_DT) {
+                assignNumberToGoal(Terrain::getMainPosition(), Zerg_Overlord, 1, GoalType::Defend);
             }
 
             // Assign an Overlord to watch for drops
@@ -528,8 +530,8 @@ namespace McRave::Goals {
             if (Broodwar->self()->getRace() != Races::Zerg)
                 return;
 
-            auto outlines      = Terrain::getAreaOutline(Terrain::getMainArea());
-            auto oldestTile    = TilePositions::Invalid;
+            auto outlines   = Terrain::getAreaOutline(Terrain::getMainArea());
+            auto oldestTile = TilePositions::Invalid;
             for (auto &w : outlines) {
                 auto tile = TilePosition(w);
                 if (tile.isValid() && Broodwar->getFrameCount() - Grids::getLastVisibleFrame(tile) >= 720)
@@ -561,7 +563,7 @@ namespace McRave::Goals {
                 vector<shared_ptr<UnitInfo>> assigned;
                 for (int i = 0; i < numMutas; i++) {
                     auto closestVulture = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy,
-                                                               [&](auto &u) { return u->getType() == Terran_Vulture && !Util::contains(assigned, u); });
+                                                               [&](auto &u) { return u->getType() == Terran_Vulture && !Util::contains(assigned, u) && u->unit()->exists(); });
                     if (closestVulture) {
                         assignNumberToGoal(closestVulture->getPosition(), usefulMuta, 1, GoalType::Escort);
                         assigned.push_back(closestVulture->shared_from_this());
@@ -598,11 +600,6 @@ namespace McRave::Goals {
             auto harassers = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) >= 2 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Shuttle) > 0;
             if (harassers && (Players::getCompleteCount(PlayerState::Self, Zerg_Spore_Colony) == 0 || !Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Pneumatized_Carapace))) {
                 assignNumberToGoal(Terrain::getNaturalPosition(), Zerg_Hydralisk, 2, GoalType::Defend);
-            }
-
-            // Always move and overlord to the main if we see a drop coming
-            if (Spy::getEnemyTransition() == P_Robo || Spy::getEnemyTransition() == P_DT) {
-                assignNumberToGoal(Terrain::getMainPosition(), Zerg_Overlord, 1, GoalType::Defend);
             }
 
             // Always leave 2 lings at home in ZvZ

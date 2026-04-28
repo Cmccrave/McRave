@@ -22,8 +22,9 @@ namespace McRave::BuildOrder::Terran {
         transitionReady = false;
         planEarly       = false;
 
-        wallNat  = false;
-        wallMain = false;
+        wallNat   = false;
+        wallMain  = false;
+        wallThird = true;
     }
 
     void TvT_5Fact()

@@ -624,9 +624,9 @@ namespace McRave::Command {
     bool retreat(UnitInfo &unit)
     {
         const auto scoreFunction = [&](ScoreContext &context) {
-            auto score = 0.0;
-            score      = mobility(context) * Util::fastReciprocal(distance(context));
-            return score;
+            if (unit.isLightAir())
+                return 1.0 * Util::fastReciprocal(distance(context) * threat(context));
+            return mobility(context) * Util::fastReciprocal(distance(context));
         };
 
         const auto canRetreat = [&]() {

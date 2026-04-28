@@ -522,6 +522,8 @@ namespace McRave::Planning {
                 if (auto closestSunk = Util::getClosestUnit(desiredCenter, PlayerState::Self, [&](auto &u) { return isDefensiveType(u->getType()); })) {
                     desiredCenter = closestSunk->getPosition();
                 }
+                if (Spy::getEnemyBuild() == T_RaxFact && wall.getGroundDefenseCount() == 0)
+                    desiredCenter = Position(Terrain::getMainChoke()->Center());
 
                 int colonies = 0;
                 for (auto &tile : wall.getDefenses()) {

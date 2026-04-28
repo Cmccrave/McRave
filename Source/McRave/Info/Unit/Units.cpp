@@ -412,7 +412,7 @@ namespace McRave::Units {
         const auto notInNatural = !Terrain::inArea(Terrain::getEnemyNatural()->getBase()->GetArea(), unit.getPosition());
         const auto notInMain    = !Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), unit.getPosition());
 
-        return (Spy::enemyFastExpand() && notInNatural && notInMain) || (!Spy::enemyFastExpand() && notInMain);
+        return (notInNatural && notInMain) || (Players::ZvZ() && notInMain);
     }
 
     bool commandAllowed(UnitInfo &unit)

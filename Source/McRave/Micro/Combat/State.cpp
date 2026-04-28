@@ -392,7 +392,7 @@ namespace McRave::Combat::State {
             if (target.isThreatening() && !target.isHidden()) {
                 if (unit.isMelee() && target.isMelee() && !target.hasAttackedRecently() && !inRange && !Combat::isDefendNatural() && nearMainRamp())
                     return false;
-                if (unit.getType() == Zerg_Zergling && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && !inRange)
+                if (unit.getType() == Zerg_Zergling && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && !inRange && !target.hasAttackedRecently())
                     return false;
                 return true;
             }

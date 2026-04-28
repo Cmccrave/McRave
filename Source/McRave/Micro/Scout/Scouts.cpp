@@ -28,7 +28,7 @@ namespace McRave::Scouts {
             return area && main && area->AccessibleFrom(main);
         }
 
-        enum class ScoutType { None, Main, Natural, Proxy, Safe, Army, Expansion };
+        enum class ScoutType { None, Main, Natural, Proxy, SafeAir, SafeGround, Army, Expansion };
 
         struct ScoutTarget {
             Position center = Positions::Invalid;
@@ -89,13 +89,13 @@ namespace McRave::Scouts {
         bool firstOverlord     = false;
         bool secondOverlord    = false;
         vector<const BWEB::Station *> scoutOrder, scoutOrderFirstOverlord, scoutOrderSecondOverlord;
-        map<const BWEB::Station *const, Position> safePositions;
         bool resourceWalkPossible[256][256];
         UnitType workerType;
 
         set<TilePosition> safeTiles;
-        set<Position> potentialSafePositions;
-        set<TilePosition> enemyTiles;
+        set<Position> potentialAirPositions;
+        set<Position> potentialGroundPositions;
+        Position airSafePosition, groundSafePosition;
         set<TilePosition> enemyVisionTiles;
 
         void drawScouting()
@@ -164,22 +164,22 @@ namespace McRave::Scouts {
 
         void updateSafePositions()
         {
-            // for (auto tile : enemyVisionTiles) {
-            //    Visuals::drawBox(tile, Colors::Yellow);
-            //    Broodwar->drawTextMap(Position(tile) + Position(16, 16), "%d", Broodwar->getGroundHeight(tile));
-            //}
-            // for (auto tile : enemyTiles) {
-            //    Visuals::drawCircle(Position(tile) + Position(16, 16), 10, Colors::Red);
-            //    Broodwar->drawTextMap(Position(tile) + Position(16, 16), "%d", Broodwar->getGroundHeight(tile));
-            //}
-            // for (auto tile : safeTiles) {
-            //    Visuals::drawBox(tile, Colors::Green);
-            //    Broodwar->drawTextMap(Position(tile) + Position(16, 16), "%d", Broodwar->getGroundHeight(tile));
-            //}
-            // for (auto p : potentialSafePositions) {
-            //    Visuals::drawCircle(p, 8, Colors::Blue, true);
-            //    Broodwar->drawTextMap(p, "%d", Broodwar->getGroundHeight(TilePosition(p)));
-            //}
+            for (auto tile : enemyVisionTiles) {
+                Visuals::drawBox(tile, Colors::Yellow);
+                Broodwar->drawTextMap(Position(tile) + Position(16, 16), "%d", Broodwar->getGroundHeight(tile));
+            }
+            for (auto tile : safeTiles) {
+                Visuals::drawBox(tile, Colors::Green);
+                Broodwar->drawTextMap(Position(tile) + Position(16, 16), "%d", Broodwar->getGroundHeight(tile));
+            }
+            for (auto p : potentialAirPositions) {
+                Visuals::drawCircle(p, 8, Colors::Blue, true);
+                Broodwar->drawTextMap(p, "%d", Broodwar->getGroundHeight(TilePosition(p)));
+            }
+            for (auto p : potentialGroundPositions) {
+                Visuals::drawCircle(p, 8, Colors::Purple, true);
+                Broodwar->drawTextMap(p, "%d", Broodwar->getGroundHeight(TilePosition(p)));
+            }
 
             static bool safeDiscovered = false;
             if (!Terrain::getEnemyMain() || !Terrain::getEnemyNatural() || safeDiscovered) {
@@ -188,8 +188,8 @@ namespace McRave::Scouts {
 
             vector<const BWEB::Station *> enemyStations = {Terrain::getEnemyNatural()};
             safeDiscovered                              = true;
-            safePositions[Terrain::getEnemyNatural()]   = Positions::Invalid;
-            safePositions[Terrain::getEnemyMain()]      = Positions::Invalid;
+            airSafePosition                             = Positions::Invalid;
+            groundSafePosition                          = Positions::Invalid;
 
             auto neighborAreas = Terrain::getEnemyNatural()->getBase()->GetArea()->AccessibleNeighbours();
 
@@ -209,29 +209,23 @@ namespace McRave::Scouts {
                 return false;
             };
 
-            // Create a path from natural to natural, tiles around it with equal height or less are considered dangerous
+            // Create a path from enemy main to my natural
             BWEB::Path path = {Terrain::getEnemyMain()->getChokepoint()->Center(), Terrain::getMyNatural()->getChokepoint()->Center(), Protoss_Dragoon, true, false};
             path.generateJPS([&](auto t) { return path.unitWalkable(t); });
 
             // For each tile on this path, mark as being an "enemyTile"
             auto enemyNatArea = Terrain::getEnemyNatural()->getBase()->GetArea();
             Util::testAllPointOnPath(path, [&](auto &pos) {
-                if (pos.getDistance(Terrain::getEnemyNatural()->getBase()->Center()) > 1000.0)
+                if (pos.getDistance(Terrain::getEnemyNatural()->getBase()->Center()) > 1500.0)
                     return;
 
-                auto parent       = TilePosition(pos);
-                auto parentHeight = Broodwar->getGroundHeight(parent);
-                auto parentArea   = mapBWEM.GetArea(parent);
-                for (auto &t : Util::getTileCircle(6)) {
+                auto parent            = TilePosition(pos);
+                auto parentHeight      = Broodwar->getGroundHeight(parent);
+                auto parentArea        = mapBWEM.GetArea(parent);
+                auto parentInEnemyArea = tileInEnemyArea(parent);
+                for (auto &t : Util::getTileCircle(12)) {
                     auto tile             = TilePosition(pos) + t;
-                    auto validOrEnemyArea = tileInEnemyArea(tile) || Terrain::isChokepointGeo(tile);
-                    if (tile.isValid() && pos.isValid() && Broodwar->getGroundHeight(tile) <= parentHeight && validOrEnemyArea) {
-                        enemyTiles.insert(tile);
-                    }
-                }
-                for (auto &t : Util::getTileCircle(9)) {
-                    auto tile             = TilePosition(pos) + t;
-                    auto validOrEnemyArea = tileInEnemyArea(tile) || Terrain::isChokepointGeo(tile);
+                    auto validOrEnemyArea = parentInEnemyArea || Terrain::isChokepointGeo(tile);
                     if (tile.isValid() && pos.isValid() && Broodwar->getGroundHeight(tile) <= parentHeight && validOrEnemyArea) {
                         enemyVisionTiles.insert(tile);
                     }
@@ -239,18 +233,15 @@ namespace McRave::Scouts {
             });
 
             // Place all enemy tiles inside the vision tiles to prevent overlord moving through them
-            for (int x = 0; x < Broodwar->mapWidth(); x++) {
-                for (int y = 0; y < Broodwar->mapHeight(); y++) {
-                    auto t = TilePosition(x, y);
-                    if (Terrain::inArea(Terrain::getEnemyMain(), t) || Terrain::inArea(Terrain::getEnemyNatural(), t))
-                        enemyVisionTiles.insert(t);
-                }
-            }
+            for (auto &t : Terrain::getAreaGeometry(Terrain::getEnemyMain())->tiles)
+                enemyVisionTiles.insert(t);
+            for (auto &t : Terrain::getAreaGeometry(Terrain::getEnemyNatural())->tiles)
+                enemyVisionTiles.insert(t);
 
             // Designate tiles as either safe tiles or enemy tiles
             const auto checkAround = [&](auto station) {
                 auto watch = station->getBase()->Center();
-                for (auto &t : Util::getTileCircle(25)) {
+                for (auto &t : Util::getTileCircle(30)) {
                     auto tile = t + TilePosition(watch);
                     auto pos  = Position(tile) + Position(16, 16);
 
@@ -259,9 +250,7 @@ namespace McRave::Scouts {
 
                     // Within range of overlord sight sort of
                     auto enemyArea = tileInEnemyArea(tile);
-                    if (enemyArea)
-                        enemyTiles.insert(tile);
-                    else
+                    if (!enemyArea && enemyVisionTiles.find(tile) == enemyVisionTiles.end())
                         safeTiles.insert(tile);
                 }
             };
@@ -270,9 +259,13 @@ namespace McRave::Scouts {
                 checkAround(station);
 
             for (auto &parent : safeTiles) {
-                auto expectedCenter = Position(parent) + Position(16, 16);
-                auto valid          = true;
-                auto parentHeight   = Broodwar->getGroundHeight(parent);
+                auto expectedCenter  = Position(parent) + Position(16, 16);
+                auto validFlyingTile = true;
+                auto parentHeight    = Broodwar->getGroundHeight(parent);
+
+                auto validGroundTile = BWEB::Map::isWalkable(parent);
+                if (mapBWEM.GetArea(parent) && !mapBWEM.GetArea(parent)->AccessibleFrom(enemyNatArea))
+                    validGroundTile = false;
 
                 // Check for a walkabile tile directly adjacent, which breaks vision high ground it seems
                 for (int x = -1; x <= 1; x++) {
@@ -280,8 +273,8 @@ namespace McRave::Scouts {
                         auto tile = parent + TilePosition(x, y);
                         if (!tile.isValid())
                             continue;
-                        if (BWEB::Map::isWalkable(tile))
-                            valid = false;
+                        if (BWEB::Map::isWalkable(tile) && enemyVisionTiles.find(tile) != enemyVisionTiles.end())
+                            validFlyingTile = false;
                     }
                 }
 
@@ -291,8 +284,10 @@ namespace McRave::Scouts {
                         auto tile = parent + TilePosition(x, y);
                         if (!tile.isValid())
                             continue;
-                        if (tileInEnemyArea(tile) || Terrain::isChokepointGeo(tile) || enemyVisionTiles.find(tile) != enemyVisionTiles.end())
-                            valid = false;
+                        if (tileInEnemyArea(tile) || Terrain::isChokepointGeo(tile) || enemyVisionTiles.find(tile) != enemyVisionTiles.end()) {
+                            validGroundTile = false;
+                            validFlyingTile = false;
+                        }
                     }
                 }
 
@@ -303,24 +298,38 @@ namespace McRave::Scouts {
                         if (!tile.isValid())
                             continue;
                         if (Broodwar->getGroundHeight(tile) >= parentHeight) {
-                            if (tileInEnemyArea(tile) || Terrain::isChokepointGeo(tile) || enemyVisionTiles.find(tile) != enemyVisionTiles.end())
-                                valid = false;
+                            if (tileInEnemyArea(tile) || Terrain::isChokepointGeo(tile) || enemyVisionTiles.find(tile) != enemyVisionTiles.end()) {
+                                validFlyingTile = false;
+                            }
                         }
                     }
                 }
 
-                if (valid) {
-                    potentialSafePositions.insert(expectedCenter);
+                if (validFlyingTile) {
+                    potentialAirPositions.insert(expectedCenter);
+                }
+                if (validGroundTile) {
+                    potentialGroundPositions.insert(expectedCenter);
                 }
             }
 
             // Get closest safe position
             auto distBest = DBL_MAX;
-            for (auto &pos : potentialSafePositions) {
+            for (auto &pos : potentialAirPositions) {
                 auto dist = pos.getDistance(Terrain::getMainPosition()) / (1 + Broodwar->getGroundHeight(TilePosition(pos)));
                 if (dist < distBest) {
-                    safePositions[Terrain::getEnemyNatural()] = pos;
-                    distBest                                  = dist;
+                    airSafePosition = pos;
+                    distBest        = dist;
+                }
+            }
+
+            // Get furthest for ground safe position
+            distBest = 0.0;
+            for (auto &pos : potentialGroundPositions) {
+                auto dist = pos.getDistance(Terrain::getMainPosition());
+                if (dist > distBest) {
+                    groundSafePosition = pos;
+                    distBest           = dist;
                 }
             }
         }
@@ -568,11 +577,18 @@ namespace McRave::Scouts {
 
         void updateSafeScouting()
         {
-            auto &safe = scoutTargets[ScoutType::Safe];
-            auto &main = scoutTargets[ScoutType::Main];
+            const auto checkForExpansion = [&](auto &safe) {
+                auto safeToScout  = !Spy::enemyFastExpand();
+                auto recencyCheck = Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())) >= 200;
+                if (safeToScout) {
+                    if (recencyCheck || !enemyAir)
+                        safe.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
+                }
+            };
 
-            if (Terrain::getEnemyNatural() && safePositions[Terrain::getEnemyNatural()].isValid()) {
-                safe.center = safePositions[Terrain::getEnemyNatural()];
+            if (Terrain::getEnemyNatural() && airSafePosition.isValid()) {
+                auto &safe  = scoutTargets[ScoutType::SafeAir];
+                safe.center = airSafePosition;
 
                 Visuals::drawCircle(safe.center, 10, Colors::Orange, true);
 
@@ -588,13 +604,22 @@ namespace McRave::Scouts {
                         safe.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
 
-                // Overlord scouting sometimes needed
-                auto safeToScout  = !Spy::enemyFastExpand();
-                auto recencyCheck = Broodwar->getFrameCount() - Grids::getLastVisibleFrame(TilePosition(Terrain::getEnemyNatural()->getBase()->Center())) >= 200 && Util::getTime() > Time(4, 00);
-                safe.addTargets(safePositions[Terrain::getEnemyNatural()]);
-                if (safeToScout) {
-                    if (recencyCheck || !enemyAir)
-                        safe.addTargets(Terrain::getEnemyNatural()->getBase()->Center());
+                if (Util::getTime() > Time(4, 00))
+                    checkForExpansion(safe);
+            }
+
+            if (Terrain::getEnemyNatural() && groundSafePosition.isValid()) {
+                auto &safe = scoutTargets[ScoutType::SafeGround];
+                auto &army  = scoutTargets[ScoutType::Army];
+                safe.center = groundSafePosition;
+
+                // Zerg
+                if (Broodwar->self()->getRace() == Races::Zerg) {
+                    if (Players::ZvT() && Spy::getEnemyBuild() == T_RaxFact && army.desiredTypeCounts[Zerg_Zergling] == 0)
+                        safe.desiredTypeCounts[Zerg_Zergling] = 1;
+
+                    if (Util::getTime() > Time(4, 10))
+                        checkForExpansion(safe);
                 }
             }
         }
@@ -683,7 +708,7 @@ namespace McRave::Scouts {
             else if (vis(Protoss_Zealot) > 0 && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Leg_Enhancements))
                 type = Protoss_Zealot;
 
-            auto &expansion                            = scoutTargets[ScoutType::Expansion];
+            auto &expansion                   = scoutTargets[ScoutType::Expansion];
             expansion.desiredTypeCounts[type] = 1;
 
             // If we keep seeing workers outside their territory, we need to look, they might be transferring
@@ -875,7 +900,7 @@ namespace McRave::Scouts {
                 target.currentTypeCounts[unit.getType()]++;
 
                 // If we're scouting safe locations, stay at the center when injured
-                if (unit.isFlying() && type == ScoutType::Safe && unit.getPercentTotal() < 0.9) {
+                if (unit.isFlying() && type == ScoutType::SafeAir && unit.getPercentTotal() < 0.9) {
                     unit.setDestination(target.center);
                     unit.circle(Colors::Red);
                     continue;
@@ -1097,9 +1122,9 @@ namespace McRave::Scouts {
         updateSafePositions();
         updateMainScouting();
         updateNaturalScouting();
-        updateSafeScouting();
         updateProxyScouting();
         updateArmyScouting();
+        updateSafeScouting();
         updateExpansionScouting();
         updateScoutOrder();
         updateScoutRoles();

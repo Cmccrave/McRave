@@ -70,6 +70,11 @@ namespace McRave::Targets {
         if (BuildOrder::isRush() && !Terrain::inTerritory(PlayerState::Enemy, target.getPosition()) && Spy::getEnemyTransition() != U_WorkerRush)
             return false;
 
+        // TODO: Remove this when scout ejection works
+        // Need to block runbys
+        if (Players::ZvT() && unit.getType() == Zerg_Zergling && !target.hasAttackedRecently() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && Util::getTime() < Time(6, 00))
+            return false;
+
         if (Util::getTime() > Time(8, 00)) {
             return unit.isLightAir() || combatTargeters <= 4;
         }

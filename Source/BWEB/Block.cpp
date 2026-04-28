@@ -262,20 +262,10 @@ namespace BWEB::Blocks {
                 const TilePosition t(x, y);
                 if (!t.isValid())
                     return false;
-                if (type == BlockType::Supply && Map::mapBWEM.GetTile(t).MinAltitude() > 170)
-                    return false;
                 if (!Map::mapBWEM.GetTile(t).Buildable() || Map::isReserved(t) || blockGrid[x][y] != BlockType::None)
                     return false;
             }
         }
-
-        // Can't place too close to main choke
-        if (type == BlockType::Supply) {
-            auto center = Position(here) + Position(width * 32, height * 32);
-            if (center.getDistance(Position(Stations::getStartingMain()->getChokepoint()->Center())) < 160.0)
-                return false;
-        }
-
         return true;
     }
 
@@ -445,23 +435,27 @@ namespace BWEB::Blocks {
 
             const auto &area = Map::mapBWEM.GetArea(tile);
 
+            const auto smalleExpected = smallCount + piecePerArea[area].pieces[Piece::Small];
+            const auto mediumExpected = mediumCount + piecePerArea[area].pieces[Piece::Medium];
+            const auto largeExpected = largeCount + piecePerArea[area].pieces[Piece::Large];
+            const auto wideExpected   = wideCount + piecePerArea[area].pieces[Piece::Wide];
+
             // Protoss caps large pieces in the main at 16 if we don't have necessary medium pieces
             if (race == Races::Protoss) {
-                if ((largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 16 && piecePerArea[area].pieces[Piece::Medium] < 8) ||
-                    (mediumCount > 0 && piecePerArea[area].pieces[Piece::Medium] >= 12) || (smallCount > 0 && mediumCount == 0 && largeCount == 0) ||
-                    (largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 12))
+                if ((largeCount > 0 && largeExpected >= 16 && mediumExpected < 8) || (mediumCount > 0 && mediumExpected >= 12) ||
+                    (smallCount > 0 && mediumCount == 0 && largeCount == 0) || (largeCount > 0 && largeExpected >= 12))
                     return false;
             }
 
             // Zerg production placement is just solo hatcheries
             if (race == Races::Zerg) {
-                if ((mediumCount + smallCount + wideCount > 0) || (piecePerArea[area].pieces[Piece::Large] + largeCount >= 6))
+                if ((mediumCount + smallCount + wideCount > 0) || (largeExpected >= 6))
                     return false;
             }
 
             // Terran only need about 20 depot spots and 12 production spots
             if (race == Races::Terran) {
-                if (mediumCount > 0 || (largeCount > 0 && piecePerArea[area].pieces[Piece::Large] >= 12))
+                if (mediumCount > 0 || (largeCount > 0 && largeExpected >= 12))
                     return false;
             }
             return true;
@@ -519,14 +513,14 @@ namespace BWEB::Blocks {
                 for (auto x = tile.x - 1; x < tile.x + supplyWidth + 1; x++) {
                     for (auto y = tile.y - 1; y < tile.y + 3; y++) {
                         auto adjTile = TilePosition(x, y);
-                        if (adjTile.isValid() && (!Broodwar->isBuildable(adjTile) || (blockGrid[x][y] != BlockType::None && blockGrid[x][y] != BlockType::Supply))) {
+                        if (adjTile.isValid() && ((!Broodwar->isBuildable(adjTile) && BWEB::Map::isWalkable(adjTile)) || (blockGrid[x][y] != BlockType::None && blockGrid[x][y] != BlockType::Supply))) {
                             return false;
                         }
                     }
                 }
             }
 
-            if ((supplyWidth == 2 && piecePerArea[area].pieces[Piece::Small] >= 16) || (supplyWidth == 3 && piecePerArea[area].pieces[Piece::Medium] >= 25))
+            if ((supplyWidth == 2 && piecePerArea[area].pieces[Piece::Small] >= 16) || (supplyWidth == 3 && piecePerArea[area].pieces[Piece::Medium] >= 30))
                 return false;
             return true;
         };

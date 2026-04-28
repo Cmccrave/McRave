@@ -59,7 +59,7 @@ namespace McRave::BuildOrder::Protoss {
                 auto minProbesPerGas = 24 + (4 * vis(Protoss_Assimilator));
                 auto takeAllGeysers  = com(Protoss_Probe) >= minProbesAllGas;
                 auto allowNewGeyser  = com(Protoss_Probe) >= minProbesPerGas && (Resources::isMineralSaturated() || productionSat || takeAllGeysers);
-                auto needGeyser      = gasLimit > vis(Protoss_Assimilator) * 3;
+                auto needGeyser      = gasLimit >= vis(Protoss_Assimilator) * 3;
                 gasDesired           = allowNewGeyser && needGeyser;
 
                 buildQueue[Protoss_Assimilator] = min(vis(Protoss_Assimilator) + gasDesired, Resources::getGasCount());

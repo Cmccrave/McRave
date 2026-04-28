@@ -68,7 +68,12 @@ namespace McRave::Terrain {
     bool isChokepointGeo(BWAPI::TilePosition);
 
     // Area information
-    std::vector<BWAPI::WalkPosition> getAreaGeometry(const BWEM::Area *);
+    struct AreaGeometry {
+        std::vector<BWAPI::TilePosition> tiles;
+        std::vector<BWAPI::WalkPosition> walks;
+    };
+    AreaGeometry* getAreaGeometry(const BWEM::Area *);
+    inline AreaGeometry* getAreaGeometry(const BWEB::Station *station) { return getAreaGeometry(station->getBase()->GetArea()); };
     std::vector<BWAPI::WalkPosition> getAreaOutline(const BWEM::Area *);
 
     // Checks if "here" is in area

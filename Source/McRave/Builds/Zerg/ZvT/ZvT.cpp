@@ -26,11 +26,14 @@ namespace McRave::BuildOrder::Zerg {
         inOpening    = true;
         inBookSupply = true;
 
-        wallNat  = hatchCount() >= 3 && (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled());
-        wallMain = false;
+        wantNatural = true;
+        if (Spy::getEnemyTransition() == U_WorkerRush)
+            wantNatural = hatchCount() >= 2;
 
-        wantNatural = hatchCount() >= 3 || (Spy::getEnemyTransition() != U_WorkerRush && hatchCount() < 2);
         wantThird   = hatchCount() >= 3 || (Spy::getEnemyBuild() == T_RaxCC);
+
+        wallNat  = wantNatural && hatchCount() >= 2 && (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled());
+        wallMain = false;
 
         mineralThird    = false;
         proxy           = false;
@@ -95,7 +98,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // RaxFact
         if (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled() || Spy::getEnemyBuild() == "Unknown") {
-            initialValue = 4;
+            initialValue = 2;
             if (Spy::getEnemyOpener() == T_1FactFE || Spy::getEnemyOpener() == T_2FactFE || Util::getTime() > Time(4, 00))
                 initialValue = 4;
             if (Spy::getEnemyOpener() == T_2FactVulture || Players::hasUpgraded(PlayerState::Enemy, Ion_Thrusters)) 
@@ -171,7 +174,7 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit    = Zerg_Mutalisk;
         reserveLarva = 6;
 
-        auto thirdHatch  = Spy::enemyFastExpand() && com(Zerg_Spire) == 0 && s >= 48 && vis(Zerg_Drone) >= 20;
+        auto thirdHatch  = (Spy::enemyFastExpand() && com(Zerg_Spire) == 0 && s >= 48 && vis(Zerg_Drone) >= 20);
         auto fourthHatch = com(Zerg_Mutalisk) > 0;
 
         auto firstGas  = (hatchCount() >= 2 && vis(Zerg_Drone) >= 10 && vis(Zerg_Spawning_Pool) > 0);
@@ -190,7 +193,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Overlord]          = 1 + (s >= 18) + (s >= 32);
         buildQueue[Zerg_Lair]              = (s >= 24 && gas(80));
         buildQueue[Zerg_Spire]             = (vis(Zerg_Drone) >= 16 && atPercent(Zerg_Lair, 0.95));
-        buildQueue[Zerg_Hydralisk_Den]     = com(Zerg_Mutalisk) > 0 && unitOrder == mutalurk;
+        buildQueue[Zerg_Hydralisk_Den]     = (com(Zerg_Mutalisk) > 0 && unitOrder == mutalurk);
         buildQueue[Zerg_Evolution_Chamber] = (unitOrder == ultraling && hatchCount() >= 3) || (unitOrder == mutalingdefiler && total(Zerg_Mutalisk) >= 9);
 
         techQueue[Lurker_Aspect] = com(Zerg_Hydralisk_Den) > 0;
