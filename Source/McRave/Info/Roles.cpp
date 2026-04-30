@@ -106,6 +106,8 @@ namespace McRave::Roles {
         {
             // CannonRush response is generically the same
             // Manner stuff is generically the same, except zvz sunken rush
+            if (proxyCombatWorker && com(Zerg_Zergling) == 0 && com(Terran_Marine) == 0 &&  com(Protoss_Zealot) == 0)
+                forceCombatWorker(1);
         }
 
         void pPullWorker()
@@ -243,8 +245,6 @@ namespace McRave::Roles {
                     forceCombatWorker(1);
 
                 // Proxy worker, 1 drone
-                else if (Spy::enemyPossibleProxy() && proxyWorker && proxyWorker->unit()->exists() && com(Zerg_Zergling) <= 2)
-                    forceCombatWorker(1);
                 else if (Spy::getEnemyBuild() == P_CannonRush && com(Zerg_Zergling) <= 2)
                     forceCombatWorker(1);
 
@@ -319,6 +319,7 @@ namespace McRave::Roles {
             proxyThreateningUnit = Util::getClosestUnit(Position(Terrain::getNaturalChoke()->Center()), PlayerState::Enemy, [&](auto &u) { return u->isThreatening() && u->canAttackGround(); });
 
             // Pull workers
+            genericPullWorker();
             pPullWorker();
             tPullWorker();
             zPullWorker();

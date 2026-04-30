@@ -21,7 +21,7 @@ namespace McRave::Planning {
     namespace {
 
         int plannedMineral, plannedGas;
-        map<TilePosition, UnitType> buildingsPlanned, morphsPlanned;
+        map<TilePosition, UnitType> buildingsPlanned;
         map<TilePosition, int> buildingTimer;
         bool expansionPlanned                 = false;
         const BWEB::Station *currentExpansion = nullptr;
@@ -494,8 +494,6 @@ namespace McRave::Planning {
                 if (needGrd) {
                     if (isPlannable(Zerg_Creep_Colony, station->getPocketDefense()) && isBuildable(Zerg_Creep_Colony, station->getPocketDefense())) {
                         placement = station->getPocketDefense();
-                        if (building == Zerg_Creep_Colony)
-                            morphsPlanned[placement] = Zerg_Sunken_Colony;
                         return true;
                     }
                 }
@@ -504,10 +502,6 @@ namespace McRave::Planning {
                 if (needGrd || needAir) {
                     placement = returnClosest(building, station->getDefenses(), desiredCenter);
                     if (placement.isValid()) {
-                        if (building == Zerg_Creep_Colony)
-                            morphsPlanned[placement] = Zerg_Sunken_Colony;
-                        if (building == Zerg_Creep_Colony)
-                            morphsPlanned[placement] = Zerg_Spore_Colony;
                         return true;
                     }
                 }
@@ -544,10 +538,8 @@ namespace McRave::Planning {
                     // Try to place in adjacent rows as existing defenses
                     if (!desiredRowOrder.empty()) {
                         for (auto i : desiredRowOrder) {
-                            placement = returnClosest(building, wall.getDefenses(i), desiredCenter, false, true);
+                            placement = returnClosest(building, wall.getDefenses(i), desiredCenter, false, false);
                             if (placement.isValid()) {
-                                if (building == Zerg_Creep_Colony)
-                                    morphsPlanned[placement] = Zerg_Sunken_Colony;
                                 return true;
                             }
                         }
@@ -557,8 +549,6 @@ namespace McRave::Planning {
                     else {
                         placement = returnClosest(building, wall.getDefenses(0), desiredCenter);
                         if (placement.isValid()) {
-                            if (building == Zerg_Creep_Colony)
-                                morphsPlanned[placement] = Zerg_Sunken_Colony;
                             return true;
                         }
                     }
@@ -570,8 +560,6 @@ namespace McRave::Planning {
                     for (int i = 2; i <= 2; i++) {
                         placement = returnClosest(building, wall.getDefenses(i), desiredCenter);
                         if (placement.isValid()) {
-                            if (building == Zerg_Creep_Colony)
-                                morphsPlanned[placement] = Zerg_Spore_Colony;
                             return true;
                         }
                     }
@@ -579,8 +567,6 @@ namespace McRave::Planning {
                     // Resort to just placing a defense in the wall
                     placement = returnClosest(building, wall.getDefenses(0), desiredCenter);
                     if (placement.isValid()) {
-                        if (building == Zerg_Creep_Colony)
-                            morphsPlanned[placement] = Zerg_Spore_Colony;
                         return true;
                     }
                 }
@@ -970,14 +956,6 @@ namespace McRave::Planning {
     {
         auto itr = buildingsPlanned.find(here);
         if (itr != buildingsPlanned.end())
-            return itr->second;
-        return None;
-    }
-
-    UnitType whatMorphsHere(TilePosition here)
-    {
-        auto itr = morphsPlanned.find(here);
-        if (itr != morphsPlanned.end())
             return itr->second;
         return None;
     }

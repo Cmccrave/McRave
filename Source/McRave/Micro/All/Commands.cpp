@@ -489,6 +489,8 @@ namespace McRave::Command {
             if (unit.getType().isWorker() && Spy::getEnemyTransition() == U_WorkerRush && vis(Zerg_Sunken_Colony) == 0 && !unit.getUnitsInReachOfThis().empty() &&
                 unit.getHealth() < unit.getType().maxHitPoints() && !unit.unit()->isCarryingMinerals())
                 return true;
+            if (unit.getType().isWorker() && !unit.getUnitsTargetingThis().empty())
+                return true;
 
             if (unit.getRole() == Role::Combat || unit.getRole() == Role::Scout) {
 
@@ -499,10 +501,15 @@ namespace McRave::Command {
                     const auto defenders       = com(Zerg_Sunken_Colony) > 0 && Combat::State::isStaticRetreat(unit.getType());
 
                     if (Players::ZvP() && target.getType() == Protoss_Zealot) {
-                        if (Util::getTime() < Time(4, 30) && Players::ZvP() && unit.getHealth() <= 16 && com(Zerg_Sunken_Colony) > 0)
-                            return true;
-                        if (Util::getTime() < Time(3, 30) && Players::ZvP() && unit.getHealth() <= 16 && !unit.getUnitsTargetingThis().empty())
-                            return true;
+                        if (unit.getHealth() <= 16 && Util::getTime() < Time(4, 30)) {
+                            for (auto &e : unit.getUnitsInReachOfThis()) {
+                                if (auto enemy = e.lock()) {
+                                    auto dist = Util::boxDistance(unit, *enemy);
+                                    if (dist < 96.0)
+                                        return true;
+                                }
+                            }
+                        }
                     }
 
                     if (Util::getTime() < Time(3, 30) && !target.isThreatening() && !Combat::holdAtChoke() && target.isWithinReach(unit) && target.getType() == Zerg_Zergling && unit.getHealth() <= 10)

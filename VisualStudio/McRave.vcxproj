@@ -189,7 +189,10 @@
     <ClInclude Include="..\Source\McRave\Map\Grids\Grids.h" />
     <ClInclude Include="..\Source\McRave\Map\Stations\Stations.h" />
     <ClInclude Include="..\Source\McRave\Map\Terrain\Terrain.h" />
+    <ClInclude Include="..\Source\McRave\Map\Walls\ProtossWalls.h" />
+    <ClInclude Include="..\Source\McRave\Map\Walls\TerranWalls.h" />
     <ClInclude Include="..\Source\McRave\Map\Walls\Walls.h" />
+    <ClInclude Include="..\Source\McRave\Map\Walls\ZergWalls.h" />
     <ClInclude Include="..\Source\McRave\Micro\All\Commands.h" />
     <ClInclude Include="..\Source\McRave\Micro\Combat\Combat.h" />
     <ClInclude Include="..\Source\McRave\Micro\Defender\Defender.h" />

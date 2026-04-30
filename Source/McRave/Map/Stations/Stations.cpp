@@ -204,13 +204,6 @@ namespace McRave::Stations {
                 auto wall = BWEB::Walls::getClosestWall(station->getBase()->Center());
                 if (wall && Walls::isComplete(wall) && wall->getStation() == station) {
                     if (wall->getOpenings().size() > 0) {
-                        TilePosition avgOpeningPosition = TilePosition(0, 0);
-                        for (auto opening : wall->getOpenings()) {
-                            avgOpeningPosition += opening;
-                        }
-                        avgOpeningPosition /= int(wall->getOpenings().size());
-                        defendPositions[station] = Position(avgOpeningPosition) + Position(16, 16);
-                        Visuals::drawCircle(defendPositions[station], 10, Colors::Cyan, true);
                     }
                 }
             }
@@ -617,10 +610,21 @@ namespace McRave::Stations {
             return 0;
 
         auto airCount       = getAirDefenseCount(station);
-        const auto enemyAir = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0 ||
-                              Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) > 0 ||
-                              Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0 ||
-                              (Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 && Util::getTime() > Time(4, 45));
+        const auto enemyAir = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair, Protoss_Scout) > 0    //
+                              || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith, Terran_Valkyrie) > 0 //
+                              || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0;                 //
+
+        // Time the expected arrival based on potential completion time, if we see it still building
+        if (!enemyAir && Players::getCompleteCount(PlayerState::Enemy, Protoss_Stargate, Terran_Starport, Zerg_Spire) == 0) {
+            auto airprod = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType() == Protoss_Stargate || u->getType() == Terran_Starport; });
+            if (airprod && !airprod->isCompleted()) {
+                static auto airProdCompleteTime = airprod->timeCompletesWhen();
+                if (airProdCompleteTime > Util::getTime()) {
+                    LOG_SLOW("Delaying defenses until ", airprod->getType().c_str(), " completes at ", airProdCompleteTime.toString());
+                    return 0;
+                }
+            }
+        }
 
         auto mutaBuild  = BuildOrder::getCurrentTransition().find("Muta") != string::npos;
         auto hydraBuild = BuildOrder::getCurrentTransition().find("Hydra") != string::npos;

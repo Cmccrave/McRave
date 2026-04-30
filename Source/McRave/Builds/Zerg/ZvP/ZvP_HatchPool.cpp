@@ -19,7 +19,7 @@ namespace McRave::BuildOrder::Zerg {
         // Buildings
         buildQueue[Zerg_Hatchery]      = 1 + (s >= 24);
         buildQueue[Zerg_Spawning_Pool] = (hatchCount() >= 2);
-        buildQueue[Zerg_Overlord]      = 1 + (s >= 16) + (s >= 30);
+        buildQueue[Zerg_Overlord]      = 1 + (s >= 16) + (s >= 32);
 
         // Pumping
         zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < 13;
@@ -29,7 +29,7 @@ namespace McRave::BuildOrder::Zerg {
     void ZvP_HP_10Hatch()
     {
         // 10h 9p
-        transitionReady = vis(Zerg_Spawning_Pool) > 0 && vis(Zerg_Drone) >= 11;
+        transitionReady = vis(Zerg_Spawning_Pool) > 0;
         scout           = scout || (hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150);
         planEarly       = !Spy::enemyProxy() && hatchCount() == 1 && s == 20 && Broodwar->self()->minerals() >= 150;
         gasTrick        = com(Zerg_Overlord) < 2;
@@ -40,7 +40,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Overlord]      = 1 + (s >= 18 && vis(Zerg_Spawning_Pool) > 0) + (s >= 36);
 
         // Pumping
-        zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < 11;
+        zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < (10 - (hatchCount() >= 2));
         zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvP();
     }
 

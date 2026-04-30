@@ -15,7 +15,6 @@ namespace McRave::Planning {
     bool isWallType(BWAPI::UnitType);
 
     BWAPI::UnitType whatPlannedHere(BWAPI::TilePosition);
-    BWAPI::UnitType whatMorphsHere(BWAPI::TilePosition);
     bool overlapsPlan(UnitInfo &, BWAPI::Position);
     bool isUnplannable(BWAPI::UnitType);
 

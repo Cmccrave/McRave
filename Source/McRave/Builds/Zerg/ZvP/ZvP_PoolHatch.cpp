@@ -19,7 +19,7 @@ namespace McRave::BuildOrder::Zerg {
         // Buildings
         buildQueue[Zerg_Hatchery]      = 1 + (s >= 22 && vis(Zerg_Spawning_Pool) > 0);
         buildQueue[Zerg_Spawning_Pool] = (vis(Zerg_Overlord) >= 2);
-        buildQueue[Zerg_Overlord]      = 1 + (s >= 18) + (s >= 30);
+        buildQueue[Zerg_Overlord]      = 1 + (s >= 18) + (s >= 32);
 
         // Pumping
         zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < (11 - (hatchCount() >= 2));
@@ -54,7 +54,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Hatchery]      = 1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0 && atPercent(Zerg_Spawning_Pool, 0.8 && total(Zerg_Zergling) >= 6) && vis(Zerg_Overlord) >= 2 &&
                                          (!Spy::enemyProxy() || vis(Zerg_Sunken_Colony) >= 2));
         buildQueue[Zerg_Spawning_Pool] = s >= 18;
-        buildQueue[Zerg_Overlord]      = 1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0) + (s >= 30);
+        buildQueue[Zerg_Overlord]      = 1 + (s >= 20 && vis(Zerg_Spawning_Pool) > 0) + (s >= 32);
 
         // Pumping
         zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < (12 - vis(Zerg_Hatchery));

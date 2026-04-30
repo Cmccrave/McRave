@@ -315,10 +315,20 @@ namespace McRave::Producing {
             auto closestStation = Stations::getClosestStationAir(larva.unit()->getHatchery()->getPosition(), PlayerState::Self);
             if (!closestStation)
                 return false;
+            auto mustMove = Planning::overlapsPlan(larva, larva.getPosition());
 
-            auto mustMoveToLeft = Planning::overlapsPlan(larva, larva.getPosition());
-            auto canMove        = (larva.getPosition().y - 16.0 > larva.unit()->getHatchery()->getPosition().y || larva.getPosition().x + 24 > larva.unit()->getHatchery()->getPosition().x);
-            if (canMove && mustMoveToLeft) {
+            if (mustMove) {
+                auto dist       = Util::boxDistance(larva.getType(), larva.getPosition(), Zerg_Hatchery, closestStation->getBase()->Center());
+                auto facingDist = Util::boxDistance(larva.getType(), larva.getFacingPosition(), Zerg_Hatchery, closestStation->getBase()->Center());
+                if (dist >= 2 && facingDist > dist && larva.unit()->getOrder() == Orders::Larva) {
+                    larva.circle(Colors::Blue);
+                    larva.unit()->stop();
+                    return true;
+                }
+            }
+
+            auto canMove = (larva.getPosition().y - 16.0 > larva.unit()->getHatchery()->getPosition().y || larva.getPosition().x + 24 > larva.unit()->getHatchery()->getPosition().x);
+            if (canMove && mustMove) {
                 if (larva.unit()->getLastCommand().getType() != UnitCommandTypes::Stop)
                     larva.unit()->stop();
                 return true;

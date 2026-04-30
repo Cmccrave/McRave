@@ -274,8 +274,10 @@ namespace McRave::Combat::State {
 
         // Drones
         if (!BuildOrder::isPressure(Zerg_Drone) && unlockedOrVis(Zerg_Drone)) {
-            if (!unlockedOrVis(Zerg_Zergling) || !staticRetreatTypes.empty())
-                staticRetreatTypes.push_back(Zerg_Drone);
+            if (!Spy::enemyProxy()) {
+                if (!unlockedOrVis(Zerg_Zergling) || !staticRetreatTypes.empty())
+                    staticRetreatTypes.push_back(Zerg_Drone);
+            }
         }
     }
 
@@ -323,8 +325,8 @@ namespace McRave::Combat::State {
         };
 
         // General commonly used checks
-        const auto atHome  = Terrain::isAtHome(target.getPosition());
-        const auto inRange = unit.isWithinRange(target);
+        const auto atHome        = Terrain::isAtHome(target.getPosition());
+        const auto inRange       = unit.isWithinRange(target);
         const auto targetInRange = target.isWithinRange(unit);
 
         // If this unit is melee and forcing engagement is ideal
@@ -571,7 +573,7 @@ namespace McRave::Combat::State {
 
         for (auto &u : Units::getUnits(PlayerState::Self)) {
             auto &unit = *u;
-            int width = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
+            int width  = unit.getType().isBuilding() ? -16 : unit.getType().width() / 2;
             width += -32;
 
             if (unit.getRole() == Role::Combat) {

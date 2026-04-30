@@ -143,8 +143,6 @@ namespace McRave::Support {
 
         void updateDestination(UnitInfo &unit)
         {
-            auto enemyAir = Spy::getEnemyTransition() == P_Corsair || Spy::getEnemyTransition() == T_2PortWraith || Players::getStrength(PlayerState::Enemy).airToAir > 0.0;
-
             auto followArmyPossible = unit.isHealthy() && unit.getType() != Zerg_Queen && (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) &&
                                       any_of(types.begin(), types.end(), [&](auto &t) { return com(t) >= 6; });
 

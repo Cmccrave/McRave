@@ -10,7 +10,7 @@ namespace McRave {
         int lastMoveFrame    = -999;
         int lastStuckFrame   = 0;
         int lastStimFrame    = 0;
-        int lastCommandFrame = 0;
+        int lastQueueFrame = 0;
         int lastBurrowFrame  = 0;
         int lastSiegeFrame   = 0;
 

@@ -24,8 +24,25 @@ namespace McRave::Buildings {
     namespace {
         set<Position> larvaPositions, eggPositions;
         set<TilePosition> unpoweredPositions;
-        map<TilePosition, UnitType> morphPlanning;
         int lastMorphFrame = -999;
+
+        BWEB::Wall* isWallDefense(UnitInfo &building)
+        {
+            for (auto &[_, wall] : BWEB::Walls::getWalls()) {
+                if (Util::contains(wall.getDefenses(), building.getTilePosition()))
+                    return &wall;
+            }
+            return false;
+        }
+
+        const BWEB::Station* isStationDefense(UnitInfo &building)
+        {
+            for (auto &station : BWEB::Stations::getStations()) {
+                if (Util::contains(station.getDefenses(), building.getTilePosition()) || building.getTilePosition() == station.getPocketDefense())
+                    return &station;
+            }
+            return false;
+        }
 
         bool willDieToAttacks(UnitInfo &building)
         {
@@ -55,10 +72,8 @@ namespace McRave::Buildings {
         void updateLarvaEncroachment(UnitInfo &building)
         {
             // Updates a list of larva positions that can block planning
-            if (building.getType() == Zerg_Larva && !Producing::larvaTrickRequired(building)) {
-                for (auto &[_, pos] : building.getPositionHistory())
-                    larvaPositions.insert(pos);
-            }
+            if (building.getType() == Zerg_Larva && !Producing::larvaTrickRequired(building))
+                larvaPositions.insert(building.getPosition());
             if (building.getType() == Zerg_Egg || building.getType() == Zerg_Lurker_Egg)
                 eggPositions.insert(building.getPosition());
         }
@@ -133,11 +148,8 @@ namespace McRave::Buildings {
         {
             auto needLarvaSpending = vis(Zerg_Larva) > 3 && Broodwar->self()->supplyUsed() < Broodwar->self()->supplyTotal() && BuildOrder::getUnitReservation(Zerg_Mutalisk) == 0 &&
                                      Util::getTime() < Time(4, 30) && com(Zerg_Sunken_Colony) > 2;
-            auto morphType   = UnitTypes::None;
-            auto station     = BWEB::Stations::getClosestStation(building.getTilePosition());
-            auto wall        = BWEB::Walls::getClosestWall(building.getPosition());
-            auto plannedType = Planning::whatMorphsHere(building.getTilePosition());
-
+            auto morphType = UnitTypes::None;
+            auto station   = BWEB::Stations::getClosestStation(building.getTilePosition());
             if (lastMorphFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4)
                 return;
 
@@ -158,29 +170,30 @@ namespace McRave::Buildings {
 
             // Sunken / Spore morphing
             else if (building.getType() == Zerg_Creep_Colony && !willDieToAttacks(building) && !needLarvaSpending) {
-                auto wallDefense    = wall && wall->getDefenses().find(building.getTilePosition()) != wall->getDefenses().end();
-                auto stationDefense = station && (station->getDefenses().find(building.getTilePosition()) != station->getDefenses().end() || building.getTilePosition() == station->getPocketDefense());
+
+                auto wall    = isWallDefense(building);
+                auto station = isStationDefense(building);
 
                 // If this is a Station defense
-                if (stationDefense && Stations::needGroundDefenses(station) > 0 && com(Zerg_Spawning_Pool) > 0)
+                if (station && Stations::needGroundDefenses(station) > 0 && com(Zerg_Spawning_Pool) > 0)
                     morphType = Zerg_Sunken_Colony;
-                else if (stationDefense && Stations::needAirDefenses(station) > 0 && com(Zerg_Evolution_Chamber) > 0)
+                else if (station && Stations::needAirDefenses(station) > 0 && com(Zerg_Evolution_Chamber) > 0)
                     morphType = Zerg_Spore_Colony;
 
                 // If this is a Wall defense
-                else if (wallDefense && Walls::needAirDefenses(*wall) > 0 && plannedType == Zerg_Spore_Colony && com(Zerg_Evolution_Chamber) > 0)
+                else if (wall && Walls::needAirDefenses(*wall) > 0 && com(Zerg_Evolution_Chamber) > 0)
                     morphType = Zerg_Spore_Colony;
-                else if (wallDefense && Walls::needGroundDefenses(*wall) > 0 && plannedType == Zerg_Sunken_Colony && com(Zerg_Spawning_Pool) > 0)
+                else if (wall && Walls::needGroundDefenses(*wall) > 0 && com(Zerg_Spawning_Pool) > 0)
                     morphType = Zerg_Sunken_Colony;
+
+                LOG_FAST("Creep colony expected morph is ", morphType.c_str());
+                LOG_FAST("Walldefense? ", wall);
             }
 
             // Morph
-            if (morphType != UnitTypes::None) {
-                morphPlanning[building.getTilePosition()] = morphType;
-                if (building.isCompleted()) {
-                    building.unit()->morph(morphType);
-                    lastMorphFrame = Broodwar->getFrameCount();
-                }
+            if (morphType != UnitTypes::None && building.isCompleted() && Broodwar->self()->minerals() >= morphType.mineralPrice() && Broodwar->self()->gas() >= morphType.gasPrice()) {
+                building.unit()->morph(morphType);
+                lastMorphFrame = Broodwar->getFrameCount();
             }
         }
 

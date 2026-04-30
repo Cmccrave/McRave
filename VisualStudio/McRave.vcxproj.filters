@@ -570,6 +570,15 @@
     <ClInclude Include="..\Source\McRave\Map\Blocks\Blocks.h">
       <Filter>McRave\Map\Blocks</Filter>
     </ClInclude>
+    <ClInclude Include="..\Source\McRave\Map\Walls\ZergWalls.h">
+      <Filter>McRave\Map\Walls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Map\Walls\ProtossWalls.h">
+      <Filter>McRave\Map\Walls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Map\Walls\TerranWalls.h">
+      <Filter>McRave\Map\Walls</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="BWEM">

@@ -124,12 +124,11 @@ namespace McRave::Scouts {
             unexploredNaturals.clear();
 
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
-            enemyAir           = enemyStrength.groundToAir > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 ||
-                       Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Scout) > 0 ||
-                       Players::getTotalCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Stargate) > 0 ||
-                       Players::getTotalCount(PlayerState::Enemy, Zerg_Spire) > 0 || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) > 0 ||
-                       Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk_Den) > 0 || Players::getTotalCount(PlayerState::Enemy, Terran_Marine) > 0 ||
-                       Players::getTotalCount(PlayerState::Enemy, Terran_Barracks) > 0 || (Players::ZvT() && Terrain::getEnemyStartingPosition().isValid());
+            enemyAir           = enemyStrength.groundToAir > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0                                    //
+                       || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon, Protoss_Corsair, Protoss_Scout, Protoss_Cybernetics_Core, Protoss_Stargate) > 0 //
+                       || Players::getTotalCount(PlayerState::Enemy, Zerg_Spire, Zerg_Hydralisk, Zerg_Hydralisk_Den) > 0                                              //
+                       || Players::getTotalCount(PlayerState::Enemy, Terran_Marine, Terran_Barracks) > 0                                                              //
+                       || (Players::ZvT() && Terrain::getEnemyStartingPosition().isValid());                                                                          //
 
             // Calculate the number of unexplored bases
             for (auto &station : BWEB::Stations::getStations()) {
@@ -412,8 +411,7 @@ namespace McRave::Scouts {
                 if (Players::ZvP()) {
 
                     // Drone
-                    auto sawZealotTiming = (Spy::getEnemyBuild() == P_2Gate && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 3) ||
-                                           (Spy::getEnemyBuild() == P_1GateCore && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0);
+                    auto sawZealotTiming = (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0);
                     if (sawZealotTiming || Spy::getEnemyBuild() == P_FFE || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 ||
                         Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0 || fullScout || Util::getTime() > Time(3, 30))
                         main.desiredTypeCounts[Zerg_Drone] = 0;
@@ -609,7 +607,7 @@ namespace McRave::Scouts {
             }
 
             if (Terrain::getEnemyNatural() && groundSafePosition.isValid()) {
-                auto &safe = scoutTargets[ScoutType::SafeGround];
+                auto &safe  = scoutTargets[ScoutType::SafeGround];
                 auto &army  = scoutTargets[ScoutType::Army];
                 safe.center = groundSafePosition;
 
@@ -703,7 +701,7 @@ namespace McRave::Scouts {
             auto type = Broodwar->self()->getRace().getWorker();
             if (vis(Terran_Vulture) > 0 && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Ion_Thrusters))
                 type = Terran_Vulture;
-            else if (vis(Zerg_Zergling) > 0 && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost))
+            else if (vis(Zerg_Zergling) > 0)
                 type = Zerg_Zergling;
             else if (vis(Protoss_Zealot) > 0 && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Leg_Enhancements))
                 type = Protoss_Zealot;

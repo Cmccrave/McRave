@@ -409,9 +409,17 @@ namespace McRave {
         // Check if our defenses can hit or be hit
         auto nearDefenders = [&]() {
             auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getRole() == Role::Defender && ((u->canAttackGround() && !this->isFlying()) || (u->canAttackAir() && this->isFlying())) && (u->isCompleted() || hasAttackedRecently());
+                return u->getRole() == Role::Defender && ((u->canAttackGround() && !this->isFlying()) || (u->canAttackAir() && this->isFlying()));
             });
-            return (closestDefender && closestDefender->isWithinRange(*this)) || (closestDefender && this->canAttackGround() && this->isWithinRange(*closestDefender));
+
+            // If this defender is in a wall, it's not threatening until within the wall boundary
+            if (!this->isFlying() && closestWall && closestDefender && Util::contains(closestWall->getDefenses(), closestDefender->getTilePosition())) {
+                if (Walls::isComplete(closestWall))
+                    return false;
+            }
+
+            return (closestDefender && closestDefender->isWithinRange(*this) && closestDefender->isCompleted()) ||
+                   (closestDefender && this->canAttackGround() && this->isWithinRange(*closestDefender));
         };
 
         // Checks if it can damage an already damaged building
@@ -570,7 +578,7 @@ namespace McRave {
         }
 
         // Check if this is identical to last command
-        if ((commandType == cmd && commandPosition == here) || (unit()->getOrder() == Orders::Move && unit()->getOrderTargetPosition() == here))
+        if (commandType == cmd && commandPosition == here && Broodwar->getFrameCount() - commandFrame < 6)
             return;
 
         // TESTING:
@@ -589,6 +597,7 @@ namespace McRave {
             }
         }
 
+        commandFrame    = Broodwar->getFrameCount();
         commandPosition = here;
         commandType     = cmd;
 
@@ -607,6 +616,7 @@ namespace McRave {
         if ((commandType == cmd && commandTarget == target.unit()) || (unit()->getOrder() == Orders::AttackUnit && unit()->getOrderTarget() == target.unit()))
             return;
 
+        commandFrame  = Broodwar->getFrameCount();
         commandTarget = target.unit();
         commandType   = cmd;
 
@@ -622,7 +632,9 @@ namespace McRave {
         // Check if this is identical to last command
         if (commandType == cmd)
             return;
-        commandType = cmd;
+
+        commandFrame = Broodwar->getFrameCount();
+        commandType  = cmd;
 
         // Send a new command
         if (cmd == UnitCommandTypes::Hold_Position)
@@ -644,11 +656,11 @@ namespace McRave {
         if (commandType == UnitCommandTypes::Use_Tech_Position && commandPosition == here)
             return;
 
-        if (isCommandable()) {
-            commandPosition = here;
-            commandType     = UnitCommandTypes::Use_Tech_Position;
-            unit()->useTech(tech, here);
-        }
+        commandFrame    = Broodwar->getFrameCount();
+        commandPosition = here;
+        commandType     = UnitCommandTypes::Use_Tech_Position;
+
+        unit()->useTech(tech, here);
     }
 
     void UnitInfo::setCommand(TechType tech, UnitInfo &target)
@@ -656,10 +668,10 @@ namespace McRave {
         if (commandType == UnitCommandTypes::Use_Tech_Unit && unit()->getLastCommand().getTarget() == target.unit())
             return;
 
-        if (isCommandable()) {
-            commandPosition = target.getPosition();
-            unit()->useTech(tech, target.unit());
-        }
+        commandFrame    = Broodwar->getFrameCount();
+        commandPosition = target.getPosition();
+
+        unit()->useTech(tech, target.unit());
     }
 
     void UnitInfo::setCommand(TechType tech)
@@ -667,10 +679,10 @@ namespace McRave {
         if (commandType == UnitCommandTypes::Use_Tech)
             return;
 
-        if (isCommandable()) {
-            commandPosition = getPosition();
-            unit()->useTech(tech);
-        }
+        commandFrame    = Broodwar->getFrameCount();
+        commandPosition = getPosition();
+
+        unit()->useTech(tech);
     }
 
     // Check for ability to execute a command

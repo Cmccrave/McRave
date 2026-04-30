@@ -182,7 +182,7 @@ namespace McRave::Pathing {
         void updateSurroundPositions(UnitInfo &enemy)
         {
             // List of viable surround targets
-            static set<UnitType> surroundTypes = {Protoss_Zealot, Protoss_Dragoon, Terran_Goliath, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode};
+            static set<UnitType> surroundTypes = {Protoss_Dragoon, Terran_Goliath, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode};
             if (surroundTypes.find(enemy.getType()) == surroundTypes.end())
                 return;
 

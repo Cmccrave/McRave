@@ -110,13 +110,13 @@ namespace McRave::Units {
                     if (unit.isLightAir())
                         frames = 2;
 
-                    unit.nextCommandFrame = unit.lastCommandFrame + frames;
+                    unit.nextQueueFrame = unit.lastQueueFrame + frames;
                     commandQueue.push_back(&unit);
                 }
             }
 
             // Sort by stalest and truncate anything past 64, but reserve 3 slots for production/upgrades/research for now and 1 for padding
-            sort(commandQueue.begin(), commandQueue.end(), [](UnitInfo *a, UnitInfo *b) { return a->nextCommandFrame < b->nextCommandFrame; });
+            sort(commandQueue.begin(), commandQueue.end(), [](UnitInfo *a, UnitInfo *b) { return a->nextQueueFrame < b->nextQueueFrame; });
             int maxCommandsPerFrame = 60;
             int maxCommandsPerTurn  = maxCommandsPerFrame / Broodwar->getLatencyFrames();
             if (int(commandQueue.size()) > maxCommandsPerTurn) {
@@ -419,7 +419,7 @@ namespace McRave::Units {
     {
         auto it = std::find(commandQueue.begin(), commandQueue.end(), &unit);
         if (it != commandQueue.end()) {
-            unit.lastCommandFrame = Broodwar->getFrameCount();
+            unit.lastQueueFrame = Broodwar->getFrameCount();
             return true;
         }
         return false;

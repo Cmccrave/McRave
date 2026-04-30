@@ -87,6 +87,7 @@ namespace McRave {
         Unit commandTarget          = nullptr;
         Position commandPosition    = Positions::Invalid;
         UnitCommandType commandType = UnitCommandTypes::None;
+        int commandFrame            = 0;
 
         BWEB::Path marchPath;
         BWEB::Path retreatPath;
@@ -116,8 +117,8 @@ namespace McRave {
         int debugNum = 0;
         bool debugFlag = false;
 
-        int lastCommandFrame     = 0;
-        int nextCommandFrame     = 0;
+        int lastQueueFrame     = 0;
+        int nextQueueFrame     = 0;
         int lastThreateningFrame = -999;
         int framesVisible        = -999;
         int framesCommitted      = 0;

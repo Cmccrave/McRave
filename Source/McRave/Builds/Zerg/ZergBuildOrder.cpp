@@ -53,7 +53,7 @@ namespace McRave::BuildOrder::Zerg {
                     unitOrder = switchedComposition;
                 }
             }
-            
+
             // TODO: Allow faster switching if we have the tech already
             if (Util::getTime() - lastSwitchTime < Time(2, 30))
                 return;
@@ -127,7 +127,7 @@ namespace McRave::BuildOrder::Zerg {
                 if (vis(Zerg_Extractor) == 0 && vis(Zerg_Drone) >= 10)
                     cancelled = true;
                 if (cancelled)
-                    gasTrick = false;            
+                    gasTrick = false;
             }
         }
 
@@ -210,13 +210,17 @@ namespace McRave::BuildOrder::Zerg {
                 }
 
                 // ZvP anticipate corsair timing on 1 base
-                auto ruleOutCorsairs = Players::getTotalCount(PlayerState::Enemy, Protoss_Gateway) >= 3 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2 //
-                                       || Spy::enemyFastExpand() || Spy::getEnemyTransition() != "Unknown";                                                                 //
-                auto p2GateSair = Spy::getEnemyBuild() == P_2Gate && Util::getTime() > Time(4, 45);
-                auto p1GcSair   = Spy::getEnemyBuild() == P_1GateCore && Util::getTime() > Time(4, 15);
-                if (Players::ZvP() && !ruleOutCorsairs && (p2GateSair || p1GcSair)) {
-                    needSpores = true;
-                    wallNat    = true;
+                if (Players::ZvP()) {
+                    auto ruleOutCorsairs = Players::getTotalCount(PlayerState::Enemy, Protoss_Gateway) >= 3 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2 //
+                                           || Spy::enemyFastExpand() || Spy::getEnemyTransition() != "Unknown";                                                                 //
+                    auto p2GateSair = Spy::getEnemyBuild() == P_2Gate && Util::getTime() > Time(4, 45);
+                    auto p1GcSair   = Spy::getEnemyBuild() == P_1GateCore && Util::getTime() > Time(4, 15);
+                    auto stargate   = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &s) { return s->getType() == Protoss_Stargate; });
+
+                    if (Players::ZvP() && !ruleOutCorsairs && (p2GateSair || p1GcSair)) {
+                        needSpores = true;
+                        wallNat    = true;
+                    }
                 }
 
                 // ZvZ anticipate faster muta timing
@@ -244,9 +248,11 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueSupply()
         {
+            int supplyPerOvie = max(16 - (hatchCount() / 5), 12);
+            int supplyCap     = com(Zerg_Overlord) * supplyPerOvie;
+
             // Adding Overlords outside opening book supply, offset by large hatch counts
             if (!inBookSupply) {
-                int supplyPerOvie         = max(16 - (hatchCount() / 5), 12);
                 int count                 = 1 + min(26, s / supplyPerOvie);
                 buildQueue[Zerg_Overlord] = min(25, count);
             }
@@ -275,6 +281,10 @@ namespace McRave::BuildOrder::Zerg {
             // Remove spending money on Overlords if they'll have no protection anyways
             if (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0 && vis(Zerg_Lair) == 0 && vis(Zerg_Hydralisk_Den) == 0 && vis(Zerg_Spore_Colony) == 0 &&
                 Util::getTime() < Time(7, 00))
+                buildQueue[Zerg_Overlord] = 0;
+
+            // Remove building Overlords if we need Zerglings immediately and can afford the supply
+            if (Util::getTime() < Time(3, 30) && zergUnitPump[Zerg_Zergling] && s <= supplyCap - 2)
                 buildQueue[Zerg_Overlord] = 0;
         }
 
@@ -812,6 +822,24 @@ namespace McRave::BuildOrder::Zerg {
             // Pump drones explicitly or we're trying to pump anything else but can't afford it (fall through)
             zergUnitPump[Zerg_Drone] |= zergUnitPump[Zerg_Defiler] || zergUnitPump[Zerg_Scourge] || zergUnitPump[Zerg_Mutalisk] || zergUnitPump[Zerg_Hydralisk];
 
+            // After making a pool, don't spend all the larva until we see something
+            if (com(Zerg_Spawning_Pool) > 0 && vis(Zerg_Zergling) > 0 && Util::getTime() < Time(3, 30) && Spy::getEnemyBuild() == "Unknown") {
+                static bool saveLarva = true;
+                if (vis(Zerg_Larva) >= 3) {
+                    static auto spendLarva = Util::getTime() + Time(0, 10);
+                    if (Util::getTime() >= spendLarva)
+                        saveLarva = false;
+                }
+
+                if (saveLarva) {
+                    zergUnitPump[Zerg_Drone] = false;
+                    LOG_ONCE("Delaying larva spending until scouting sees something");
+                }
+                else {
+                    LOG_ONCE("Spending resumed");
+                }
+            }
+
             // Unit based
             if (zergUnitPump[Zerg_Lurker] && availGas > 100 && com(Zerg_Hydralisk) > 0 && Researching::haveResearch(TechTypes::Lurker_Aspect))
                 armyComposition[Zerg_Lurker] = 1.00;
@@ -892,7 +920,7 @@ namespace McRave::BuildOrder::Zerg {
                     priorityOrder = {
                         {Zerg_Drone, 30},    {Zerg_Mutalisk, 16}, {Zerg_Ultralisk, 4},  {Zerg_Defiler, 1}, //
                         {Zerg_Drone, 40},    {Zerg_Mutalisk, 24}, {Zerg_Ultralisk, 8},  {Zerg_Defiler, 2}, //
-                        {Zerg_Drone, 50},    {Zerg_Mutalisk, 32}, {Zerg_Ultralisk, 10},  {Zerg_Defiler, 2}, //
+                        {Zerg_Drone, 50},    {Zerg_Mutalisk, 32}, {Zerg_Ultralisk, 10}, {Zerg_Defiler, 2}, //
                         {Zerg_Drone, 60},    {Zerg_Mutalisk, 48}, {Zerg_Ultralisk, 12}, {Zerg_Defiler, 2}, //
                         {Zerg_Mutalisk, 100}                                                               //
                     };
@@ -1022,13 +1050,15 @@ namespace McRave::BuildOrder::Zerg {
 
     int capGas(int value)
     {
-        auto onTheWay = 0;
+        // Sometimes we don't hit the cap gas amount, unsure if it's a ceil/round issue, but assume we need 1 more trip
+        auto onTheWay = -8;
         for (auto &w : Units::getUnits(PlayerState::Self)) {
             auto &worker = *w;
-            if (worker.unit()->isCarryingGas() || (worker.hasResource() && worker.getResource().lock()->getType().isRefinery()))
-                onTheWay += 8;
+            if (worker.getRole() == Role::Worker) {
+                if (worker.unit()->isCarryingGas() || worker.unit()->getOrder() == Orders::WaitForGas || worker.unit()->getOrder() == Orders::HarvestGas || worker.unit()->getOrder() == Orders::ReturnGas || worker.unit()->getOrder() == Orders::MoveToGas)
+                    onTheWay += 8;
+            }
         }
-
-        return int(round(double(value - Broodwar->self()->gas() - onTheWay) / 8.0));
+        return int(ceil(double(value - Broodwar->self()->gas() - onTheWay) / 8.0));
     }
 } // namespace McRave::BuildOrder::Zerg

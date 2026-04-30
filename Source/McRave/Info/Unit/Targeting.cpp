@@ -166,8 +166,6 @@ namespace McRave::Targets {
                 return Priority::Minor;
             if (!unit.getType().isWorker() && !target.getType().isWorker() && unit.isFlying() == target.isFlying())
                 return Priority::Major;
-            if (target.getType().isWorker() && target.isThreatening())
-                return Priority::Critical;
         }
 
         // Sacrifice unit away from army
@@ -491,7 +489,7 @@ namespace McRave::Targets {
             return (1.0 + (1.0 * double(target.getUnitsTargetingThis().size())));
         }
 
-        if (unit.isMelee()) {
+        if (unit.isMelee() && !unit.isWithinRange(target)) {
             const auto targetSize     = max(target.getType().width(), target.getType().height());
             const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->isMelee(); });
             if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
@@ -747,8 +745,9 @@ namespace McRave::Targets {
     {
         // Sort my units by distance to closest enemy
         static auto lastUpdate = Time(0, 0);
-        if (Util::getTime() - lastUpdate > Time(0, 1)) {
+        if (Util::getTime() - lastUpdate > Time(0, 5)) {
             sortedUnits.clear();
+            lastUpdate = Util::getTime();
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit    = *u;
                 auto closestEnemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) {

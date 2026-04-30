@@ -24,6 +24,8 @@ namespace McRave::Goals {
     namespace {
 
         multimap<double, BWEB::Station> stationsByDistance;
+        UnitType firstType  = UnitTypes::None;
+        UnitType workerType = UnitTypes::None;
         UnitType rangedType = UnitTypes::None;
         UnitType meleeType  = UnitTypes::None;
         UnitType airType    = UnitTypes::None;
@@ -222,7 +224,7 @@ namespace McRave::Goals {
                 if (Terrain::getMyMain() && Stations::getGroundDefenseCount(Terrain::getMyMain()) <= 0)
                     assignNumberToGoal(Terrain::getMainPosition(), rangedType, 6, GoalType::Defend);
 
-                if (Terrain::getMyNatural() && Stations::getGroundDefenseCount(Terrain::getMyNatural()) <= 0)
+                if (Walls::getNaturalWall() && Walls::getNaturalWall()->getGroundDefenseCount() <= 0)
                     assignNumberToGoal(Terrain::getNaturalPosition(), rangedType, 6, GoalType::Defend);
             }
 
@@ -306,6 +308,35 @@ namespace McRave::Goals {
                     assignWorker(Planning::getCurrentExpansion()->getBase()->Center());
             }
 
+            auto outlines   = Terrain::getAreaOutline(Terrain::getMainArea());
+            auto oldestTile = TilePositions::Invalid;
+            for (auto &w : outlines) {
+                auto tile = TilePosition(w);
+                if (tile.isValid() && Broodwar->getFrameCount() - Grids::getLastVisibleFrame(tile) >= 720)
+                    oldestTile = tile;
+            }
+
+            // Clear out base early game
+            auto proxyNeedsScouting = !Spy::enemyProxy() || Spy::getEnemyBuild() == P_CannonRush;
+            if (Util::getTime() < Time(4, 00) && !BuildOrder::isRush() && proxyNeedsScouting && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() &&
+                Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
+                if (oldestTile.isValid())
+                    assignNumberToGoal(oldestTile, firstType, 1, GoalType::Explore);
+            }
+
+            // Clear out for potential in base proxy
+            auto possibleProxyFact  = (Spy::enemyPossibleProxy() && Spy::getEnemyBuild() == T_RaxFact);
+            auto possibleCannonRush = (Spy::enemyPossibleProxy() && Players::getTotalCount(PlayerState::Enemy, Protoss_Probe) > 0);
+            if (Roles::getRoleCount(Role::Combat) == 0 && (possibleProxyFact || possibleCannonRush)) {
+                static auto scoutProxyTime = Util::getTime();
+                if (Util::getTime() - scoutProxyTime > Time(0, 30)) {
+                    LOG_ONCE("Need to scout main for proxy");
+                    auto proxyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy(); });
+                    if (proxyWorker && !proxyWorker->unit()->exists())
+                        assignNumberToGoal(oldestTile, workerType, 1, GoalType::Explore);
+                }
+            }
+
             // Send detector to next expansion
             if (Planning::getCurrentExpansion()) {
                 auto nextExpand  = Planning::getCurrentExpansion()->getBase()->Center();
@@ -332,7 +363,7 @@ namespace McRave::Goals {
 
                     // When attempting to expand, escort from vultures
                     if (closestBuilder && !closestBuilder->isWithinBuildRange()) {
-                        LOG_FAST("Worker looking to expand");
+                        LOG_SLOW("Worker looking to expand");
                         assignNumberToGoal(closestBuilder->getPosition(), type, 2, GoalType::Escort);
 
                         for (auto &e : closestBuilder->getUnitsInReachOfThis()) {
@@ -442,11 +473,17 @@ namespace McRave::Goals {
 
         void updateOverlordGoals()
         {
-            auto enemyAir = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) + Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) +
-                            Players::getVisibleCount(PlayerState::Enemy, Zerg_Mutalisk);
-
+            auto enemyAir   = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair, Protoss_Scout, Zerg_Mutalisk, Terran_Wraith, Terran_Valkyrie) > 0;
             auto watchChoke = Terrain::getNaturalChoke() && !Spy::enemyRush() && !Spy::enemyProxy() && //
                               (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) == 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0);
+            
+            const auto assignSafely = [&](auto station) { 
+                auto closestSpore = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Spore_Colony; });
+                if (closestSpore && Util::contains(station->getDefenses(), closestSpore->getTilePosition()))
+                    assignNumberToGoal(closestSpore->getPosition(), Zerg_Overlord, 1, GoalType::Defend);
+                else
+                    assignNumberToGoal(station->getBase()->Center(), Zerg_Overlord, 1, GoalType::Defend);
+            };
 
             // Assign an Overlord to watch our Choke early on
             if (watchChoke) {
@@ -473,16 +510,22 @@ namespace McRave::Goals {
             }
 
             // Always assign an Overlord to the natural
-            if (Util::getTime() > Time(4, 00))
-                assignNumberToGoal(Terrain::getNaturalPosition(), Zerg_Overlord, 1, GoalType::Defend);
+            if (Util::getTime() > Time(4, 00)) {
+                assignSafely(Terrain::getMyNatural());
+            }
 
-            // Assign an overlord to the main if we see a drop coming
-            if (Spy::getEnemyTransition() == P_Robo || Spy::getEnemyTransition() == P_DT) {
-                assignNumberToGoal(Terrain::getMainPosition(), Zerg_Overlord, 1, GoalType::Defend);
+            // Assign an overlord to the main if we see a drop coming or have air damage
+            if (!enemyAir && (Spy::getEnemyTransition() == P_Robo || Spy::getEnemyTransition() == P_DT || vis(Zerg_Hydralisk) > 0 || vis(Zerg_Mutalisk) > 0)) {
+                assignSafely(Terrain::getMyMain());
+            }
+
+            // Assign an Overlord to each base
+            for (auto &station : Stations::getStations(PlayerState::Self)) {
+                assignSafely(station);
             }
 
             // Assign an Overlord to watch for drops
-            if (Terrain::getEnemyStartingPosition().isValid()) {
+            if (Terrain::getEnemyStartingPosition().isValid() && !enemyAir) {
                 auto edgeEnemy = Terrain::getClosestMapEdge(Terrain::getEnemyStartingPosition());
                 auto edgeSelf  = Terrain::getClosestMapEdge(Terrain::getMainPosition());
                 auto width     = Broodwar->mapWidth();
@@ -512,6 +555,7 @@ namespace McRave::Goals {
                     if (closestStation && p.getDistance(closestStation->getBase()->Center()) < 1600.0) {
                         return true;
                     }
+                    return false;
                 };
 
                 auto pointA = Util::findPointOnPath(newPathA, overlordSpot);
@@ -529,32 +573,6 @@ namespace McRave::Goals {
         {
             if (Broodwar->self()->getRace() != Races::Zerg)
                 return;
-
-            auto outlines   = Terrain::getAreaOutline(Terrain::getMainArea());
-            auto oldestTile = TilePositions::Invalid;
-            for (auto &w : outlines) {
-                auto tile = TilePosition(w);
-                if (tile.isValid() && Broodwar->getFrameCount() - Grids::getLastVisibleFrame(tile) >= 720)
-                    oldestTile = tile;
-            }
-
-            // Clear out for potential in base proxy
-            auto possibleProxyFact  = (Spy::enemyPossibleProxy() && Spy::getEnemyBuild() == T_RaxFact);
-            auto possibleCannonRush = (Spy::enemyPossibleProxy() && Players::getTotalCount(PlayerState::Enemy, Protoss_Probe) > 0);
-            if (Roles::getRoleCount(Role::Combat) == 0 && (possibleProxyFact || possibleCannonRush)) {
-                LOG_FAST("Need to scout for proxy");
-                auto proxyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy(); });
-                if (proxyWorker && !proxyWorker->unit()->exists())
-                    assignNumberToGoal(oldestTile, Zerg_Drone, 1, GoalType::Explore);
-            }
-
-            // Clear out base early game
-            auto proxyNeedsScouting = !Spy::enemyProxy() || Spy::getEnemyBuild() == P_CannonRush;
-            if (Util::getTime() < Time(4, 00) && !BuildOrder::isRush() && proxyNeedsScouting && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() &&
-                Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
-                if (oldestTile.isValid())
-                    assignNumberToGoal(oldestTile, Zerg_Zergling, 1, GoalType::Explore);
-            }
 
             // Vultures on the map can be chased by low hp mutalisks
             if (Players::ZvT()) {
@@ -650,6 +668,8 @@ namespace McRave::Goals {
     void onStart()
     {
         if (Broodwar->self()->getRace() == Races::Protoss) {
+            firstType  = Protoss_Zealot;
+            workerType = Protoss_Probe;
             rangedType = Protoss_Dragoon;
             meleeType  = Protoss_Zealot;
             airType    = Protoss_Corsair;
@@ -657,6 +677,8 @@ namespace McRave::Goals {
             base       = Protoss_Nexus;
         }
         if (Broodwar->self()->getRace() == Races::Zerg) {
+            firstType  = Zerg_Zergling;
+            workerType = Zerg_Drone;
             rangedType = Zerg_Hydralisk;
             meleeType  = Zerg_Zergling;
             airType    = Zerg_Mutalisk;
@@ -664,6 +686,8 @@ namespace McRave::Goals {
             base       = Zerg_Hatchery;
         }
         if (Broodwar->self()->getRace() == Races::Terran) {
+            firstType  = Terran_Marine;
+            workerType = Terran_SCV;
             rangedType = Terran_Vulture;
             meleeType  = Terran_Firebat;
             airType    = Terran_Wraith;
