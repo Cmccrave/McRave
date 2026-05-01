@@ -181,9 +181,9 @@ namespace McRave::Buildings {
                     morphType = Zerg_Spore_Colony;
 
                 // If this is a Wall defense
-                else if (wall && Walls::needAirDefenses(*wall) > 0 && com(Zerg_Evolution_Chamber) > 0)
+                else if (wall && Walls::needAirDefenses(wall) > 0 && com(Zerg_Evolution_Chamber) > 0)
                     morphType = Zerg_Spore_Colony;
-                else if (wall && Walls::needGroundDefenses(*wall) > 0 && com(Zerg_Spawning_Pool) > 0)
+                else if (wall && Walls::needGroundDefenses(wall) > 0 && com(Zerg_Spawning_Pool) > 0)
                     morphType = Zerg_Sunken_Colony;
 
                 LOG_FAST("Creep colony expected morph is ", morphType.c_str());

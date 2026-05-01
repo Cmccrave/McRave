@@ -560,7 +560,7 @@ namespace McRave::Stations {
     {
         auto colonies  = 0;
         auto wallNeeds = station->getChokepoint() && BWEB::Walls::getWall(station->getChokepoint()) &&
-                         (Walls::needGroundDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0 || Walls::needAirDefenses(*BWEB::Walls::getWall(station->getChokepoint())) > 0);
+                         (Walls::needGroundDefenses(BWEB::Walls::getWall(station->getChokepoint())) > 0 || Walls::needAirDefenses(BWEB::Walls::getWall(station->getChokepoint())) > 0);
         for (auto &tile : station->getDefenses()) {
             if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony)
                 colonies++;

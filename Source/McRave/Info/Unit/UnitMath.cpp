@@ -153,7 +153,7 @@ namespace McRave::Math {
         auto splash   = calcSplashModifier(unit);
         auto damage   = unit.getGroundDamage();
         auto cooldown = calcGroundCooldown(unit);
-        auto numHits  = max(unit.getType().maxGroundHits(), unit.getType().groundWeapon().damageFactor());
+        auto numHits  = max({1, unit.getType().maxGroundHits(), unit.getType().groundWeapon().damageFactor()});
 
         if (unit.getType() == Terran_Bunker) {
             numHits = 4;
@@ -167,7 +167,7 @@ namespace McRave::Math {
         auto splash   = calcSplashModifier(unit);
         auto damage   = unit.getAirDamage();
         auto cooldown = calcAirCooldown(unit);
-        auto numHits  = max(unit.getType().maxAirHits(), unit.getType().airWeapon().damageFactor());
+        auto numHits  = max({1, unit.getType().maxAirHits(), unit.getType().airWeapon().damageFactor()});
 
         if (unit.getType() == Terran_Bunker) {
             numHits = 4;
@@ -479,5 +479,7 @@ namespace McRave {
         maxAirStrength        = Math::calcMaxAirStrength(unit);
         splash                = Math::calcSplashRadius(unit);
         priority              = Math::calcPriority(unit);
+
+        Broodwar->drawTextMap(unit.getPosition(), "%.2f", priority);
     }
 } // namespace McRave

@@ -33,7 +33,7 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyOpener() == P_Horror_9_9 || (Spy::getEnemyOpener() == P_Proxy_9_9 && currentOpener == Z_12Hatch))
             wantNatural = macroHatchCount >= 1;
 
-        wantThird = Spy::getEnemyBuild() == P_FFE || (Spy::getEnemyBuild() == P_1GateCore && macroHatchCount >= 2) || (Spy::enemyFastExpand() && macroHatchCount >= 2) || macroHatchCount >= 3 ||
+        wantThird = Spy::getEnemyBuild() == P_FFE || (Spy::getEnemyBuild() == P_1GateCore && macroHatchCount >= 2) || (Spy::enemyFastExpand() && macroHatchCount >= 1) || macroHatchCount >= 3 ||
                     Spy::getEnemyBuild() == "Unknown";
         if (!wantNatural)
             wantThird = false;
@@ -88,7 +88,7 @@ namespace McRave::BuildOrder::Zerg {
         // Make less if we have some other units outside our opening
         if (total(Zerg_Zergling) >= transitionLings || com(Zerg_Sunken_Colony) > 0) {
             arrivalValue -= vis(Zerg_Hydralisk) * 3;
-            arrivalValue -= (vis(Zerg_Sunken_Colony)) * 6.0;
+            arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 6.0;
         }
 
         return int(arrivalValue);
@@ -138,9 +138,9 @@ namespace McRave::BuildOrder::Zerg {
 
         // 1GC
         if (Spy::getEnemyBuild() == P_1GateCore) {
-            initialValue = 4;
+            initialValue = 6;
             if (Spy::getEnemyOpener() == P_ZCore || Spy::getEnemyOpener() == P_ZZCore || Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0)
-                initialValue = 6;
+                initialValue = 8;
         }
 
         // CannonRush
@@ -481,10 +481,8 @@ namespace McRave::BuildOrder::Zerg {
 
         // All-in
         if (!needMinimumHydras && total(Zerg_Hydralisk) >= 2 && hatchCount() >= 3) {
-            if (Spy::getEnemyBuild() != P_CannonRush && (Spy::enemyGreedy() || Spy::getEnemyTransition() == P_CorsairGoon))
+            if (Spy::getEnemyBuild() != P_CannonRush && (Spy::enemyGreedy() || Spy::getEnemyTransition() == P_4Gate || Spy::getEnemyTransition() == P_CorsairGoon))
                 activeAllinType = AllinType::Z_5HatchSpeedling;
-            if (Spy::getEnemyTransition() == P_4Gate || Spy::getEnemyTransition() == P_5GateGoon)
-                activeAllinType = AllinType::Z_9HatchCrackling;
         }
 
         // Gas
@@ -531,7 +529,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Extractor]         = (s >= 30 && hatchCount() >= 3) + (vis(Zerg_Drone) >= 30 && s >= 70) + (hatchCount() >= 6 && Researching::haveOrResearching(Lurker_Aspect));
         buildQueue[Zerg_Lair]              = (s >= 32 && gas(100) && hatchCount() >= 3);
         buildQueue[Zerg_Hydralisk_Den]     = (s >= 60);
-        buildQueue[Zerg_Evolution_Chamber] = (s >= 70) + (s >= 150);
+        buildQueue[Zerg_Evolution_Chamber] = (s >= 70) + (s >= 120);
 
         // Upgrades
         auto rangeFirst = Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2 || Spy::getEnemyBuild() == P_1GateCore;

@@ -29,7 +29,18 @@ namespace McRave::Walls {
         vector<UnitType> defenses;
         bool tight;
         bool openWall;
-        UnitType tightType   = None;
+        UnitType tightType = None;
+
+        struct WallInfo {
+            int desiredGroundDefenses;
+            int desiredAirDefenses;
+
+            map<UnitType, int> comType;
+            map<UnitType, int> visType;
+            map<UnitType, int> totalType;
+        };
+
+        map<BWEB::Wall *, WallInfo> wallMap;
 
         map<BWEB::Wall *, int> desiredGroundDefenses;
         map<BWEB::Wall *, int> desiredAirDefenses;
@@ -161,10 +172,10 @@ namespace McRave::Walls {
 
             // If they're only at home and not proxying units, don't make any defenses for a bit
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                auto seconds             = Walls::getColonyCount(&wall) > 0 ? 20 : 30;
+                auto seconds             = colonyCount > 0 ? 20 : 30;
                 auto minimumColonyNeeded = (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(6, 00));
                 auto morphAlways         = (Spy::getEnemyBuild() == T_RaxFact && wall.getGroundDefenseCount() == 0) || Players::vFFA() || Spy::enemyProxy();
-                if (!morphAlways && (wall.getGroundDefenseCount() >= minimumColonyNeeded || getColonyCount(&wall) >= minimumColonyNeeded)) {
+                if (!morphAlways && (wall.getGroundDefenseCount() >= minimumColonyNeeded || colonyCount >= minimumColonyNeeded)) {
                     auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) { return Units::inBoundUnit(*u, seconds); });
                     if (!closestUnit)
                         return 0;
@@ -311,11 +322,11 @@ namespace McRave::Walls {
         return colonies;
     }
 
-    int needGroundDefenses(BWEB::Wall &wall) { return desiredGroundDefenses[&wall]; }
-    int needAirDefenses(BWEB::Wall &wall) { return desiredAirDefenses[&wall]; }
-    int getCompleteTypeCount(UnitType type) {}
-    int getIncompleteTypeCount(UnitType type) {}
-    int getTotalTypeCount(UnitType type) {}
+    int needGroundDefenses(BWEB::Wall *const wall) { return desiredGroundDefenses[wall]; }
+    int needAirDefenses(BWEB::Wall *const wall) { return desiredAirDefenses[wall]; }
+    int getCompleteTypeCount(BWEB::Wall *const wall, UnitType type) {}
+    int getIncompleteTypeCount(BWEB::Wall *const wall, UnitType type) {}
+    int getTotalTypeCount(BWEB::Wall *const wall, UnitType type) {}
     BWEB::Wall *const getMainWall() { return mainWall; }
     BWEB::Wall *const getNaturalWall() { return naturalWall; }
 } // namespace McRave::Walls

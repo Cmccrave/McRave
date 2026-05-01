@@ -154,8 +154,8 @@ namespace McRave::BuildOrder::Zerg {
                             colonies--;
                     }
 
-                    auto airNeeded = Walls::needAirDefenses(wall);
-                    auto grdNeeded = Walls::needGroundDefenses(wall);
+                    auto airNeeded = Walls::needAirDefenses(&wall);
+                    auto grdNeeded = Walls::needGroundDefenses(&wall);
                     if (airNeeded > 0)
                         needSpores = true;
                     if (grdNeeded > 0)

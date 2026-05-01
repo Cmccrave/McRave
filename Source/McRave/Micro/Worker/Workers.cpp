@@ -304,7 +304,8 @@ namespace McRave::Workers {
 
             // Check if we're trying to build a structure near this worker
             else if (resource) {
-                if (auto builder = Util::getClosestUnit(resource->getPosition(), PlayerState::Self, [&](auto &u) { return *u != unit && u->getBuildType() != UnitTypes::None && !u->getBuildType().isRefinery(); })) {
+                if (auto builder = Util::getClosestUnit(resource->getPosition(), PlayerState::Self,
+                                                        [&](auto &u) { return *u != unit && u->getBuildType() != UnitTypes::None && !u->getBuildType().isRefinery(); })) {
                     auto center       = Position(builder->getBuildPosition()) + Position(builder->getBuildType().tileWidth() * 32, builder->getBuildType().tileHeight() * 32);
                     auto canAfford    = Broodwar->self()->minerals() >= builder->getBuildType().mineralPrice() && Broodwar->self()->gas() >= builder->getBuildType().gasPrice();
                     auto builderClose = builder->getPosition().getDistance(center) < 96.0;
@@ -374,11 +375,12 @@ namespace McRave::Workers {
                     // Find closest unit that we will re-assign
                     if (!threatened) {
                         auto closestunit = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) {
-                            return u->getRole() == Role::Worker && !u->getBuildPosition().isValid() && (!u->hasResource() || u->getResource().lock()->getType().isMineralField());
+                            return u->getRole() == Role::Worker && !u->getBuildPosition().isValid() && (unit.unit()->isCarryingMinerals() || unit.unit()->getOrder() == Orders::MoveToMinerals) &&
+                                   (!u->hasResource() || u->getResource().lock()->getType().isMineralField());
                         });
 
                         // If this is the closest unit and it's doing a return trip or moving to mine
-                        if (closestunit && (unit != *closestunit || !unit.unit()->isCarryingMinerals() || unit.unit()->getOrder() == Orders::MoveToMinerals))
+                        if (closestunit && unit != *closestunit)
                             continue;
                     }
 

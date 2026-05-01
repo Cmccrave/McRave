@@ -167,11 +167,11 @@ namespace McRave::Spy::Protoss {
                 theSpy.opener.name = P_NZCore;
 
             // ZCore
-            else if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) == 1)
+            else if (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) == 1)
                 theSpy.opener.name = P_ZCore;
 
             // ZZCore
-            else if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 2)
+            else if (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 2)
                 theSpy.opener.name = P_ZZCore;
         }
 

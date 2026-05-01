@@ -533,7 +533,7 @@ namespace McRave::Planning {
                     desiredRowOrder = {1, 2, 3};
 
                 // If this wall needs defenses
-                if (Walls::needGroundDefenses(wall) > colonies) {
+                if (Walls::needGroundDefenses(&wall) > colonies) {
 
                     // Try to place in adjacent rows as existing defenses
                     if (!desiredRowOrder.empty()) {
@@ -554,7 +554,7 @@ namespace McRave::Planning {
                     }
                 }
 
-                if (Walls::needAirDefenses(wall) > colonies) {
+                if (Walls::needAirDefenses(&wall) > colonies) {
 
                     // Try to always place in middle rows first
                     for (int i = 2; i <= 2; i++) {

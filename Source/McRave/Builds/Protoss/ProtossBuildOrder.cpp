@@ -24,7 +24,7 @@ namespace McRave::BuildOrder::Protoss {
         {
             // Adding Wall Defenses
             if (Walls::getNaturalWall()) {
-                if (vis(Protoss_Forge) > 0 && (Walls::needAirDefenses(*Walls::getNaturalWall()) > 0 || Walls::needGroundDefenses(*Walls::getNaturalWall()) > 0))
+                if (vis(Protoss_Forge) > 0 && (Walls::needAirDefenses(Walls::getNaturalWall()) > 0 || Walls::needGroundDefenses(Walls::getNaturalWall()) > 0))
                     buildQueue[Protoss_Photon_Cannon] = vis(Protoss_Photon_Cannon) + 1;
             }
 

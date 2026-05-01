@@ -200,7 +200,7 @@ namespace McRave::Combat::State {
 
                 if (Players::ZvP()) {
                     const auto killWorkers  = Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) >= 8;
-                    const auto scaryOpeners = Spy::getEnemyBuild() != P_FFE && Util::getTime() < Time(8, 00) && vis(Zerg_Sunken_Colony) > 0;
+                    const auto scaryOpeners = (Spy::getEnemyBuild() != P_FFE && Util::getTime() < Time(8, 00) && vis(Zerg_Sunken_Colony) > 0) || (Spy::getEnemyBuild() == P_2Gate);
                     const auto hideCheese   = BuildOrder::isHideTech() && BuildOrder::isOpener();
                     const auto deniedProxy  = Spy::enemyProxy() && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) > 0;
                     const auto defendProxy  = Spy::enemyProxy() && !speedLing && Util::getTime() < Time(5, 00) && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0;

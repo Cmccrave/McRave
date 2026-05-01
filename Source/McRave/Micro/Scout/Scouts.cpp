@@ -411,7 +411,7 @@ namespace McRave::Scouts {
                 if (Players::ZvP()) {
 
                     // Drone
-                    auto sawZealotTiming = (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0);
+                    auto sawZealotTiming = (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 2);
                     if (sawZealotTiming || Spy::getEnemyBuild() == P_FFE || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 ||
                         Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0 || fullScout || Util::getTime() > Time(3, 30))
                         main.desiredTypeCounts[Zerg_Drone] = 0;

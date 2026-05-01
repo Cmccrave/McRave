@@ -358,68 +358,63 @@ namespace McRave {
         const auto atChoke     = getPosition().getDistance(closestGeo) <= rangeCheck;
         const auto nearMe      = atHome || atChoke;
 
-        // Check if enemy has attacked a worker
-        auto attackedWorkers = [&]() {
-            if (hasTarget(); auto target = getTarget().lock()) {
-                return hasAttackedRecently() && Terrain::inTerritory(PlayerState::Self, target->getPosition()) && (target->getRole() == Role::Worker || target->getRole() == Role::Support);
+        auto threatensStation = [&]() {
+            if (!closestWall && closestStation) {
+                if (atHome && Terrain::inArea(closestStation, getPosition()))
+                    return true;
+            }
+
+            if (!closestWall)
+                return false;
+
+            // If a wall defender is within range (open wall) or this is within range of a defender
+            auto wallDefender = Util::getClosestUnit(position, PlayerState::Self, [&](auto &u) {
+                return u->getRole() == Role::Defender && u->canAttack(*this) && Util::contains(closestWall->getDefenses(), u->getTilePosition());
+            });
+            if (wallDefender && (this->isWithinRange(*wallDefender) || (!Walls::isComplete(closestWall) && wallDefender->isWithinRange(*this))))
+                return true;
+
+            // If within range of a fragile piece or inside the wall
+            auto wallPiece = Util::getClosestUnit(position, PlayerState::Self, [&](auto &u) {
+                return u->getRole() == Role::Production && (Util::contains(closestWall->getMediumTiles(), u->getTilePosition()) || Util::contains(closestWall->getLargeTiles(), u->getTilePosition()));
+            });
+            if (wallPiece) {
+                auto insideWall  = wallDefender && position.getDistance(wallDefender->getPosition()) < wallPiece->getPosition().getDistance(wallDefender->getPosition());
+                auto fragileWall = !wallPiece->isHealthy() && this->isWithinRange(*wallPiece);
+                if (insideWall || fragileWall)
+                    return true;
             }
             return false;
         };
 
-        // Check if enemy is possibly denying resources
-        auto nearResources = [&]() {
+        auto threatensWorkers = [&]() {
+            if (hasTarget(); auto target = getTarget().lock()) {
+                return hasAttackedRecently() && Terrain::inTerritory(PlayerState::Self, target->getPosition()) && (target->getRole() == Role::Worker || target->getRole() == Role::Support);
+            }
             auto closestMineral = Resources::getClosestMineral(position, [&](auto &r) { return r->getResourceState() == ResourceState::Mineable; });
             if (closestMineral && closestMineral->getPosition().getDistance(position) < max(200.0, getGroundRange()))
                 return true;
             return false;
         };
 
-        // Check if enemy is generally in our territory
-        auto nearTerritory = [&]() {
-            if (isFlying() && getType().spaceProvided() == 0)
-                return atHome;
+        auto threatensTerritory = [&]() {
+            if (Terrain::inArea(Terrain::getMainArea(), position)) {
+                auto defendMainChoke  = (!Combat::isDefendNatural() && Combat::holdAtChoke());
+                auto defendMainAlways = Combat::isDefendNatural() && !Terrain::isPocketNatural();
+                if (defendMainChoke || defendMainAlways)
+                    return true;
+            }
 
             if ((Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural() && Combat::holdAtChoke()) ||
                 (Terrain::inArea(Terrain::getMainArea(), position) && Combat::isDefendNatural() && !Terrain::isPocketNatural()))
                 return true;
 
-            // If in a territory with a station/wall and there is no defenders, we will need to engage
-            if (atHome) {
-                if (closestWall && Terrain::inArea(closestWall->getArea(), getPosition())) {
-                    if ((closestWall->getGroundDefenseCount() == 0 && !isFlying()) || closestWall->getAirDefenseCount() == 0 && isFlying())
-                        return true;
-                }
-                if (closestStation && Terrain::inArea(closestStation->getBase()->GetArea(), getPosition())) {
-                    if ((Stations::getGroundDefenseCount(closestStation) == 0 && !isFlying()) || (Stations::getAirDefenseCount(closestStation) == 0 && isFlying()))
-                        return true;
-                }
+            if (inTerritory) {
+                auto dangerous = getType() == Protoss_Reaver || getType() == Protoss_High_Templar || getType() == Protoss_Dark_Templar || getType() == Terran_Vulture;
+                auto transport = isFlying() && getType().spaceProvided() == 0;
+                if (dangerous || transport)
+                    return true;
             }
-
-            // Dangerous harassing units are always a threat in our area
-            if (getType() == Protoss_Reaver || getType() == Protoss_High_Templar || getType() == Protoss_Dark_Templar || getType() == Terran_Vulture)
-                return inTerritory;
-
-            return (Util::getTime() > Time(5, 00) && Terrain::inArea(Terrain::getMainArea(), position) && Stations::getGroundDefenseCount(Terrain::getMyMain()) == 0 &&
-                    (!Walls::getMainWall() || Walls::getMainWall()->getGroundDefenseCount() == 0)) ||
-                   (Util::getTime() > Time(7, 00) && Terrain::inArea(Terrain::getNaturalArea(), position) && Stations::getGroundDefenseCount(Terrain::getMyNatural()) == 0 &&
-                    (!Walls::getNaturalWall() || Walls::getNaturalWall()->getGroundDefenseCount() == 0)) ||
-                   (Util::getTime() > Time(9, 00) && atHome && !Terrain::inArea(Terrain::getMainArea(), position) && !Terrain::inArea(Terrain::getNaturalArea(), position));
-        };
-
-        // Check if our defenses can hit or be hit
-        auto nearDefenders = [&]() {
-            auto closestDefender = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
-                return u->getRole() == Role::Defender && ((u->canAttackGround() && !this->isFlying()) || (u->canAttackAir() && this->isFlying()));
-            });
-
-            // If this defender is in a wall, it's not threatening until within the wall boundary
-            if (!this->isFlying() && closestWall && closestDefender && Util::contains(closestWall->getDefenses(), closestDefender->getTilePosition())) {
-                if (Walls::isComplete(closestWall))
-                    return false;
-            }
-
-            return (closestDefender && closestDefender->isWithinRange(*this) && closestDefender->isCompleted()) ||
-                   (closestDefender && this->canAttackGround() && this->isWithinRange(*closestDefender));
         };
 
         // Checks if it can damage an already damaged building
@@ -471,7 +466,7 @@ namespace McRave {
             }
 
             //
-            threateningThisFrame = attackedWorkers() || nearResources() || nearTerritory() || nearFragileBuilding() || nearBuildPosition() || nearDefenders();
+            threateningThisFrame = threatensStation() || threatensWorkers() || threatensTerritory() || nearFragileBuilding() || nearBuildPosition();
         }
 
         // Determine if this unit is threatening
@@ -900,6 +895,9 @@ namespace McRave {
 
     bool UnitInfo::isWithinRange(UnitInfo &otherUnit)
     {
+        if (!isCompleted())
+            return false;
+
         // Special case: hydras have a long initial animation with a short repeated animation. Get them much further in range before attacking
         if (getType() == Zerg_Hydralisk) {
             if (!hasAttackedRecently() && !otherUnit.isMelee() && getSpeed() >= otherUnit.getSpeed() && !otherUnit.isSplasher())
