@@ -213,9 +213,14 @@ namespace McRave::BuildOrder::Zerg {
                 if (Players::ZvP()) {
                     auto ruleOutCorsairs = Players::getTotalCount(PlayerState::Enemy, Protoss_Gateway) >= 3 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2 //
                                            || Spy::enemyFastExpand() || Spy::getEnemyTransition() != "Unknown";                                                                 //
-                    auto p2GateSair = Spy::getEnemyBuild() == P_2Gate && Util::getTime() > Time(4, 45);
-                    auto p1GcSair   = Spy::getEnemyBuild() == P_1GateCore && Util::getTime() > Time(4, 15);
-                    auto stargate   = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &s) { return s->getType() == Protoss_Stargate; });
+
+                    // If a dragoon was made, we have to assume worse case, since we probably won't see inside their base
+                    auto p2GateSair = Spy::getEnemyBuild() == P_2Gate &&
+                                      ((Util::getTime() > Time(4, 45) && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0) || Util::getTime() > Time(5, 30));
+                    auto p1GcSair = Spy::getEnemyBuild() == P_1GateCore &&
+                                    ((Util::getTime() > Time(4, 15) && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0) || Util::getTime() > Time(5, 00));
+
+                    auto stargate = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &s) { return s->getType() == Protoss_Stargate; });
 
                     if (Players::ZvP() && !ruleOutCorsairs && (p2GateSair || p1GcSair)) {
                         needSpores = true;
@@ -1055,7 +1060,8 @@ namespace McRave::BuildOrder::Zerg {
         for (auto &w : Units::getUnits(PlayerState::Self)) {
             auto &worker = *w;
             if (worker.getRole() == Role::Worker) {
-                if (worker.unit()->isCarryingGas() || worker.unit()->getOrder() == Orders::WaitForGas || worker.unit()->getOrder() == Orders::HarvestGas || worker.unit()->getOrder() == Orders::ReturnGas || worker.unit()->getOrder() == Orders::MoveToGas)
+                if (worker.unit()->isCarryingGas() || worker.unit()->getOrder() == Orders::WaitForGas || worker.unit()->getOrder() == Orders::HarvestGas ||
+                    worker.unit()->getOrder() == Orders::ReturnGas || worker.unit()->getOrder() == Orders::MoveToGas)
                     onTheWay += 8;
             }
         }

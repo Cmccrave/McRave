@@ -58,6 +58,7 @@
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvT\TvT_RaxFact.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ_2Rax.cpp" />
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ_RaxFact.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZergBuildOrder.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZSilly.cpp" />
     <ClCompile Include="..\Source\McRave\Builds\Zerg\ZvFFA\ZvFFA.cpp" />

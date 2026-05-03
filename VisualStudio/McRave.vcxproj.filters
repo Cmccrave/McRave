@@ -340,6 +340,9 @@
     <ClCompile Include="..\Source\McRave\Map\Blocks\Blocks.cpp">
       <Filter>McRave\Map\Blocks</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\McRave\Builds\Terran\TvZ\TvZ_RaxFact.cpp">
+      <Filter>McRave\Builds\Terran\TvZ</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\BWEB\Block.h">

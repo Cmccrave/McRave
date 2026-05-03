@@ -50,6 +50,7 @@ const std::string_view T_11_18 = "11/18";
 
 const std::string_view T_1RaxFE  = "1RaxFE";
 const std::string_view T_2RaxFE  = "2RaxFE";
+const std::string_view T_111     = "111";
 const std::string_view T_1FactFE = "1FactFE";
 const std::string_view T_2FactFE = "2FactFE";
 

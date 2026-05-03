@@ -371,7 +371,10 @@ namespace McRave::Learning {
                 TwoRax.setOpeners({T_11_13});
                 TwoRax.setTransitions({T_Academy});
 
-                myBuilds = {TwoRax};
+                RaxFact.setOpeners({T_111});
+                RaxFact.setTransitions({T_2PortWraith});
+
+                myBuilds = {TwoRax, RaxFact};
             }
         }
 

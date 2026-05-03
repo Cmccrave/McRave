@@ -440,6 +440,13 @@ namespace McRave::Command {
             return true;
         }
 
+        // Medic - Healing
+        else if (unit.getType() == Terran_Medic && unit.isWithinRange(target)) {
+            unit.setCommand(Healing);
+            unit.commandText = "Healing";
+            return true;
+        }
+
         // Comsat scans
         else if (unit.getType() == Terran_Comsat_Station) {
             if (target.unit()->exists() && !Actions::overlapsDetection(unit.unit(), target.getPosition(), PlayerState::Self)) {

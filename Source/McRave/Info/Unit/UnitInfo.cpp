@@ -576,22 +576,6 @@ namespace McRave {
         if (commandType == cmd && commandPosition == here && Broodwar->getFrameCount() - commandFrame < 6)
             return;
 
-        // TESTING:
-        // First glance this looks very helpful, sometimes the worker starts in the wrong direction however, it should be closer to the cmd than the worker is?
-        // If this is a worker, attempt to get its movement going with a gather command
-        if (getType().isWorker() && getCurrentSpeed() < 2.0) {
-            auto bestNeutral = Util::getClosestUnit(here, PlayerState::Neutral, [&](auto &u) {
-                auto dist = u->getPosition().getDistance(getPosition());
-                return dist >= 160;
-            });
-            if (bestNeutral) {
-                if (unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit || unit()->getLastCommand().getTarget() != bestNeutral->unit())
-                    unit()->rightClick(bestNeutral->unit());
-                Visuals::drawLine(getPosition(), bestNeutral->getPosition(), Colors::Yellow);
-                return;
-            }
-        }
-
         commandFrame    = Broodwar->getFrameCount();
         commandPosition = here;
         commandType     = cmd;
@@ -951,9 +935,6 @@ namespace McRave {
         // Check if we need to wait a few frames before issuing a command due to stop frames
         const auto frameSinceAttack = Broodwar->getFrameCount() - getLastAttackFrame();
         const auto cancelAttackRisk = frameSinceAttack <= minStopFrame - Broodwar->getRemainingLatencyFrames();
-
-        if (cancelAttackRisk)
-            circle(Colors::Red);
 
         // Allows skipping the command but still printing the result to screen
         return !cancelAttackRisk;

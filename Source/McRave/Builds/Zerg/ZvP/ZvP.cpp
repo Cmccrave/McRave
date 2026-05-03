@@ -91,6 +91,15 @@ namespace McRave::BuildOrder::Zerg {
             arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 6.0;
         }
 
+        // Make more if we have damaged lings or runby lings
+        for (auto &u : Units::getUnits(PlayerState::Self)) {
+            auto &unit = *u;
+            if (unit.getType() == Zerg_Zergling) {
+                if (unit.getHealth() <= 16 || unit.getGoalType() == GoalType::Runby)
+                    arrivalValue++;
+            }
+        }
+
         return int(arrivalValue);
     }
 
@@ -272,7 +281,7 @@ namespace McRave::BuildOrder::Zerg {
         auto thirdGas  = (mutaOpen && hatchCount() >= 5 && Util::getTime() > Time(8, 00)) || (hydraOpen && hydraDone);
 
         // Hatch timings
-        auto thirdHatch  = (s >= 28 && vis(Zerg_Drone) >= 13 && vis(Zerg_Extractor) > 0 && total(Zerg_Zergling) >= transitionLings) || (s >= 40);
+        auto thirdHatch  = (s >= 28 && vis(Zerg_Drone) >= 11 && vis(Zerg_Extractor) > 0 && total(Zerg_Zergling) >= transitionLings) || (s >= 32);
         auto fourthHatch = (vis(Zerg_Drone) >= 28 && vis(Zerg_Spire) > 0) || (total(Zerg_Scourge) >= 6);
         auto fifthHatch  = (vis(Zerg_Drone) >= 30);
         auto sixHatch    = (vis(Zerg_Drone) >= 38);
@@ -354,10 +363,6 @@ namespace McRave::BuildOrder::Zerg {
 
             if (dropGasLowDrone || dropGasEarly || dropGasHatch)
                 gasLimit = 0;
-            else if (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 16)
-                gasLimit = 1;
-            else if (vis(Zerg_Lair) > 0 && vis(Zerg_Drone) < 20)
-                gasLimit = 2;
         }
         if (gasLimit > 0 && (Spy::getEnemyBuild() == "Unknown" || Spy::getEnemyBuild() == P_2Gate) && !atPercent(Zerg_Lair, 0.25))
             gasLimit = capGas(100);

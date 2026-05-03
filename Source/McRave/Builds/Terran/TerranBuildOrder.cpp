@@ -81,10 +81,6 @@ namespace McRave::BuildOrder::Terran {
 
         void queueUpgradeStructures()
         {
-            // Control Tower
-            if (com(Terran_Starport) >= 1)
-                buildQueue[Terran_Control_Tower] = com(Terran_Starport);
-
             // Machine Shop
             if (com(Terran_Factory) >= 3 && rampType == Terran_Factory)
                 buildQueue[Terran_Machine_Shop] = Stations::getGasingStationsCount();
@@ -109,6 +105,10 @@ namespace McRave::BuildOrder::Terran {
 
                 if (com(Terran_Science_Facility) > 0 && isFocusUnit(Terran_Battlecruiser) && vis(Terran_Physics_Lab) == 0)
                     buildQueue[Terran_Physics_Lab] = 1;
+
+                // Control Tower
+                if (com(Terran_Starport) >= 1)
+                    buildQueue[Terran_Control_Tower] = com(Terran_Starport);
 
                 // Engineering Bay
                 if ((rampType == Terran_Barracks && s > 200) || (Util::getTime() > Time(5, 00) && Players::TvZ()))
@@ -376,22 +376,32 @@ namespace McRave::BuildOrder::Terran {
         }
 
         if (!inOpening) {
-            static vector<pair<UnitType, int>> priorityOrder;
+            static vector<pair<UnitType, int>> ccOrder;
+            static vector<pair<UnitType, int>> barracksOrder;
+            static vector<pair<UnitType, int>> factoryOrder;
+            static vector<pair<UnitType, int>> starportOrder;
+
+            ccOrder = {{Terran_SCV, 60}};
 
             if (rampType == Terran_Factory) {
-                priorityOrder = {
-                    {Terran_SCV, 60},                                                                   // CC
-                    {Terran_Vulture, 2},        {Terran_Goliath, 1}, {Terran_Siege_Tank_Tank_Mode, 2},  // Factory
-                    {Terran_Vulture, 8},        {Terran_Goliath, 2}, {Terran_Siege_Tank_Tank_Mode, 4},  //
-                    {Terran_Vulture, 16},       {Terran_Goliath, 4}, {Terran_Siege_Tank_Tank_Mode, 8},  //
-                    {Terran_Vulture, 24},       {Terran_Goliath, 4}, {Terran_Siege_Tank_Tank_Mode, 16}, //
-                    {Terran_Vulture, 32},       {Terran_Goliath, 6}, {Terran_Siege_Tank_Tank_Mode, 32}, //
-                    {Terran_Science_Vessel, 3},                                                         // Starport
+
+                factoryOrder = {
+                    {Terran_Vulture, 2},  {Terran_Goliath, 1}, {Terran_Siege_Tank_Tank_Mode, 2},  //
+                    {Terran_Vulture, 8},  {Terran_Goliath, 2}, {Terran_Siege_Tank_Tank_Mode, 4},  //
+                    {Terran_Vulture, 16}, {Terran_Goliath, 4}, {Terran_Siege_Tank_Tank_Mode, 8},  //
+                    {Terran_Vulture, 24}, {Terran_Goliath, 4}, {Terran_Siege_Tank_Tank_Mode, 16}, //
+                    {Terran_Vulture, 32}, {Terran_Goliath, 6}, {Terran_Siege_Tank_Tank_Mode, 32}, //
                 };
 
-                // Swap tank/goliath count vs carriers
-                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier) > 0) {
-                    for (auto &[type, cnt] : priorityOrder) {
+                if (isFocusUnit(Terran_Wraith))
+                    starportOrder = {{Terran_Wraith, 12}, {Terran_Science_Vessel, 3}};
+                else
+                    starportOrder = {{Terran_Science_Vessel, 3}};
+
+                // TODO: Composition switcher, faster switching than zergs
+                // Swap tank/goliath count vs carriers/guardians
+                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Carrier, Zerg_Guardian) > 0) {
+                    for (auto &[type, cnt] : factoryOrder) {
                         if (type == Terran_Siege_Tank_Tank_Mode) {
                             type = Terran_Goliath;
                         }
@@ -403,26 +413,31 @@ namespace McRave::BuildOrder::Terran {
             }
 
             if (rampType == Terran_Barracks) {
-                priorityOrder = {
-                    {Terran_SCV, 60},                                                    // CC
-                    {Terran_Marine, 5},        {Terran_Medic, 3},  {Terran_Firebat, 3},  // Rax
-                    {Terran_Marine, 10},       {Terran_Medic, 6},  {Terran_Firebat, 6},  // Rax
-                    {Terran_Marine, 20},       {Terran_Medic, 9},  {Terran_Firebat, 9},  //
-                    {Terran_Marine, 20},       {Terran_Medic, 12}, {Terran_Firebat, 12}, //
-                    {Terran_Marine, 40},       {Terran_Medic, 15}, {Terran_Firebat, 15}, //
-                    {Terran_Marine, 80},       {Terran_Medic, 18}, {Terran_Firebat, 18}, //
-                    {Terran_Science_Vessel, 8}                                           // Starport
+                barracksOrder = {
+                    {Terran_Marine, 5},  {Terran_Medic, 3},  {Terran_Firebat, 3},  //
+                    {Terran_Marine, 10}, {Terran_Medic, 6},  {Terran_Firebat, 6},  //
+                    {Terran_Marine, 20}, {Terran_Medic, 9},  {Terran_Firebat, 9},  //
+                    {Terran_Marine, 20}, {Terran_Medic, 12}, {Terran_Firebat, 12}, //
+                    {Terran_Marine, 40}, {Terran_Medic, 15}, {Terran_Firebat, 15}, //
+                    {Terran_Marine, 80}, {Terran_Medic, 18}, {Terran_Firebat, 18}, //
                 };
+
+                if (isFocusUnit(Terran_Wraith))
+                    starportOrder = {{Terran_Wraith, 12}, {Terran_Science_Vessel, 3}};
+                else
+                    starportOrder = {{Terran_Science_Vessel, 8}};
             }
 
-            for (auto &[type, count] : priorityOrder) {
-                auto typeAvailable = (unlockReady(type) && vis(type) < count);
-                if (type.isWorker() && Resources::isMineralSaturated() && Resources::isGasSaturated())
-                    continue;
-                if (!typeAvailable || availGas < type.gasPrice() || !buildingAvailable(type))
-                    continue;
-                armyComposition[type] = 1.00;
-                break;
+            for (auto &order : {ccOrder, barracksOrder, factoryOrder, starportOrder}) {
+                for (auto &[type, count] : order) {
+                    auto typeAvailable = (unlockReady(type) && vis(type) < count);
+                    if (type.isWorker() && Resources::isMineralSaturated() && Resources::isGasSaturated())
+                        continue;
+                    if (!typeAvailable || availGas < type.gasPrice() || !buildingAvailable(type))
+                        continue;
+                    armyComposition[type] = 1.00;
+                    break;
+                }
             }
         }
     }

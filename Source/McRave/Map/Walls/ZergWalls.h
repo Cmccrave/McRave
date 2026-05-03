@@ -84,7 +84,7 @@ namespace McRave::Walls::Zerg {
 
             // Corsair
             if (Spy::getEnemyTransition() == P_Corsair || Spy::getEnemyTransition() == P_CorsairGoon) {
-                return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(6, 15));
+                return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 45));
             }
 
             // Speedlot

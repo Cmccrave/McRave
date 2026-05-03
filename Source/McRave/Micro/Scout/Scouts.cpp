@@ -163,22 +163,22 @@ namespace McRave::Scouts {
 
         void updateSafePositions()
         {
-            for (auto tile : enemyVisionTiles) {
-                Visuals::drawBox(tile, Colors::Yellow);
-                Broodwar->drawTextMap(Position(tile) + Position(16, 16), "%d", Broodwar->getGroundHeight(tile));
-            }
-            for (auto tile : safeTiles) {
-                Visuals::drawBox(tile, Colors::Green);
-                Broodwar->drawTextMap(Position(tile) + Position(16, 16), "%d", Broodwar->getGroundHeight(tile));
-            }
-            for (auto p : potentialAirPositions) {
-                Visuals::drawCircle(p, 8, Colors::Blue, true);
-                Broodwar->drawTextMap(p, "%d", Broodwar->getGroundHeight(TilePosition(p)));
-            }
-            for (auto p : potentialGroundPositions) {
-                Visuals::drawCircle(p, 8, Colors::Purple, true);
-                Broodwar->drawTextMap(p, "%d", Broodwar->getGroundHeight(TilePosition(p)));
-            }
+            //for (auto tile : enemyVisionTiles) {
+            //    Visuals::drawBox(tile, Colors::Yellow);
+            //    Broodwar->drawTextMap(Position(tile) + Position(16, 16), "%d", Broodwar->getGroundHeight(tile));
+            //}
+            //for (auto tile : safeTiles) {
+            //    Visuals::drawBox(tile, Colors::Green);
+            //    Broodwar->drawTextMap(Position(tile) + Position(16, 16), "%d", Broodwar->getGroundHeight(tile));
+            //}
+            //for (auto p : potentialAirPositions) {
+            //    Visuals::drawCircle(p, 8, Colors::Blue, true);
+            //    Broodwar->drawTextMap(p, "%d", Broodwar->getGroundHeight(TilePosition(p)));
+            //}
+            //for (auto p : potentialGroundPositions) {
+            //    Visuals::drawCircle(p, 8, Colors::Purple, true);
+            //    Broodwar->drawTextMap(p, "%d", Broodwar->getGroundHeight(TilePosition(p)));
+            //}
 
             static bool safeDiscovered = false;
             if (!Terrain::getEnemyMain() || !Terrain::getEnemyNatural() || safeDiscovered) {
@@ -613,7 +613,7 @@ namespace McRave::Scouts {
 
                 // Zerg
                 if (Broodwar->self()->getRace() == Races::Zerg) {
-                    if (Players::ZvT() && Spy::getEnemyBuild() == T_RaxFact && army.desiredTypeCounts[Zerg_Zergling] == 0)
+                    if (Players::ZvT() && Spy::getEnemyBuild() == T_RaxFact)
                         safe.desiredTypeCounts[Zerg_Zergling] = 1;
 
                     if (Util::getTime() > Time(4, 10))
@@ -636,7 +636,7 @@ namespace McRave::Scouts {
                     time = Time(3, 45);
                 if (Players::ZvZ())
                     time = Time(4, 00);
-                if (Spy::getEnemyTransition() == U_WorkerRush)
+                if (Spy::getEnemyTransition() == U_WorkerRush || Spy::getEnemyOpener() == P_Proxy_9_9 || Spy::getEnemyOpener() == P_Horror_9_9)
                     time = Time(6, 00);
 
                 if (Util::getTime() > time) {
@@ -701,7 +701,7 @@ namespace McRave::Scouts {
             auto type = Broodwar->self()->getRace().getWorker();
             if (vis(Terran_Vulture) > 0 && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Ion_Thrusters))
                 type = Terran_Vulture;
-            else if (vis(Zerg_Zergling) > 0)
+            else if (vis(Zerg_Zergling) > 0 && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) == 0)
                 type = Zerg_Zergling;
             else if (vis(Protoss_Zealot) > 0 && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Leg_Enhancements))
                 type = Protoss_Zealot;
@@ -798,7 +798,7 @@ namespace McRave::Scouts {
             }
 
             for (auto &[type, count] : totalDesiredScoutTypeCounts) {
-                if (scoutTypeDeaths[type] > 0 && (type != Zerg_Zergling || Players::ZvZ()))
+                if (scoutTypeDeaths[type] > 0 && (type != Zerg_Zergling || Players::ZvZ() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0))
                     continue;
                 if (totalCurrentScoutTypeCounts[type] < totalDesiredScoutTypeCounts[type] && (type.isFlyer() || !contained))
                     assign(type);

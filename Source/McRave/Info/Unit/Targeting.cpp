@@ -17,7 +17,7 @@ using namespace UnitTypes;
 namespace McRave::Targets {
 
     struct Context {
-        const std::shared_ptr<UnitInfo>& unit, target;
+        const std::shared_ptr<UnitInfo> &unit, target;
         double dist;
         double targetRange, targetReach, unitRange, unitReach;
         bool unitInRange, targetInRange;
@@ -27,13 +27,13 @@ namespace McRave::Targets {
             if (unit && target) {
                 dist = unit->getPosition().getDistance(target->getPosition());
 
-                targetRange = unit->isFlying() ? target->getAirRange() : target->getGroundRange();
-                targetReach = unit->isFlying() ? target->getAirReach() : target->getGroundReach();
+                targetRange   = unit->isFlying() ? target->getAirRange() : target->getGroundRange();
+                targetReach   = unit->isFlying() ? target->getAirReach() : target->getGroundReach();
                 targetInRange = target->isWithinRange(*unit);
 
-                unitRange     = target->isFlying() ? unit->getAirRange() : unit->getGroundRange();
-                unitReach     = target->isFlying() ? unit->getAirReach() : unit->getGroundReach();
-                unitInRange   = unit->isWithinRange(*unit);
+                unitRange   = target->isFlying() ? unit->getAirRange() : unit->getGroundRange();
+                unitReach   = target->isFlying() ? unit->getAirReach() : unit->getGroundReach();
+                unitInRange = unit->isWithinRange(*unit);
             }
         };
     };
@@ -265,6 +265,13 @@ namespace McRave::Targets {
         return Priority::Normal;
     }
 
+    Priority wraithPriority(UnitInfo &unit, UnitInfo &target)
+    {
+        if (target.getType() == Zerg_Overlord && unit.isWithinRange(target))
+            return Priority::Major;
+        return Priority::Normal;
+    }
+
     // Z
     Priority zerglingPriority(UnitInfo &unit, UnitInfo &target)
     {
@@ -454,6 +461,8 @@ namespace McRave::Targets {
             return medicPriority(unit, target);
         if (unit.getType() == Terran_Ghost)
             return ghostPriority(unit, target);
+        if (unit.getType() == Terran_Wraith)
+            return wraithPriority(unit, target);
 
         // Z
         if (unit.getType() == Zerg_Zergling)
@@ -532,8 +541,9 @@ namespace McRave::Targets {
         auto minuteScalar = Players::ZvZ() ? 8.0 : 4.0;
 
         // Make distance targeting scaling with minutes in the game
+        auto diff             = max(1.0, actualDist - range);
         const auto earlyScale = max(1.0, 4.0 - Util::getTime().minutes * 0.3);
-        const auto dist       = exp(actualDist / (48.0 * earlyScale));
+        const auto dist       = exp(diff / (32.0 * earlyScale));
         return dist;
     }
 

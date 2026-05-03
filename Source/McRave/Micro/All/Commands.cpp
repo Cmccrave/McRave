@@ -79,10 +79,60 @@ namespace McRave::Command {
             auto existingEdgeCost   = max(penalizeEdge(unit.getPosition()), penalizeEdge(unit.getNavigation()));
             auto existingCornerCost = max(penalizeCorner(unit.getPosition()), penalizeCorner(unit.getNavigation()));
 
+            struct Blocker {
+                int dx, dy;
+                double dist;
+            };
+
+            vector<Blocker> blockers;
+
+            // Get a bounding box around the unit to determine directions that are ok
+            auto box        = Util::typeBoundingBox(unit.getPosition(), unit.getType());
+            auto topLeft    = WalkPosition(box.first);
+            auto botRight   = WalkPosition(box.second);
+            auto walkRadius = max(unit.getWalkHeight(), unit.getWalkWidth()) + 4;
+
+            for (auto &w : Util::getWalkCircle(walkRadius)) {
+                const auto walk = WalkPosition(w) + WalkPosition(unit.getPosition());
+                if (!walk.isValid() || (walk.x >= topLeft.x && walk.x < botRight.x && walk.y >= topLeft.y && walk.y < botRight.y))
+                    continue;
+
+                // If this walk is blocked, then add a directional blocker
+                if (Grids::getFCollision(walk, PlayerState::All) > 0 || !Broodwar->isWalkable(walk)) {
+                    Position p = Position(walk) + Position(4, 4);
+                    auto dx    = p.x - unit.getPosition().x;
+                    auto dy    = p.y - unit.getPosition().y;
+                    auto dist  = p.getDistance(unit.getPosition());
+                    blockers.push_back({dx, dy, dist});
+                }
+            }
+
+            // Check if this direction is occluded by a blocker
+            auto isOccluded = [&](Position pos) {
+                auto dx         = pos.x - unit.getPosition().x;
+                auto dy         = pos.y - unit.getPosition().y;
+                const auto dist = pos.getDistance(unit.getPosition());
+
+                // Occlusion struggles if we're trying to build on a vespene geyser, since it's unwalkable
+                if (unit.getBuildType().isRefinery())
+                    return false;
+
+                for (auto &b : blockers) {
+                    const auto dot = dx * b.dx + dy * b.dy;
+                    if (dot <= 0)
+                        continue;
+                    const auto cosSq = (dot) / (dist * b.dist);
+                    if (cosSq >= 0.98) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
             // Check if this is a viable position for movement
             const auto viablePosition = [&](Position p) {
                 if (!unit.getType().isFlyer()) {
-                    if (Planning::overlapsPlan(unit, p) || !Util::findWalkable(unit, p))
+                    if (isOccluded(p) || Planning::overlapsPlan(unit, p) || !Util::findWalkable(unit, p))
                         return false;
                 }
                 if (Actions::isInDanger(unit, p))
@@ -105,16 +155,16 @@ namespace McRave::Command {
             };
 
             // Clear the vector and keep the space reserved
-            auto radius           = 4.0 + (unit.getSpeed() * 2);
+            auto radius           = int(4.0 + (unit.getSpeed() * 2.0));
             const auto vectorSize = size_t(radius * radius);
             positionsByCost.clear();
             positionsByCost.reserve(vectorSize);
 
             // Grab the expected circle representation of this radius
-            for (auto &walk : Util::getWalkCircle(radius)) {
-                const auto w = WalkPosition(walk) + WalkPosition(unit.getPosition());
-                if (w.isValid()) {
-                    auto p   = Position(w) + Position(4, 4);
+            for (auto &w : Util::getWalkCircle(radius)) {
+                const auto walk = WalkPosition(w) + WalkPosition(unit.getPosition());
+                if (walk.isValid()) {
+                    auto p   = Position(walk) + Position(4, 4);
                     double s = scorePosition(p);
                     posQueue.push({s, p});
                 }
@@ -432,7 +482,7 @@ namespace McRave::Command {
             auto maxRange  = max(kiteRange, maxEnemyRange);
             auto calcPair  = Util::findPointOnCircle(unit.getPosition(), unit.getPosition(), maxRange, threatCalc);
             kiteTowards    = calcPair.second;
-            Visuals::drawLine(unit.getPosition(), kiteTowards, Colors::Purple);
+            // Visuals::drawLine(unit.getPosition(), kiteTowards, Colors::Purple);
         }
 
         const auto scoreFunction = [&](ScoreContext &context) {
@@ -501,6 +551,11 @@ namespace McRave::Command {
                     const auto defenders       = com(Zerg_Sunken_Colony) > 0 && Combat::State::isStaticRetreat(unit.getType());
 
                     if (Players::ZvP() && target.getType() == Protoss_Zealot) {
+                        if (target.hasTarget(); auto enemyTarget = target.getTarget().lock()) {
+                            if (enemyTarget->getType() == Zerg_Sunken_Colony)
+                                return false;
+                        }
+
                         if (unit.getHealth() <= 16 && Util::getTime() < Time(4, 30)) {
                             for (auto &e : unit.getUnitsInReachOfThis()) {
                                 if (auto enemy = e.lock()) {
@@ -572,6 +627,7 @@ namespace McRave::Command {
             // If we found a valid position, move to it
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
             if (bestPosition.isValid()) {
+                Visuals::drawLine(unit.getPosition(), bestPosition, Colors::Green);
                 unit.setCommand(Move, bestPosition);
                 unit.commandText = "Kite";
                 return true;
@@ -654,16 +710,19 @@ namespace McRave::Command {
 
         if (canRetreat() && shouldRetreat()) {
             auto bestPosition = findViablePosition(unit, unit.getNavigation(), scoreFunction);
+            if (unit.isLightAir() && unit.getPosition().getDistance(unit.getDestination()) < 160.0) {
+                unit.setCommand(Right_Click_Position, unit.getDestination());
+                unit.commandText = "Retreat";
+                return true;
+            }
             if (bestPosition.isValid()) {
                 unit.setCommand(Move, bestPosition);
                 unit.commandText = "Retreat";
                 return true;
             }
-            else {
-                unit.setCommand(Move, Stations::getClosestRetreatStation(unit)->getBase()->Center());
-                unit.commandText = "Retreat";
-                return true;
-            }
+            unit.setCommand(Move, Stations::getClosestRetreatStation(unit)->getBase()->Center());
+            unit.commandText = "Retreat";
+            return true;
         }
         return false;
     }

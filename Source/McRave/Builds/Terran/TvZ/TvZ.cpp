@@ -32,7 +32,7 @@ namespace McRave::BuildOrder::Terran {
     void TvZ_Academy()
     {
         rampType     = Terran_Barracks;
-        gasLimit     = 3;
+        gasLimit     = gasMax();
         inBookSupply = vis(Terran_Supply_Depot) < 3;
         inOpening    = vis(Terran_Comsat_Station) == 0;
 
@@ -54,6 +54,25 @@ namespace McRave::BuildOrder::Terran {
         terranUnitPump[Terran_Firebat] = com(Terran_Academy) > 0 && vis(Terran_Medic) < vis(Terran_Marine) / 1.5;
     }
 
+    void TvZ_2PortWraith()
+    {
+        rampType     = Terran_Barracks;
+        gasLimit     = gasMax();
+        inBookSupply = vis(Terran_Supply_Depot) < 2;
+        inOpening    = total(Terran_Wraith) < 6;
+        focusUnit    = Terran_Wraith;
+
+        buildQueue[Terran_Starport]      = (com(Terran_Factory) > 0) + (vis(Terran_Starport) > 0);
+        buildQueue[Terran_Control_Tower] = total(Terran_Wraith) >= 2;
+
+        techQueue[Cloaking_Field] = com(Terran_Control_Tower) > 0;
+
+        terranUnitPump[Terran_SCV]     = vis(Terran_SCV) < 24;
+        terranUnitPump[Terran_Marine]  = vis(Terran_Factory) > 0 && total(Terran_Marine) < 2;
+        terranUnitPump[Terran_Vulture] = vis(Terran_Starport) >= 2 && total(Terran_Vulture) < 1;
+        terranUnitPump[Terran_Wraith]  = true;
+    }
+
     void TvZ()
     {
         defaultTvZ();
@@ -61,11 +80,15 @@ namespace McRave::BuildOrder::Terran {
         // Builds
         if (currentBuild == T_2Rax)
             TvZ_2Rax();
+        if (currentBuild == T_RaxFact)
+            TvZ_RaxFact();
 
         // Transitions
         if (transitionReady) {
             if (currentTransition == T_Academy)
                 TvZ_Academy();
+            if (currentTransition == T_2PortWraith)
+                TvZ_2PortWraith();
         }
     }
 } // namespace McRave::BuildOrder::Terran

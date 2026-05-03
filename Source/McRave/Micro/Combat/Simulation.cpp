@@ -73,22 +73,22 @@ namespace McRave::Combat::Simulation {
         if (Players::PvP()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.2;
-            commitFrames  = 12;
+            commitFrames  = 0;
         }
         if (Players::PvZ()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.2;
-            commitFrames  = 12;
+            commitFrames  = 0;
         }
         if (Players::PvT()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.2;
-            commitFrames  = 12;
+            commitFrames  = 0;
         }
         if (Players::PvFFA()) {
             minWinPercent = 0.8;
             maxWinPercent = 1.2;
-            commitFrames  = 12;
+            commitFrames  = 0;
         }
 
         // Z
@@ -115,24 +115,24 @@ namespace McRave::Combat::Simulation {
 
         // T
         if (Players::TvP()) {
-            minWinPercent = 0.7;
-            maxWinPercent = 1.3;
-            commitFrames  = 12;
+            minWinPercent = 0.8;
+            maxWinPercent = 1.2;
+            commitFrames  = 0;
         }
         if (Players::TvZ()) {
-            minWinPercent = 0.7;
-            maxWinPercent = 1.3;
-            commitFrames  = 12;
+            minWinPercent = 0.8;
+            maxWinPercent = 1.2;
+            commitFrames  = 0;
         }
         if (Players::TvT()) {
-            minWinPercent = 0.9;
-            maxWinPercent = 1.3;
-            commitFrames  = 12;
+            minWinPercent = 0.8;
+            maxWinPercent = 1.2;
+            commitFrames  = 0;
         }
         if (Players::TvFFA()) {
-            minWinPercent = 0.9;
-            maxWinPercent = 1.3;
-            commitFrames  = 12;
+            minWinPercent = 0.8;
+            maxWinPercent = 1.2;
+            commitFrames  = 0;
         }
     }
 

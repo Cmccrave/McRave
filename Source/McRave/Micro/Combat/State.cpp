@@ -200,7 +200,7 @@ namespace McRave::Combat::State {
 
                 if (Players::ZvP()) {
                     const auto killWorkers  = Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) >= 8;
-                    const auto scaryOpeners = (Spy::getEnemyBuild() != P_FFE && Util::getTime() < Time(8, 00) && vis(Zerg_Sunken_Colony) > 0) || (Spy::getEnemyBuild() == P_2Gate);
+                    const auto scaryOpeners = (Spy::getEnemyBuild() != P_FFE && Util::getTime() < Time(8, 00));
                     const auto hideCheese   = BuildOrder::isHideTech() && BuildOrder::isOpener();
                     const auto deniedProxy  = Spy::enemyProxy() && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) > 0;
                     const auto defendProxy  = Spy::enemyProxy() && !speedLing && Util::getTime() < Time(5, 00) && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0;
@@ -443,7 +443,7 @@ namespace McRave::Combat::State {
             if (slowZealotVsVulture || sparseCorsairVsScourge || lowShieldFlyer || oomMedic || hurtLingVsWorker)
                 return true;
         }
-        return !Terrain::isAtHome(unit.getPosition()) && unit.getGlobalState() == GlobalState::Retreat;
+        return unit.getGlobalState() == GlobalState::Retreat;
     }
 
     bool forceGlobalRetreat(UnitInfo &unit)
@@ -468,13 +468,16 @@ namespace McRave::Combat::State {
             // Try to save scouts as they have high shield counts
             const auto scoutSavingRequired = unit.getType() == Protoss_Scout && !unit.isWithinRange(target) && unit.getHealth() + unit.getShields() <= 80;
 
+            // Try to save wraiths after only a few hits, want to keep a large count
+            const auto wraithSavingRequired = unit.getType() == Terran_Wraith && unit.getHealth() < 75;
+
             // Try to save zerglings in ZvZ
             const auto zerglingSaving = Players::ZvZ() && unit.getType() == Zerg_Zergling && !unit.isWithinRange(target) && unit.getHealth() <= 10;
 
             const auto queenSaving = unit.getType() == Zerg_Queen && unit.getEnergy() < TechTypes::Spawn_Broodlings.energyCost();
 
             // Save the units
-            if (mutaSavingRequired || scoutSavingRequired || queenSaving /*|| zerglingSaving*/)
+            if (mutaSavingRequired || scoutSavingRequired || queenSaving || wraithSavingRequired /*|| zerglingSaving*/)
                 unit.saveUnit = true;
             if (unit.saveUnit) {
                 if (unit.getType() == Zerg_Mutalisk && unit.getHealth() >= 100)
@@ -482,6 +485,8 @@ namespace McRave::Combat::State {
                 if (unit.getType() == Protoss_Scout && unit.getShields() >= 90)
                     unit.saveUnit = false;
                 if (unit.getType() == Zerg_Zergling && unit.getHealth() >= 30)
+                    unit.saveUnit = false;                
+                if (unit.getType() == Terran_Wraith && unit.getHealth() >= 120)
                     unit.saveUnit = false;
                 if (unit.getGoal().isValid())
                     unit.saveUnit = false;

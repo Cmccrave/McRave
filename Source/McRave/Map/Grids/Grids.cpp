@@ -53,7 +53,7 @@ namespace McRave::Grids {
         {
             auto collisionLessOrders = {Orders::HarvestGas,     Orders::MoveToGas,      Orders::ReturnGas,      Orders::WaitForGas,
                                         Orders::MiningMinerals, Orders::MoveToMinerals, Orders::ReturnMinerals, Orders::WaitForMinerals};
-            if (unit.unit()->exists() && find(collisionLessOrders.begin(), collisionLessOrders.end(), unit.unit()->getOrder()) != collisionLessOrders.end())
+            if (unit.unit()->exists() && Util::contains(collisionLessOrders, unit.unit()->getOrder()))
                 return;
 
             // Pixel rectangle (make any even size units an extra WalkPosition)
@@ -221,7 +221,7 @@ namespace McRave::Grids {
 
             // Don't add to any grid under these conditions
             const auto canAddToGrid = [&](auto &unit) {
-                if ((unit.unit()->exists() && !unit.isAvailable()) || !unit.getPosition().isValid() ||
+                if ((unit.unit()->exists() && !unit.getType().isBuilding() && !unit.isAvailable()) || !unit.getPosition().isValid() ||
                     unit.getType() == Protoss_Interceptor || unit.getType().isSpell() || unit.isToken() ||
                     (unit.getPlayer() == Broodwar->self() && !unit.getType().isBuilding() && !unit.unit()->isCompleted()))
                     return false;

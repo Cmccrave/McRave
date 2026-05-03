@@ -11,45 +11,42 @@ using namespace TechTypes;
 
 namespace McRave::BuildOrder::Terran {
 
-    namespace {
+    void TvP_1FactFE()
+    {
+        transitionReady = vis(Terran_Factory) >= 1;
+        gasLimit        = 3;
+        scout           = scout || (s >= 26 && vis(Terran_Refinery) == 1);
 
-        void TvP_1FactFE()
-        {
-            transitionReady =                               vis(Terran_Factory) >= 1;
-            gasLimit =                                      3;
-            scout =                                         scout || (s >= 26 && vis(Terran_Refinery) == 1);
+        wallNat = vis(Terran_Barracks) > 0;
 
-            wallNat = vis(Terran_Barracks) > 0;
+        // Buildings
+        buildQueue[Terran_Supply_Depot] = (s >= 18) + (vis(Terran_Factory) >= 1 && s >= 32);
+        buildQueue[Terran_Barracks]     = (s >= 22);
+        buildQueue[Terran_Refinery]     = (s >= 24);
+        buildQueue[Terran_Factory]      = (s >= 32);
 
-            // Buildings
-            buildQueue[Terran_Supply_Depot] =               (s >= 18) + (vis(Terran_Factory) >= 1 && s >= 32);
-            buildQueue[Terran_Barracks] =                   (s >= 22);
-            buildQueue[Terran_Refinery] =                   (s >= 24);
-            buildQueue[Terran_Factory] =                    (s >= 32);
+        terranUnitPump[Terran_SCV]     = vis(Terran_SCV) < 24;
+        terranUnitPump[Terran_Marine]  = com(Terran_Barracks) > 0 && total(Terran_Marine) < 4;
+        terranUnitPump[Terran_Vulture] = com(Terran_Factory) > 0;
+    }
 
-            terranUnitPump[Terran_SCV] = vis(Terran_SCV) < 24;
-            terranUnitPump[Terran_Marine] = com(Terran_Barracks) > 0 && total(Terran_Marine) < 4;
-            terranUnitPump[Terran_Vulture] = com(Terran_Factory) > 0;
-        }
+    void TvP_2FactFE()
+    {
+        transitionReady = total(Terran_Vulture) >= 2;
+        gasLimit        = (vis(Terran_Factory) >= 2) ? 1 : 3;
+        scout           = scout || (s >= 26 && vis(Terran_Refinery) == 1);
 
-        void TvP_2FactFE()
-        {
-            transitionReady =                               total(Terran_Vulture) >= 2;
-            gasLimit =                                      (vis(Terran_Factory) >= 2) ? 1 : 3;
-            scout =                                         scout || (s >= 26 && vis(Terran_Refinery) == 1);
+        wallNat = vis(Terran_Barracks) > 0;
 
-            wallNat = vis(Terran_Barracks) > 0;
+        // Buildings
+        buildQueue[Terran_Supply_Depot] = (s >= 18) + (vis(Terran_Factory) >= 1 && s >= 32) + (s >= 44);
+        buildQueue[Terran_Barracks]     = (s >= 22);
+        buildQueue[Terran_Refinery]     = (s >= 24);
+        buildQueue[Terran_Factory]      = (s >= 32) + (s >= 36);
 
-            // Buildings
-            buildQueue[Terran_Supply_Depot] =               (s >= 18) + (vis(Terran_Factory) >= 1 && s >= 32) + (s >= 44);
-            buildQueue[Terran_Barracks] =                   (s >= 22);
-            buildQueue[Terran_Refinery] =                   (s >= 24);
-            buildQueue[Terran_Factory] =                    (s >= 32) + (s >= 36);
-
-            terranUnitPump[Terran_SCV] = vis(Terran_SCV) < 24;
-            terranUnitPump[Terran_Marine] = com(Terran_Barracks) > 0 && total(Terran_Marine) < 2;
-            terranUnitPump[Terran_Vulture] = com(Terran_Factory) > 0;
-        }
+        terranUnitPump[Terran_SCV]     = vis(Terran_SCV) < 24;
+        terranUnitPump[Terran_Marine]  = com(Terran_Barracks) > 0 && total(Terran_Marine) < 2;
+        terranUnitPump[Terran_Vulture] = com(Terran_Factory) > 0;
     }
 
     void TvP_RaxFact()
@@ -60,4 +57,4 @@ namespace McRave::BuildOrder::Terran {
         if (currentOpener == T_2FactFE)
             TvP_2FactFE();
     }
-}
+} // namespace McRave::BuildOrder::Terran

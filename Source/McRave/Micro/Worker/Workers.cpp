@@ -234,7 +234,7 @@ namespace McRave::Workers {
                 const auto resourceWalkable = [&](const TilePosition &tile) {
                     return (unit.hasResource() && !unit.getBuildPosition().isValid() && tile.x >= resourceTile.x && tile.x < resourceTile.x + resourceType.tileWidth() && tile.y >= resourceTile.y &&
                             tile.y < resourceTile.y + resourceType.tileHeight()) ||
-                           (unit.getBuildPosition().isValid() && BWEB::Map::isUsed(tile) == Resource_Vespene_Geyser) || newPath.unitWalkable(tile);
+                           (unit.getBuildType().isRefinery() && BWEB::Map::isUsed(tile) == Resource_Vespene_Geyser) || newPath.unitWalkable(tile);
                 };
                 newPath.generateJPS(resourceWalkable);
                 unit.setMarchPath(newPath);
@@ -242,7 +242,7 @@ namespace McRave::Workers {
 
             // Set destination to intermediate position along path
             unit.setNavigation(unit.getDestination());
-            auto dist = Util::isAdjacentUsed(unit.getTilePosition()) ? 160.0 : 96.0;
+            auto dist  = 96.0;
             if (unit.getMarchPath().getTarget() == TilePosition(unit.getDestination())) {
                 auto newDestination = Util::findPointOnPath(unit.getMarchPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= dist; });
 
@@ -250,8 +250,8 @@ namespace McRave::Workers {
                     unit.setNavigation(newDestination);
             }
 
-            // Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
-            // Visuals::drawPath(unit.getMarchPath());
+            Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
+            Visuals::drawPath(unit.getMarchPath());
         }
 
         void updateDestination(UnitInfo &unit)

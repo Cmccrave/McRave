@@ -49,13 +49,13 @@ namespace McRave::Combat::Bearings {
     // What is the "backward" bearing for this unit
     void updateRetreat(UnitInfo &unit)
     {
-        auto retreat = Stations::getClosestRetreatStation(unit);
+        auto retreat    = Stations::getClosestRetreatStation(unit);
         unit.retreatPos = Terrain::getMainPosition();
 
         if (retreat)
             unit.retreatPos = retreat->getBase()->Center();
 
-        //Visuals::drawLine(unit.getPosition(), unit.retreatPos, Colors::Red);
+        // Visuals::drawLine(unit.getPosition(), unit.retreatPos, Colors::Red);
     }
 
     // What is the "forward" bearing for this unit
@@ -72,7 +72,7 @@ namespace McRave::Combat::Bearings {
             unit.marchPos = unit.getDestination();
         }
 
-        //Visuals::drawLine(unit.getPosition(), unit.marchPos, Colors::Green);
+        // Visuals::drawLine(unit.getPosition(), unit.marchPos, Colors::Green);
     }
 
     void updateDestination(UnitInfo &unit)
@@ -109,6 +109,10 @@ namespace McRave::Combat::Bearings {
             if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Defend) {
                 unit.setDestination(unit.getGoal());
             }
+            else if (unit.getType() == Terran_Wraith && unit.saveUnit;
+                     auto closestRepair = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) { return u->getType().isWorker() && u->getRole() == Role::Combat; })) {
+                unit.setDestination(closestRepair->getPosition());
+            }
             else if (retreat) {
                 unit.setDestination(retreat->getBase()->Center());
             }
@@ -120,32 +124,32 @@ namespace McRave::Combat::Bearings {
             if (unit.getGoal().isValid()) {
                 unit.setDestination(unit.getGoal());
                 // Visuals::drawLine(unit.getPosition(), unit.getGoal(), Colors::Cyan);
-                Broodwar->drawTextMap(unit.getPosition(), "z_goal");
+                // Broodwar->drawTextMap(unit.getPosition(), "z_goal");
             }
             else if (unit.attemptingRegroup()) {
                 unit.setDestination(unit.getCommander().lock()->getPosition());
-                Broodwar->drawTextMap(unit.getPosition(), "z_regrp");
+                // Broodwar->drawTextMap(unit.getPosition(), "z_regrp");
             }
             else if (Combat::getHarassPosition().isValid() && unit.attemptingHarass()) {
                 unit.setDestination(Combat::getHarassPosition());
-                Broodwar->drawTextMap(unit.getPosition(), "z_harass");
+                // Broodwar->drawTextMap(unit.getPosition(), "z_harass");
             }
             else if (unit.hasTarget()) {
                 unit.setDestination(unit.getTarget().lock()->getPosition());
-                Broodwar->drawTextMap(unit.getPosition(), "z_target");
+                // Broodwar->drawTextMap(unit.getPosition(), "z_target");
             }
             else if (Combat::getAttackPosition().isValid() && unit.canAttackGround()) {
                 unit.setDestination(Combat::getAttackPosition());
-                Broodwar->drawTextMap(unit.getPosition(), "z_atkpos");
+                // Broodwar->drawTextMap(unit.getPosition(), "z_atkpos");
             }
             else {
                 getCleanupPosition(unit);
-                Broodwar->drawTextMap(unit.getPosition(), "z_clean");
+                // Broodwar->drawTextMap(unit.getPosition(), "z_clean");
             }
             unit.marchPos = unit.getDestination();
         }
 
-        //Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
+        // Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Cyan);
     }
 
     void onFrame()

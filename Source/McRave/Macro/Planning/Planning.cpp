@@ -228,6 +228,8 @@ namespace McRave::Planning {
                     }
                     return false;
                 };
+
+                // Ensure there is support for an addon
                 if (building == Terran_Starport || building == Terran_Science_Facility) {
                     for (auto &tile : block.getLargeTiles()) {
                         if (hasAddonLocation(block, tile))

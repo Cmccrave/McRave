@@ -166,7 +166,7 @@ namespace McRave::Combat {
         {
             auto oldHarass = harassPosition;
             harassPosition = Positions::Invalid;
-            if (!Terrain::getEnemyMain() || (com(Zerg_Mutalisk) == 0 && com(Protoss_Corsair) == 0))
+            if (!Terrain::getEnemyMain() || (com(Zerg_Mutalisk) == 0 && com(Protoss_Corsair) == 0 && com(Protoss_Scout) == 0 && com(Terran_Wraith) == 0))
                 return;
             vector<const BWEB::Station *> stations = Stations::getStations(PlayerState::Enemy);
 

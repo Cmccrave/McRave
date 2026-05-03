@@ -252,9 +252,9 @@ namespace McRave::Stations {
             auto groundCount = getGroundDefenseCount(station);
 
             if (station->isMain()) {
-                // Add 2 sunks if we gave up the natural intentionally
-                if (!BuildOrder::takeNatural())
-                    return (Util::getTime() > Time(2, 40)) + (Util::getTime() > Time(3, 00)) - groundCount;
+                //// Add 2 sunks if we gave up the natural intentionally
+                //if (!BuildOrder::takeNatural())
+                //    return (Util::getTime() > Time(2, 40)) + (Util::getTime() > Time(3, 00)) - groundCount;
 
                 //// Add 1 sunks if we opened greedy against proxy gates
                 // if (Spy::getEnemyOpener() == "Proxy9/9" && BuildOrder::getCurrentBuild() == Z_HatchPool)

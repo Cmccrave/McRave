@@ -76,12 +76,8 @@ namespace McRave::Roles {
 
         void forceCombatWorker(int count, Position fromWhere = Terrain::getMainPosition())
         {
-            auto needed = count - forcedRoles[Role::Combat];
-            if (needed <= 0)
-                return;
-
             // Only pull the closest worker
-            for (int i = 0; i < needed; i++) {
+            for (int i = 0; i < count; i++) {
                 auto closestForcedWorker = Util::getClosestUnitGround(fromWhere, PlayerState::Self,
                                                                       [&](auto &unit) { return validCombatWorker(unit) && unit->getRole() == Role::Worker && unit->getLastRole() == Role::Combat; });
 
@@ -138,6 +134,7 @@ namespace McRave::Roles {
             if (Broodwar->self()->getRace() != Races::Terran)
                 return;
 
+            // Count repairs needed
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
                 if (unit.isCompleted()) {
@@ -146,11 +143,11 @@ namespace McRave::Roles {
 
                     if (damaged || threatened) {
                         if (unit.getType() == Terran_Missile_Turret)
-                            forceCombatWorker(3);
+                            forceCombatWorker(3, unit.getPosition());
                         if (unit.getType() == Terran_Bunker)
-                            forceCombatWorker(3);
+                            forceCombatWorker(3, unit.getPosition());
                         if (unit.getType().isMechanical() && damaged && Terrain::inTerritory(PlayerState::Self, unit.getPosition()))
-                            forceCombatWorker(1);
+                            forceCombatWorker(1, unit.getPosition());
                     }
                 }
             }
@@ -158,15 +155,17 @@ namespace McRave::Roles {
             if (proxyWorker && Terrain::inTerritory(PlayerState::Self, proxyWorker->getPosition()) && Util::getTime() < Time(4, 00))
                 forceCombatWorker(1);
 
-            if (Players::TvP()) {
+            if (Players::TvP() && Util::getTime() < Time(6, 00)) {
                 // Support marines vs zealots
                 if (proxyCombatUnit && Terrain::inTerritory(PlayerState::Self, proxyCombatUnit->getPosition()))
                     forceCombatWorker(2);
             }
 
-            if (Players::TvZ()) {
-                if (proxyCombatUnit && Spy::getEnemyOpener() == Z_4Pool)
+            if (Players::TvZ() && Util::getTime() < Time(6, 00)) {
+                if (proxyCombatUnit && (Spy::getEnemyOpener() == Z_4Pool || Spy::getEnemyOpener() == Z_7Pool))
                     forceCombatWorker(5);
+                if (proxyCombatUnit && Spy::getEnemyOpener() == Z_9Pool)
+                    forceCombatWorker(3);
             }
         }
 

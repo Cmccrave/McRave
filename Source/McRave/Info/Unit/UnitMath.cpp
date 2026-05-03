@@ -479,7 +479,5 @@ namespace McRave {
         maxAirStrength        = Math::calcMaxAirStrength(unit);
         splash                = Math::calcSplashRadius(unit);
         priority              = Math::calcPriority(unit);
-
-        Broodwar->drawTextMap(unit.getPosition(), "%.2f", priority);
     }
 } // namespace McRave

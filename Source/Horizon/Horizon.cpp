@@ -82,7 +82,7 @@ namespace McRave::Horizon {
         const auto timePad           = Util::getTime().minutes / 6;
         const auto unitToEngage      = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
 
-        const auto extendDuration     = (unit.isLightAir() || Players::ZvZ()) ? 1.0 : 5.0;
+        const auto extendDuration     = (unit.isLightAir() || Players::ZvZ()) ? 2.0 : 5.0;
         const auto simulationTime     = unitToEngage + extendDuration + addPrepTime(unit) - rangeDisplacement;
         const auto targetDisplacement = 0.0; // unitToEngage * unitTarget->getSpeed() * 24.0;
         map<Player, SimStrength> simStrengthPerPlayer;
@@ -98,7 +98,7 @@ namespace McRave::Horizon {
             const auto distUnknown = min(double(unit.getType().sightRange()), (Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) * enemy.getSpeed());
             const auto distTarget  = max(0.0, double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getPosition())));
             const auto distEngage  = max(0.0, double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getEngagePosition())));
-            const auto enemyRange  = enemyTarget->getType().isFlyer() ? enemy.getAirRange() : enemy.getGroundRange();
+            const auto enemyRange  = max(enemy.getAirRange(), enemy.getGroundRange());
             const auto enemyReach  = max(enemy.getAirReach(), enemy.getGroundReach());
 
             // If the unit doesn't affect this simulation
@@ -118,11 +118,14 @@ namespace McRave::Horizon {
 
             // If enemy can move, calculate how quickly it can engage
             else {
-                const auto distance   = distEngage - distUnknown;
+                const auto distance   = min(distTarget, distEngage) - distUnknown;
                 const auto speed      = enemy.getSpeed() * 24.0;
                 const auto engageTime = max(0.0, (distance - enemyRange) / speed);
                 simRatio              = max(0.0, simulationTime - engageTime);
             }
+
+            if (unit.unit()->isSelected())
+                Broodwar->drawTextMap(enemy.getPosition(), "%.2f", simRatio);
 
             // Add their values to the simulation
             addBonus(enemy, *enemyTarget, simRatio);
@@ -148,6 +151,9 @@ namespace McRave::Horizon {
                 (self.getGlobalState() == GlobalState::Retreat) || (Combat::State::isStaticRetreat(self.getType()) && !unitTarget->isThreatening()))
                 continue;
 
+            if (unit.unit()->isSelected())
+                Broodwar->drawTextMap(self.getPosition(), "%.2f", simRatio);
+
             // Add their values to the simulation
             addBonus(self, *selfTarget, simRatio);
             addSimStrength(simStrengthPerPlayer[self.getPlayer()], self, simRatio);
@@ -171,6 +177,9 @@ namespace McRave::Horizon {
             if ((ally.getSpeed() <= 0.0 && ally.getEngDist() > -16.0) || (unit.hasTarget() && ally.hasTarget() && ally.getEngagePosition().getDistance(unitTarget->getPosition()) > reach))
                 continue;
 
+            if (unit.unit()->isSelected())
+                Broodwar->drawTextMap(ally.getPosition(), "%.2f", simRatio);
+
             // Add their values to the simulation
             addBonus(ally, *allyTarget, simRatio);
             addSimStrength(simStrengthPerPlayer[ally.getPlayer()], ally, simRatio);
@@ -187,7 +196,6 @@ namespace McRave::Horizon {
             // TODO
         }
         else {
-
 
             // Check if both raw engagement wins (flyer engages just a2a + g2a, ground engages just
             // a2g + g2g) Check if combined engagement wins If raw engagement is a stronger win than

@@ -18,6 +18,8 @@ namespace McRave::Support {
         set<Position> assignedOverlords;
         set<UnitType> types;
 
+        bool slowOverlords() { return Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Pneumatized_Carapace) == 0; }
+
         void reset()
         {
             assignedOverlords.clear();
@@ -57,44 +59,45 @@ namespace McRave::Support {
 
         void getSafeHome(UnitInfo &unit)
         {
-            auto closestStation = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
-            auto closestSpore   = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Spore_Colony; });
+            auto closestStation  = Stations::getClosestStationAir(unit.getPosition(), PlayerState::Self);
+            auto closestDefender = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) { return u->getType().isBuilding() && u->canAttackAir(); });
 
-            // If this overlord was excessively far from home (maybe it was scouting), send it far away
-            if (unit.getType() == Zerg_Overlord && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Pneumatized_Carapace) == 0) {
-                if (Util::getTime() > Time(4, 00) && closestStation && unit.getPosition().getDistance(closestStation->getBase()->Center()) >= 960.0 && Terrain::getEnemyNatural() &&
-                    Terrain::getMyNatural()) {
-                    auto furthest = 0.0;
-                    for (auto &station : BWEB::Stations::getStations()) {
-                        auto dist = station.getBase()->Center().getDistance(Terrain::getEnemyNatural()->getBase()->Center()) +
-                                    station.getBase()->Center().getDistance(Terrain::getMyNatural()->getBase()->Center());
-                        if (dist > furthest) {
-                            unit.setDestination(station.getBase()->Center());
-                            furthest = dist;
-                        }
+            auto farFromStation = Util::getTime() > Time(4, 00) && closestStation && unit.getPosition().getDistance(closestStation->getBase()->Center()) >= 960.0 && Terrain::getEnemyNatural() &&
+                                  Terrain::getMyNatural();
+            auto assignOutwards = unit.getType() == Zerg_Overlord && slowOverlords();
+
+            // If this is a slow overlord far from home (maybe it was scouting), send it far away instead of home
+            if (unit.getType() == Zerg_Overlord && slowOverlords() && farFromStation) {
+                auto furthest = 0.0;
+                for (auto &station : BWEB::Stations::getStations()) {
+                    auto dist = station.getBase()->Center().getDistance(Terrain::getEnemyNatural()->getBase()->Center()) +
+                                station.getBase()->Center().getDistance(Terrain::getMyNatural()->getBase()->Center());
+                    if (dist > furthest) {
+                        unit.setDestination(station.getBase()->Center());
+                        furthest = dist;
                     }
                 }
             }
 
-            // Assign in a safe box formation around a station or spore
+            // Assign in a safe box formation around a station or defender
             else if (closestStation && !closestStation->isMain()) {
-                if (closestSpore && closestSpore->getPosition().getDistance(closestStation->getBase()->Center()) < 160.0)
-                    assignInBox(closestSpore->getPosition(), unit);
+                if (closestDefender && closestDefender->getPosition().getDistance(closestStation->getBase()->Center()) < 160.0)
+                    assignInBox(closestDefender->getPosition(), unit);
                 else
                     assignInBox(closestStation->getBase()->Center(), unit);
             }
 
-            // Overlords safe at a spore
-            else if (closestSpore) {
-                assignInBox(closestSpore->getPosition(), unit);
+            // Assign to defender
+            else if (closestDefender) {
+                assignInBox(closestDefender->getPosition(), unit);
             }
 
-            // No spore, look for hydras, go to natural where we expect them to be
-            else if (Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace) == 0) {
+            // Assign slow overlords to the natural
+            else if (unit.getType() == Zerg_Overlord && slowOverlords()) {
                 assignInBox(Terrain::getMyNatural()->getBase()->Center(), unit);
             }
 
-            // Attempting to build a spore
+            // Assign to future air defenders
             else if (Stations::needAirDefenses(Terrain::getMyNatural()) > 0) {
                 assignInBox(Terrain::getMyNatural()->getBase()->Center(), unit);
             }
@@ -143,7 +146,10 @@ namespace McRave::Support {
 
         void updateDestination(UnitInfo &unit)
         {
-            auto followArmyPossible = unit.isHealthy() && unit.getType() != Zerg_Queen && (unit.getType() != Zerg_Overlord || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Pneumatized_Carapace)) &&
+            static const auto armyFollowers      = {Protoss_Arbiter, Protoss_Observer, Terran_Science_Vessel, Terran_Barracks, Terran_Science_Facility, Terran_Factory, Terran_Engineering_Bay};
+
+            auto armyOvie           = unit.getType() == Zerg_Overlord && unit.isHealthy() && !slowOverlords();
+            auto followArmyPossible = (Util::contains(armyFollowers, unit.getType()) || armyOvie) &&
                                       any_of(types.begin(), types.end(), [&](auto &t) { return com(t) >= 6; });
 
             // Set goal as destination

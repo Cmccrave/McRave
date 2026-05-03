@@ -179,7 +179,7 @@ namespace McRave::Goals {
                 }
 
                 auto proxyGates    = Spy::getEnemyOpener() == P_Proxy_9_9 || Spy::getEnemyOpener() == P_Horror_9_9;
-                auto proxyBackstab = proxyGates && Util::getTime() < Time(4, 00) && (com(Zerg_Sunken_Colony) >= 2 || BuildOrder::getCurrentOpener() == Z_12Hatch);
+                auto proxyBackstab = proxyGates && Util::getTime() > Time(4, 00) && com(Zerg_Sunken_Colony) >= 1;
 
                 if (proxyBackstab) {
                     LOG_ONCE("Attempting ZvP ling runby");
@@ -509,64 +509,54 @@ namespace McRave::Goals {
                 }
             }
 
-            // Always assign an Overlord to the natural
-            if (Util::getTime() > Time(4, 00)) {
-                assignSafely(Terrain::getMyNatural());
-            }
-
             // Assign an overlord to the main if we see a drop coming or have air damage
             if (!enemyAir && (Spy::getEnemyTransition() == P_Robo || Spy::getEnemyTransition() == P_DT || vis(Zerg_Hydralisk) > 0 || vis(Zerg_Mutalisk) > 0)) {
                 assignSafely(Terrain::getMyMain());
             }
 
-            // Assign an Overlord to each base
-            for (auto &station : Stations::getStations(PlayerState::Self)) {
-                assignSafely(station);
-            }
-
             // Assign an Overlord to watch for drops
-            if (Terrain::getEnemyStartingPosition().isValid() && !enemyAir) {
-                auto edgeEnemy = Terrain::getClosestMapEdge(Terrain::getEnemyStartingPosition());
-                auto edgeSelf  = Terrain::getClosestMapEdge(Terrain::getMainPosition());
-                auto width     = Broodwar->mapWidth();
-                auto height    = Broodwar->mapHeight();
-                vector<TilePosition> claimedCorner;
+            //if (Terrain::getEnemyStartingPosition().isValid() && !enemyAir) {
+            //    auto edgeEnemy = Terrain::getClosestMapEdge(Terrain::getEnemyStartingPosition());
+            //    auto edgeSelf  = Terrain::getClosestMapEdge(Terrain::getMainPosition());
+            //    auto width     = Broodwar->mapWidth();
+            //    auto height    = Broodwar->mapHeight();
+            //    vector<TilePosition> claimedCorner;
 
-                // Each path can claim a corner once, to try and create both boundary paths
-                auto pathEdge = [&](auto &t) {
-                    if (Util::contains(claimedCorner, t))
-                        return false;
-                    return t.x == 0 || t.y == 0 || t.x == width - 1 || t.y == height - 1;
-                };
+            //    // Each path can claim a corner once, to try and create both boundary paths
+            //    auto pathEdge = [&](auto &t) {
+            //        if (Util::contains(claimedCorner, t))
+            //            return false;
+            //        return t.x == 0 || t.y == 0 || t.x == width - 1 || t.y == height - 1;
+            //    };
 
-                BWEB::Path newPathA(edgeSelf, edgeEnemy, Zerg_Overlord, false, false);
-                newPathA.generateJPS(pathEdge);
+            //    BWEB::Path newPathA(edgeSelf, edgeEnemy, Zerg_Overlord, false, false);
+            //    newPathA.generateJPS(pathEdge);
 
-                for (auto &t : newPathA.getTiles()) {
-                    if (t != newPathA.getSource() && t != newPathA.getTarget())
-                        claimedCorner.push_back(t);
-                }
+            //    for (auto &t : newPathA.getTiles()) {
+            //        if (t != newPathA.getSource() && t != newPathA.getTarget())
+            //            claimedCorner.push_back(t);
+            //    }
 
-                BWEB::Path newPathB(edgeSelf, edgeEnemy, Zerg_Overlord, false, false);
-                newPathB.generateJPS(pathEdge);
+            //    BWEB::Path newPathB(edgeSelf, edgeEnemy, Zerg_Overlord, false, false);
+            //    newPathB.generateJPS(pathEdge);
 
-                auto overlordSpot = [&](auto &p) {
-                    auto closestStation = Stations::getClosestStationAir(p, PlayerState::Enemy);
-                    if (closestStation && p.getDistance(closestStation->getBase()->Center()) < 1600.0) {
-                        return true;
-                    }
-                    return false;
-                };
+            //    auto overlordSpot = [&](auto &p) {
+            //        auto closestStation = Stations::getClosestStationAir(p, PlayerState::Enemy);
+            //        if (closestStation && p.getDistance(closestStation->getBase()->Center()) < 1600.0) {
+            //            return true;
+            //        }
+            //        return false;
+            //    };
 
-                auto pointA = Util::findPointOnPath(newPathA, overlordSpot);
-                auto pointB = Util::findPointOnPath(newPathB, overlordSpot);
+            //    auto pointA = Util::findPointOnPath(newPathA, overlordSpot);
+            //    auto pointB = Util::findPointOnPath(newPathB, overlordSpot);
 
-                assignNumberToGoal(pointA, Zerg_Overlord, 1, GoalType::Explore);
-                assignNumberToGoal(pointB, Zerg_Overlord, 1, GoalType::Explore);
+            //    assignNumberToGoal(pointA, Zerg_Overlord, 1, GoalType::Explore);
+            //    assignNumberToGoal(pointB, Zerg_Overlord, 1, GoalType::Explore);
 
-                Visuals::drawPath(newPathA);
-                Visuals::drawPath(newPathB);
-            }
+            //    Visuals::drawPath(newPathA);
+            //    Visuals::drawPath(newPathB);
+            //}
         }
 
         void updateZergGoals()
