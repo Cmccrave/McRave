@@ -747,6 +747,22 @@ namespace McRave {
 
     bool UnitInfo::canStartGather() { return false; }
 
+    bool UnitInfo::canStartCast(TechType tech)
+    {
+        // Not researched
+        if (!getPlayer()->hasResearched(tech))
+            return false;
+
+        auto energyNeeded     = tech.energyCost() - energy;
+        auto framesToEnergize = 17.856 * energyNeeded;
+        auto spellReady       = energy >= tech.energyCost();
+        auto spellWillBeReady = framesToEnergize <= getEngDist() / (hasTransport() ? getTransport().lock()->getSpeed() : getSpeed());
+
+        if (!spellReady && !spellWillBeReady)
+            return false;
+        return true;
+    }
+
     bool UnitInfo::canStartCast(TechType tech, Position here)
     {
         // Not researched or overlaps our own cast

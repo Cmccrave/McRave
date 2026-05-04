@@ -37,6 +37,10 @@ namespace McRave::Learning {
                 return true;
             }
 
+            // Terran wall requirements
+            if (Broodwar->self()->getRace() == Races::Terran)
+                return true;
+
             // Zerg wall requirements
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 if (Players::ZvP() && component == Z_2HatchMuta) {
@@ -44,11 +48,26 @@ namespace McRave::Learning {
                 }
                 return true;
             }
-
-            // Terran wall requirements
-            if (Broodwar->self()->getRace() == Races::Terran)
-                return true;
             return false;
+        }
+
+        bool isComboPossible(string build, string opener, string transition)
+        {
+            // Protoss bans
+            if (Broodwar->self()->getRace() == Races::Protoss) {
+            }
+
+            // Terran bans
+            if (Broodwar->self()->getRace() == Races::Terran) {
+                if (opener == T_111 && transition == T_5FactGoliath)
+                    return false;
+            }
+
+            // Zerg bans
+            if (Broodwar->self()->getRace() == Races::Zerg) {
+            }
+
+            return true;
         }
 
         void getDefaultBuild()
@@ -171,7 +190,7 @@ namespace McRave::Learning {
                 for (auto &opener : build.openers)
                     opener.ucb1 = calculateUCB(opener.name, opener.w, opener.l);
                 for (auto &transition : build.transitions) {
-                    transition.ucb1 = calculateUCB(transition.name, transition.w, transition.l, true);                    
+                    transition.ucb1 = calculateUCB(transition.name, transition.w, transition.l, true);
                 }
 
                 sort(build.openers.begin(), build.openers.end(), [&](const auto &left, const auto &right) { return left.ucb1 < right.ucb1; });
@@ -205,6 +224,8 @@ namespace McRave::Learning {
                         if (transition.ucb1 < bestTransitionUCB1)
                             continue;
                         if (!isComponentPossible(transition.name))
+                            continue;
+                        if (!isComboPossible(build.name, opener.name, transition.name))
                             continue;
                         bestTransitionUCB1 = transition.ucb1;
                         BuildOrder::setLearnedBuild(build.name, opener.name, transition.name);
@@ -371,8 +392,8 @@ namespace McRave::Learning {
                 TwoRax.setOpeners({T_11_13});
                 TwoRax.setTransitions({T_Academy});
 
-                RaxFact.setOpeners({T_111});
-                RaxFact.setTransitions({T_2PortWraith});
+                RaxFact.setOpeners({T_111, T_1FactFE});
+                RaxFact.setTransitions({T_2PortWraith, T_5FactGoliath});
 
                 myBuilds = {TwoRax, RaxFact};
             }

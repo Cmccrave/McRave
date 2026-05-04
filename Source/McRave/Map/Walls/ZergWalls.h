@@ -1,6 +1,5 @@
 #pragma once
 #include "BWEB.h"
-
 #include "Builds/All/BuildOrder.h"
 #include "Builds/All/Learning.h"
 #include "Info/Player/Players.h"
@@ -17,7 +16,8 @@ using namespace BWEM;
 using namespace UnitTypes;
 
 namespace McRave::Walls::Zerg {
-    // ZvP
+
+    // ZvP Ground
     int ZvP_Opener(BWEB::Wall &wall)
     {
         // 1GateCore
@@ -130,7 +130,7 @@ namespace McRave::Walls::Zerg {
         return 0;
     }
 
-    int ZvP_Defenses(BWEB::Wall &wall)
+    int ZvP_GroundDefenses(BWEB::Wall &wall)
     {
         // Determine how much we have traded
         auto unitsKilled     = Players::getDeadCount(PlayerState::Enemy, Protoss_Zealot, Protoss_Dragoon, Protoss_Dark_Templar, Protoss_High_Templar);
@@ -176,7 +176,10 @@ namespace McRave::Walls::Zerg {
         return max(minimum, expected - reduction);
     }
 
-    // ZvT
+    // ZvP Air
+    int ZvP_AirDefenses(BWEB::Wall &wall) { return 0; }
+
+    // ZvT Ground
     int ZvT_Opener(BWEB::Wall &wall)
     {
         // 8Rax / Proxy
@@ -257,7 +260,7 @@ namespace McRave::Walls::Zerg {
         return 0;
     }
 
-    int ZvT_Defenses(BWEB::Wall &wall)
+    int ZvT_GroundDefenses(BWEB::Wall &wall)
     {
         // Determine how much we have traded
         auto bioKilled       = Players::getDeadCount(PlayerState::Enemy, Terran_Marine, Terran_Firebat, Terran_Medic);
@@ -276,8 +279,11 @@ namespace McRave::Walls::Zerg {
         return max(minimum, expected - reduction);
     }
 
-    // ZvZ
-    int ZvZ_Defenses(BWEB::Wall &wall)
+    // ZvT Air
+    int ZvT_AirDefenses(BWEB::Wall &wall) { return 0; }
+
+    // ZvZ Ground
+    int ZvZ_GroundDefenses(BWEB::Wall &wall)
     {
         if (Spy::getEnemyTransition() == Z_1HatchMuta || Spy::getEnemyTransition() == Z_2HatchMuta)
             return 0;
@@ -298,6 +304,12 @@ namespace McRave::Walls::Zerg {
         return 0;
     }
 
-    // ZvFFA
-    int ZvFFA_Defenses(BWEB::Wall &wall) { return 1 + (Util::getTime() > Time(5, 20)) + (Util::getTime() > Time(5, 40)); }
-}
+    // ZvZ Air
+    int ZvZ_AirDefenses(BWEB::Wall &wall) { return 0; }
+
+    // ZvFFA Ground
+    int ZvFFA_GroundDefenses(BWEB::Wall &wall) { return 1 + (Util::getTime() > Time(5, 20)) + (Util::getTime() > Time(5, 40)); }
+
+    // ZvFFA Air
+    int ZvFFA_AirDefenses(BWEB::Wall &wall) { return 0; }
+} // namespace McRave::Walls::Zerg

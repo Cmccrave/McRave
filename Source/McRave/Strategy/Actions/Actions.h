@@ -30,7 +30,8 @@ namespace McRave::Actions {
     inline std::vector<Action> neutralActions;
 
     // Adds an Action at a Position
-    template <class T> void addAction(BWAPI::Unit unit, BWAPI::Position here, T type, PlayerState player = PlayerState::Neutral, int width = 0)
+    template <class T> //
+    void addAction(BWAPI::Unit unit, BWAPI::Position here, T type, PlayerState player = PlayerState::Neutral, int width = 0)
     {
         if (player == PlayerState::Enemy)
             enemyActions.push_back(Action(unit, here, type, width));
@@ -43,7 +44,8 @@ namespace McRave::Actions {
     }
 
     // Adds an Action at a Unit
-    template <class T> void addAction(BWAPI::Unit source, BWAPI::Unit target, T type, PlayerState player = PlayerState::Neutral)
+    template <class T> //
+    void addAction(BWAPI::Unit source, BWAPI::Unit target, T type, PlayerState player = PlayerState::Neutral)
     {
         if (player == PlayerState::Enemy)
             enemyActions.push_back(Action(source, target, type));
@@ -68,6 +70,17 @@ namespace McRave::Actions {
 
     bool overlapsDetection(BWAPI::Unit, BWAPI::Position, PlayerState);
     bool isInDanger(UnitInfo &, BWAPI::Position here = BWAPI::Positions::Invalid);
+
+    template <class T> //
+    bool isNeutralAction(T type)
+    {
+        if constexpr (std::same_as<T, BWAPI::TechType>) {
+            using namespace BWAPI::TechTypes;
+            static auto neutralTechs = {Dark_Swarm, Disruption_Web, EMP_Shockwave, Psionic_Storm, Ensnare, Plague};
+            return Util::contains(neutralTechs, type);
+        }
+        return false;
+    }
 
     void onFrame();
 } // namespace McRave::Actions

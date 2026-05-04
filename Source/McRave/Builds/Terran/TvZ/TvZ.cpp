@@ -59,7 +59,7 @@ namespace McRave::BuildOrder::Terran {
         rampType     = Terran_Barracks;
         gasLimit     = gasMax();
         inBookSupply = vis(Terran_Supply_Depot) < 2;
-        inOpening    = total(Terran_Wraith) < 6;
+        inOpening    = total(Terran_Wraith) < 4;
         focusUnit    = Terran_Wraith;
 
         buildQueue[Terran_Starport]      = (com(Terran_Factory) > 0) + (vis(Terran_Starport) > 0);
@@ -71,6 +71,32 @@ namespace McRave::BuildOrder::Terran {
         terranUnitPump[Terran_Marine]  = vis(Terran_Factory) > 0 && total(Terran_Marine) < 2;
         terranUnitPump[Terran_Vulture] = vis(Terran_Starport) >= 2 && total(Terran_Vulture) < 1;
         terranUnitPump[Terran_Wraith]  = true;
+    }
+
+    void TvZ_3FactGoliath() {}
+
+    void TvZ_5FactGoliath()
+    {
+        rampType     = Terran_Factory;
+        gasLimit     = gasMax();
+        inBookSupply = vis(Terran_Supply_Depot) < 4;
+        inOpening    = Util::getTime() < Time(9, 00);
+
+        buildQueue[Terran_Command_Center]  = 2;
+        buildQueue[Terran_Supply_Depot]    = 2 + (s >= 48) + (s >= 80);
+        buildQueue[Terran_Refinery]        = 1 + (s >= 104);
+        buildQueue[Terran_Factory]         = 1 + (s >= 32) + (s >= 104) + (s >= 120) * 2;
+        buildQueue[Terran_Armory]          = (s >= 50);
+        buildQueue[Terran_Engineering_Bay] = (s >= 66);
+        buildQueue[Terran_Machine_Shop]    = vis(Terran_Vulture) >= 2 || (s >= 50) || vis(Terran_Armory) > 0;
+
+        upgradeQueue[Charon_Boosters]        = com(Terran_Armory) > 0;
+        upgradeQueue[Terran_Vehicle_Plating] = com(Terran_Armory) > 0;
+
+        terranUnitPump[Terran_SCV]     = vis(Terran_SCV) < 48;
+        terranUnitPump[Terran_Marine]  = total(Terran_Marine) < 4;
+        terranUnitPump[Terran_Vulture] = total(Terran_Vulture) < 2;
+        terranUnitPump[Terran_Goliath] = true;
     }
 
     void TvZ()
@@ -89,6 +115,8 @@ namespace McRave::BuildOrder::Terran {
                 TvZ_Academy();
             if (currentTransition == T_2PortWraith)
                 TvZ_2PortWraith();
+            if (currentTransition == T_5FactGoliath)
+                TvZ_5FactGoliath();
         }
     }
 } // namespace McRave::BuildOrder::Terran

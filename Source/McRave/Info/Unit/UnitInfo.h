@@ -181,6 +181,7 @@ namespace McRave {
         bool isWithinBuildRange();
         bool isWithinGatherRange();
         bool canStartAttack();
+        bool canStartCast(TechType);
         bool canStartCast(TechType, Position);
         bool canStartCast(TechType, UnitInfo &);
         bool canStartGather();

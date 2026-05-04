@@ -100,8 +100,11 @@ namespace McRave::Command {
                     unit.commandText = "LoadBunker";
                     return true;
                 }
-                if (unit.unit()->isLoaded() && unloadBunker)
+                if (unit.unit()->isLoaded() && unloadBunker) {
                     bunker->unit()->unloadAll();
+                    unit.commandText = "UnloadBunker";
+                    return true;
+                }
             }
         }
 
@@ -286,7 +289,7 @@ namespace McRave::Command {
                 if (auto enemy = t.lock()) {
                     if (enemy->getType() == Protoss_Reaver || enemy->isThreatening()) {
                         threatened = enemy->hasTarget() && enemy->getTarget().lock()->getType().isWorker() && enemy->hasAttackedRecently();
-                        damage += enemy->getGroundDamage();
+                        damage += int(enemy->getGroundDamage());
                     }
                 }
             }
@@ -403,11 +406,13 @@ namespace McRave::Command {
 
         // Battlecruiser - Yamato
         if (unit.getType() == Terran_Battlecruiser && Broodwar->self()->hasResearched(Yamato_Gun)) {
-            if ((unit.unit()->getOrder() == Orders::FireYamatoGun || (unit.getEnergy() >= Yamato_Gun.energyCost()) && target.getHealth() >= 80)) {
-                if ((unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech || unit.unit()->getLastCommand().getTarget() != target.unit())) {
-                    unit.setCommand(Yamato_Gun, target);
-                    unit.commandText = "Yamato";
-                }
+            auto targetCastable = target.unit()->exists() && !target.isHidden() && unit.canStartCast(Yamato_Gun, target) && target.getHealth() >= 80;
+            auto inRange        = unit.getPosition().getDistance(target.getPosition()) <= Util::getCastRange(Yamato_Gun);
+
+            // If close to target and can cast Yamato
+            if (targetCastable && inRange) {
+                unit.setCommand(Yamato_Gun, target);
+                unit.commandText = "Yamato";
                 Actions::addAction(unit.unit(), target.getPosition(), Yamato_Gun, PlayerState::Neutral);
                 return true;
             }
@@ -434,22 +439,38 @@ namespace McRave::Command {
         }
 
         // Marine / Firebat - Stim Packs
-        else if ((unit.getType() == Terran_Marine || unit.getType() == Terran_Firebat) && Broodwar->self()->hasResearched(Stim_Packs) && !unit.isStimmed() && unit.isWithinRange(target)) {
-            unit.setCommand(Stim_Packs);
-            unit.commandText = "Stim";
-            return true;
+        else if ((unit.getType() == Terran_Marine || unit.getType() == Terran_Firebat)) {
+            auto selfCastable = !unit.isStimmed() && unit.canStartCast(Stim_Packs, target.getPosition());
+            auto inRange      = unit.isWithinRange(target);
+
+            // If close to target and can cast Stim on self
+            if (selfCastable && inRange) {
+                unit.setCommand(Stim_Packs);
+                unit.commandText = "Stim";
+                return true;
+            }
         }
 
         // Medic - Healing
-        else if (unit.getType() == Terran_Medic && unit.isWithinRange(target)) {
-            unit.setCommand(Healing);
-            unit.commandText = "Healing";
-            return true;
+        else if (unit.getType() == Terran_Medic) {
+            auto targetCastable = unit.canStartCast(Healing, target.getPosition());
+            auto inRange        = unit.getPosition().getDistance(target.getPosition()) <= Util::getCastRange(Healing) + 32.0;
+
+            // If close to target and can cast Healing
+            if (targetCastable && inRange) {
+                unit.setCommand(Healing);
+                unit.commandText = "Healing";
+                return true;
+            }
         }
 
         // Comsat scans
         else if (unit.getType() == Terran_Comsat_Station) {
-            if (target.unit()->exists() && !Actions::overlapsDetection(unit.unit(), target.getPosition(), PlayerState::Self)) {
+            auto targetScannable = target.unit()->exists() && unit.canStartCast(Scanner_Sweep, target.getPosition());
+            auto selfInReach     = Util::getClosestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) { return u->getLocalState() == LocalState::Attack && u->isWithinReach(target); });
+
+            // If something is close to target and this can cast Scanner Sweep
+            if (targetScannable && selfInReach) {
                 unit.setCommand(Scanner_Sweep, target.getPosition());
                 unit.commandText = "Scan";
                 Actions::addAction(unit.unit(), target.getPosition(), Spell_Scanner_Sweep, PlayerState::Self, Util::getCastRadius(Scanner_Sweep));
@@ -459,9 +480,12 @@ namespace McRave::Command {
 
         // Arbiters - Stasis Field
         else if (unit.getType() == Protoss_Arbiter) {
+            auto targetCastable = target.unit()->exists() && unit.canStartCast(Stasis_Field, target.getPosition());
+            auto inRange        = unit.getPosition().getDistance(target.getPosition()) <= Util::getCastRange(Stasis_Field) + 32.0;
+            auto selfInReach    = Util::getClosestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) { return u->getLocalState() == LocalState::Attack && u->isWithinReach(target); });
 
             // If close to target and can cast Stasis Field
-            if (unit.canStartCast(Stasis_Field, target.getPosition())) {
+            if (targetCastable && inRange && selfInReach) {
                 unit.setCommand(Stasis_Field, target);
                 unit.commandText = "Stasis";
                 Actions::addAction(unit.unit(), target.getPosition(), Stasis_Field, PlayerState::Self, Util::getCastRadius(Stasis_Field));
@@ -471,9 +495,11 @@ namespace McRave::Command {
 
         // High Templar - Psi Storm
         else if (unit.getType() == Protoss_High_Templar) {
+            auto targetCastable = target.unit()->exists() && unit.canStartCast(Psionic_Storm, target.getPosition());
+            auto inRange        = unit.getPosition().getDistance(target.getPosition()) <= Util::getCastRange(Psionic_Storm) + 32.0;
 
             // If close to target and can cast Psi Storm
-            if (unit.getPosition().getDistance(target.getPosition()) <= 320 && unit.canStartCast(Psionic_Storm, target.getPosition())) {
+            if (inRange && targetCastable) {
                 unit.setCommand(Psionic_Storm, target);
                 unit.commandText = "Storm";
                 Actions::addAction(unit.unit(), target.getPosition(), Psionic_Storm, PlayerState::Neutral, Util::getCastRadius(Psionic_Storm));

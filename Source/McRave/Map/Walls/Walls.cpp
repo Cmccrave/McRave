@@ -146,62 +146,69 @@ namespace McRave::Walls {
                 Stations::isPocket(wall.getStation()))
                 return 0;
 
-            // (ZvZ) If enemy adds defenses, we can start to cut defenses too
-            if (Players::ZvZ() && Util::getTime() > Time(4, 00))
-                groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Creep_Colony) +
-                               Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
-
-            // (ZvP) If they expanded, we can skip a sunk after a delay
-            if (Players::ZvP() && colonyCount == 0 && Spy::enemyFastExpand() && Spy::getEnemyBuild() != P_FFE && Util::getTime() > Time(4, 30)) {
-                static Time now = Util::getTime();
-                if (Util::getTime() > now + Time(0, 45))
-                    groundCount++;
-            }
-
-            // (Zv) Can't build defensives early until closest hatch almost completes
-            if (Broodwar->self()->getRace() == Races::Zerg && Util::getTime() < Time(3, 30)) {
-                auto nearestHatch = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Self, [&](auto &u) { return u->getType().isResourceDepot(); });
-                if (nearestHatch && nearestHatch->frameCompletesWhen() > Broodwar->getFrameCount() + 200)
-                    return 0;
-            }
-
-            // (Zv) If the natural is narrow, it's fair to skip one after we hit 2
-            if (Broodwar->self()->getRace() == Races::Zerg && wall.getStation() && wall.getStation()->isNatural() && Terrain::isNarrowNatural() && wall.getGroundDefenseCount() >= 2) {
-                groundCount++;
-            }
-
-            // If they're only at home and not proxying units, don't make any defenses for a bit
-            if (Broodwar->self()->getRace() == Races::Zerg) {
-                auto seconds             = colonyCount > 0 ? 20 : 30;
-                auto minimumColonyNeeded = (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(6, 00));
-                auto morphAlways         = (Spy::getEnemyBuild() == T_RaxFact && wall.getGroundDefenseCount() == 0) || Players::vFFA() || Spy::enemyProxy();
-                if (!morphAlways && (wall.getGroundDefenseCount() >= minimumColonyNeeded || colonyCount >= minimumColonyNeeded)) {
-                    auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) { return Units::inBoundUnit(*u, seconds); });
-                    if (!closestUnit)
-                        return 0;
-                }
-            }
-
             // Protoss
             if (Broodwar->self()->getRace() == Races::Protoss) {
                 if (Players::PvP())
                     return Protoss::PvP_Defenses(wall) - groundCount;
+                if (Players::PvT())
+                    return Protoss::PvT_Defenses(wall) - groundCount;
                 if (Players::PvZ())
                     return Protoss::PvZ_Defenses(wall) - groundCount;
+                if (Players::PvFFA())
+                    return Protoss::PvFFA_Defenses(wall) - groundCount;
             }
 
             // Terran
             if (Broodwar->self()->getRace() == Races::Terran) {
                 if (Players::TvZ())
-                    return Terran::TvZ_Defenses(wall) - groundCount;
-                if (Players::TvZ())
-                    return Terran::TvZ_Defenses(wall) - groundCount;
-                if (Players::TvZ())
-                    return Terran::TvZ_Defenses(wall) - groundCount;
+                    return Terran::TvZ_GroundDefenses(wall) - groundCount;
+                if (Players::TvP())
+                    return Terran::TvP_GroundDefenses(wall) - groundCount;
+                if (Players::TvT())
+                    return Terran::TvT_GroundDefenses(wall) - groundCount;
+                if (Players::TvFFA())
+                    return Terran::TvFFA_GroundDefenses(wall) - groundCount;
             }
 
             // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
+
+                // If enemy adds defenses, we can start to cut defenses too
+                if (Players::ZvZ() && Util::getTime() > Time(4, 00))
+                    groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Creep_Colony) +
+                                   Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
+
+                // If they expanded, we can skip a sunk after a delay
+                if (Players::ZvP() && colonyCount == 0 && Spy::enemyFastExpand() && Spy::getEnemyBuild() != P_FFE && Util::getTime() > Time(4, 30)) {
+                    static Time now = Util::getTime();
+                    if (Util::getTime() > now + Time(0, 45))
+                        groundCount++;
+                }
+
+                // Can't build defensives early until closest hatch almost completes
+                if (Broodwar->self()->getRace() == Races::Zerg && Util::getTime() < Time(3, 30)) {
+                    auto nearestHatch = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Self, [&](auto &u) { return u->getType().isResourceDepot(); });
+                    if (nearestHatch && nearestHatch->frameCompletesWhen() > Broodwar->getFrameCount() + 200)
+                        return 0;
+                }
+
+                // If the natural is narrow, it's fair to skip one after we hit 2
+                if (Broodwar->self()->getRace() == Races::Zerg && wall.getStation() && wall.getStation()->isNatural() && Terrain::isNarrowNatural() && wall.getGroundDefenseCount() >= 2) {
+                    groundCount++;
+                }
+
+                // If they're only at home and not proxying units, don't make any defenses for a bit
+                if (Broodwar->self()->getRace() == Races::Zerg) {
+                    auto seconds             = colonyCount > 0 ? 20 : 30;
+                    auto minimumColonyNeeded = (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(6, 00));
+                    auto morphAlways         = (Spy::getEnemyBuild() == T_RaxFact && wall.getGroundDefenseCount() == 0) || Players::vFFA() || Spy::enemyProxy();
+                    if (!morphAlways && (wall.getGroundDefenseCount() >= minimumColonyNeeded || colonyCount >= minimumColonyNeeded)) {
+                        auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) { return Units::inBoundUnit(*u, seconds); });
+                        if (!closestUnit)
+                            return 0;
+                    }
+                }
+
                 if (Stations::ownedBy(wall.getStation()) != PlayerState::Self)
                     return 0;
 
@@ -209,13 +216,13 @@ namespace McRave::Walls {
                     wall.requestAddedLayer();
 
                 if (Players::ZvP())
-                    return Zerg::ZvP_Defenses(wall) - groundCount;
+                    return Zerg::ZvP_GroundDefenses(wall) - groundCount;
                 if (Players::ZvT())
-                    return Zerg::ZvT_Defenses(wall) - groundCount;
+                    return Zerg::ZvT_GroundDefenses(wall) - groundCount;
                 if (Players::ZvZ())
-                    return Zerg::ZvZ_Defenses(wall) - groundCount;
+                    return Zerg::ZvZ_GroundDefenses(wall) - groundCount;
                 if (Players::ZvFFA())
-                    return Zerg::ZvFFA_Defenses(wall) - groundCount;
+                    return Zerg::ZvFFA_GroundDefenses(wall) - groundCount;
             }
             return 0;
         }
@@ -237,10 +244,25 @@ namespace McRave::Walls {
             }
 
             // Terran
+            if (Broodwar->self()->getRace() == Races::Terran) {
+                if (Players::TvZ())
+                    return Terran::TvZ_AirDefenses(wall) - airCount;
+                if (Players::TvP())
+                    return Terran::TvP_AirDefenses(wall) - airCount;
+                if (Players::TvT())
+                    return Terran::TvT_AirDefenses(wall) - airCount;
+            }
 
             // Zerg
             if (Broodwar->self()->getRace() == Races::Zerg) {
-                return 0;
+                if (Players::ZvZ())
+                    return Zerg::ZvZ_AirDefenses(wall) - airCount;
+                if (Players::ZvP())
+                    return Zerg::ZvP_AirDefenses(wall) - airCount;
+                if (Players::ZvT())
+                    return Zerg::ZvT_AirDefenses(wall) - airCount;
+                if (Players::ZvFFA())
+                    return Zerg::ZvFFA_AirDefenses(wall) - airCount;
             }
             return 0;
         }

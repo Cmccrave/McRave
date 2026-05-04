@@ -537,6 +537,13 @@ namespace BWEB {
                     count++;
             }
         }
+
+        // Bunkers can fit in medium tiles too
+        for (auto &tile : mediumTiles) {
+            auto type = Map::isUsed(tile);
+            if (type == UnitTypes::Terran_Bunker)
+                count++;
+        }
         return count;
     }
 

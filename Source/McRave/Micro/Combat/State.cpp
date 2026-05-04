@@ -108,8 +108,8 @@ namespace McRave::Combat::State {
         }
 
         // Factory
-        if (!BuildOrder::isPressure(Terran_Siege_Tank_Tank_Mode) && !BuildOrder::isPressure(Terran_Siege_Tank_Siege_Mode) &&
-            (unlockedOrVis(Terran_Siege_Tank_Tank_Mode) || unlockedOrVis(Terran_Siege_Tank_Siege_Mode))) {
+        if (!BuildOrder::isPressure(Terran_Siege_Tank_Tank_Mode) && !BuildOrder::isPressure(Terran_Siege_Tank_Siege_Mode) && !BuildOrder::isPressure(Terran_Goliath) &&
+            (unlockedOrVis(Terran_Siege_Tank_Tank_Mode) || unlockedOrVis(Terran_Siege_Tank_Siege_Mode) || unlockedOrVis(Terran_Goliath))) {
             if (Players::TvP()) {
                 if (Util::getTime() < Time(12, 00)) {
                     staticRetreatTypes.push_back(Terran_Siege_Tank_Tank_Mode);
@@ -120,6 +120,11 @@ namespace McRave::Combat::State {
 
             if (Players::TvT()) {
                 if (!Spy::enemyFastExpand() && Util::getTime() < Time(8, 00))
+                    lockFactory();
+            }
+
+            if (Players::TvZ()) {
+                if (Util::getTime() < Time(9, 00) || !Upgrading::haveUpgrade(UpgradeTypes::Charon_Boosters))
                     lockFactory();
             }
         }
@@ -485,7 +490,7 @@ namespace McRave::Combat::State {
                 if (unit.getType() == Protoss_Scout && unit.getShields() >= 90)
                     unit.saveUnit = false;
                 if (unit.getType() == Zerg_Zergling && unit.getHealth() >= 30)
-                    unit.saveUnit = false;                
+                    unit.saveUnit = false;
                 if (unit.getType() == Terran_Wraith && unit.getHealth() >= 120)
                     unit.saveUnit = false;
                 if (unit.getGoal().isValid())

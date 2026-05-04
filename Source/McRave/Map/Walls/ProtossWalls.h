@@ -25,6 +25,9 @@ namespace McRave::Walls::Protoss {
         return 0;
     }
 
+    // PvT
+    int PvT_Defenses(BWEB::Wall &wall) { return 0; }
+
     // PvZ
     int PvZ_Opener(BWEB::Wall &wall)
     {
@@ -65,4 +68,7 @@ namespace McRave::Walls::Protoss {
 
         return max(minimum, expected - reduction);
     }
+
+    // PvFFA
+    int PvFFA_Defenses(BWEB::Wall &wall) { return 1 + (Util::getTime() > Time(5, 20)) + (Util::getTime() > Time(5, 40)); }
 } // namespace McRave::Walls::Protoss

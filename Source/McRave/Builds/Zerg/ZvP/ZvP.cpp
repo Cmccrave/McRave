@@ -196,7 +196,7 @@ namespace McRave::BuildOrder::Zerg {
         reserveLarva                = (Spy::getEnemyBuild() == P_FFE || Spy::enemyFastExpand()) ? 6 : 0;
         wantThird                   = hatchCount() >= 4;
         wallNat                     = hatchCount() >= 2;
-        unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0;
+        unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Spy::getEnemyTransition() != P_Rush;
 
         // Order
         unitOrder = mutalurk;
@@ -271,7 +271,7 @@ namespace McRave::BuildOrder::Zerg {
         planEarly                   = wantNatural && wantThird && hatchCount() < 3 && Util::getTime() > Time(2, 30);
         reserveLarva                = (mutaOpen && Spy::getEnemyBuild() == P_FFE) ? 6 : 0;
         mineralThird                = wantThird && Spy::getEnemyBuild() == P_1GateCore;
-        unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0;
+        unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) == 0 && Spy::getEnemyTransition() != P_Rush;
 
         auto mutaLingOpen = mutaOpen && Spy::getEnemyBuild() == P_2Gate && Spy::getEnemyBuild() == P_Rush;
 

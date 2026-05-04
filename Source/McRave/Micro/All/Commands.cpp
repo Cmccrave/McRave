@@ -591,6 +591,10 @@ namespace McRave::Command {
                         return true;
                 }
 
+                // Special Case: Marines dont kite when stimmed
+                if (unit.getType() == Terran_Marine && unit.isStimmed())
+                    return false;
+
                 if (unit.isTargetedBySuicide() && !unit.isFlying())
                     return false;
 

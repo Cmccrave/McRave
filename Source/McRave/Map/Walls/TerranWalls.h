@@ -17,29 +17,50 @@ using namespace UnitTypes;
 
 namespace McRave::Walls::Terran {
 
-    // TvP
+    // TvP Ground
     int TvP_Opener(BWEB::Wall &wall) { return 0; }
 
     int TvP_Transition(BWEB::Wall &wall) { return 0; }
 
-    int TvP_Defenses(BWEB::Wall &wall) { return 1; }
+    int TvP_GroundDefenses(BWEB::Wall &wall) { return 1; }
 
-    // TvT
+    // TvP Air
+    int TvP_AirDefenses(BWEB::Wall &wall) { return 0; }
+
+    // TvT Ground
     int TvT_Opener(BWEB::Wall &wall) { return 0; }
 
     int TvT_Transition(BWEB::Wall &wall) { return 0; }
 
-    int TvT_Defenses(BWEB::Wall &wall) { return 0; }
+    int TvT_GroundDefenses(BWEB::Wall &wall) { return 1; }
 
-    // TvZ
+    // TvT Air
+    int TvT_AirDefenses(BWEB::Wall &wall) { return 0; }
+
+    // TvZ Ground
     int TvZ_Opener(BWEB::Wall &wall) { return 0; }
 
     int TvZ_Transition(BWEB::Wall &wall) { return 0; }
 
-    int TvZ_Defenses(BWEB::Wall &wall)
+    int TvZ_GroundDefenses(BWEB::Wall &wall)
     {
-        if (Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_2HatchLurker)
+        if (Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_2HatchLurker || Players::getTotalCount(PlayerState::Enemy, Zerg_Lurker) > 0)
             return 2;
+        return 1;
+    }
+
+    // TvZ Air
+    int TvZ_AirDefenses(BWEB::Wall &wall)
+    {
+        if (Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_2HatchLurker || Players::getTotalCount(PlayerState::Enemy, Zerg_Lurker) > 0)
+            return 1;
         return 0;
     }
+
+    // TvFFA Ground
+    int TvFFA_GroundDefenses(BWEB::Wall &wall) { return 1; }
+
+    // TvFFA Air
+    int TvFFA_AirDefenses(BWEB::Wall &wall) { return 0; }
+
 } // namespace McRave::Walls::Terran

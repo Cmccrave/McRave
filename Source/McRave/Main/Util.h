@@ -24,6 +24,7 @@ namespace McRave::Util {
 
     int getCastRadius(BWAPI::TechType);
     double getCastLimit(BWAPI::TechType);
+    double getCastRange(BWAPI::TechType);
 
     int boxDistance(BWAPI::UnitType, BWAPI::Position, BWAPI::UnitType, BWAPI::Position);
     int boxDistance(UnitInfo &unit, UnitInfo &target);

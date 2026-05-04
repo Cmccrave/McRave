@@ -82,7 +82,7 @@ namespace McRave::Combat::Formations {
 
             Visuals::drawCircle(Position(closestChoke->Center()), 6, Colors::Yellow, true);
 
-            auto maxRange   = max(commander->getGroundRange(), double(Players::getStrength(PlayerState::Enemy).maxGroundRange));
+            auto maxRange   = max(commander->getGroundRange(), double(Players::getStrength(PlayerState::Enemy).maxGroundRange)) + 64.0;
             auto minSpacing = double(closestChoke->Width() / cluster.units.size());
 
             if (closestChoke == Terrain::getMainChoke()) {

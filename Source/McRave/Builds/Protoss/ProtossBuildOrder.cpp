@@ -393,7 +393,7 @@ namespace McRave::BuildOrder::Protoss {
                 sort(sortedByGas.begin(), sortedByGas.end(), [&](auto &lhs, auto &rhs) { return lhs.gasPrice() >= rhs.gasPrice(); });
 
                 for (auto &type : sortedByGas) {
-                    if (!protossUnitPump[type] || !unlockReady(type) || availGas < type.gasPrice() || !buildingAvailable(type))
+                    if (!protossUnitPump[type] || !unlockReady(type) || (type.gasPrice() > 0 && availGas < type.gasPrice()) || !buildingAvailable(type))
                         continue;
 
                     armyComposition[type] = 1.00;

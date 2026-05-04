@@ -329,7 +329,21 @@ namespace McRave::Planning {
                         }
                     }
                 }
+
+                // Terran
                 if (Broodwar->self()->getRace() == Races::Terran) {
+
+                    // Discount block if it has a similar production type available
+                    if (building == Terran_Barracks) {
+                        if (Players::TvZ() && block.getPlacements(building).size() < 4)
+                            cost = 5.0;
+                        if (any_of(block.getLargeTiles().begin(), block.getLargeTiles().end(), [&](auto &t) { return BWEB::Map::isUsed(t) == Terran_Barracks; }))
+                            cost = 0.5;
+                    }
+                    if (building == Terran_Factory) {
+                        if (any_of(block.getLargeTiles().begin(), block.getLargeTiles().end(), [&](auto &t) { return BWEB::Map::isUsed(t) == Terran_Factory; }))
+                            cost = 0.5;
+                    }
                 }
 
                 listByDist.emplace(make_pair(dist * cost, &block));
@@ -408,13 +422,17 @@ namespace McRave::Planning {
             if (!isProductionType(building))
                 return false;
 
-            auto funcCall = (building == Terran_Starport) ? furthestLocation : closestLocation;
+            auto floatingTypes = (building == Protoss_Robotics_Facility || building == Protoss_Stargate || building == Terran_Starport);
+            auto funcCall      = floatingTypes ? furthestLocation : closestLocation;
 
             // Main gets production if we don't have a natural base yet
             if (BuildOrder::isOpener() && Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::None) {
+
                 auto desiredCenter = Terrain::getMainPosition();
-                if (building.getRace() != Races::Zerg)
-                    desiredCenter = (Position(Terrain::getMainChoke()->Center()) + Terrain::getMainPosition()) / 2;
+                if (floatingTypes)
+                    desiredCenter = Position(Terrain::getMainChoke()->Center());
+                else if (building.getRace() != Races::Zerg)
+                    desiredCenter = Position(Terrain::getMainChoke()->Center() * 0.25) + (Terrain::getMainPosition() * 0.75);
 
                 placement = funcCall(building, desiredCenter);
                 if (placement.isValid())

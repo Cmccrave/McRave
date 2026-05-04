@@ -125,6 +125,32 @@ namespace McRave::Util {
         return 1;
     }
 
+    double getCastRange(TechType tech)
+    { 
+        // TODO: add recharge shields when techtype added, it has a range of 128
+        using namespace TechTypes;
+        if (tech == Consume)
+            return 32.0;
+        if (tech == Healing)
+            return 64.0;
+        if (tech == Restoration)
+            return 192.0;
+        if (tech == Hallucination)
+            return 224.0;
+        if (tech == Mind_Control || tech == EMP_Shockwave || tech == Lockdown || tech == Nuclear_Strike)
+            return 256.0;
+        if (tech == Disruption_Web || tech == Psionic_Storm || tech == Stasis_Field || tech == Irradiate || tech == Optical_Flare || tech == Dark_Swarm || tech == Ensnare || tech == Plague ||
+            tech == Spawn_Broodlings)
+            return 288.0;
+        if (tech == Feedback || tech == Maelstrom || tech == Defensive_Matrix || tech == Yamato_Gun)
+            return 320.0;
+        if (tech == Parasite)
+            return 384.0;
+        if (tech == Recall || tech == Scanner_Sweep)
+            return 50000.0;
+        return 0.0;
+    }
+
     int boxDistance(BWAPI::UnitType typeA, BWAPI::Position posA, BWAPI::UnitType typeB, BWAPI::Position posB)
     {
         return pxDistanceBB(posA.x - typeA.dimensionLeft(), posA.y - typeA.dimensionUp(), posA.x + typeA.dimensionRight() + 1, posA.y + typeA.dimensionDown() + 1, posB.x - typeB.dimensionLeft(),

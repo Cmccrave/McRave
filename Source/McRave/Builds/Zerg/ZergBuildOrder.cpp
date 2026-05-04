@@ -1049,10 +1049,6 @@ namespace McRave::BuildOrder::Zerg {
 
     bool hydraRange() { return Upgrading::haveOrUpgrading(UpgradeTypes::Grooved_Spines, 1); }
 
-    bool gas(int amount) { return Broodwar->self()->gas() >= amount; }
-
-    bool minerals(int amount) { return Broodwar->self()->minerals() >= amount; }
-
     int capGas(int value)
     {
         // Sometimes we don't hit the cap gas amount, unsure if it's a ceil/round issue, but assume we need 1 more trip

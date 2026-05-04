@@ -51,18 +51,20 @@ namespace McRave::Actions {
             };
 
             const auto whatTech = [&](Order order) {
-                switch (order) {
-                    case Orders::CastEMPShockwave:
-                        return TechTypes::EMP_Shockwave;
-                    case Orders::CastDarkSwarm:
-                        return TechTypes::Dark_Swarm;
-                    case Orders::CastDisruptionWeb:
-                        return TechTypes::Disruption_Web;
-                    case Orders::CastPsionicStorm:
-                        return TechTypes::Psionic_Storm;
-                    case Orders::CastSpawnBroodlings:
-                        return TechTypes::Spawn_Broodlings;
-                }
+                if (order == Orders::CastEMPShockwave)
+                    return TechTypes::EMP_Shockwave;
+                if (order == Orders::CastDarkSwarm)
+                    return TechTypes::Dark_Swarm;
+                if (order == Orders::CastDisruptionWeb)
+                    return TechTypes::Disruption_Web;
+                if (order == Orders::CastPsionicStorm)
+                    return TechTypes::Psionic_Storm;
+                if (order == Orders::CastSpawnBroodlings)
+                    return TechTypes::Spawn_Broodlings;
+                if (order == Orders::NukePaint || order == Orders::NukeTrack || order == Orders::NukeWait)
+                    return TechTypes::Nuclear_Strike;
+                if (order == Orders::FireYamatoGun)
+                    return TechTypes::Yamato_Gun;
                 return TechTypes::None;
             };
 
@@ -83,6 +85,9 @@ namespace McRave::Actions {
                     if (b->getType() == BulletTypes::Longbolt_Missile && b->getSource() && b->getSource()->getType() == Terran_Ghost) {
                         addAction(nullptr, b->getTarget(), TechTypes::Lockdown, PlayerState::Neutral);
                     }
+                    if (b->getType() == BulletTypes::Yamato_Gun) {
+                        addAction(nullptr, b->getTarget(), TechTypes::Spawn_Broodlings, PlayerState::Neutral);                    
+                    }
                 }
             }
 
@@ -94,11 +99,11 @@ namespace McRave::Actions {
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo &unit = *u;
 
-                if (!unit.unit() || (unit.unit()->exists() && (unit.unit()->isLockedDown() || unit.unit()->isMaelstrommed() || unit.unit()->isStasised() || !unit.unit()->isCompleted())))
+                if (!unit.unit() || (unit.unit()->exists() && unit.isAvailable()))
                     continue;
 
                 // TODO: Sight range != detection range
-                if (unit.getType().isDetector())
+                if (unit.getType().isDetector() && unit.unit()->isCompleted())
                     addAction(unit.unit(), unit.getPosition(), unit.getType(), PlayerState::Enemy, unit.getType().sightRange() / 2);
 
                 // Add action for previous orders that may or may not physically exist yet

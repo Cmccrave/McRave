@@ -41,8 +41,6 @@ namespace McRave::BuildOrder::Zerg {
     bool lingSpeed();
     bool hydraSpeed();
     bool hydraRange();
-    bool gas(int);
-    bool minerals(int);
     int capGas(int);
 
     int lingsNeeded_ZvFFA();

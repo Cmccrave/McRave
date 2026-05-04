@@ -8,6 +8,7 @@
 #include "Map/Blocks/Blocks.h"
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
+#include "Map/Walls/Walls.h"
 #include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;
@@ -38,11 +39,24 @@ namespace McRave::BuildOrder::Terran {
                     buildQueue[Terran_Bunker] = vis(Terran_Bunker) + 1;
             }
 
+            // Adding wall defenses
+            for (auto &[_, wall] : BWEB::Walls::getWalls()) {
+                auto grdNeeded = Walls::needGroundDefenses(&wall);
+                auto airNeeded = Walls::needAirDefenses(&wall);
+                if (grdNeeded > 0)
+                    buildQueue[Terran_Bunker] = vis(Terran_Bunker) + 1;
+                if (airNeeded > 0)
+                    buildQueue[Terran_Missile_Turret] = vis(Terran_Missile_Turret) + 1;
+            }
+
             // Adding block defenses
             for (auto &block : BWEB::Blocks::getBlocks()) {
-                auto airneeded = Blocks::needAirDefenses(&block);
-                if (airneeded > 0)
+                auto airNeeded = Blocks::needAirDefenses(&block);
+                auto grdNeeded = Blocks::needGroundDefenses(&block);
+                if (airNeeded > 0)
                     buildQueue[Terran_Missile_Turret] = vis(Terran_Missile_Turret) + 1;
+                if (grdNeeded > 0)
+                    buildQueue[Terran_Bunker] = vis(Terran_Bunker) + 1;
             }
 
             // TvZ anticipate muta timing
@@ -103,11 +117,11 @@ namespace McRave::BuildOrder::Terran {
                 if (rampType == Terran_Factory)
                     buildQueue[Terran_Armory] = (s > 160) + (s > 200);
 
-                if (com(Terran_Science_Facility) > 0 && isFocusUnit(Terran_Battlecruiser) && vis(Terran_Physics_Lab) == 0)
+                if (com(Terran_Science_Facility) > 0 && isFocusUnit(Terran_Battlecruiser))
                     buildQueue[Terran_Physics_Lab] = 1;
 
                 // Control Tower
-                if (com(Terran_Starport) >= 1)
+                if (com(Terran_Starport) >= 1 && (isFocusUnit(Terran_Dropship) || isFocusUnit(Terran_Science_Vessel) || isFocusUnit(Terran_Valkyrie)))
                     buildQueue[Terran_Control_Tower] = com(Terran_Starport);
 
                 // Engineering Bay
@@ -144,6 +158,7 @@ namespace McRave::BuildOrder::Terran {
             // If we're not in our opener
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
+                const auto availableGas = Broodwar->self()->gas() - BuildOrder::getGasQueued();
 
                 // Adding production
                 // Mech play
@@ -151,7 +166,7 @@ namespace McRave::BuildOrder::Terran {
                     auto maxFacts     = 8;
                     auto factsPerBase = 3;
                     productionSat     = (vis(Terran_Factory) >= int(factsPerBase * vis(Terran_Command_Center)) || vis(Terran_Factory) >= maxFacts);
-                    rampDesired       = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
+                    rampDesired       = !productionSat && ((focusUnit == None && availableMinerals >= 150 && availableGas >= 100 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
 
                     if (rampDesired) {
                         auto factCount             = min({maxFacts, int(round(com(Terran_Command_Center) * factsPerBase)), vis(Terran_Factory) + 1});
@@ -163,6 +178,10 @@ namespace McRave::BuildOrder::Terran {
                 if (rampType == Terran_Barracks) {
                     auto maxRax     = 10;
                     auto raxPerBase = 2.5;
+
+                    if (isFocusUnit(Terran_Siege_Tank_Tank_Mode) || isFocusUnit(Terran_Wraith))
+                        raxPerBase -= 1.0;
+
                     productionSat   = (vis(Terran_Barracks) >= int(raxPerBase * vis(Terran_Command_Center)) || vis(Terran_Command_Center) >= maxRax);
                     rampDesired     = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
 
@@ -367,7 +386,7 @@ namespace McRave::BuildOrder::Terran {
                 sort(sortedByGas.begin(), sortedByGas.end(), [&](auto &lhs, auto &rhs) { return lhs.gasPrice() >= rhs.gasPrice(); });
 
                 for (auto &type : sortedByGas) {
-                    if (!terranUnitPump[type] || availGas < type.gasPrice() || !buildingAvailable(type))
+                    if (!terranUnitPump[type] || !unlockReady(type) || (type.gasPrice() > 0 && availGas < type.gasPrice()) || !buildingAvailable(type))
                         continue;
                     armyComposition[type] = 1.00;
                     break;
