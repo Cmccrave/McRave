@@ -46,7 +46,9 @@ namespace McRave::Walls::Terran {
     {
         if (Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_2HatchLurker || Players::getTotalCount(PlayerState::Enemy, Zerg_Lurker) > 0)
             return 2;
-        return 1;
+        if (Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 6 || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk) >= 2)
+            return 1;
+        return 0;
     }
 
     // TvZ Air

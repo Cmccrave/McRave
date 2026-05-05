@@ -47,8 +47,8 @@ namespace McRave::BuildOrder::Terran {
         if (gas(88) || vis(Terran_Factory) > 0)
             gasLimit = 1;
 
-        terranUnitPump[Terran_SCV]    = vis(Terran_SCV) < 24;
-        terranUnitPump[Terran_Marine] = vis(Terran_Factory) > 0;
+        terranUnitPump[Terran_SCV]    = vis(Terran_SCV) < 48;
+        terranUnitPump[Terran_Marine] = total(Terran_Marine) < 2;
     }
 
     void TvZ_RaxFact()

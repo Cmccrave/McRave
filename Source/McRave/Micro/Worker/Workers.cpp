@@ -514,8 +514,8 @@ namespace McRave::Workers {
         auto speed         = unit.getSpeed();
         auto dist          = BWEB::Map::getGroundDistance(unit.getPosition(), center);
         auto time          = (dist / speed);
-        auto enoughGas     = unit.getBuildType().gasPrice() > 0 ? Broodwar->self()->gas() + int(gasIncome * time) >= unit.getBuildType().gasPrice() * 0.8 : true;
-        auto enoughMins    = unit.getBuildType().mineralPrice() > 0 ? Broodwar->self()->minerals() + int(mineralIncome * time) >= unit.getBuildType().mineralPrice() * 0.8 : true;
+        auto enoughGas     = unit.getBuildType().gasPrice() > 0 ? Broodwar->self()->gas() + int(gasIncome * time) >= unit.getBuildType().gasPrice() * 0.9 : true;
+        auto enoughMins    = unit.getBuildType().mineralPrice() > 0 ? Broodwar->self()->minerals() + int(mineralIncome * time) >= unit.getBuildType().mineralPrice() * 0.9 : true;
 
         return (enoughGas && enoughMins);
     };

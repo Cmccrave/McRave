@@ -594,9 +594,15 @@ namespace McRave::Planning {
 
             // Defense placements near blocks
             for (auto &block : BWEB::Blocks::getBlocks()) {
-                auto airneeded = Blocks::needAirDefenses(&block);
-                if (airneeded > 0) {
+                auto airNeeded = Blocks::needAirDefenses(&block);
+                if (airNeeded > 0) {
                     placement = returnClosest(building, block.getSmallTiles(), block.getCenter());
+                    if (placement.isValid())
+                        return true;
+                }
+                auto grdNeeded = Blocks::needGroundDefenses(&block);
+                if (grdNeeded > 0) {
+                    placement = returnClosest(building, block.getMediumTiles(), block.getCenter());
                     if (placement.isValid())
                         return true;
                 }

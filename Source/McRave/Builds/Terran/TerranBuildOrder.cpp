@@ -27,22 +27,26 @@ namespace McRave::BuildOrder::Terran {
             // Adding station defenses
             auto estimateBlockDefenses = 0;
             for (auto &station : Stations::getStations(PlayerState::Self)) {
-                auto airNeeded = Stations::needAirDefenses(station);
                 auto grdNeeded = Stations::needGroundDefenses(station);
+                auto airNeeded = Stations::needAirDefenses(station);
 
                 if (airNeeded > 0)
                     needTurrets = true;
 
-                if (airNeeded > 0 && atPercent(Terran_Engineering_Bay, 0.80))
-                    buildQueue[Terran_Missile_Turret] = vis(Terran_Missile_Turret) + 1;
                 if (grdNeeded > 0)
                     buildQueue[Terran_Bunker] = vis(Terran_Bunker) + 1;
+                if (airNeeded > 0 && atPercent(Terran_Engineering_Bay, 0.80))
+                    buildQueue[Terran_Missile_Turret] = vis(Terran_Missile_Turret) + 1;
             }
 
             // Adding wall defenses
             for (auto &[_, wall] : BWEB::Walls::getWalls()) {
-                auto grdNeeded = Walls::needGroundDefenses(&wall);
                 auto airNeeded = Walls::needAirDefenses(&wall);
+                auto grdNeeded = Walls::needGroundDefenses(&wall);
+
+                if (airNeeded > 0)
+                    needTurrets = true;
+
                 if (grdNeeded > 0)
                     buildQueue[Terran_Bunker] = vis(Terran_Bunker) + 1;
                 if (airNeeded > 0)
@@ -53,10 +57,14 @@ namespace McRave::BuildOrder::Terran {
             for (auto &block : BWEB::Blocks::getBlocks()) {
                 auto airNeeded = Blocks::needAirDefenses(&block);
                 auto grdNeeded = Blocks::needGroundDefenses(&block);
+
                 if (airNeeded > 0)
-                    buildQueue[Terran_Missile_Turret] = vis(Terran_Missile_Turret) + 1;
+                    needTurrets = true;
+
                 if (grdNeeded > 0)
                     buildQueue[Terran_Bunker] = vis(Terran_Bunker) + 1;
+                if (airNeeded > 0 && atPercent(Terran_Engineering_Bay, 0.80))
+                    buildQueue[Terran_Missile_Turret] = vis(Terran_Missile_Turret) + 1;
             }
 
             // TvZ anticipate muta timing
@@ -158,7 +166,7 @@ namespace McRave::BuildOrder::Terran {
             // If we're not in our opener
             if (!inOpening) {
                 const auto availableMinerals = Broodwar->self()->minerals() - BuildOrder::getMinQueued();
-                const auto availableGas = Broodwar->self()->gas() - BuildOrder::getGasQueued();
+                const auto availableGas      = Broodwar->self()->gas() - BuildOrder::getGasQueued();
 
                 // Adding production
                 // Mech play
@@ -166,7 +174,8 @@ namespace McRave::BuildOrder::Terran {
                     auto maxFacts     = 8;
                     auto factsPerBase = 3;
                     productionSat     = (vis(Terran_Factory) >= int(factsPerBase * vis(Terran_Command_Center)) || vis(Terran_Factory) >= maxFacts);
-                    rampDesired       = !productionSat && ((focusUnit == None && availableMinerals >= 150 && availableGas >= 100 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
+                    rampDesired       = !productionSat &&
+                                  ((focusUnit == None && availableMinerals >= 150 && availableGas >= 100 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
 
                     if (rampDesired) {
                         auto factCount             = min({maxFacts, int(round(com(Terran_Command_Center) * factsPerBase)), vis(Terran_Factory) + 1});
@@ -182,8 +191,8 @@ namespace McRave::BuildOrder::Terran {
                     if (isFocusUnit(Terran_Siege_Tank_Tank_Mode) || isFocusUnit(Terran_Wraith))
                         raxPerBase -= 1.0;
 
-                    productionSat   = (vis(Terran_Barracks) >= int(raxPerBase * vis(Terran_Command_Center)) || vis(Terran_Command_Center) >= maxRax);
-                    rampDesired     = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
+                    productionSat = (vis(Terran_Barracks) >= int(raxPerBase * vis(Terran_Command_Center)) || vis(Terran_Command_Center) >= maxRax);
+                    rampDesired   = !productionSat && ((focusUnit == None && availableMinerals >= 150 && (techSat || com(Terran_Command_Center) >= 3)) || availableMinerals >= 300);
 
                     if (rampDesired) {
                         auto raxCount               = min({maxRax, int(round(com(Terran_Command_Center) * raxPerBase)), vis(Terran_Barracks) + 1});

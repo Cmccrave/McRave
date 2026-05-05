@@ -1,5 +1,6 @@
 #include "Blocks.h"
 
+#include "Micro/Combat/Combat.h"
 #include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;
@@ -18,19 +19,19 @@ namespace McRave::Blocks {
         }
 
         // Bunker or shield battery
-        if (block->isDefensive()) {
+        if (block->isDefensive() && !Combat::isDefendNatural()) {
+            if (Players::TvP()) {
+                if (Spy::getEnemyBuild() == P_2Gate || Spy::getEnemyBuild() == P_1GateCore)
+                    return 1 - count;
+            }
+
+            if (Players::TvZ()) {
+                if (Spy::getEnemyOpener() == Z_9Pool || Spy::getEnemyBuild() == Z_Overpool || Util::getTime() > Time(4, 00))
+                    return 1 - count;
+            }
+
+            // Maybe shield battery logic here?
         }
-
-        // Turrets or cannons
-        else {
-        }
-
-        // Reasons we want a bunker that is not in a wall
-        // 4pool up to overpool
-        // or ling all-in (pressure?/rush?)
-        // 2bunker if lurker all-in
-
-        // Maybe shield battery logic here?
         return 0;
     }
 

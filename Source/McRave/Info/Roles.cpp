@@ -137,7 +137,7 @@ namespace McRave::Roles {
             // Count repairs needed
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
-                if (unit.isCompleted()) {
+                if (unit.isCompleted() && !unit.getType().isWorker()) {
                     auto damaged    = unit.getHealth() != unit.getType().maxHitPoints();
                     auto threatened = Units::enemyThreatening() || !unit.getUnitsInReachOfThis().empty();
 

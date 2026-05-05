@@ -246,7 +246,7 @@ namespace McRave::Targets {
 
     Priority medicPriority(UnitInfo &unit, UnitInfo &target)
     {
-        if (target.isTargetedByType(Terran_Medic))
+        if (target.isTargetedByType(Terran_Medic) || target.unit()->isLoaded())
             return Priority::Ignore;
         if (target.getType() == Terran_Marine || target.getType() == Terran_Firebat || (target.getType() == Terran_Medic && target.getHealth() < target.getType().maxHitPoints()))
             return Priority::Critical;
@@ -267,6 +267,12 @@ namespace McRave::Targets {
 
     Priority wraithPriority(UnitInfo &unit, UnitInfo &target)
     {
+        // One/two shot is high priority to hit
+        if (unit.isWithinReach(target) && Combat::Clusters::canDecimate(unit, target))
+            return Priority::Critical;
+
+        if (target.getType().isWorker() && unit.isWithinReach(target))
+            return Priority::Major;
         if (target.getType() == Zerg_Overlord && unit.isWithinRange(target))
             return Priority::Major;
         return Priority::Normal;
@@ -828,7 +834,7 @@ namespace McRave::Targets {
         for (auto &state : {PlayerState::Self, PlayerState::Enemy, PlayerState::Ally}) {
             for (auto &u : Units::getUnits(state)) {
                 UnitInfo &unit = *u;
-                if (!unit.isAvailable() || unit.unit()->isLoaded() || !unit.hasTarget())
+                if (!unit.isAvailable() || !unit.hasTarget())
                     continue;
                 int color = unit.getPlayer()->getColor();
                 Visuals::drawLine(unit.getTarget().lock()->getPosition(), unit.getPosition(), color);

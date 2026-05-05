@@ -163,8 +163,6 @@ namespace McRave {
             retreatRadius = Math::calcSimRadius(*this) + 64.0;
 
             // States
-            lState = LocalState::None;
-            gState = GlobalState::None;
             tState = TransportState::None;
 
             // Attack Frame
@@ -371,7 +369,7 @@ namespace McRave {
             auto wallDefender = Util::getClosestUnit(position, PlayerState::Self, [&](auto &u) {
                 return u->getRole() == Role::Defender && u->canAttack(*this) && Util::contains(closestWall->getDefenses(), u->getTilePosition());
             });
-            if (wallDefender && (this->isWithinRange(*wallDefender) || (!Walls::isComplete(closestWall) && wallDefender->isWithinRange(*this))))
+            if (wallDefender && ((this->isWithinRange(*wallDefender) || (!Walls::isComplete(closestWall) && wallDefender->isWithinRange(*this)))))
                 return true;
 
             // If within range of a fragile piece or inside the wall
@@ -405,16 +403,13 @@ namespace McRave {
                     return true;
             }
 
-            if ((Terrain::inArea(Terrain::getMainArea(), position) && !Combat::isDefendNatural() && Combat::holdAtChoke()) ||
-                (Terrain::inArea(Terrain::getMainArea(), position) && Combat::isDefendNatural() && !Terrain::isPocketNatural()))
-                return true;
-
             if (inTerritory) {
                 auto dangerous = getType() == Protoss_Reaver || getType() == Protoss_High_Templar || getType() == Protoss_Dark_Templar || getType() == Terran_Vulture;
                 auto transport = isFlying() && getType().spaceProvided() == 0;
                 if (dangerous || transport)
                     return true;
             }
+            return false;
         };
 
         // Checks if it can damage an already damaged building
@@ -660,6 +655,7 @@ namespace McRave {
 
         commandFrame    = Broodwar->getFrameCount();
         commandPosition = getPosition();
+        commandType     = UnitCommandTypes::Use_Tech;
 
         unit()->useTech(tech);
     }
@@ -904,8 +900,14 @@ namespace McRave {
                 return Util::boxDistance(getType(), getPosition(), otherUnit.getType(), otherUnit.getPosition()) <= 96.0;
         }
 
+        // Special case: swiping light units need a slight reduction in range because of units not being perfectly stacked
+        auto reduction = 0;
+        if (getType() == Zerg_Mutalisk || getType() == Terran_Wraith) {
+            reduction = 8;
+        }
+
         auto boxDistance = Util::boxDistance(*this, otherUnit);
-        auto range       = max(32.0, otherUnit.getType().isFlyer() ? getAirRange() : getGroundRange());
+        auto range       = max(32.0, otherUnit.getType().isFlyer() ? getAirRange() : getGroundRange()) - reduction;
         auto latencyDist = (Broodwar->getLatencyFrames() * getSpeed()) - (Broodwar->getLatencyFrames() * otherUnit.getSpeed());
         return range + latencyDist >= boxDistance;
     }

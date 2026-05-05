@@ -86,7 +86,7 @@ namespace McRave::Actions {
                         addAction(nullptr, b->getTarget(), TechTypes::Lockdown, PlayerState::Neutral);
                     }
                     if (b->getType() == BulletTypes::Yamato_Gun) {
-                        addAction(nullptr, b->getTarget(), TechTypes::Spawn_Broodlings, PlayerState::Neutral);                    
+                        addAction(nullptr, b->getTarget(), TechTypes::Spawn_Broodlings, PlayerState::Neutral);
                     }
                 }
             }
@@ -99,12 +99,14 @@ namespace McRave::Actions {
             for (auto &u : Units::getUnits(PlayerState::Enemy)) {
                 UnitInfo &unit = *u;
 
-                if (!unit.unit() || (unit.unit()->exists() && unit.isAvailable()))
+                if (!unit.unit() || (unit.unit()->exists() && !unit.isAvailable()))
                     continue;
 
                 // TODO: Sight range != detection range
-                if (unit.getType().isDetector() && unit.unit()->isCompleted())
+                if (unit.getType().isDetector() && unit.unit()->isCompleted()) {
+                    Visuals::drawCircle(unit.getTilePosition(), unit.getType().sightRange() / 2, Colors::Purple);
                     addAction(unit.unit(), unit.getPosition(), unit.getType(), PlayerState::Enemy, unit.getType().sightRange() / 2);
+                }
 
                 // Add action for previous orders that may or may not physically exist yet
                 for (auto &[frame, order] : unit.getOrderHistory()) {
@@ -128,6 +130,9 @@ namespace McRave::Actions {
             // Check my Actions
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
+
+                if (!unit.unit() || (unit.unit()->exists() && !unit.isAvailable()))
+                    continue;
 
                 if (unit.getType().isDetector() && unit.unit()->isCompleted())
                     addAction(unit.unit(), unit.getPosition(), unit.getType(), PlayerState::Self, unit.getType().sightRange() / 2);

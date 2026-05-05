@@ -83,10 +83,12 @@ namespace McRave::Horizon {
         const auto unitToEngage      = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
 
         const auto extendDuration     = (unit.isLightAir() || Players::ZvZ()) ? 2.0 : 5.0;
-        const auto simulationTime     = unitToEngage + extendDuration + addPrepTime(unit) - rangeDisplacement;
+        const auto simulationTime     = unitToEngage + extendDuration + addPrepTime(unit) /*- rangeDisplacement*/;
         const auto targetDisplacement = 0.0; // unitToEngage * unitTarget->getSpeed() * 24.0;
         map<Player, SimStrength> simStrengthPerPlayer;
         map<PlayerState, SimStrength> simStrengthPerState;
+
+        auto combinedSim = false;
 
         for (auto &e : Units::getUnits(PlayerState::Enemy)) {
             UnitInfo &enemy = *e;
@@ -153,6 +155,9 @@ namespace McRave::Horizon {
 
             if (unit.unit()->isSelected())
                 Broodwar->drawTextMap(self.getPosition(), "%.2f", simRatio);
+
+            if (selfTarget->isFlying() != unitTarget->isFlying())
+                combinedSim = true;
 
             // Add their values to the simulation
             addBonus(self, *selfTarget, simRatio);
@@ -222,7 +227,10 @@ namespace McRave::Horizon {
             }
 
             // Assign the highest value
-            unit.setSimValue(max(solo, combined));
+            if (combinedSim)
+                unit.setSimValue(combined);
+            else
+                unit.setSimValue(solo);
         }
     }
 } // namespace McRave::Horizon

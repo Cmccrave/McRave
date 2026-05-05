@@ -78,7 +78,7 @@ namespace McRave::Command {
         else if (unit.getType() == Terran_Marine && vis(Terran_Bunker) > 0) {
 
             auto bunker = Util::getClosestUnit(unit.getPosition(), PlayerState::Self,
-                                               [&](auto &u) { return (u->getType() == Terran_Bunker && u->isCompleted() && u->unit()->getSpaceRemaining() > 0); });
+                                               [&](auto &u) { return (u->getType() == Terran_Bunker && u->isCompleted()); });
 
             auto loadBunker   = false;
             auto unloadBunker = false;
@@ -95,14 +95,12 @@ namespace McRave::Command {
                     loadBunker   = alwaysLoad;
                     unloadBunker = !alwaysLoad;
                 }
-                if (!unit.unit()->isLoaded() && loadBunker) {
+                if (!unit.unit()->isLoaded() && loadBunker && bunker->unit()->getSpaceRemaining() > 0) {
                     unit.setCommand(Right_Click_Unit, *bunker);
-                    unit.commandText = "LoadBunker";
                     return true;
                 }
                 if (unit.unit()->isLoaded() && unloadBunker) {
                     bunker->unit()->unloadAll();
-                    unit.commandText = "UnloadBunker";
                     return true;
                 }
             }

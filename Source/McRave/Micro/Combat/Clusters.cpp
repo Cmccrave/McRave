@@ -37,10 +37,13 @@ namespace McRave::Combat::Clusters {
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
 
-                if (unit.getRole() != Role::Combat || unit.unit()->isLoaded() || unit.getType() == Protoss_Interceptor)
+                if (unit.getRole() != Role::Combat || unit.getType() == Protoss_Interceptor)
                     continue;
 
                 unit.setCommander(nullptr);
+
+                if (unit.unit()->isLoaded())
+                    unit.circle(Colors::Purple);
 
                 ClusterNode newNode;
                 newNode.position = unit.getPosition();
@@ -81,7 +84,7 @@ namespace McRave::Combat::Clusters {
                 if (parent.unit->isLightAir() && child.unit->isLightAir())
                     return matchedStrat && matchedGoal;
 
-                auto matchedType     = parent.unit->isFlying() == child.unit->isFlying();
+                auto matchedType     = parent.unit->isFlying() == child.unit->isFlying() && parent.unit->unit()->isLoaded() == child.unit->unit()->isLoaded();
                 auto matchedDistance = abs(parent.unit->getEngDist() - child.unit->getEngDist()) < eps &&
                                        (child.position.getDistance(root.position) < eps || child.position.getDistance(parent.position) < eps);
 
@@ -271,13 +274,11 @@ namespace McRave::Combat::Clusters {
 
                     // Determine how commands are sent out
                     if (commander->isLightAir()) {
-
                         cluster.commandShare    = CommandShare::Exact;
                         cluster.marchPosition   = Combat::getHarassPosition();
                         cluster.retreatPosition = commander->retreatPos;
                     }
                     else {
-
                         cluster.commandShare    = CommandShare::Parallel;
                         cluster.marchPosition   = commander->marchPos;
                         cluster.retreatPosition = commander->retreatPos;

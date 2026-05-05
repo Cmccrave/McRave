@@ -366,8 +366,7 @@ namespace McRave::Scouts {
 
                 main.desiredTypeCounts[Protoss_Probe] = int(BuildOrder::shouldScout()) +
                                                         int(Players::PvZ() && !Terrain::getEnemyStartingPosition().isValid() && mapBWEM.StartingLocations().size() == 4 &&
-                                                            unexploredMains.size() == 2) +
-                                                        int(Players::PvP() && (Spy::enemyProxy() || Spy::enemyPossibleProxy()) && com(Protoss_Zealot) < 1);
+                                                            unexploredMains.size() == 2);
 
                 if ((Players::PvZ() && Spy::enemyRush() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 2) || (Players::PvT() && (Spy::enemyPressure() || Spy::enemyWalled())) ||
                     (Util::getTime() > Time(5, 00)))
@@ -376,7 +375,8 @@ namespace McRave::Scouts {
 
             // Terran
             if (Broodwar->self()->getRace() == Races::Terran) {
-                main.desiredTypeCounts[Terran_SCV] = (BuildOrder::shouldScout() || Spy::enemyPossibleProxy() || Spy::enemyProxy());
+                main.desiredTypeCounts[Terran_SCV] = int(BuildOrder::shouldScout()) +
+                                                     int(Players::TvZ() && !Terrain::getEnemyStartingPosition().isValid() && mapBWEM.StartingLocations().size() == 4 && unexploredMains.size() == 2);
                 if (Util::getTime() > Time(4, 00) || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
                     main.desiredTypeCounts[Terran_SCV] = 0;
             }

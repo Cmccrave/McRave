@@ -495,6 +495,17 @@ namespace McRave::Command {
         };
 
         const auto canKite = [&]() {
+            if (unit.getSpeed() <= 0.0 || unit.getType() == Zerg_Lurker)
+                return false;
+            return true;
+        };
+
+        const auto shouldKite = [&]() {
+            auto allyRange     = (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
+            auto enemyRange    = (unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange());
+            auto targetKitable = allyRange > enemyRange && enemyRange != 0 && allyRange != 0;
+            auto boxDist       = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition());
+
             // Special Case: Carriers
             if (unit.getType() == Protoss_Carrier) {
                 auto leashRange = 320;
@@ -509,9 +520,9 @@ namespace McRave::Command {
             }
 
             // Special Case: Casters
-            if (unit.getPosition().getDistance(target.getPosition()) <= 400.0) {
+            if (unit.isSpellcaster()) {
                 if (unit.getType() == Protoss_High_Templar)
-                    return !unit.canStartCast(TechTypes::Psionic_Storm, target.getPosition());
+                    return unit.isWithinRange(target) && !unit.canStartCast(TechTypes::Psionic_Storm, target.getPosition());
                 if (unit.getType() == Zerg_Queen) {
                     return !unit.canStartCast(TechTypes::Spawn_Broodlings, target.getPosition());
                 }
@@ -523,17 +534,6 @@ namespace McRave::Command {
                                unit.getPosition().getDistance(target.getPosition()) <= 400.0;
                 }
             }
-
-            if (unit.getSpeed() <= 0.0 || unit.getType() == Zerg_Lurker)
-                return false;
-            return true;
-        };
-
-        const auto shouldKite = [&]() {
-            auto allyRange     = (target.getType().isFlyer() ? unit.getAirRange() : unit.getGroundRange());
-            auto enemyRange    = (unit.getType().isFlyer() ? target.getAirRange() : target.getGroundRange());
-            auto targetKitable = allyRange > enemyRange && enemyRange != 0 && allyRange != 0;
-            auto boxDist       = Util::boxDistance(unit.getType(), unit.getPosition(), target.getType(), target.getPosition());
 
             // Special Case: workers trying to not die
             if (unit.getType().isWorker() && Spy::getEnemyTransition() == U_WorkerRush && vis(Zerg_Sunken_Colony) == 0 && !unit.getUnitsInReachOfThis().empty() &&

@@ -73,7 +73,7 @@ namespace McRave::Combat::State {
         // Probes
         if (!BuildOrder::isPressure(Protoss_Probe) && unlockedOrVis(Protoss_Probe)) {
             if (!unlockedOrVis(Protoss_Zealot) || !staticRetreatTypes.empty())
-                staticRetreatTypes.push_back(Zerg_Drone);
+                staticRetreatTypes.push_back(Protoss_Probe);
         }
     }
 
@@ -506,6 +506,12 @@ namespace McRave::Combat::State {
         return unit.isNearHidden() || unit.saveUnit;
     }
 
+    void resetStates(UnitInfo &unit)
+    {
+        unit.setGlobalState(GlobalState::None);
+        unit.setLocalState(LocalState::None);
+    }
+
     void updateLocalState(UnitInfo &unit)
     {
         if (!unit.hasSimTarget() || !unit.hasTarget() || unit.getLocalState() != LocalState::None)
@@ -570,6 +576,7 @@ namespace McRave::Combat::State {
         for (auto &u : Units::getUnits(PlayerState::Self)) {
             auto &unit = *u;
             if (unit.getRole() == Role::Combat) {
+                resetStates(unit);
                 updateGlobalState(unit);
                 updateLocalState(unit);
             }

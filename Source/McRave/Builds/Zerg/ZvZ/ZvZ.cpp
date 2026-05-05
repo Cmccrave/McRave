@@ -45,7 +45,7 @@ namespace McRave::BuildOrder::Zerg {
         // Make less if we have some other units outside our opening
         if (com(Zerg_Sunken_Colony) > 0) {
             arrivalValue -= vis(Zerg_Hydralisk);
-            arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 6.0;
+            arrivalValue -= (vis(Zerg_Sunken_Colony) + vis(Zerg_Creep_Colony)) * 4.0;
         }
         return int(arrivalValue);
     }
@@ -123,7 +123,7 @@ namespace McRave::BuildOrder::Zerg {
 
         auto faster = selfSpireTiming - enemySpireTiming > Time(0, 25);
         if (faster)
-            LOG_ONCE("Enemy faster spire");
+            LOG_ONCE("Self faster spire");
 
         return enemySpireTiming == Time(0, 00) || enemySpireTiming - selfSpireTiming > Time(0, 25);
     }

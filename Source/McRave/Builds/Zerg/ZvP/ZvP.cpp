@@ -135,7 +135,7 @@ namespace McRave::BuildOrder::Zerg {
             if (Spy::getEnemyOpener() == P_10_12)
                 initialValue = 10;
             if (Spy::getEnemyOpener() == P_10_15)
-                initialValue = 2;
+                initialValue = 6;
         }
 
         // FFE
@@ -236,14 +236,14 @@ namespace McRave::BuildOrder::Zerg {
         // Gas
         gasLimit = gasMax();
         if (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != P_FFE && !Spy::enemyFastExpand()) {
-            if (vis(Zerg_Drone) + vis(Zerg_Extractor) < 10)
+            auto dropGasLowDrone = vis(Zerg_Drone) + vis(Zerg_Extractor) < 10;
+            auto dropGasEarly    = Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(3, 45);
+            auto dropGasAfterLair = vis(Zerg_Lair) > 0 && Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(3, 40);
+            auto dropGasAfterSpire = vis(Zerg_Spire) > 0 && Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(4, 30);
+            auto dropGasSpores   = Spy::getEnemyOpener() == P_Corsair && Util::getTime() < Time(4, 30);
+
+            if (dropGasLowDrone || dropGasEarly || dropGasAfterLair || dropGasAfterSpire || dropGasSpores)
                 gasLimit = 0;
-            else if (vis(Zerg_Lair) > 0 && Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(3, 45))
-                gasLimit = 0;
-            else if (vis(Zerg_Lair) > 0 && Util::getTime() < Time(3, 45))
-                gasLimit = 1;
-            else if (vis(Zerg_Spire) > 0 && Util::getTime() < Time(4, 30))
-                gasLimit = 1;
         }
         if (gasLimit > 0 && (Spy::getEnemyBuild() == "Unknown" || Spy::getEnemyBuild() == P_2Gate || Spy::getEnemyBuild() == P_1GateCore) && !atPercent(Zerg_Lair, 0.5))
             gasLimit = capGas(100);
@@ -360,8 +360,9 @@ namespace McRave::BuildOrder::Zerg {
             auto dropGasLowDrone = vis(Zerg_Drone) + vis(Zerg_Extractor) < 11;
             auto dropGasEarly    = Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(3, 30);
             auto dropGasHatch    = hatchCount() < 3 && Util::getTime() < Time(4, 00);
+            auto dropGasSpores   = Spy::getEnemyOpener() == P_Corsair && Util::getTime() < Time(4, 30);
 
-            if (dropGasLowDrone || dropGasEarly || dropGasHatch)
+            if (dropGasLowDrone || dropGasEarly || dropGasHatch || dropGasSpores)
                 gasLimit = 0;
         }
         if (gasLimit > 0 && (Spy::getEnemyBuild() == "Unknown" || Spy::getEnemyBuild() == P_2Gate) && !atPercent(Zerg_Lair, 0.25))
@@ -405,7 +406,7 @@ namespace McRave::BuildOrder::Zerg {
         auto secondHydraPump = hatchCount() >= 5 && vis(Zerg_Drone) >= 36;
 
         // Pumping
-        zergUnitPump[Zerg_Drone] |= (vis(Zerg_Drone) < 19 && com(Zerg_Spawning_Pool) > 0) || (!rush && vis(Zerg_Drone) < 36);
+        zergUnitPump[Zerg_Drone] |= (vis(Zerg_Drone) < 19 && com(Zerg_Spawning_Pool) > 0) || (!rush && vis(Zerg_Drone) < 36 && com(Zerg_Spawning_Pool) > 0);
         zergUnitPump[Zerg_Zergling]  = (com(Zerg_Spawning_Pool) > 0 && total(Zerg_Zergling) < 6) || (lingsNeeded_ZvP() > vis(Zerg_Zergling) && com(Zerg_Hydralisk_Den) == 0);
         zergUnitPump[Zerg_Hydralisk] = firstHydraPump || secondHydraPump;
 

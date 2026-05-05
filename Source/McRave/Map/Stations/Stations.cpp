@@ -253,7 +253,7 @@ namespace McRave::Stations {
 
             if (station->isMain()) {
                 //// Add 2 sunks if we gave up the natural intentionally
-                //if (!BuildOrder::takeNatural())
+                // if (!BuildOrder::takeNatural())
                 //    return (Util::getTime() > Time(2, 40)) + (Util::getTime() > Time(3, 00)) - groundCount;
 
                 //// Add 1 sunks if we opened greedy against proxy gates
@@ -403,7 +403,7 @@ namespace McRave::Stations {
         {
             auto groundCount = getGroundDefenseCount(station);
 
-            if (station->isMain() && (Spy::getEnemyOpener() == Z_4Pool || Spy::getEnemyOpener() == Z_9Pool))
+            if (station->isMain() && (Spy::getEnemyOpener() == Z_4Pool || Spy::getEnemyOpener() == Z_7Pool))
                 return 1 - groundCount;
             return 0;
         }
@@ -708,6 +708,22 @@ namespace McRave::Stations {
                 return amount - airCount;
             }
 
+            // 1hl
+            if (Spy::getEnemyTransition() == Z_1HatchLurker) {
+                if (station->isNatural() && Util::getTime() > Time(4, 00))
+                    return 1 - airCount;
+                if (station->isMain() && Util::getTime() > Time(5, 00))
+                    return 1 - airCount;
+            }
+
+            // 2hl
+            if (Spy::getEnemyTransition() == Z_2HatchLurker) {
+                if (station->isNatural() && Util::getTime() > Time(4, 30))
+                    return 1 - airCount;
+                if (station->isMain() && Util::getTime() > Time(5, 30))
+                    return 1 - airCount;
+            }
+
             // Make mutas as we see them, and at least 1 if there is lurkers
             auto lurkerBuild = Spy::getEnemyTransition().find("Lurker") != string::npos || Spy::getEnemyTransition().find("Hydra") != string::npos ||
                                Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk, Zerg_Hydralisk_Den, Zerg_Lurker) > 0;
@@ -722,7 +738,7 @@ namespace McRave::Stations {
         }
 
         if (Broodwar->self()->getRace() == Races::Terran) {
-            if (Spy::enemyInvis())
+            if ((Players::TvP() || Players::TvT()) && Spy::enemyInvis())
                 return 1 - airCount;
         }
 

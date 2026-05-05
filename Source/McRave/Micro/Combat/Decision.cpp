@@ -46,6 +46,8 @@ namespace McRave::Combat::Decision {
             unit.setCommand(commander.getCommandType(), cmdPos);
         else if (commander.getCommandType() == UnitCommandTypes::Right_Click_Position)
             unit.setCommand(UnitCommandTypes::Right_Click_Position, commander.getCommandPosition());
+        else if (commander.getCommandType() == UnitCommandTypes::Use_Tech)
+            unit.setCommand(TechTypes::Cloaking_Field);
         else
             updateDecision(unit);
     }
