@@ -43,14 +43,20 @@ namespace McRave::Walls::Protoss {
         auto cannonCount = 1 + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 6) + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 12) +
                            (Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 24) + (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk) / 2);
 
-        if (Spy::getEnemyTransition() == Z_2HatchHydra)
-            return 5;
-        else if (Spy::getEnemyTransition() == Z_3HatchHydra)
-            return 4;
-        else if (Spy::getEnemyTransition() == Z_2HatchMuta && Util::getTime() > Time(4, 0))
-            return 3;
-        else if (Spy::getEnemyTransition() == Z_3HatchMuta && Util::getTime() > Time(5, 0))
-            return 3;
+        if (Spy::getEnemyTransition() == Z_2HatchHydra && Util::getTime() > Time(4, 00)) {
+            if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk) > 0)
+                return 5;
+            return 2;
+        }
+        else if (Spy::getEnemyTransition() == Z_3HatchHydra && Util::getTime() > Time(5, 00)) {
+            if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk) > 0)
+                return 4;
+            return 2;
+        }
+        else if (Spy::getEnemyTransition() == Z_2HatchMuta && Util::getTime() > Time(5, 30))
+            return 2;
+        else if (Spy::getEnemyTransition() == Z_3HatchMuta && Util::getTime() > Time(6, 00))
+            return 2;
         return cannonCount;
     }
 

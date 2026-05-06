@@ -336,6 +336,7 @@ namespace McRave::BuildOrder {
 
     // Focus
     UnitType getFirstFocusUnit() { return focusUnit; }
+    UnitType getRampType() { return rampType; }
 
     // getFocusTechs
     // getFocusUpgrades

@@ -292,7 +292,7 @@ namespace McRave::Walls::Zerg {
         if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 || Spy::getEnemyTransition() == Z_3HatchSpeedling)
             return 1 + (Util::getTime() > Time(4, 15));
         if (Spy::getEnemyTransition() == Z_2HatchSpeedling || (Stations::getStations(PlayerState::Enemy).size() <= 1 && Players::getTotalCount(PlayerState::Enemy, Zerg_Hatchery) >= 2))
-            return 1 + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 15));
+            return 1;
         if (Spy::getEnemyOpener() == Z_12Hatch || Spy::getEnemyOpener() == Z_10Hatch)
             return 1;
 

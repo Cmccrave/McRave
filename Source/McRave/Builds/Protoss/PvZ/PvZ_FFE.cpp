@@ -31,6 +31,25 @@ namespace McRave::BuildOrder::Protoss {
         protossUnitPump[Protoss_Zealot] = com(Protoss_Gateway) > 0;
     }
 
+    void PvZ_FFE_Nexus()
+    {
+        wantNatural     = true;
+        wallNat         = true;
+        scout           = vis(Protoss_Pylon) > 0;
+        transitionReady = vis(Protoss_Gateway) >= 1;
+
+        // Buildings
+        buildQueue[Protoss_Nexus]       = 1 + (s >= 28);
+        buildQueue[Protoss_Pylon]       = (s >= 14) + (s >= 30), (s >= 16) + (s >= 30);
+        buildQueue[Protoss_Assimilator] = !Spy::enemyRush() && s >= 34;
+        buildQueue[Protoss_Gateway]     = s >= 32;
+        buildQueue[Protoss_Forge]       = s >= 20;
+
+        // Pumping
+        protossUnitPump[Protoss_Probe]  = true;
+        protossUnitPump[Protoss_Zealot] = true;
+    }
+
     void PvZ_2Stargate()
     {
         inOpening    = s < 100;
@@ -40,19 +59,15 @@ namespace McRave::BuildOrder::Protoss {
         // Buildings
         buildQueue[Protoss_Assimilator]      = (s >= 38) + (atPercent(Protoss_Cybernetics_Core, 0.75));
         buildQueue[Protoss_Cybernetics_Core] = s >= 36;
-        buildQueue[Protoss_Citadel_of_Adun]  = 0;
-        buildQueue[Protoss_Templar_Archives] = 0;
-        buildQueue[Protoss_Stargate]         = (vis(Protoss_Corsair) > 0) + (atPercent(Protoss_Cybernetics_Core, 1.00));
+        buildQueue[Protoss_Stargate]         = (vis(Protoss_Corsair) > 0) + (com(Protoss_Cybernetics_Core) > 0);
 
         // Upgrades
         upgradeQueue[Protoss_Air_Weapons] = vis(Protoss_Stargate) > 0;
 
         // Pumping
         protossUnitPump[Protoss_Probe]        = true;
-        protossUnitPump[Protoss_Zealot]       = com(Protoss_Gateway) > 0;
-        protossUnitPump[Protoss_Dark_Templar] = com(Protoss_Gateway) > 0 && com(Protoss_Templar_Archives) > 0 && total(Protoss_Dark_Templar) < 2;
-        protossUnitPump[Protoss_High_Templar] = com(Protoss_Gateway) > 0 && com(Protoss_Templar_Archives) > 0 && total(Protoss_High_Templar) < 2;
-        protossUnitPump[Protoss_Corsair]      = com(Protoss_Stargate) > 0;
+        protossUnitPump[Protoss_Zealot]       = true;
+        protossUnitPump[Protoss_Corsair]      = true;
     }
 
     void PvZ_5GateGoon()
@@ -72,8 +87,8 @@ namespace McRave::BuildOrder::Protoss {
 
         // Pumping
         protossUnitPump[Protoss_Probe]   = true;
-        protossUnitPump[Protoss_Zealot]  = com(Protoss_Gateway) > 0 && total(Protoss_Zealot) < 2;
-        protossUnitPump[Protoss_Dragoon] = com(Protoss_Gateway) > 0 && com(Protoss_Cybernetics_Core) > 0;
+        protossUnitPump[Protoss_Zealot]  = total(Protoss_Zealot) < 2;
+        protossUnitPump[Protoss_Dragoon] = true;
     }
 
     void PvZ_NeoBisu()
@@ -91,21 +106,14 @@ namespace McRave::BuildOrder::Protoss {
         buildQueue[Protoss_Stargate]         = com(Protoss_Cybernetics_Core) >= 1;
         buildQueue[Protoss_Templar_Archives] = Broodwar->self()->isUpgrading(UpgradeTypes::Leg_Enhancements) || Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements);
 
-        if (vis(Protoss_Templar_Archives) > 0) {
-            focusUnits.insert(Protoss_High_Templar);
-            unlockedType.insert(Protoss_High_Templar);
-            focusUnits.insert(Protoss_Dark_Templar);
-            unlockedType.insert(Protoss_Dark_Templar);
-        }
-
         // Upgrades
         upgradeQueue[Protoss_Ground_Weapons] = com(Protoss_Cybernetics_Core) > 0;
         upgradeQueue[Protoss_Air_Weapons]    = com(Protoss_Cybernetics_Core) > 0 && Upgrading::haveOrUpgrading(Protoss_Ground_Weapons, 1);
 
         // Pumping
         protossUnitPump[Protoss_Probe]        = true;
-        protossUnitPump[Protoss_Zealot]       = com(Protoss_Gateway) > 0;
-        protossUnitPump[Protoss_Dark_Templar] = com(Protoss_Gateway) > 0 && com(Protoss_Templar_Archives) > 0 && total(Protoss_Dark_Templar) < 2;
+        protossUnitPump[Protoss_Zealot]       = true;
+        protossUnitPump[Protoss_Dark_Templar] = total(Protoss_Dark_Templar) < 2;
         protossUnitPump[Protoss_High_Templar] = com(Protoss_Gateway) > 0 && com(Protoss_Templar_Archives) > 0 && total(Protoss_High_Templar) < 2;
         protossUnitPump[Protoss_Corsair]      = com(Protoss_Stargate) > 0;
     }
@@ -121,6 +129,8 @@ namespace McRave::BuildOrder::Protoss {
         // Openers
         if (currentOpener == P_Forge)
             PvZ_FFE_Forge();
+        if (currentOpener == P_Nexus)
+            PvZ_FFE_Nexus();
 
         // Transitions
         if (transitionReady) {

@@ -206,11 +206,11 @@ namespace McRave::Spy::Zerg {
                         theSpy.transition.name = Z_5HatchHydra;
                     else if (theSpy.productionCount == 3)
                         theSpy.transition.name = Z_4HatchHydra;
-                    else if (theSpy.productionCount == 2)
+                    else if (theSpy.productionCount == 2 || completesBy(1, Zerg_Hydralisk_Den, Time(4, 15)))
                         theSpy.transition.name = Z_3HatchHydra;
-                    else if (theSpy.productionCount == 1)
+                    else if (theSpy.productionCount == 1 || completesBy(1, Zerg_Hydralisk_Den, Time(3, 45)))
                         theSpy.transition.name = Z_2HatchHydra;
-                    else if (theSpy.productionCount == 0)
+                    else if (theSpy.productionCount == 0 || completesBy(1, Zerg_Hydralisk_Den, Time(3, 15)))
                         theSpy.transition.name = Z_1HatchHydra;
                 }
                 else {

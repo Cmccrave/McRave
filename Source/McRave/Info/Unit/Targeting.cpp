@@ -275,6 +275,8 @@ namespace McRave::Targets {
             return Priority::Major;
         if (target.getType() == Zerg_Overlord && unit.isWithinRange(target))
             return Priority::Major;
+        if (target.getType().isBuilding() && !target.isFlying())
+            return Priority::Minor;
         return Priority::Normal;
     }
 

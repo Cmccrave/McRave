@@ -71,6 +71,7 @@ namespace McRave::BuildOrder {
 
         // Focus queue
         inline BWAPI::UnitType focusUnit = BWAPI::UnitTypes::None;
+        inline BWAPI::UnitType rampType  = BWAPI::UnitTypes::None;
         inline std::vector<BWAPI::UnitType> unitOrder;
 
         // Focus complete
@@ -104,6 +105,7 @@ namespace McRave::BuildOrder {
     std::map<BWAPI::UpgradeType, int> &getUpgradeQueue();
     std::map<BWAPI::TechType, int> &getTechQueue();
     BWAPI::UnitType getFirstFocusUnit();
+    BWAPI::UnitType getRampType();
     std::set<BWAPI::UnitType> &getUnlockedList();
     int gasWorkerLimit();
     int gasMax();

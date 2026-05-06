@@ -326,9 +326,16 @@ namespace McRave::BuildOrder::Protoss {
                 focusUnits.insert(unit);
         }
 
+        // Dont double count very similar tech units
+        auto focusUnitSize = int(focusUnits.size());
+        if (isFocusUnit(Protoss_Dark_Templar) && isFocusUnit(Protoss_High_Templar))
+            focusUnitSize--;
+        if (isFocusUnit(Protoss_Reaver) && isFocusUnit(Protoss_Observer))
+            focusUnitSize--;
+
         // Adding tech
         const auto endOfTech   = !unitOrder.empty() && isFocusUnit(unitOrder.back());
-        const auto techVal     = int(focusUnits.size()) + techOffset + mineralThird;
+        const auto techVal     = focusUnitSize + techOffset + mineralThird;
         const auto readyToTech = (vis(Protoss_Assimilator) > 0 || int(Stations::getStations(PlayerState::Self).size()) >= 3 || focusUnits.empty()) && vis(Protoss_Probe) >= 20;
         techSat                = (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
 

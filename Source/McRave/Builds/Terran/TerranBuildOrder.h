@@ -3,7 +3,6 @@
 #include "Builds/All/BuildOrder.h"
 
 namespace McRave::BuildOrder::Terran {
-    inline BWAPI::UnitType rampType = BWAPI::UnitTypes::Terran_Barracks;
 
     inline std::map<BWAPI::UnitType, bool> terranUnitPump;
 

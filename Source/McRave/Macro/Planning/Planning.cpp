@@ -39,8 +39,6 @@ namespace McRave::Planning {
             return builder;
         }
 
-        bool isPathable(UnitType building, TilePosition here) { return find(unreachablePositions.begin(), unreachablePositions.end(), here) == unreachablePositions.end(); }
-
         bool creepOrPowerReadyOnArrival(UnitType building, TilePosition here, UnitInfo &builder)
         {
             const auto adjacentToHatch = [&](auto &hatch) { return (here.x - hatch.x >= -2 && here.x - hatch.x <= 4 && here.y - hatch.y >= -2 && here.y - hatch.y <= 3); };
@@ -162,6 +160,10 @@ namespace McRave::Planning {
             return true;
         }
 
+        bool isPathable(UnitType building, TilePosition here) { return find(unreachablePositions.begin(), unreachablePositions.end(), here) == unreachablePositions.end(); }
+
+        bool isReady(UnitType building, TilePosition here) { return here.isValid() && isPlannable(building, here) && isBuildable(building, here) && isPathable(building, here); }
+
         TilePosition returnFurthest(UnitType building, set<TilePosition> placements, Position desired, bool purelyFurthest = false)
         {
             auto tileBest = TilePositions::Invalid;
@@ -169,7 +171,7 @@ namespace McRave::Planning {
             for (auto &placement : placements) {
                 auto center  = Position(placement) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
                 auto current = center.getDistance(desired);
-                if (current > distBest && isPlannable(building, placement) && isBuildable(building, placement) && isPathable(building, placement)) {
+                if (current > distBest && isReady(building, placement)) {
                     distBest = current;
                     tileBest = placement;
                 }
@@ -272,23 +274,21 @@ namespace McRave::Planning {
             // Check if any secondary locations are available here
             auto closestStation = Stations::getClosestStationAir(here, PlayerState::Self);
             if (closestStation) {
-                if (building == Zerg_Spawning_Pool) {
-                    if (isBuildable(building, closestStation->getMediumPosition()) && isPlannable(building, closestStation->getMediumPosition()) &&
-                        isPathable(building, closestStation->getMediumPosition())) {
+                if (building == Zerg_Spawning_Pool || building == Terran_Supply_Depot) {
+                    if (isReady(building, closestStation->getMediumPosition())) {
                         tileBest = closestStation->getMediumPosition();
                         return tileBest;
                     }
                 }
                 else if (building == Zerg_Spire) {
-                    if (isBuildable(building, closestStation->getSmallPosition()) && isPlannable(building, closestStation->getSmallPosition()) &&
-                        isPathable(building, closestStation->getSmallPosition())) {
+                    if (isReady(building, closestStation->getSmallPosition())) {
                         tileBest = closestStation->getSmallPosition();
                         return tileBest;
                     }
                 }
-                else if (building == Zerg_Hatchery) {
+                else if (building == Zerg_Hatchery || building == Terran_Barracks) {
                     for (auto &location : closestStation->getSecondaryLocations()) {
-                        if (building == Zerg_Hatchery && isBuildable(building, location) && isPlannable(building, location) && isPathable(building, location)) {
+                        if (isReady(building, location) && isPlannable(building, location)) {
                             tileBest = location;
                             return tileBest;
                         }
@@ -392,16 +392,16 @@ namespace McRave::Planning {
             if (!building.isResourceDepot() || !expand || expansionPlanned || BuildOrder::isProxy())
                 return false;
 
-            // Rebuild main if it was lost
-            if (isBuildable(baseType, Terrain::getMainTile()) && isPlannable(baseType, Terrain::getMainTile()) && isPathable(building, Terrain::getMainTile())) {
+            // Rebuild main if it was lost and we own the natural or have no bases left
+            if (isReady(baseType, Terrain::getMainTile()) && (Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::Self || Stations::getStations(PlayerState::Self).empty())) {
                 placement        = Terrain::getMainTile();
                 currentExpansion = Terrain::getMyMain();
                 expansionPlanned = true;
                 return true;
             }
 
-            // First expansion is always the Natural
-            if (BuildOrder::takeNatural() && isBuildable(baseType, Terrain::getNaturalTile()) && isPlannable(baseType, Terrain::getNaturalTile()) && isPathable(building, Terrain::getNaturalTile())) {
+            // First expansion is always the Natural if we own the main for it
+            if (BuildOrder::takeNatural() && isReady(baseType, Terrain::getNaturalTile()) && Stations::ownedBy(Terrain::getMyMain()) == PlayerState::Self) {
                 placement        = Terrain::getNaturalTile();
                 currentExpansion = Terrain::getMyNatural();
                 expansionPlanned = true;
@@ -422,29 +422,24 @@ namespace McRave::Planning {
             if (!isProductionType(building))
                 return false;
 
-            auto floatingTypes = (building == Protoss_Robotics_Facility || building == Protoss_Stargate || building == Terran_Starport);
-            auto funcCall      = floatingTypes ? furthestLocation : closestLocation;
+            auto floatingType = (building == Protoss_Robotics_Facility || building == Protoss_Stargate || building == Terran_Starport);
+            auto nonRampType  = (BuildOrder::getRampType() != None && building != BuildOrder::getRampType());
 
-            // Main gets production if we don't have a natural base yet
-            if (BuildOrder::isOpener() && Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::None) {
-
-                auto desiredCenter = Terrain::getMainPosition();
-                if (floatingTypes)
-                    desiredCenter = Position(Terrain::getMainChoke()->Center());
-                else if (building.getRace() != Races::Zerg)
-                    desiredCenter = Position(Terrain::getMainChoke()->Center() * 0.25) + (Terrain::getMainPosition() * 0.75);
-
-                placement = funcCall(building, desiredCenter);
-                if (placement.isValid())
-                    return true;
-            }
+            auto placeFar = floatingType || nonRampType;
+            auto funcCall = placeFar ? furthestLocation : closestLocation;
 
             // Figure out where we need to place a production building
             for (auto &[_, station] : Stations::getStationsByProduction()) {
                 if (!station->isMain() && Broodwar->self()->getRace() != Races::Zerg)
                     continue;
+
                 auto desiredCenter = station->getBase()->Center();
-                placement          = funcCall(building, desiredCenter);
+                if (placeFar && station->getChokepoint())
+                    desiredCenter = Position(station->getChokepoint()->Center());
+                else if (building.getRace() != Races::Zerg && station->getChokepoint())
+                    desiredCenter = Util::shiftTowards(station->getBase()->Center(), Position(station->getChokepoint()->Center()), 160.0);
+
+                placement = funcCall(building, desiredCenter);
                 if (placement.isValid())
                     return true;
             }
@@ -458,14 +453,20 @@ namespace McRave::Planning {
                 return false;
 
             // Hide tech if needed or against a rush
-            if ((BuildOrder::isHideTech() && (building == Protoss_Citadel_of_Adun || building == Protoss_Templar_Archives)) || (Spy::enemyRush() && (Players::PvZ() || Players::TvZ())))
+            if (BuildOrder::isHideTech() && (building == Protoss_Citadel_of_Adun || building == Protoss_Templar_Archives))
                 placement = furthestLocation(building, (Position)Terrain::getMainChoke()->Center());
+
+            auto placeFar = building.getRace() != Races::Zerg;
+            auto funcCall = placeFar ? furthestLocation : closestLocation;
 
             // Try to place the tech building inside a main base
             for (auto &station : Stations::getStations(PlayerState::Self)) {
                 if (station->isMain()) {
                     auto desiredCenter = Players::ZvZ() ? station->getResourceCentroid() : station->getBase()->Center();
-                    placement          = closestLocation(building, desiredCenter);
+                    if (placeFar && station->getChokepoint())
+                        desiredCenter = Position(station->getChokepoint()->Center());
+
+                    placement = funcCall(building, desiredCenter);
                     if (placement.isValid())
                         return true;
                 }
@@ -474,7 +475,7 @@ namespace McRave::Planning {
             // Try to place the tech building anywhere
             for (auto &station : Stations::getStations(PlayerState::Self)) {
                 if (!station->isMain()) {
-                    placement = closestLocation(building, station->getBase()->Center());
+                    placement = funcCall(building, station->getBase()->Center());
                     if (placement.isValid())
                         return true;
                 }
@@ -670,8 +671,6 @@ namespace McRave::Planning {
             return placement.isValid();
         }
 
-        bool findBatteryLocation(TilePosition &placement) { return false; }
-
         bool findPylonLocation(UnitType building, TilePosition &placement)
         {
             if (building != Protoss_Pylon)
@@ -768,6 +767,13 @@ namespace McRave::Planning {
         {
             if (building != Terran_Supply_Depot && building != Terran_Academy && building != Terran_Armory)
                 return false;
+
+            for (auto &station : Stations::getStations(PlayerState::Self)) {
+                if (isReady(building, station->getMediumPosition())) {
+                    placement = station->getMediumPosition();
+                    return true;
+                }
+            }
 
             placement = furthestLocation(building, mapBWEM.Center());
             return placement.isValid();

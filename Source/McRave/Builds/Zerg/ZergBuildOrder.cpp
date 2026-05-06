@@ -230,7 +230,7 @@ namespace McRave::BuildOrder::Zerg {
 
                 // ZvZ anticipate faster muta timing
                 if (Players::ZvZ() && !Spy::enemyFastExpand() && Spy::getEnemyOpener() != Z_4Pool && !Spy::enemyTurtle() && Spy::getEnemyOpener() != Z_7Pool &&
-                    Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00) && currentTransition != Z_1HatchMuta) {
+                    Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 30) && currentTransition != Z_1HatchMuta) {
                     needSpores = true;
                     wallNat    = true;
                 }

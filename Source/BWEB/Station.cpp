@@ -2,8 +2,7 @@
 
 using namespace std;
 using namespace BWAPI;
-
-#include <optional>
+using namespace UnitTypes;
 
 namespace BWEB {
 
@@ -130,11 +129,11 @@ namespace BWEB {
         Map::addUsed(base->Location(), Broodwar->self()->getRace().getResourceDepot());
 
         if (Broodwar->self()->getRace() == Races::Protoss)
-            defenseType = UnitTypes::Protoss_Photon_Cannon;
+            defenseType = Protoss_Photon_Cannon;
         if (Broodwar->self()->getRace() == Races::Terran)
-            defenseType = UnitTypes::Terran_Missile_Turret;
+            defenseType = Terran_Missile_Turret;
         if (Broodwar->self()->getRace() == Races::Zerg)
-            defenseType = UnitTypes::Zerg_Creep_Colony;
+            defenseType = Zerg_Creep_Colony;
     }
 
     void Station::findChoke()
@@ -288,6 +287,53 @@ namespace BWEB {
             auto scannerTile = base->Location() + TilePosition(4, 1);
             smallPosition    = scannerTile;
             Map::addUsed(scannerTile, defenseType);
+
+            if (main) {
+                // Get angle of resources to base
+                auto angle          = Map::getAngle(base->Center(), resourceCentroid);
+                auto quadrant       = int(round(angle / M_PI_D2)) % 4;
+                auto raxPosition    = TilePositions::Invalid;
+                auto turretPosition = TilePositions::Invalid;
+                auto depotPosition  = TilePositions::Invalid;
+
+                if (quadrant == 0) {
+                    raxPosition    = base->Location() + TilePosition(-4, 0);
+                    depotPosition  = base->Location() + TilePosition(0, 3);
+                    turretPosition = base->Location() + TilePosition(-2, 3);
+                }
+
+                if (quadrant == 1) {
+                    raxPosition    = base->Location() + TilePosition(0, 3);
+                    depotPosition  = base->Location() + TilePosition(-3, 3);
+                    turretPosition = base->Location() + TilePosition(4, 3);
+                }
+
+                if (quadrant == 2) {
+                    raxPosition    = base->Location() + TilePosition(6, 0);
+                    depotPosition  = base->Location() + TilePosition(6, -2);
+                    turretPosition = base->Location() + TilePosition(4, -1);
+                }
+
+                if (quadrant == 3) {
+                    raxPosition    = base->Location() + TilePosition(0, -3);
+                    depotPosition  = base->Location() + TilePosition(-3, -2);
+                    turretPosition = base->Location() + TilePosition(4, -2);
+                }
+
+                if (Map::isPlaceable(Terran_Barracks, raxPosition))
+                    secondaryLocations.insert(raxPosition);
+                if (Map::isPlaceable(Terran_Supply_Depot, depotPosition))
+                    mediumPosition = depotPosition;
+                if (Map::isPlaceable(Terran_Missile_Turret, turretPosition))
+                    defenses.insert(turretPosition);
+            }
+            // If minerals on right side, put a depot below CC and a barracks on left of CC
+
+            // If minerals on left side, put a depot below CC + (1, 0) and a barracks on right of comsat spot
+
+            // If minerals above, put a barracks below CC
+
+            // If minerals below, put a barracks above CC
         }
 
         if (Broodwar->self()->getRace() != Races::Zerg)
@@ -363,12 +409,12 @@ namespace BWEB {
 
                 // For each pair, we try to place the best positions first
                 for (auto &[medium, small, defense] : tryOrder) {
-                    if (Map::isPlaceable(UnitTypes::Zerg_Spawning_Pool, base->Location() + medium) && Map::isPlaceable(UnitTypes::Zerg_Spire, base->Location() + small) &&
-                        Map::isPlaceable(UnitTypes::Zerg_Sunken_Colony, base->Location() + defense)) {
+                    if (Map::isPlaceable(Zerg_Spawning_Pool, base->Location() + medium) && Map::isPlaceable(Zerg_Spire, base->Location() + small) &&
+                        Map::isPlaceable(Zerg_Sunken_Colony, base->Location() + defense)) {
                         mediumPosition = base->Location() + medium;
                         smallPosition  = base->Location() + small;
-                        Map::addUsed(smallPosition, UnitTypes::Zerg_Spire);
-                        Map::addUsed(mediumPosition, UnitTypes::Zerg_Spawning_Pool);
+                        Map::addUsed(smallPosition, Zerg_Spire);
+                        Map::addUsed(mediumPosition, Zerg_Spawning_Pool);
                         break;
                     }
                 }
@@ -417,23 +463,6 @@ namespace BWEB {
                 placement.x = -(placement.x - 2);
         }
 
-        // If geyser is above, as it should be, add in a defense to left/right
-        if (base->Geysers().size() == 1 && !isNatural()) {
-            auto geyser = base->Geysers().front();
-            auto tile   = geyser->TopLeft();
-            if ((tile.y < base->Location().y - 3) || tile.y > base->Location().y + 5) {
-                auto placement = tile - base->Location();
-                basePlacements.push_back(placement + TilePosition(-2, 1));
-                basePlacements.push_back(placement + TilePosition(4, 1));
-
-                // If a placement is where miners would path, shift it over
-                for (auto &spot : basePlacements) {
-                    if (spot == TilePosition(2, -2))
-                        spot = TilePosition(0, -2);
-                }
-            }
-        }
-
         // Add a defense near each base placement if possible
         for (auto &placement : basePlacements) {
             auto tile = base->Location() + placement;
@@ -448,6 +477,12 @@ namespace BWEB {
     {
         int color     = Broodwar->self()->getColor();
         int textColor = color == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
+
+        if (main) {
+            auto angle = Map::getAngle(base->Center(), resourceCentroid);
+            auto quadrant = int(round(angle / M_PI_D2)) % 4;
+            Broodwar->drawTextMap(resourceCentroid, "%d", quadrant);
+        }
 
         // Draw boxes around each feature
         for (auto &tile : defenses) {

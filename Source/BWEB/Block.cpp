@@ -401,10 +401,10 @@ namespace BWEB::Blocks {
         // Sort available tiles by distance to starting main
         vector<TilePosition> tilesDistStart = availableTiles;
         vector<TilePosition> tilesDistChoke = availableTiles;
-        auto startingMainTile               = Stations::getStartingMain()->getBase()->Location();
         auto startingMainChokeTile          = TilePosition(Stations::getStartingMain()->getChokepoint()->Center());
+        auto startingMainStartTile          = Stations::getStartingMain()->getBase()->Location() * 3 / 4 + startingMainChokeTile / 4;
 
-        sort(tilesDistStart.begin(), tilesDistStart.end(), [&](auto &p1, auto &p2) { return p1.getDistance(startingMainTile) < p2.getDistance(startingMainTile); });
+        sort(tilesDistStart.begin(), tilesDistStart.end(), [&](auto &p1, auto &p2) { return p1.getDistance(startingMainStartTile) < p2.getDistance(startingMainStartTile); });
         sort(tilesDistChoke.begin(), tilesDistChoke.end(), [&](auto &p1, auto &p2) { return p1.getDistance(startingMainChokeTile) < p2.getDistance(startingMainChokeTile); });
 
         // P needs 2 start blocks
@@ -437,13 +437,13 @@ namespace BWEB::Blocks {
 
             const auto smalleExpected = smallCount + piecePerArea[area].pieces[Piece::Small];
             const auto mediumExpected = mediumCount + piecePerArea[area].pieces[Piece::Medium];
-            const auto largeExpected = largeCount + piecePerArea[area].pieces[Piece::Large];
+            const auto largeExpected  = largeCount + piecePerArea[area].pieces[Piece::Large];
             const auto wideExpected   = wideCount + piecePerArea[area].pieces[Piece::Wide];
 
             // Protoss caps large pieces in the main at 16 if we don't have necessary medium pieces
             if (race == Races::Protoss) {
-                if ((largeCount > 0 && largeExpected >= 16 && mediumExpected < 8) || (mediumCount > 0 && mediumExpected >= 12) ||
-                    (smallCount > 0 && mediumCount == 0 && largeCount == 0) || (largeCount > 0 && largeExpected >= 12))
+                if ((largeCount > 0 && largeExpected >= 16 && mediumExpected < 8) || (mediumCount > 0 && mediumExpected >= 12) || (smallCount > 0 && mediumCount == 0 && largeCount == 0) ||
+                    (largeCount > 0 && largeExpected >= 12))
                     return false;
             }
 
@@ -513,7 +513,8 @@ namespace BWEB::Blocks {
                 for (auto x = tile.x - 1; x < tile.x + supplyWidth + 1; x++) {
                     for (auto y = tile.y - 1; y < tile.y + 3; y++) {
                         auto adjTile = TilePosition(x, y);
-                        if (adjTile.isValid() && ((!Broodwar->isBuildable(adjTile) && BWEB::Map::isWalkable(adjTile)) || (blockGrid[x][y] != BlockType::None && blockGrid[x][y] != BlockType::Supply))) {
+                        if (adjTile.isValid() &&
+                            ((!Broodwar->isBuildable(adjTile) && BWEB::Map::isWalkable(adjTile)) || (blockGrid[x][y] != BlockType::None && blockGrid[x][y] != BlockType::Supply))) {
                             return false;
                         }
                     }

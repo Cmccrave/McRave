@@ -77,8 +77,7 @@ namespace McRave::Command {
         // Bunker - Loading / Unloading
         else if (unit.getType() == Terran_Marine && vis(Terran_Bunker) > 0) {
 
-            auto bunker = Util::getClosestUnit(unit.getPosition(), PlayerState::Self,
-                                               [&](auto &u) { return (u->getType() == Terran_Bunker && u->isCompleted()); });
+            auto bunker = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) { return (u->getType() == Terran_Bunker && u->isCompleted()); });
 
             auto loadBunker   = false;
             auto unloadBunker = false;
@@ -451,7 +450,7 @@ namespace McRave::Command {
 
         // Medic - Healing
         else if (unit.getType() == Terran_Medic) {
-            auto targetCastable = unit.canStartCast(Healing, target.getPosition());
+            auto targetCastable = unit.canStartCast(Healing, target.getPosition()) && target.getHealth() < target.getType().maxHitPoints();
             auto inRange        = unit.getPosition().getDistance(target.getPosition()) <= Util::getCastRange(Healing) + 32.0;
 
             // If close to target and can cast Healing
@@ -465,7 +464,9 @@ namespace McRave::Command {
         // Comsat scans
         else if (unit.getType() == Terran_Comsat_Station) {
             auto targetScannable = target.unit()->exists() && unit.canStartCast(Scanner_Sweep, target.getPosition());
-            auto selfInReach     = Util::getClosestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) { return u->getLocalState() == LocalState::Attack && u->isWithinReach(target); });
+            auto selfInReach     = Util::getClosestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
+                return (u->getRole() == Role::Combat && u->getLocalState() == LocalState::Attack && u->isWithinReach(target)) || (u->getRole() == Role::Defender && u->isWithinRange(target));
+            });
 
             // If something is close to target and this can cast Scanner Sweep
             if (targetScannable && selfInReach) {
