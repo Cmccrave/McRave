@@ -49,30 +49,13 @@ namespace McRave::Combat::Bearings {
     // What is the "backward" bearing for this unit
     void updateRetreat(UnitInfo &unit)
     {
-        auto retreat    = Stations::getClosestRetreatStation(unit);
-        unit.retreatPos = Terrain::getMainPosition();
 
-        if (retreat)
-            unit.retreatPos = retreat->getBase()->Center();
-
-        // Visuals::drawLine(unit.getPosition(), unit.retreatPos, Colors::Red);
     }
 
     // What is the "forward" bearing for this unit
     void updateMarch(UnitInfo &unit)
     {
-        auto retreat = Stations::getClosestRetreatStation(unit);
 
-        if (unit.getGlobalState() == GlobalState::Retreat) {
-            unit.marchPos = Stations::getDefendPosition(Terrain::getMyMain());
-            if (retreat)
-                unit.marchPos = Stations::getDefendPosition(retreat);
-        }
-        else {
-            unit.marchPos = unit.getDestination();
-        }
-
-        // Visuals::drawLine(unit.getPosition(), unit.marchPos, Colors::Green);
     }
 
     void updateDestination(UnitInfo &unit)
@@ -81,6 +64,8 @@ namespace McRave::Combat::Bearings {
             return;
 
         auto retreat = Stations::getClosestRetreatStation(unit);
+        unit.marchPos = Stations::getDefendPosition(retreat);
+        unit.retreatPos = retreat->getBase()->Center();
 
         // If attacking and target is close, set as destination
         if (unit.getLocalState() == LocalState::Attack) {

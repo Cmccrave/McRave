@@ -16,7 +16,6 @@ namespace McRave::Util {
 
     namespace {
         string mapName;
-        ofstream writeFile;
         Time gameTime(0, 0);
         double log10Lookup[1000];
         vector<Position> posCircleCache[256];
@@ -338,14 +337,6 @@ namespace McRave::Util {
         return source;
     }
 
-    Position projectLine(pair<Position, Position> line, Position here)
-    {
-        auto directionVector = line.second - line.first;
-        auto currVector      = here - line.first;
-        auto projCalc        = double((directionVector.x * currVector.x) + (directionVector.y * currVector.y)) / (pow(directionVector.x, 2.0) + pow(directionVector.y, 2.0));
-        return (line.first + Position(int(projCalc * directionVector.x), int(projCalc * directionVector.y)));
-    }
-
     Position shiftTowards(Position here, Position target, double dist)
     {
         if (here == target)
@@ -399,8 +390,6 @@ namespace McRave::Util {
                 break;
         }
         LOG("New game on " + mapName);
-
-        writeFile.open("bwapi-data/write/logger.txt");
     }
 
     double log10(int index) { return log10Lookup[index]; }
@@ -469,6 +458,4 @@ namespace McRave::Util {
     vector<WalkPosition> &getWalkCircle(int radius) { return walkCircleCache[radius]; }
 
     vector<TilePosition> &getTileCircle(int radius) { return tileCircleCache[radius]; }
-
-    void writeToLoggerImpl(const std::string &msg) { writeFile << msg << "\n"; }
 } // namespace McRave::Util

@@ -297,31 +297,19 @@ namespace McRave::Visuals {
             }
         }
 
-        if (text == "/commands")
-            toggleDrawing(DrawingType::Commands);
-        else if (text == "/targets")
-            toggleDrawing(DrawingType::Targets);
-        else if (text == "/states")
-            toggleDrawing(DrawingType::States);
-        else if (text == "/strengths")
-            toggleDrawing(DrawingType::Strengths);
-        else if (text == "/builds")
-            toggleDrawing(DrawingType::Builds);
-        else if (text == "/bweb")
-            toggleDrawing(DrawingType::BWEB);
-        else if (text == "/orders")
-            toggleDrawing(DrawingType::Orders);
-        else if (text == "/resources")
-            toggleDrawing(DrawingType::Resources);
-        else if (text == "/timers")
-            toggleDrawing(DrawingType::Timers);
-        else if (text == "/roles")
-            toggleDrawing(DrawingType::Roles);
-        else if (text == "/clusters")
-            toggleDrawing(DrawingType::Clusters);
-        else if (text == "/formations")
-            toggleDrawing(DrawingType::Formations);
-        else if (text == "/bo")
+        static map<DrawingType, string> mappedCommands = {
+            {DrawingType::Commands, "/commands"},   {DrawingType::Targets, "/targets"}, {DrawingType::States, "/states"},     {DrawingType::Strengths, "/strengths"},
+            {DrawingType::Builds, "/builds"},       {DrawingType::BWEB, "/bweb"},       {DrawingType::Orders, "/orders"},     {DrawingType::Resources, "/resources"},
+            {DrawingType::Timers, "/timers"},       {DrawingType::Roles, "/roles"},     {DrawingType::Clusters, "/clusters"}, {DrawingType::Formations, "/formations"},
+            {DrawingType::Stations, "/stations"}, {DrawingType::Timers, "/timers"},   {DrawingType::Roles, "/roles"},
+        };
+
+        for (auto &[cmd, txt] : mappedCommands) {
+            if (text == txt)
+                toggleDrawing(cmd);
+        }
+
+        if (text == "/bo")
             bo_switch = !bo_switch;
         else
             Broodwar->sendText("%s", text.c_str());

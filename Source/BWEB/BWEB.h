@@ -7,6 +7,7 @@
 #include "PathFind.h"
 #include "Station.h"
 #include "Wall.h"
+#include "Logger.h"
 
 #define M_PI_D4 0.78539816339744830961
 #define M_PI_D2 1.57079632679489661923

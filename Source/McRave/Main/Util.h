@@ -2,6 +2,7 @@
 #include "Common.h"
 #include "Info/Unit/UnitInfo.h"
 #include "Info/Unit/Units.h"
+#include "Main/Logger.h"
 
 namespace McRave::Util {
 
@@ -54,7 +55,6 @@ namespace McRave::Util {
     bool findWalkable(UnitInfo &, BWAPI::Position &, bool visual = false);
 
     BWAPI::Position shiftTowards(BWAPI::Position here, BWAPI::Position target, double dist);
-    BWAPI::Position projectLine(std::pair<BWAPI::Position, BWAPI::Position> line, BWAPI::Position here);
     BWAPI::Position clipLine(BWAPI::Position, BWAPI::Position);
     BWAPI::Position clipPosition(BWAPI::Position);
 
@@ -71,8 +71,6 @@ namespace McRave::Util {
     void onFrame();
 
     double log10(int);
-
-    void writeToLoggerImpl(const std::string &msg);
 
     inline BWAPI::Position getMousePosition() { return BWAPI::Broodwar->getScreenPosition() + BWAPI::Broodwar->getMousePosition(); }
 
@@ -102,24 +100,6 @@ namespace McRave::Util {
             }
         }
         return false;
-    }
-
-    template <typename... Args> //
-    void writeToLogger(const char *file, int line, Args &&... args)
-    {
-        std::ostringstream ss;
-
-        auto bracketWrap = [](const auto &x) -> std::string {
-            std::ostringstream temp;
-            temp << "[" << x << "]";
-            return temp.str();
-        };
-
-        ss << Util::getTime().toString() << bracketWrap(BWAPI::Broodwar->getFrameCount());
-        ss << bracketWrap(std::string(file) + ":" + std::to_string(line)) << " ";
-        (ss << ... << args);
-
-        writeToLoggerImpl(ss.str());
     }
 
     inline float fastReciprocal(float x)
@@ -342,46 +322,3 @@ namespace McRave::Util {
 
     std::pair<double, BWAPI::Position> findPointOnCircle(BWAPI::Position source, BWAPI::Position target, double radius, std::function<double(BWAPI::Position)> calc);
 } // namespace McRave::Util
-
-constexpr const char *baseName(const char *path)
-{
-    const char *file = path;
-    while (*path) {
-        if (*path == '/' || *path == '\\')
-            file = path + 1;
-        ++path;
-    }
-    return file;
-}
-
-#define LOG(...)                                                                                                                                                                                       \
-    do {                                                                                                                                                                                               \
-        Util::writeToLogger(baseName(__FILE__), __LINE__, __VA_ARGS__);                                                                                                                                \
-    } while (0)
-
-#define LOG_ONCE(...)                                                                                                                                                                                  \
-    do {                                                                                                                                                                                               \
-        static bool _logged = false;                                                                                                                                                                   \
-        if (!_logged) {                                                                                                                                                                                \
-            Util::writeToLogger(baseName(__FILE__), __LINE__, __VA_ARGS__);                                                                                                                            \
-            _logged = true;                                                                                                                                                                            \
-        }                                                                                                                                                                                              \
-    } while (0)
-
-#define LOG_FAST(...)                                                                                                                                                                                  \
-    do {                                                                                                                                                                                               \
-        static Time lastLogTime = Util::getTime() - Time(0, 01);                                                                                                                                       \
-        if (Util::getTime() - lastLogTime >= Time(0, 01)) {                                                                                                                                            \
-            Util::writeToLogger(baseName(__FILE__), __LINE__, __VA_ARGS__);                                                                                                                            \
-            lastLogTime = Util::getTime();                                                                                                                                                             \
-        }                                                                                                                                                                                              \
-    } while (0)
-
-#define LOG_SLOW(...)                                                                                                                                                                                  \
-    do {                                                                                                                                                                                               \
-        static Time lastLogTime = Util::getTime() - Time(0, 05);                                                                                                                                       \
-        if (Util::getTime() - lastLogTime >= Time(0, 05)) {                                                                                                                                            \
-            Util::writeToLogger(baseName(__FILE__), __LINE__, __VA_ARGS__);                                                                                                                            \
-            lastLogTime = Util::getTime();                                                                                                                                                             \
-        }                                                                                                                                                                                              \
-    } while (0)

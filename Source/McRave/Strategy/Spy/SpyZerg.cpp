@@ -76,7 +76,7 @@ namespace McRave::Spy::Zerg {
 
                     if (unit.getType() == Zerg_Overlord) {
                         auto distFromStart   = unit.getPosition().getDistance(Terrain::getEnemyStartingPosition());
-                        auto framesTravelled = distFromStart / unit.getSpeed();
+                        auto framesTravelled = int(distFromStart / unit.getSpeed());
                         auto time            = Util::getTime() - Time(framesTravelled);
 
                         if (time > Time(0, 30)) {
@@ -127,7 +127,7 @@ namespace McRave::Spy::Zerg {
                     theSpy.opener.name = Z_12Hatch;
             }
 
-            // Ling timings
+            // Ling timings, early pools can determine off a small number of lings
             else if (Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > 0) {
                 // 4Pool
                 if (arrivesBy(1, Zerg_Zergling, Time(2, 40)) || arrivesBy(8, Zerg_Zergling, Time(3, 00)) || completesBy(1, Zerg_Zergling, Time(2, 05)))
@@ -138,21 +138,23 @@ namespace McRave::Spy::Zerg {
                     theSpy.opener.name = Z_7Pool;
 
                 // 9Pool
-                else if (arrivesBy(1, Zerg_Zergling, Time(2, 55)) || arrivesBy(8, Zerg_Zergling, Time(3, 15)) || completesBy(1, Zerg_Zergling, Time(2, 25)) ||
-                         completesBy(8, Zerg_Zergling, Time(3, 00)) || completesBy(10, Zerg_Zergling, Time(3, 20)) || completesBy(12, Zerg_Zergling, Time(3, 30)) ||
-                         completesBy(14, Zerg_Zergling, Time(3, 40)) || arrivesBy(16, Zerg_Zergling, Time(4, 20)))
+                else if (arrivesBy(1, Zerg_Zergling, Time(2, 55)) || arrivesBy(8, Zerg_Zergling, Time(3, 15)) || completesBy(1, Zerg_Zergling, Time(2, 25)))
                     theSpy.opener.name = Z_9Pool;
 
                 // Overpool
                 else if (arrivesBy(1, Zerg_Zergling, Time(3, 05)) || arrivesBy(8, Zerg_Zergling, Time(3, 20)) || completesBy(1, Zerg_Zergling, Time(2, 40)))
                     theSpy.opener.name = Z_Overpool;
 
+                // 10Hatch
+                else if (arrivesBy(12, Zerg_Zergling, Time(3, 55)))
+                    theSpy.opener.name = Z_10Hatch;
+
                 // 12Pool
-                else if (arrivesBy(1, Zerg_Zergling, Time(3, 30)) || arrivesBy(8, Zerg_Zergling, Time(3, 35)) || completesBy(1, Zerg_Zergling, Time(3, 00)))
+                else if (arrivesBy(10, Zerg_Zergling, Time(3, 55)))
                     theSpy.opener.name = Z_12Pool;
 
                 // 12Hatch
-                else if (completesBy(6, Zerg_Zergling, Time(3, 15)) || arrivesBy(6, Zerg_Zergling, Time(4, 00)) || arrivesBy(10, Zerg_Zergling, Time(4, 20)))
+                else if (arrivesBy(10, Zerg_Zergling, Time(4, 15)))
                     theSpy.opener.name = Z_12Hatch;
             }
 
@@ -180,13 +182,14 @@ namespace McRave::Spy::Zerg {
             if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Spire) == 0 && Players::getVisibleCount(PlayerState::Enemy, Zerg_Hydralisk_Den) == 0 &&
                 Players::getVisibleCount(PlayerState::Enemy, Zerg_Lair) == 0 && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) >= 12) {
 
-                // General
-                if (completesBy(1, UpgradeTypes::Metabolic_Boost, Time(4, 15)) && arrivesBy(20, Zerg_Zergling, Time(4, 30)) ||
-                    (Util::getTime() < Time(5, 00) && Scouts::gotFullScout() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone) <= 8 && theSpy.build.name == Z_PoolHatch &&
-                     (theSpy.opener.name == Z_9Pool || theSpy.opener.name == Z_Overpool)))
+                auto aggroOpener = (theSpy.opener.name == Z_9Pool || theSpy.opener.name == Z_Overpool || theSpy.opener.name == Z_10Hatch);
+                auto noEconomy   = Scouts::gotFullScout() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Drone) <= 9 && !Spy::enemyFastExpand();
+                auto lingFlood2H = theSpy.productionCount == 1 && completesBy(1, UpgradeTypes::Metabolic_Boost, Time(4, 30)) && arrivesBy(16, Zerg_Zergling, Time(4, 30));
+                auto lingFlood3H = theSpy.productionCount == 2 && completesBy(1, UpgradeTypes::Metabolic_Boost, Time(5, 00)) && arrivesBy(28, Zerg_Zergling, Time(5, 10));
+
+                if (aggroOpener && noEconomy && lingFlood2H)
                     theSpy.transition.name = Z_2HatchSpeedling;
-                else if (theSpy.productionCount == 2 && !completesBy(1, UpgradeTypes::Metabolic_Boost, Time(4, 15)) && completesBy(1, UpgradeTypes::Metabolic_Boost, Time(5, 00)) &&
-                         arrivesBy(28, Zerg_Zergling, Time(5, 10)))
+                else if (lingFlood3H)
                     theSpy.transition.name = Z_3HatchSpeedling;
 
                 // ZvZ

@@ -162,6 +162,8 @@ namespace McRave::Targets {
 
         // Threatening priority
         if (target.isThreatening() && (unit.isWithinReach(target) || Util::getTime() < Time(5, 00) || Terrain::inTerritoryPath(PlayerState::Self, unit.getPosition(), target.getPosition()))) {
+            if (Players::ZvZ() && unit.isWithinRange(target))
+                return Priority::Critical;
             if (unit.getSpeed() < target.getSpeed() && unitRange < targetRange)
                 return Priority::Minor;
             if (!unit.getType().isWorker() && !target.getType().isWorker() && unit.isFlying() == target.isFlying())
@@ -507,10 +509,10 @@ namespace McRave::Targets {
         }
 
         if (unit.isMelee() && !unit.isWithinRange(target)) {
-            const auto targetSize     = max(target.getType().width(), target.getType().height());
+            const auto targetSize     = max(target.getType().width(), target.getType().height()) / 4;
             const auto targetingCount = count_if(target.getUnitsTargetingThis().begin(), target.getUnitsTargetingThis().end(), [&](auto &u) { return u.lock()->isMelee(); });
-            if (!target.getType().isBuilding() && targetingCount >= targetSize / 4)
-                return 0.05;
+            if (!target.getType().isBuilding() && targetingCount >= targetSize)
+                return 0.01;
         }
 
         const auto withinReachHigherRange = range > 32.0 && range >= enemyRange && boxDistance <= reach;
@@ -671,8 +673,6 @@ namespace McRave::Targets {
 
             // If this target is more important to target, set as current target
             const auto thisUnit = scoreTarget(unit, target);
-            if (unit.getType() == Zerg_Hydralisk)
-                Broodwar->drawTextMap(target.getPosition(), "%.2f", thisUnit);
             if (thisUnit > scoreBest && checkGroundAccess(target)) {
                 scoreBest = thisUnit;
                 unit.setTarget(&target);
@@ -762,8 +762,8 @@ namespace McRave::Targets {
     void updateTargets()
     {
         // Sort my units by distance to closest enemy
-        static auto lastUpdate = Time(0, 0);
-        if (Util::getTime() - lastUpdate > Time(0, 5)) {
+        static auto lastUpdate = Time(0, 5);
+        if (Util::getTime() - lastUpdate > Time(0, 5) || sortedUnits.empty()) {
             sortedUnits.clear();
             lastUpdate = Util::getTime();
             for (auto &u : Units::getUnits(PlayerState::Self)) {

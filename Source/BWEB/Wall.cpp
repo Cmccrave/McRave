@@ -79,6 +79,7 @@ namespace BWEB {
             defenseAngle = Map::getAngle(make_pair(station->getBase()->Center(), bestGeo)) + M_PI_D2;
         }
         defenseArrangement = int(round(defenseAngle / M_PI_D4)) % 4;
+        wallAngle          = FacingAngle(defenseArrangement);
 
         // If this is a natural wall, check if the wall can by bypassed into the main, then wall at the choke instead
         if (station && station->isNatural()) {
@@ -124,7 +125,7 @@ namespace BWEB {
                         auto baseCenterTile = TilePosition(base->Center());
 
                         auto dx = 0;
-                        if (defenseArrangement == 0) {
+                        if (wallAngle == FacingAngle::Horizontal) {
                             dx = mainChokeTile.x - baseCenterTile.x;
                             if (dx >= 2)
                                 dx -= 2;
@@ -133,7 +134,7 @@ namespace BWEB {
                         }
 
                         auto dy = 0;
-                        if (defenseArrangement == 2) {
+                        if (wallAngle == FacingAngle::Vertical) {
                             dy = mainChokeTile.y - baseCenterTile.y;
                             if (dy >= 2)
                                 dy -= 2;
@@ -141,14 +142,16 @@ namespace BWEB {
                                 dy += 2;
                         }
 
-                        auto tiledx  = clamp(dx, -8, 8);
-                        auto tiledy  = clamp(dy, -8, 8);
-                        wallLocation = TilePosition(base->Location()) + TilePosition(tiledx, tiledy);
+                        if (wallAngle != FacingAngle::Angled) {
+                            auto tiledx  = clamp(dx, -8, 8);
+                            auto tiledy  = clamp(dy, -8, 8);
+                            wallLocation = TilePosition(base->Location()) + TilePosition(tiledx, tiledy);
 
-                        defenseAngle       = BWEB::Map::getAngle(Position(wallLocation) + Position(16, 16), natChokeCenter) + M_PI_D2;
-                        defenseArrangement = int(round(defenseAngle / M_PI_D4)) % 4;
+                            defenseAngle = BWEB::Map::getAngle(Position(wallLocation) + Position(16, 16), natChokeCenter) + M_PI_D2;
+                            defenseArrangement = int(round(defenseAngle / M_PI_D4)) % 4;
 
-                        testTiles[wallLocation] = Colors::Blue;
+                            testTiles[wallLocation] = Colors::Blue;
+                        }
                     }
                 }
             }
@@ -612,7 +615,6 @@ namespace BWEB::Walls {
     Wall *const createWall(vector<UnitType> &buildings, const BWEM::Area *area, const BWEM::ChokePoint *choke, const UnitType tightType, const vector<UnitType> &defenses, const bool openWall,
                            const bool requireTight)
     {
-        ofstream writeFile;
         string buffer;
         auto timePointNow = chrono::system_clock::now();
         auto timeNow      = chrono::system_clock::to_time_t(timePointNow);
@@ -622,35 +624,21 @@ namespace BWEB::Walls {
         if (clock < 0)
             clock += 12;
 
-        // Open the log file if desired and write information
-        if (logInfo) {
-            writeFile.open("bwapi-data/write/BWEB_Wall.txt");
-            writeFile << ctime(&timeNow);
-            writeFile << Broodwar->mapFileName().c_str() << endl;
-            writeFile << "At: " << clock << " o'clock." << endl;
-            writeFile << endl;
-
-            writeFile << "Buildings:" << endl;
-            for (auto &building : buildings)
-                writeFile << building.c_str() << endl;
-            writeFile << endl;
-        }
-
         // Verify inputs are correct
         if (!area) {
-            writeFile << "BWEB: Can't create a wall without a valid BWEM::Area" << endl;
+            BWEB_LOG_ONCE("BWEB: Can't create a wall without a valid BWEM::Area");
             return nullptr;
         }
 
         if (!choke) {
-            writeFile << "BWEB: Can't create a wall without a valid BWEM::Chokepoint" << endl;
+            BWEB_LOG_ONCE("BWEB: Can't create a wall without a valid BWEM::Chokepoint");
             return nullptr;
         }
 
         // Verify not attempting to create a Wall in the same Area/ChokePoint combination
         for (auto &[_, wall] : walls) {
             if (wall.getChokePoint() == choke) {
-                writeFile << "BWEB: Can't create a Wall where one already exists." << endl;
+                BWEB_LOG_ONCE("BWEB: Can't create a Wall where one already exists.");
                 return &wall;
             }
         }
@@ -676,8 +664,7 @@ namespace BWEB::Walls {
         // Log information
         if (logInfo) {
             double dur = std::chrono::duration<double, std::milli>(chrono::system_clock::now() - timePointNow).count();
-            writeFile << "Generation Time: " << dur << "ms and " << (wallFound ? "successful." : "failed.") << endl;
-            writeFile << "--------------------" << endl;
+            BWEB_LOG_ONCE("Generation Time: ", dur, "ms and ", (wallFound ? "successful." : "failed."));
         }
 
         // If we found a suitable Wall, push into container and return pointer to it

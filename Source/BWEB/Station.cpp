@@ -114,19 +114,15 @@ namespace BWEB {
             resourceCentroid += mineral->Pos();
             cnt++;
         }
-
-        if (cnt > 0)
-            defenseCentroid = resourceCentroid / cnt;
-
         for (auto &gas : base->Geysers()) {
-            defenseCentroid = (defenseCentroid + gas->Pos()) / 2;
             resourceCentroid += gas->Pos();
             cnt++;
         }
 
         if (cnt > 0)
+            defenseCentroid = resourceCentroid / cnt;
+        if (cnt > 0)
             resourceCentroid = resourceCentroid / cnt;
-        Map::addUsed(base->Location(), Broodwar->self()->getRace().getResourceDepot());
 
         if (Broodwar->self()->getRace() == Races::Protoss)
             defenseType = Protoss_Photon_Cannon;
@@ -280,65 +276,113 @@ namespace BWEB {
         }
     }
 
-    void Station::findSecondaryLocations()
+    void Station::addIfPlaceable(TilePosition tile, UnitType type)
+    {
+        auto placement = base->Location() + tile;
+
+        // TODO: Support wide if needed
+        if (Map::isPlaceable(type, placement)) {
+            if (type.tileWidth() == 4)
+                largeTiles.insert(placement);
+            else if (type.tileWidth() == 3)
+                mediumTiles.insert(placement);
+            else if (type.canAttack())
+                defenses.insert(placement);
+            else
+                smallTiles.insert(placement);
+        }
+    }
+
+    void Station::findProtossLocations()
+    {
+        if (main) {
+            auto angle          = Map::getAngle(base->Center(), resourceCentroid);
+            auto quadrant       = int(round(angle / M_PI_D2)) % 4;
+            auto raxPosition    = TilePositions::Invalid;
+            auto turretPosition = TilePositions::Invalid;
+            auto depotPosition  = TilePositions::Invalid;
+
+            // Place left of base
+            if (quadrant == 0) {
+                addIfPlaceable(TilePosition(-6, -1), Protoss_Gateway);
+                addIfPlaceable(TilePosition(-6, 2), Protoss_Gateway);
+                addIfPlaceable(TilePosition(-2, 3), Protoss_Cybernetics_Core);
+                addIfPlaceable(TilePosition(-2, 1), Protoss_Photon_Cannon);
+            }
+
+            // Place below base
+            if (quadrant == 1) {
+                addIfPlaceable(TilePosition(0, 3), Protoss_Gateway);
+                addIfPlaceable(TilePosition(-3, 3), Protoss_Cybernetics_Core);
+                addIfPlaceable(TilePosition(4, 3), Protoss_Photon_Cannon);
+            }
+
+            // Place right of base
+            if (quadrant == 2) {
+                addIfPlaceable(TilePosition(6, -1), Protoss_Gateway);
+                addIfPlaceable(TilePosition(6, 2), Protoss_Gateway);
+                addIfPlaceable(TilePosition(3, 3), Protoss_Cybernetics_Core);
+                addIfPlaceable(TilePosition(4, -1), Protoss_Photon_Cannon);
+            }
+
+            // Place above base
+            if (quadrant == 3) {
+                addIfPlaceable(TilePosition(0, -3), Terran_Barracks);
+                addIfPlaceable(TilePosition(-3, -2), Protoss_Cybernetics_Core);
+                addIfPlaceable(TilePosition(4, -2), Protoss_Photon_Cannon);
+            }
+        }
+    }
+
+    void Station::findTerranLocations()
     {
         // Add scanner addon for Terran
-        if (Broodwar->self()->getRace() == Races::Terran) {
-            auto scannerTile = base->Location() + TilePosition(4, 1);
-            smallPosition    = scannerTile;
-            Map::addUsed(scannerTile, defenseType);
+        auto scannerTile = base->Location() + TilePosition(4, 1);
+        smallTiles.insert(scannerTile);
 
-            if (main) {
-                // Get angle of resources to base
-                auto angle          = Map::getAngle(base->Center(), resourceCentroid);
-                auto quadrant       = int(round(angle / M_PI_D2)) % 4;
-                auto raxPosition    = TilePositions::Invalid;
-                auto turretPosition = TilePositions::Invalid;
-                auto depotPosition  = TilePositions::Invalid;
+        if (main) {
+            auto angle          = Map::getAngle(base->Center(), resourceCentroid);
+            auto quadrant       = int(round(angle / M_PI_D2)) % 4;
+            auto raxPosition    = TilePositions::Invalid;
+            auto turretPosition = TilePositions::Invalid;
+            auto depotPosition  = TilePositions::Invalid;
 
-                if (quadrant == 0) {
-                    raxPosition    = base->Location() + TilePosition(-4, 0);
-                    depotPosition  = base->Location() + TilePosition(0, 3);
-                    turretPosition = base->Location() + TilePosition(-2, 3);
-                }
-
-                if (quadrant == 1) {
-                    raxPosition    = base->Location() + TilePosition(0, 3);
-                    depotPosition  = base->Location() + TilePosition(-3, 3);
-                    turretPosition = base->Location() + TilePosition(4, 3);
-                }
-
-                if (quadrant == 2) {
-                    raxPosition    = base->Location() + TilePosition(6, 0);
-                    depotPosition  = base->Location() + TilePosition(6, -2);
-                    turretPosition = base->Location() + TilePosition(4, -1);
-                }
-
-                if (quadrant == 3) {
-                    raxPosition    = base->Location() + TilePosition(0, -3);
-                    depotPosition  = base->Location() + TilePosition(-3, -2);
-                    turretPosition = base->Location() + TilePosition(4, -2);
-                }
-
-                if (Map::isPlaceable(Terran_Barracks, raxPosition))
-                    secondaryLocations.insert(raxPosition);
-                if (Map::isPlaceable(Terran_Supply_Depot, depotPosition))
-                    mediumPosition = depotPosition;
-                if (Map::isPlaceable(Terran_Missile_Turret, turretPosition))
-                    defenses.insert(turretPosition);
+            // Place left of base
+            if (quadrant == 0) {
+                addIfPlaceable(TilePosition(-6, -1), Terran_Barracks);
+                addIfPlaceable(TilePosition(-6, 2), Terran_Barracks);
+                addIfPlaceable(TilePosition(-2, 3), Terran_Supply_Depot);
+                addIfPlaceable(TilePosition(-2, 1), Terran_Missile_Turret);
             }
-            // If minerals on right side, put a depot below CC and a barracks on left of CC
 
-            // If minerals on left side, put a depot below CC + (1, 0) and a barracks on right of comsat spot
+            // Place below base
+            if (quadrant == 1) {
+                addIfPlaceable(TilePosition(-2, 5), Terran_Barracks);
+                addIfPlaceable(TilePosition(2, 5), Terran_Barracks);
+                addIfPlaceable(TilePosition(-2, 3), Terran_Supply_Depot);
+                addIfPlaceable(TilePosition(1, 3), Terran_Supply_Depot);
+                addIfPlaceable(TilePosition(4, 3), Terran_Missile_Turret);
+            }
 
-            // If minerals above, put a barracks below CC
+            // Place right of base
+            if (quadrant == 2) {
+                addIfPlaceable(TilePosition(6, -1), Terran_Barracks);
+                addIfPlaceable(TilePosition(6, 2), Terran_Barracks);
+                addIfPlaceable(TilePosition(3, 3), Terran_Supply_Depot);
+                addIfPlaceable(TilePosition(4, -1), Terran_Missile_Turret);
+            }
 
-            // If minerals below, put a barracks above CC
+            // Place above base
+            if (quadrant == 3) {
+                addIfPlaceable(TilePosition(0, -3), Terran_Barracks);
+                addIfPlaceable(TilePosition(-3, -2), Terran_Supply_Depot);
+                addIfPlaceable(TilePosition(4, -2), Terran_Missile_Turret);
+            }
         }
+    }
 
-        if (Broodwar->self()->getRace() != Races::Zerg)
-            return;
-
+    void Station::findZergLocations()
+    {
         vector<tuple<TilePosition, TilePosition, TilePosition>> tryOrder;
 
         // Determine some standard positions to place simcity pool/spire/sunken
@@ -411,35 +455,25 @@ namespace BWEB {
                 for (auto &[medium, small, defense] : tryOrder) {
                     if (Map::isPlaceable(Zerg_Spawning_Pool, base->Location() + medium) && Map::isPlaceable(Zerg_Spire, base->Location() + small) &&
                         Map::isPlaceable(Zerg_Sunken_Colony, base->Location() + defense)) {
-                        mediumPosition = base->Location() + medium;
-                        smallPosition  = base->Location() + small;
-                        Map::addUsed(smallPosition, Zerg_Spire);
-                        Map::addUsed(mediumPosition, Zerg_Spawning_Pool);
+                        mediumTiles.insert(base->Location() + medium);
+                        smallTiles.insert(base->Location() + small);
+                        defenses.insert(defense);
                         break;
                     }
                 }
                 tryOrder.clear();
             }
         }
+    }
 
-        const auto distCalc = [&](const auto &position) {
-            if (natural && partnerBase) {
-                const auto closestMain = Stations::getClosestMainStation(base->Location());
-                if (closestMain && closestMain->getChokepoint())
-                    return Position(closestMain->getChokepoint()->Center()).getDistance(position);
-            }
-
-            else if (!base->Minerals().empty()) {
-                auto distMineralBest = DBL_MAX;
-                for (auto &mineral : base->Minerals()) {
-                    auto dist = mineral->Pos().getDistance(position);
-                    if (dist < distMineralBest)
-                        distMineralBest = dist;
-                }
-                return distMineralBest;
-            }
-            return 0.0;
-        };
+    void Station::findSecondaryLocations()
+    {
+        if (Broodwar->self()->getRace() == Races::Protoss)
+            findProtossLocations();
+        if (Broodwar->self()->getRace() == Races::Terran)
+            findTerranLocations();
+        if (Broodwar->self()->getRace() == Races::Zerg)
+            findZergLocations();
     }
 
     void Station::findDefenses()
@@ -468,25 +502,24 @@ namespace BWEB {
             auto tile = base->Location() + placement;
             if (Map::isPlaceable(defenseType, tile)) {
                 defenses.insert(tile);
-                Map::addUsed(tile, defenseType);
             }
         }
     }
 
-    const void Station::draw() const
+    const void Station::draw(std::optional<BWAPI::Color> color) const
     {
-        int color     = Broodwar->self()->getColor();
-        int textColor = color == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
+        int drawColor = !color ? Broodwar->self()->getColor() : color.value();
+        int textColor = drawColor == 185 ? textColor = Text::DarkGreen : Broodwar->self()->getTextColor();
 
         if (main) {
-            auto angle = Map::getAngle(base->Center(), resourceCentroid);
+            auto angle    = Map::getAngle(base->Center(), resourceCentroid);
             auto quadrant = int(round(angle / M_PI_D2)) % 4;
             Broodwar->drawTextMap(resourceCentroid, "%d", quadrant);
         }
 
         // Draw boxes around each feature
         for (auto &tile : defenses) {
-            Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), color);
+            Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), drawColor);
             Broodwar->drawTextMap(Position(tile) + Position(4, 52), "%cS", textColor);
         }
 
@@ -512,20 +545,24 @@ namespace BWEB {
             }
         }
 
-        Broodwar->drawCircleMap(resourceCentroid, 3, color, true);
-        Broodwar->drawBoxMap(Position(base->Location()), Position(base->Location()) + Position(129, 97), color);
+        Broodwar->drawCircleMap(resourceCentroid, 3, drawColor, true);
+        Broodwar->drawBoxMap(Position(base->Location()), Position(base->Location()) + Position(129, 97), drawColor);
         Broodwar->drawTextMap(Position(base->Location()) + Position(4, 84), "%cS", textColor);
 
         // Draw secondary locations
-        for (auto &location : secondaryLocations) {
-            Broodwar->drawBoxMap(Position(location), Position(location) + Position(129, 97), color);
-            Broodwar->drawTextMap(Position(location) + Position(4, 84), "%cS", textColor);
+        for (auto &tile : smallTiles) {
+            Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(65, 65), drawColor);
+            Broodwar->drawTextMap(Position(tile) + Position(52, 52), "%cB", textColor);
         }
-        Broodwar->drawBoxMap(Position(mediumPosition), Position(mediumPosition) + Position(97, 65), color);
-        Broodwar->drawTextMap(Position(mediumPosition) + Position(4, 52), "%cS", textColor);
-        Broodwar->drawBoxMap(Position(smallPosition), Position(smallPosition) + Position(65, 65), color);
-        Broodwar->drawTextMap(Position(smallPosition) + Position(4, 52), "%cS", textColor);
-        Broodwar->drawBoxMap(Position(pocketDefense), Position(pocketDefense) + Position(65, 65), color);
+        for (auto &tile : mediumTiles) {
+            Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(97, 65), drawColor);
+            Broodwar->drawTextMap(Position(tile) + Position(84, 52), "%cB", textColor);
+        }
+        for (auto &tile : largeTiles) {
+            Broodwar->drawBoxMap(Position(tile), Position(tile) + Position(129, 97), drawColor);
+            Broodwar->drawTextMap(Position(tile) + Position(116, 84), "%cB", textColor);
+        }
+        Broodwar->drawBoxMap(Position(pocketDefense), Position(pocketDefense) + Position(65, 65), drawColor);
         Broodwar->drawTextMap(Position(pocketDefense) + Position(4, 52), "%cS", textColor);
     }
 
@@ -537,20 +574,17 @@ namespace BWEB {
             Map::addReserve(tile, 2, 2);
         }
 
-        // Remove used on secondary locations
-        for (auto &tile : secondaryLocations) {
-            Map::removeUsed(tile, 4, 3);
+        // Add reserve
+        for (auto &tile : largeTiles) {
             Map::addReserve(tile, 4, 3);
         }
-
-        // Remove used on base location
-        Map::removeUsed(getBase()->Location(), 4, 3);
+        for (auto &tile : mediumTiles) {
+            Map::addReserve(tile, 3, 2);
+        }
+        for (auto &tile : smallTiles) {
+            Map::addReserve(tile, 2, 2);
+        }
         Map::addReserve(getBase()->Location(), 4, 3);
-        Map::removeUsed(mediumPosition, 3, 2);
-        Map::addReserve(mediumPosition, 3, 2);
-        Map::removeUsed(smallPosition, 2, 2);
-        Map::addReserve(smallPosition, 2, 2);
-        Map::removeUsed(pocketDefense, 2, 2);
         Map::addReserve(pocketDefense, 2, 2);
     }
 } // namespace BWEB

@@ -126,6 +126,7 @@
     <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyTerran.cpp" />
     <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyZerg.cpp" />
     <ClCompile Include="..\Source\McRave\Strategy\Zones\Zones.cpp" />
+    <ClInclude Include="..\Source\BWEB\Logger.h" />
     <ClInclude Include="..\Source\Horizon\Horizon.h" />
     <ClInclude Include="..\Source\McRave\Builds\All\BuildOrder.h" />
     <ClInclude Include="..\Source\McRave\Builds\All\Learning.h" />
@@ -183,6 +184,7 @@
     <ClInclude Include="..\Source\McRave\Main\Events.h" />
     <ClInclude Include="..\Source\McRave\Main\Header.h" />
     <ClInclude Include="..\Source\McRave\Main\Helpers.h" />
+    <ClInclude Include="..\Source\McRave\Main\Logger.h" />
     <ClInclude Include="..\Source\McRave\Main\McRave.h" />
     <ClInclude Include="..\Source\McRave\Main\Time.h" />
     <ClInclude Include="..\Source\McRave\Main\Util.h" />

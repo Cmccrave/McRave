@@ -2,6 +2,7 @@
 
 using namespace std;
 using namespace BWAPI;
+using namespace UnitTypes;
 
 namespace BWEB {
 
@@ -310,7 +311,7 @@ namespace BWEB::Blocks {
             if (station.isMain())
                 Map::addReserve(station.getBase()->Location() - TilePosition(1, 1), 6, 5);
 
-            for (auto &secondary : station.getSecondaryLocations()) {
+            for (auto &secondary : station.getLargeLocations()) {
                 addToBlockGrid(secondary, secondary + TilePosition(4, 3), BlockType::Production);
                 if (station.isMain())
                     Map::addReserve(secondary - TilePosition(1, 1), 6, 5);

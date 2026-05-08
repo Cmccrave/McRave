@@ -585,6 +585,12 @@
     <ClInclude Include="..\Source\McRave\Map\Walls\TerranWalls.h">
       <Filter>McRave\Map\Walls</Filter>
     </ClInclude>
+    <ClInclude Include="..\Source\BWEB\Logger.h">
+      <Filter>BWEB</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\McRave\Main\Logger.h">
+      <Filter>McRave\Main</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="BWEM">

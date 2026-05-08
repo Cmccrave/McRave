@@ -173,6 +173,8 @@ namespace McRave::Combat::Clusters {
             cluster.retreatPath = commander->getRetreatPath();
 
             const auto validPathPoint = [&](auto &p) {
+                if (BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None)
+                    return false;
                 auto mobility = (10 - Grids::getMobility(p)) * 16;
                 auto value    = mobility + dist;
                 return p.getDistance(commander->getPosition()) >= value;

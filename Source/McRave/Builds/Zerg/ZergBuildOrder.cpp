@@ -1018,7 +1018,7 @@ namespace McRave::BuildOrder::Zerg {
     void unlocks()
     {
         // Saving larva to burst out tech units
-        const auto reserveAt = Players::ZvZ() ? 10 : 16;
+        const auto reserveAt = Players::ZvZ() ? 9 : 16;
         unitReservations.clear();
         if (vis(Zerg_Drone) >= reserveAt && inOpening && reserveLarva > 0) {
             if (atPercent(Zerg_Spire, 0.50) && focusUnit == Zerg_Mutalisk)

@@ -67,6 +67,7 @@ const std::string_view Z_12Pool   = "12Pool";
 
 const std::string_view Z_9Hatch  = "9Hatch";
 const std::string_view Z_10Hatch = "10Hatch";
+const std::string_view Z_11Hatch = "11Hatch";
 const std::string_view Z_12Hatch = "12Hatch";
 
 // P Transitions

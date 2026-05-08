@@ -263,7 +263,7 @@ namespace McRave::Command {
             if (unit.getRole() == Role::Combat) {
                 if (unit.attemptingSurround() || unit.attemptingTrap())
                     return false;
-                if (unit.isMelee() && !unit.isHovering() && unit.isWithinReach(target) && unit.getLocalState() == LocalState::Attack)
+                if (unit.isMelee() && !unit.isHovering() && unit.getPosition().getDistance(target.getPosition()) < 96.0 && unit.getLocalState() == LocalState::Attack)
                     return true;
                 if (unit.isLightAir() && !unit.isWithinAngle(target) && unit.getPosition().getDistance(target.getPosition()) > 48.0)
                     return false;

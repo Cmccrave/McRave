@@ -27,6 +27,18 @@ namespace McRave::Combat {
         BWAPI::Color color;
         BWEB::Path marchPath, retreatPath;
 
+        void logData()
+        {
+            LOG_SLOW("Position: ", avgPosition);
+            LOG_SLOW("Marching: ", marchPosition);
+            LOG_SLOW("Retreating : ", retreatPosition);
+            LOG_SLOW("State: ", int(state));
+            LOG_SLOW("Spacing: ", spacing);
+            LOG_SLOW("Radius: ", radius);
+            for (auto [type, cnt] : typeCounts)
+                LOG_SLOW("  ", type.c_str(), cnt);
+        }
+
         Cluster(BWAPI::Position _avg, BWAPI::Position _march, BWAPI::Position _retreat, BWAPI::UnitType _t)
         {
             marchPosition   = _march;

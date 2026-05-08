@@ -34,7 +34,7 @@ namespace McRave::Combat::Formations {
                     (Terrain::inArea(u->getPosition(), cluster.avgPosition) && Terrain::inArea(u->getPosition(), cluster.retreatPosition)));
         });
 
-        auto formationWithBase      = (!Combat::holdAtChoke() && Util::getTime() < Time(5, 00)) || (!closestBuilding && !closestDefender);
+        auto formationWithBase      = (!Combat::holdAtChoke() && Util::getTime() < Time(4, 00)) || (!closestBuilding && !closestDefender);
         auto formationWithDefender  = !Combat::holdAtChoke() && closestDefender && (Players::ZvZ() || !outRangesWall);
         auto formationWithBuilding  = !Combat::holdAtChoke() && closestBuilding;
         auto formationWithChoke     = Combat::holdAtChoke() && closestChoke && Position(closestChoke->Center()).getDistance(cluster.marchPosition) < 32.0;
@@ -68,6 +68,19 @@ namespace McRave::Combat::Formations {
             formation.radius      = closestBuilding->getPosition().getDistance(cluster.marchPosition);
             formation.stepPerUnit = expSpacing;
             formation.angle       = (round(formation.angle / M_PI_D4)) * M_PI_D4;
+
+            // Temporary test
+            // Some matchups we want the lineup forward/backward from a building
+            if (auto closestStation = Stations::getClosestStationAir(cluster.retreatPosition, PlayerState::Self)) {
+                if (Players::ZvZ() || Players::ZvP()) {
+                    if (closestBuilding->getPosition() == closestStation->getBase()->Center())
+                        formation.start = Util::shiftTowards(closestBuilding->getPosition(), cluster.marchPosition, 64.0);
+                }
+                if (Players::TvZ() || Players::TvP()) {
+                    if (closestBuilding->getPosition() != closestStation->getBase()->Center())
+                        formation.start = Util::shiftTowards(closestBuilding->getPosition(), cluster.retreatPosition, 64.0);
+                }
+            }
         }
 
         // Hold with choke, use ramp angles if provided
@@ -82,7 +95,7 @@ namespace McRave::Combat::Formations {
 
             Visuals::drawCircle(Position(closestChoke->Center()), 6, Colors::Yellow, true);
 
-            auto maxRange   = max(commander->getGroundRange(), double(Players::getStrength(PlayerState::Enemy).maxGroundRange)) + 64.0;
+            auto maxRange   = max(commander->getGroundRange(), double(Players::getStrength(PlayerState::Enemy).maxGroundRange)) + 96.0;
             auto minSpacing = double(closestChoke->Width() / cluster.units.size());
 
             if (closestChoke == Terrain::getMainChoke()) {
@@ -212,6 +225,7 @@ namespace McRave::Combat::Formations {
 
         // Prevent blocking our own buildings
         auto closestBuilder = Util::getClosestUnit(formation.center, PlayerState::Self, [&](auto &u) { return u->getBuildPosition().isValid(); });
+        auto buildCenter    = closestBuilder ? closestBuilder->getPosition() : Positions::Invalid;
         bool first          = true;
 
         // Checks if a position is okay, stores if it is
@@ -228,7 +242,7 @@ namespace McRave::Combat::Formations {
             }
 
             //
-            if (skip || assignmentsRemaining <= 0 || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None || (closestBuilder && p.getDistance(closestBuilder->getPosition()) < 128.0)) {
+            if (skip || assignmentsRemaining <= 0 || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None || (buildCenter.isValid() && p.getDistance(buildCenter) < 128.0)) {
                 return;
             }
 
@@ -264,8 +278,9 @@ namespace McRave::Combat::Formations {
             if (assignmentsRemaining <= 0 || wrap >= 5)
                 break;
 
-            if (attempts >= totalAssignments * 2) {
+            if (attempts >= totalAssignments * 4) {
                 LOG_SLOW("Bad formation, discarding");
+                cluster.logData();
                 return;
             }
         }
@@ -301,7 +316,7 @@ namespace McRave::Combat::Formations {
         // Wrap function
         const auto wrapFunc = [&](auto skipAll) {
             if (skipAll || count * formation.stepPerUnit > formation.radius) {
-                count     = 0;
+                count = 0;
                 formation.start -= Position(int(yStepPer), int(xStepPer));
                 return true;
             }
@@ -388,7 +403,7 @@ namespace McRave::Combat::Formations {
 
             // Create a concave
             Formation formation;
-            formation.leash = 640.0;
+            formation.leash   = 640.0;
             formation.cluster = &cluster;
 
             if (cluster.shape == Shape::Concave)

@@ -75,6 +75,14 @@ namespace McRave::Combat::State {
             if (!unlockedOrVis(Protoss_Zealot) || !staticRetreatTypes.empty())
                 staticRetreatTypes.push_back(Protoss_Probe);
         }
+
+        // NR15 in FFA
+        if (Players::PvFFA()) {
+            for (auto &type : UnitTypes::allUnitTypes()) {
+                if (!type.isHero() && !type.isBuilding() && type != Protoss_Corsair && type != Protoss_Scout)
+                    staticRetreatTypes.push_back(type);
+            }
+        }
     }
 
     void updateTStaticStates()
@@ -134,6 +142,14 @@ namespace McRave::Combat::State {
             if (!unlockedOrVis(Terran_Marine) || !staticRetreatTypes.empty())
                 staticRetreatTypes.push_back(Terran_SCV);
         }
+
+        // NR15 in FFA
+        if (Players::TvFFA()) {
+            for (auto &type : UnitTypes::allUnitTypes()) {
+                if (!type.isHero() && !type.isBuilding() && type != Terran_Wraith)
+                    staticRetreatTypes.push_back(type);
+            }
+        }
     }
 
     void updateZStaticStates()
@@ -178,17 +194,17 @@ namespace McRave::Combat::State {
                 if (com(Zerg_Mutalisk) < 6 && total(Zerg_Mutalisk) < 9)
                     staticRetreatTypes.push_back(Zerg_Mutalisk);
             }
+        }
 
-            // If we don't have enough for a reasonable ball, we should just go home
-            if (Util::getTime() < Time(10, 0) && (Players::ZvT() || Players::ZvP())) {
-                auto healthyCount = 0;
-                for (auto &u : Units::getUnits(PlayerState::Self)) {
-                    if (u->isLightAir() && !u->saveUnit)
-                        healthyCount++;
-                }
-                if (healthyCount < 5)
-                    staticRetreatTypes.push_back(Zerg_Mutalisk);
+        // If we don't have enough for a reasonable ball, we should just go home
+        if (Util::getTime() < Time(10, 00) && (Players::ZvT() || Players::ZvP())) {
+            auto healthyCount = 0;
+            for (auto &u : Units::getUnits(PlayerState::Self)) {
+                if (u->isLightAir() && !u->saveUnit)
+                    healthyCount++;
             }
+            if (healthyCount < 5)
+                staticRetreatTypes.push_back(Zerg_Mutalisk);
         }
 
         // Zerglings
@@ -284,6 +300,14 @@ namespace McRave::Combat::State {
                     staticRetreatTypes.push_back(Zerg_Drone);
             }
         }
+
+        // NR15 in FFA
+        if (Players::ZvFFA()) {
+            for (auto &type : UnitTypes::allUnitTypes()) {
+                if (!type.isHero() && !type.isBuilding() && type != Zerg_Mutalisk)
+                    staticRetreatTypes.push_back(type);
+            }
+        }
     }
 
     // Certain unit types are vulnerable under certain group sizes / lack of upgrades
@@ -301,7 +325,7 @@ namespace McRave::Combat::State {
             return false;
         auto &target = *unit.getTarget().lock();
 
-        auto holdAtHome = Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && (unit.getGlobalState() == GlobalState::Retreat || unit.getGoalType() == GoalType::Defend);
+        auto holdAtHome = Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && (unit.getGlobalState() == GlobalState::Retreat || unit.getGoalType() == GoalType::Defend || unit.getSimState() == SimState::Loss);
 
         if (holdAtHome)
             return true;

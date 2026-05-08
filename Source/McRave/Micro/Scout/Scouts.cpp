@@ -403,7 +403,7 @@ namespace McRave::Scouts {
                     main.desiredTypeCounts[Zerg_Overlord] = 2;
                     if (Terrain::getEnemyStartingPosition().isValid())
                         main.desiredTypeCounts[Zerg_Overlord] = 1;
-                    if (enemyAir || Spy::enemyFastExpand() || (Terrain::getEnemyStartingPosition().isValid() && vis(Zerg_Zergling) > 0))
+                    if (enemyAir || Spy::enemyFastExpand())
                         main.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
 
@@ -411,7 +411,7 @@ namespace McRave::Scouts {
                 if (Players::ZvP()) {
 
                     // Drone
-                    auto sawZealotTiming = (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 2);
+                    auto sawZealotTiming = (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 2 && Spy::getEnemyBuild() != "Unknown");
                     if (sawZealotTiming || Spy::getEnemyBuild() == P_FFE || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 ||
                         Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0 || fullScout || Util::getTime() > Time(3, 30))
                         main.desiredTypeCounts[Zerg_Drone] = 0;
@@ -426,7 +426,7 @@ namespace McRave::Scouts {
                     main.desiredTypeCounts[Zerg_Overlord] = 2;
                     if (Terrain::getEnemyStartingPosition().isValid())
                         main.desiredTypeCounts[Zerg_Overlord] = 1;
-                    if (enemyAir || Spy::enemyFastExpand() || (Terrain::getEnemyStartingPosition().isValid() && vis(Zerg_Zergling) > 0))
+                    if (enemyAir || Spy::enemyFastExpand())
                         main.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
 

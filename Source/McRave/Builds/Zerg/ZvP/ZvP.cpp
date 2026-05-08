@@ -236,11 +236,11 @@ namespace McRave::BuildOrder::Zerg {
         // Gas
         gasLimit = gasMax();
         if (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != P_FFE && !Spy::enemyFastExpand()) {
-            auto dropGasLowDrone = vis(Zerg_Drone) + vis(Zerg_Extractor) < 10;
-            auto dropGasEarly    = Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(3, 45);
-            auto dropGasAfterLair = vis(Zerg_Lair) > 0 && Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(3, 40);
+            auto dropGasLowDrone   = vis(Zerg_Drone) + vis(Zerg_Extractor) < 10;
+            auto dropGasEarly      = Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(3, 45);
+            auto dropGasAfterLair  = vis(Zerg_Lair) > 0 && Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(3, 40);
             auto dropGasAfterSpire = vis(Zerg_Spire) > 0 && Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(4, 30);
-            auto dropGasSpores   = Spy::getEnemyOpener() == P_Corsair && Util::getTime() < Time(4, 30);
+            auto dropGasSpores     = Spy::getEnemyOpener() == P_Corsair && Util::getTime() < Time(4, 30);
 
             if (dropGasLowDrone || dropGasEarly || dropGasAfterLair || dropGasAfterSpire || dropGasSpores)
                 gasLimit = 0;
@@ -349,6 +349,8 @@ namespace McRave::BuildOrder::Zerg {
             if (Spy::enemyGreedy() && Spy::getEnemyBuild() != P_CannonRush)
                 activeAllinType = AllinType::Z_5HatchSpeedling;
         }
+        if (Spy::getEnemyTransition() == P_Rush)
+            activeAllinType = AllinType::Z_5HatchSpeedling;
         if (mutaDone) {
             if (Spy::getEnemyTransition() == P_5GateGoon)
                 activeAllinType = AllinType::Z_9HatchCrackling;
@@ -409,6 +411,9 @@ namespace McRave::BuildOrder::Zerg {
         zergUnitPump[Zerg_Drone] |= (vis(Zerg_Drone) < 19 && com(Zerg_Spawning_Pool) > 0) || (!rush && vis(Zerg_Drone) < 36 && com(Zerg_Spawning_Pool) > 0);
         zergUnitPump[Zerg_Zergling]  = (com(Zerg_Spawning_Pool) > 0 && total(Zerg_Zergling) < 6) || (lingsNeeded_ZvP() > vis(Zerg_Zergling) && com(Zerg_Hydralisk_Den) == 0);
         zergUnitPump[Zerg_Hydralisk] = firstHydraPump || secondHydraPump;
+
+        if (Spy::getEnemyOpener() == P_Nexus || Spy::getEnemyOpener() == P_Gateway)
+            activeAllinType = AllinType::Z_3HatchSpeedling;
 
         // Gas
         gasLimit = gasMax();

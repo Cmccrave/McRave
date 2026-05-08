@@ -26,6 +26,23 @@ namespace McRave::BuildOrder::Zerg {
         zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvP();
     }
 
+    void ZvP_HP_11Hatch()
+    {
+        // 11h 11p
+        transitionReady = vis(Zerg_Spawning_Pool) > 0;
+        scout           = scout || (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
+        planEarly       = !Spy::enemyProxy() && (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
+
+        // Buildings
+        buildQueue[Zerg_Hatchery]      = 1 + (s >= 22);
+        buildQueue[Zerg_Spawning_Pool] = s >= 22 && (hatchCount() >= 2);
+        buildQueue[Zerg_Overlord]      = 1 + (s >= 16) + (s >= 32);
+
+        // Pumping
+        zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < 13;
+        zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvP();
+    }
+
     void ZvP_HP_10Hatch()
     {
         // 10h 9p
@@ -46,14 +63,11 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvP_HP()
     {
-        // If we scout a proxy early enough, switch to pool first
-        if (Spy::getEnemyOpener() == P_Proxy_9_9 && currentOpener == Z_12Hatch && total(Zerg_Hatchery) < 2) {
-            currentOpener = Z_10Hatch;
-        }
-
         // Openers
         if (currentOpener == Z_10Hatch)
             ZvP_HP_10Hatch();
+        if (currentOpener == Z_11Hatch)
+            ZvP_HP_11Hatch();
         if (currentOpener == Z_12Hatch)
             ZvP_HP_12Hatch();
     }

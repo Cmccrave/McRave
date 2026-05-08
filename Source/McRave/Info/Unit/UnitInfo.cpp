@@ -345,7 +345,7 @@ namespace McRave {
         const auto choke          = (Combat::isDefendNatural() && Combat::isHoldNatural()) ? Terrain::getNaturalChoke() : Terrain::getMainChoke();
         const auto closestGeo     = BWEB::Map::getClosestChokeTile(choke, getPosition());
         const auto closestStation = Stations::getClosestStationAir(getPosition(), PlayerState::Self);
-        const auto closestWall    = BWEB::Walls::getClosestWall(getPosition());
+        const auto closestWall    = (closestStation && closestStation->getChokepoint()) ? BWEB::Walls::getWall(closestStation->getChokepoint()) : BWEB::Walls::getClosestWall(getPosition());
         const auto rangeCheck     = max({getAirRange() + 32.0, getGroundRange() + 32.0, 64.0});
         const auto proximityCheck = max(rangeCheck, 200.0);
         auto threateningThisFrame = false;
@@ -357,13 +357,10 @@ namespace McRave {
         const auto nearMe      = atHome || atChoke;
 
         auto threatensStation = [&]() {
-            if (!closestWall && closestStation) {
-                if (atHome && Terrain::inArea(closestStation, getPosition()))
-                    return true;
-            }
-
-            if (!closestWall)
+            if (!closestStation)
                 return false;
+            if (!closestWall)
+                return (atHome && Terrain::inArea(closestStation, getPosition()));
 
             // If a wall defender is within range (open wall) or this is within range of a defender
             auto wallDefender = Util::getClosestUnit(position, PlayerState::Self, [&](auto &u) {
@@ -371,6 +368,12 @@ namespace McRave {
             });
             if (wallDefender && ((this->isWithinRange(*wallDefender) || (!Walls::isComplete(closestWall) && wallDefender->isWithinRange(*this)))))
                 return true;
+
+            // If no wall defender, defend stations within the radius
+            if (!wallDefender && closestStation) {
+                if (atHome && Terrain::inArea(closestStation, getPosition()))
+                    return true;
+            }
 
             // If within range of a fragile piece or inside the wall
             auto wallPiece = Util::getClosestUnit(position, PlayerState::Self, [&](auto &u) {

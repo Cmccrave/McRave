@@ -275,20 +275,24 @@ namespace McRave::Planning {
             auto closestStation = Stations::getClosestStationAir(here, PlayerState::Self);
             if (closestStation) {
                 if (building == Zerg_Spawning_Pool || building == Terran_Supply_Depot) {
-                    if (isReady(building, closestStation->getMediumPosition())) {
-                        tileBest = closestStation->getMediumPosition();
-                        return tileBest;
+                    for (auto &location : closestStation->getMediumLocations()) {
+                        if (isReady(building, location)) {
+                            tileBest = location;
+                            return tileBest;
+                        }
                     }
                 }
                 else if (building == Zerg_Spire) {
-                    if (isReady(building, closestStation->getSmallPosition())) {
-                        tileBest = closestStation->getSmallPosition();
-                        return tileBest;
+                    for (auto &location : closestStation->getSmallLocations()) {
+                        if (isReady(building, location)) {
+                            tileBest = location;
+                            return tileBest;
+                        }
                     }
                 }
                 else if (building == Zerg_Hatchery || building == Terran_Barracks) {
-                    for (auto &location : closestStation->getSecondaryLocations()) {
-                        if (isReady(building, location) && isPlannable(building, location)) {
+                    for (auto &location : closestStation->getLargeLocations()) {
+                        if (isReady(building, location)) {
                             tileBest = location;
                             return tileBest;
                         }
@@ -484,6 +488,20 @@ namespace McRave::Planning {
             return placement.isValid();
         }
 
+        bool findGroundDefenseLocation(UnitType building, TilePosition &placement)
+        {
+            // Don't place if not defensive building
+            if (!isDefensiveType(building) || building == Terran_Missile_Turret)
+                return false;
+        }
+
+        bool findAirDefenseLocation(UnitType building, TilePosition &placement)
+        {
+            // Don't place if not defensive building
+            if (!isDefensiveType(building))
+                return false;
+        }
+
         bool findDefenseLocation(UnitType building, TilePosition &placement)
         {
             // Don't place if not defensive building
@@ -507,13 +525,13 @@ namespace McRave::Planning {
 
                 // Place defenses closest to the resources by default
                 auto colonies          = Stations::getColonyCount(station);
-                auto needGrd           = Stations::needGroundDefenses(station) > colonies;
+                auto needGrd           = Stations::needGroundDefenses(station) > colonies && building != Terran_Missile_Turret;
                 auto needAir           = Stations::needAirDefenses(station) > colonies;
                 Position desiredCenter = (Players::ZvZ() && needGrd && station->getChokepoint()) ? Position(station->getChokepoint()->Center()) : station->getResourceCentroid();
 
                 // If pocket defense is buildable
                 if (needGrd) {
-                    if (isPlannable(Zerg_Creep_Colony, station->getPocketDefense()) && isBuildable(Zerg_Creep_Colony, station->getPocketDefense())) {
+                    if (isReady(building, station->getPocketDefense())) {
                         placement = station->getPocketDefense();
                         return true;
                     }
@@ -540,11 +558,9 @@ namespace McRave::Planning {
                 if (Spy::getEnemyBuild() == T_RaxFact && wall.getGroundDefenseCount() == 0)
                     desiredCenter = Position(Terrain::getMainChoke()->Center());
 
-                int colonies = 0;
-                for (auto &tile : wall.getDefenses()) {
-                    if (BWEB::Map::isUsed(tile) == Zerg_Creep_Colony || buildingsPlanned.find(tile) != buildingsPlanned.end())
-                        colonies++;
-                }
+                auto colonies = Walls::getColonyCount(&wall);
+                auto needGrd  = Walls::needGroundDefenses(&wall) > colonies && building != Terran_Missile_Turret;
+                auto needAir  = Walls::needAirDefenses(&wall) > colonies;
 
                 // How to dictate row order
                 vector<int> desiredRowOrder = {1};
@@ -554,7 +570,7 @@ namespace McRave::Planning {
                     desiredRowOrder = {1, 2, 3};
 
                 // If this wall needs defenses
-                if (Walls::needGroundDefenses(&wall) > colonies) {
+                if (needGrd) {
 
                     // Try to place in adjacent rows as existing defenses
                     if (!desiredRowOrder.empty()) {
@@ -575,7 +591,7 @@ namespace McRave::Planning {
                     }
                 }
 
-                if (Walls::needAirDefenses(&wall) > colonies) {
+                if (needAir) {
 
                     // Try to always place in middle rows first
                     for (int i = 2; i <= 2; i++) {
@@ -595,14 +611,14 @@ namespace McRave::Planning {
 
             // Defense placements near blocks
             for (auto &block : BWEB::Blocks::getBlocks()) {
-                auto airNeeded = Blocks::needAirDefenses(&block);
-                if (airNeeded > 0) {
+                auto needAir = Blocks::needAirDefenses(&block);
+                if (needAir > 0) {
                     placement = returnClosest(building, block.getSmallTiles(), block.getCenter());
                     if (placement.isValid())
                         return true;
                 }
-                auto grdNeeded = Blocks::needGroundDefenses(&block);
-                if (grdNeeded > 0) {
+                auto needGrd = Blocks::needGroundDefenses(&block);
+                if (needGrd > 0) {
                     placement = returnClosest(building, block.getMediumTiles(), block.getCenter());
                     if (placement.isValid())
                         return true;
@@ -769,9 +785,11 @@ namespace McRave::Planning {
                 return false;
 
             for (auto &station : Stations::getStations(PlayerState::Self)) {
-                if (isReady(building, station->getMediumPosition())) {
-                    placement = station->getMediumPosition();
-                    return true;
+                for (auto &location : station->getMediumLocations()) {
+                    if (isReady(building, location)) {
+                        placement = location;
+                        return true;
+                    }
                 }
             }
 

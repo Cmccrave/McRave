@@ -199,7 +199,7 @@ namespace McRave::Roles {
             // ZvZ
             if (Players::ZvZ() && Util::getTime() < Time(6, 00) && !Spy::enemyTurtle() && !Spy::enemyFastExpand()) {
                 if (Combat::isDefendNatural()) {
-                    auto earlyPool = Spy::getEnemyOpener() == Z_9Pool || Spy::getEnemyOpener() == Z_Overpool || Spy::getEnemyOpener() == "Unknown";
+                    auto earlyPool = Spy::getEnemyOpener() == Z_9Pool || Spy::getEnemyOpener() == Z_Overpool;
                     auto moreLings = Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling);
 
                     if (earlyPool || moreLings) {

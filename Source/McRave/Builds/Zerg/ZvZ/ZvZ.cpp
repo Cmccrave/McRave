@@ -38,7 +38,7 @@ namespace McRave::BuildOrder::Zerg {
             if (idx != trackables.end()) {
                 arrivalValue += idx->second * 0.9;
                 if (Units::inBoundUnit(unit) || droneDiff >= 3)
-                    arrivalValue += idx->second * 0.4;
+                    arrivalValue += idx->second * 0.5;
             }
         }
 
@@ -76,7 +76,7 @@ namespace McRave::BuildOrder::Zerg {
                 initialValue = 12;
             if (Spy::enemyTurtle())
                 initialValue = 12;
-            if (Spy::getEnemyBuild() == Z_12Hatch || Spy::getEnemyTransition() == Z_3HatchSpeedling || Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3)
+            if (Spy::getEnemyBuild() == Z_12Hatch)
                 initialValue = 6;
         }
 
@@ -156,8 +156,9 @@ namespace McRave::BuildOrder::Zerg {
 
         focusUnit                   = Zerg_Mutalisk;
         reserveLarva                = 3;
-        unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony, Zerg_Mutalisk) == 0 && Players::getDeadCount(PlayerState::Enemy, Zerg_Drone) < 8;
-        wantNatural                 = (Spy::enemyTurtle() && Spy::getEnemyTransition() != Z_2HatchHydra) || Spy::getEnemyTransition() == Z_2HatchMuta;
+        unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony, Zerg_Mutalisk, Zerg_Evolution_Chamber) == 0 &&
+                                      Players::getDeadCount(PlayerState::Enemy, Zerg_Drone) < 8;
+        wantNatural = (Spy::enemyTurtle() && Spy::getEnemyTransition() != Z_2HatchHydra) || Spy::getEnemyTransition() == Z_2HatchMuta;
 
         auto mirrorBuild  = (Spy::getEnemyTransition() == Z_1HatchMuta && atPercent(Zerg_Spire, 0.5) && vis(Zerg_Drone) >= 12); // We have a mirror, so take a greedy extra hatch
         auto catchupHatch = (Spy::getEnemyTransition() == Z_2HatchMuta && atPercent(Zerg_Lair, 0.5));                           // We need to catch up on production
@@ -181,7 +182,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // Pumping
         zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 18 && com(Zerg_Spawning_Pool) > 0;
-        zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling);
+        zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling) || !zergUnitPump[Zerg_Drone];
         zergUnitPump[Zerg_Scourge]  = com(Zerg_Spire) == 1 && hatchCount() >= 2 && enemyFasterSpire();
         zergUnitPump[Zerg_Mutalisk] = !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) == 1 && gas(80) && vis(Zerg_Drone) >= 8;
 
@@ -203,8 +204,9 @@ namespace McRave::BuildOrder::Zerg {
         inTransition = vis(Zerg_Lair) > 0;
         inBookSupply = vis(Zerg_Overlord) < 3;
 
-        focusUnit = Zerg_Mutalisk;
-        unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony, Zerg_Mutalisk) == 0 && Players::getDeadCount(PlayerState::Enemy, Zerg_Drone) < 8;
+        focusUnit                   = Zerg_Mutalisk;
+        unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony, Zerg_Mutalisk, Zerg_Evolution_Chamber) == 0 &&
+                                      Players::getDeadCount(PlayerState::Enemy, Zerg_Drone) < 8;
 
         reserveLarva = 3;
         if (Spy::enemyPressure() || (Spy::getEnemyTransition() == Z_1HatchMuta && !Spy::enemyTurtle()))
@@ -224,12 +226,15 @@ namespace McRave::BuildOrder::Zerg {
         // Upgrades
         upgradeQueue[Metabolic_Boost] = (speedFirst || vis(Zerg_Lair) > 0) && (total(Zerg_Zergling) >= 6 && gas(100));
 
+        auto firstDronePump = vis(Zerg_Drone) < 12 && com(Zerg_Spawning_Pool) > 0;
+        auto secondDronePump = vis(Zerg_Drone) < 24 && com(Zerg_Spire) > 0 && lingSpeed();
+
         // Pumping
-        zergUnitPump[Zerg_Drone] |= vis(Zerg_Drone) < 24 && com(Zerg_Spawning_Pool) > 0;
-        zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling);
+        zergUnitPump[Zerg_Drone] |= firstDronePump || secondDronePump;
+        zergUnitPump[Zerg_Zergling] = lingsNeeded_ZvZ() > vis(Zerg_Zergling) || !zergUnitPump[Zerg_Drone];
         zergUnitPump[Zerg_Scourge]  = com(Zerg_Spire) == 1 && Spy::getEnemyTransition() == Z_1HatchMuta && !Spy::enemyTurtle() && gas(75) && total(Zerg_Scourge) < 24;
         zergUnitPump[Zerg_Mutalisk] = !zergUnitPump[Zerg_Scourge] && com(Zerg_Spire) == 1 && gas(80) && vis(Zerg_Drone) >= 8;
-        
+
         // Cap gas at 100 until lair and speed, then put all on
         gasLimit = capGas(100);
 

@@ -25,6 +25,11 @@ namespace McRave::Learning {
         string version;
         string learningExtension, gameInfoExtension;
 
+        // We store these to learn off, as reactions can cause us to get stuck in loops of trying builds we didnt learn from
+        string initialBuild      = "";
+        string initialOpener     = "";
+        string initialTransition = "";
+
         bool isComponentPossible(string component)
         {
             // Protoss wall requirements
@@ -65,6 +70,8 @@ namespace McRave::Learning {
 
             // Zerg bans
             if (Broodwar->self()->getRace() == Races::Zerg) {
+                if (opener == Z_10Hatch && transition != Z_2HatchMuta)
+                    return false;
             }
 
             return true;
@@ -332,7 +339,7 @@ namespace McRave::Learning {
                 PoolHatch.setOpeners({Z_Overpool});
                 PoolHatch.setTransitions({Z_2HatchMuta, Z_3HatchMuta, Z_3HatchHydra, Z_4HatchHydra, Z_6HatchHydra});
 
-                HatchPool.setOpeners({Z_10Hatch, Z_12Hatch});
+                HatchPool.setOpeners({Z_10Hatch, Z_11Hatch, Z_12Hatch});
                 HatchPool.setTransitions({Z_2HatchMuta, Z_3HatchMuta, Z_3HatchHydra, Z_4HatchHydra, Z_6HatchHydra});
 
                 myBuilds = {PoolHatch, HatchPool};
@@ -430,11 +437,11 @@ namespace McRave::Learning {
         while (ss >> token) {
             int w, l;
             ss >> w >> l;
-            if (BuildOrder::getCurrentBuild() == token)
+            if (initialBuild == token)
                 foundLearning = true;
-            if (BuildOrder::getCurrentBuild() == token || token == "Total" || (foundLearning && (BuildOrder::getCurrentOpener() == token || BuildOrder::getCurrentTransition() == token)))
+            if (initialBuild == token || token == "Total" || (foundLearning && (initialOpener == token || initialTransition == token)))
                 isWinner ? w++ : l++;
-            if (BuildOrder::getCurrentTransition() == token)
+            if (initialTransition == token)
                 foundLearning = false;
             config << token << " " << w << " " << l << endl;
         }
@@ -502,5 +509,9 @@ namespace McRave::Learning {
         getDefaultBuild();
         getBestBuild();
         getPermanentBuild();
+
+        initialBuild = BuildOrder::getCurrentBuild();
+        initialOpener = BuildOrder::getCurrentOpener();
+        initialTransition = BuildOrder::getCurrentTransition();
     }
 } // namespace McRave::Learning

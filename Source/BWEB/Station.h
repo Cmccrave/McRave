@@ -3,6 +3,7 @@
 
 #include <bwem.h>
 #include <set>
+#include <optional>
 
 namespace BWEB {
 
@@ -11,14 +12,19 @@ namespace BWEB {
         const BWEM::Base *partnerBase = nullptr;
         const BWEM::ChokePoint *choke = nullptr;
         BWAPI::Position resourceCentroid, defenseCentroid, anglePosition;
-        std::set<BWAPI::TilePosition> secondaryLocations;
+        std::set<BWAPI::TilePosition> smallTiles, mediumTiles, largeTiles;
         std::set<BWAPI::TilePosition> defenses;
         bool main, natural;
         double defenseAngle    = 0.0;
         double baseAngle       = 0.0;
         double chokeAngle      = 0.0;
         int defenseArrangement = -1;
-        BWAPI::TilePosition smallPosition, mediumPosition, pocketDefense;
+        BWAPI::TilePosition pocketDefense;
+
+        void addIfPlaceable(BWAPI::TilePosition, BWAPI::UnitType);
+        void findProtossLocations();
+        void findTerranLocations();
+        void findZergLocations();
 
         void initialize();
         void findChoke();
@@ -36,8 +42,6 @@ namespace BWEB {
             natural          = _natural;
             resourceCentroid = BWAPI::Position(0, 0);
             defenseCentroid  = BWAPI::Position(0, 0);
-            smallPosition    = BWAPI::TilePositions::Invalid;
-            mediumPosition   = BWAPI::TilePositions::Invalid;
             pocketDefense    = BWAPI::TilePositions::Invalid;
 
             initialize();
@@ -52,20 +56,20 @@ namespace BWEB {
         /// <summary> Returns the central position of the resources associated with this Station including geysers. </summary>
         const BWAPI::Position getResourceCentroid() const { return resourceCentroid; }
 
-        /// <summary> Returns a backup base placement in case the main is blocked or a second one is desired for walling purposes. </summary>
-        const std::set<BWAPI::TilePosition> &getSecondaryLocations() const { return secondaryLocations; }
+        /// <summary> Returns a list of Small (2x2) locations if the Station has any. </summary>
+        const std::set<BWAPI::TilePosition> getSmallLocations() const { return smallTiles; }
+
+        /// <summary> Returns a list of Medium (3x2) locations if the Station has any. </summary>
+        const std::set<BWAPI::TilePosition> getMediumLocations() const { return mediumTiles; }
+
+        /// <summary> Returns a list of Large (4x3) locations if the Station has any. </summary>
+        const std::set<BWAPI::TilePosition> &getLargeLocations() const { return largeTiles; }
 
         /// <summary> Returns the set of defense locations associated with this Station. </summary>
         const std::set<BWAPI::TilePosition> &getDefenses() const { return defenses; }
 
         /// <summary> Returns a pocket defense placement </summary>
         const BWAPI::TilePosition getPocketDefense() const { return pocketDefense; }
-
-        /// <summary> Returns a medium placement that is useful for placing first Depot/Pool </summary>
-        const BWAPI::TilePosition getMediumPosition() const { return mediumPosition; }
-
-        /// <summary> Returns a small placement that is useful for placing first Spire </summary>
-        const BWAPI::TilePosition getSmallPosition() const { return smallPosition; }
 
         /// <summary> Returns the BWEM Base associated with this Station. </summary>
         const BWEM::Base *getBase() const { return base; }
@@ -80,7 +84,7 @@ namespace BWEB {
         const bool isNatural() const { return natural; }
 
         /// <summary> Draws all the features of the Station. </summary>
-        const void draw() const;
+        const void draw(std::optional<BWAPI::Color> color = std::nullopt) const;
 
         ///
         const double getDefenseAngle() const { return defenseAngle; }

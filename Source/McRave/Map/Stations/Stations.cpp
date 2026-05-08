@@ -300,8 +300,8 @@ namespace McRave::Stations {
                                Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
 
             // Don't make sunkens if we are within a certain ling count or are expanding
-            if (station->isMain() && !Spy::enemyRush()) {
-                auto lingsPerSunken = 6 * (1 + groundCount);
+            if (station->isMain() && !Spy::enemyRush() && getColonyCount(station) == 0) {
+                auto lingsPerSunken = 4 * (1 + groundCount);
                 if (vis(Zerg_Zergling) + lingsPerSunken >= Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling))
                     return 0;
                 if (BuildOrder::takeNatural() || getStations(PlayerState::Self).size() > 1)
@@ -318,16 +318,6 @@ namespace McRave::Stations {
                         return 1 + latePool - groundCount;
                     if (Spy::getEnemyOpener() == Z_7Pool)
                         return 1 - groundCount;
-
-                    // 3 Hatch
-                    if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && com(Zerg_Spire) > 0)
-                        return 4 - groundCount;
-                    if (Spy::getEnemyTransition() == Z_3HatchSpeedling && com(Zerg_Spire) > 0)
-                        return 4 - groundCount;
-
-                    // Excess lings compared to me
-                    if (Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) > total(Zerg_Zergling) && Util::getTime() > Time(3, 40) && com(Zerg_Spire) > 0)
-                        return 1 - groundCount;
                 }
             }
 
@@ -336,7 +326,7 @@ namespace McRave::Stations {
 
                     // 4 Pool
                     if (Spy::getEnemyOpener() == Z_4Pool)
-                        desiredDefenses = max(desiredDefenses, 1 + (vis(Zerg_Spire) > 0));
+                        desiredDefenses = max(desiredDefenses, 1 + (vis(Zerg_Spire) > 0)) - groundCount;
 
                     // 3 Hatch
                     if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 && vis(Zerg_Spire) > 0)
@@ -344,7 +334,7 @@ namespace McRave::Stations {
 
                     // Speedling all-in
                     if (Spy::getEnemyTransition() == Z_2HatchSpeedling)
-                        return (Util::getTime() > Time(3, 00)) + (Util::getTime() > Time(3, 00)) + (vis(Zerg_Spire) * 2) - groundCount;
+                        return (vis(Zerg_Spire) > 0) + (com(Zerg_Spire) > 0) - groundCount;
 
                     if (total(Zerg_Mutalisk) >= 4) {
 
@@ -411,9 +401,6 @@ namespace McRave::Stations {
         int TvFFAgroundDef(const BWEB::Station *const station)
         {
             auto groundCount = getGroundDefenseCount(station);
-
-            if (station->isMain() && com(Terran_Marine) > 0)
-                return 1 - groundCount;
             return 0;
         }
 
@@ -445,6 +432,7 @@ namespace McRave::Stations {
                 Broodwar->drawTextMap(topLeft, "%d", Stations::needGroundDefenses(station));
                 Broodwar->drawTextMap(topLeft + Position(0, 16), "%d", Stations::needAirDefenses(station));
             }
+            BWEB::Stations::draw();
         }
     } // namespace
 
@@ -456,6 +444,7 @@ namespace McRave::Stations {
         updateProduction();
         updateStationDefenses();
         updateDefendPositions();
+        drawStations();
         Visuals::endPerfTest("Stations");
     }
 
