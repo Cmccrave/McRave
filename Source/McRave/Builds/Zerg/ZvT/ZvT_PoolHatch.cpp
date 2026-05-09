@@ -44,7 +44,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Overlord]      = 1 + (s >= 18) + (s >= 30);
 
         // Pumping
-        zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < (12 - vis(Zerg_Hatchery));
+        zergUnitPump[Zerg_Drone]    = capTotalDrones(14);
         zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvT();
     }
 
@@ -60,7 +60,7 @@ namespace McRave::BuildOrder::Zerg {
         buildQueue[Zerg_Spawning_Pool] = s >= 26;
 
         // Pumping
-        zergUnitPump[Zerg_Drone]    = vis(Zerg_Drone) < (13 - vis(Zerg_Extractor) - vis(Zerg_Spawning_Pool));
+        zergUnitPump[Zerg_Drone]    = capTotalDrones(15);
         zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvT();
     }
 

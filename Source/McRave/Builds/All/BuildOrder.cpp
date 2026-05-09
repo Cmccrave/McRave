@@ -7,6 +7,7 @@
 #include "Builds/Zerg/ZergBuildOrder.h"
 #include "Info/Player/Players.h"
 #include "Info/Resource/Resources.h"
+#include "Macro/Upgrading/Upgrading.h"
 #include "Main/Common.h"
 #include "Main/Visuals.h"
 #include "Map/Terrain/Terrain.h"
@@ -233,11 +234,11 @@ namespace McRave::BuildOrder {
         if (type == Zerg_Hydralisk)
             return com(Zerg_Hydralisk_Den) > 0;
         if (type == Zerg_Lurker)
-            return com(Zerg_Hydralisk_Den) > 0 && com(Zerg_Lair) > 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
+            return com(Zerg_Hydralisk) > 0 && Broodwar->self()->hasResearched(TechTypes::Lurker_Aspect);
         if (type == Zerg_Queen)
-            return com(Zerg_Queens_Nest);
+            return com(Zerg_Queens_Nest) > 0;
         if (type == Zerg_Ultralisk)
-            return com(Zerg_Ultralisk_Cavern) > 0;
+            return com(Zerg_Ultralisk_Cavern) > 0 && Upgrading::haveOrUpgrading(UpgradeTypes::Anabolic_Synthesis) && Upgrading::haveOrUpgrading(UpgradeTypes::Chitinous_Plating);
         if (type == Zerg_Defiler)
             return com(Zerg_Defiler_Mound) > 0;
 

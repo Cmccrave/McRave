@@ -368,7 +368,7 @@ namespace McRave::Targets {
         }
 
         // If our build is hitting a timing, kill workers
-        if (BuildOrder::isPressure(Zerg_Mutalisk) && !target.getType().isWorker() && !target.isThreatening() && Util::getTime() < Time(8, 00))
+        if (BuildOrder::isPressure(Zerg_Mutalisk) && !target.isLightAir() && !target.isTransport() && !target.getType().isWorker() && !target.isThreatening() && Util::getTime() < Time(8, 00))
             return Priority::Ignore;
 
         // One/two shot is high priority to hit

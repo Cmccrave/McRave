@@ -96,6 +96,7 @@ const std::string_view P_ReaverCarrier = "ReaverCarrier";
 const std::string_view T_Rush    = "MarineRush";
 const std::string_view T_Academy = "Academy";
 const std::string_view T_Sparks  = "Sparks";
+const std::string_view T_4Rax    = "4Rax";
 const std::string_view T_5Rax    = "5Rax";
 
 const std::string_view T_5Fact        = "5Fact";

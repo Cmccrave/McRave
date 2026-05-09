@@ -801,23 +801,21 @@ namespace McRave::Stations {
     // Returns true if this station is going to be lost
     bool isThreatened(const BWEB::Station *const station)
     {
-        // Find self unit with losing sim state that is targeting a threatening unit near this station
+        // If a self owned unit is fighting a winning battle, then it's not threatened
         const auto closestSelf = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) {
-            if (u->getRole() != Role::Combat || !u->isCompleted())
+            if (u->getRole() != Role::Combat || !u->isCompleted() || u->isLightAir())
                 return false;
-            return Terrain::inArea(station, u->getPosition());
-        });
-        if (closestSelf) {
-            if (closestSelf->hasTarget(); auto target = closestSelf->getTarget().lock()) {
-                if (target->isThreatening() && closestSelf->getSimState() == SimState::Loss)
+            if (u->hasTarget(); auto target = u->getTarget().lock()) {
+                if (Terrain::inArea(station, u->getPosition()) && Terrain::inArea(station, target->getPosition()) && u->getLocalState() == LocalState::Attack && u->getSimState() == SimState::Win)
                     return true;
-                return false;
             }
-        }
+            return false;
+        });
+        if (closestSelf)
+            return false;
 
         // There's a threatening unit and nothing to support
         const auto closestEnemy = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Enemy, [&](auto &u) { return u->isThreatening() && Terrain::inArea(station, u->getPosition()); });
-
         return closestEnemy;
     }
 

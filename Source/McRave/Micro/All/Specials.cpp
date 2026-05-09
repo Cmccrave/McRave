@@ -285,14 +285,14 @@ namespace McRave::Command {
             for (auto &t : list) {
                 if (auto enemy = t.lock()) {
                     if (enemy->getType() == Protoss_Reaver || enemy->isThreatening()) {
-                        threatened = enemy->hasTarget() && enemy->getTarget().lock()->getType().isWorker() && enemy->hasAttackedRecently();
+                        threatened = threatened || enemy->hasAttackedRecently(Zerg_Drone);
                         damage += int(enemy->getGroundDamage());
                     }
                 }
             }
 
             auto hideFromDamage = unit.isBurrowed() ? damage >= unit.getHealth() / 2 : damage >= unit.getHealth();
-            auto burrowUnit     = !unit.getBuildPosition().isValid() && !unit.getUnitsTargetingThis().empty() && (hideFromDamage || threatened) && !Planning::overlapsPlan(unit, unit.getPosition());
+            auto burrowUnit     = !unit.getBuildPosition().isValid() && (hideFromDamage || threatened) && !Planning::overlapsPlan(unit, unit.getPosition());
 
             // Burrow/unburrow as needed
             if (!unit.isBurrowed() && burrowUnit) {

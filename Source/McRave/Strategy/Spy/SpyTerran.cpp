@@ -194,11 +194,15 @@ namespace McRave::Spy::Terran {
                         theSpy.transition.name = T_5Rax;
                 }
 
+                // 4Rax
+                if (theSpy.expand.possible && arrivesBy(20, Terran_Marine, Time(7, 00)))
+                    theSpy.transition.name = T_4Rax;
+
                 // Goliaths builds
                 if (completesBy(2, Terran_Goliath, Time(5, 00)) || completesBy(4, Terran_Goliath, Time(5, 30)) || completesBy(6, Terran_Goliath, Time(6, 00)) ||
                     completesBy(1, UpgradeTypes::Charon_Boosters, Time(7, 15)))
                     theSpy.transition.name = T_3FactGoliath;
-                if (completesBy(3, Terran_Goliath, Time(6, 15)) || completesBy(5, Terran_Goliath, Time(6, 45)) || completesBy(7, Terran_Goliath, Time(7, 15)) ||
+                else if (completesBy(3, Terran_Goliath, Time(6, 15)) || completesBy(5, Terran_Goliath, Time(6, 45)) || completesBy(7, Terran_Goliath, Time(7, 15)) ||
                     completesBy(1, UpgradeTypes::Charon_Boosters, Time(8, 30)))
                     theSpy.transition.name = T_5FactGoliath;
             }

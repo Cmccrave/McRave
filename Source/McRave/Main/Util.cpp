@@ -402,7 +402,7 @@ namespace McRave::Util {
         gameTime.minutes = minutes;
     }
 
-    pair<double, Position> findPointOnCircle(Position source, Position target, double radius, function<double(Position)> calc)
+    pair<double, Position> findPointOnCircle(Position target, double radius, function<double(Position)> calc)
     {
         // Create a search tree in a circle around the target
         auto position                 = target;

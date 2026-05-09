@@ -107,7 +107,7 @@ namespace McRave::BuildOrder::Zerg {
 
         // TODO: Fix T spy
         if (Spy::getEnemyOpener() == T_8Rax || Spy::enemyProxy())
-            initialValue = 10;
+            initialValue = 12;
         if (Spy::getEnemyTransition() == U_WorkerRush)
             initialValue = 24;
 
@@ -174,7 +174,7 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit    = Zerg_Mutalisk;
         reserveLarva = 6;
 
-        auto thirdHatch  = (Spy::enemyFastExpand() && com(Zerg_Spire) == 0 && s >= 48 && vis(Zerg_Drone) >= 20);
+        auto thirdHatch  = (Spy::enemyFastExpand() && com(Zerg_Spire) == 0 && vis(Zerg_Drone) >= 20);
         auto fourthHatch = com(Zerg_Mutalisk) > 0;
 
         auto firstGas  = (hatchCount() >= 2 && vis(Zerg_Drone) >= 10 && vis(Zerg_Spawning_Pool) > 0);

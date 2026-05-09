@@ -4,13 +4,16 @@
 namespace McRave {
     class UnitFrames {
     protected:
-        int lastAttackFrame  = -999;
-        int lastRepairFrame  = -999;
+        int lastAttackFrame = -999;
+        int lastRepairFrame = -999;
+        std::map<BWAPI::UnitType, int> lastAttackTypeFrame;
+        std::map<BWAPI::UnitType, int> lastRepairTypeFrame;
+
         int lastVisibleFrame = -999;
         int lastMoveFrame    = -999;
         int lastStuckFrame   = 0;
         int lastStimFrame    = 0;
-        int lastQueueFrame = 0;
+        int lastQueueFrame   = 0;
         int lastBurrowFrame  = 0;
         int lastSiegeFrame   = 0;
 
@@ -30,8 +33,13 @@ namespace McRave {
         int getRemainingTrainFrames() { return remainingTrainFrame; }
         int framesHoldingResource() { return resourceHeldFrames; }
 
-        bool hasAttackedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastAttackFrame < 120); }
-        bool hasRepairedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastRepairFrame < 120); }
+        bool hasAttackedRecently(BWAPI::UnitType type = BWAPI::UnitTypes::None)
+        {
+            auto compareFrame = (type != BWAPI::UnitTypes::None) ? lastAttackTypeFrame[type] : lastAttackFrame;
+            return BWAPI::Broodwar->getFrameCount() - compareFrame < 120;
+        }
+        bool hasRepairedRecently(BWAPI::UnitType type = BWAPI::UnitTypes::None) { return (BWAPI::Broodwar->getFrameCount() - lastRepairFrame < 120); }
+
         bool hasBurrowedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastBurrowFrame < 120); }
         bool hasSiegedRecently() { return (BWAPI::Broodwar->getFrameCount() - lastSiegeFrame < 120); }
 

@@ -187,7 +187,7 @@ namespace McRave::Combat {
             // Inbound unit fighting
             if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure(Zerg_Mutalisk) && Util::getTime() < Time(10, 00)) {
                 const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy,
-                                                          [&](auto &u) { return Units::inBoundUnit(*u, 15) && !u->getType().isWorker() && u->getType() != Terran_Vulture && !u->isHidden(); });
+                                                          [&](auto &u) { return Units::inBoundUnit(*u, 20) && u->unit()->exists() && !u->getType().isWorker() && u->getType() != Terran_Vulture && !u->isHidden(); });
 
                 if (closest) {
                     harassPosition = closest->getPosition();
@@ -196,10 +196,11 @@ namespace McRave::Combat {
                 }
             }
 
-            // Inbound siege unit or transport unit targeting
+            // Inbound important unit targeting
             if (Players::ZvT() || Players::ZvP()) {
-                const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy,
-                                                          [&](auto &u) { return Units::inBoundUnit(*u, 15) && (u->isSiegeTank() || u->getType() == Protoss_Reaver || u->isTransport()); });
+                const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return Units::inBoundUnit(*u, 15) && (u->isSiegeTank() || u->getType() == Protoss_Reaver || u->getType() == Terran_Valkyrie || u->isTransport());
+                });
                 if (closest) {
                     harassPosition = closest->getPosition();
                     LOG_SLOW("Harassing inbound units, closest is a ", closest->getType().c_str());

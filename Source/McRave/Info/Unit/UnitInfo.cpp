@@ -176,6 +176,12 @@ namespace McRave {
                     lastAttackFrame = Broodwar->getFrameCount();
             }
 
+            // Store the type it attacked
+            if (lastAttackFrame == Broodwar->getFrameCount()) {
+                if (unit()->getOrderTarget() && unit()->getOrderTarget()->exists())
+                    lastAttackTypeFrame[unit()->getOrderTarget()->getType()] = Broodwar->getFrameCount();
+            }
+
             // Clear last path
             if (lastTile != tilePosition) {
                 marchPath   = BWEB::Path();

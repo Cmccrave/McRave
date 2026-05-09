@@ -320,5 +320,5 @@ namespace McRave::Util {
         return returnVector;
     }
 
-    std::pair<double, BWAPI::Position> findPointOnCircle(BWAPI::Position source, BWAPI::Position target, double radius, std::function<double(BWAPI::Position)> calc);
+    std::pair<double, BWAPI::Position> findPointOnCircle(BWAPI::Position, double, std::function<double(BWAPI::Position)>);
 } // namespace McRave::Util

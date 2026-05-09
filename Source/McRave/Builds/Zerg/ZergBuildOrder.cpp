@@ -263,7 +263,7 @@ namespace McRave::BuildOrder::Zerg {
             }
 
             // Queue enough overlords to fit the reservations
-            if (reserveLarva > 0 && atPercent(Zerg_Spire, 0.33) && total(focusUnit) < reserveLarva && com(Zerg_Spire) == 0) {
+            if (reserveLarva > 0 && atPercent(Zerg_Spire, 0.70) && total(focusUnit) < reserveLarva && com(Zerg_Spire) == 0) {
                 auto expectedSupply       = s + ((reserveLarva - total(focusUnit)) * 4);
                 auto expectedOverlords    = int(ceil(double(expectedSupply) / 16.0));
                 buildQueue[Zerg_Overlord] = expectedOverlords;
@@ -489,8 +489,9 @@ namespace McRave::BuildOrder::Zerg {
                     auto dropGasLarva    = !Players::ZvZ() && vis(Zerg_Larva) >= hatchCount() && unitReservations.empty();
                     auto dropGasDefenses = needSunks && (Players::ZvZ() || Spy::enemyProxy() || Spy::getEnemyOpener() == P_9_9 || Spy::getEnemyOpener() == T_8Rax);
 
-                    auto gasPer            = (vis(Zerg_Spire) > 0) ? 20 : 13;
-                    auto mineralToGasRatio = minRemaining < max(100, 8 * vis(Zerg_Drone)) && gasRemaining > max(150, gasPer * vis(Zerg_Drone));
+                    auto gasPer            = (vis(Zerg_Spire) > 0) ? 18 : 13;
+                    auto minsPer           = 9;
+                    auto mineralToGasRatio = minRemaining < max(100, minsPer * vis(Zerg_Drone)) && gasRemaining > max(150, gasPer * vis(Zerg_Drone));
 
                     if (mineralToGasRatio && !rush && !pressure) {
                         if (dropGasRush || dropGasLarva || dropGasDefenses || Roles::getRoleCount(Role::Worker) < 5 || Players::ZvZ())
@@ -532,8 +533,10 @@ namespace McRave::BuildOrder::Zerg {
                 upgradeQueue[Pneumatized_Carapace] = 1;
 
             // Drone burrow to avoid a targeted tech build
-            auto zvtBurrow                  = (Players::ZvT() && Spy::getEnemyBuild() == T_RaxFact && Util::getTime() > Time(4, 15) && !Spy::enemyFastExpand());
-            auto zvpBurrow                  = (Players::ZvP() && Spy::getEnemyTransition() == P_Robo && Util::getTime() > Time(5, 00) && !Spy::enemyFastExpand());
+            auto zvtTime                    = Spy::enemyFastExpand() ? Time(4, 45) : Time(4, 15);
+            auto zvpTime                    = Spy::enemyFastExpand() ? Time(5, 30) : Time(5, 00);
+            auto zvtBurrow                  = Players::ZvT() && Spy::getEnemyBuild() == T_RaxFact && Util::getTime() > zvtTime;
+            auto zvpBurrow                  = Players::ZvP() && Spy::getEnemyTransition() == P_Robo && Util::getTime() > zvpTime;
             techQueue[TechTypes::Burrowing] = zvtBurrow || zvpBurrow;
 
             if (inOpening)
@@ -828,10 +831,11 @@ namespace McRave::BuildOrder::Zerg {
             zergUnitPump[Zerg_Drone] |= zergUnitPump[Zerg_Defiler] || zergUnitPump[Zerg_Scourge] || zergUnitPump[Zerg_Mutalisk] || zergUnitPump[Zerg_Hydralisk];
 
             // After making a pool, don't spend all the larva until we see something
-            if (com(Zerg_Spawning_Pool) > 0 && vis(Zerg_Zergling) > 0 && Util::getTime() < Time(3, 30) && Spy::getEnemyBuild() == "Unknown") {
+            auto time = Players::ZvP() ? Time(3, 30) : Time(3, 15);
+            if (com(Zerg_Spawning_Pool) > 0 && vis(Zerg_Zergling) > 0 && Util::getTime() < time && Spy::getEnemyBuild() == "Unknown") {
                 static bool saveLarva = true;
                 if (vis(Zerg_Larva) >= 3) {
-                    static auto spendLarva = Util::getTime() + Time(0, 10);
+                    static auto spendLarva = Util::getTime() + Time(0, 5);
                     if (Util::getTime() >= spendLarva)
                         saveLarva = false;
                 }
@@ -1062,5 +1066,12 @@ namespace McRave::BuildOrder::Zerg {
             }
         }
         return int(ceil(double(value - Broodwar->self()->gas() - onTheWay) / 8.0));
+    }
+
+    bool capTotalDrones(int count)
+    {
+        auto buildingCount = Players::getVisibleCount(PlayerState::Self, Zerg_Hatchery, Zerg_Extractor, Zerg_Spawning_Pool, Zerg_Hydralisk_Den, Zerg_Creep_Colony, Zerg_Sunken_Colony,
+                                                      Zerg_Spore_Colony, Zerg_Evolution_Chamber);
+        return total(Zerg_Drone) < (count - buildingCount);
     }
 } // namespace McRave::BuildOrder::Zerg

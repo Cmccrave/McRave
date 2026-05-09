@@ -10,27 +10,46 @@ using namespace McRave::BuildOrder::All;
 
 namespace McRave::BuildOrder::Zerg {
 
+    void ZvT_HP_11Hatch()
+    {
+        // 11h 11p
+        transitionReady = vis(Zerg_Spawning_Pool) > 0;
+        scout           = scout || (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
+        planEarly       = (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
+
+        // Buildings
+        buildQueue[Zerg_Hatchery]      = 1 + (s >= 22);
+        buildQueue[Zerg_Spawning_Pool] = s >= 22 && (hatchCount() >= 2);
+        buildQueue[Zerg_Overlord]      = 1 + (s >= 16) + (s >= 32);
+
+        // Pumping
+        zergUnitPump[Zerg_Drone]    = capTotalDrones(15);
+        zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvT();
+    }
+
     void ZvT_HP_12Hatch()
     {
         // 12h 11p
-        transitionReady =                               vis(Zerg_Spawning_Pool) > 0;
-        scout =                                         scout || (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
-        planEarly =                                     (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
+        transitionReady = vis(Zerg_Spawning_Pool) > 0;
+        scout           = scout || (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
+        planEarly       = (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
 
         // Buildings
-        buildQueue[Zerg_Hatchery] =                     1 + (s >= 24);
-        buildQueue[Zerg_Spawning_Pool] =                (hatchCount() >= 2);
-        buildQueue[Zerg_Overlord] =                     1 + (s >= 16) + (s >= 32);
+        buildQueue[Zerg_Hatchery]      = 1 + (s >= 24);
+        buildQueue[Zerg_Spawning_Pool] = (hatchCount() >= 2);
+        buildQueue[Zerg_Overlord]      = 1 + (s >= 16) + (s >= 32);
 
         // Pumping
-        zergUnitPump[Zerg_Drone] =                      vis(Zerg_Drone) < 13;
-        zergUnitPump[Zerg_Zergling] =                   vis(Zerg_Zergling) < lingsNeeded_ZvT();
+        zergUnitPump[Zerg_Drone]    = capTotalDrones(15);
+        zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvT();
     }
 
     void ZvT_HP()
     {
         // Openers
+        if (currentOpener == Z_11Hatch)
+            ZvT_HP_11Hatch();
         if (currentOpener == Z_12Hatch)
             ZvT_HP_12Hatch();
     }
-}
+} // namespace McRave::BuildOrder::Zerg

@@ -152,7 +152,7 @@ namespace McRave {
             return type == UnitTypes::Protoss_Reaver || type == UnitTypes::Protoss_High_Templar || type == UnitTypes::Terran_Vulture_Spider_Mine || type == UnitTypes::Protoss_Archon ||
                    type == UnitTypes::Protoss_Corsair || type == UnitTypes::Terran_Valkyrie || type == UnitTypes::Zerg_Devourer;
         }
-        bool isLightAir() { return type == UnitTypes::Protoss_Corsair || type == UnitTypes::Protoss_Scout || type == UnitTypes::Zerg_Mutalisk || type == UnitTypes::Terran_Wraith; }
+        bool isLightAir() { return type == UnitTypes::Protoss_Corsair || type == UnitTypes::Protoss_Scout || type == UnitTypes::Zerg_Mutalisk || type == UnitTypes::Terran_Wraith || type == UnitTypes::Terran_Valkyrie; }
         bool isToken() { return type == UnitTypes::Terran_Vulture_Spider_Mine || type == UnitTypes::Protoss_Scarab || type == UnitTypes::Protoss_Interceptor || type == UnitTypes::Zerg_Larva; }
         bool isCapitalShip() { return type == UnitTypes::Protoss_Carrier || type == UnitTypes::Terran_Battlecruiser || type == UnitTypes::Zerg_Guardian; }
         bool isHovering() { return type.isWorker() || type == UnitTypes::Protoss_Archon || type == UnitTypes::Protoss_Dark_Archon || type == UnitTypes::Terran_Vulture; }

@@ -24,7 +24,7 @@ namespace McRave::Walls::Zerg {
         if (Spy::getEnemyBuild() == P_1GateCore || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
             if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 3)
                 return 2;
-            return (Util::getTime() > Time(3, 30)) + (Util::getTime() > Time(4, 30));
+            return (Util::getTime() > Time(3, 30));
         }
 
         // 2Gate
@@ -32,18 +32,23 @@ namespace McRave::Walls::Zerg {
             if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0)
                 return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 10)) + (Util::getTime() > Time(4, 30));
 
+            // 10-15
             if (Spy::getEnemyOpener() == P_10_15)
                 return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 10)) + (Util::getTime() > Time(5, 00));
 
+            // 10-12
             if (Spy::getEnemyOpener() == P_10_12 || Spy::getEnemyOpener() == "Unknown")
                 return (Util::getTime() > Time(3, 15)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 45));
 
+            // 9-9
             if (Spy::getEnemyOpener() == P_9_9)
                 return 1 + (BuildOrder::getCurrentOpener() == Z_12Hatch) + (Util::getTime() > Time(4, 30));
 
+            // Proxy 9-9
             if (Spy::getEnemyOpener() == P_Proxy_9_9)
                 return 2;
 
+            // Horror 9-9
             if (Spy::getEnemyOpener() == P_Horror_9_9)
                 return 1;
 
@@ -70,37 +75,38 @@ namespace McRave::Walls::Zerg {
     {
         // 1 base transitions
         if (Spy::getEnemyBuild() == P_2Gate || Spy::getEnemyBuild() == P_1GateCore) {
+            auto initial = (Spy::getEnemyBuild() == P_2Gate) ? 2 : 1;
 
             // 4Gate
             if (Spy::getEnemyTransition() == P_4Gate) {
-                return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 15)) +
+                return initial + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 15)) +
                        (Util::getTime() > Time(5, 30)) + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(7, 00)) + (Util::getTime() > Time(8, 00));
             }
 
             // DT
             if (Spy::getEnemyTransition() == P_DT) {
-                return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 30));
+                return initial + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 30));
             }
 
             // Corsair
             if (Spy::getEnemyTransition() == P_Corsair || Spy::getEnemyTransition() == P_CorsairGoon) {
-                return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 45));
+                return initial + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 45));
             }
 
             // Speedlot
             if (Spy::getEnemyTransition() == P_Speedlot) {
-                return (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 15));
+                return initial + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 15));
             }
 
             // Zealot flood
             if (Spy::getEnemyTransition() == P_Rush) {
-                return (Util::getTime() > Time(3, 40)) + (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(4, 20)) + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 00)) +
+                return initial + (Util::getTime() > Time(4, 20)) + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 00)) +
                        (Util::getTime() > Time(5, 20)) + (Util::getTime() > Time(5, 40)) + (Util::getTime() > Time(6, 00)) - Spy::enemyProxy();
             }
 
             // Worker rush with zealots
             if (Spy::getEnemyTransition() == U_WorkerRush) {
-                return 2 + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 20));
+                return initial + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 20));
             }
 
             if (Util::getTime() > Time(4, 00) && Util::getTime() < Time(6, 30))
@@ -225,9 +231,8 @@ namespace McRave::Walls::Zerg {
 
     int ZvT_Transition(BWEB::Wall &wall)
     {
-        if (Spy::getEnemyTransition() == U_WorkerRush) {
+        if (Spy::getEnemyTransition() == U_WorkerRush)
             return 0;
-        }
 
         // Upwards of 5 sunkens vs marine flood
         if (Spy::getEnemyTransition() == T_Rush)
@@ -238,8 +243,12 @@ namespace McRave::Walls::Zerg {
             return 5 * (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 45));
 
         // Need 3 sunkens to defend against 7:30 timing
-        if (Spy::getEnemyTransition() == T_3FactGoliath)
+        if (Spy::getEnemyTransition() == T_3FactGoliath && Stations::getStations(PlayerState::Self).size() >= 3)
             return 1 + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 30));
+
+        // 4Rax
+        if (Spy::getEnemyTransition() == T_4Rax)
+            return 5 * (Util::getTime() > Time(6, 00));
 
         // Need 1 sunken to defend vulture threat
         if (Spy::getEnemyTransition() == T_2PortWraith)

@@ -991,7 +991,8 @@ namespace McRave::Scouts {
             }
             if (Players::ZvT()) {
                 auto sacrificeZvT = (!Terrain::foundEnemy() && Util::getTime() > Time(4, 00) && Spy::getEnemyBuild() == "Unknown") + //
-                                    (!Spy::enemyFastExpand() && Util::getTime() > Time(4, 45) && Spy::getEnemyTransition() == "Unknown");
+                                    (!Spy::enemyFastExpand() && Util::getTime() > Time(4, 45) && Spy::getEnemyTransition() == "Unknown") + //
+                                    (Spy::enemyFastExpand() && Util::getTime() > Time(6, 00) && Spy::getEnemyTransition() == "Unknown");
 
                 if (sacrificeZvT > sacrificeCount)
                     requestSacrifice();

@@ -477,10 +477,11 @@ namespace McRave::Command {
                 return threat;
             };
 
+            auto kitePoint = unit.isFlying() ? target.getPosition() : unit.getPosition();
             auto cd        = target.isFlying() ? unit.getType().airWeapon().damageCooldown() : unit.getType().groundWeapon().damageCooldown();
             auto kiteRange = (unit.getSpeed() * cd) + selfRange;
             auto maxRange  = max(kiteRange, maxEnemyRange);
-            auto calcPair  = Util::findPointOnCircle(unit.getPosition(), unit.getPosition(), maxRange, threatCalc);
+            auto calcPair  = Util::findPointOnCircle(kitePoint, maxRange, threatCalc);
             kiteTowards    = calcPair.second;
             // Visuals::drawLine(unit.getPosition(), kiteTowards, Colors::Purple);
         }

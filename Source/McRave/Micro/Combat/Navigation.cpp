@@ -159,7 +159,7 @@ namespace McRave::Combat::Navigation {
 
         auto selfRange   = target->isFlying() ? unit.getAirRange() : unit.getGroundRange();
         auto targetRange = unit.isFlying() ? target->getAirRange() : target->getGroundRange();
-        auto maxRange    = Util::boxDistance(*commander, *target); //max(selfRange, targetRange);
+        auto maxRange    = max(selfRange, targetRange);
 
         // Get a position away from splash
         auto commanderAngle = BWEB::Map::getAngle(commander->getPosition(), target->getPosition());
@@ -178,8 +178,6 @@ namespace McRave::Combat::Navigation {
             auto density = double(Grids::getAirDensity(p, PlayerState::Self));
 
             Visuals::drawCircle(p, 2, Colors::Blue, true);
-            if (p.getDistance(commander->getPosition()) > 160.0)
-                return DBL_MAX;
 
             if (unit.isTargetedByType(Terran_Valkyrie)) {
                 auto angle = BWEB::Map::getAngle(p, target->getPosition());
@@ -193,7 +191,7 @@ namespace McRave::Combat::Navigation {
             }
             return threat;
         };
-        auto calcPair = Util::findPointOnCircle(unit.getPosition(), target->getPosition(), maxRange, threatCalc);
+        auto calcPair = Util::findPointOnCircle(unit.getPosition(), maxRange, threatCalc);
         unit.setNavigation(calcPair.second);
     }
 
