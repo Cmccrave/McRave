@@ -508,7 +508,7 @@ namespace McRave::Scouts {
             // Check if fully scouted
             if (Terrain::getEnemyNatural()) {
                 natural.center = Terrain::getEnemyNatural()->getBase()->Center();
-                natural.addTargets(Terrain::getEnemyNatural()->getBase()->Center(), 160.0);
+                natural.addTargets(Terrain::getEnemyNatural()->getBase()->Center(), 160);
                 if (Stations::isBaseExplored(Terrain::getEnemyNatural()))
                     natScouted = true;
 
@@ -798,7 +798,7 @@ namespace McRave::Scouts {
             }
 
             for (auto &[type, count] : totalDesiredScoutTypeCounts) {
-                if (scoutTypeDeaths[type] > 0 && (type != Zerg_Zergling || Players::ZvZ() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0))
+                if (scoutTypeDeaths[type] > 0 && (type == Zerg_Drone || Players::ZvZ() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0))
                     continue;
                 if (totalCurrentScoutTypeCounts[type] < totalDesiredScoutTypeCounts[type] && (type.isFlyer() || !contained))
                     assign(type);
@@ -998,7 +998,7 @@ namespace McRave::Scouts {
                     requestSacrifice();
             }
             if (Players::ZvZ()) {
-                auto sacrificeZvZ = (!Terrain::foundEnemy() && !Spy::enemyTurtle() && Util::getTime() > Time(4, 00) && Spy::getEnemyTransition() == "Unknown");
+                auto sacrificeZvZ = int(!Terrain::foundEnemy() && !Spy::enemyTurtle() && Util::getTime() > Time(4, 00) && Spy::getEnemyTransition() == "Unknown");
 
                 if (sacrificeZvZ > sacrificeCount)
                     requestSacrifice();

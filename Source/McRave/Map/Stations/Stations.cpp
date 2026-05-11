@@ -25,6 +25,7 @@ namespace McRave::Stations {
         vector<const BWEB::Station *> allyStations;
 
         map<const BWEB::Station *const, Position> defendPositions;
+        map<const BWEB::Station *const, Position> holdPositions;
         multimap<double, const BWEB::Station *const> stationsBySaturation;
         multimap<double, const BWEB::Station *const> stationsByProduction;
         map<const BWEB::Station *const, int> airDefenseCount, groundDefenseCount, remainingMinerals, remainingGas, initialMinerals, initialGas;
@@ -204,6 +205,65 @@ namespace McRave::Stations {
                 auto wall = BWEB::Walls::getClosestWall(station->getBase()->Center());
                 if (wall && Walls::isComplete(wall) && wall->getStation() == station) {
                     if (wall->getOpenings().size() > 0) {
+                    }
+                }
+            }
+        }
+
+        void updateHoldPositions()
+        {
+            auto holdBothChokes   = Util::getTime() < Time(3, 30);
+            auto holdWallDefender = !Players::PvZ() && Players::getStrength(PlayerState::Enemy).maxGroundRange < 160; // TODO: Expand on this concept
+            auto holdWallPiece    = Players::PvZ() || Players::PvT();
+            auto holdAheadWall    = Players::ZvZ() || Players::ZvP();
+            auto holdBehindWall   = Players::TvZ() || Players::TvP();
+
+            for (auto &station : BWEB::Stations::getStations()) {
+                holdPositions[&station] = station.getBase()->Center();
+                if (!station.getChokepoint())
+                    continue;
+
+                auto chokeCenter    = Position(station.getChokepoint()->Center());
+                auto defendPosition = getDefendPosition(&station);
+
+                // Hold between chokes
+                if (auto closestMain = BWEB::Stations::getClosestMainStation(station.getBase()->Center())) {
+                    if (holdBothChokes && station.isNatural() && closestMain->getChokepoint()) {
+                        auto chokeCenter        = Position(closestMain->getChokepoint()->Center());
+                        holdPositions[&station] = Util::shiftTowards(station.getBase()->Center(), chokeCenter, 128.0);
+                        continue;
+                    }
+                }
+
+                if (auto closestWall = BWEB::Walls::getWall(station.getChokepoint()); (closestWall && closestWall->getStation() == &station)) {
+
+                    // Hold with defender
+                    if (holdWallDefender) {
+
+                        auto closestDefender = Util::getClosestUnit(chokeCenter, PlayerState::Self,
+                                                                    [&](auto &u) { return u->getRole() == Role::Defender && Util::contains(closestWall->getDefenses(), u->getTilePosition()); });
+                        if (closestDefender) {
+
+                            holdPositions[&station] = closestDefender->getPosition();
+                            continue;
+                        }
+                    }
+
+                    // Hold with wall
+                    if (holdWallPiece) {
+                        auto closestBuilding = Util::getClosestUnit(chokeCenter, PlayerState::Self,
+                                                                    [&](auto &u) { return u->getType().isBuilding() && closestWall->isWallTile(u->getTilePosition()); });
+                        if (closestBuilding) {
+                            auto dist = closestBuilding->getPosition().getDistance(station.getBase()->Center());
+
+                            if (holdAheadWall && !closestWall->isWallTile(closestBuilding->getTilePosition()))
+                                holdPositions[&station] = Util::shiftTowards(station.getBase()->Center(), defendPosition, dist + 64.0);
+                            else if (holdBehindWall)
+                                holdPositions[&station] = Util::shiftTowards(station.getBase()->Center(), defendPosition, dist - 64.0);
+                            else
+                                holdPositions[&station] = Util::shiftTowards(station.getBase()->Center(), defendPosition, dist);
+                            continue;
+                        }
                     }
                 }
             }
@@ -444,6 +504,7 @@ namespace McRave::Stations {
         updateProduction();
         updateStationDefenses();
         updateDefendPositions();
+        updateHoldPositions();
         drawStations();
         Visuals::endPerfTest("Stations");
     }
@@ -916,10 +977,20 @@ namespace McRave::Stations {
 
     Position getDefendPosition(const BWEB::Station *const station)
     {
-        if (defendPositions.find(station) != defendPositions.end())
-            return defendPositions[station];
+        auto itr = defendPositions.find(station);
+        if (itr != defendPositions.end())
+            return itr->second;
         return Positions::Invalid;
     }
+
+    Position getHoldPosition(const BWEB::Station *const station)
+    {
+        auto itr = holdPositions.find(station);
+        if (itr != holdPositions.end())
+            return itr->second;
+        return Positions::Invalid;
+    }
+
     multimap<double, const BWEB::Station *const> &getStationsBySaturation() { return stationsBySaturation; }
     multimap<double, const BWEB::Station *const> &getStationsByProduction() { return stationsByProduction; }
     int getGasingStationsCount() { return gasingStations; }

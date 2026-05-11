@@ -276,9 +276,17 @@ namespace BWEB {
         }
     }
 
-    void Station::addIfPlaceable(TilePosition tile, UnitType type)
+    void Station::addIfPlaceable(TilePosition tile, Piece piece)
     {
         auto placement = base->Location() + tile;
+
+        auto type = UnitTypes::None;
+        if (piece == Piece::Large)
+            type = Protoss_Gateway;
+        if (piece == Piece::Medium)
+            type = Protoss_Cybernetics_Core;
+        if (piece == Piece::Small)
+            type = Protoss_Pylon;
 
         // TODO: Support wide if needed
         if (Map::isPlaceable(type, placement)) {
@@ -286,10 +294,10 @@ namespace BWEB {
                 largeTiles.insert(placement);
             else if (type.tileWidth() == 3)
                 mediumTiles.insert(placement);
-            else if (type.canAttack())
+            else if (type.tileWidth() == 2) {
                 defenses.insert(placement);
-            else
                 smallTiles.insert(placement);
+            }
         }
     }
 
@@ -304,32 +312,38 @@ namespace BWEB {
 
             // Place left of base
             if (quadrant == 0) {
-                addIfPlaceable(TilePosition(-6, -1), Protoss_Gateway);
-                addIfPlaceable(TilePosition(-6, 2), Protoss_Gateway);
-                addIfPlaceable(TilePosition(-2, 3), Protoss_Cybernetics_Core);
-                addIfPlaceable(TilePosition(-2, 1), Protoss_Photon_Cannon);
+                addIfPlaceable(TilePosition(-6, -4), Piece::Large);
+                addIfPlaceable(TilePosition(-6, -1), Piece::Large);
+                addIfPlaceable(TilePosition(-6, 2), Piece::Large);
+                addIfPlaceable(TilePosition(-2, 3), Piece::Medium);
+                addIfPlaceable(TilePosition(-2, -1), Piece::Small);
+                addIfPlaceable(TilePosition(-2, 1), Piece::Small);
             }
 
             // Place below base
             if (quadrant == 1) {
-                addIfPlaceable(TilePosition(0, 3), Protoss_Gateway);
-                addIfPlaceable(TilePosition(-3, 3), Protoss_Cybernetics_Core);
-                addIfPlaceable(TilePosition(4, 3), Protoss_Photon_Cannon);
+                addIfPlaceable(TilePosition(-2, 5), Piece::Large);
+                addIfPlaceable(TilePosition(2, 5), Piece::Large);
+                addIfPlaceable(TilePosition(-2, 3), Piece::Medium);
+                addIfPlaceable(TilePosition(1, 3), Piece::Medium);
+                addIfPlaceable(TilePosition(4, 3), Piece::Small);
             }
 
             // Place right of base
             if (quadrant == 2) {
-                addIfPlaceable(TilePosition(6, -1), Protoss_Gateway);
-                addIfPlaceable(TilePosition(6, 2), Protoss_Gateway);
-                addIfPlaceable(TilePosition(3, 3), Protoss_Cybernetics_Core);
-                addIfPlaceable(TilePosition(4, -1), Protoss_Photon_Cannon);
+                addIfPlaceable(TilePosition(6, -4), Piece::Large);
+                addIfPlaceable(TilePosition(6, -1), Piece::Large);
+                addIfPlaceable(TilePosition(6, 2), Piece::Large);
+                addIfPlaceable(TilePosition(3, 3), Piece::Medium);
+                addIfPlaceable(TilePosition(4, -1), Piece::Small);
+                addIfPlaceable(TilePosition(4, 1), Piece::Small);
             }
 
             // Place above base
             if (quadrant == 3) {
-                addIfPlaceable(TilePosition(0, -3), Terran_Barracks);
-                addIfPlaceable(TilePosition(-3, -2), Protoss_Cybernetics_Core);
-                addIfPlaceable(TilePosition(4, -2), Protoss_Photon_Cannon);
+                addIfPlaceable(TilePosition(0, -3), Piece::Large);
+                addIfPlaceable(TilePosition(-3, -2), Piece::Medium);
+                addIfPlaceable(TilePosition(4, -2), Piece::Small);
             }
         }
     }
@@ -349,34 +363,34 @@ namespace BWEB {
 
             // Place left of base
             if (quadrant == 0) {
-                addIfPlaceable(TilePosition(-6, -1), Terran_Barracks);
-                addIfPlaceable(TilePosition(-6, 2), Terran_Barracks);
-                addIfPlaceable(TilePosition(-2, 3), Terran_Supply_Depot);
-                addIfPlaceable(TilePosition(-2, 1), Terran_Missile_Turret);
+                addIfPlaceable(TilePosition(-6, -1), Piece::Large);
+                addIfPlaceable(TilePosition(-6, 2), Piece::Large);
+                addIfPlaceable(TilePosition(-2, 3), Piece::Medium);
+                addIfPlaceable(TilePosition(-2, 1), Piece::Small);
             }
 
             // Place below base
             if (quadrant == 1) {
-                addIfPlaceable(TilePosition(-2, 5), Terran_Barracks);
-                addIfPlaceable(TilePosition(2, 5), Terran_Barracks);
-                addIfPlaceable(TilePosition(-2, 3), Terran_Supply_Depot);
-                addIfPlaceable(TilePosition(1, 3), Terran_Supply_Depot);
-                addIfPlaceable(TilePosition(4, 3), Terran_Missile_Turret);
+                addIfPlaceable(TilePosition(-2, 5), Piece::Large);
+                addIfPlaceable(TilePosition(2, 5), Piece::Large);
+                addIfPlaceable(TilePosition(-2, 3), Piece::Medium);
+                addIfPlaceable(TilePosition(1, 3), Piece::Medium);
+                addIfPlaceable(TilePosition(4, 3), Piece::Small);
             }
 
             // Place right of base
             if (quadrant == 2) {
-                addIfPlaceable(TilePosition(6, -1), Terran_Barracks);
-                addIfPlaceable(TilePosition(6, 2), Terran_Barracks);
-                addIfPlaceable(TilePosition(3, 3), Terran_Supply_Depot);
-                addIfPlaceable(TilePosition(4, -1), Terran_Missile_Turret);
+                addIfPlaceable(TilePosition(6, -1), Piece::Large);
+                addIfPlaceable(TilePosition(6, 2), Piece::Large);
+                addIfPlaceable(TilePosition(3, 3), Piece::Medium);
+                addIfPlaceable(TilePosition(4, -1), Piece::Small);
             }
 
             // Place above base
             if (quadrant == 3) {
-                addIfPlaceable(TilePosition(0, -3), Terran_Barracks);
-                addIfPlaceable(TilePosition(-3, -2), Terran_Supply_Depot);
-                addIfPlaceable(TilePosition(4, -2), Terran_Missile_Turret);
+                addIfPlaceable(TilePosition(0, -3), Piece::Large);
+                addIfPlaceable(TilePosition(-3, -2), Piece::Medium);
+                addIfPlaceable(TilePosition(4, -2), Piece::Small);
             }
         }
     }

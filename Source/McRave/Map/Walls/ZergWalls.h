@@ -248,7 +248,7 @@ namespace McRave::Walls::Zerg {
 
         // 4Rax
         if (Spy::getEnemyTransition() == T_4Rax)
-            return 5 * (Util::getTime() > Time(6, 00));
+            return 3 * (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 30));
 
         // Need 1 sunken to defend vulture threat
         if (Spy::getEnemyTransition() == T_2PortWraith)

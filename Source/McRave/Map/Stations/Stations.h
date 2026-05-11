@@ -33,6 +33,7 @@ namespace McRave::Stations {
     double getSaturationRatio(const BWEB::Station *const);
     double getStationSaturation(const BWEB::Station *const);
     BWAPI::Position getDefendPosition(const BWEB::Station *const);
+    BWAPI::Position getHoldPosition(const BWEB::Station *const);
     const BWEB::Station *const getClosestRetreatStation(UnitInfo &);
     int getGasingStationsCount();
     int getMiningStationsCount();

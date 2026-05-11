@@ -21,7 +21,7 @@ namespace BWEB {
         int defenseArrangement = -1;
         BWAPI::TilePosition pocketDefense;
 
-        void addIfPlaceable(BWAPI::TilePosition, BWAPI::UnitType);
+        void addIfPlaceable(BWAPI::TilePosition, Piece);
         void findProtossLocations();
         void findTerranLocations();
         void findZergLocations();

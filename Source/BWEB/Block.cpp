@@ -288,17 +288,13 @@ namespace BWEB::Blocks {
                 BWEB::Map::addReserve(placement, 3, 2);
             }
             if (piece == Piece::Large) {
-                auto tile = (Broodwar->self()->getRace() != Races::Zerg) ? (placement - TilePosition(1, 1)) : placement;
-                auto ff   = (Broodwar->self()->getRace() != Races::Zerg) ? 2 : 0;
-                BWEB::Map::addReserve(tile, 4 + ff, 3 + ff);
+                BWEB::Map::addReserve(placement, 4, 3);
             }
             if (piece == Piece::Wide) {
                 BWEB::Map::addReserve(placement, 4, 2);
             }
             if (piece == Piece::Addon) {
-                auto tile = (placement - TilePosition(1, 1));
-                auto ff   = 2;
-                BWEB::Map::addReserve(tile, 2 + ff, 2 + ff);
+                BWEB::Map::addReserve(placement, 2, 2);
             }
         }
     }
@@ -325,8 +321,8 @@ namespace BWEB::Blocks {
         }
     }
 
-    template <typename T, typename C> //
-    bool findBlock(Position start, BlockType type, int width, int height, vector<TilePosition> searchTiles, T conditions, C callback)
+    template <typename T> //
+    bool findBlock(Position start, BlockType type, int width, int height, vector<TilePosition> searchTiles, T conditions)
     {
         const auto race = Broodwar->self()->getRace();
         auto tileStart  = TilePosition(start);
@@ -353,7 +349,6 @@ namespace BWEB::Blocks {
 
                     if (canAddBlock(tile, w, h, pieceLayout, type)) {
                         createBlock(tile, pieceLayout, w, h, type);
-                        callback(tile);
                         return true;
                     }
                 }
@@ -412,15 +407,15 @@ namespace BWEB::Blocks {
         // T needs 1 block
         // Z will repeat finding a block until it fails
         if (race == Races::Zerg)
-            while (findBlock(firstStart, BlockType::Start, 4, 3, tilesDistStart, startOk, successCallback))
+            while (findBlock(firstStart, BlockType::Start, 4, 3, tilesDistStart, startOk))
                 ;
         else if (race == Races::Terran) {
-            findBlock(secondStart, BlockType::Defensive, 3, 2, tilesDistChoke, defOk, successCallback);
-            findBlock(secondStart, BlockType::Start, 10, 6, tilesDistStart, startOk, successCallback);
+            findBlock(secondStart, BlockType::Defensive, 3, 2, tilesDistChoke, defOk);
+            findBlock(secondStart, BlockType::Start, 10, 6, tilesDistStart, startOk);
         }
         else {
-            findBlock(firstStart, BlockType::Start, 8, 5, tilesDistStart, startOk, successCallback);
-            findBlock(secondStart, BlockType::Start, 8, 5, tilesDistStart, startOk, successCallback);
+            findBlock(firstStart, BlockType::Start, 8, 5, tilesDistStart, startOk);
+            findBlock(secondStart, BlockType::Start, 8, 5, tilesDistStart, startOk);
         }
     }
 
@@ -481,7 +476,7 @@ namespace BWEB::Blocks {
 
                 sort(tilesDistMain.begin(), tilesDistMain.end(), [&](auto &p1, auto &p2) { return p1.getDistance(desiredCenter) < p2.getDistance(desiredCenter); });
 
-                while (findBlock(station.getBase()->Center(), BlockType::Production, 20, 20, tilesDistMain, productionOk, successCallback))
+                while (findBlock(station.getBase()->Center(), BlockType::Production, 20, 20, tilesDistMain, productionOk))
                     ;
 
                 // Create a path that prevents blocking units inside
@@ -543,7 +538,7 @@ namespace BWEB::Blocks {
                 sort(tilesDistMain.begin(), tilesDistMain.end(),
                      [&](auto &p1, auto &p2) { return p1.getDistance(desiredCenter) + p1.getDistance(centerTile) > p2.getDistance(desiredCenter) + p2.getDistance(centerTile); });
 
-                while (findBlock(station.getBase()->Center(), BlockType::Supply, supplyWidth, 2, tilesDistMain, supplyOk, successCallback))
+                while (findBlock(station.getBase()->Center(), BlockType::Supply, supplyWidth, 2, tilesDistMain, supplyOk))
                     ;
             }
         }

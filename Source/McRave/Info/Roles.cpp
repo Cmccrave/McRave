@@ -76,6 +76,10 @@ namespace McRave::Roles {
 
         void forceCombatWorker(int count, Position fromWhere = Terrain::getMainPosition())
         {
+            auto extraNeeded = count - forcedRoles[Role::Combat];
+            if (extraNeeded <= 0)
+                return;
+
             // Only pull the closest worker
             for (int i = 0; i < count; i++) {
                 auto closestForcedWorker = Util::getClosestUnitGround(fromWhere, PlayerState::Self,
@@ -100,10 +104,43 @@ namespace McRave::Roles {
 
         void genericPullWorker()
         {
+            auto haveMinCombatSupport  = com(Zerg_Zergling) >= 2 || com(Protoss_Zealot) >= 1 || com(Terran_Marine) >= 2;
+            auto haveGoodCombatSupport = com(Zerg_Zergling) >= 6 || com(Protoss_Zealot) >= 2 || com(Terran_Marine) >= 4;
+
             // CannonRush response is generically the same
             // Manner stuff is generically the same, except zvz sunken rush
-            if (proxyCombatWorker && com(Zerg_Zergling) == 0 && com(Terran_Marine) == 0 &&  com(Protoss_Zealot) == 0)
+            if (proxyCombatWorker && !haveMinCombatSupport)
                 forceCombatWorker(1);
+
+            if (Players::vP()) {
+                if (Spy::getEnemyOpener() == P_Proxy_9_9 || Spy::getEnemyOpener() == P_Horror_9_9)
+                    return;
+                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0 || Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 || Util::getTime() < Time(6, 00))
+                    return;
+
+                // Gateway or Cannon in territory, 6 workers
+                if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 && Spy::getEnemyBuild() == P_CannonRush && !haveGoodCombatSupport)
+                    forceCombatWorker(6);
+                else if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0 && Spy::getEnemyBuild() == P_2Gate)
+                    forceCombatWorker(6);
+
+                // Pylon in main or natural, 3 workers
+                else if (proxyBuilding && !haveMinCombatSupport &&
+                         (Terrain::inArea(Terrain::getMainArea(), proxyBuilding->getPosition()) || Terrain::inArea(Terrain::getMainArea(), proxyBuilding->getPosition())))
+                    forceCombatWorker(3);
+
+                // Probe actively building dangerous proxy, 2 workers
+                else if (proxyBuilding && proxyBuildingWorker && proxyDangerousBuilding)
+                    forceCombatWorker(2);
+
+                // Proxy building, 1 workers
+                else if (proxyBuilding && !haveMinCombatSupport)
+                    forceCombatWorker(1);
+
+                // Proxy worker, 1 workers
+                else if (Spy::getEnemyBuild() == P_CannonRush && !haveMinCombatSupport)
+                    forceCombatWorker(1);
+            }
         }
 
         void pPullWorker()
@@ -190,7 +227,7 @@ namespace McRave::Roles {
                 if (Players::ZvP() && sixLings && com(Zerg_Sunken_Colony) == 0 && Combat::isDefendNatural() && proxyWorker && proxyCombatUnit) {
                     forceCombatWorker(12);
                 }
-                 if (Players::ZvT() && com(Zerg_Sunken_Colony) == 0 && com(Zerg_Spawning_Pool) > 0 && vis(Zerg_Creep_Colony) > 0 && proxyCombatWorker) {
+                if (Players::ZvT() && com(Zerg_Sunken_Colony) == 0 && com(Zerg_Spawning_Pool) > 0 && vis(Zerg_Creep_Colony) > 0 && proxyCombatWorker) {
                     forceCombatWorker(vis(Zerg_Drone));
                 }
                 return;
@@ -219,37 +256,14 @@ namespace McRave::Roles {
 
             // ZvP
             if (Players::ZvP() && Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) == 0 && Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) == 0 &&
-                Util::getTime() < Time(6, 00)) {
+                Util::getTime() < Time(4, 00)) {
 
                 if (Spy::getEnemyOpener() == P_Proxy_9_9 || Spy::getEnemyOpener() == P_Horror_9_9)
                     return;
 
-                // Gateway or Cannon in territory, 6 drones
-                if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 && Spy::getEnemyBuild() == P_CannonRush && com(Zerg_Zergling) <= 6)
-                    forceCombatWorker(6);
-                else if (proxyDangerousBuilding && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) > 0 && Spy::getEnemyBuild() == P_2Gate)
-                    forceCombatWorker(6);
-
-                // Pylon in main or natural, 3 drones
-                else if (proxyBuilding && com(Zerg_Zergling) <= 2 &&
-                         (Terrain::inArea(Terrain::getMainArea(), proxyBuilding->getPosition()) || Terrain::inArea(Terrain::getMainArea(), proxyBuilding->getPosition())))
-                    forceCombatWorker(3);
-
-                // Probe actively building dangerous proxy, 2 drones
-                else if (proxyBuilding && proxyBuildingWorker && proxyDangerousBuilding)
-                    forceCombatWorker(2);
-
-                // Proxy building, 1 drone
-                else if (proxyBuilding && com(Zerg_Zergling) <= 2)
-                    forceCombatWorker(1);
-
-                // Proxy worker, 1 drone
-                else if (Spy::getEnemyBuild() == P_CannonRush && com(Zerg_Zergling) <= 2)
-                    forceCombatWorker(1);
-
                 // We haven't got our hatchery down yet
-                else if (vis(Zerg_Hatchery) < 2 && BuildOrder::takeNatural() && proxyWorker && proxyWorker->unit()->exists() && selfBuildingWorker &&
-                         (Terrain::inArea(Terrain::getNaturalArea(), proxyWorker->getPosition()) || proxyWorker->hasAttackedRecently() || proxyWorker->isThreatening()))
+                if (vis(Zerg_Hatchery) < 2 && BuildOrder::takeNatural() && proxyWorker && proxyWorker->unit()->exists() && selfBuildingWorker &&
+                    (Terrain::inArea(Terrain::getNaturalArea(), proxyWorker->getPosition()) || proxyWorker->hasAttackedRecently() || proxyWorker->isThreatening()))
                     forceCombatWorker(1);
             }
 
@@ -326,7 +340,7 @@ namespace McRave::Roles {
             // Log what is pulled
             if (forcedRoles[Role::Combat] != lastCombatWorkerCount) {
                 lastCombatWorkerCount = forcedRoles[Role::Combat];
-                LOG("forcing ", lastCombatWorkerCount, " combat workers");
+                LOG("Forcing ", lastCombatWorkerCount, " combat workers");
             }
         }
 

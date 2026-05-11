@@ -65,7 +65,7 @@ namespace McRave::Combat::Bearings {
 
         auto retreat = Stations::getClosestRetreatStation(unit);
         unit.marchPos = Stations::getDefendPosition(retreat);
-        unit.retreatPos = retreat->getBase()->Center();
+        unit.retreatPos = Stations::getHoldPosition(retreat);
 
         // If attacking and target is close, set as destination
         if (unit.getLocalState() == LocalState::Attack) {

@@ -274,7 +274,7 @@ namespace McRave::Planning {
             // Check if any secondary locations are available here
             auto closestStation = Stations::getClosestStationAir(here, PlayerState::Self);
             if (closestStation) {
-                if (building == Zerg_Spawning_Pool || building == Terran_Supply_Depot) {
+                if (building.tileWidth() == 3) {
                     for (auto &location : closestStation->getMediumLocations()) {
                         if (isReady(building, location)) {
                             tileBest = location;
@@ -282,7 +282,7 @@ namespace McRave::Planning {
                         }
                     }
                 }
-                else if (building == Zerg_Spire) {
+                else if (building.tileWidth() == 2) {
                     for (auto &location : closestStation->getSmallLocations()) {
                         if (isReady(building, location)) {
                             tileBest = location;
@@ -290,7 +290,7 @@ namespace McRave::Planning {
                         }
                     }
                 }
-                else if (building == Zerg_Hatchery || building == Terran_Barracks) {
+                else if (building.tileWidth() == 4) {
                     for (auto &location : closestStation->getLargeLocations()) {
                         if (isReady(building, location)) {
                             tileBest = location;
@@ -460,7 +460,7 @@ namespace McRave::Planning {
             if (BuildOrder::isHideTech() && (building == Protoss_Citadel_of_Adun || building == Protoss_Templar_Archives))
                 placement = furthestLocation(building, (Position)Terrain::getMainChoke()->Center());
 
-            auto placeFar = building.getRace() != Races::Zerg;
+            auto placeFar = building.getRace() != Races::Zerg && building != Protoss_Cybernetics_Core;
             auto funcCall = placeFar ? furthestLocation : closestLocation;
 
             // Try to place the tech building inside a main base
@@ -711,6 +711,34 @@ namespace McRave::Planning {
                 return TilePositions::Invalid;
             };
 
+            // Check if this is the first Pylon and if the main supports an opener
+            if (vis(Protoss_Pylon) <= 0) {
+                auto mainStation = Terrain::getMyMain();
+                if (mainStation->getLargeLocations().size() >= 2 && mainStation->getMediumLocations().size() >= 1) {
+                    placement = returnClosest(Protoss_Pylon, mainStation->getSmallLocations(), (Position)Terrain::getMainChoke()->Center());
+                    if (placement.isValid())
+                        return true;
+                }
+            }
+
+            // Check if we need to hide tech
+            if (vis(Protoss_Pylon) > 0) {
+                static auto hiddenPylonTile = furthestLocation(building, (Position)Terrain::getMainChoke()->Center());
+                if (building == Protoss_Pylon && BuildOrder::isHideTech() && isReady(Protoss_Pylon, hiddenPylonTile)) {
+                    placement = hiddenPylonTile;
+                    return true;
+                }
+            }
+
+            // Check we need a battery
+            if (vis(Protoss_Pylon) > 0) {
+                static auto defensivePylonTile = closestLocation(Protoss_Pylon, (Position)Terrain::getMainChoke()->Center());
+                if (!BuildOrder::takeNatural() && (!Spy::enemyRush() || !Players::vZ()) && isReady(Protoss_Pylon, defensivePylonTile)) {
+                    placement = defensivePylonTile;
+                    return true;
+                }
+            }
+
             // Check if any Nexus needs a Pylon for defense placement
             if (com(Protoss_Pylon) >= (Players::vT() ? 5 : 3) || Spy::getEnemyTransition() == Z_2HatchMuta || Spy::getEnemyTransition() == Z_3HatchMuta) {
                 for (auto &station : Stations::getStations(PlayerState::Self)) {
@@ -720,24 +748,10 @@ namespace McRave::Planning {
                 }
             }
 
-            // Check if this our second Pylon and we're hiding tech
-            if (building == Protoss_Pylon && vis(Protoss_Pylon) == 2 && BuildOrder::isHideTech()) {
-                placement = furthestLocation(building, (Position)Terrain::getMainChoke()->Center());
-                if (placement.isValid())
-                    return true;
-            }
-
             // Check if any buildings lost power
             if (!Buildings::getUnpoweredPositions().empty()) {
                 for (auto &tile : Buildings::getUnpoweredPositions())
                     placement = closestLocation(Protoss_Pylon, Position(tile));
-                if (placement.isValid())
-                    return true;
-            }
-
-            // Check if our main choke should get a Pylon for a Shield Battery
-            if (vis(Protoss_Pylon) == 1 && !BuildOrder::takeNatural() && (!Spy::enemyRush() || !Players::vZ())) {
-                placement = closestLocation(Protoss_Pylon, (Position)Terrain::getMainChoke()->Center());
                 if (placement.isValid())
                     return true;
             }

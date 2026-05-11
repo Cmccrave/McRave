@@ -17,7 +17,7 @@ namespace BWEB {
         UnitType defenseType;
         TilePosition wallLocation;
         vector<TilePosition> smlOrder, medOrder, lrgOrder, opnOrder, pylOrder;
-        set<TilePosition> smallTiles, mediumTiles, largeTiles, openings;
+        set<TilePosition> smallTiles, mediumTiles, largeTiles, allTiles, openings;
         map<int, set<TilePosition>> defenses;
         vector<UnitType> rawBuildings, rawDefenses;
         vector<const BWEM::Area *> accessibleNeighbors;
@@ -108,6 +108,9 @@ namespace BWEB {
 
         /// <summary> Returns the raw vector of the defenses the wall was initialzied with. </summary>
         const vector<UnitType> &getRawDefenses() const { return rawDefenses; }
+
+        /// <summary> Returns true if the TilePosition exists as part of the wall geometry. </summary>
+        const bool isWallTile(BWAPI::TilePosition) const;
 
         /// <summary> Returns true if the Wall only contains Pylons. </summary>
         const bool isPylonWall() const { return pylonWall; }

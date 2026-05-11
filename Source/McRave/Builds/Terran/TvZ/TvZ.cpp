@@ -82,6 +82,9 @@ namespace McRave::BuildOrder::Terran {
         inBookSupply = vis(Terran_Supply_Depot) < 4;
         inOpening    = Util::getTime() < Time(9, 00);
 
+        auto mutaBuild  = Spy::getEnemyTransition().find("Muta") != string::npos || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk, Zerg_Spire) > 0;
+        auto hydraBuild = Spy::getEnemyTransition().find("Hydra") != string::npos || Players::getTotalCount(PlayerState::Enemy, Zerg_Hydralisk, Zerg_Hydralisk_Den) > 0;
+
         buildQueue[Terran_Command_Center]  = 2;
         buildQueue[Terran_Supply_Depot]    = 2 + (s >= 48) + (s >= 80);
         buildQueue[Terran_Refinery]        = 1 + (s >= 104);
@@ -93,10 +96,13 @@ namespace McRave::BuildOrder::Terran {
         upgradeQueue[Charon_Boosters]        = com(Terran_Armory) > 0;
         upgradeQueue[Terran_Vehicle_Plating] = com(Terran_Armory) > 0;
 
-        terranUnitPump[Terran_SCV]     = vis(Terran_SCV) < 48;
-        terranUnitPump[Terran_Marine]  = total(Terran_Marine) < 4;
-        terranUnitPump[Terran_Vulture] = total(Terran_Vulture) < 2;
-        terranUnitPump[Terran_Goliath] = true;
+        techQueue[Tank_Siege_Mode] = hydraBuild && vis(Terran_Factory) >= 5;
+
+        terranUnitPump[Terran_SCV]                  = vis(Terran_SCV) < 42;
+        terranUnitPump[Terran_Marine]               = total(Terran_Marine) < 4;
+        terranUnitPump[Terran_Vulture]              = total(Terran_Vulture) < 2;
+        terranUnitPump[Terran_Goliath]              = !hydraBuild || total(Terran_Goliath) <= 10;
+        terranUnitPump[Terran_Siege_Tank_Tank_Mode] = hydraBuild && total(Terran_Goliath) >= 10;
     }
 
     void TvZ()

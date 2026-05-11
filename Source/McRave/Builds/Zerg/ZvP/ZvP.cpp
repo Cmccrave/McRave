@@ -349,8 +349,6 @@ namespace McRave::BuildOrder::Zerg {
             if (Spy::enemyGreedy() && Spy::getEnemyBuild() != P_CannonRush)
                 activeAllinType = AllinType::Z_5HatchSpeedling;
         }
-        if (Spy::getEnemyTransition() == P_Rush)
-            activeAllinType = AllinType::Z_5HatchSpeedling;
         if (mutaDone) {
             if (Spy::getEnemyTransition() == P_5GateGoon)
                 activeAllinType = AllinType::Z_9HatchCrackling;

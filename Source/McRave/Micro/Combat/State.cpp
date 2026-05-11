@@ -263,7 +263,7 @@ namespace McRave::Combat::State {
                     const auto enemyHydraBuild  = Spy::getEnemyTransition() == Z_1HatchLurker || Spy::getEnemyTransition() == Z_1HatchHydra || Spy::getEnemyTransition() == Z_2HatchHydra;
                     const auto enemyTimingBuild = Spy::getEnemyTransition() == Z_2HatchSpeedling || Spy::getEnemyTransition() == Z_UpgradeLing;
                     if (!enemyHydraBuild) {
-                        if (!lingAdvantage && (expansionAdvantage || hatchAdvatange || techAdvantage))
+                        if (!lingAdvantage && Util::getTime() > Time(3, 15) && (expansionAdvantage || hatchAdvatange || techAdvantage))
                             staticRetreatTypes.push_back(Zerg_Zergling);
 
                         // 1hm early

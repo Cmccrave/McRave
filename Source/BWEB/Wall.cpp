@@ -147,7 +147,7 @@ namespace BWEB {
                             auto tiledy  = clamp(dy, -8, 8);
                             wallLocation = TilePosition(base->Location()) + TilePosition(tiledx, tiledy);
 
-                            defenseAngle = BWEB::Map::getAngle(Position(wallLocation) + Position(16, 16), natChokeCenter) + M_PI_D2;
+                            defenseAngle       = BWEB::Map::getAngle(Position(wallLocation) + Position(16, 16), natChokeCenter) + M_PI_D2;
                             defenseArrangement = int(round(defenseAngle / M_PI_D4)) % 4;
 
                             testTiles[wallLocation] = Colors::Blue;
@@ -527,6 +527,13 @@ namespace BWEB {
 
         addDefenseLayer(-4, 1, 6);
         return true;
+    }
+
+    const bool Wall::isWallTile(TilePosition tile) const
+    {
+        return find(smallTiles.begin(), smallTiles.end(), tile) != smallTiles.end()       //
+               || find(mediumTiles.begin(), mediumTiles.end(), tile) != mediumTiles.end() //
+               || find(largeTiles.begin(), largeTiles.end(), tile) != largeTiles.end();   //
     }
 
     const int Wall::getGroundDefenseCount() const
