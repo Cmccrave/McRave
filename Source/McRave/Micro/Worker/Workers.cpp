@@ -3,6 +3,7 @@
 #include "Builds/All/BuildOrder.h"
 #include "Info/Player/Players.h"
 #include "Info/Resource/Resources.h"
+#include "Info/Unit/Pathing.h"
 #include "Info/Unit/Units.h"
 #include "Main/Util.h"
 #include "Map/Grids/Grids.h"
@@ -191,7 +192,7 @@ namespace McRave::Workers {
                 return true;
 
             // Generate a path that obeys refinery placement as well
-            auto pathPoint = Util::getPathPoint(unit, resource->getPosition());
+            auto pathPoint = Pathing::getPathPoint(unit, resource->getPosition());
             BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
             newPath.generateJPS([&](const TilePosition &t) { return newPath.unitWalkable(t); });
 
@@ -242,20 +243,11 @@ namespace McRave::Workers {
 
             // Set destination to intermediate position along path
             unit.setNavigation(unit.getDestination());
-            auto dist  = 96.0;
-            int i     = 0;
             if (unit.getMarchPath().getTarget() == TilePosition(unit.getDestination())) {
-                auto newDestination = Util::findPointOnPath(unit.getMarchPath(), [&](Position p) { 
-                    i++;
-                    return i >= 3; 
-                });
-
+                auto newDestination = Pathing::getNavPoint(unit, unit.getMarchPath());
                 if (newDestination.isValid())
                     unit.setNavigation(newDestination);
             }
-
-            Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Orange);
-            Visuals::drawPath(unit.getMarchPath());
         }
 
         void updateDestination(UnitInfo &unit)
@@ -302,15 +294,18 @@ namespace McRave::Workers {
                 unit.setDestination(unit.getGoal());
 
             // If unit has a resource
-            else if (resource && resource->getResourceState() == ResourceState::Mineable && !unit.isWithinGatherRange()) {
-                unit.setDestination(resource->getPosition());
-            }
+            else if (resource && resource->getResourceState() == ResourceState::Mineable) {
 
-            // Check if we're trying to build a structure near this worker
-            else if (resource) {
+                if ((unit.unit()->isCarryingGas() || unit.unit()->isCarryingMinerals()))
+                    unit.setDestination(resource->getStation()->getBase()->Center());
+                else
+                    unit.setDestination(resource->getPosition());
+
+                // Check if we're trying to build a structure near this worker
+                // TODO: This check fails if worker grabs random resource due to oversaturation (not assigned)
                 if (auto builder = Util::getClosestUnit(resource->getPosition(), PlayerState::Self,
                                                         [&](auto &u) { return *u != unit && u->getBuildType() != UnitTypes::None && !u->getBuildType().isRefinery(); })) {
-                    auto center       = Position(builder->getBuildPosition()) + Position(builder->getBuildType().tileWidth() * 32, builder->getBuildType().tileHeight() * 32);
+                    auto center       = Position(builder->getBuildPosition()) + Position(builder->getBuildType().tileWidth() * 16, builder->getBuildType().tileHeight() * 16);
                     auto canAfford    = Broodwar->self()->minerals() >= builder->getBuildType().mineralPrice() && Broodwar->self()->gas() >= builder->getBuildType().gasPrice();
                     auto builderClose = builder->getPosition().getDistance(center) < 96.0;
 
@@ -320,7 +315,9 @@ namespace McRave::Workers {
                     auto resourceTopLeft  = resource->getTilePosition();
                     auto resourceBotRight = resource->getTilePosition() + resource->getType().tileSize();
                     auto adjacentPlanning = Util::rectangleIntersect(buildingTopLeft, buildingBotRight, resourceTopLeft, resourceBotRight);
-                    auto nearby           = Util::boxDistance(unit.getType(), unit.getPosition(), builder->getBuildType(), center) < 8.0;
+                    auto nearby           = Util::boxDistance(unit.getType(), unit.getPosition(), builder->getBuildType(), center) <= 64.0;
+
+                    Visuals::drawCircle(center, 5, Colors::Green);
 
                     if (builderClose && canAfford && (adjacentPlanning || nearby)) {
                         auto destination = Util::shiftTowards(center, unit.getPosition(), 96.0);
@@ -329,6 +326,8 @@ namespace McRave::Workers {
                     }
                 }
             }
+
+            Visuals::drawLine(unit.getPosition(), unit.getDestination(), Colors::Purple);
         }
 
         void updateResource(UnitInfo &unit)

@@ -457,7 +457,9 @@ namespace McRave {
         // Worker
         else if (getType().isWorker()) {
             const auto constructing = unit()->exists() && (unit()->isConstructing() || unit()->getOrder() == Orders::ConstructingBuilding || unit()->getOrder() == Orders::PlaceBuilding);
-            threateningThisFrame    = atHome && (constructing || hasAttackedRecently());
+            const auto denyingNatural    = Terrain::inArea(Terrain::getMyNatural(), getPosition()) && Util::getTime() < Time(2, 30);
+
+            threateningThisFrame    = (atHome || denyingNatural) && (constructing || hasAttackedRecently() || Planning::overlapsPlan(*this, this->getPosition()));
         }
 
         // Unit
@@ -971,7 +973,7 @@ namespace McRave {
 
     bool UnitInfo::attemptingSurround()
     {
-        if (!hasTarget() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 16.0 || lState != LocalState::Attack)
+        if (!hasTarget() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 16.0)
             return false;
 
         auto &target = *getTarget().lock();
@@ -1037,10 +1039,12 @@ namespace McRave {
         if (!isLightAir())
             return false;
 
-        if (isRangedByType(Protoss_Corsair) || isRangedByType(Zerg_Devourer) || isReachedByType(Protoss_Archon) || isTargetedByType(Terran_Valkyrie))
-            circle(Colors::Red);
+        const auto avoidCorsair = isRangedByType(Protoss_Corsair);
+        const auto avoidDevo    = isRangedByType(Zerg_Devourer);
+        const auto avoidArchon  = isReachedByType(Protoss_Archon);
+        const auto avoidValk    = isTargetedByType(Terran_Valkyrie);
 
-        return (isRangedByType(Protoss_Corsair) || isRangedByType(Zerg_Devourer) || isReachedByType(Protoss_Archon) || isTargetedByType(Terran_Valkyrie));
+        return avoidCorsair || avoidDevo || avoidArchon || avoidValk;
     }
 
     bool UnitInfo::isTargetedByType(UnitType type) { return Util::contains(typesTargetingThis, type); }

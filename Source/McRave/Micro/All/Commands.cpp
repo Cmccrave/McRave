@@ -356,7 +356,7 @@ namespace McRave::Command {
         auto current   = unit.isFlying() ? Grids::getAirThreat(unit.getPosition(), PlayerState::Enemy) : Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy);
         auto harassing = unit.isLightAir() && !unit.getGoal().isValid() && unit.getDestination() == Combat::getHarassPosition() && unit.attemptingHarass() && unit.getLocalState() == LocalState::None;
 
-        const auto safeMovement = (unit.getRole() == Role::Worker && !atHome) || (unit.getType() == Zerg_Queen);
+        const auto safeMovement = (unit.getRole() == Role::Worker && !atHome) || (unit.getGoalType() == GoalType::Runby) || (unit.getType() == Zerg_Queen);
 
         auto target         = unit.hasTarget() ? unit.getTarget().lock() : nullptr;
         const auto surround = target && unit.attemptingSurround() && unit.isWithinReach(*target);
@@ -403,7 +403,13 @@ namespace McRave::Command {
 
             // Workers should move if they need to get to a new gather or construction job
             if (unit.getRole() == Role::Worker) {
-                return unit.getDestination().isValid();
+                if (unit.hasResource(); auto resource = unit.getResource().lock()) {
+                    if (unit.getDestination() == resource->getPosition() && unit.isWithinGatherRange())
+                        return false;
+                    if (unit.getDestination() == resource->getStation()->getBase()->Center())
+                        return false;
+                    return unit.getDestination().isValid();
+                }
             }
 
             // Scouts and Transports should always move
@@ -422,12 +428,12 @@ namespace McRave::Command {
                 return true;
             }
 
-            auto clickToSurround = unit.attemptingSurround() && unit.getPosition().getDistance(unit.getSurroundPosition()) < 160.0;
-            if (clickToSurround) {
-                unit.setCommand(Move, unit.getSurroundPosition());
-                unit.commandText = "Move_S";
-                return true;
-            }
+            // auto clickToSurround = unit.attemptingSurround() && unit.getPosition().getDistance(unit.getSurroundPosition()) < 160.0;
+            // if (clickToSurround) {
+            //    unit.setCommand(Move, unit.getSurroundPosition());
+            //    unit.commandText = "Move_S";
+            //    return true;
+            //}
 
             // Find the best position to move to
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);

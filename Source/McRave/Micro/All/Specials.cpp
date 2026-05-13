@@ -662,6 +662,8 @@ namespace McRave::Command {
         // Can't return cargo if we aren't carrying a resource or overlapping a building position
         if ((!unit.unit()->isCarryingGas() && !unit.unit()->isCarryingMinerals()) || unit.getRole() != Role::Worker)
             return false;
+        if (unit.hasResource() && unit.getDestination() != unit.getResource().lock()->getStation()->getBase()->Center())
+            return false;
 
         auto checkPath = (unit.hasResource() && unit.getPosition().getDistance(unit.getResource().lock()->getPosition()) > 320.0) ||
                          (!unit.hasResource() && !Terrain::inTerritory(PlayerState::Self, unit.getPosition()));

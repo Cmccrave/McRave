@@ -221,7 +221,7 @@ namespace McRave::Combat::State {
 
                 if (Players::ZvP()) {
                     const auto killWorkers  = Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) >= 8;
-                    const auto scaryOpeners = (Spy::getEnemyBuild() != P_FFE && Util::getTime() < Time(8, 00));
+                    const auto scaryOpeners = (Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_1GateCore && Util::getTime() < Time(3, 30));
                     const auto hideCheese   = BuildOrder::isHideTech() && BuildOrder::isOpener();
                     const auto deniedProxy  = Spy::enemyProxy() && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) > 0;
                     const auto defendProxy  = Spy::enemyProxy() && !speedLing && Util::getTime() < Time(5, 00) && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0;
@@ -325,7 +325,7 @@ namespace McRave::Combat::State {
             return false;
         auto &target = *unit.getTarget().lock();
 
-        auto holdAtHome = Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && (unit.getGlobalState() == GlobalState::Retreat || unit.getGoalType() == GoalType::Defend || unit.getSimState() == SimState::Loss);
+        auto holdAtHome = Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && (unit.getGlobalState() == GlobalState::Retreat || unit.getGoalType() == GoalType::Defend);
 
         if (holdAtHome)
             return true;
@@ -363,12 +363,11 @@ namespace McRave::Combat::State {
             if (!unit.isMelee())
                 return false;
 
-            return unit.getType() == Zerg_Broodling                                                                                                                                               //
-                   || (unit.getType() == Zerg_Ultralisk && unit.unit()->isIrradiated())                                                                                                           //
-                   || (unit.getSurroundPosition().isValid() && inRange)                                                                                                                           //
-                   || (unit.getType().isWorker() && target.getType().isWorker() && Util::getTime() < Time(2, 00))                                                                                 //
-                   || (!target.isMelee() && Actions::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm))) //
-                   || (unit.isSuicidal() && !nearEnemyDefense());                                                                                                                                 //
+            return unit.getType() == Zerg_Broodling                                                                                                                                                //
+                   || (unit.getType() == Zerg_Ultralisk && unit.unit()->isIrradiated())                                                                                                            //
+                   || (unit.getSurroundPosition().isValid() && inRange)                                                                                                                            //
+                   || (unit.getType().isWorker() && target.getType().isWorker() && Util::getTime() < Time(2, 00))                                                                                  //
+                   || (!target.isMelee() && Actions::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm))); //
         };
 
         // Cargo that is dropped from a transport should engage
@@ -406,7 +405,7 @@ namespace McRave::Combat::State {
 
         // Runby units should always engage once they've found workers
         auto runbyAttack = [&]() {
-            const auto runbyVsWorker = (unit.attemptingRunby() && target.getType().isWorker() && (unit.getHealth() > 15 || Util::getTime() > Time(6, 00) || Players::ZvZ()));
+            const auto runbyVsWorker = (unit.attemptingRunby() && target.getType().isWorker());
 
             return runbyVsWorker;
         };
@@ -416,6 +415,8 @@ namespace McRave::Combat::State {
             return (unit.isHidden() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy))                                                                  //
                    || (unit.getType() == Zerg_Lurker && unit.isBurrowed() && !Spy::enemyDetection() && !Actions::overlapsDetection(unit.unit(), unit.getEngagePosition(), PlayerState::Enemy)); //
         };
+
+        auto suicideAttack = [&]() { return (unit.isSuicidal() && !nearEnemyDefense()); };
 
         // If inside self territory, likely forcing an attack is best
         auto atHomeAttack = [&]() {
@@ -444,7 +445,7 @@ namespace McRave::Combat::State {
                     !Players::ZvZ() && nearEnemyStation());
         };
 
-        return meleeAttack() || cargoAttack() || harassAttack() || inRangeAttack() || runbyAttack() || invisAttack() || atHomeAttack() || atEnemyAttack();
+        return meleeAttack() || cargoAttack() || harassAttack() || inRangeAttack() || runbyAttack() || invisAttack() || suicideAttack() || atHomeAttack() || atEnemyAttack();
     }
 
     bool forceLocalRetreat(UnitInfo &unit)
@@ -555,7 +556,7 @@ namespace McRave::Combat::State {
                                     : BWEB::Map::getGroundDistance(unit.getPosition(), target.getPosition());
 
         const auto insideRetreatRadius = distSim < unit.getRetreatRadius() || unit.getGlobalState() == GlobalState::Retreat;
-        const auto insideEngageRadius  = distSim < unit.getEngageRadius();
+        const auto insideEngageRadius  = distSim < unit.getEngageRadius() || selfTerritory;
         const auto insideHoldRadius    = distSim >= unit.getRetreatRadius() || selfTerritory;
 
         const auto localRetreat = unit.getSimState() == SimState::Loss && insideRetreatRadius && (!unit.attemptingRunby() || Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()));
@@ -579,7 +580,7 @@ namespace McRave::Combat::State {
         else if (localEngage)
             unit.setLocalState(LocalState::Attack);
         // else if (localHold)
-        //    unit.setLocalState(LocalState::Hold);
+        //   unit.setLocalState(LocalState::Hold);
         else if (localRetreat)
             unit.setLocalState(LocalState::Retreat);
     }

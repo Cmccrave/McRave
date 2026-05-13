@@ -130,17 +130,26 @@ namespace McRave::Spy::Protoss {
             // 9/9
             else if (arrivesBy(1, Protoss_Zealot, Time(3, 00)) || arrivesBy(2, Protoss_Zealot, Time(3, 15)) || arrivesBy(3, Protoss_Zealot, Time(3, 20)) || arrivesBy(4, Protoss_Zealot, Time(3, 30)) ||
                      arrivesBy(5, Protoss_Zealot, Time(3, 35)) || completesBy(2, Protoss_Zealot, Time(2, 45)) || completesBy(3, Protoss_Zealot, Time(2, 50)) ||
-                     completesBy(4, Protoss_Zealot, Time(3, 10)) || completesBy(5, Protoss_Zealot, Time(3, 15)) || completesBy(2, Protoss_Gateway, Time(2, 15)))
+                     completesBy(4, Protoss_Zealot, Time(3, 10)) || completesBy(5, Protoss_Zealot, Time(3, 15)))
                 theSpy.opener.name = P_9_9;
 
             // 10/12
-            else if (arrivesBy(3, Protoss_Zealot, Time(4, 05)) || arrivesBy(4, Protoss_Zealot, Time(4, 20)) || completesBy(2, Protoss_Gateway, Time(2, 35)))
+            else if (arrivesBy(3, Protoss_Zealot, Time(4, 05)) || arrivesBy(4, Protoss_Zealot, Time(4, 20)))
                 theSpy.opener.name = P_10_12;
 
             // 10/15
-            else if (arrivesBy(3, Protoss_Zealot, Time(4, 20)) || arrivesBy(2, Protoss_Dragoon, Time(5, 00)) || completesBy(1, Protoss_Cybernetics_Core, Time(3, 40)) ||
-                     completesBy(2, Protoss_Gateway, Time(2, 50)))
+            else if (arrivesBy(3, Protoss_Zealot, Time(4, 20)) || arrivesBy(2, Protoss_Dragoon, Time(5, 00)) || completesBy(1, Protoss_Cybernetics_Core, Time(3, 40)))
                 theSpy.opener.name = P_10_15;
+
+            // Gateway timings
+            else if (Players::getCompleteCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
+                if (completesBy(2, Protoss_Gateway, Time(2, 15)))
+                    theSpy.opener.name = P_9_9;
+                else if (completesBy(2, Protoss_Gateway, Time(2, 35)))
+                    theSpy.opener.name = P_10_12;
+                else if (completesBy(2, Protoss_Gateway, Time(2, 50)))
+                    theSpy.opener.name = P_10_15;
+            }
         }
 
         // FFE Openers - need timings for when Nexus/Forge/Gate complete

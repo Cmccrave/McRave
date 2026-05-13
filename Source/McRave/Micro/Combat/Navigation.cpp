@@ -1,6 +1,7 @@
 #include "Combat.h"
 #include "Info/Unit/UnitInfo.h"
 #include "Info/Unit/Units.h"
+#include "Info/Unit/Pathing.h"
 #include "Map/Grids/Grids.h"
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
@@ -21,7 +22,7 @@ namespace McRave::Combat::Navigation {
 
     void getGroundMarchPath(UnitInfo &unit)
     {
-        auto pathPoint      = Util::getPathPoint(unit, unit.getDestination());
+        auto pathPoint      = Pathing::getPathPoint(unit, unit.getDestination());
         auto newPathAllowed = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) ||
                               mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)));
 
@@ -34,7 +35,7 @@ namespace McRave::Combat::Navigation {
 
     void getGroundRetreatPath(UnitInfo &unit)
     {
-        auto pathPoint      = Util::getPathPoint(unit, unit.retreatPos);
+        auto pathPoint      = Pathing::getPathPoint(unit, unit.retreatPos);
         auto newPathAllowed = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) ||
                               mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)));
 
@@ -142,7 +143,7 @@ namespace McRave::Combat::Navigation {
         if (unit.getMarchPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > dist) {
             auto closestPoint   = unit.getDestination();
             auto closestDist    = DBL_MAX;
-            auto newDestination = Util::findPointOnPath(unit.getMarchPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= dist; });
+            auto newDestination = Pathing::getNavPoint(unit, unit.getMarchPath());
 
             if (newDestination.isValid())
                 unit.setNavigation(newDestination);
@@ -152,6 +153,9 @@ namespace McRave::Combat::Navigation {
     void updateAvoidance(UnitInfo &unit)
     {
         if (!unit.hasCommander() || !unit.hasTarget() || !unit.attemptingAvoidance())
+            return;
+
+        if (unit.getLocalState() == LocalState::Attack && unit.canStartAttack())
             return;
 
         auto commander = unit.getCommander().lock();
@@ -234,8 +238,8 @@ namespace McRave::Combat::Navigation {
         if (harassingCommander) {
             auto &unit = *harassingCommander;
 
-            auto start = Util::getPathPoint(unit, harassingCommander->getPosition());
-            auto end   = Util::getPathPoint(unit, Terrain::getEnemyStartingPosition());
+            auto start = Pathing::getPathPoint(unit, harassingCommander->getPosition());
+            auto end   = Pathing::getPathPoint(unit, Terrain::getEnemyStartingPosition());
 
             if (int(Stations::getStations(PlayerState::Enemy).size()) >= 2 && Units::getEnemyArmyCenter().isValid() &&
                 Terrain::inArea(Terrain::getEnemyMain()->getBase()->GetArea(), Units::getEnemyArmyCenter()))

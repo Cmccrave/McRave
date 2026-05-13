@@ -1,6 +1,7 @@
 #include "Transports.h"
 
 #include "Info/Unit/Units.h"
+#include "Info/Unit/Pathing.h"
 #include "Map/Grids/Grids.h"
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
@@ -207,7 +208,7 @@ namespace McRave::Transports {
             // If path is reachable, find a point n pixels away to set as new destination
             unit.setNavigation(unit.getDestination());
             if (unit.getMarchPath().isReachable() && unit.getPosition().getDistance(unit.getDestination()) > 96.0) {
-                auto newDestination = Util::findPointOnPath(unit.getMarchPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= 96.0; });
+                auto newDestination = Pathing::getNavPoint(unit, unit.getMarchPath());
 
                 if (newDestination.isValid())
                     unit.setNavigation(newDestination);

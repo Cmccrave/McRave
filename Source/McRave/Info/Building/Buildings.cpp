@@ -133,7 +133,7 @@ namespace McRave::Buildings {
             }
 
             // Cancelling any hatchery if against an all-in worker rush
-            auto workerRush = Spy::getEnemyTransition() == U_WorkerRush;
+            auto workerRush = Spy::getEnemyBuild() != P_2Gate && Spy::getEnemyTransition() == U_WorkerRush;
             if (building.getType() == Zerg_Hatchery && workerRush && BuildOrder::buildCount(Zerg_Hatchery) < vis(Zerg_Hatchery)) {
                 Events::onUnitCancelBecauseBWAPISucks(building);
                 building.unit()->cancelConstruction();

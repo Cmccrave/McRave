@@ -6,6 +6,7 @@
 #include "Main/Common.h"
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
+#include "Map/Grids/Grids.h"
 #include "Micro/Combat/Combat.h"
 
 using namespace BWAPI;
@@ -257,7 +258,49 @@ namespace McRave::Pathing {
 
     void getExplorePath(UnitInfo &unit, BWEB::Path &path) {}
 
-    void getDefaultPath(UnitInfo &unit, BWEB::Path &path) {}
+    void getDefaultPath(UnitInfo &unit, BWEB::Path &path) {}    
+
+    Position getPathPoint(UnitInfo &unit, Position start)
+    {
+        // Create a pathpoint
+        auto pathPoint = start;
+        auto usedTile  = BWEB::Map::isUsed(TilePosition(start));
+        if (!BWEB::Map::isWalkable(TilePosition(start), unit.getType()) || usedTile != UnitTypes::None) {
+            auto dimensions = usedTile != UnitTypes::None ? usedTile.tileSize() : TilePosition(1, 1);
+            auto closest    = DBL_MAX;
+            for (int x = TilePosition(start).x - dimensions.x; x < TilePosition(start).x + dimensions.x + 1; x++) {
+                for (int y = TilePosition(start).y - dimensions.y; y < TilePosition(start).y + dimensions.y + 1; y++) {
+                    auto tile = TilePosition(x, y);
+                    if (!tile.isValid())
+                        continue;
+
+                    auto center = Position(tile) + Position(16, 16);
+                    auto dist   = center.getDistance(unit.getPosition());
+                    if (dist < closest && BWEB::Map::isWalkable(tile, unit.getType()) && BWEB::Map::isUsed(tile) == UnitTypes::None) {
+                        closest   = dist;
+                        pathPoint = center;
+                    }
+                }
+            }
+        }
+        return pathPoint;
+    }
+
+    Position getNavPoint(UnitInfo &unit, BWEB::Path &path)
+    {
+        const auto validPathPoint = [&](auto &p) {
+            if (unit.isFlying())
+                return p.getDistance(unit.getPosition()) >= 96.0;
+
+            if (BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None)
+                return false;
+            auto mobility = (10 - Grids::getMobility(p)) * 12;
+            auto value    = mobility + 64.0;
+            return p.getDistance(unit.getPosition()) >= value;
+        };
+
+        return Util::findPointOnPath(path, validPathPoint);
+    }
 
     void onFrame() { updatePositions(); }
 } // namespace McRave::Pathing

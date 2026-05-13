@@ -176,18 +176,21 @@ namespace McRave::Combat {
             };
 
             // Threatening unit with nothing fighting it
-            for (auto &station : Stations::getStations(PlayerState::Self)) {
-                if (Stations::isThreatened(station)) {
-                    LOG_SLOW("Harassing threatening units at home");
-                    harassPosition = station->getBase()->Center();
-                    return;
+            if (!BuildOrder::isPressure(Zerg_Mutalisk)) {
+                for (auto &station : Stations::getStations(PlayerState::Self)) {
+                    if (Stations::isThreatened(station)) {
+                        LOG_SLOW("Harassing threatening units at home");
+                        harassPosition = station->getBase()->Center();
+                        return;
+                    }
                 }
             }
 
             // Inbound unit fighting
-            if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure(Zerg_Mutalisk) && Util::getTime() < Time(10, 00)) {
-                const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy,
-                                                          [&](auto &u) { return Units::inBoundUnit(*u, 20) && u->unit()->exists() && !u->getType().isWorker() && u->getType() != Terran_Vulture && !u->isHidden(); });
+            if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure(Zerg_Mutalisk)) {
+                const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return Units::inBoundUnit(*u, 20) && u->unit()->exists() && !u->getType().isWorker() && u->getType() != Terran_Vulture && !u->isHidden();
+                });
 
                 if (closest) {
                     harassPosition = closest->getPosition();
@@ -197,7 +200,7 @@ namespace McRave::Combat {
             }
 
             // Inbound important unit targeting
-            if (Players::ZvT() || Players::ZvP()) {
+            if ((Players::ZvT() || Players::ZvP()) && !BuildOrder::isPressure(Zerg_Mutalisk)) {
                 const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
                     return Units::inBoundUnit(*u, 15) && (u->isSiegeTank() || u->getType() == Protoss_Reaver || u->getType() == Terran_Valkyrie || u->isTransport());
                 });

@@ -1,6 +1,7 @@
 #include "Combat.h"
 #include "Info/Player/Players.h"
 #include "Info/Unit/Units.h"
+#include "Info/Unit/Pathing.h"
 #include "Map/Grids/Grids.h"
 #include "Map/Terrain/Terrain.h"
 
@@ -166,29 +167,21 @@ namespace McRave::Combat::Clusters {
             }
         }
 
-        void pathCluster(Cluster &cluster, double dist)
+        void pathCluster(Cluster &cluster)
         {
             auto commander      = cluster.commander.lock();
             cluster.marchPath   = commander->getMarchPath();
             cluster.retreatPath = commander->getRetreatPath();
 
-            const auto validPathPoint = [&](auto &p) {
-                if (BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None)
-                    return false;
-                auto mobility = (10 - Grids::getMobility(p)) * 16;
-                auto value    = mobility + dist;
-                return p.getDistance(commander->getPosition()) >= value;
-            };
-
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.marchNavigation = cluster.marchPosition;
-            const auto march        = Util::findPointOnPath(cluster.marchPath, validPathPoint);
+            const auto march        = Pathing::getNavPoint(*commander, commander->getMarchPath());
             if (march.isValid())
                 cluster.marchNavigation = march;
 
             // If path is reachable, find a point n pixels away to set as new destination;
             cluster.retreatNavigation = cluster.retreatPosition;
-            const auto retreat        = Util::findPointOnPath(cluster.retreatPath, validPathPoint);
+            const auto retreat        = Pathing::getNavPoint(*commander, commander->getRetreatPath());
             if (retreat.isValid())
                 cluster.retreatNavigation = retreat;
 
@@ -220,7 +213,7 @@ namespace McRave::Combat::Clusters {
                         }
                     }
                     cluster.spacing = sqrt(pow(type.width(), 2.0) + pow(type.height(), 2.0));
-                    pathCluster(cluster, 96.0);
+                    pathCluster(cluster);
 
                     // Determine the state of the cluster
                     // Move to formation

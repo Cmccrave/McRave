@@ -665,6 +665,7 @@ namespace McRave::Stations {
                               || Players::getTotalCount(PlayerState::Enemy, Zerg_Mutalisk) > 0;                 //
 
         // Time the expected arrival based on potential completion time, if we see it still building
+        auto enemyAirSlower = false;
         if (!enemyAir && Players::getCompleteCount(PlayerState::Enemy, Protoss_Stargate, Terran_Starport, Zerg_Spire) == 0) {
             auto airprod = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType() == Protoss_Stargate || u->getType() == Terran_Starport; });
             if (airprod && !airprod->isCompleted()) {
@@ -688,6 +689,29 @@ namespace McRave::Stations {
                 return (Util::getTime() > Time(6, 30)) - airCount;
             }
 
+            // Corsair DT exist
+            if (!Combat::State::isStaticRetreat(Zerg_Hydralisk) && !station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 &&
+                Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0)
+                return (Util::getTime() > Time(9, 00)) - airCount;
+
+            // All-in and Corsairs exists
+            if (station->isNatural() && BuildOrder::isAllIn() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0)
+                return 1 + (Util::getTime() > Time(10, 00)) - airCount;
+
+            // Late spores if we're allin
+            if (station->isNatural() && enemyAir && BuildOrder::isAllIn() && com(Zerg_Hydralisk) == 0 && com(Zerg_Mutalisk) == 0)
+                return (Util::getTime() > Time(5, 00)) - airCount;
+            if (station->isNatural() && enemyAir && !hydraBuild && !mutaBuild)
+                return (Util::getTime() > Time(5, 00)) - airCount;
+            if (enemyAir && !mutaBuild && !hydraBuild)
+                return (Util::getTime() > Time(9, 00)) - airCount;
+
+            // Don't need spores if Spire almost done
+            if (Spy::enemyFastExpand() || Players::getTotalCount(PlayerState::Enemy, Protoss_Gateway) >= 3) {
+                if (BuildOrder::atPercent(Zerg_Spire, 0.5))
+                    return 0;
+            }
+
             // 1 Gate Corsair
             if (station->isNatural() && Spy::getEnemyBuild() == P_1GateCore && Spy::getEnemyTransition() == P_Corsair && !hydraBuild)
                 return (Util::getTime() > Time(4, 20)) - airCount;
@@ -701,23 +725,6 @@ namespace McRave::Stations {
                 return (Util::getTime() > Time(4, 45)) - airCount;
             if (station->isNatural() && Spy::getEnemyBuild() == P_2Gate && Spy::getEnemyTransition() == P_CorsairGoon && !hydraBuild)
                 return (Util::getTime() > Time(5, 45)) - airCount;
-
-            // Late spores if we're allin
-            if (station->isNatural() && enemyAir && BuildOrder::isAllIn() && com(Zerg_Hydralisk) == 0 && com(Zerg_Mutalisk) == 0)
-                return (Util::getTime() > Time(5, 00)) - airCount;
-            if (station->isNatural() && enemyAir && !hydraBuild && !mutaBuild)
-                return (Util::getTime() > Time(5, 00)) - airCount;
-            if (enemyAir && !mutaBuild && !hydraBuild)
-                return (Util::getTime() > Time(9, 00)) - airCount;
-
-            // Corsair DT exist
-            if (!Combat::State::isStaticRetreat(Zerg_Hydralisk) && !station->isMain() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0 &&
-                Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0)
-                return (Util::getTime() > Time(9, 00)) - airCount;
-
-            // All-in and Corsairs exists
-            if (station->isNatural() && BuildOrder::isAllIn() && Players::getTotalCount(PlayerState::Enemy, Protoss_Corsair) > 0)
-                return 1 + (Util::getTime() > Time(10, 00)) - airCount;
         }
 
         if (Players::ZvZ()) {

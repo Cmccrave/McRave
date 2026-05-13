@@ -62,9 +62,11 @@ namespace McRave::BuildOrder::Zerg {
 
                 // Opposites for now
                 auto enemyWeakToMuta = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair, Protoss_Archon) <
-                                       Players::getVisibleCount(PlayerState::Enemy, Protoss_High_Templar, Protoss_Reaver);
+                                           Players::getVisibleCount(PlayerState::Enemy, Protoss_High_Templar, Protoss_Reaver) ||
+                                       Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair, Protoss_Archon) == 0;
                 auto enemyWeakToHydra = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair, Protoss_Archon) >
-                                        Players::getVisibleCount(PlayerState::Enemy, Protoss_High_Templar, Protoss_Reaver);
+                                            Players::getVisibleCount(PlayerState::Enemy, Protoss_High_Templar, Protoss_Reaver) ||
+                                        Players::getVisibleCount(PlayerState::Enemy, Protoss_High_Templar, Protoss_Reaver) == 0;
 
                 if (enemyWeakToHydra) {
                     switchedComposition = hydralurk;
@@ -214,11 +216,12 @@ namespace McRave::BuildOrder::Zerg {
                     auto ruleOutCorsairs = Players::getTotalCount(PlayerState::Enemy, Protoss_Gateway) >= 3 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2 //
                                            || Spy::enemyFastExpand() || Spy::getEnemyTransition() != "Unknown";                                                                 //
 
+                    auto extraGate = Spy::getEnemyBuild() == P_2Gate ? 3 : 2;
+                    auto delayed   = Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Gateway) >= extraGate;
+
                     // If a dragoon was made, we have to assume worse case, since we probably won't see inside their base
-                    auto p2GateSair = Spy::getEnemyBuild() == P_2Gate &&
-                                      ((Util::getTime() > Time(4, 45) && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0) || Util::getTime() > Time(5, 30));
-                    auto p1GcSair = Spy::getEnemyBuild() == P_1GateCore &&
-                                    ((Util::getTime() > Time(4, 15) && Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) > 0) || Util::getTime() > Time(5, 00));
+                    auto p2GateSair = Spy::getEnemyBuild() == P_2Gate && ((Util::getTime() > Time(5, 00) && delayed) || Util::getTime() > Time(5, 30));
+                    auto p1GcSair   = Spy::getEnemyBuild() == P_1GateCore && ((Util::getTime() > Time(4, 30) && delayed) || Util::getTime() > Time(5, 00));
 
                     auto stargate = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &s) { return s->getType() == Protoss_Stargate; });
 
@@ -529,7 +532,7 @@ namespace McRave::BuildOrder::Zerg {
                                         (!Players::ZvZ() && Players::getSupply(PlayerState::Self, Races::Zerg) >= 200);                                //
 
             // Need to do this otherwise our queue isnt empty
-            if (queueOvieSpeed)
+            if (queueOvieSpeed && vis(Zerg_Drone) >= 18)
                 upgradeQueue[Pneumatized_Carapace] = 1;
 
             // Drone burrow to avoid a targeted tech build
@@ -996,6 +999,12 @@ namespace McRave::BuildOrder::Zerg {
                 if (availGas >= type.gasPrice())
                     armyComposition[type] = 1.00;
                 break;
+            }
+
+            // Always need 1 scourge vs air
+            if (vis(Zerg_Drone) >= 30 && vis(Zerg_Mutalisk) >= 6 && vis(Zerg_Scourge) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) > 0) {
+                armyComposition.clear();
+                armyComposition[Zerg_Scourge] = 1.0;
             }
 
             // Always need 2 lings

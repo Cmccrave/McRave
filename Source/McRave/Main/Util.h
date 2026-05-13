@@ -58,8 +58,6 @@ namespace McRave::Util {
     BWAPI::Position clipLine(BWAPI::Position, BWAPI::Position);
     BWAPI::Position clipPosition(BWAPI::Position);
 
-    BWAPI::Position getPathPoint(UnitInfo &, BWAPI::Position);
-
     std::vector<BWAPI::WalkPosition> &getWalkCircle(int);
     std::vector<BWAPI::TilePosition> &getTileCircle(int);
 

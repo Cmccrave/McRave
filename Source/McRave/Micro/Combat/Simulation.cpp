@@ -134,6 +134,12 @@ namespace McRave::Combat::Simulation {
             maxWinPercent = 1.2;
             commitFrames  = 0;
         }
+
+        // Early fights are more predictable
+        if (Util::getTime() < Time(5, 00)) {
+            minWinPercent += 0.1;
+            maxWinPercent -= 0.1;
+        }
     }
 
     void updateIncentives(UnitInfo &unit)

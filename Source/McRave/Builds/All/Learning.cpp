@@ -268,7 +268,7 @@ namespace McRave::Learning {
                     return;
                 }
                 if (Players::ZvP()) {
-                    BuildOrder::setLearnedBuild(Z_PoolHatch, Z_Overpool, Z_4HatchHydra);
+                    BuildOrder::setLearnedBuild(Z_PoolHatch, Z_Overpool, Z_3HatchMuta);
                     return;
                 }
             }

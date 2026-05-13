@@ -13,9 +13,9 @@ namespace McRave::Combat::Formations {
 
     void holdFormation(Formation &formation, Cluster &cluster)
     {
-        auto commander  = cluster.commander.lock();
-        auto expSpacing = double(max(commander->getType().width(), commander->getType().height()) + 2);
-        auto closestChoke    = Util::getClosestChokepoint(cluster.marchPosition);
+        auto commander              = cluster.commander.lock();
+        auto expSpacing             = double(max(commander->getType().width(), commander->getType().height()) + 2);
+        auto closestChoke           = Util::getClosestChokepoint(cluster.marchPosition);
         auto formationWithChoke     = Combat::holdAtChoke() && closestChoke && Position(closestChoke->Center()).getDistance(cluster.marchPosition) < 32.0;
         auto formationWithCommander = cluster.shape == Shape::Concave;
 
@@ -66,7 +66,7 @@ namespace McRave::Combat::Formations {
         }
 
         //// Hold with commander
-        // else if (formationWithCommander) {
+        //else if (formationWithCommander) {
         //    formation.radius = clamp((cluster.units.size() * cluster.spacing / 1.3), 64.0, 640.0);
         //    formation.start  = commander->getPosition();
         //    formation.angle  = BWEB::Map::getAngle(cluster.marchNavigation, cluster.retreatNavigation);
@@ -100,7 +100,7 @@ namespace McRave::Combat::Formations {
         if (commander->isFlying() && commander->hasTarget()) {
             formation.angle       = BWEB::Map::getAngle(cluster.marchPosition, cluster.retreatPosition);
             formation.radius      = max(commander->getGroundRange(), commander->getAirRange()) + 32.0;
-            formation.stepPerUnit = M_PI / cluster.units.size();
+            formation.stepPerUnit = 64;
             formation.center      = commander->getTarget().lock()->getPosition(); // Should be marchNavigation, but we are trying to do avoidance right now
         }
     }
@@ -181,14 +181,16 @@ namespace McRave::Combat::Formations {
             last = p;
 
             // Must be walkable for this type (TODO: Check size being assigned)
-            if (p.isValid() && !Util::findTerrainWalkable(p, commander->getType())) {
-                skip = true;
-                return;
-            }
+            if (!commander->isFlying()) {
+                if (p.isValid() && !Util::findTerrainWalkable(p, commander->getType())) {
+                    skip = true;
+                    return;
+                }
 
-            //
-            if (skip || assignmentsRemaining <= 0 || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None || (buildCenter.isValid() && p.getDistance(buildCenter) < 128.0)) {
-                return;
+                //
+                if (skip || assignmentsRemaining <= 0 || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None || (buildCenter.isValid() && p.getDistance(buildCenter) < 128.0)) {
+                    return;
+                }
             }
 
             auto box   = Util::typeBoundingBox(p, commander->getType());

@@ -24,7 +24,7 @@ namespace McRave::Walls::Zerg {
         if (Spy::getEnemyBuild() == P_1GateCore || (Spy::getEnemyBuild() == "Unknown" && Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) >= 1)) {
             if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) >= 3)
                 return 2;
-            return (Util::getTime() > Time(3, 30));
+            return (Util::getTime() > Time(4, 00));
         }
 
         // 2Gate
@@ -75,12 +75,12 @@ namespace McRave::Walls::Zerg {
     {
         // 1 base transitions
         if (Spy::getEnemyBuild() == P_2Gate || Spy::getEnemyBuild() == P_1GateCore) {
-            auto initial = (Spy::getEnemyBuild() == P_2Gate) ? 2 : 1;
+            auto initial = (Spy::getEnemyBuild() == P_2Gate) ? (2 * (Util::getTime() > Time(4, 00))) : (Util::getTime() > Time(4, 00));
 
             // 4Gate
             if (Spy::getEnemyTransition() == P_4Gate) {
-                return initial + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 15)) +
-                       (Util::getTime() > Time(5, 30)) + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(7, 00)) + (Util::getTime() > Time(8, 00));
+                return initial + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(5, 30)) +
+                       (Util::getTime() > Time(5, 45)) + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 30));
             }
 
             // DT
@@ -89,8 +89,8 @@ namespace McRave::Walls::Zerg {
             }
 
             // Corsair
-            if (Spy::getEnemyTransition() == P_Corsair || Spy::getEnemyTransition() == P_CorsairGoon) {
-                return initial + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 45));
+            if (Spy::getEnemyTransition() == P_Corsair || Spy::getEnemyTransition() == P_Robo || Spy::getEnemyTransition() == P_CorsairGoon) {
+                return initial + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 45)) + (Util::getTime() > Time(7, 15));
             }
 
             // Speedlot
@@ -100,13 +100,13 @@ namespace McRave::Walls::Zerg {
 
             // Zealot flood
             if (Spy::getEnemyTransition() == P_Rush) {
-                return initial + (Util::getTime() > Time(4, 20)) + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 00)) +
-                       (Util::getTime() > Time(5, 20)) + (Util::getTime() > Time(5, 40)) + (Util::getTime() > Time(6, 00)) - Spy::enemyProxy();
+                return initial + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 00)) +
+                       (Util::getTime() > Time(5, 30)) + (Util::getTime() > Time(6, 00)) - Spy::enemyProxy();
             }
 
             // Worker rush with zealots
             if (Spy::getEnemyTransition() == U_WorkerRush) {
-                return initial + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 20));
+                return initial + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 20)) + (Util::getTime() > Time(5, 40)) + (Util::getTime() > Time(6, 20));
             }
 
             if (Util::getTime() > Time(4, 00) && Util::getTime() < Time(6, 30))
@@ -149,12 +149,8 @@ namespace McRave::Walls::Zerg {
         auto minimum    = int(expected > 0);
 
         // 3h builds make roughly half as many
-        if (threeHatch && expected > 1 && Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_CannonRush) {
-            if (com(Zerg_Zergling) >= 24 && hatchCount() >= 3)
-                expected = int(ceil(double(expected) / 1.5));
-            else
-                expected = int(floor(double(expected) / 2.0));
-        }
+        if (threeHatch && expected > 1 && Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_CannonRush)
+            expected = int(floor(double(expected) / 2.0));
 
         // Non natural walls are limited to 1 total
         if (!wall.getStation()->isNatural() && expected > 0 && Spy::getEnemyBuild() != P_FFE) {
@@ -163,7 +159,7 @@ namespace McRave::Walls::Zerg {
         }
 
         // Make minimum sunkens if criteria fulfilled
-        if (expected > 0)
+        if (expected > 0 || Util::getTime() > Time(8, 00))
             minimum = 1;
         if (Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_CannonRush && Util::getTime() < Time(8, 00)) {
             if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0 || Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Singularity_Charge, 1) ||

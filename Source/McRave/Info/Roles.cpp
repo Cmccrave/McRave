@@ -115,7 +115,7 @@ namespace McRave::Roles {
             if (Players::vP()) {
                 if (Spy::getEnemyOpener() == P_Proxy_9_9 || Spy::getEnemyOpener() == P_Horror_9_9)
                     return;
-                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0 || Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 || Util::getTime() < Time(6, 00))
+                if (Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) > 0 || Players::getCompleteCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 || Util::getTime() > Time(6, 00))
                     return;
 
                 // Gateway or Cannon in territory, 6 workers

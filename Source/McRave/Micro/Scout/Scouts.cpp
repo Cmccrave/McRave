@@ -3,6 +3,7 @@
 #include "Builds/All/BuildOrder.h"
 #include "Info/Player/Players.h"
 #include "Info/Resource/Resources.h"
+#include "Info/Unit/Pathing.h"
 #include "Info/Unit/Units.h"
 #include "Map/Grids/Grids.h"
 #include "Map/Stations/Stations.h"
@@ -157,25 +158,25 @@ namespace McRave::Scouts {
             // Determine if we are lightly contained such that a scout cant get out
             auto choke         = Terrain::isPocketNatural() ? Terrain::getMainChoke() : Terrain::getNaturalChoke();
             auto closestRanged = Util::getClosestUnit(Position(choke->Center()), PlayerState::Enemy,
-                                                      [&](auto &u) { return u->getGroundRange() >= 64.0 && u->getPosition().getDistance(Position(Terrain::getNaturalChoke()->Center())) < 320.0; });
+                                                      [&](auto &u) { return u->getGroundRange() >= 64.0 && u->getPosition().getDistance(Position(Terrain::getNaturalChoke()->Center())) < 480.0; });
             contained          = closestRanged != nullptr;
         }
 
         void updateSafePositions()
         {
-            //for (auto tile : enemyVisionTiles) {
+            // for (auto tile : enemyVisionTiles) {
             //    Visuals::drawBox(tile, Colors::Yellow);
             //    Broodwar->drawTextMap(Position(tile) + Position(16, 16), "%d", Broodwar->getGroundHeight(tile));
             //}
-            //for (auto tile : safeTiles) {
+            // for (auto tile : safeTiles) {
             //    Visuals::drawBox(tile, Colors::Green);
             //    Broodwar->drawTextMap(Position(tile) + Position(16, 16), "%d", Broodwar->getGroundHeight(tile));
             //}
-            //for (auto p : potentialAirPositions) {
+            // for (auto p : potentialAirPositions) {
             //    Visuals::drawCircle(p, 8, Colors::Blue, true);
             //    Broodwar->drawTextMap(p, "%d", Broodwar->getGroundHeight(TilePosition(p)));
             //}
-            //for (auto p : potentialGroundPositions) {
+            // for (auto p : potentialGroundPositions) {
             //    Visuals::drawCircle(p, 8, Colors::Purple, true);
             //    Broodwar->drawTextMap(p, "%d", Broodwar->getGroundHeight(TilePosition(p)));
             //}
@@ -316,6 +317,7 @@ namespace McRave::Scouts {
             auto distBest = DBL_MAX;
             for (auto &pos : potentialAirPositions) {
                 auto dist = pos.getDistance(Terrain::getMainPosition()) / (1 + Broodwar->getGroundHeight(TilePosition(pos)));
+                dist /= pos.getDistance(mapBWEM.Center());
                 if (dist < distBest) {
                     airSafePosition = pos;
                     distBest        = dist;
@@ -335,7 +337,7 @@ namespace McRave::Scouts {
 
         void checkScoutDenied()
         {
-            if (workerScoutDenied || Util::getTime() < Time(3, 30) || !Terrain::getEnemyStartingPosition().isValid())
+            if (workerScoutDenied || Util::getTime() < Time(2, 30) || !Terrain::getEnemyStartingPosition().isValid())
                 return;
 
             auto closestWorker = Util::getFurthestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType().isWorker() && u->getRole() == Role::Scout; });
@@ -365,8 +367,7 @@ namespace McRave::Scouts {
             if (Broodwar->self()->getRace() == Races::Protoss) {
 
                 main.desiredTypeCounts[Protoss_Probe] = int(BuildOrder::shouldScout()) +
-                                                        int(Players::PvZ() && !Terrain::getEnemyStartingPosition().isValid() && mapBWEM.StartingLocations().size() == 4 &&
-                                                            unexploredMains.size() == 2);
+                                                        int(Players::PvZ() && !Terrain::getEnemyStartingPosition().isValid() && mapBWEM.StartingLocations().size() == 4 && unexploredMains.size() == 2);
 
                 if ((Players::PvZ() && Spy::enemyRush() && Players::getVisibleCount(PlayerState::Enemy, Zerg_Zergling) >= 2) || (Players::PvT() && (Spy::enemyPressure() || Spy::enemyWalled())) ||
                     (Util::getTime() > Time(5, 00)))
@@ -632,9 +633,9 @@ namespace McRave::Scouts {
             // No threat at home, we should use a ling to scout the enemy
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 auto time = Time(2, 30);
-                if (Spy::enemyRush() || Spy::getEnemyBuild() == P_2Gate || Spy::getEnemyBuild() == P_1GateCore || Spy::enemyProxy() || total(Zerg_Zergling) < 2)
+                if (Spy::getEnemyBuild() == P_1GateCore || Spy::enemyProxy() || total(Zerg_Zergling) < 2)
                     time = Time(3, 45);
-                if (Players::ZvZ())
+                if (Spy::enemyRush() || Spy::getEnemyBuild() == P_2Gate || Players::ZvZ())
                     time = Time(4, 00);
                 if (Spy::getEnemyTransition() == U_WorkerRush || Spy::getEnemyOpener() == P_Proxy_9_9 || Spy::getEnemyOpener() == P_Horror_9_9)
                     time = Time(6, 00);
@@ -798,7 +799,7 @@ namespace McRave::Scouts {
             }
 
             for (auto &[type, count] : totalDesiredScoutTypeCounts) {
-                if (scoutTypeDeaths[type] > 0 && (type == Zerg_Drone || Players::ZvZ() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0))
+                if (scoutTypeDeaths[type] > 0 && (type == Zerg_Drone || type == Zerg_Overlord || Players::ZvZ() || Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0))
                     continue;
                 if (totalCurrentScoutTypeCounts[type] < totalDesiredScoutTypeCounts[type] && (type.isFlyer() || !contained))
                     assign(type);
@@ -990,7 +991,7 @@ namespace McRave::Scouts {
                     requestSacrifice();
             }
             if (Players::ZvT()) {
-                auto sacrificeZvT = (!Terrain::foundEnemy() && Util::getTime() > Time(4, 00) && Spy::getEnemyBuild() == "Unknown") + //
+                auto sacrificeZvT = (!Terrain::foundEnemy() && Util::getTime() > Time(4, 00) && Spy::getEnemyBuild() == "Unknown") +       //
                                     (!Spy::enemyFastExpand() && Util::getTime() > Time(4, 45) && Spy::getEnemyTransition() == "Unknown") + //
                                     (Spy::enemyFastExpand() && Util::getTime() > Time(6, 00) && Spy::getEnemyTransition() == "Unknown");
 
@@ -1020,7 +1021,7 @@ namespace McRave::Scouts {
         void updateGroundPath(UnitInfo &unit)
         {
             if (unit.getFormation().isValid() || unit.getDestination().isValid()) {
-                auto pathPoint      = unit.getFormation().isValid() ? Util::getPathPoint(unit, unit.getFormation()) : Util::getPathPoint(unit, unit.getDestination());
+                auto pathPoint      = unit.getFormation().isValid() ? Pathing::getPathPoint(unit, unit.getFormation()) : Pathing::getPathPoint(unit, unit.getDestination());
                 auto newPathAllowed = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) ||
                                       mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)));
 
@@ -1052,10 +1053,12 @@ namespace McRave::Scouts {
 
         void updateNavigation(UnitInfo &unit)
         {
-            auto newDestination = Util::findPointOnPath(unit.getMarchPath(), [&](Position p) { return p.getDistance(unit.getPosition()) >= 96.0 && BWEB::Map::isUsed(TilePosition(p)) == None; });
+            auto newDestination = Pathing::getNavPoint(unit, unit.getMarchPath());
 
             if (newDestination.isValid())
                 unit.setNavigation(newDestination);
+
+            Visuals::drawLine(unit.getPosition(), unit.getNavigation(), Colors::Purple);
         }
 
         void updateDecision(UnitInfo &unit)

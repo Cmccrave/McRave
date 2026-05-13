@@ -166,7 +166,7 @@ namespace McRave::Targets {
                 return Priority::Critical;
             if (unit.getSpeed() < target.getSpeed() && unitRange < targetRange)
                 return Priority::Minor;
-            if (!unit.getType().isWorker() && !target.getType().isWorker() && unit.isFlying() == target.isFlying())
+            if (unit.getType().isWorker() == target.getType().isWorker() && unit.isFlying() == target.isFlying())
                 return Priority::Major;
         }
 
@@ -196,7 +196,7 @@ namespace McRave::Targets {
         if (target.getType().isSpell()                                                                                                     //
             || (target.getType() == Terran_Vulture_Spider_Mine && int(target.getUnitsTargetingThis().size()) >= 4 && !target.isBurrowed()) // Don't over target spider mines
             || (target.getType() == Protoss_Interceptor && unit.isFlying())                                                                // Don't target interceptors as a flying unit
-            || (target.getType() == Protoss_Corsair && !unit.isFlying() && !target.isThreatening() && !target.hasAttackedRecently() && !unit.isWithinRange(target)) //
+            || (target.getType() == Protoss_Corsair && !unit.isFlying() && !unit.isWithinReach(target))                                    //
             || (target.isHidden() && (!targetCanAttack || (!Players::hasDetection(PlayerState::Self) && Players::PvP())) &&
                 !unit.getType().isDetector()) // Don't target if invisible and can't attack this unit or we have no detectors in PvP
             || (target.isFlying() && !unit.isFlying() && !BWEB::Map::isWalkable(target.getTilePosition(), unit.getType()) && !unit.isWithinRange(target))) // Don't target flyers that we can't reach
@@ -368,7 +368,7 @@ namespace McRave::Targets {
         }
 
         // If our build is hitting a timing, kill workers
-        if (BuildOrder::isPressure(Zerg_Mutalisk) && !target.isLightAir() && !target.isTransport() && !target.getType().isWorker() && !target.isThreatening() && Util::getTime() < Time(8, 00))
+        if (BuildOrder::isPressure(Zerg_Mutalisk) && !target.isLightAir() && !target.isTransport() && !target.getType().isWorker() && (!target.isThreatening() || target.canAttackAir()))
             return Priority::Ignore;
 
         // One/two shot is high priority to hit

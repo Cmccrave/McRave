@@ -178,16 +178,13 @@ namespace McRave::Walls {
                     groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Creep_Colony) +
                                    Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
 
-                // If they expanded, we can skip a sunk after a delay
-                if (Players::ZvP() && colonyCount == 0 && Spy::enemyFastExpand() && Spy::getEnemyBuild() != P_FFE && Util::getTime() > Time(4, 30)) {
-                    static Time now = Util::getTime();
-                    if (Util::getTime() > now + Time(0, 45))
-                        groundCount++;
-                }
+                // If they expanded, we can skip a sunk
+                if (Players::ZvP() && colonyCount == 0 && Spy::enemyFastExpand() && Spy::getEnemyBuild() != P_FFE && Util::getTime() > Time(4, 30))
+                    groundCount++;
 
                 // Can't build defensives early until closest hatch almost completes
                 if (Broodwar->self()->getRace() == Races::Zerg && Util::getTime() < Time(3, 30)) {
-                    auto nearestHatch = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Self, [&](auto &u) { return u->getType().isResourceDepot(); });
+                    auto nearestHatch = Util::getClosestUnit(Position(wall.getStation()->getBase()->Center()), PlayerState::Self, [&](auto &u) { return u->getType().isResourceDepot(); });
                     if (nearestHatch && nearestHatch->frameCompletesWhen() > Broodwar->getFrameCount() + 200)
                         return 0;
                 }
@@ -199,7 +196,7 @@ namespace McRave::Walls {
 
                 // If they're only at home and not proxying units, don't make any defenses for a bit
                 if (Broodwar->self()->getRace() == Races::Zerg) {
-                    auto seconds             = colonyCount > 0 ? 20 : 30;
+                    auto seconds             = (colonyCount > 0) ? 20 : 30;
                     auto minimumColonyNeeded = (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(6, 00));
                     auto morphAlways         = (Spy::getEnemyBuild() == T_RaxFact && wall.getGroundDefenseCount() == 0) || Players::vFFA() || Spy::enemyProxy();
                     if (!morphAlways && (wall.getGroundDefenseCount() >= minimumColonyNeeded || colonyCount >= minimumColonyNeeded)) {
