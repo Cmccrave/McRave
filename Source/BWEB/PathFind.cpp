@@ -25,8 +25,11 @@ namespace BWEB {
             bool isClosed     = false;
         };
 
-        std::set<TilePosition> notReachable;
-        bool expectReachable(TilePosition source, TilePosition target) { return (notReachable.find(source) == notReachable.end()) || (notReachable.find(target) == notReachable.end()); }
+        map<int, std::set<TilePosition>> notReachable;
+        bool expectReachable(TilePosition source, TilePosition target) { 
+            auto index = notReachable[Broodwar->getFrameCount()];
+            return (index.find(source) == index.end()) || (index.find(target) == index.end()); 
+        }
 
         int oneDim(TilePosition tile) { return (tile.y * Broodwar->mapWidth()) + tile.x; }
         int currentId = 0;
@@ -70,8 +73,8 @@ namespace BWEB {
                 std::reverse(tiles.begin(), tiles.end());
         }
         else {
-            notReachable.insert(source);
-            notReachable.insert(target);
+            notReachable[Broodwar->getFrameCount()].insert(source);
+            notReachable[Broodwar->getFrameCount()].insert(target);
         }
     }
 
@@ -158,8 +161,8 @@ namespace BWEB {
         }
 
         // Must not be reachable if we are here
-        notReachable.insert(source);
-        notReachable.insert(target);
+        notReachable[Broodwar->getFrameCount()].insert(source);
+        notReachable[Broodwar->getFrameCount()].insert(target);
     }
 
     bool Path::terrainWalkable(const TilePosition &tile)
@@ -175,17 +178,4 @@ namespace BWEB {
             return true;
         return false;
     }
-
-    namespace Pathfinding {
-        void clearCacheFully() { notReachable.clear(); }
-
-        void clearCache(function<bool(const TilePosition &)> passedWalkable) {}
-
-        void testCache()
-        {
-            for (auto &tile : notReachable) {
-                Broodwar->drawCircleMap(Position(tile), 4, Colors::Blue);
-            }
-        }
-    } // namespace Pathfinding
 } // namespace BWEB

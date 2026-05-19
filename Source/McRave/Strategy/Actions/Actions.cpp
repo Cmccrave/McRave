@@ -315,7 +315,6 @@ namespace McRave::Actions {
 
     void onFrame()
     {
-        Visuals::startPerfTest();
         drawActions();
         updateActions();
         Visuals::endPerfTest("Actions");

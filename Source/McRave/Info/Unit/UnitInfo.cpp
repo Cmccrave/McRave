@@ -35,7 +35,7 @@ namespace McRave {
                 return here;
 
             // Check if we should overshoot for halting distance
-            if (!unit->getBuildPosition().isValid() && (unit->isFlying() || unit->isHovering() || unit->getType() == Protoss_High_Templar || unit->attemptingSurround())) {
+            if (!unit->getBuildLocation().isValid() && (unit->isFlying() || unit->isHovering() || unit->getType() == Protoss_High_Templar || unit->attemptingSurround())) {
                 auto distance      = unit->getPosition().getDistance(here);
                 auto haltDistance  = max({distance, 32.0, double(unit->getType().haltDistance()) / 256.0});
                 auto overShootHere = here;
@@ -211,6 +211,17 @@ namespace McRave {
             arriveFrame = Broodwar->getFrameCount() + int(dist / speed);
         }
 
+        // Create a list of units that are in engage of this unit
+        unitsInEngageOfThis.clear();
+        typesEngagingThis.clear();
+        for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+            auto &unit = *u;
+            if (((this->isFlying() && unit.canAttackAir()) || (!this->isFlying() && unit.canAttackGround())) && unit.isWithinEngage(*this)) {
+                unitsInEngageOfThis.push_back(unit.weak_from_this());
+                typesEngagingThis.insert(unit.getType());
+            }
+        }
+
         // Create a list of units that are in reach of this unit
         unitsInReachOfThis.clear();
         typesReachingThis.clear();
@@ -283,6 +294,38 @@ namespace McRave {
         target_.reset();
         unitsTargetingThis.clear();
         typesTargetingThis.clear();
+    }
+
+    void UnitInfo::updateOcclusion()
+    {
+        blockers.clear();
+        if (isFlying() || getType().isBuilding())
+            return;
+
+        // Get a bounding box around the unit to determine directions that are ok
+        auto box        = Util::typeBoundingBox(getPosition(), getType());
+        auto topLeft    = WalkPosition(box.first);
+        auto botRight   = WalkPosition(box.second);
+        auto walkRadius = max(getWalkHeight(), getWalkWidth()) + 4;
+
+        for (auto &w : Util::getWalkCircle(walkRadius)) {
+            const auto walk = WalkPosition(w) + WalkPosition(getPosition());
+            if (!walk.isValid() || (walk.x >= topLeft.x - 1 && walk.x < botRight.x + 1 && walk.y >= topLeft.y - 1 && walk.y < botRight.y + 1))
+                continue;
+
+            // if (unit.unit()->isSelected())
+            //    Visuals::drawBox(walk, Colors::Green);
+
+            // If this walk is blocked, then add a directional blocker
+            if (Grids::getFCollision(walk, PlayerState::All) > 0 || Grids::getHCollision(walk, PlayerState::Enemy) > 0 || Grids::getVCollision(walk, PlayerState::Enemy) > 0 ||
+                !Broodwar->isWalkable(walk)) {
+                Position p = Position(walk) + Position(4, 4);
+                auto dx    = p.x - getPosition().x;
+                auto dy    = p.y - getPosition().y;
+                auto dist  = p.getDistance(getPosition());
+                blockers.push_back({dx, dy, dist});
+            }
+        }
     }
 
     // Strategic flags
@@ -368,8 +411,8 @@ namespace McRave {
             if (!closestWall)
                 return (atHome && Terrain::inArea(closestStation, getPosition()));
 
-            // If a wall defender is within range (open wall) or this is within range of a defender
-            auto wallDefender = Util::getClosestUnit(position, PlayerState::Self, [&](auto &u) {
+            // If furthest wall defender is within range (open wall) or this is within range of it
+            auto wallDefender = Util::getFurthestUnit(position, PlayerState::Self, [&](auto &u) {
                 return u->getRole() == Role::Defender && u->canAttack(*this) && Util::contains(closestWall->getDefenses(), u->getTilePosition());
             });
             if (wallDefender && ((this->isWithinRange(*wallDefender) || (!Walls::isComplete(closestWall) && wallDefender->isWithinRange(*this)))))
@@ -433,14 +476,14 @@ namespace McRave {
         };
 
         // Check if any builders can be hit or blocked
-        auto nearBuildPosition = [&]() {
+        auto nearbuildLocation = [&]() {
             if (!this->canAttackGround())
                 return false;
             if (atHome && !isFlying() && Util::getTime() < Time(5, 00)) {
                 auto closestBuilder = Util::getClosestUnit(getPosition(), PlayerState::Self,
-                                                           [&](auto &u) { return u->getRole() == Role::Worker && u->getBuildPosition().isValid() && u->getBuildType().isValid(); });
+                                                           [&](auto &u) { return u->getRole() == Role::Worker && u->getBuildLocation().isValid() && u->getBuildType().isValid(); });
                 if (closestBuilder) {
-                    auto center = Position(closestBuilder->getBuildPosition()) + Position(closestBuilder->getBuildType().tileWidth() * 16, closestBuilder->getBuildType().tileHeight() * 16);
+                    auto center = Position(closestBuilder->getBuildLocation()) + Position(closestBuilder->getBuildType().tileWidth() * 16, closestBuilder->getBuildType().tileHeight() * 16);
                     if (Util::boxDistance(getType(), getPosition(), closestBuilder->getBuildType(), center) < proximityCheck)
                         return true;
                 }
@@ -456,10 +499,10 @@ namespace McRave {
 
         // Worker
         else if (getType().isWorker()) {
-            const auto constructing = unit()->exists() && (unit()->isConstructing() || unit()->getOrder() == Orders::ConstructingBuilding || unit()->getOrder() == Orders::PlaceBuilding);
-            const auto denyingNatural    = Terrain::inArea(Terrain::getMyNatural(), getPosition()) && Util::getTime() < Time(2, 30);
+            const auto constructing   = unit()->exists() && (unit()->isConstructing() || unit()->getOrder() == Orders::ConstructingBuilding || unit()->getOrder() == Orders::PlaceBuilding);
+            const auto denyingNatural = Terrain::inArea(Terrain::getMyNatural(), getPosition()) && Util::getTime() < Time(2, 30);
 
-            threateningThisFrame    = (atHome || denyingNatural) && (constructing || hasAttackedRecently() || Planning::overlapsPlan(*this, this->getPosition()));
+            threateningThisFrame = (atHome || denyingNatural) && (constructing || hasAttackedRecently() || Planning::overlapsPlan(*this, this->getPosition()));
         }
 
         // Unit
@@ -472,7 +515,7 @@ namespace McRave {
             }
 
             //
-            threateningThisFrame = threatensStation() || threatensWorkers() || threatensTerritory() || nearFragileBuilding() || nearBuildPosition();
+            threateningThisFrame = threatensStation() || threatensWorkers() || threatensTerritory() || nearFragileBuilding() || nearbuildLocation();
         }
 
         // Determine if this unit is threatening
@@ -638,7 +681,7 @@ namespace McRave {
 
     void UnitInfo::setCommand(TechType tech, Position here)
     {
-        if (commandType == UnitCommandTypes::Use_Tech_Position && commandPosition == here)
+        if (commandType == UnitCommandTypes::Use_Tech_Position && commandPosition == here && Broodwar->getFrameCount() - commandFrame < 6)
             return;
 
         commandFrame    = Broodwar->getFrameCount();
@@ -661,7 +704,7 @@ namespace McRave {
 
     void UnitInfo::setCommand(TechType tech)
     {
-        if (commandType == UnitCommandTypes::Use_Tech)
+        if (commandType == UnitCommandTypes::Use_Tech && Broodwar->getFrameCount() - commandFrame < 6)
             return;
 
         commandFrame    = Broodwar->getFrameCount();
@@ -854,6 +897,51 @@ namespace McRave {
         return 1.0 * dps;
     }
 
+    bool UnitInfo::hasCollision()
+    {
+        static const auto collisionLessOrders = {Orders::HarvestGas,     Orders::MoveToGas,      Orders::ReturnGas,      Orders::WaitForGas,
+                                                 Orders::MiningMinerals, Orders::MoveToMinerals, Orders::ReturnMinerals, Orders::WaitForMinerals};
+        if (isFlying() || (unit()->exists() && Util::contains(collisionLessOrders, unit()->getOrder())))
+            return false;
+        return true;
+    }
+
+    bool UnitInfo::isOccluded(Position here)
+    {
+        if (isFlying())
+            return false;
+
+        const auto halfWidth  = getType().width() / 2;
+        const auto halfHeight = getType().height() / 2;
+
+        // Check if this direction is occluded by a blocker
+        auto occluded = [&](Position pos, Position start) {
+            auto dx         = pos.x - start.x;
+            auto dy         = pos.y - start.y;
+            const auto dist = pos.getDistance(start);
+
+            // Occlusion struggles if we're trying to build on a vespene geyser, since it's unwalkable
+            if (getBuildType().isRefinery())
+                return false;
+
+            for (auto &b : blockers) {
+                const auto dot = dx * b.dx + dy * b.dy;
+                if (dot <= 0)
+                    continue;
+                const auto cosSq = (dot) / (dist * b.dist);
+                if (cosSq >= 0.985) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        auto bounding = Util::typeBoundingBox(getPosition(), getType());
+        bounding.first -= Position(halfWidth, halfHeight);
+        bounding.second += Position(halfWidth, halfHeight);
+        return occluded(here, bounding.first) || occluded(here, bounding.second);
+    }
+
     bool UnitInfo::isHealthy()
     {
         if (type.isBuilding() || type.isWorker() || type == Zerg_Overlord)
@@ -935,10 +1023,10 @@ namespace McRave {
 
     bool UnitInfo::isWithinBuildRange()
     {
-        if (!getBuildPosition().isValid())
+        if (!getBuildLocation().isValid())
             return false;
 
-        const auto center = Position(getBuildPosition()) + Position(getBuildType().tileWidth() * 16, getBuildType().tileHeight() * 16);
+        const auto center = Position(getBuildLocation()) + Position(getBuildType().tileWidth() * 16, getBuildType().tileHeight() * 16);
         const auto dist   = Util::boxDistance(getType(), getPosition(), getBuildType(), center);
 
         // https://github.com/bwapi/bwapi/issues/914
@@ -973,22 +1061,20 @@ namespace McRave {
 
     bool UnitInfo::attemptingSurround()
     {
-        if (!hasTarget() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 16.0)
+        if (!hasTarget() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 20.0)
             return false;
 
         auto &target = *getTarget().lock();
         if (target.isThreatening())
             return false;
-        if (!target.getType().isWorker() && Util::getTime() < Time(4, 00))
-            return false;
         if (target.getSpeed() >= speed)
             return false;
-        return position.getDistance(surroundPosition) > 8.0;
+        return true;
     }
 
     bool UnitInfo::attemptingTrap()
     {
-        if (!hasTarget() || !trapPosition.isValid() || position.getDistance(trapPosition) < 16.0 || lState != LocalState::Attack)
+        if (!hasTarget() || !trapPosition.isValid() || position.getDistance(trapPosition) < 16.0)
             return false;
 
         auto &target = *getTarget().lock();
@@ -1002,7 +1088,7 @@ namespace McRave {
 
     bool UnitInfo::attemptingHarass()
     {
-        if (!isLightAir() || !Combat::getHarassPosition().isValid())
+        if (!isLightAir() || saveUnit || !Combat::getHarassPosition().isValid())
             return false;
 
         // ZvZ
@@ -1047,9 +1133,22 @@ namespace McRave {
         return avoidCorsair || avoidDevo || avoidArchon || avoidValk;
     }
 
+    bool UnitInfo::attemptingIntercept()
+    {
+        if (!hasTarget() || !interceptPosition.isValid() || position.getDistance(interceptPosition) < 8.0 || lState != LocalState::Attack)
+            return false;
+        return true;
+    }
+
     bool UnitInfo::isTargetedByType(UnitType type) { return Util::contains(typesTargetingThis, type); }
     bool UnitInfo::isReachedByType(UnitType type) { return Util::contains(typesReachingThis, type); }
     bool UnitInfo::isRangedByType(UnitType type) { return Util::contains(typesRangingThis, type); }
+
+    bool UnitInfo::targetsFriendly()
+    {
+        return (type == UnitTypes::Terran_Medic && getEnergy() > 0) || type == UnitTypes::Terran_Science_Vessel ||
+               (type == UnitTypes::Zerg_Defiler && getEnergy() < 150 && com(UnitTypes::Zerg_Zergling) > 0);
+    }
 
     void UnitInfo::setResource(ResourceInfo *unit) { unit ? resource = unit->weak_from_this() : resource.reset(); }
 } // namespace McRave

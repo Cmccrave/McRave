@@ -100,8 +100,6 @@ namespace McRave::Goals {
                             return false;
                         if (u->getRole() == Role::Scout)
                             return false;
-                        if (u->getLocalState() == LocalState::Attack)
-                            return false;
                         return u->getType() == type && !u->getGoal().isValid();
                     });
 
@@ -116,8 +114,6 @@ namespace McRave::Goals {
                         if (!u->isAvailable())
                             return false;
                         if (gType == GoalType::Attack && Combat::State::isStaticRetreat(type))
-                            return false;
-                        if (u->getLocalState() == LocalState::Attack)
                             return false;
                         return u->getType() == type && !u->getGoal().isValid();
                     });
@@ -353,25 +349,24 @@ namespace McRave::Goals {
                 // Escort expanders
                 if (nextExpand.isValid()) {
                     auto closestBuilder = Util::getClosestUnit(nextExpand, PlayerState::Self, [&](auto &u) {
-                        return u->getBuildType().isResourceDepot() && u->getBuildPosition() == Planning::getCurrentExpansion()->getBase()->Location();
+                        return u->getBuildType().isResourceDepot() && u->getBuildLocation() == Planning::getCurrentExpansion()->getBase()->Location();
                     });
                     auto type           = (vis(airType) > 0 && Broodwar->self()->getRace() == Races::Zerg) ? airType : rangedType;
                     auto perEnemy       = (type == airType) ? 1 : 4;
-                    auto typeSpeed      = 0.0;
-                    if (auto unit = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == type; }))
-                        typeSpeed = unit->getSpeed();
 
                     // When attempting to expand, escort from vultures
-                    if (closestBuilder && !closestBuilder->isWithinBuildRange()) {
+                    if (closestBuilder && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && (!closestBuilder->isWithinBuildRange() || type.isFlyer())) {
                         LOG_SLOW("Worker looking to expand");
-                        assignNumberToGoal(closestBuilder->getPosition(), type, 2, GoalType::Escort);
+                        assignNumberToGoal(closestBuilder->getPosition(), type, 1, GoalType::Escort);
 
-                        for (auto &e : closestBuilder->getUnitsInReachOfThis()) {
+                        for (auto &e : closestBuilder->getUnitsInEngageOfThis()) {
                             if (auto enemy = e.lock()) {
                                 if (enemy->getType() == Terran_Vulture)
                                     assignNumberToGoal(enemy->getPosition(), type, 1, GoalType::Escort);
                             }
                         }
+
+                        assignPercentToGoal(closestBuilder->getPosition(), type, 1.0, GoalType::Escort);
                     }
                 }
             }
@@ -591,18 +586,18 @@ namespace McRave::Goals {
             auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto &s) { return s->isMain(); }));
 
             // Before Hydras have upgrades, defend vulnerable bases, put lings on defense too
-            // if (Combat::State::isStaticRetreat(Zerg_Hydralisk) && !BuildOrder::isAllIn() && com(Zerg_Hydralisk_Den) > 0) {
-            //    auto evenSplit = (1.0 / double(stations.size() - mainStations));
+             if (Combat::State::isStaticRetreat(Zerg_Hydralisk) && !BuildOrder::isAllIn() && com(Zerg_Hydralisk_Den) > 0) {
+                auto evenSplit = (1.0 / double(stations.size() - mainStations));
 
-            //    if (!stations.empty()) {
-            //        for (auto &station : stations) {
-            //            if ((station->isNatural() && Terrain::isPocketNatural()) || (station->isMain() && !Terrain::isPocketNatural()))
-            //                continue;
-            //            assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, evenSplit, GoalType::Defend);
-            //            assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Zergling, evenSplit, GoalType::Defend);
-            //        }
-            //    }
-            //}
+                if (!stations.empty()) {
+                    for (auto &station : stations) {
+                        if ((station->isNatural() && Terrain::isPocketNatural()) || (station->isMain() && !Terrain::isPocketNatural()))
+                            continue;
+                        assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Hydralisk, evenSplit, GoalType::Defend);
+                        assignPercentToGoal(Stations::getDefendPosition(station), Zerg_Zergling, evenSplit, GoalType::Defend);
+                    }
+                }
+            }
 
             // Always keep 2 hydras at home to protect from sairs if we dont have a spore or dont have speed
             auto harassers = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair) >= 2 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Shuttle) > 0;

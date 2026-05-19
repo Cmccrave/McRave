@@ -71,10 +71,9 @@ namespace McRave::Resources {
                     auto baseCompletion = base->unit()->getRemainingBuildTime();
                     resource.setResourceState(ResourceState::Assignable);
 
-                    if (resource.getType().isMineralField()) {
-                        auto worker = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) { return u->getType().isWorker(); });
-
-                        if (worker) {
+                    // If resource can be gathered from
+                    if (resource.getType().isMineralField() || (resource.unit()->getPlayer() == Broodwar->self() && resource.unit()->getRemainingBuildTime() <= 40)) {
+                        if (auto worker = Util::getClosestUnit(resource.getPosition(), PlayerState::Self, [&](auto &u) { return u->getType().isWorker(); })) {
                             auto workerArrival = worker->getPosition().getDistance(resource.getPosition()) / worker->getSpeed();
                             if (workerArrival + 120 > baseCompletion)
                                 resource.setResourceState(ResourceState::Mineable);
@@ -82,10 +81,6 @@ namespace McRave::Resources {
                         if (base && baseCompletion < 120 && (base->getType() == Protoss_Nexus || base->getType() == Terran_Command_Center || base->getType() == Zerg_Hatchery))
                             resource.setResourceState(ResourceState::Mineable);
                         if (base && (base->getType() == Zerg_Lair || base->getType() == Zerg_Hive))
-                            resource.setResourceState(ResourceState::Mineable);
-                    }
-                    else {
-                        if (resource.unit()->getPlayer() == Broodwar->self() && resource.unit()->getRemainingBuildTime() < 40)
                             resource.setResourceState(ResourceState::Mineable);
                     }
                 }
@@ -105,7 +100,7 @@ namespace McRave::Resources {
 
                 for (auto &w : resource.targetedByWhat()) {
                     if (auto worker = w.lock()) {
-                        if (worker->getBuildPosition().isValid())
+                        if (worker->getBuildLocation().isValid())
                             maxMin--, maxGas--;
                     }
                 }
@@ -257,7 +252,6 @@ namespace McRave::Resources {
 
     void onFrame()
     {
-        Visuals::startPerfTest();
         updateResources();
         updateDrilling();
         updateDrawing();

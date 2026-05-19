@@ -6,6 +6,7 @@
 #include "Main/Common.h"
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
+#include "Strategy/Spy/Defs.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -106,6 +107,9 @@ namespace McRave::Expansion {
             if (Terrain::getMyNatural())
                 expansionOrder.push_back(Terrain::getMyNatural());
 
+            // 
+            auto naturalThird = Broodwar->getStartLocations().size() >= 3 && BuildOrder::getCurrentTransition() == Z_2HatchMuta;
+
             for (int i = 0; i < int(BWEB::Stations::getStations().size()); i++) {
                 auto costBest                    = DBL_MAX;
                 const BWEB::Station *stationBest = nullptr;
@@ -140,7 +144,8 @@ namespace McRave::Expansion {
                         (Terrain::getEnemyMain() && &station == Terrain::getEnemyMain()) || (Terrain::getEnemyNatural() && &station == Terrain::getEnemyNatural()) ||
                         (station == Terrain::getMyNatural() && !BuildOrder::takeNatural()) || (station.getBase()->Geysers().empty() && int(expansionOrder.size()) < allowedFirstMineralBase) ||
                         (Terrain::inTerritory(PlayerState::Enemy, station.getBase()->GetArea())) ||
-                        (Players::vFFA() && !Stations::isBaseExplored(&station)))
+                        (Players::vFFA() && !Stations::isBaseExplored(&station)) ||
+                        (!station.isNatural() && naturalThird))
                         continue;
 
                     // Check if it's a dangerous/blocked station
@@ -217,7 +222,6 @@ namespace McRave::Expansion {
 
     void onFrame()
     {
-        Visuals::startPerfTest();
         updateExpandPlan();
         Visuals::endPerfTest("Production");
     }

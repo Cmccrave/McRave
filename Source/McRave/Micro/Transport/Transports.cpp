@@ -33,10 +33,10 @@ namespace McRave::Transports {
 
             // Check if we are ready to assign this worker to a transport - TODO: Clean this up and make available for builds, enable islands again
             const auto readyToAssignWorker = [&](UnitInfo &cargo) {
-                auto buildDist    = cargo.getBuildType().isValid() ? BWEB::Map::getGroundDistance((Position)cargo.getBuildPosition(), (Position)cargo.getTilePosition()) : 0.0;
+                auto buildDist    = cargo.getBuildType().isValid() ? BWEB::Map::getGroundDistance((Position)cargo.getBuildLocation(), (Position)cargo.getTilePosition()) : 0.0;
                 auto resourceDist = cargo.hasResource() ? BWEB::Map::getGroundDistance(cargo.getPosition(), cargo.getResource().lock()->getPosition()) : 0.0;
 
-                if ((cargo.getBuildPosition().isValid() && buildDist == DBL_MAX) || (cargo.getBuildType().isResourceDepot() && Terrain::isIslandMap()))
+                if ((cargo.getBuildLocation().isValid() && buildDist == DBL_MAX) || (cargo.getBuildType().isResourceDepot() && Terrain::isIslandMap()))
                     return true;
                 if (cargo.hasResource() && resourceDist == DBL_MAX)
                     return true;
@@ -306,7 +306,6 @@ namespace McRave::Transports {
 
     void onFrame()
     {
-        Visuals::startPerfTest();
         updateTransports();
         Visuals::endPerfTest("Transports");
     }
@@ -357,7 +356,7 @@ namespace McRave::Transports {
 
 //// Check if this worker is ready to build
 // const auto readyToBuild = [&](UnitInfo& worker) {
-//    if (Terrain::isIslandMap() && worker.getBuildPosition().isValid() && mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getBuildPosition()))
+//    if (Terrain::isIslandMap() && worker.getBuildLocation().isValid() && mapBWEM.GetArea(worker.getTilePosition()) == mapBWEM.GetArea(worker.getBuildLocation()))
 //        return true;
 //    return false;
 //};

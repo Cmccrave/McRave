@@ -77,15 +77,4 @@ namespace BWEB {
 
         bool operator!=(const Path &r) { return source != r.source || target != r.target; };
     };
-
-    namespace Pathfinding {
-
-        /// <summary> Clears the entire Pathfinding cache. All Paths will be generated as a new Path. </summary>
-        void clearCacheFully();
-
-        /// <summary> Clears the Pathfinding cache for a specific walkable function. All Paths will be generated as a new Path. </summary>
-        void clearCache(std::function<bool(const BWAPI::TilePosition &)>);
-
-        void testCache();
-    } // namespace Pathfinding
 } // namespace BWEB

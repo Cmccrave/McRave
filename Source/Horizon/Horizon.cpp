@@ -20,8 +20,10 @@ namespace McRave::Horizon {
 
         bool addToSim(UnitInfo &u)
         {
-            if (!u.unit() || (u.getType().isWorker() && Util::getTime() > Time(6, 00) && ((u.unit()->exists() && u.unit()->getOrder() != Orders::AttackUnit) || !u.hasAttackedRecently())) ||
-                (u.isStunned()) || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0) ||
+            if (u.getType().isWorker() && ((u.unit()->getOrder() != Orders::AttackUnit && !u.hasAttackedRecently()) || Util::getTime() > Time(6, 00)))
+                return false;
+
+            if (!u.unit() || (u.isStunned()) || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0) ||
                 (u.getRole() != Role::None && u.getRole() != Role::Combat && u.getRole() != Role::Defender) || (u.getRole() == Role::Combat && u.getGlobalState() == GlobalState::Retreat) ||
                 (!u.hasTarget() && !u.hasSimTarget()))
                 return false;
@@ -61,8 +63,6 @@ namespace McRave::Horizon {
                 return 65.0 / 24.0;
             if (unit.getType() == UnitTypes::Zerg_Lurker && !unit.isBurrowed())
                 return 36.0 / 24.0;
-            if (unit.attemptingSurround())
-                return 1.5;
             return 0.0;
         }
     } // namespace
@@ -82,7 +82,7 @@ namespace McRave::Horizon {
         const auto timePad           = Util::getTime().minutes / 6;
         const auto unitToEngage      = unit.getSpeed() > 0.0 ? unit.getEngDist() / (24.0 * unit.getSpeed()) : 5.0;
 
-        const auto extendDuration     = (unit.isLightAir() || Players::ZvZ()) ? 2.0 : 5.0;
+        const auto extendDuration     = (unit.isLightAir() || Players::ZvZ()) ? 2.0 : 4.0;
         const auto simulationTime     = unitToEngage + extendDuration + addPrepTime(unit) /*- rangeDisplacement*/;
         const auto targetDisplacement = 0.0; // unitToEngage * unitTarget->getSpeed() * 24.0;
         map<Player, SimStrength> simStrengthPerPlayer;

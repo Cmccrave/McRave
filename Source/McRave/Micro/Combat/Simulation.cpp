@@ -51,19 +51,22 @@ namespace McRave::Combat::Simulation {
             newState = SimState::Loss;
         unit.setSimState(newState);
 
-        //if (newState != lastState) {
-        //    unit.framesCommitted++;
-        //    if (unit.framesCommitted >= commitFrames) {
-        //        unit.setSimState(newState);
-        //        unit.framesCommitted = 0;
+        //if (!unit.isFlying()) {
+        //    if (newState != lastState) {
+        //        unit.framesCommitted++;
+
+        //        if (unit.framesCommitted >= commitFrames) {
+        //            unit.setSimState(newState);
+        //            unit.framesCommitted = 0;
+        //        }
+        //        else {
+        //            unit.setSimState(lastState);
+        //        }
         //    }
         //    else {
-        //        unit.setSimState(lastState);
+        //        unit.framesCommitted = 0;
+        //        unit.setSimState(newState);
         //    }
-        //}
-        //else {
-        //    unit.framesCommitted = 0;
-        //    unit.setSimState(newState);
         //}
     }
 
@@ -93,9 +96,9 @@ namespace McRave::Combat::Simulation {
 
         // Z
         if (Players::ZvP()) {
-            minWinPercent = 0.8;
-            maxWinPercent = 1.2;
-            commitFrames  = 12;
+            minWinPercent = 0.7;
+            maxWinPercent = 1.3;
+            commitFrames  = 24;
         }
         if (Players::ZvZ()) {
             minWinPercent = 0.8;

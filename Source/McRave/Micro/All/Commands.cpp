@@ -60,8 +60,7 @@ namespace McRave::Command {
                 if (!Actions::overlapsDetection(context.unit->unit(), context.p, PlayerState::Enemy))
                     return 0.01;
             }
-            return max(0.01f, context.unit->isFlying() ? (Grids::getAirThreat(context.w, PlayerState::Enemy) * Grids::getAirThreat(context.w, PlayerState::Enemy))
-                                                       : (Grids::getGroundThreat(context.w, PlayerState::Enemy)));
+            return max(0.01f, context.unit->isFlying() ? (Grids::getAirThreat(context.w, PlayerState::Enemy)) : (Grids::getGroundThreat(context.w, PlayerState::Enemy)));
         }
 
         Position findViablePosition(UnitInfo &unit, Position pstart, function<double(ScoreContext &)> scoreFunc)
@@ -79,60 +78,10 @@ namespace McRave::Command {
             auto existingEdgeCost   = max(penalizeEdge(unit.getPosition()), penalizeEdge(unit.getNavigation()));
             auto existingCornerCost = max(penalizeCorner(unit.getPosition()), penalizeCorner(unit.getNavigation()));
 
-            struct Blocker {
-                int dx, dy;
-                double dist;
-            };
-
-            vector<Blocker> blockers;
-
-            // Get a bounding box around the unit to determine directions that are ok
-            auto box        = Util::typeBoundingBox(unit.getPosition(), unit.getType());
-            auto topLeft    = WalkPosition(box.first);
-            auto botRight   = WalkPosition(box.second);
-            auto walkRadius = max(unit.getWalkHeight(), unit.getWalkWidth()) + 4;
-
-            for (auto &w : Util::getWalkCircle(walkRadius)) {
-                const auto walk = WalkPosition(w) + WalkPosition(unit.getPosition());
-                if (!walk.isValid() || (walk.x >= topLeft.x && walk.x < botRight.x && walk.y >= topLeft.y && walk.y < botRight.y))
-                    continue;
-
-                // If this walk is blocked, then add a directional blocker
-                if (Grids::getFCollision(walk, PlayerState::All) > 0 || !Broodwar->isWalkable(walk)) {
-                    Position p = Position(walk) + Position(4, 4);
-                    auto dx    = p.x - unit.getPosition().x;
-                    auto dy    = p.y - unit.getPosition().y;
-                    auto dist  = p.getDistance(unit.getPosition());
-                    blockers.push_back({dx, dy, dist});
-                }
-            }
-
-            // Check if this direction is occluded by a blocker
-            auto isOccluded = [&](Position pos) {
-                auto dx         = pos.x - unit.getPosition().x;
-                auto dy         = pos.y - unit.getPosition().y;
-                const auto dist = pos.getDistance(unit.getPosition());
-
-                // Occlusion struggles if we're trying to build on a vespene geyser, since it's unwalkable
-                if (unit.getBuildType().isRefinery())
-                    return false;
-
-                for (auto &b : blockers) {
-                    const auto dot = dx * b.dx + dy * b.dy;
-                    if (dot <= 0)
-                        continue;
-                    const auto cosSq = (dot) / (dist * b.dist);
-                    if (cosSq >= 0.98) {
-                        return true;
-                    }
-                }
-                return false;
-            };
-
             // Check if this is a viable position for movement
             const auto viablePosition = [&](Position p) {
-                if (!unit.getType().isFlyer()) {
-                    if (isOccluded(p) || Planning::overlapsPlan(unit, p) || !Util::findWalkable(unit, p))
+                if (!unit.isFlying()) {
+                    if (unit.isOccluded(p) || Planning::overlapsPlan(unit, p) || !Util::findWalkable(unit, p))
                         return false;
                 }
                 if (Actions::isInDanger(unit, p))
@@ -166,6 +115,12 @@ namespace McRave::Command {
                 if (walk.isValid()) {
                     auto p   = Position(walk) + Position(4, 4);
                     double s = scorePosition(p);
+
+                    if (unit.unit()->isSelected()) {
+                        if (unit.isOccluded(p) || unit.isOccluded(p))
+                            Visuals::drawBox(walk, Colors::Red);
+                    }
+
                     posQueue.push({s, p});
                 }
             }
@@ -261,7 +216,7 @@ namespace McRave::Command {
         const auto shouldAttack = [&]() {
             // Combat will attack when in range unless surrounding
             if (unit.getRole() == Role::Combat) {
-                if (unit.attemptingSurround() || unit.attemptingTrap())
+                if (unit.attemptingSurround() || unit.attemptingTrap() || unit.attemptingIntercept())
                     return false;
                 if (unit.isMelee() && !unit.isHovering() && unit.getPosition().getDistance(target.getPosition()) < 96.0 && unit.getLocalState() == LocalState::Attack)
                     return true;
@@ -272,8 +227,8 @@ namespace McRave::Command {
 
             // Workers will poke damage if near a build job or is threatning our gathering
             if (unit.getRole() == Role::Worker) {
-                if (unit.getBuildPosition().isValid()) {
-                    const auto topLeft  = Position(unit.getBuildPosition());
+                if (unit.getBuildLocation().isValid()) {
+                    const auto topLeft  = Position(unit.getBuildLocation());
                     const auto botRight = topLeft + Position(unit.getBuildType().tileWidth() * 32, unit.getBuildType().tileHeight() * 32);
                     return Util::rectangleIntersect(topLeft, botRight, target.getPosition());
                 }
@@ -388,7 +343,7 @@ namespace McRave::Command {
             // Combats should move if we're not retreating
             if (unit.getRole() == Role::Combat) {
 
-                if (unit.attemptingSurround() || unit.attemptingTrap())
+                if (unit.attemptingSurround() || unit.attemptingTrap() || unit.attemptingIntercept())
                     return true;
 
                 if (unit.hasTarget()) {
@@ -428,12 +383,12 @@ namespace McRave::Command {
                 return true;
             }
 
-            // auto clickToSurround = unit.attemptingSurround() && unit.getPosition().getDistance(unit.getSurroundPosition()) < 160.0;
-            // if (clickToSurround) {
-            //    unit.setCommand(Move, unit.getSurroundPosition());
-            //    unit.commandText = "Move_S";
-            //    return true;
-            //}
+            auto clickToSurround = unit.attemptingSurround() && unit.getPosition().getDistance(unit.getSurroundPosition()) < 16.0;
+            if (clickToSurround) {
+                unit.setCommand(Move, unit.getSurroundPosition());
+                unit.commandText = "Move_S";
+                return true;
+            }
 
             // Find the best position to move to
             auto bestPosition = findViablePosition(unit, unit.getPosition(), scoreFunction);
@@ -529,16 +484,12 @@ namespace McRave::Command {
             // Special Case: Casters
             if (unit.isSpellcaster()) {
                 if (unit.getType() == Protoss_High_Templar)
-                    return unit.isWithinRange(target) && !unit.canStartCast(TechTypes::Psionic_Storm, target.getPosition());
+                    return unit.isWithinRange(target);
                 if (unit.getType() == Zerg_Queen) {
-                    return !unit.canStartCast(TechTypes::Spawn_Broodlings, target.getPosition());
+                    return unit.isWithinRange(target);
                 }
                 if (unit.getType() == Zerg_Defiler) {
-                    if (target.getPlayer() == Broodwar->self())
-                        return false;
-                    else
-                        return !unit.canStartCast(TechTypes::Dark_Swarm, target.getPosition()) && !unit.canStartCast(TechTypes::Plague, target.getPosition()) &&
-                               unit.getPosition().getDistance(target.getPosition()) <= 400.0;
+                    return !unit.targetsFriendly() && unit.isWithinRange(target);
                 }
             }
 

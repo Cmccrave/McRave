@@ -398,11 +398,10 @@ namespace McRave::Math {
 
     double calcSimRadius(UnitInfo &unit)
     {
-        if (unit.getPlayer()->isEnemy(Broodwar->self()))
-            return 0.0;
+        auto pState = unit.getPlayer() == Broodwar->self() ? PlayerState::Enemy : PlayerState::Self;
 
-        auto maxAirReach = max(256.0, Players::getStrength(PlayerState::Enemy).maxAirReach);
-        auto maxGrdReach = max(256.0, Players::getStrength(PlayerState::Enemy).maxGroundReach);
+        auto maxAirReach = max(256.0, Players::getStrength(pState).maxAirReach);
+        auto maxGrdReach = max(256.0, Players::getStrength(pState).maxGroundReach);
 
         if (unit.isFlying())
             return maxAirReach;

@@ -823,8 +823,8 @@ namespace McRave::Planning {
         TilePosition getBuildLocation(UnitType building)
         {
             auto placement     = TilePositions::Invalid;
-            const auto finders = {findWallLocation,  findDefenseLocation,    findProxyLocation, findResourceDepotLocation, findPylonLocation,
-                                  findDepotLocation, findProductionLocation, findTechLocation,  findRefineryLocation};
+            const auto finders = {findResourceDepotLocation, findWallLocation,       findDefenseLocation, findProxyLocation,   findPylonLocation,
+                                  findDepotLocation,         findProductionLocation, findTechLocation,    findRefineryLocation};
             for (auto &finder : finders) {
                 if (finder(building, placement))
                     return placement;
@@ -865,10 +865,10 @@ namespace McRave::Planning {
             map<TilePosition, UnitInfo *> oldBuilders;
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
-                if (unit.getBuildPosition().isValid()) {
-                    oldBuilders[unit.getBuildPosition()] = &unit;
+                if (unit.getBuildLocation().isValid()) {
+                    oldBuilders[unit.getBuildLocation()] = &unit;
                     unit.setBuildingType(UnitTypes::None);
-                    unit.setBuildPosition(TilePositions::Invalid);
+                    unit.setBuildLocation(TilePositions::Invalid);
                 }
             }
             buildingsPlanned.clear();
@@ -936,13 +936,42 @@ namespace McRave::Planning {
                         Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::Red);
                     }
 
-                    if (here.isValid() && builder && Workers::shouldMoveToBuild(*builder, here, building)) {
+                    if (here.isValid() && builder) {
                         Visuals::drawBox(Position(here) + Position(4, 4), Position(here + building.tileSize()) - Position(4, 4), Colors::White);
                         Visuals::drawLine(builder->getPosition(), center, Colors::White);
                         Broodwar->drawTextMap(builder->getPosition(), "%s", building.c_str());
                         builder->setBuildingType(building);
-                        builder->setBuildPosition(here);
+                        builder->setBuildLocation(here);
                         buildingsPlanned[here] = building;
+
+                        auto center = Position(here) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
+
+                        // Probes wants to try to place offcenter so the Probe doesn't have to reset collision on placement
+                        if (builder->getType() == Protoss_Probe && builder->hasResource()) {
+                            auto resource = builder->getResource().lock();
+                            center.x += resource->getPosition().x > center.x ? builder->getBuildType().dimensionRight() : -builder->getBuildType().dimensionLeft();
+                            center.y += resource->getPosition().y > center.y ? builder->getBuildType().dimensionDown() : -builder->getBuildType().dimensionUp();
+                        }
+
+                        // Drone wants to be slightly offcenter to prevent a long animation before placing
+                        if (builder->getType() == Zerg_Drone) {
+                            center.x -= 0;
+                            center.y -= 7;
+                        }
+                        builder->setBuildPosition(center);
+
+                        // https://github.com/bwapi/bwapi/issues/914
+                        if (builder->getBuildType() == Zerg_Nydus_Canal) {
+                            auto mapEdge   = Terrain::getClosestMapEdge(Position(builder->getBuildLocation()));
+                            auto nudgeDiff = 64.0;
+
+                            if (mapEdge.x == center.x) {
+                                builder->setBuildPosition(Position(center.x, mapEdge.y == 0 ? center.y - nudgeDiff : center.y + nudgeDiff));
+                            }
+                            else {
+                                builder->setBuildPosition(Position(mapEdge.x == 0 ? center.x - nudgeDiff : center.x + nudgeDiff, center.y));
+                            }
+                        }
 
                         if (buildingTimer.find(here) == buildingTimer.end())
                             buildingTimer[here] = Broodwar->getFrameCount() + int(BWEB::Map::getGroundDistance(builder->getPosition(), center) / builder->getSpeed()) + 200;
@@ -1033,7 +1062,7 @@ namespace McRave::Planning {
         // Check if there's a building queued there already
         for (auto &[tile, building] : buildingsPlanned) {
 
-            if (Broodwar->self()->minerals() < building.mineralPrice() * 0.8 || Broodwar->self()->gas() < building.gasPrice() * 0.8 || unit.getBuildPosition() == tile)
+            if (Broodwar->self()->minerals() < building.mineralPrice() * 0.8 || Broodwar->self()->gas() < building.gasPrice() * 0.8 || unit.getBuildLocation() == tile)
                 continue;
 
             auto center = Position(tile) + Position(building.tileWidth() * 16, building.tileHeight() * 16);

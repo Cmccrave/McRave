@@ -61,8 +61,6 @@ void McRaveModule::onStart()
     Broodwar->setLatCom(true);
     Broodwar->sendText("glhf");
     Broodwar->setLocalSpeed(Broodwar->getGameType() != BWAPI::GameTypes::Use_Map_Settings ? 0 : 42);
-
-    BWEB::Pathfinding::clearCacheFully();
 }
 
 void McRaveModule::onEnd(bool isWinner)
@@ -74,7 +72,6 @@ void McRaveModule::onEnd(bool isWinner)
     Learning::onEnd(isWinner);
     Resources::onEnd();
     Broodwar->sendText("ggwp");
-    BWEB::Pathfinding::clearCacheFully();
 }
 
 void McRaveModule::onFrame()
@@ -124,8 +121,6 @@ void McRaveModule::onFrame()
 
     // Display information from this frame
     Visuals::onFrame();
-
-    BWEB::Pathfinding::testCache();
 }
 
 void McRaveModule::onSendText(string text) { Visuals::onSendText(text); }

@@ -144,6 +144,8 @@ namespace McRave::BuildOrder::Zerg {
         gasTrick        = false;
         reserveLarva    = 0;
 
+        unitOrder = mutaling;
+
         gasLimit  = gasMax();
         focusUnit = UnitTypes::None;
     }

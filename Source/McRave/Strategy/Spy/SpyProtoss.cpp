@@ -231,11 +231,13 @@ namespace McRave::Spy::Protoss {
                 theSpy.transition.name = P_Speedlot;
 
             // Corsair
-            if ((theSpy.build.name == P_2Gate && completesBy(1, Protoss_Stargate, Time(6, 30))) || (theSpy.build.name == P_1GateCore && completesBy(1, Protoss_Stargate, Time(5, 00))) ||
-                (theSpy.build.name == P_2Gate && completesBy(1, Protoss_Scout, Time(7, 00))) || (theSpy.build.name == P_2Gate && completesBy(1, Protoss_Corsair, Time(7, 00))) ||
-                (theSpy.build.name == P_2Gate && arrivesBy(1, Protoss_Corsair, Time(7, 30))) || (theSpy.build.name == P_1GateCore && completesBy(1, Protoss_Scout, Time(5, 15))) ||
-                (theSpy.build.name == P_1GateCore && completesBy(1, Protoss_Corsair, Time(5, 15))) || (theSpy.build.name == P_1GateCore && arrivesBy(1, Protoss_Corsair, Time(5, 45))))
-                theSpy.transition.name = P_Corsair;
+            if (Players::getTotalCount(PlayerState::Enemy, Protoss_Gateway) <= 2) {
+                if ((theSpy.build.name == P_2Gate && completesBy(1, Protoss_Stargate, Time(6, 30))) || (theSpy.build.name == P_1GateCore && completesBy(1, Protoss_Stargate, Time(5, 00))) ||
+                    (theSpy.build.name == P_2Gate && completesBy(1, Protoss_Scout, Time(7, 00))) || (theSpy.build.name == P_2Gate && completesBy(1, Protoss_Corsair, Time(7, 00))) ||
+                    (theSpy.build.name == P_2Gate && arrivesBy(1, Protoss_Corsair, Time(7, 30))) || (theSpy.build.name == P_1GateCore && completesBy(1, Protoss_Scout, Time(5, 15))) ||
+                    (theSpy.build.name == P_1GateCore && completesBy(1, Protoss_Corsair, Time(5, 15))) || (theSpy.build.name == P_1GateCore && arrivesBy(1, Protoss_Corsair, Time(5, 45))))
+                    theSpy.transition.name = P_Corsair;
+            }
 
             // Robo
             if (Players::getVisibleCount(PlayerState::Enemy, Protoss_Shuttle) > 0 || Players::getVisibleCount(PlayerState::Enemy, Protoss_Reaver) > 0 ||

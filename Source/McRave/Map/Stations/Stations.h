@@ -23,6 +23,7 @@ namespace McRave::Stations {
     int getAirDefenseCount(const BWEB::Station *const);
     bool needPower(const BWEB::Station *const);
     bool isIsland(const BWEB::Station *const);
+    bool isVisible(const BWEB::Station *const);
     bool isBaseExplored(const BWEB::Station *const);
     bool isGeyserExplored(const BWEB::Station *const);
     bool isCompleted(const BWEB::Station *const);

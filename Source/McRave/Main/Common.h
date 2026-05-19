@@ -24,8 +24,8 @@ namespace McRave {
     enum class Role { None, Worker, Combat, Transport, Scout, Production, Defender, Support, Consumable };
     enum class TransportState { None, Loading, Engaging, Retreating, Reinforcing };
     enum class ResourceState { None, Assignable, Mineable, Stealable };
-    enum class GlobalState { None, Attack, Hold, Retreat };
-    enum class LocalState { None, Attack, Hold, Retreat };
+    enum class GlobalState { None, Attack, Hold, Retreat, Preserve };
+    enum class LocalState { None, Attack, Hold, Retreat, Preserve };
     enum class SimState { None, Win, Loss };
     enum class PlayerState { None, Self, Ally, Enemy, Neutral, All };
     // clang-format on

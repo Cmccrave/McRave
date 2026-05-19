@@ -584,7 +584,6 @@ namespace BWEB::Blocks {
         findProductionBlocks();
         findSupplyBlocks();
         findTechBlocks();
-        Pathfinding::clearCacheFully();
     }
 
     void draw()

@@ -299,7 +299,6 @@ namespace McRave::BuildOrder::Terran {
 
     void tech()
     {
-        getTech = false;
         if (inOpening)
             return;
 
@@ -336,14 +335,14 @@ namespace McRave::BuildOrder::Terran {
         }
 
         // Adding tech
-        const auto endOfTech   = !unitOrder.empty() && isFocusUnit(unitOrder.back());
+        const auto endOfTech   = !unitOrder.empty() && isFocusUnit(unitOrder.back()) && focusUnits.size() >= unitOrder.size();
         const auto techVal     = int(focusUnits.size()) + techOffset;
         const auto readyToTech = (vis(Terran_Refinery) > 0 || int(Stations::getStations(PlayerState::Self).size()) >= 3 || focusUnits.empty()) && vis(Terran_SCV) >= 20;
         techSat                = (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
 
-        getTech = readyToTech && !techSat && productionSat;
-        getNewTech();
-        getTechBuildings();
+        techDesired = readyToTech && !techSat && productionSat;
+        if (techDesired)
+            getNewTech();
     }
 
     void situational()

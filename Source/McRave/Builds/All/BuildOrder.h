@@ -31,7 +31,6 @@ namespace McRave::BuildOrder {
         inline bool inOpening    = true;
         inline bool inTransition = false;
 
-        inline bool getTech       = false;
         inline bool wallNat       = false;
         inline bool wallMain      = false;
         inline bool wallThird     = false;
@@ -53,6 +52,7 @@ namespace McRave::BuildOrder {
         inline bool gasDesired    = false;
         inline bool expandDesired = false;
         inline bool rampDesired   = false;
+        inline bool techDesired   = false;
         inline bool mineralThird  = false;
 
         inline std::map<BWAPI::UnitType, int> unitLimits;
@@ -91,7 +91,7 @@ namespace McRave::BuildOrder {
 
     void onFrame();
     void getNewTech();
-    void getTechBuildings();
+    void getTechBuildings(BWAPI::UnitType);
 
     int getGasQueued();
     int getMinQueued();

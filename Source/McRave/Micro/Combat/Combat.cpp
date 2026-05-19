@@ -135,7 +135,7 @@ namespace McRave::Combat {
 
             // Override if we have queued to build there, maybe need to clear it
             auto closestBuilder = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Self,
-                                                       [&](auto &u) { return u->getBuildPosition() == Terrain::getMyNatural()->getBase()->Location(); });
+                                                       [&](auto &u) { return u->getBuildLocation() == Terrain::getMyNatural()->getBase()->Location(); });
             if (closestBuilder) {
                 holdNatural   = true;
                 defendNatural = true;
@@ -172,7 +172,7 @@ namespace McRave::Combat {
 
             const auto commanderInRange = [&](Position here) {
                 auto commander = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) { return u->isLightAir(); });
-                return commander && commander->getPosition().getDistance(here) < 256.0;
+                return commander && commander->getPosition().getDistance(here) < 64.0;
             };
 
             // Threatening unit with nothing fighting it
@@ -185,6 +185,20 @@ namespace McRave::Combat {
                     }
                 }
             }
+
+            // Buildings attempting to contain
+            if (Players::ZvT()) {
+                const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
+                    return Terrain::isCloserHome(u->getPosition()) && u->getType().isBuilding() && u->canAttackAir();
+                });
+
+                if (closest) {
+                    harassPosition = closest->getPosition();
+                    LOG_SLOW("Harassing containing building, closest is a ", closest->getType().c_str());
+                    return;
+                }
+            }
+
 
             // Inbound unit fighting
             if ((Players::ZvP() || Players::ZvT()) && !BuildOrder::isPressure(Zerg_Mutalisk)) {
@@ -200,9 +214,9 @@ namespace McRave::Combat {
             }
 
             // Inbound important unit targeting
-            if ((Players::ZvT() || Players::ZvP()) && !BuildOrder::isPressure(Zerg_Mutalisk)) {
+            if (Players::ZvT() || Players::ZvP()) {
                 const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return Units::inBoundUnit(*u, 15) && (u->isSiegeTank() || u->getType() == Protoss_Reaver || u->getType() == Terran_Valkyrie || u->isTransport());
+                    return Units::inBoundUnit(*u, 15) && u->unit()->exists() && (u->isSiegeTank() || u->getType() == Protoss_Reaver || u->getType() == Terran_Valkyrie || u->isTransport());
                 });
                 if (closest) {
                     harassPosition = closest->getPosition();
@@ -231,14 +245,15 @@ namespace McRave::Combat {
             }
 
             // ZvT main is easier to harass in the immediate
-            if (Players::ZvT() && Util::getTime() < Time(8, 00) && Terrain::getEnemyMain()) {
+            if (Players::ZvT() && Util::getTime() < Time(10, 00) && Terrain::getEnemyMain() && !commanderInRange(Terrain::getEnemyMain()->getResourceCentroid())) {
                 harassPosition = Terrain::getEnemyMain()->getResourceCentroid();
                 LOG_SLOW("Harassing enemy main");
                 return;
             }
 
             // ZvP is less likely to have cannons setup at the natural if not FFE
-            if (Players::ZvP() && Spy::enemyFastExpand() && Spy::getEnemyBuild() != P_FFE && Terrain::getEnemyNatural() && Util::getTime() < Time(8, 00)) {
+            if (Players::ZvP() && Spy::enemyFastExpand() && Spy::getEnemyBuild() != P_FFE && Terrain::getEnemyNatural() && Util::getTime() < Time(8, 00) &&
+                !commanderInRange(Terrain::getEnemyNatural()->getResourceCentroid())) {
                 harassPosition = Terrain::getEnemyNatural()->getResourceCentroid();
                 LOG_SLOW("Harassing enemy natural");
                 return;
@@ -277,12 +292,14 @@ namespace McRave::Combat {
                 }
             }
 
-            if (harassStation == Terrain::getEnemyMain())
-                LOG_SLOW("Harassing enemy main");
-            else if (harassStation == Terrain::getEnemyNatural())
-                LOG_SLOW("Harassing enemy natural");
-            else
-                LOG_SLOW("Harassing enemy third");
+            if (harassStation) {
+                if (harassStation == Terrain::getEnemyMain())
+                    LOG_SLOW("Harassing enemy main: ", harassStation->getBase()->Center());
+                else if (harassStation == Terrain::getEnemyNatural())
+                    LOG_SLOW("Harassing enemy natural: ", harassStation->getBase()->Center());
+                else
+                    LOG_SLOW("Harassing enemy third: ", harassStation->getBase()->Center());
+            }
         }
 
         void checkHoldChoke()
@@ -338,19 +355,24 @@ namespace McRave::Combat {
 
     void onFrame()
     {
-        Visuals::startPerfTest();
         findAttackPosition();
         findDefendPosition();
         findHarassPosition();
         checkHoldChoke();
         Simulation::onFrame();
+        Visuals::endPerfTest("Simulation");
         State::onFrame();
+        Visuals::endPerfTest("State");
         Bearings::onFrame();
+        Visuals::endPerfTest("Bearings");
         Clusters::onFrame();
+        Visuals::endPerfTest("Clusters");
         Formations::onFrame();
+        Visuals::endPerfTest("Formations");
         Navigation::onFrame();
+        Visuals::endPerfTest("Navigation");
         Decision::onFrame();
-        Visuals::endPerfTest("Combat");
+        Visuals::endPerfTest("Decision");
     }
 
     void onStart() {}

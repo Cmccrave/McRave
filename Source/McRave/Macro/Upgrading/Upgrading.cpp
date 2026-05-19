@@ -133,7 +133,6 @@ namespace McRave::Upgrading {
 
     void onFrame()
     {
-        Visuals::startPerfTest();
         reset();
         updateReservedResources();
         updateUpgrading();

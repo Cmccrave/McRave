@@ -265,7 +265,7 @@ namespace McRave::Combat::Navigation {
 
         // Create one path from commander to retreat
         auto harassingCommander = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self,
-                                                       [&](auto &u) { return u->isLightAir() && !u->hasCommander() && u->getGlobalState() == GlobalState::Attack && !u->getGoal().isValid(); });
+                                                       [&](auto &u) { return u->isLightAir() && !u->hasCommander() && !u->saveUnit && u->getGlobalState() == GlobalState::Attack && !u->getGoal().isValid(); });
 
         if (harassingCommander) {
             auto &unit = *harassingCommander;
@@ -276,8 +276,14 @@ namespace McRave::Combat::Navigation {
             flyerHarassPath = {};
 
             // Harass path
-            auto simDistCurrent = unit.hasSimTarget() ? unit.getPosition().getApproxDistance(unit.getSimTarget().lock()->getPosition()) : unit.getPosition().getApproxDistance(unit.getDestination());
-            auto simPosition    = unit.hasSimTarget() ? unit.getSimTarget().lock()->getPosition() : unit.getDestination();
+            auto simDistCurrent = unit.getPosition().getApproxDistance(unit.getDestination());
+            auto simPosition    = unit.getDestination();
+            if (unit.hasSimTarget(); auto simTarget = unit.getSimTarget().lock()) {
+                if (!simTarget->isFlying()) {
+                    auto simDistCurrent = unit.getPosition().getApproxDistance(simTarget->getPosition());
+                    auto simPosition    = simTarget->getPosition();
+                }
+            }
 
             // Generate a flying path for harassing that obeys exploration and staying out of range of threats if possible
             auto &simPositions = lastSimPositions[&unit];

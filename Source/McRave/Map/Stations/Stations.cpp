@@ -498,7 +498,6 @@ namespace McRave::Stations {
 
     void onFrame()
     {
-        Visuals::startPerfTest();
         // updateOwners();
         updateSaturation();
         updateProduction();
@@ -575,9 +574,6 @@ namespace McRave::Stations {
 
         if (!station || here.getDistance(station->getBase()->Center()) > 96.0 || stationptr == stations.end() || stationptr->second == PlayerState::None)
             return;
-
-        Broodwar << "remove called" << endl;
-        Broodwar << here << endl;
 
         // Remove workers from any resources on this station
         for (auto &mineral : Resources::getMyMinerals()) {
@@ -707,9 +703,11 @@ namespace McRave::Stations {
                 return (Util::getTime() > Time(9, 00)) - airCount;
 
             // Don't need spores if Spire almost done
-            if (Spy::enemyFastExpand() || Players::getTotalCount(PlayerState::Enemy, Protoss_Gateway) >= 3) {
-                if (BuildOrder::atPercent(Zerg_Spire, 0.5))
-                    return 0;
+            if (vis(Zerg_Evolution_Chamber) == 0) {
+                if (Spy::enemyFastExpand() || Players::getTotalCount(PlayerState::Enemy, Protoss_Gateway) >= 3) {
+                    if (BuildOrder::atPercent(Zerg_Spire, 0.5))
+                        return 0;
+                }
             }
 
             // 1 Gate Corsair
@@ -810,6 +808,12 @@ namespace McRave::Stations {
                 count++;
         }
         return count < 2;
+    }
+
+    bool isVisible(const BWEB::Station *const station)
+    {
+        auto botRight = station->getBase()->Location() + TilePosition(3, 2);
+        return (Broodwar->isVisible(station->getBase()->Location()) && Broodwar->isVisible(botRight));
     }
 
     bool isBaseExplored(const BWEB::Station *const station)

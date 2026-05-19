@@ -122,6 +122,9 @@ namespace McRave::Units {
             if (int(commandQueue.size()) > maxCommandsPerTurn) {
                 commandQueue.resize(maxCommandsPerTurn);
             }
+            for (auto &unit : commandQueue) {
+                unit->updateOcclusion();
+            }
         }
 
         void updateNeutrals()
@@ -335,7 +338,6 @@ namespace McRave::Units {
 
     void onFrame()
     {
-        Visuals::startPerfTest();
         updateCounters();
         updateUnits();
         drawStrengths();

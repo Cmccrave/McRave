@@ -164,6 +164,16 @@ namespace McRave::Visuals {
             else if (overall > 55) {
                 Broodwar << "55ms DQ at: " << Util::getTime() << endl;
                 LOG("55ms DQ");
+
+                // Print 5 most expensive calls
+                sort(frameTests.begin(), frameTests.end(), [&](auto &left, auto &right) { return left.current > right.current; });
+                int i = 0;
+                for (auto &test : frameTests) {
+                    i++;
+                    LOG("  Caller: ", test.name, " Time: ", test.current);
+                    if (i >= 5)
+                        break;
+                }
             }
 
             if (bo_switch) {
@@ -266,9 +276,8 @@ namespace McRave::Visuals {
 
         if (!found)
             frameTests.push_back(FrameTest(function));
+        start = chrono::high_resolution_clock::now();
     }
-
-    void startPerfTest() { start = chrono::high_resolution_clock::now(); }
 
     void toggleDrawing(DrawingType type)
     {

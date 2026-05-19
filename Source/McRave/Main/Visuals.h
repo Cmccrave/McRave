@@ -12,7 +12,6 @@ namespace McRave::Visuals {
 
     void onStart();
     void onFrame();
-    void startPerfTest();
     void endPerfTest(std::string);
     void onSendText(std::string);
     void drawPath(BWEB::Path &);

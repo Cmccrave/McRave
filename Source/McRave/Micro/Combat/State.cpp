@@ -23,8 +23,8 @@ namespace McRave::Combat::State {
         // Corsairs
         if (!BuildOrder::isPressure(Protoss_Corsair) && unlockedOrVis(Protoss_Corsair)) {
             if (Players::PvZ()) {
-                if (Players::getCompleteCount(PlayerState::Enemy, Zerg_Scourge) > 0 && !Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Protoss_Air_Weapons) &&
-                    com(Protoss_Corsair) < 6)
+                auto spireTechDone = Players::getCompleteCount(PlayerState::Enemy, Zerg_Spire, Zerg_Scourge, Zerg_Mutalisk) > 0;
+                if (spireTechDone && (!Upgrading::haveUpgrade(UpgradeTypes::Protoss_Air_Weapons, 1) || com(Protoss_Corsair) < 6))
                     staticRetreatTypes.push_back(Protoss_Corsair);
             }
         }
@@ -68,12 +68,6 @@ namespace McRave::Combat::State {
                 if (rush && !Upgrading::haveUpgrade(UpgradeTypes::Singularity_Charge))
                     lockGateways();
             }
-        }
-
-        // Probes
-        if (!BuildOrder::isPressure(Protoss_Probe) && unlockedOrVis(Protoss_Probe)) {
-            if (!unlockedOrVis(Protoss_Zealot) || !staticRetreatTypes.empty())
-                staticRetreatTypes.push_back(Protoss_Probe);
         }
 
         // NR15 in FFA
@@ -158,7 +152,7 @@ namespace McRave::Combat::State {
         if (!BuildOrder::isPressure(Zerg_Hydralisk) && (unlockedOrVis(Zerg_Hydralisk) || BuildOrder::getCurrentTransition() == Z_4HatchHydra || BuildOrder::getCurrentTransition() == Z_6HatchHydra)) {
             const auto hydraSpeed   = Upgrading::haveUpgrade(UpgradeTypes::Muscular_Augments);
             const auto hydraRange   = Upgrading::haveUpgrade(UpgradeTypes::Grooved_Spines);
-            const auto defendTiming = Spy::getEnemyBuild() == P_FFE && Util::getTime() < Time(12, 00);
+            const auto defendTiming = Spy::getEnemyBuild() == P_FFE && Util::getTime() < Time(8, 00);
             const auto enemyTeched  = Players::getTotalCount(PlayerState::Enemy, Protoss_Shuttle) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Reaver) > 0 ||
                                      Players::getTotalCount(PlayerState::Enemy, Protoss_Robotics_Facility) > 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Robotics_Support_Bay) > 0;
 
@@ -221,7 +215,7 @@ namespace McRave::Combat::State {
 
                 if (Players::ZvP()) {
                     const auto killWorkers  = Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) >= 8;
-                    const auto scaryOpeners = (Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_1GateCore && Util::getTime() < Time(3, 30));
+                    const auto scaryOpeners = (Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_1GateCore && Util::getTime() < Time(4, 00));
                     const auto hideCheese   = BuildOrder::isHideTech() && BuildOrder::isOpener();
                     const auto deniedProxy  = Spy::enemyProxy() && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) > 0;
                     const auto defendProxy  = Spy::enemyProxy() && !speedLing && Util::getTime() < Time(5, 00) && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0;
@@ -304,7 +298,7 @@ namespace McRave::Combat::State {
         // NR15 in FFA
         if (Players::ZvFFA()) {
             for (auto &type : UnitTypes::allUnitTypes()) {
-                if (!type.isHero() && !type.isBuilding() && type != Zerg_Mutalisk)
+                if (!type.isBuilding() && type != Zerg_Mutalisk)
                     staticRetreatTypes.push_back(type);
             }
         }
@@ -317,6 +311,22 @@ namespace McRave::Combat::State {
         updatePStaticStates();
         updateTStaticStates();
         updateZStaticStates();
+
+        // Workers
+        for (auto type : {Protoss_Probe, Terran_SCV, Zerg_Drone}) {
+            if (!BuildOrder::isPressure(type) && unlockedOrVis(type)) {
+                if (!Spy::enemyProxy()) {
+                    if ((!unlockedOrVis(Protoss_Zealot) && !unlockedOrVis(Terran_Marine) && !unlockedOrVis(Zerg_Zergling)) || !staticRetreatTypes.empty()) {
+                        staticRetreatTypes.push_back(Protoss_Probe);
+                        staticRetreatTypes.push_back(Terran_SCV);
+                        staticRetreatTypes.push_back(Zerg_Drone);
+                        break;
+                    }
+                }
+            }
+        }
+
+        Visuals::endPerfTest("State::Static");
     }
 
     bool forceLocalHold(UnitInfo &unit)
@@ -343,6 +353,8 @@ namespace McRave::Combat::State {
             return (closestEnemyStation && unit.getPosition().getDistance(closestEnemyStation->getBase()->Center()) < 400.0);
         };
 
+        const auto nearSelfStation = [&]() {};
+
         const auto nearEnemyDefense = [&]() {
             const auto closestDefense = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isBuilding() && u->canAttack(unit); });
             return closestDefense && closestDefense->getPosition().getDistance(target.getPosition()) < 256.0;
@@ -353,8 +365,13 @@ namespace McRave::Combat::State {
             return center.isValid() && target.getPosition().getDistance(center) < 64.0;
         };
 
+        const auto enemyNearSelfStation = [&]() {
+            const auto closestSelfStation = Stations::getClosestStationGround(unit.getPosition(), PlayerState::Self);
+            return closestSelfStation && target.getPosition().getDistance(closestSelfStation->getBase()->Center()) < unit.getPosition().getDistance(closestSelfStation->getBase()->Center());
+        };
+
         // General commonly used checks
-        const auto atHome        = Terrain::isAtHome(target.getPosition());
+        const auto atHome        = Terrain::isAtHome(target.getPosition()) || (!unit.isFlying() && Terrain::isCloserHome(unit.getPosition()) && enemyNearSelfStation());
         const auto inRange       = unit.isWithinRange(target);
         const auto targetInRange = target.isWithinRange(unit);
 
@@ -441,6 +458,11 @@ namespace McRave::Combat::State {
 
         // If inside enemy territory, likely forcing an attack is best
         auto atEnemyAttack = [&]() {
+            if (unit.getType() == Zerg_Defiler && unit.getEnergy() >= 100 &&
+                (Actions::overlapsActions(unit.unit(), unit.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm)) ||
+                 Actions::overlapsActions(unit.unit(), unit.getEngagePosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm))))
+                return true;
+
             return (!unit.isFlying() && unit.isMelee() && unit.getGoalType() == GoalType::Explore && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) && Util::getTime() > Time(8, 00) &&
                     !Players::ZvZ() && nearEnemyStation());
         };
@@ -481,9 +503,6 @@ namespace McRave::Combat::State {
         if (unit.getGoalType() == GoalType::Escort || unit.getGoalType() == GoalType::Runby)
             return false;
 
-        if (isStaticRetreat(unit.getType()))
-            return true;
-
         if (unit.hasTarget()) {
             auto &target = *unit.getTarget().lock();
 
@@ -523,12 +542,16 @@ namespace McRave::Combat::State {
                 if (unit.getType() == Zerg_Queen && unit.getEnergy() >= TechTypes::Spawn_Broodlings.energyCost())
                     unit.saveUnit = false;
             }
+
+            if (unit.getType() == Zerg_Mutalisk && unit.saveUnit && unit.getSimValue() >= 10.0f && !target.canAttackAir() && unit.getUnitsInReachOfThis().empty()) {
+                return true;
+            }
         }
 
         // Forced global retreat:
         // ... unit is near a hidden enemy
         // ... unit should be sent home to heal
-        return unit.isNearHidden() || unit.saveUnit;
+        return isStaticRetreat(unit.getType()) || unit.isNearHidden() || unit.saveUnit;
     }
 
     void resetStates(UnitInfo &unit)
@@ -583,6 +606,8 @@ namespace McRave::Combat::State {
         //   unit.setLocalState(LocalState::Hold);
         else if (localRetreat)
             unit.setLocalState(LocalState::Retreat);
+
+        Visuals::endPerfTest("State::Local");
     }
 
     void updateGlobalState(UnitInfo &unit)
@@ -594,6 +619,8 @@ namespace McRave::Combat::State {
             unit.setGlobalState(GlobalState::Retreat);
         else
             unit.setGlobalState(GlobalState::Attack);
+
+        Visuals::endPerfTest("State::Global");
     }
 
     void updateStates()

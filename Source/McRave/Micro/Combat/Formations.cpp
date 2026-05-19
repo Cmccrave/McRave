@@ -169,8 +169,7 @@ namespace McRave::Combat::Formations {
         pair<Position, Position> lastPositions = {Positions::Invalid, Positions::Invalid};
 
         // Prevent blocking our own buildings
-        auto closestBuilder = Util::getClosestUnit(formation.center, PlayerState::Self, [&](auto &u) { return u->getBuildPosition().isValid(); });
-        auto buildCenter    = closestBuilder ? closestBuilder->getPosition() : Positions::Invalid;
+        auto closestBuilder = Util::getClosestUnit(formation.center, PlayerState::Self, [&](auto &u) { return u->getBuildLocation().isValid(); });
         bool first          = true;
 
         // Checks if a position is okay, stores if it is
@@ -188,7 +187,15 @@ namespace McRave::Combat::Formations {
                 }
 
                 //
-                if (skip || assignmentsRemaining <= 0 || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None || (buildCenter.isValid() && p.getDistance(buildCenter) < 128.0)) {
+                if (skip || assignmentsRemaining <= 0 || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None) {
+                    auto box = Util::typeBoundingBox(p, commander->getType());
+                    Visuals::drawBox(box.first, box.second, Colors::Red);
+                    return;
+                }
+
+                if (closestBuilder && Util::boxDistance(commander->getType(), p, closestBuilder->getBuildType(), closestBuilder->getBuildPosition()) < 32.0) {
+                    auto box = Util::typeBoundingBox(p, commander->getType());
+                    Visuals::drawBox(box.first, box.second, Colors::Red);
                     return;
                 }
             }
@@ -196,7 +203,7 @@ namespace McRave::Combat::Formations {
             auto box   = Util::typeBoundingBox(p, commander->getType());
             auto color = first ? Colors::Blue : Colors::Green;
             first      = false;
-            // Visuals::drawBox(box.first, box.second, color);
+            Visuals::drawBox(box.first, box.second, color);
             assignmentsRemaining--;
             formation.positions.push_back(p);
         };
@@ -225,7 +232,7 @@ namespace McRave::Combat::Formations {
             if (assignmentsRemaining <= 0 || wrap >= 5)
                 break;
 
-            if (attempts >= totalAssignments * 4) {
+            if (attempts >= totalAssignments * 6) {
                 LOG_SLOW("Bad formation, discarding");
                 cluster.logData();
                 return;

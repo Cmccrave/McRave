@@ -142,7 +142,10 @@ namespace McRave::Walls {
             auto groundCount = wall.getGroundDefenseCount();
             auto colonyCount = Walls::getColonyCount(&wall);
 
-            if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) || BuildOrder::isAllIn() || (!Combat::isDefendNatural() && wall.getStation()->isNatural()) ||
+            if (colonyCount == 0 && BuildOrder::isAllIn())
+                return 0;
+
+            if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) || (!Combat::isDefendNatural() && wall.getStation()->isNatural()) ||
                 Stations::isPocket(wall.getStation()))
                 return 0;
 
@@ -198,8 +201,10 @@ namespace McRave::Walls {
                 if (Broodwar->self()->getRace() == Races::Zerg) {
                     auto seconds             = (colonyCount > 0) ? 20 : 30;
                     auto minimumColonyNeeded = (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(6, 00));
-                    auto morphAlways         = (Spy::getEnemyBuild() == T_RaxFact && wall.getGroundDefenseCount() == 0) || Players::vFFA() || Spy::enemyProxy();
-                    if (!morphAlways && (wall.getGroundDefenseCount() >= minimumColonyNeeded || colonyCount >= minimumColonyNeeded)) {
+
+                    auto morphBlindAgainst = Spy::getEnemyBuild() == T_RaxFact || Spy::getEnemyBuild() == P_2Gate;
+                    auto morphAlways       = (morphBlindAgainst && wall.getGroundDefenseCount() == 0) || Players::vFFA() || Spy::enemyProxy();
+                    if (!morphAlways && (wall.getGroundDefenseCount() >= minimumColonyNeeded || colonyCount >= minimumColonyNeeded || Spy::enemyFastExpand())) {
                         auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) { return Units::inBoundUnit(*u, seconds); });
                         if (!closestUnit)
                             return 0;

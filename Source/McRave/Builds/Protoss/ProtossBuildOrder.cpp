@@ -274,7 +274,6 @@ namespace McRave::BuildOrder::Protoss {
 
     void tech()
     {
-        getTech = false;
         if (inOpening)
             return;
 
@@ -320,12 +319,6 @@ namespace McRave::BuildOrder::Protoss {
             unitOrder = {Protoss_Observer, Protoss_Reaver, Protoss_Carrier};
         }
 
-        // Ensure anything we already made is added into the list
-        for (auto unit : unitOrder) {
-            if (unlockReady(unit))
-                focusUnits.insert(unit);
-        }
-
         // Dont double count very similar tech units
         auto focusUnitSize = int(focusUnits.size());
         if (isFocusUnit(Protoss_Dark_Templar) && isFocusUnit(Protoss_High_Templar))
@@ -334,14 +327,14 @@ namespace McRave::BuildOrder::Protoss {
             focusUnitSize--;
 
         // Adding tech
-        const auto endOfTech   = !unitOrder.empty() && isFocusUnit(unitOrder.back());
+        const auto endOfTech   = !unitOrder.empty() && isFocusUnit(unitOrder.back()) && focusUnits.size() >= unitOrder.size();
         const auto techVal     = focusUnitSize + techOffset + mineralThird;
         const auto readyToTech = (vis(Protoss_Assimilator) > 0 || int(Stations::getStations(PlayerState::Self).size()) >= 3 || focusUnits.empty()) && vis(Protoss_Probe) >= 20;
         techSat                = (techVal >= int(Stations::getStations(PlayerState::Self).size()) || endOfTech);
 
-        getTech = readyToTech && !techSat && productionSat;
-        getNewTech();
-        getTechBuildings();
+        techDesired = readyToTech && !techSat && productionSat;
+        if (techDesired)
+            getNewTech();
     }
 
     void situational()

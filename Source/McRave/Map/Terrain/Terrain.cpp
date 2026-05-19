@@ -58,7 +58,9 @@ namespace McRave::Terrain {
         {
             // If we think we found the enemy but we were wrong
             if (enemyStartingPosition.isValid()) {
-                if (enemyMain && Stations::isBaseExplored(enemyMain) && Util::getTime() < Time(5, 00) && BWEB::Map::isUsed(enemyStartingTilePosition) == UnitTypes::None) {
+                auto checked = Util::getTime() < Time(5, 00) ? Stations::isBaseExplored(enemyMain) : Stations::isVisible(enemyMain);
+
+                if (enemyMain && checked && BWEB::Map::isUsed(enemyStartingTilePosition) == UnitTypes::None) {
                     bannedStart.insert(enemyStartingTilePosition);
                     enemyStartingPosition     = Positions::Invalid;
                     enemyStartingTilePosition = TilePositions::Invalid;
@@ -895,7 +897,6 @@ namespace McRave::Terrain {
 
     void onFrame()
     {
-        Visuals::startPerfTest();
         findEnemy();
         findEnemyNextExpand();
         findCleanupPositions();
@@ -921,20 +922,38 @@ namespace McRave::Terrain {
     vector<Position> &getGroundCleanupPositions() { return groundCleanupPositions; }
     vector<Position> &getAirCleanupPositions() { return airCleanupPositions; }
 
-    bool isAtHome(Position here)
+    // Strategic checks
+    bool isAtCheck(Position here, PlayerState pState)
     {
         const auto growthRate     = pow(Util::getTime().minutes, 2) * 8.0;
         const auto dist           = clamp(96.0 + growthRate, 160.0, 640.0);
-        const auto closestStation = Stations::getClosestStationAir(here, PlayerState::Self);
+        const auto closestStation = Stations::getClosestStationAir(here, pState);
 
         const auto closestMain    = BWEB::Stations::getClosestMainStation(here);
         const auto closestNatural = BWEB::Stations::getClosestNaturalStation(here);
 
-        const auto inDefendedArea = Terrain::inTerritory(PlayerState::Self, here) && closestStation && closestStation->getBase()->Center().getDistance(here) < dist;
-        const auto inDefendedMain = closestMain && closestNatural && Terrain::inArea(closestMain->getBase()->GetArea(), here) && Stations::ownedBy(closestMain) == PlayerState::Self &&
-                                    Stations::ownedBy(closestNatural) == PlayerState::Self;
+        const auto inDefendedArea = Terrain::inTerritory(pState, here) && closestStation && closestStation->getBase()->Center().getDistance(here) < dist;
+        const auto inDefendedMain = closestMain && closestNatural && Terrain::inArea(closestMain->getBase()->GetArea(), here) && Stations::ownedBy(closestMain) == pState &&
+                                    Stations::ownedBy(closestNatural) == pState;
         return inDefendedArea || inDefendedMain;
     }
+    bool isAtHome(Position here) { return isAtCheck(here, PlayerState::Self); }
+    bool isAtEnemy(Position here) { return isAtCheck(here, PlayerState::Enemy); }
+
+    bool isCloserCheck(Position here, PlayerState pState)
+    {
+        auto closestEnemy = Stations::getClosestStationAir(here, PlayerState::Enemy);
+        auto closestSelf  = Stations::getClosestStationAir(here, PlayerState::Self);
+        if (!closestEnemy || !closestSelf)
+            return false;
+
+        auto distSelf  = here.getDistance(closestSelf->getBase()->Center());
+        auto distEnemy = here.getDistance(closestEnemy->getBase()->Center());
+
+        return pState == PlayerState::Enemy ? distEnemy < distSelf : distSelf < distEnemy;
+    }
+    bool isCloserHome(Position here) { return isCloserCheck(here, PlayerState::Self); }
+    bool isCloserEnemy(Position here) { return isCloserCheck(here, PlayerState::Enemy); }
 
     // Main information
     const BWEB::Station *const getMyMain() { return BWEB::Stations::getStartingMain(); }
@@ -960,7 +979,7 @@ namespace McRave::Terrain {
     }
 
     // Area information
-    AreaGeometry* getAreaGeometry(const BWEM::Area *area)
+    AreaGeometry *getAreaGeometry(const BWEM::Area *area)
     {
         if (area) {
             return &areaGeometry[area];

@@ -136,7 +136,7 @@ namespace McRave::Command {
 
             if (unit.getDestination() == resource->getPosition() && boxDist >= 128.0) {
                 auto closestUnit = Util::getClosestUnit(unit.getPosition(), PlayerState::None, [&](auto &u) {
-                    return u->isCompleted() && *u != unit && !u->getType().isBuilding() && !u->isFlying() && u->getPosition().getDistance(unit.getPosition()) < 32.0;
+                    return u->isCompleted() && *u != unit && !u->getType().isBuilding() && !u->isFlying() && u->getPosition().getDistance(unit.getPosition()) < 32.0 && u->hasCollision();
                 });
 
                 if (closestUnit) {
@@ -292,7 +292,7 @@ namespace McRave::Command {
             }
 
             auto hideFromDamage = unit.isBurrowed() ? damage >= unit.getHealth() / 2 : damage >= unit.getHealth();
-            auto burrowUnit     = !unit.getBuildPosition().isValid() && (hideFromDamage || threatened) && !Planning::overlapsPlan(unit, unit.getPosition());
+            auto burrowUnit     = !unit.getBuildLocation().isValid() && (hideFromDamage || threatened) && !Planning::overlapsPlan(unit, unit.getPosition());
 
             // Burrow/unburrow as needed
             if (!unit.isBurrowed() && burrowUnit) {
@@ -512,10 +512,13 @@ namespace McRave::Command {
             auto selfMoreMelee  = vis(Zerg_Zergling) + vis(Zerg_Ultralisk) > vis(Zerg_Hydralisk);
             auto enemyLessMelee = (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot)) || (Players::ZvT());
 
-            auto castSwarmTarget = selfMoreMelee && enemyLessMelee && (target.getType() == Terran_Marine || target.getType() == Terran_Medic || target.isSiegeTank());
+            auto castSwarmTarget = selfMoreMelee && enemyLessMelee && unit.canStartCast(Dark_Swarm, target.getPosition());
+            auto castSwarmAlly   = !selfMoreMelee;
+
+            auto castPlagueTarget = castSwarmTarget;
 
             // If close to target and can cast Plague
-            if (!unit.targetsFriendly() && !castSwarmTarget && unit.getLocalState() != LocalState::None && unit.canStartCast(Plague, target.getPosition())) {
+            if (!unit.targetsFriendly() && castPlagueTarget && target.unit()->exists() && unit.canStartCast(Plague, target.getPosition()) && unit.isWithinRange(target)) {
                 unit.setCommand(Plague, target.getPosition());
                 unit.commandText = "Plague";
                 Actions::addAction(unit.unit(), target.getPosition(), Plague, PlayerState::Neutral, Util::getCastRadius(Plague));
@@ -523,7 +526,7 @@ namespace McRave::Command {
             }
 
             // If close to target and can cast Dark Swarm
-            if (!unit.targetsFriendly() && castSwarmTarget && unit.getPosition().getDistance(target.getPosition()) <= 400 && unit.canStartCast(Dark_Swarm, target.getPosition())) {
+            if (!unit.targetsFriendly() && castSwarmTarget && target.unit()->exists() && unit.isWithinRange(target)) {
                 unit.setCommand(Dark_Swarm, target.getPosition());
                 unit.commandText = "DarkSwarm";
                 Actions::addAction(unit.unit(), target.getPosition(), Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
@@ -532,19 +535,21 @@ namespace McRave::Command {
 
             // If within range of an intermediate point within engaging distance
             if (!unit.targetsFriendly()) {
-                for (auto &tile : unit.getMarchPath().getTiles()) {
-                    auto center = Position(tile) + Position(16, 16);
 
-                    auto distMin = BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0 ? 200.0 : 0.0;
-                    auto dist    = center.getDistance(target.getPosition());
+                auto pos = Util::findPointOnPath(unit.getMarchPath(), [&](auto &p) {
+                    auto distSelf = p.getDistance(unit.getPosition());
+                    auto distMin  = BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0 ? 200.0 : 0.0;
+                    auto dist     = p.getDistance(target.getPosition());
+                    if (dist < 400.0 && dist > distMin && !Actions::overlapsActions(unit.unit(), p, TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm)))
+                        Visuals::drawBox(TilePosition(p), Colors::Blue);
 
-                    if (dist <= 400 && dist > distMin && unit.canStartCast(Dark_Swarm, center)) {
-                        if (unit.unit()->getLastCommand().getTechType() != Dark_Swarm)
-                            unit.setCommand(Dark_Swarm, center);
-                        Actions::addAction(unit.unit(), center, Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
-                        unit.commandText = "DarkSwarm";
-                        return true;
-                    }
+                    return dist < 400.0 && dist > distMin && !Actions::overlapsActions(unit.unit(), p, TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm));
+                });
+                if (pos.isValid() && unit.getPosition().getDistance(pos) < 320.0 && unit.canStartCast(Dark_Swarm, pos)) {
+                    unit.setCommand(Dark_Swarm, pos);
+                    unit.commandText = "DarkSwarmPath";
+                    Actions::addAction(unit.unit(), target.getPosition(), Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
+                    return true;
                 }
             }
 
@@ -713,16 +718,16 @@ namespace McRave::Command {
 
     bool build(UnitInfo &unit)
     {
-        if (unit.getRole() != Role::Worker || !unit.getBuildPosition().isValid())
+        if (unit.getRole() != Role::Worker || !unit.getBuildLocation().isValid())
             return false;
 
-        const auto topLeft  = Position(unit.getBuildPosition());
-        const auto botRight = Position(unit.getBuildPosition() + TilePosition(unit.getBuildType().tileWidth(), unit.getBuildType().tileHeight()));
+        const auto topLeft  = Position(unit.getBuildLocation());
+        const auto botRight = Position(unit.getBuildLocation() + TilePosition(unit.getBuildType().tileWidth(), unit.getBuildType().tileHeight()));
         const auto center   = (topLeft + botRight) / 2;
 
-        const auto fullyVisible = Broodwar->isVisible(unit.getBuildPosition()) && Broodwar->isVisible(unit.getBuildPosition() + TilePosition(unit.getBuildType().tileWidth(), 0)) &&
-                                  Broodwar->isVisible(unit.getBuildPosition() + TilePosition(unit.getBuildType().tileWidth(), unit.getBuildType().tileHeight())) &&
-                                  Broodwar->isVisible(unit.getBuildPosition() + TilePosition(0, unit.getBuildType().tileHeight()));
+        const auto fullyVisible = Broodwar->isVisible(unit.getBuildLocation()) && Broodwar->isVisible(unit.getBuildLocation() + TilePosition(unit.getBuildType().tileWidth(), 0)) &&
+                                  Broodwar->isVisible(unit.getBuildLocation() + TilePosition(unit.getBuildType().tileWidth(), unit.getBuildType().tileHeight())) &&
+                                  Broodwar->isVisible(unit.getBuildLocation() + TilePosition(0, unit.getBuildType().tileHeight()));
 
         const auto canAfford = Broodwar->self()->minerals() >= unit.getBuildType().mineralPrice() && Broodwar->self()->gas() >= unit.getBuildType().gasPrice();
 
@@ -740,7 +745,7 @@ namespace McRave::Command {
         // If build position is fully visible and unit is close to it, start building as soon as possible
         if (fullyVisible && canAfford && unit.isWithinBuildRange()) {
             if (unit.unit()->getLastCommandFrame() < Broodwar->getFrameCount() - 10) {
-                unit.unit()->build(unit.getBuildType(), unit.getBuildPosition());
+                unit.unit()->build(unit.getBuildType(), unit.getBuildLocation());
             }
             unit.commandText = "Build";
             return true;

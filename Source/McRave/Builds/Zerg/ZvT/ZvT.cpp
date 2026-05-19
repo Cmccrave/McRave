@@ -5,6 +5,7 @@
 #include "Macro/Researching/Researching.h"
 #include "Macro/Upgrading/Upgrading.h"
 #include "Main/Common.h"
+#include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
 #include "Strategy/Spy/Spy.h"
 
@@ -30,7 +31,7 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyTransition() == U_WorkerRush)
             wantNatural = hatchCount() >= 2;
 
-        wantThird   = hatchCount() >= 3 || (Spy::getEnemyBuild() == T_RaxCC);
+        wantThird = hatchCount() >= 3 || (Spy::getEnemyBuild() == T_RaxCC);
 
         wallNat  = wantNatural && hatchCount() >= 2 && (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled());
         wallMain = false;
@@ -47,6 +48,17 @@ namespace McRave::BuildOrder::Zerg {
 
         gasLimit  = gasMax();
         focusUnit = UnitTypes::None;
+
+        // Order
+        unitOrder = mutalingdefiler;
+        if (Spy::Terran::enemyBio()) {
+            if (Spy::getEnemyTransition() == T_1FactTanks)
+                unitOrder = mutalingdefiler;
+            else if (Spy::enemyFastExpand())
+                unitOrder = ultraling;
+            else
+                unitOrder = mutalurk;
+        }
     }
 
     int inboundUnits_ZvT()
@@ -98,10 +110,10 @@ namespace McRave::BuildOrder::Zerg {
 
         // RaxFact
         if (Spy::getEnemyBuild() == T_RaxFact || Spy::enemyWalled() || Spy::getEnemyBuild() == "Unknown") {
-            initialValue = 2;
+            initialValue = 4;
             if (Spy::getEnemyOpener() == T_1FactFE || Spy::getEnemyOpener() == T_2FactFE || Util::getTime() > Time(4, 00))
                 initialValue = 4;
-            if (Spy::getEnemyOpener() == T_2FactVulture || Players::hasUpgraded(PlayerState::Enemy, Ion_Thrusters)) 
+            if (Spy::getEnemyOpener() == T_2FactVulture || Players::hasUpgraded(PlayerState::Enemy, Ion_Thrusters))
                 initialValue = 6;
         }
 
@@ -166,26 +178,19 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvT_2HatchMuta()
     {
-        inTransition                = vis(Zerg_Lair) > 0;
-        inOpening                   = total(Zerg_Mutalisk) <= 12;
-        inBookSupply                = total(Zerg_Overlord) < 3;
-        unitPressure[Zerg_Mutalisk] = (Spy::getEnemyTransition() == T_2FactVulture && Util::getTime() < Time(10, 00)) || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) == 0;
+        inTransition = vis(Zerg_Lair) > 0;
+        inOpening    = total(Zerg_Mutalisk) <= 12;
+        inBookSupply = total(Zerg_Overlord) < 3;
 
-        focusUnit    = Zerg_Mutalisk;
-        reserveLarva = 6;
+        unitPressure[Zerg_Mutalisk] = (Spy::getEnemyTransition() == T_2FactVulture && Util::getTime() < Time(10, 00)) || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) == 0;
+        reserveLarva                = 6;
 
         auto thirdHatch  = (Spy::enemyFastExpand() && com(Zerg_Spire) == 0 && vis(Zerg_Drone) >= 20);
         auto fourthHatch = com(Zerg_Mutalisk) > 0;
+        planEarly        = fourthHatch && Stations::getStations(PlayerState::Self).size() >= 4;
 
         auto firstGas  = (hatchCount() >= 2 && vis(Zerg_Drone) >= 10 && vis(Zerg_Spawning_Pool) > 0);
         auto secondGas = (Spy::enemyFastExpand() && vis(Zerg_Spire) > 0 && vis(Zerg_Drone) >= 20) || (atPercent(Zerg_Spire, 0.25) && vis(Zerg_Drone) >= 18);
-
-        // Order
-        unitOrder = mutalingdefiler;
-        if (Spy::Terran::enemyMech())
-            unitOrder = mutalingqueen;
-        if (Spy::Terran::enemyBio())
-            unitOrder = Spy::enemyFastExpand() ? ultraling : mutalurk;
 
         // Buildings
         buildQueue[Zerg_Hatchery]          = 2 + thirdHatch + fourthHatch;
@@ -228,25 +233,17 @@ namespace McRave::BuildOrder::Zerg {
     void ZvT_3HatchMuta()
     {
         // 13h 12g
-        inTransition                = vis(Zerg_Lair) > 0;
-        inOpening                   = total(Zerg_Mutalisk) <= 12;
-        inBookSupply                = vis(Zerg_Overlord) < 4;
-        unitPressure[Zerg_Mutalisk] = (Spy::getEnemyTransition() == T_2FactVulture && Util::getTime() < Time(10, 00)) || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) == 0;
+        inTransition = vis(Zerg_Lair) > 0;
+        inOpening    = total(Zerg_Mutalisk) <= 12;
+        inBookSupply = vis(Zerg_Overlord) < 4;
 
-        focusUnit    = Zerg_Mutalisk;
-        reserveLarva = (Spy::enemyFastExpand() ? 9 : 6);
+        unitPressure[Zerg_Mutalisk] = (Spy::getEnemyTransition() == T_2FactVulture && Util::getTime() < Time(10, 00)) || Players::getTotalCount(PlayerState::Enemy, Terran_Missile_Turret) == 0;
+        reserveLarva                = (Spy::enemyFastExpand() ? 9 : 6);
 
         auto thirdHatch  = (s >= 26 && vis(Zerg_Drone) >= 11 && total(Zerg_Zergling) >= transitionLings);
         auto fourthHatch = (Spy::getEnemyBuild() == T_RaxFact || !Spy::enemyFastExpand()) ? com(Zerg_Mutalisk) > 0 : (vis(Zerg_Spire) > 0 && s >= 66);
 
         auto secondGas = (Spy::enemyFastExpand() && vis(Zerg_Drone) >= 20) || (atPercent(Zerg_Lair, 0.5) && vis(Zerg_Drone) >= 20);
-
-        // Order
-        unitOrder = mutalingdefiler;
-        if (Spy::Terran::enemyMech())
-            unitOrder = mutalingqueen;
-        if (Spy::Terran::enemyBio())
-            unitOrder = Spy::enemyFastExpand() ? ultraling : mutalurk;
 
         // Buildings
         buildQueue[Zerg_Hatchery]          = 2 + thirdHatch + fourthHatch;

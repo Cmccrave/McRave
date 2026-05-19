@@ -4,9 +4,9 @@
 #include "Info/Unit/UnitInfo.h"
 #include "Info/Unit/Units.h"
 #include "Main/Common.h"
+#include "Map/Grids/Grids.h"
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
-#include "Map/Grids/Grids.h"
 #include "Micro/Combat/Combat.h"
 
 using namespace BWAPI;
@@ -25,7 +25,7 @@ namespace McRave::Pathing {
                 return;
             }
 
-            auto range    = (target.isFlying() ? unit.getAirRange() : unit.getGroundRange());
+            auto range = (target.isFlying() ? unit.getAirRange() : unit.getGroundRange());
 
             // No need to calculate for units that don't move or are in range
             if (unit.getRole() == Role::Defender || unit.getSpeed() <= 0.0) {
@@ -45,13 +45,13 @@ namespace McRave::Pathing {
                 range -= 48.0;
 
             // Create an air distance calculation for engage position
-            //auto distance       = double(Util::boxDistance(unit, target));
-            //auto engagePosition = Util::shiftTowards(target.getPosition(), unit.getPosition(), min(distance, range));
-            //unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
-            //unit.setEngagePosition(engagePosition);
+            // auto distance       = double(Util::boxDistance(unit, target));
+            // auto engagePosition = Util::shiftTowards(target.getPosition(), unit.getPosition(), min(distance, range));
+            // unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
+            // unit.setEngagePosition(engagePosition);
 
-            auto distance = double(Util::boxDistance(unit, target));
-            auto moveDist = std::max(0.0, distance - range);
+            auto distance       = double(Util::boxDistance(unit, target));
+            auto moveDist       = std::max(0.0, distance - range);
             auto engagePosition = Util::shiftTowards(unit.getPosition(), target.getPosition(), moveDist);
             unit.setEngagePosition(engagePosition);
             unit.setEngDist(unit.getPosition().getDistance(unit.getEngagePosition()));
@@ -67,13 +67,15 @@ namespace McRave::Pathing {
                 return;
 
             // Light air and scout ejection
-            auto allowedToIntercept = unit.isLightAir() || (unit.isMelee() && target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target.getPosition()));
-            if (!allowedToIntercept || unit.isWithinRange(target))
+            auto allowedToIntercept = unit.isLightAir() || unit.getType() == Zerg_Scourge ||
+                                      (unit.isMelee() && target.getType().isWorker() && Terrain::inArea(Terrain::getMyMain(), target.getPosition()));
+            if (!allowedToIntercept || (unit.isWithinRange(target) && unit.isFlying()))
                 return;
 
-            auto toTarget  = target.getPosition() - unit.getPosition();
-            auto time      = max(target.getPosition().getDistance(unit.getPosition()) / unit.getSpeed(), 1.0);
-            auto intercept = target.getPosition() + Position(int(round(target.unit()->getVelocityX() * time)), int(round(target.unit()->getVelocityY() * time)));
+            auto meleeFudge = unit.isMelee() ? 1.5 : 1.00;
+            auto toTarget   = target.getPosition() - unit.getPosition();
+            auto time       = max(target.getPosition().getDistance(unit.getPosition()) / unit.getSpeed(), 1.0) * meleeFudge;
+            auto intercept  = target.getPosition() + Position(int(round(target.unit()->getVelocityX() * time)), int(round(target.unit()->getVelocityY() * time)));
 
             // Only need to intercept if it's moving away
             if (intercept.getDistance(unit.getPosition()) > target.getPosition().getDistance(unit.getPosition()))
@@ -125,6 +127,21 @@ namespace McRave::Pathing {
             return result;
         };
 
+        auto squareGenerator = [&](UnitInfo &enemy, Position biasTowards) {
+            std::vector<Position> result;
+            int offset = std::max(enemy.getType().width(), enemy.getType().height()) - 4;
+            for (int dx = -1; dx <= 1; ++dx) {
+                for (int dy = -1; dy <= 1; ++dy) {
+                    if (dx == 0 && dy == 0)
+                        continue;
+
+                    result.emplace_back(enemy.getPosition().x + (dx * offset), enemy.getPosition().y + (dy * offset));
+                }
+            }
+
+            return result;
+        };
+
         void updateInterceptPositions(UnitInfo &enemy) {}
 
         void updateTrapPositions(UnitInfo &enemy)
@@ -162,8 +179,8 @@ namespace McRave::Pathing {
                 auto weightExpand  = (frames + 2);
                 auto finalPosition = pos + Position(int(dirx * weightTowards), int(diry * weightTowards)) + Position(int(expandx * weightExpand), int(expandy * weightExpand));
 
-                //Visuals::drawLine(unit.getPosition(), finalPosition, Colors::Green);
-                //Visuals::drawCircle(finalPosition, 4, Colors::Green);
+                // Visuals::drawLine(unit.getPosition(), finalPosition, Colors::Green);
+                // Visuals::drawCircle(finalPosition, 4, Colors::Green);
 
                 if (Util::findWalkable(unit, finalPosition))
                     unit.setTrapPosition(finalPosition);
@@ -184,21 +201,12 @@ namespace McRave::Pathing {
         {
             // List of viable surround targets
             static set<UnitType> surroundTypes = {Protoss_Dragoon, Terran_Goliath, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode};
-            if (surroundTypes.find(enemy.getType()) == surroundTypes.end())
+            if (surroundTypes.find(enemy.getType()) == surroundTypes.end() || enemy.getUnitsInReachOfThis().empty())
                 return;
 
             // List of viable surround targeters
             static set<UnitType> allowedTypes = {Zerg_Zergling, Protoss_Zealot};
-            auto biasTowards                  = enemy.getPosition() + Position(int(enemy.unit()->getVelocityX() * 24.0), int(enemy.unit()->getVelocityY() * 24.0));
-
-            // Need at least 5 units targeting to surround
-            auto cnt = 0;
-            for (auto &targeter : enemy.getUnitsTargetingThis()) {
-                if (Util::contains(allowedTypes, targeter.lock()->getType()))
-                    cnt++;            
-            }
-            if (cnt < 5)
-                return;
+            auto biasTowards                  = enemy.getPosition();
 
             auto assignPosition = [&](UnitInfo &unit, Position pos) {
                 double distToBias = enemy.getPosition().getDistance(biasTowards);
@@ -210,8 +218,7 @@ namespace McRave::Pathing {
                 auto expandx = (pos.x - unit.getPosition().x) / max(1.0, distToPos);
                 auto expandy = (pos.y - unit.getPosition().y) / max(1.0, distToPos);
 
-                auto frames = clamp(pow(unit.getPosition().getDistance(pos) / unit.getSpeed(), 1.5), 2.0, 64.0);
-
+                auto frames        = clamp(unit.getPosition().getDistance(pos) / unit.getSpeed(), 2.0, 32.0);
                 auto finalPosition = pos + Position(int(dirx * frames), int(diry * frames)) + Position(int(expandx * frames), int(expandy * frames));
 
                 // Visuals::drawLine(unit.getPosition(), finalPosition, Colors::Green);
@@ -219,14 +226,18 @@ namespace McRave::Pathing {
                 unit.setSurroundPosition(finalPosition);
             };
 
-            auto positions = generatePositions(enemy, biasTowards, circleGenerator);
+            // Testing:
+            // This doesnt grab the closest targeter, just the closest ling, so re-assign targeting as a test
+            auto positions = generatePositions(enemy, biasTowards, squareGenerator);
             for (auto &[pos, dist] : positions) {
                 auto closestTargeter = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
-                    return allowedTypes.find(u->getType()) != allowedTypes.end() && u->hasTarget() && u->getRole() == Role::Combat &&
-                           (!u->getSurroundPosition().isValid() || u->getSurroundPosition() == pos) && *u->getTarget().lock() == enemy;
+                    return allowedTypes.find(u->getType()) != allowedTypes.end() && u->getRole() == Role::Combat && (!u->getSurroundPosition().isValid() || u->getSurroundPosition() == pos) &&
+                           u->hasTarget() && *u->getTarget().lock() == enemy;
                 });
-                if (closestTargeter)
+                if (closestTargeter && Util::findWalkable(*closestTargeter, pos)) {
                     assignPosition(*closestTargeter, pos);
+                    closestTargeter->setTarget(&enemy);
+                }
             }
         }
 
@@ -258,7 +269,7 @@ namespace McRave::Pathing {
 
     void getExplorePath(UnitInfo &unit, BWEB::Path &path) {}
 
-    void getDefaultPath(UnitInfo &unit, BWEB::Path &path) {}    
+    void getDefaultPath(UnitInfo &unit, BWEB::Path &path) {}
 
     Position getPathPoint(UnitInfo &unit, Position start)
     {
@@ -288,12 +299,23 @@ namespace McRave::Pathing {
 
     Position getNavPoint(UnitInfo &unit, BWEB::Path &path)
     {
+        auto returnNext = false;
+
         const auto validPathPoint = [&](auto &p) {
             if (unit.isFlying())
                 return p.getDistance(unit.getPosition()) >= 96.0;
 
             if (BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None)
                 return false;
+
+            // If occluded, return next so we don't try to path into a corner
+            if (returnNext)
+                return true;
+            if (unit.isOccluded(p)) {
+                returnNext = true;
+                return false;
+            }
+
             auto mobility = (10 - Grids::getMobility(p)) * 12;
             auto value    = mobility + 64.0;
             return p.getDistance(unit.getPosition()) >= value;

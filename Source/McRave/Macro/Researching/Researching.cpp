@@ -121,7 +121,6 @@ namespace McRave::Researching {
 
     void onFrame()
     {
-        Visuals::startPerfTest();
         reset();
         updateReservedResources();
         updateResearching();

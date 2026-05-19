@@ -42,11 +42,11 @@ namespace McRave::Walls::Zerg {
 
             // 9-9
             if (Spy::getEnemyOpener() == P_9_9)
-                return 1 + (BuildOrder::getCurrentOpener() == Z_12Hatch) + (Util::getTime() > Time(4, 30));
+                return 1 + (Util::getTime() > Time(4, 30));
 
             // Proxy 9-9
             if (Spy::getEnemyOpener() == P_Proxy_9_9)
-                return 2;
+                return 1;
 
             // Horror 9-9
             if (Spy::getEnemyOpener() == P_Horror_9_9)
@@ -59,7 +59,7 @@ namespace McRave::Walls::Zerg {
         if (Spy::getEnemyBuild() == P_FFE) {
             if (Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) >= 2 || Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot) >= 6)
                 return 2;
-            return Util::getTime() > Time(5, 00);
+            return Util::getTime() > Time(6, 00);
         }
 
         // CannonRush
@@ -85,7 +85,7 @@ namespace McRave::Walls::Zerg {
 
             // DT
             if (Spy::getEnemyTransition() == P_DT) {
-                return initial + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 30));
+                return initial + (Util::getTime() > Time(4, 45)) + 2 * (Util::getTime() > Time(5, 15)) + 2 * (Util::getTime() > Time(6, 00));
             }
 
             // Corsair
@@ -95,13 +95,13 @@ namespace McRave::Walls::Zerg {
 
             // Speedlot
             if (Spy::getEnemyTransition() == P_Speedlot) {
-                return initial + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 15));
+                return initial + (Util::getTime() > Time(4, 45)) + 2 * (Util::getTime() > Time(5, 15)) + 2 * (Util::getTime() > Time(6, 15));
             }
 
             // Zealot flood
             if (Spy::getEnemyTransition() == P_Rush) {
-                return initial + (Util::getTime() > Time(4, 15)) + (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(4, 45)) + (Util::getTime() > Time(5, 00)) +
-                       (Util::getTime() > Time(5, 30)) + (Util::getTime() > Time(6, 00)) - Spy::enemyProxy();
+                return initial + (Util::getTime() > Time(4, 25)) + (Util::getTime() > Time(4, 50)) + (Util::getTime() > Time(5, 15)) + (Util::getTime() > Time(5, 40)) +
+                       (Util::getTime() > Time(6, 05)) - Spy::enemyProxy();
             }
 
             // Worker rush with zealots
@@ -109,14 +109,19 @@ namespace McRave::Walls::Zerg {
                 return initial + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 20)) + (Util::getTime() > Time(5, 40)) + (Util::getTime() > Time(6, 20));
             }
 
-            if (Util::getTime() > Time(4, 00) && Util::getTime() < Time(6, 30))
-                return (Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot) / 3) + (Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) / 2);
+            if (Util::getTime() < Time(7, 00)) {
+                auto sunksForZealots  = double(Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot)) / 2.5;
+                auto sunksForDragoons = double(Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon)) / 2.0;
+                auto sunksForDTs      = double(Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar)) / 1.0;
+                return ceil(sunksForZealots + sunksForDragoons + sunksForDTs);
+            }
         }
 
         // FFE transitions
         if (Spy::getEnemyBuild() == P_FFE) {
             if (Spy::getEnemyTransition() == P_5GateGoon)
-                return (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 30)) + (Util::getTime() > Time(8, 00));
+                return (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 30)) + (Util::getTime() > Time(6, 45)) + (Util::getTime() > Time(7, 00)) + (Util::getTime() > Time(7, 15)) +
+                       (Util::getTime() > Time(7, 30));
 
             if (Spy::getEnemyTransition() == P_CorsairGoon)
                 return (Util::getTime() > Time(7, 00));
@@ -149,8 +154,8 @@ namespace McRave::Walls::Zerg {
         auto minimum    = int(expected > 0);
 
         // 3h builds make roughly half as many
-        if (threeHatch && expected > 1 && Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_CannonRush)
-            expected = int(floor(double(expected) / 2.0));
+        if (threeHatch && expected > 1 && Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_CannonRush && Spy::getEnemyTransition() != P_4Gate)
+            expected = int(floor(double(expected) / 1.5));
 
         // Non natural walls are limited to 1 total
         if (!wall.getStation()->isNatural() && expected > 0 && Spy::getEnemyBuild() != P_FFE) {
@@ -168,8 +173,6 @@ namespace McRave::Walls::Zerg {
             if (Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0)
                 expected--;
         }
-
-        LOG_SLOW("Expected defenses: ", expected);
 
         // Against turtle builds we don't need any for a while
         if (Spy::enemyTurtle() && Util::getTime() < Time(5, 00))
@@ -254,9 +257,9 @@ namespace McRave::Walls::Zerg {
         if (Spy::getEnemyTransition() == T_2FactVulture)
             return 1;
 
-        // Need 3 sunkens to defend against tank timing
+        // Need 4 sunkens to defend against tank timing
         if (Spy::getEnemyTransition() == T_1FactTanks)
-            return (Util::getTime() > Time(7, 45)) + (Util::getTime() > Time(8, 15)) + (Util::getTime() > Time(8, 45));
+            return (Util::getTime() > Time(7, 45)) + (Util::getTime() > Time(8, 15)) + (Util::getTime() > Time(8, 30)) + (Util::getTime() > Time(8, 45));
 
         // Otherwise throw down 2 if they haven't expanded by 6:00
         if (!Spy::enemyFastExpand())
@@ -274,7 +277,7 @@ namespace McRave::Walls::Zerg {
 
         auto minimum   = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 ? 1 : 0;
         auto expected  = max(ZvT_Opener(wall), ZvT_Transition(wall));
-        auto reduction = (bioKilled / 16) + (mechKilled / 2) + buildingsKilled + (Spy::enemyFastExpand() && Spy::getEnemyBuild() != T_RaxCC);
+        auto reduction = (bioKilled / 16) + (mechKilled / 2) + buildingsKilled;
 
         if (expected > 0)
             minimum = 1;

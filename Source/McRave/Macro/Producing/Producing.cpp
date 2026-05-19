@@ -237,7 +237,6 @@ namespace McRave::Producing {
 
     void onFrame()
     {
-        Visuals::startPerfTest();
         reset();
         updateReservedResources();
         updateLarva();
@@ -339,20 +338,6 @@ namespace McRave::Producing {
 
     bool larvaTrickOptional(UnitInfo &larva)
     {
-        if (larva.getType() == Zerg_Larva && larva.unit()->getHatchery() && larva.getRemainingTrainFrames() <= 0) {
-            auto closestStation = Stations::getClosestStationAir(larva.unit()->getHatchery()->getPosition(), PlayerState::Self);
-            if (!closestStation)
-                return false;
-
-            auto tryMoveToLeft = closestStation->getResourceCentroid().y + 64.0 < closestStation->getBase()->Center().y ||
-                                 closestStation->getResourceCentroid().x < closestStation->getBase()->Center().x;
-            auto canMove = (larva.getPosition().y - 16.0 > larva.unit()->getHatchery()->getPosition().y || larva.getPosition().x + 24 > larva.unit()->getHatchery()->getPosition().x);
-            if (canMove && tryMoveToLeft) {
-                if (larva.unit()->getLastCommand().getType() != UnitCommandTypes::Stop)
-                    larva.unit()->stop();
-                return true;
-            }
-        }
         return false;
     };
 

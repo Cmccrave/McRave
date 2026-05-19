@@ -239,7 +239,6 @@ namespace McRave::Grids {
             // Iterate player states and units, adding to grids if possible
             static map<PlayerState, string> playerStates = {{PlayerState::Self, "Self"}, {PlayerState::Enemy, "Enemy"}, {PlayerState::Neutral, "Neutral"}};
             for (auto &[player, name] : playerStates) {
-                Visuals::startPerfTest();
                 for (auto &u : Units::getUnits(player)) {
                     UnitInfo &unit = *u;
                     if (!canAddToGrid(unit))
@@ -366,9 +365,6 @@ namespace McRave::Grids {
                             bestPair = make_pair(tile, opposite);
                         }
                     }
-
-                    if (bestPair.first.isValid())
-                        Visuals::drawLine(bestPair.first, bestPair.second, Colors::Red);
                 }
             }
         }

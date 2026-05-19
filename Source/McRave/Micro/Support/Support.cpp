@@ -149,7 +149,7 @@ namespace McRave::Support {
         {
             static const auto armyFollowers      = {Protoss_Arbiter, Protoss_Observer, Terran_Science_Vessel, Terran_Barracks, Terran_Science_Facility, Terran_Factory, Terran_Engineering_Bay};
 
-            auto armyOvie           = unit.getType() == Zerg_Overlord && unit.isHealthy() && !slowOverlords();
+            auto armyOvie           = unit.getType() == Zerg_Overlord && ((unit.isHealthy() && !slowOverlords()) || Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar) > 0);
             auto followArmyPossible = (Util::contains(armyFollowers, unit.getType()) || armyOvie) &&
                                       any_of(types.begin(), types.end(), [&](auto &t) { return com(t) >= 6; });
 

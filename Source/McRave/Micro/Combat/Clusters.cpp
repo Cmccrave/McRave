@@ -1,7 +1,7 @@
 #include "Combat.h"
 #include "Info/Player/Players.h"
-#include "Info/Unit/Units.h"
 #include "Info/Unit/Pathing.h"
+#include "Info/Unit/Units.h"
 #include "Map/Grids/Grids.h"
 #include "Map/Terrain/Terrain.h"
 
@@ -79,7 +79,7 @@ namespace McRave::Combat::Clusters {
                     return false;
                 }
 
-                auto matchedGoal  = parent.unit->getGoal() == child.unit->getGoal();
+                auto matchedGoal  = parent.unit->getGoal() == child.unit->getGoal() && parent.unit->saveUnit == child.unit->saveUnit;
                 auto matchedStrat = parent.unit->getGlobalState() == child.unit->getGlobalState();
 
                 if (parent.unit->isLightAir() && child.unit->isLightAir())
@@ -193,6 +193,12 @@ namespace McRave::Combat::Clusters {
             auto pixelDiff = (commander->getPosition() % 32);
             cluster.marchNavigation += pixelDiff;
             cluster.retreatNavigation += pixelDiff;
+
+            if (cluster.retreatNavigation.getDistance(cluster.retreatPosition) < 96.0)
+                cluster.retreatNavigation = cluster.retreatPosition;
+
+            if (cluster.marchNavigation.getDistance(cluster.marchPosition) < 96.0)
+                cluster.marchNavigation = cluster.marchPosition;
         }
 
         void finishClusters()
@@ -370,7 +376,6 @@ namespace McRave::Combat::Clusters {
             return false;
 
         // Calculate the risk
-        auto unitRange  = target.isFlying() ? unit.getAirRange() : unit.getGroundRange();
         auto dpsInRange = 0.0;
         for (auto u : Units::getUnits(PlayerState::Enemy)) {
             auto &enemy = *u;

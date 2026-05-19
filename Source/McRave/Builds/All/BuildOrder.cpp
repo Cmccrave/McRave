@@ -65,7 +65,7 @@ namespace McRave::BuildOrder {
             Broodwar->drawTextScreen(432, 26, "%c%s: %c%s %s", Text::White, Spy::getEnemyBuild().c_str(), Text::Grey, Spy::getEnemyOpener().c_str(), Spy::getEnemyTransition().c_str());
             Broodwar->drawTextScreen(160, 0, "%cExpanding", expandDesired ? Text::White : Text::Grey);
             Broodwar->drawTextScreen(160, 10, "%cRamping", rampDesired ? Text::White : Text::Grey);
-            Broodwar->drawTextScreen(160, 20, "%cTeching", focusUnit != UnitTypes::None ? Text::White : Text::Grey);
+            Broodwar->drawTextScreen(160, 20, "%cTeching", techDesired ? Text::White : Text::Grey);
         }
     } // namespace
 
@@ -248,38 +248,32 @@ namespace McRave::BuildOrder {
 
     void getNewTech()
     {
-        // First one always gets inserted
-        if (focusUnit != None && !isFocusUnit(focusUnit)) {
-            focusUnits.insert(focusUnit);
-            LOG("focusing existing ", focusUnit.c_str());
-            return;
+        // Ensure teched types are built
+        for (auto &type : focusUnits) {
+            getTechBuildings(type);
         }
-
-        if (!getTech || !techComplete())
-            return;
 
         // Select next tech based on the order
         for (auto &type : unitOrder) {
             if (!isFocusUnit(type)) {
-                getTech = false;
-                focusUnits.insert(type);
-                LOG("focusing new ", type.c_str());
+                getTechBuildings(type);
+                LOG_SLOW("Focusing ", type.c_str());
                 return;
             }
         }
     }
 
-    void getTechBuildings()
+    void getTechBuildings(UnitType type)
     {
-        const auto notCompleted = [&](UnitType type) {
+        const auto notCompleted = [&](UnitType t) {
             int morphOffset = 0;
-            if (type == Zerg_Creep_Colony)
+            if (t == Zerg_Creep_Colony)
                 morphOffset = vis(Zerg_Sunken_Colony) + vis(Zerg_Spore_Colony);
-            if (type == Zerg_Hatchery)
+            if (t == Zerg_Hatchery)
                 morphOffset = vis(Zerg_Lair) + vis(Zerg_Hive);
-            if (type == Zerg_Lair)
+            if (t == Zerg_Lair)
                 morphOffset = vis(Zerg_Hive);
-            return (int(atPercent(type, 0.95)) + morphOffset) == 0;
+            return (int(atPercent(t, 0.95)) + morphOffset) == 0;
         };
 
         // For every unit in our tech list, ensure we are building the required buildings
@@ -287,25 +281,26 @@ namespace McRave::BuildOrder {
         vector<UnitType> checkedAlready;
 
         // Add any buildable requisite buildings to make this unit
-        std::function<void(UnitType)> addBuildableRequisites = [&](auto &type) {
-            for (auto &[parent, _] : type.requiredUnits()) {
+        std::function<void(UnitType)> addBuildableRequisites = [&](auto &t) {
+            for (auto &[parent, _] : t.requiredUnits()) {
                 if (parent == Zerg_Larva || parent.isWorker())
                     continue;
                 if (notCompleted(parent) && find(checkedAlready.begin(), checkedAlready.end(), parent) == checkedAlready.end()) {
-                    checkedAlready.push_back(type);
+                    checkedAlready.push_back(t);
                     addBuildableRequisites(parent);
                     return;
                 }
             }
-            toCheck.push_back(type);
+            toCheck.push_back(t);
         };
-        for (auto &type : focusUnits)
-            addBuildableRequisites(type);
+        addBuildableRequisites(type);
         reverse(toCheck.begin(), toCheck.end());
 
         // Some hardcoded requirements
-        if (isFocusUnit(Zerg_Zergling))
+        if (type == Zerg_Zergling)
             toCheck.push_back(Zerg_Hive);
+        if (type == Zerg_Lurker && com(Zerg_Hydralisk_Den) > 0)
+            techQueue[TechTypes::Lurker_Aspect] = 1;
 
         // For each building we need to check, add to our queue whatever is possible to build based on its required branch
         for (auto &check : toCheck) {
@@ -329,7 +324,6 @@ namespace McRave::BuildOrder {
 
     void onFrame()
     {
-        Visuals::startPerfTest();
         updateBuild();
         updateDrawing();
         Visuals::endPerfTest("BuildOrder");

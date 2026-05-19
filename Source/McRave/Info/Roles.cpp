@@ -35,7 +35,7 @@ namespace McRave::Roles {
 
         bool validCombatWorker(const shared_ptr<UnitInfo> &unit)
         {
-            if (unit->getBuildPosition().isValid()) {
+            if (unit->getBuildLocation().isValid()) {
                 return false;
             }
 

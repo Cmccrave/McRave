@@ -125,11 +125,12 @@ namespace McRave::Scouts {
             unexploredNaturals.clear();
 
             auto enemyStrength = Players::getStrength(PlayerState::Enemy);
-            enemyAir           = enemyStrength.groundToAir > 0.0 || enemyStrength.airToAir > 0.0 || enemyStrength.airDefense > 0.0                                    //
-                       || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon, Protoss_Corsair, Protoss_Scout, Protoss_Cybernetics_Core, Protoss_Stargate) > 0 //
-                       || Players::getTotalCount(PlayerState::Enemy, Zerg_Spire, Zerg_Hydralisk, Zerg_Hydralisk_Den) > 0                                              //
-                       || Players::getTotalCount(PlayerState::Enemy, Terran_Marine, Terran_Barracks) > 0                                                              //
-                       || (Players::ZvT() && Terrain::getEnemyStartingPosition().isValid());                                                                          //
+            enemyAir           = enemyStrength.groundToAir > 0.0 || enemyStrength.airToAir > 0.0                                            //
+                       || Players::getCompleteCount(PlayerState::Enemy, Protoss_Cybernetics_Core) > 0                                       //
+                       || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon, Protoss_Corsair, Protoss_Scout, Protoss_Stargate) > 0 //
+                       || Players::getTotalCount(PlayerState::Enemy, Zerg_Spire, Zerg_Hydralisk, Zerg_Hydralisk_Den) > 0                    //
+                       || Players::getTotalCount(PlayerState::Enemy, Terran_Marine, Terran_Barracks) > 0                                    //
+                       || (Players::ZvT() && Terrain::getEnemyStartingPosition().isValid());                                                //
 
             // Calculate the number of unexplored bases
             for (auto &station : BWEB::Stations::getStations()) {
@@ -418,7 +419,7 @@ namespace McRave::Scouts {
                         main.desiredTypeCounts[Zerg_Drone] = 0;
 
                     // Zergling
-                    main.desiredTypeCounts[Zerg_Zergling] = Spy::getEnemyTransition() == "Unknown" && Util::getTime() > Time(5, 00);
+                    main.desiredTypeCounts[Zerg_Zergling] = Spy::getEnemyBuild() == "Unknown" && Util::getTime() < Time(5, 00);
                     if (BuildOrder::isRush() || Players::getTotalCount(PlayerState::Enemy, Protoss_Photon_Cannon) > 0 ||
                         (com(Zerg_Sunken_Colony) > 0 && !Terrain::getEnemyStartingPosition().isValid()))
                         main.desiredTypeCounts[Zerg_Zergling] = 0;
@@ -427,7 +428,7 @@ namespace McRave::Scouts {
                     main.desiredTypeCounts[Zerg_Overlord] = 2;
                     if (Terrain::getEnemyStartingPosition().isValid())
                         main.desiredTypeCounts[Zerg_Overlord] = 1;
-                    if (enemyAir || Spy::enemyFastExpand())
+                    if (enemyAir || (Spy::getEnemyBuild() != P_FFE && Spy::enemyFastExpand()))
                         main.desiredTypeCounts[Zerg_Overlord] = 0;
                 }
 
@@ -635,7 +636,7 @@ namespace McRave::Scouts {
                 auto time = Time(2, 30);
                 if (Spy::getEnemyBuild() == P_1GateCore || Spy::enemyProxy() || total(Zerg_Zergling) < 2)
                     time = Time(3, 45);
-                if (Spy::enemyRush() || Spy::getEnemyBuild() == P_2Gate || Players::ZvZ())
+                if (Spy::enemyRush() || Players::ZvZ())
                     time = Time(4, 00);
                 if (Spy::getEnemyTransition() == U_WorkerRush || Spy::getEnemyOpener() == P_Proxy_9_9 || Spy::getEnemyOpener() == P_Horror_9_9)
                     time = Time(6, 00);
@@ -765,7 +766,7 @@ namespace McRave::Scouts {
                 if (scout) {
                     scout->setRole(Role::Scout);
                     scout->setBuildingType(None);
-                    scout->setBuildPosition(TilePositions::Invalid);
+                    scout->setBuildLocation(TilePositions::Invalid);
 
                     if (scout->hasResource())
                         Workers::removeUnit(*scout);
@@ -981,25 +982,29 @@ namespace McRave::Scouts {
                 LOG("Sacrificing a scout (count: %d)", sacrificeCount);
             };
 
+            const auto unknownBuild      = Spy::getEnemyBuild() == "Unknown";
+            const auto unknownTransition = Spy::getEnemyTransition() == "Unknown";
+
             // Sometimes we need to just sacrifice a zergling to get some info based on timings
             if (Players::ZvP()) {
                 auto sacrificeZvP = (Spy::getEnemyBuild() == P_FFE && Util::getTime() > Time(6, 00)) +                                                        //
                                     (Spy::getEnemyBuild() == P_FFE && BuildOrder::getCurrentTransition() == Z_3HatchHydra && Util::getTime() > Time(4, 30)) + //
-                                    (Spy::getEnemyBuild() != P_FFE && !Spy::enemyFastExpand() && Util::getTime() > Time(3, 30));                              //
+                                    (Spy::getEnemyBuild() != P_FFE && !Spy::enemyFastExpand() && Util::getTime() > Time(3, 30) && unknownBuild) +             //
+                                    (Spy::getEnemyBuild() != P_FFE && !Spy::enemyFastExpand() && Util::getTime() > Time(5, 00) && unknownTransition);         //
 
                 if (sacrificeZvP > sacrificeCount)
                     requestSacrifice();
             }
             if (Players::ZvT()) {
-                auto sacrificeZvT = (!Terrain::foundEnemy() && Util::getTime() > Time(4, 00) && Spy::getEnemyBuild() == "Unknown") +       //
-                                    (!Spy::enemyFastExpand() && Util::getTime() > Time(4, 45) && Spy::getEnemyTransition() == "Unknown") + //
-                                    (Spy::enemyFastExpand() && Util::getTime() > Time(6, 00) && Spy::getEnemyTransition() == "Unknown");
+                auto sacrificeZvT = (!Terrain::foundEnemy() && Util::getTime() > Time(4, 00) && unknownBuild) +       //
+                                    (!Spy::enemyFastExpand() && Util::getTime() > Time(4, 45) && unknownTransition) + //
+                                    (Spy::enemyFastExpand() && Util::getTime() > Time(6, 00) && unknownTransition);
 
                 if (sacrificeZvT > sacrificeCount)
                     requestSacrifice();
             }
             if (Players::ZvZ()) {
-                auto sacrificeZvZ = int(!Terrain::foundEnemy() && !Spy::enemyTurtle() && Util::getTime() > Time(4, 00) && Spy::getEnemyTransition() == "Unknown");
+                auto sacrificeZvZ = int(!Terrain::foundEnemy() && !Spy::enemyTurtle() && Util::getTime() > Time(4, 00) && unknownTransition);
 
                 if (sacrificeZvZ > sacrificeCount)
                     requestSacrifice();
@@ -1118,7 +1123,6 @@ namespace McRave::Scouts {
 
     void onFrame()
     {
-        Visuals::startPerfTest();
         checkScoutDenied();
         updateMisc();
         updateSafePositions();

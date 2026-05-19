@@ -224,9 +224,6 @@ namespace BWEB::Map
                     usedGrid[x][y] = type;
                 }
             }
-
-            // Clear pathfinding cache
-            Pathfinding::clearCacheFully();
         }
     }
 
@@ -249,9 +246,6 @@ namespace BWEB::Map
                     usedGrid[x][y] = UnitTypes::None;
                 }
             }
-
-            // Clear pathfinding cache
-            Pathfinding::clearCacheFully();
         }
 
         // Update BWEM

@@ -72,7 +72,7 @@ namespace McRave::Targets {
 
         // TODO: Remove this when scout ejection works
         // Need to block runbys
-        if (Players::ZvT() && unit.getType() == Zerg_Zergling && !target.hasAttackedRecently() && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && Util::getTime() < Time(6, 00))
+        if (Players::ZvT() && unit.getType() == Zerg_Zergling && !unit.isWithinRange(target) && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && Util::getTime() < Time(6, 00))
             return false;
 
         if (Util::getTime() > Time(8, 00)) {
@@ -80,7 +80,7 @@ namespace McRave::Targets {
         }
 
         auto allowed = unit.getType().isWorker() || unit.isWithinRange(target) || unit.attemptingRunby() || unit.isLightAir() || target.isThreatening() || BuildOrder::isHideTech() ||
-                       (combatTargeters == 0 && !Players::ZvZ()) || Spy::getEnemyTransition() == U_WorkerRush || Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
+                       (combatTargeters < 2 && !Players::ZvZ()) || Spy::getEnemyTransition() == U_WorkerRush || Terrain::inTerritory(PlayerState::Enemy, target.getPosition());
 
         if (Util::getTime() < Time(5, 00)) {
             return allowed || target.hasAttackedRecently() || target.hasRepairedRecently();
@@ -336,9 +336,9 @@ namespace McRave::Targets {
 
         if (Players::ZvP()) {
 
-            // Clean Zealots up vs rushes
-            if (Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == P_Rush)
-                return Priority::Major;
+            //// Clean Zealots up vs rushes
+            // if (Util::getTime() < Time(9, 00) && target.getType() == Protoss_Zealot && Spy::getEnemyTransition() == P_Rush)
+            //    return Priority::Major;
         }
 
         if (Players::ZvT()) {
@@ -353,8 +353,11 @@ namespace McRave::Targets {
                     return Priority::Critical;
             }
 
-            // Handle turrets and repairs
             if (target.getType() == Terran_Missile_Turret) {
+                // Proxy turrets are critical to kill
+                if (target.isProxy())
+                    return Priority::Critical;
+                // Lower priority if being repaired
                 if (target.hasRepairedRecently() && !Combat::Clusters::canDecimate(unit, target))
                     return Priority::Trivial;
             }
@@ -367,8 +370,23 @@ namespace McRave::Targets {
                 return Priority::Critical;
         }
 
+        // If this unit is trying to be preserved, target easy wins close to home
+        if (unit.saveUnit) {
+            if (Terrain::isCloserEnemy(target.getPosition()))
+                return Priority::Ignore;
+
+            auto closestEnemy = Util::getClosestUnit(unit.getPosition(), PlayerState::Enemy, [&](auto &u) { return u->canAttackAir(); });
+            if (closestEnemy && closestEnemy->getPosition().getDistance(unit.getPosition()) < 400.0)
+                return Priority::Ignore;
+        }
+
+        // Don't commit in air to air unless they attack (otherwise we get kited)
+        if (BuildOrder::isPressure(Zerg_Mutalisk) && !unit.saveUnit && target.isLightAir() && !target.hasAttackedRecently() && !unit.isWithinRange(target))
+            return Priority::Ignore;
+
         // If our build is hitting a timing, kill workers
-        if (BuildOrder::isPressure(Zerg_Mutalisk) && !target.isLightAir() && !target.isTransport() && !target.getType().isWorker() && (!target.isThreatening() || target.canAttackAir()))
+        if (BuildOrder::isPressure(Zerg_Mutalisk) && !unit.saveUnit && !target.isLightAir() && !target.isTransport() && !target.getType().isWorker() &&
+            (!target.isThreatening() || target.canAttackAir()))
             return Priority::Ignore;
 
         // One/two shot is high priority to hit
@@ -418,7 +436,7 @@ namespace McRave::Targets {
                 return Priority::Ignore;
 
             if (Actions::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm)))
-                return Priority::Ignore;
+                return Priority::Trivial;
 
             if (!unit.targetsFriendly() && target.isSiegeTank() && unit.isWithinReach(target))
                 return Priority::Major;
@@ -605,7 +623,10 @@ namespace McRave::Targets {
     {
         double distBest = DBL_MAX;
         for (auto &t : Units::getUnits(pState)) {
-            UnitInfo &target     = *t;
+            UnitInfo &target = *t;
+            if (target.isToken())
+                continue;
+
             auto targetCanAttack = ((unit.isFlying() && target.canAttackAir()) || (!unit.isFlying() && target.canAttackGround()) ||
                                     (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine));
             auto unitCanAttack   = ((target.isFlying() && unit.canAttackAir()) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));

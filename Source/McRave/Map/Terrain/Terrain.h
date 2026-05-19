@@ -40,6 +40,9 @@ namespace McRave::Terrain {
 
     // Strategic checks
     bool isAtHome(BWAPI::Position);
+    bool isAtEnemy(BWAPI::Position);
+    bool isCloserHome(BWAPI::Position);
+    bool isCloserEnemy(BWAPI::Position);
 
     // Main information
     BWAPI::Position getMainPosition();

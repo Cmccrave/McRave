@@ -53,9 +53,11 @@ namespace McRave {
         std::vector<std::weak_ptr<UnitInfo>> assignedCargo;
 
         std::vector<std::weak_ptr<UnitInfo>> unitsTargetingThis;
+        std::vector<std::weak_ptr<UnitInfo>> unitsInEngageOfThis;
         std::vector<std::weak_ptr<UnitInfo>> unitsInReachOfThis;
         std::vector<std::weak_ptr<UnitInfo>> unitsInRangeOfThis;
         std::set<BWAPI::UnitType> typesTargetingThis;
+        std::set<BWAPI::UnitType> typesEngagingThis;
         std::set<BWAPI::UnitType> typesReachingThis;
         std::set<BWAPI::UnitType> typesRangingThis;
 
@@ -70,30 +72,37 @@ namespace McRave {
         UnitType type         = UnitTypes::None;
         UnitType buildingType = UnitTypes::None;
 
-        Position position           = Positions::Invalid;
-        Position engagePosition     = Positions::Invalid;
-        Position destination        = Positions::Invalid;
-        Position formation          = Positions::Invalid;
-        Position navigation         = Positions::Invalid;
-        Position goal               = Positions::Invalid;
-        Position surroundPosition   = Positions::Invalid;
-        Position interceptPosition  = Positions::Invalid;
-        Position trapPosition       = Positions::Invalid;
-        Position facingPosition     = Positions::Invalid;
-        WalkPosition walkPosition   = WalkPositions::Invalid;
-        TilePosition tilePosition   = TilePositions::Invalid;
-        TilePosition buildPosition  = TilePositions::Invalid;
+        Position position          = Positions::Invalid;
+        Position engagePosition    = Positions::Invalid;
+        Position destination       = Positions::Invalid;
+        Position formation         = Positions::Invalid;
+        Position navigation        = Positions::Invalid;
+        Position goal              = Positions::Invalid;
+        Position surroundPosition  = Positions::Invalid;
+        Position interceptPosition = Positions::Invalid;
+        Position trapPosition      = Positions::Invalid;
+        Position facingPosition    = Positions::Invalid;
+        Position buildPosition     = Positions::Invalid;
+        WalkPosition walkPosition  = WalkPositions::Invalid;
+        TilePosition tilePosition  = TilePositions::Invalid;
+        TilePosition buildLocation = TilePositions::Invalid;
 
         Unit commandTarget          = nullptr;
         Position commandPosition    = Positions::Invalid;
         UnitCommandType commandType = UnitCommandTypes::None;
         int commandFrame            = 0;
 
+        struct Blocker {
+            int dx, dy;
+            double dist;
+        };
+        std::vector<Blocker> blockers;
+
         BWEB::Path marchPath;
         BWEB::Path retreatPath;
         void updateHistory();
-        void updateStatistics();
         void updateEvents();
+        void updateStatistics();
         void checkStuck();
         void checkHidden();
         void checkThreatening();
@@ -107,6 +116,7 @@ namespace McRave {
         UnitInfo(Unit u) { bwUnit = u; }
 
         void update();
+        void updateOcclusion();
 
         // HACK: Hacky stuff that was added quickly for testing
         bool movedFlag = false;
@@ -114,11 +124,11 @@ namespace McRave {
         bool inDanger  = false;
         bool sacrifice = false;
 
-        int debugNum = 0;
+        int debugNum   = 0;
         bool debugFlag = false;
 
-        int lastQueueFrame     = 0;
-        int nextQueueFrame     = 0;
+        int lastQueueFrame       = 0;
+        int nextQueueFrame       = 0;
         int lastThreateningFrame = -999;
         int framesVisible        = -999;
         int framesCommitted      = 0;
@@ -144,7 +154,8 @@ namespace McRave {
 
         bool hasSameMarchPath(Position source, Position target) { return marchPath.getSource() == TilePosition(source) && marchPath.getTarget() == TilePosition(target); }
         bool hasSameRetreatPath(Position source, Position target) { return retreatPath.getSource() == TilePosition(source) && retreatPath.getTarget() == TilePosition(target); }
-        bool targetsFriendly() { return (type == UnitTypes::Terran_Medic && getEnergy() > 0) || type == UnitTypes::Terran_Science_Vessel || (type == UnitTypes::Zerg_Defiler && getEnergy() < 100); }
+
+        bool targetsFriendly();
 
         bool isSuicidal() { return type == UnitTypes::Protoss_Scarab || type == UnitTypes::Terran_Vulture_Spider_Mine || type == UnitTypes::Zerg_Scourge || type == UnitTypes::Zerg_Infested_Terran; }
         bool isSplasher()
@@ -152,7 +163,10 @@ namespace McRave {
             return type == UnitTypes::Protoss_Reaver || type == UnitTypes::Protoss_High_Templar || type == UnitTypes::Terran_Vulture_Spider_Mine || type == UnitTypes::Protoss_Archon ||
                    type == UnitTypes::Protoss_Corsair || type == UnitTypes::Terran_Valkyrie || type == UnitTypes::Zerg_Devourer;
         }
-        bool isLightAir() { return type == UnitTypes::Protoss_Corsair || type == UnitTypes::Protoss_Scout || type == UnitTypes::Zerg_Mutalisk || type == UnitTypes::Terran_Wraith || type == UnitTypes::Terran_Valkyrie; }
+        bool isLightAir()
+        {
+            return type == UnitTypes::Protoss_Corsair || type == UnitTypes::Protoss_Scout || type == UnitTypes::Zerg_Mutalisk || type == UnitTypes::Terran_Wraith || type == UnitTypes::Terran_Valkyrie;
+        }
         bool isToken() { return type == UnitTypes::Terran_Vulture_Spider_Mine || type == UnitTypes::Protoss_Scarab || type == UnitTypes::Protoss_Interceptor || type == UnitTypes::Zerg_Larva; }
         bool isCapitalShip() { return type == UnitTypes::Protoss_Carrier || type == UnitTypes::Terran_Battlecruiser || type == UnitTypes::Zerg_Guardian; }
         bool isHovering() { return type.isWorker() || type == UnitTypes::Protoss_Archon || type == UnitTypes::Protoss_Dark_Archon || type == UnitTypes::Terran_Vulture; }
@@ -172,6 +186,8 @@ namespace McRave {
                    (getType() == otherUnit.getType() || lState != LocalState::Attack);
         }
 
+        bool hasCollision();
+        bool isOccluded(BWAPI::Position);
         bool isHealthy();
         bool isRequestingPickup();
         bool isWithinEngage(UnitInfo &);
@@ -214,6 +230,7 @@ namespace McRave {
 
         std::vector<std::weak_ptr<UnitInfo>> &getAssignedCargo() { return assignedCargo; }
         std::vector<std::weak_ptr<UnitInfo>> &getUnitsTargetingThis() { return unitsTargetingThis; }
+        std::vector<std::weak_ptr<UnitInfo>> &getUnitsInEngageOfThis() { return unitsInEngageOfThis; }
         std::vector<std::weak_ptr<UnitInfo>> &getUnitsInReachOfThis() { return unitsInReachOfThis; }
         std::vector<std::weak_ptr<UnitInfo>> &getUnitsInRangeOfThis() { return unitsInRangeOfThis; }
         std::map<int, Position> &getPositionHistory() { return positionHistory; }
@@ -247,9 +264,10 @@ namespace McRave {
         Position getSurroundPosition() { return surroundPosition; }
         Position getTrapPosition() { return trapPosition; }
         Position getFacingPosition() { return facingPosition; }
+        Position getBuildPosition() { return buildPosition; }
         WalkPosition getWalkPosition() { return walkPosition; }
         TilePosition getTilePosition() { return tilePosition; }
-        TilePosition getBuildPosition() { return buildPosition; }
+        TilePosition getBuildLocation() { return buildLocation; }
         BWEB::Path &getMarchPath() { return marchPath; }
         BWEB::Path &getRetreatPath() { return retreatPath; }
 
@@ -308,7 +326,8 @@ namespace McRave {
         void setFormation(Position newPosition) { formation = newPosition; }
         void setNavigation(Position newPosition) { navigation = newPosition; }
         void setGoal(Position newPosition) { goal = newPosition; }
-        void setBuildPosition(TilePosition newPosition) { buildPosition = newPosition; }
+        void setBuildPosition(Position newPosition) { buildPosition = newPosition; }
+        void setBuildLocation(TilePosition newPosition) { buildLocation = newPosition; }
         void setMarchPath(BWEB::Path &newPath) { marchPath = newPath; }
         void setRetreatPath(BWEB::Path &newPath) { retreatPath = newPath; }
 

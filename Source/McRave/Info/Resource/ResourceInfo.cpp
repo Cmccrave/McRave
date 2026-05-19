@@ -79,7 +79,7 @@ namespace McRave {
 
                 if (!type.isMineralField() && framesPerTrips[t] > 52)
                     workerCap = 4;
-                if (targeter->getBuildPosition().isValid())
+                if (targeter->getBuildLocation().isValid())
                     workerCap++;
             }
         }
