@@ -100,11 +100,11 @@ namespace McRave::Util {
     double getCastLimit(TechType tech)
     {
         if (tech == TechTypes::Plague)
-            return 6.0;
+            return 4.0;
         if (tech == TechTypes::Psionic_Storm || tech == TechTypes::Maelstrom || tech == TechTypes::Ensnare)
-            return 1.5;
+            return 2.5;
         if (tech == TechTypes::Stasis_Field)
-            return 1.5;
+            return 2.5;
         return 0.0;
     }
 
@@ -125,7 +125,7 @@ namespace McRave::Util {
     }
 
     double getCastRange(TechType tech)
-    { 
+    {
         // TODO: add recharge shields when techtype added, it has a range of 128
         using namespace TechTypes;
         if (tech == Consume)
@@ -172,6 +172,20 @@ namespace McRave::Util {
         return false;
     }
 
+    Position closestLinearIntersect(Position source, Position start, Position end)
+    {
+        auto ab   = end - start;
+        auto ap   = source - start;
+        auto dist = start.getDistance(end);
+
+        if (dist == 0)
+            return start;
+
+        // Calculate t (dot product / length squared) and clamp between 0.0 and 1.0
+        auto t = max(0.0, min(1.0, (ap.x * ab.x + ap.y * ab.y) / dist));
+        return start + Position(int(ab.x * t), int(ab.y * t));
+    }
+
     pair<Position, Position> typeBoundingBox(Position here, UnitType type)
     {
         const auto topLeft  = Position(here.x - type.dimensionLeft(), here.y - type.dimensionUp());
@@ -181,14 +195,16 @@ namespace McRave::Util {
 
     bool findTerrainWalkable(Position here, UnitType type)
     {
-        const auto box = typeBoundingBox(here, type);
-        for (int x = WalkPosition(box.first).x; x <= WalkPosition(box.second).x; x++) {
-            for (int y = WalkPosition(box.first).y; y <= WalkPosition(box.second).y; y++) {
-                auto walk = WalkPosition(x, y);
-                if (walk.isValid() && !Broodwar->isWalkable(walk))
-                    return false;                
-            }
-        }
+        return Broodwar->isWalkable(WalkPosition(here));
+
+        //const auto box = typeBoundingBox(here, type);
+        //for (int x = WalkPosition(box.first).x; x <= WalkPosition(box.second).x; x++) {
+        //    for (int y = WalkPosition(box.first).y; y <= WalkPosition(box.second).y; y++) {
+        //        auto walk = WalkPosition(x, y);
+        //        if (walk.isValid() && !Broodwar->isWalkable(walk))
+        //            return false;
+        //    }
+        //}
 
         // TODO: Adjust if possible
 
@@ -400,6 +416,7 @@ namespace McRave::Util {
         auto minutes     = int(double(Broodwar->getFrameCount()) / 23.81) / 60;
         gameTime.seconds = seconds;
         gameTime.minutes = minutes;
+        Visuals::endPerfTest("Util");
     }
 
     pair<double, Position> findPointOnCircle(Position target, double radius, function<double(Position)> calc)

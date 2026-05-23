@@ -1041,6 +1041,7 @@ namespace McRave::Planning {
         updateReachable();
         updateNextExpand();
         updatePlan();
+        Visuals::endPerfTest("Planning");
     }
 
     void onStart() { BWEB::Blocks::findBlocks(); }

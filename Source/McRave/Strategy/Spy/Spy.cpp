@@ -94,6 +94,7 @@ namespace McRave::Spy {
             theSpy.openerTime = Util::getTime();
         if (theSpy.transition.likely && theSpy.transitionTime == Time(999, 00))
             theSpy.transitionTime = Util::getTime();
+        Visuals::endPerfTest("Spy");
     }
 
     string getEnemyBuild() { return theSpy.build.name; }

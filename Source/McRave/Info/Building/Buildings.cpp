@@ -14,7 +14,6 @@
 #include "Map/Terrain/Terrain.h"
 #include "Map/Walls/Walls.h"
 #include "Strategy/Spy/Spy.h"
-#include "Strategy/Zones/Zones.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -62,11 +61,6 @@ namespace McRave::Buildings {
             // If a building is unpowered, get a pylon placement ready
             if (building.getType().requiresPsi() && !Pylons::hasPowerSoon(building.getTilePosition(), building.getType()))
                 unpoweredPositions.insert(building.getTilePosition());
-
-            if (Util::getTime() > Time(6, 00)) {
-                auto range = int(max({building.getGroundRange(), building.getAirRange(), double(building.getType().sightRange())}));
-                Zones::addZone(building.getPosition(), ZoneType::Defend, 1, range);
-            }
         }
 
         void updateLarvaEncroachment(UnitInfo &building)
@@ -245,6 +239,7 @@ namespace McRave::Buildings {
                 updateCommands(unit);
             }
         }
+        Visuals::endPerfTest("Buildings");
     }
 
     set<TilePosition> &getUnpoweredPositions() { return unpoweredPositions; }

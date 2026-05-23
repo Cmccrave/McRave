@@ -131,8 +131,8 @@ namespace McRave::Grids {
             const auto y1       = unit.getPosition().y;
             const auto center   = WalkPosition(unit.getPosition());
 
-            const auto clusterTopLeft  = topLeft - Position(48, 48);
-            const auto clusterBotRight = botRight + Position(48, 48);
+            const auto clusterTopLeft  = topLeft - Position(96, 96);
+            const auto clusterBotRight = botRight + Position(96, 96);
             const auto allowCluster    = (unit.getPlayer() != Broodwar->self() || unit.getRole() == Role::Combat);
             const auto allowCollision  = !unit.isFlying() && !unit.isBurrowed();
             const auto allowGround     = unit.getPlayer() != Broodwar->self() && unit.getPlayer() != Broodwar->neutral() && unit.canAttackGround();

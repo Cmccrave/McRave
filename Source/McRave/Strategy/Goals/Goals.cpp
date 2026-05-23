@@ -32,8 +32,6 @@ namespace McRave::Goals {
         UnitType detector   = UnitTypes::None;
         UnitType base       = UnitTypes::None;
 
-        map<UnitInfo *, pair<Position, GoalType>> oldGoals;
-
         struct GoalTarget {
             Position center = Positions::Invalid;
             GoalType gtype;
@@ -43,11 +41,9 @@ namespace McRave::Goals {
             GoalTarget(){};
         };
 
-        bool canAssignGoal(const shared_ptr<UnitInfo> unit, GoalType gType)
+        bool canAssignGoal(const shared_ptr<UnitInfo> unit)
         {
-            if (gType == GoalType::Attack && Combat::State::isStaticRetreat(unit->getType()))
-                return false;
-            if (unit->getRole() == Role::Scout || unit->getLocalState() == LocalState::Attack || unit->getGoal().isValid())
+            if (!unit->isAvailable() || unit->getRole() == Role::Scout || unit->getGoal().isValid())
                 return false;
             return true;
         }
@@ -61,7 +57,7 @@ namespace McRave::Goals {
 
             // TODO: Caching
             for (int current = 0; current < count; current++) {
-                const auto closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) { return canAssignGoal(u, gType) && pred(u); });
+                const auto closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) { return canAssignGoal(u) && pred(u); });
                 if (closest) {
                     closest->setGoal(here);
                     closest->setGoalType(gType);
@@ -77,51 +73,24 @@ namespace McRave::Goals {
                 return;
 
             // Check for a cached assignment
-            int countCached = 0;
-            for (int current = 0; current < count; current++) {
-                for (auto &[unit, goalPair] : oldGoals) {
-                    if (!unit->getGoal().isValid() && unit->getRole() != Role::Scout && unit->getType() == type && goalPair.first == here && goalPair.second == gType) {
-                        unit->setGoal(here);
-                        unit->setGoalType(gType);
-                        countCached++;
-                        break;
-                    }
+            for (auto &unit : Units::getUnits(PlayerState::Self)) {
+                if (!unit->getLastGoal().isValid() && !unit->getGoal().isValid() && unit->getLastGoal().getDistance(here) < 320.0 && unit->getRole() != Role::Scout && unit->getType() == type) {
+                    unit->setGoal(here);
+                    unit->setGoalType(gType);
+                    count--;
                 }
             }
 
+            auto assignable = [&](auto &u) { return canAssignGoal(u) && u->getType() == type; };
+
+            auto getClosest = [&]() { return type.isFlyer() ? Util::getClosestUnit(here, PlayerState::Self, assignable) : Util::getClosestUnitGround(here, PlayerState::Self, assignable); };
+
             // Get new assignment
-            count -= countCached;
             for (int current = 0; current < count; current++) {
-                if (type.isFlyer()) {
-                    const auto closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) {
-                        if (!u->isAvailable())
-                            return false;
-                        if (gType == GoalType::Attack && Combat::State::isStaticRetreat(type))
-                            return false;
-                        if (u->getRole() == Role::Scout)
-                            return false;
-                        return u->getType() == type && !u->getGoal().isValid();
-                    });
-
-                    if (closest) {
-                        closest->setGoal(here);
-                        closest->setGoalType(gType);
-                    }
-                }
-
-                else {
-                    const auto closest = Util::getClosestUnitGround(here, PlayerState::Self, [&](auto &u) {
-                        if (!u->isAvailable())
-                            return false;
-                        if (gType == GoalType::Attack && Combat::State::isStaticRetreat(type))
-                            return false;
-                        return u->getType() == type && !u->getGoal().isValid();
-                    });
-
-                    if (closest) {
-                        closest->setGoal(here);
-                        closest->setGoalType(gType);
-                    }
+                auto closest = getClosest();
+                if (closest) {
+                    closest->setGoal(here);
+                    closest->setGoalType(gType);
                 }
             }
         }
@@ -144,10 +113,8 @@ namespace McRave::Goals {
 
         void clearGoals()
         {
-            oldGoals.clear();
             for (auto &unit : Units::getUnits(PlayerState::Self)) {
                 if (unit->getGoalType() != GoalType::Runby) {
-                    oldGoals[&*unit] = make_pair(unit->getGoal(), unit->getGoalType());
                     unit->setGoal(Positions::Invalid);
                     unit->setGoalType(GoalType::None);
                 }
@@ -174,12 +141,13 @@ namespace McRave::Goals {
                         assignPercentToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 1.0, GoalType::Runby);
                 }
 
+                auto excessGates   = Players::getTotalCount(PlayerState::Enemy, Protoss_Gateway) >= 3;
                 auto proxyGates    = Spy::getEnemyOpener() == P_Proxy_9_9 || Spy::getEnemyOpener() == P_Horror_9_9;
-                auto proxyBackstab = proxyGates && Util::getTime() > Time(4, 00) && com(Zerg_Sunken_Colony) >= 1;
+                auto proxyBackstab = proxyGates && ((Util::getTime() > Time(4, 00) && com(Zerg_Sunken_Colony) >= 1) || excessGates);
 
                 if (proxyBackstab) {
                     LOG_ONCE("Attempting ZvP ling runby");
-                    assignNumberToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 4, GoalType::Runby);
+                    assignNumberToGoal(Terrain::getEnemyStartingPosition(), Zerg_Zergling, 8, GoalType::Runby);
                     runbyOnce = false;
                 }
             }
@@ -227,7 +195,7 @@ namespace McRave::Goals {
             // Assume each shuttle should have units assigned to fight it
             for (auto &unit : Units::getUnits(PlayerState::Enemy)) {
                 if (unit->getType() == Protoss_Shuttle) {
-                    if (unit->unit()->exists()) {
+                    if (unit->unit()->exists() && Terrain::isCloserHome(unit->getPosition())) {
                         assignNumberToGoal(unit->getPosition(), rangedType, 4, GoalType::Attack);
                     }
                     else if (auto closestStation = Stations::getClosestStationAir(unit->getPosition(), PlayerState::Self)) {
@@ -305,31 +273,38 @@ namespace McRave::Goals {
             }
 
             auto outlines   = Terrain::getAreaOutline(Terrain::getMainArea());
+            auto natOutline = Terrain::getAreaOutline(Terrain::getNaturalArea());
+            outlines.insert(outlines.end(), natOutline.begin(), natOutline.end());
+
             auto oldestTile = TilePositions::Invalid;
             for (auto &w : outlines) {
                 auto tile = TilePosition(w);
-                if (tile.isValid() && Broodwar->getFrameCount() - Grids::getLastVisibleFrame(tile) >= 720)
+                if (tile.isValid() && Broodwar->getFrameCount() - Grids::getLastVisibleFrame(tile) >= 720 && Broodwar->isBuildable(oldestTile)) {
                     oldestTile = tile;
+                    break;
+                }
             }
 
-            // Clear out base early game
-            auto proxyNeedsScouting = !Spy::enemyProxy() || Spy::getEnemyBuild() == P_CannonRush;
-            if (Util::getTime() < Time(4, 00) && !BuildOrder::isRush() && proxyNeedsScouting && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() &&
-                Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
-                if (oldestTile.isValid())
+            if (oldestTile.isValid()) {
+
+                // Clear out base early game
+                auto proxyNeedsScouting = !Spy::enemyProxy() || Spy::getEnemyBuild() == P_CannonRush;
+                if (Util::getTime() < Time(4, 00) && !BuildOrder::isRush() && proxyNeedsScouting && !Spy::enemyRush() && !Spy::enemyPressure() && !Players::ZvZ() &&
+                    Players::getVisibleCount(PlayerState::Enemy, Terran_Factory) == 0 && Players::getVisibleCount(PlayerState::Enemy, Protoss_Gateway) == 0) {
                     assignNumberToGoal(oldestTile, firstType, 1, GoalType::Explore);
-            }
+                }
 
-            // Clear out for potential in base proxy
-            auto possibleProxyFact  = (Spy::enemyPossibleProxy() && Spy::getEnemyBuild() == T_RaxFact);
-            auto possibleCannonRush = (Spy::enemyPossibleProxy() && Players::getTotalCount(PlayerState::Enemy, Protoss_Probe) > 0);
-            if (Roles::getRoleCount(Role::Combat) == 0 && (possibleProxyFact || possibleCannonRush)) {
-                static auto scoutProxyTime = Util::getTime();
-                if (Util::getTime() - scoutProxyTime > Time(0, 30)) {
-                    LOG_ONCE("Need to scout main for proxy");
-                    auto proxyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy(); });
-                    if (proxyWorker && !proxyWorker->unit()->exists())
-                        assignNumberToGoal(oldestTile, workerType, 1, GoalType::Explore);
+                // Clear out for potential in base proxy
+                auto possibleProxyFact  = (Spy::enemyPossibleProxy() && Spy::getEnemyBuild() == T_RaxFact);
+                auto possibleCannonRush = (Spy::enemyPossibleProxy() && Players::getTotalCount(PlayerState::Enemy, Protoss_Probe) > 0) || Spy::getEnemyBuild() == P_CannonRush;
+                if (Roles::getRoleCount(Role::Combat) == 0 && (possibleProxyFact || possibleCannonRush)) {
+                    static auto scoutProxyTime = Util::getTime();
+                    if (Util::getTime() - scoutProxyTime > Time(0, 30)) {
+                        LOG_ONCE("Need to scout main for proxy");
+                        auto proxyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy(); });
+                        if (!proxyWorker || (proxyWorker && !proxyWorker->unit()->exists()))
+                            assignNumberToGoal(oldestTile, workerType, 1, GoalType::Explore);
+                    }
                 }
             }
 
@@ -471,8 +446,8 @@ namespace McRave::Goals {
             auto enemyAir   = Players::getVisibleCount(PlayerState::Enemy, Protoss_Corsair, Protoss_Scout, Zerg_Mutalisk, Terran_Wraith, Terran_Valkyrie) > 0;
             auto watchChoke = Terrain::getNaturalChoke() && !Spy::enemyRush() && !Spy::enemyProxy() && //
                               (Players::getTotalCount(PlayerState::Enemy, Terran_Marine) == 0 || Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon) == 0);
-            
-            const auto assignSafely = [&](auto station) { 
+
+            const auto assignSafely = [&](auto station) {
                 auto closestSpore = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Spore_Colony; });
                 if (closestSpore && Util::contains(station->getDefenses(), closestSpore->getTilePosition()))
                     assignNumberToGoal(closestSpore->getPosition(), Zerg_Overlord, 1, GoalType::Defend);
@@ -510,7 +485,7 @@ namespace McRave::Goals {
             }
 
             // Assign an Overlord to watch for drops
-            //if (Terrain::getEnemyStartingPosition().isValid() && !enemyAir) {
+            // if (Terrain::getEnemyStartingPosition().isValid() && !enemyAir) {
             //    auto edgeEnemy = Terrain::getClosestMapEdge(Terrain::getEnemyStartingPosition());
             //    auto edgeSelf  = Terrain::getClosestMapEdge(Terrain::getMainPosition());
             //    auto width     = Broodwar->mapWidth();
@@ -586,7 +561,7 @@ namespace McRave::Goals {
             auto mainStations = int(count_if(stations.begin(), stations.end(), [&](auto &s) { return s->isMain(); }));
 
             // Before Hydras have upgrades, defend vulnerable bases, put lings on defense too
-             if (Combat::State::isStaticRetreat(Zerg_Hydralisk) && !BuildOrder::isAllIn() && com(Zerg_Hydralisk_Den) > 0) {
+            if (Combat::State::isStaticRetreat(Zerg_Hydralisk) && !BuildOrder::isAllIn() && com(Zerg_Hydralisk_Den) > 0) {
                 auto evenSplit = (1.0 / double(stations.size() - mainStations));
 
                 if (!stations.empty()) {
@@ -628,16 +603,22 @@ namespace McRave::Goals {
                     }
                 }
                 if (posBest.isValid()) {
-                    assignPercentToGoal(posBest, Zerg_Zergling, 1.00, GoalType::Attack);
-                    if (Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Grooved_Spines) && Players::getPlayerInfo(Broodwar->self())->hasUpgrade(UpgradeTypes::Muscular_Augments))
+                    if (!Combat::State::isStaticRetreat(Zerg_Zergling))
+                        assignPercentToGoal(posBest, Zerg_Zergling, 1.00, GoalType::Attack);
+                    if (!Combat::State::isStaticRetreat(Zerg_Hydralisk))
                         assignPercentToGoal(posBest, Zerg_Hydralisk, 0.50, GoalType::Attack);
                 }
+            }
+
+            // Always keep 6 lings on ramp to block vultures
+            if (Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && Combat::State::isStaticRetreat(Zerg_Zergling)) {
+                assignPercentToGoal(Stations::getDefendPosition(Terrain::getMyMain()), Zerg_Zergling, 1.0, GoalType::Defend);
             }
 
             // Send a Zergling to a low energy Defiler
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 auto &unit = *u;
-                if (unit.getType() == Zerg_Defiler && unit.getEnergy() < 150)
+                if (unit.getType() == Zerg_Defiler && unit.getEnergy() < 200)
                     assignNumberToGoal(unit.getTilePosition(), Zerg_Zergling, 1, GoalType::Attack);
             }
         }
@@ -691,5 +672,6 @@ namespace McRave::Goals {
         updateOverlordGoals();
         updateZergGoals();
         updateCampaignGoals();
+        Visuals::endPerfTest("Goals");
     }
 } // namespace McRave::Goals

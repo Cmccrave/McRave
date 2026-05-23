@@ -14,7 +14,7 @@ namespace McRave::Combat::Formations {
     void holdFormation(Formation &formation, Cluster &cluster)
     {
         auto commander              = cluster.commander.lock();
-        auto expSpacing             = double(max(commander->getType().width(), commander->getType().height()) + 2);
+        auto sizeSpacing            = double(max(commander->getType().width(), commander->getType().height()) + 2);
         auto closestChoke           = Util::getClosestChokepoint(cluster.marchPosition);
         auto formationWithChoke     = Combat::holdAtChoke() && closestChoke && Position(closestChoke->Center()).getDistance(cluster.marchPosition) < 32.0;
         auto formationWithCommander = cluster.shape == Shape::Concave;
@@ -23,7 +23,7 @@ namespace McRave::Combat::Formations {
         formation.center      = cluster.marchPosition;
         formation.start       = cluster.retreatPosition;
         formation.radius      = 160.0;
-        formation.stepPerUnit = expSpacing;
+        formation.stepPerUnit = sizeSpacing;
         formation.angle       = (round(BWEB::Map::getAngle(cluster.marchPosition, cluster.retreatPosition) / M_PI_D4)) * M_PI_D4;
         formation.lState      = LocalState::Hold;
 
@@ -40,24 +40,16 @@ namespace McRave::Combat::Formations {
 
             Visuals::drawCircle(Position(closestChoke->Center()), 6, Colors::Yellow, true);
 
-            auto maxRange   = max(commander->getGroundRange(), double(Players::getStrength(PlayerState::Enemy).maxGroundRange)) + 96.0;
-            auto minSpacing = double(closestChoke->Width() / cluster.units.size());
+            auto minRadius   = double(closestChoke->Width());
+            auto unitRadius  = (sizeSpacing * double(cluster.units.size())) / 1.5;
+            formation.radius = max(minRadius, unitRadius);
 
-            if (closestChoke == Terrain::getMainChoke()) {
-                formation.angle       = BWEB::Map::getAngle(Terrain::getMainRamp().center, Terrain::getMainRamp().entrance);
-                formation.radius      = (Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::Self) ? (expSpacing + 32.0) : max(maxRange, expSpacing);
-                formation.stepPerUnit = max(minSpacing, expSpacing);
-                formation.center      = Terrain::getMainRamp().center;
-                formation.start       = Terrain::getMainRamp().entrance;
-                Visuals::drawCircle(Terrain::getMainRamp().entrance, 6, Colors::Purple, true);
-            }
-            else {
-                formation.angle       = Terrain::getChokepointAngle(closestChoke);
-                formation.radius      = max(commander->getGroundRange(), double(closestChoke->Width()));
-                formation.stepPerUnit = max(minSpacing, expSpacing);
-                formation.center      = Position(closestChoke->Center());
-                formation.start       = Position(closestChoke->Center()); // ??
-            }
+            auto chokeSpacing     = double(formation.radius * M_PI_D2 / cluster.units.size());
+            formation.stepPerUnit = max(chokeSpacing, sizeSpacing);
+
+            formation.angle  = Terrain::getChokepointAngle(closestChoke);
+            formation.center = Position(closestChoke->Center());
+            formation.start  = Position(closestChoke->Center());
 
             if (badArea) {
                 formation.radius += 64.0;
@@ -66,7 +58,7 @@ namespace McRave::Combat::Formations {
         }
 
         //// Hold with commander
-        //else if (formationWithCommander) {
+        // else if (formationWithCommander) {
         //    formation.radius = clamp((cluster.units.size() * cluster.spacing / 1.3), 64.0, 640.0);
         //    formation.start  = commander->getPosition();
         //    formation.angle  = BWEB::Map::getAngle(cluster.marchNavigation, cluster.retreatNavigation);
@@ -181,21 +173,21 @@ namespace McRave::Combat::Formations {
 
             // Must be walkable for this type (TODO: Check size being assigned)
             if (!commander->isFlying()) {
+                auto box = Util::typeBoundingBox(p, commander->getType());
                 if (p.isValid() && !Util::findTerrainWalkable(p, commander->getType())) {
                     skip = true;
+                    Visuals::drawBox(box.first, box.second, Colors::Red);
                     return;
                 }
 
                 //
                 if (skip || assignmentsRemaining <= 0 || BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None) {
-                    auto box = Util::typeBoundingBox(p, commander->getType());
-                    Visuals::drawBox(box.first, box.second, Colors::Red);
+                    Visuals::drawBox(box.first, box.second, Colors::Orange);
                     return;
                 }
 
                 if (closestBuilder && Util::boxDistance(commander->getType(), p, closestBuilder->getBuildType(), closestBuilder->getBuildPosition()) < 32.0) {
-                    auto box = Util::typeBoundingBox(p, commander->getType());
-                    Visuals::drawBox(box.first, box.second, Colors::Red);
+                    Visuals::drawBox(box.first, box.second, Colors::Yellow);
                     return;
                 }
             }
@@ -329,7 +321,7 @@ namespace McRave::Combat::Formations {
                 generateConcavePositions(formation, cluster, M_PI);
             }
             else {
-                generateConcavePositions(formation, cluster, 1.3);
+                generateConcavePositions(formation, cluster, M_PI_D2);
             }
         }
     }

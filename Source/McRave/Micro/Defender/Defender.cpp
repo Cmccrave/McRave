@@ -3,7 +3,6 @@
 #include "Info/Unit/Units.h"
 #include "Map/Stations/Stations.h"
 #include "Micro/All/Commands.h"
-#include "Strategy/Zones/Zones.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -34,10 +33,6 @@ namespace McRave::Defender {
                 auto defendPosition = Stations::getDefendPosition(closestStation);
                 unit.setFormation(defendPosition);
             }
-
-            // Add a zone to help with engagements
-            Zones::addZone(unit.getPosition(), ZoneType::Defend, 1, int(unit.getGroundRange()));
-            Zones::addZone(unit.getPosition(), ZoneType::Defend, 1, int(unit.getAirRange()));
         }
 
         void updateDefenders()
@@ -66,5 +61,9 @@ namespace McRave::Defender {
         }
     } // namespace
 
-    void onFrame() { updateDefenders(); }
+    void onFrame()
+    {
+        updateDefenders();
+        Visuals::endPerfTest("Defenders");
+    }
 } // namespace McRave::Defender

@@ -95,6 +95,7 @@ namespace McRave::Pylons {
     {
         updatePowerGrid();
         updatePoweredPositions();
+        Visuals::endPerfTest("Pylons");
     }
 
     bool hasPowerNow(TilePosition here, UnitType building)

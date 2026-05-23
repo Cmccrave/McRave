@@ -299,7 +299,7 @@ namespace McRave::Pathing {
 
     Position getNavPoint(UnitInfo &unit, BWEB::Path &path)
     {
-        auto returnNext = false;
+        auto occludedCount = 0;
 
         const auto validPathPoint = [&](auto &p) {
             if (unit.isFlying())
@@ -308,12 +308,11 @@ namespace McRave::Pathing {
             if (BWEB::Map::isUsed(TilePosition(p)) != UnitTypes::None)
                 return false;
 
-            // If occluded, return next so we don't try to path into a corner
-            if (returnNext)
-                return true;
+            // If occluded, eventually need to return
             if (unit.isOccluded(p)) {
-                returnNext = true;
-                return false;
+                occludedCount++;
+                if (occludedCount >= 3)
+                    return true;
             }
 
             auto mobility = (10 - Grids::getMobility(p)) * 12;
@@ -324,5 +323,9 @@ namespace McRave::Pathing {
         return Util::findPointOnPath(path, validPathPoint);
     }
 
-    void onFrame() { updatePositions(); }
+    void onFrame()
+    {
+        updatePositions();
+        Visuals::endPerfTest("Pathing");
+    }
 } // namespace McRave::Pathing

@@ -439,6 +439,7 @@ namespace McRave::Roles {
     {
         updateSelf();
         drawRoles();
+        Visuals::endPerfTest("Roles");
     }
 
     int getRoleCount(Role role) { return myRoles[role]; }

@@ -78,6 +78,7 @@ namespace McRave::Players {
         raceCount.clear();
         for (auto &[_, player] : thePlayers)
             update(player);
+        Visuals::endPerfTest("Players");
     }
 
     void storeUnit(Unit bwUnit)

@@ -212,7 +212,7 @@ namespace McRave::Stations {
 
         void updateHoldPositions()
         {
-            auto holdBothChokes   = Util::getTime() < Time(3, 30);
+            auto holdBothChokes   = Util::getTime() < Time(4, 00);
             auto holdWallDefender = !Players::PvZ() && Players::getStrength(PlayerState::Enemy).maxGroundRange < 160; // TODO: Expand on this concept
             auto holdWallPiece    = Players::PvZ() || Players::PvT();
             auto holdAheadWall    = Players::ZvZ() || Players::ZvP();
@@ -339,11 +339,7 @@ namespace McRave::Stations {
             auto groundCount = getGroundDefenseCount(station);
 
             if (station->isMain()) {
-                if (Players::getTotalCount(PlayerState::Enemy, Terran_Dropship) > 0)
-                    return (Util::getTime() > Time(11, 00)) + (Util::getTime() > Time(15, 00)) - groundCount;
                 if (Stations::ownedBy(Terrain::getMyNatural()) != PlayerState::Self && Spy::getEnemyTransition() == T_Rush)
-                    return 1 - groundCount;
-                if (Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && Util::getTime() > Time(9, 00))
                     return 1 - groundCount;
             }
             return 0;
@@ -745,7 +741,7 @@ namespace McRave::Stations {
 
             // Late game we want a spore protecting ovies from stray valks/wraiths
             if (Stations::getStations(PlayerState::Self).size() >= 3 &&
-                (Players::getTotalCount(PlayerState::Enemy, Terran_Valkyrie) >= 4 || Players::getTotalCount(PlayerState::Enemy, Terran_Wraith) >= 8))
+                (Players::getVisibleCount(PlayerState::Enemy, Terran_Valkyrie) >= 4 || Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith) >= 8))
                 return 1 - airCount;
         }
 
@@ -875,7 +871,7 @@ namespace McRave::Stations {
     {
         // If a self owned unit is fighting a winning battle, then it's not threatened
         const auto closestSelf = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) {
-            if (u->getRole() != Role::Combat || !u->isCompleted() || u->isLightAir())
+            if ((u->getRole() != Role::Combat && u->getRole() != Role::Defender) || !u->isCompleted() || u->isLightAir())
                 return false;
             if (u->hasTarget(); auto target = u->getTarget().lock()) {
                 if (Terrain::inArea(station, u->getPosition()) && Terrain::inArea(station, target->getPosition()) && u->getLocalState() == LocalState::Attack && u->getSimState() == SimState::Win)
@@ -883,12 +879,10 @@ namespace McRave::Stations {
             }
             return false;
         });
-        if (closestSelf)
-            return false;
 
         // There's a threatening unit and nothing to support
         const auto closestEnemy = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Enemy, [&](auto &u) { return u->isThreatening() && Terrain::inArea(station, u->getPosition()); });
-        return closestEnemy;
+        return !closestSelf && closestEnemy;
     }
 
     int lastVisible(const BWEB::Station *const station)

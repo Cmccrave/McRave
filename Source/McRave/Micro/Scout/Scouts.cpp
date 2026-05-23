@@ -462,7 +462,7 @@ namespace McRave::Scouts {
                 // ZvFFA
                 if (Players::ZvFFA()) {
                     main.desiredTypeCounts[Zerg_Drone]    = 0;
-                    main.desiredTypeCounts[Zerg_Zergling] = !Terrain::getEnemyStartingPosition().isValid();
+                    main.desiredTypeCounts[Zerg_Zergling] = 1;
                 }
             }
 
@@ -525,11 +525,6 @@ namespace McRave::Scouts {
                 if (Players::ZvZ()) {
                     natural.desiredTypeCounts[Zerg_Overlord] = !enemyAir;
                 }
-
-                // ZvFFA
-                if (Players::ZvFFA()) {
-                    main.desiredTypeCounts[Zerg_Zergling] = 1;
-                }
             }
         }
 
@@ -588,12 +583,13 @@ namespace McRave::Scouts {
 
             if (Terrain::getEnemyNatural() && airSafePosition.isValid()) {
                 auto &safe  = scoutTargets[ScoutType::SafeAir];
+                auto &main  = scoutTargets[ScoutType::Main];
                 safe.center = airSafePosition;
 
                 Visuals::drawCircle(safe.center, 10, Colors::Orange, true);
 
                 // Zerg
-                if (Broodwar->self()->getRace() == Races::Zerg) {
+                if (Broodwar->self()->getRace() == Races::Zerg && main.desiredTypeCounts[Zerg_Overlord] == 0) {
 
                     safe.desiredTypeCounts[Zerg_Overlord] = Players::ZvT() || Players::ZvP();
                     if (total(Zerg_Mutalisk) >= 6 || (Players::ZvP() && Util::getTime() > Time(8, 00)) || (Players::ZvT() && Util::getTime() > Time(8, 00)))
@@ -1033,7 +1029,7 @@ namespace McRave::Scouts {
                 if (newPathAllowed && !unit.hasSameMarchPath(unit.getPosition(), pathPoint)) {
 
                     BWEB::Path newPath(unit.getPosition(), pathPoint, unit.getType());
-                    auto wT = unit.sacrifice ? 200.0 : 1000.0;
+                    auto wT = (unit.sacrifice || Spy::getEnemyBuild() == "Unknown") ? 200.0 : 1000.0;
 
                     const auto threat   = [&](const TilePosition &t) { return Grids::getGroundThreat(t, PlayerState::Enemy) * wT; };
                     const auto walkable = [&](const TilePosition &t) { return newPath.unitWalkable(t); };

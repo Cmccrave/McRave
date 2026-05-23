@@ -108,7 +108,7 @@ namespace McRave::Expansion {
                 expansionOrder.push_back(Terrain::getMyNatural());
 
             // 
-            auto naturalThird = Broodwar->getStartLocations().size() >= 3 && BuildOrder::getCurrentTransition() == Z_2HatchMuta;
+            auto naturalThird = Players::ZvP() && Stations::getStations(PlayerState::Self).size() < 3 && Broodwar->getStartLocations().size() >= 3 && BuildOrder::getCurrentTransition() == Z_2HatchMuta;
 
             for (int i = 0; i < int(BWEB::Stations::getStations().size()); i++) {
                 auto costBest                    = DBL_MAX;
@@ -223,7 +223,7 @@ namespace McRave::Expansion {
     void onFrame()
     {
         updateExpandPlan();
-        Visuals::endPerfTest("Production");
+        Visuals::endPerfTest("Expanding");
     }
 
     void onStart() {}

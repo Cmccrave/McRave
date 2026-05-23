@@ -11,6 +11,7 @@ namespace McRave {
         UnitType lastType      = UnitTypes::None;
         Role lastRole          = Role::None;
         Position lastPos       = Positions::Invalid;
+        Position lastGoal = Positions::Invalid;
         Position lastFormation = Positions::Invalid;
         WalkPosition lastWalk  = WalkPositions::Invalid;
         TilePosition lastTile  = TilePositions::Invalid;
@@ -22,6 +23,7 @@ namespace McRave {
         UnitType getLastType() { return lastType; }
         Role getLastRole() { return lastRole; }
         Position getLastPosition() { return lastPos; }
+        Position getLastGoal() { return lastGoal; }
         Position getLastFormation() { return lastFormation; }
         WalkPosition getLastWalk() { return lastWalk; }
         TilePosition getLastTile() { return lastTile; }

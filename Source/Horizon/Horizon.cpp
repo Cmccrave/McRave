@@ -11,17 +11,19 @@ namespace McRave::Horizon {
     namespace {
 
         struct SimStrength {
-            double airToAir       = 0.01;
-            double airToGround    = 0.01;
-            double groundToAir    = 0.01;
-            double groundToGround = 0.01;
-            double combined       = 0.01;
+            double airToAir       = 0.0001;
+            double airToGround    = 0.0001;
+            double groundToAir    = 0.0001;
+            double groundToGround = 0.0001;
+            double combined       = 0.0001;
         };
 
         bool addToSim(UnitInfo &u)
         {
-            if (u.getType().isWorker() && ((u.unit()->getOrder() != Orders::AttackUnit && !u.hasAttackedRecently()) || Util::getTime() > Time(6, 00)))
-                return false;
+            if (u.getPlayer() != Broodwar->self()) {
+                if (u.getType().isWorker() && !u.isProxy() && ((u.unit()->getOrder() != Orders::AttackUnit && !u.hasAttackedRecently()) || Util::getTime() > Time(6, 00)))
+                    return false;
+            }
 
             if (!u.unit() || (u.isStunned()) || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0) ||
                 (u.getRole() != Role::None && u.getRole() != Role::Combat && u.getRole() != Role::Defender) || (u.getRole() == Role::Combat && u.getGlobalState() == GlobalState::Retreat) ||
@@ -126,13 +128,13 @@ namespace McRave::Horizon {
                 simRatio              = max(0.0, simulationTime - engageTime);
             }
 
-            if (unit.unit()->isSelected())
-                Broodwar->drawTextMap(enemy.getPosition(), "%.2f", simRatio);
-
             // Add their values to the simulation
             addBonus(enemy, *enemyTarget, simRatio);
             addSimStrength(simStrengthPerPlayer[enemy.getPlayer()], enemy, simRatio);
             addSimStrength(simStrengthPerState[PlayerState::Enemy], enemy, simRatio);
+
+            //if (unit.unit()->isSelected())
+            //    Broodwar->drawTextMap(enemy.getPosition(), "%.2f", simRatio);
         }
 
         for (auto &a : Units::getUnits(PlayerState::Self)) {
@@ -153,9 +155,6 @@ namespace McRave::Horizon {
                 (self.getGlobalState() == GlobalState::Retreat) || (Combat::State::isStaticRetreat(self.getType()) && !unitTarget->isThreatening()))
                 continue;
 
-            if (unit.unit()->isSelected())
-                Broodwar->drawTextMap(self.getPosition(), "%.2f", simRatio);
-
             if (selfTarget->isFlying() != unitTarget->isFlying())
                 combinedSim = true;
 
@@ -163,6 +162,9 @@ namespace McRave::Horizon {
             addBonus(self, *selfTarget, simRatio);
             addSimStrength(simStrengthPerPlayer[self.getPlayer()], self, simRatio);
             addSimStrength(simStrengthPerState[PlayerState::Self], self, simRatio);
+
+            //if (unit.unit()->isSelected())
+            //    Broodwar->drawTextMap(self.getPosition(), "%.2f", simRatio);
         }
 
         for (auto &a : Units::getUnits(PlayerState::Ally)) {

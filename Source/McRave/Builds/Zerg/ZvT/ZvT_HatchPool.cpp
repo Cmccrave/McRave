@@ -44,6 +44,25 @@ namespace McRave::BuildOrder::Zerg {
         zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvT();
     }
 
+    void ZvT_HP_3Hatch()
+    {
+        // 12h 12h 11p
+        transitionReady = vis(Zerg_Spawning_Pool) > 0;
+        scout           = scout || (hatchCount() == 1 && s >= 22 && Util::getTime() > Time(1, 30));
+        planEarly       = (hatchCount() <= 1 && s >= 22 && Util::getTime() > Time(1, 30)) || (hatchCount() <= 2 && s >= 26 && Util::getTime() > Time(1, 30));
+
+        wantThird = true;
+
+        // Buildings
+        buildQueue[Zerg_Hatchery]      = 1 + (s >= 24) + (s >= 28 && hatchCount() >= 2);
+        buildQueue[Zerg_Spawning_Pool] = (hatchCount() >= 3);
+        buildQueue[Zerg_Overlord]      = 1 + (s >= 16) + (s >= 32);
+
+        // Pumping
+        zergUnitPump[Zerg_Drone]    = capTotalDrones(17);
+        zergUnitPump[Zerg_Zergling] = vis(Zerg_Zergling) < lingsNeeded_ZvT();
+    }
+
     void ZvT_HP()
     {
         // Openers
@@ -51,5 +70,7 @@ namespace McRave::BuildOrder::Zerg {
             ZvT_HP_11Hatch();
         if (currentOpener == Z_12Hatch)
             ZvT_HP_12Hatch();
+        if (currentOpener == Z_3Hatch)
+            ZvT_HP_3Hatch();
     }
 } // namespace McRave::BuildOrder::Zerg

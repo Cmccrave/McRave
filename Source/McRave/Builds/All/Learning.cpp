@@ -72,6 +72,8 @@ namespace McRave::Learning {
             if (Broodwar->self()->getRace() == Races::Zerg) {
                 if (opener == Z_10Hatch && transition != Z_2HatchMuta)
                     return false;
+                if (opener == Z_3Hatch && transition != Z_3HatchMuta)
+                    return false;
             }
 
             return true;
@@ -349,7 +351,7 @@ namespace McRave::Learning {
                 PoolHatch.setOpeners({Z_Overpool, Z_12Pool});
                 PoolHatch.setTransitions({Z_2HatchMuta, Z_3HatchMuta});
 
-                HatchPool.setOpeners({Z_12Hatch});
+                HatchPool.setOpeners({Z_11Hatch, Z_12Hatch, Z_3Hatch});
                 HatchPool.setTransitions({Z_2HatchMuta, Z_3HatchMuta});
 
                 PoolLair.setOpeners({Z_4Pool});

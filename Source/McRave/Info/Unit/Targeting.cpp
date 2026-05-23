@@ -164,7 +164,7 @@ namespace McRave::Targets {
         if (target.isThreatening() && (unit.isWithinReach(target) || Util::getTime() < Time(5, 00) || Terrain::inTerritoryPath(PlayerState::Self, unit.getPosition(), target.getPosition()))) {
             if (Players::ZvZ() && unit.isWithinRange(target))
                 return Priority::Critical;
-            if (unit.getSpeed() < target.getSpeed() && unitRange < targetRange)
+            if (!unit.isWithinRange(target) && unit.getSpeed() < target.getSpeed() && unitRange < targetRange)
                 return Priority::Minor;
             if (unit.getType().isWorker() == target.getType().isWorker() && unit.isFlying() == target.isFlying())
                 return Priority::Major;
@@ -221,7 +221,7 @@ namespace McRave::Targets {
             return Priority::Ignore;
 
         // Add bonus for a DT to kill important counters
-        if (unit.isWithinEngage(target) && !Actions::overlapsDetection(target.unit(), target.getPosition(), PlayerState::Enemy) &&
+        if (!Actions::overlapsDetection(target.unit(), target.getPosition(), PlayerState::Enemy) &&
             (target.getType().isWorker() || target.isSiegeTank() || target.getType().isDetector() || target.getType() == Protoss_Observatory || target.getType() == Protoss_Robotics_Facility))
             return Priority::Critical;
 
@@ -289,7 +289,7 @@ namespace McRave::Targets {
         if (Util::getTime() < Time(5, 00)) {
             if (Players::ZvZ() && !target.canAttackGround() && !Spy::enemyFastExpand())
                 return Priority::Ignore;
-            if (Players::ZvT() && target.getType() == Terran_Vulture && combatTargeters >= 2)
+            if (Players::ZvT() && !unit.isWithinRange(target) && target.getType() == Terran_Vulture && combatTargeters >= 2)
                 return Priority::Ignore;
         }
 
@@ -349,13 +349,13 @@ namespace McRave::Targets {
             if (target.getType() == Terran_Vulture_Spider_Mine && Grids::getAirThreat(target.getTilePosition(), PlayerState::Enemy) > 0)
                 return Priority::Ignore;
             if (target.isSiegeTank()) {
-                if (target.isThreatening() && unit.isWithinEngage(target))
+                if (target.isThreatening())
                     return Priority::Critical;
             }
 
             if (target.getType() == Terran_Missile_Turret) {
                 // Proxy turrets are critical to kill
-                if (target.isProxy())
+                if (Terrain::isCloserHome(target.getPosition()))
                     return Priority::Critical;
                 // Lower priority if being repaired
                 if (target.hasRepairedRecently() && !Combat::Clusters::canDecimate(unit, target))
@@ -390,7 +390,7 @@ namespace McRave::Targets {
             return Priority::Ignore;
 
         // One/two shot is high priority to hit
-        if (!Players::ZvZ() && unit.isWithinReach(target) && (Combat::Clusters::canDecimate(unit, target) || target.isSplasher()))
+        if (!Players::ZvZ() && (Combat::Clusters::canDecimate(unit, target) || target.isSplasher()))
             return Priority::Critical;
 
         // If a building is unprotected
@@ -438,7 +438,7 @@ namespace McRave::Targets {
             if (Actions::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm)))
                 return Priority::Trivial;
 
-            if (!unit.targetsFriendly() && target.isSiegeTank() && unit.isWithinReach(target))
+            if (!unit.targetsFriendly() && target.isSiegeTank() && unit.isWithinReach(target) && unit.getUnitsTargetingThis().empty())
                 return Priority::Major;
         }
         return Priority::Normal;
@@ -684,6 +684,15 @@ namespace McRave::Targets {
                 continue;
 
             auto priority = getPriority(unit, target);
+            if (unit.unit()->isSelected()) {
+                auto prio = getPriority(unit, target);
+                Broodwar->drawTextMap(target.getPosition(), "%d", int(prio));
+            }
+
+            // Don't prioritize targets way too far away
+            if (priority >= Priority::Normal && !unit.isWithinEngage(target))
+                priority = Priority::Normal;
+
             if (priority == Priority::Ignore || priority < priorityBest)
                 continue;
 
@@ -859,8 +868,15 @@ namespace McRave::Targets {
                 UnitInfo &unit = *u;
                 if (!unit.isAvailable() || !unit.hasTarget())
                     continue;
+                auto target = unit.getTarget().lock();
                 int color = unit.getPlayer()->getColor();
-                Visuals::drawLine(unit.getTarget().lock()->getPosition(), unit.getPosition(), color);
+                Visuals::drawLine(target->getPosition(), unit.getPosition(), color);
+
+                //if (unit.unit()->isSelected())
+                //{
+                //    auto prio = getPriority(unit, *target);
+                //    Broodwar->drawTextMap(target->getPosition(), "%d", int(prio));
+                //}
             }
         }
     }
@@ -870,5 +886,6 @@ namespace McRave::Targets {
         updateStatistics();
         updateTargets();
         drawTargeting();
+        Visuals::endPerfTest("Targeting");
     }
 } // namespace McRave::Targets

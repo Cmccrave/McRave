@@ -32,7 +32,6 @@
 #include "Strategy/Actions/Actions.h"
 #include "Strategy/Goals/Goals.h"
 #include "Strategy/Spy/Spy.h"
-#include "Strategy/Zones/Zones.h"
 #include "Util.h"
 
 using namespace BWAPI;
@@ -117,7 +116,6 @@ void McRaveModule::onFrame()
     Upgrading::onFrame();
     Researching::onFrame();
     Producing::onFrame();
-    Zones::onFrame();
 
     // Display information from this frame
     Visuals::onFrame();

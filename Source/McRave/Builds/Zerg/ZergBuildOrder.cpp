@@ -27,15 +27,15 @@ using namespace McRave::BuildOrder::All;
 namespace McRave::BuildOrder::Zerg {
 
     namespace {
-        bool againstRandom = false;
-        bool needSpores    = false;
-        bool needSunks     = false;
-        bool needHatch     = false;
+        bool againstRandom                   = false;
+        bool needSpores                      = false;
+        bool needSunks                       = false;
+        bool needHatch                       = false;
+        vector<UnitType> switchedComposition = {};
 
         void switchComposition()
         {
-            static auto lastSwitchTime                  = Time(9, 00);
-            static vector<UnitType> switchedComposition = {};
+            static auto lastSwitchTime = Time(8, 00);
 
             // For certain switches, we don't want to start producing anything until we're actually ready
             if (!switchedComposition.empty()) {
@@ -48,14 +48,24 @@ namespace McRave::BuildOrder::Zerg {
                     ready = com(Zerg_Spire) > 0;
                 }
 
+                // Add the buildings
+                for (auto &type : switchedComposition) {
+                    if (!isFocusUnit(type)) { // Doesnt block us from teching to two units at a time
+                        focusUnits.insert(type);
+                        break;
+                    }
+                }
+
                 if (ready) {
-                    LOG_ONCE("Switched composition ready");
-                    unitOrder = switchedComposition;
+                    LOG_SLOW("Switched composition ready");
+                    unitOrder      = switchedComposition;
+                    lastSwitchTime = Util::getTime();
+                    switchedComposition.clear();
                 }
             }
 
             // TODO: Allow faster switching if we have the tech already
-            if (Util::getTime() - lastSwitchTime < Time(2, 30))
+            if (!switchedComposition.empty() || Util::getTime() - lastSwitchTime < Time(1, 00))
                 return;
 
             if (Players::ZvP()) {
@@ -68,39 +78,35 @@ namespace McRave::BuildOrder::Zerg {
                                             Players::getVisibleCount(PlayerState::Enemy, Protoss_High_Templar, Protoss_Reaver) ||
                                         Players::getVisibleCount(PlayerState::Enemy, Protoss_High_Templar, Protoss_Reaver) == 0;
 
-                if (enemyWeakToHydra) {
+                if (enemyWeakToHydra && unitOrder != hydralurk) {
                     switchedComposition = hydralurk;
-                    lastSwitchTime      = Util::getTime();
-                    getTechBuildings(Zerg_Hydralisk);
                     LOG("Desired switch to hydralurk");
+                    return;
                 }
 
-                if (enemyWeakToMuta) {
+                if (enemyWeakToMuta && unitOrder != mutaling) {
                     switchedComposition = mutaling;
-                    lastSwitchTime      = Util::getTime();
-                    getTechBuildings(Zerg_Mutalisk);
                     LOG("Desired switch to mutaling");
+                    return;
                 }
             }
 
             if (Players::ZvT()) {
                 auto enemyWeakToHydras = Spy::Terran::enemyMech() && Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith, Terran_Valkyrie, Terran_Goliath) >
-                                                                         Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode);
+                                                                         Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode) * 2;
                 auto enemyWeakToMuta = Spy::Terran::enemyMech() && Players::getVisibleCount(PlayerState::Enemy, Terran_Wraith, Terran_Valkyrie, Terran_Goliath) <
-                                                                       Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode);
+                                                                       Players::getVisibleCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode) * 2;
 
-                if (enemyWeakToHydras && isFocusUnit(Zerg_Mutalisk)) {
+                if (enemyWeakToHydras && unitOrder != hydradefiler) {
                     switchedComposition = hydradefiler;
-                    lastSwitchTime      = Util::getTime();
-                    getTechBuildings(Zerg_Mutalisk);
                     LOG("Desired switch to hydradefiler");
+                    return;
                 }
 
-                if (enemyWeakToMuta && isFocusUnit(Zerg_Hydralisk)) {
+                if (enemyWeakToMuta && unitOrder != mutaling) {
                     switchedComposition = mutaling;
-                    lastSwitchTime      = Util::getTime();
-                    getTechBuildings(Zerg_Hydralisk);
                     LOG("Desired switch to mutaling");
+                    return;
                 }
             }
         }
@@ -168,7 +174,7 @@ namespace McRave::BuildOrder::Zerg {
                         LOG_SLOW("Wall ", i, " needs a spore - has ", wall.getAirDefenseCount(), ", wants ", airNeeded, " more, has ", colonies, " colonies");
 
                     if ((atPercent(Zerg_Spawning_Pool, 0.66) && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
-                        buildQueue[Zerg_Creep_Colony] = colonyCount + 1;
+                        buildQueue[Zerg_Creep_Colony]++;
                         i++;
                     }
                 }
@@ -188,7 +194,7 @@ namespace McRave::BuildOrder::Zerg {
                         needSunks = true;
 
                     if ((vis(Zerg_Spawning_Pool) > 0 && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
-                        buildQueue[Zerg_Creep_Colony] = colonyCount + 1;
+                        buildQueue[Zerg_Creep_Colony]++;
                         LOG_SLOW("Station ", i, " needs a sunken/spore");
                         i++;
                     }
@@ -255,12 +261,12 @@ namespace McRave::BuildOrder::Zerg {
 
         void queueSupply()
         {
-            int supplyPerOvie = max(16 - (hatchCount() / 5), 12);
+            int supplyPerOvie = max(16 - (hatchCount() / 2), 12);
             int supplyCap     = com(Zerg_Overlord) * supplyPerOvie;
 
             // Adding Overlords outside opening book supply, offset by large hatch counts
             if (!inBookSupply) {
-                int count                 = 1 + min(26, s / supplyPerOvie);
+                int count                 = 1 + (s / supplyPerOvie);
                 buildQueue[Zerg_Overlord] = min(25, count);
             }
 
@@ -337,6 +343,12 @@ namespace McRave::BuildOrder::Zerg {
                 buildQueue[Zerg_Hive]        = com(Zerg_Queens_Nest) >= 1;
                 buildQueue[Zerg_Lair]        = com(Zerg_Queens_Nest) < 1;
             }
+
+            // Adding tech buildings that allow us switching as needed
+            if (com(Zerg_Hive) > 0 && Stations::getStations(PlayerState::Self).size() >= 3) {
+                buildQueue[Zerg_Hydralisk_Den] = 1;
+                buildQueue[Zerg_Spire]         = 1;
+            }
         }
 
         void queueExpansions()
@@ -352,7 +364,7 @@ namespace McRave::BuildOrder::Zerg {
                 const auto waitForMinerals = 200 + (200 * incompleteHatch);
                 const auto resourceSat     = (availableMinerals >= waitForMinerals || vis(Zerg_Larva) <= int(Stations::getStations(PlayerState::Self).size())) && Resources::isHalfMineralSaturated() &&
                                          Resources::isGasSaturated();
-                const auto excessResources = (availableMinerals >= waitForMinerals * 2 && vis(Zerg_Larva) <= 3);
+                const auto excessResources = (availableMinerals >= waitForMinerals * 3 && vis(Zerg_Larva) <= 3);
 
                 auto selfCount  = Stations::getStations(PlayerState::Self).size();
                 auto enemyCount = Stations::getStations(PlayerState::Enemy).size();
@@ -363,7 +375,7 @@ namespace McRave::BuildOrder::Zerg {
                 }
                 else {
                     expandDesired = (resourceSat && techSat && productionSat && Stations::getMiningStationsCount() <= 5) //
-                                    || (excessResources && productionSat && techSat)                                     //
+                                    || (excessResources && productionSat)                                                //
                                     || (selfCount >= 4 && Stations::getMiningStationsCount() <= 2)                       //
                                     || (selfCount >= 4 && Stations::getGasingStationsCount() <= 1)                       //
                                     || (Stations::getMiningStationsCount() < 2 && Util::getTime() > Time(12, 00));

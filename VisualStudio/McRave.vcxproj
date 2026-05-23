@@ -125,7 +125,6 @@
     <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyProtoss.cpp" />
     <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyTerran.cpp" />
     <ClCompile Include="..\Source\McRave\Strategy\Spy\SpyZerg.cpp" />
-    <ClCompile Include="..\Source\McRave\Strategy\Zones\Zones.cpp" />
     <ClInclude Include="..\Source\BWEB\Logger.h" />
     <ClInclude Include="..\Source\Horizon\Horizon.h" />
     <ClInclude Include="..\Source\McRave\Builds\All\BuildOrder.h" />
@@ -208,7 +207,6 @@
     <ClInclude Include="..\Source\McRave\Strategy\Goals\Goals.h" />
     <ClInclude Include="..\Source\McRave\Strategy\Spy\Defs.h" />
     <ClInclude Include="..\Source\McRave\Strategy\Spy\Spy.h" />
-    <ClInclude Include="..\Source\McRave\Strategy\Zones\Zones.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Source\.clang-format" />

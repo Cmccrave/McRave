@@ -116,6 +116,11 @@ namespace McRave::Combat::Simulation {
             commitFrames  = 0;
         }
 
+        if (Broodwar->self()->getRace() == Races::Zerg && total(Zerg_Zergling) == 0) {
+            minWinPercent = 0.6;
+            maxWinPercent = 0.9;
+        }
+
         // T
         if (Players::TvP()) {
             minWinPercent = 0.8;
@@ -184,7 +189,7 @@ namespace McRave::Combat::Simulation {
     {
         for (auto &u : Units::getUnits(PlayerState::Self)) {
             auto &unit = *u;
-            if (unit.getRole() == Role::Combat) {
+            if (unit.getRole() == Role::Combat || unit.getRole() == Role::Defender) {
                 updateThresholds(unit);
                 updateIncentives(unit);
                 updateSimulation(unit);

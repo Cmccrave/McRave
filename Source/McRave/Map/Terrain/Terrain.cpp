@@ -57,16 +57,16 @@ namespace McRave::Terrain {
         void findEnemy()
         {
             // If we think we found the enemy but we were wrong
-            if (enemyStartingPosition.isValid()) {
+            if (enemyStartingPosition.isValid() && enemyMain && enemyNatural) {
                 auto checked = Util::getTime() < Time(5, 00) ? Stations::isBaseExplored(enemyMain) : Stations::isVisible(enemyMain);
 
-                if (enemyMain && checked && BWEB::Map::isUsed(enemyStartingTilePosition) == UnitTypes::None) {
+                if (checked && BWEB::Map::isUsed(enemyStartingTilePosition) == UnitTypes::None) {
+                    Stations::removeStation(enemyStartingPosition, PlayerState::Enemy);
                     bannedStart.insert(enemyStartingTilePosition);
                     enemyStartingPosition     = Positions::Invalid;
                     enemyStartingTilePosition = TilePositions::Invalid;
                     enemyNatural              = nullptr;
                     enemyMain                 = nullptr;
-                    Stations::removeStation(enemyStartingPosition, PlayerState::Enemy);
                     LOG("Reset enemy starting position");
                 }
                 else
@@ -825,7 +825,7 @@ namespace McRave::Terrain {
 
         // Make an outline for main areas for now
         for (auto &station : BWEB::Stations::getStations()) {
-            if (station.isMain()) {
+            if (station.isMain() || station.isNatural()) {
                 auto area = station.getBase()->GetArea();
                 auto geos = areaGeometry[area].walks;
 
@@ -926,7 +926,7 @@ namespace McRave::Terrain {
     bool isAtCheck(Position here, PlayerState pState)
     {
         const auto growthRate     = pow(Util::getTime().minutes, 2) * 8.0;
-        const auto dist           = clamp(96.0 + growthRate, 160.0, 640.0);
+        const auto dist           = clamp(96.0 + growthRate, 256.0, 640.0);
         const auto closestStation = Stations::getClosestStationAir(here, pState);
 
         const auto closestMain    = BWEB::Stations::getClosestMainStation(here);

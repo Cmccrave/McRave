@@ -131,12 +131,6 @@ namespace McRave::Combat::State {
             }
         }
 
-        // SCVs
-        if (!BuildOrder::isPressure(Terran_SCV) && unlockedOrVis(Terran_SCV)) {
-            if (!unlockedOrVis(Terran_Marine) || !staticRetreatTypes.empty())
-                staticRetreatTypes.push_back(Terran_SCV);
-        }
-
         // NR15 in FFA
         if (Players::TvFFA()) {
             for (auto &type : UnitTypes::allUnitTypes()) {
@@ -215,11 +209,19 @@ namespace McRave::Combat::State {
 
                 if (Players::ZvP()) {
                     const auto killWorkers  = Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) >= 8;
-                    const auto scaryOpeners = (Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_1GateCore && Util::getTime() < Time(4, 00));
+                    const auto scaryOpeners = (Spy::getEnemyBuild() != P_FFE && Spy::getEnemyBuild() != P_1GateCore && Util::getTime() < Time(3, 00));
                     const auto hideCheese   = BuildOrder::isHideTech() && BuildOrder::isOpener();
                     const auto deniedProxy  = Spy::enemyProxy() && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) > 0;
                     const auto defendProxy  = Spy::enemyProxy() && !speedLing && Util::getTime() < Time(5, 00) && Players::getDeadCount(PlayerState::Enemy, Protoss_Pylon) == 0;
                     const auto defendTiming = Spy::getEnemyBuild() == P_FFE && Util::getTime() > Time(6, 00) && Util::getTime() < Time(8, 00);
+
+                    if (Util::getTime() < Time(3, 45)) {
+                        auto closestZealot = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType() == Protoss_Zealot; });
+                        auto closestLing = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == Zerg_Zergling; });
+
+                        if (closestZealot && closestLing && closestZealot->getPosition().getDistance(Terrain::getNaturalPosition()) < closestLing->getPosition().getDistance(Terrain::getNaturalPosition()))
+                            staticRetreatTypes.push_back(Zerg_Zergling);
+                    }
 
                     if (!killWorkers && !deniedProxy && Spy::getEnemyBuild() != P_CannonRush) {
                         if (scaryOpeners || hideCheese || defendProxy || defendTiming)
@@ -287,14 +289,6 @@ namespace McRave::Combat::State {
             }
         }
 
-        // Drones
-        if (!BuildOrder::isPressure(Zerg_Drone) && unlockedOrVis(Zerg_Drone)) {
-            if (!Spy::enemyProxy()) {
-                if (!unlockedOrVis(Zerg_Zergling) || !staticRetreatTypes.empty())
-                    staticRetreatTypes.push_back(Zerg_Drone);
-            }
-        }
-
         // NR15 in FFA
         if (Players::ZvFFA()) {
             for (auto &type : UnitTypes::allUnitTypes()) {
@@ -331,11 +325,13 @@ namespace McRave::Combat::State {
 
     bool forceLocalHold(UnitInfo &unit)
     {
-        if (!unit.hasTarget() || unit.isFlying())
+        if (unit.isFlying())
             return false;
+        if (!unit.hasTarget())
+            return true;
         auto &target = *unit.getTarget().lock();
 
-        auto holdAtHome = Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && (unit.getGlobalState() == GlobalState::Retreat || unit.getGoalType() == GoalType::Defend);
+        auto holdAtHome = Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && !unit.isWithinRange(target) && (unit.getGlobalState() == GlobalState::Retreat || unit.getGoalType() == GoalType::Defend);
 
         if (holdAtHome)
             return true;
@@ -375,6 +371,10 @@ namespace McRave::Combat::State {
         const auto inRange       = unit.isWithinRange(target);
         const auto targetInRange = target.isWithinRange(unit);
 
+        // Spell checks
+        const auto engageUnderSwarm = Actions::overlapsActions(unit.unit(), unit.getEngagePosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm));
+        const auto targetUnderSwarm = Actions::overlapsActions(unit.unit(), target.getPosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm));
+
         // If this unit is melee and forcing engagement is ideal
         auto meleeAttack = [&]() {
             if (!unit.isMelee())
@@ -397,7 +397,7 @@ namespace McRave::Combat::State {
         // Harassing units should engage when they can get value
         auto harassAttack = [&]() {
             if (unit.getType() == Zerg_Mutalisk) {
-                if (Clusters::canDecimate(unit, target))
+                if (unit.isWithinEngage(target) && Clusters::canDecimate(unit, target))
                     return true;
             }
             if (unit.getType() == Terran_Vulture) {
@@ -463,6 +463,11 @@ namespace McRave::Combat::State {
                  Actions::overlapsActions(unit.unit(), unit.getEngagePosition(), TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm))))
                 return true;
 
+            if (unit.isMelee() && (targetUnderSwarm || engageUnderSwarm))
+                return true;
+            if (!unit.isMelee() && engageUnderSwarm)
+                return true;
+
             return (!unit.isFlying() && unit.isMelee() && unit.getGoalType() == GoalType::Explore && Terrain::inTerritory(PlayerState::Enemy, unit.getPosition()) && Util::getTime() > Time(8, 00) &&
                     !Players::ZvZ() && nearEnemyStation());
         };
@@ -482,8 +487,6 @@ namespace McRave::Combat::State {
             auto &target                      = *unit.getTarget().lock();
             const auto slowZealotVsVulture    = unit.getType() == Protoss_Zealot && Broodwar->self()->getUpgradeLevel(UpgradeTypes::Leg_Enhancements) == 0 && target.getType() == Terran_Vulture;
             const auto sparseCorsairVsScourge = unit.getType() == Protoss_Corsair && target.isSuicidal() && com(Protoss_Corsair) < 6; // TODO: Check density instead
-            const auto lowShieldFlyer         = false; // (unit.isLightAir() && unit.getType().maxShields() > 0 && target.getType() == Zerg_Overlord && Grids::getAirThreat(unit.getEngagePosition(),
-                                                       // PlayerState::Enemy) * 5.0 > (double)unit.getShields());
             const auto oomMedic = unit.getType() == Terran_Medic && unit.getEnergy() <= TechTypes::Healing.energyCost();
 
             if (unit.getType() == Zerg_Zergling) {
@@ -492,7 +495,7 @@ namespace McRave::Combat::State {
             }
             const auto hurtLingVsWorker = (unit.getType() == Zerg_Zergling && unit.getHealth() <= 15 && target.getType().isWorker() && Util::getTime() < Time(6, 00) && !Players::ZvZ());
 
-            if (slowZealotVsVulture || sparseCorsairVsScourge || lowShieldFlyer || oomMedic || hurtLingVsWorker)
+            if (slowZealotVsVulture || sparseCorsairVsScourge || oomMedic || hurtLingVsWorker)
                 return true;
         }
         return unit.getGlobalState() == GlobalState::Retreat;
@@ -507,7 +510,7 @@ namespace McRave::Combat::State {
             auto &target = *unit.getTarget().lock();
 
             // No saving if the enemy is threatening
-            if (target.isThreatening())
+            if (target.isThreatening() || Units::enemyThreatening())
                 return false;
 
             // Try to save Mutas that are low hp when the firepower isn't needed
@@ -543,8 +546,8 @@ namespace McRave::Combat::State {
                     unit.saveUnit = false;
             }
 
-            if (unit.getType() == Zerg_Mutalisk && unit.saveUnit && unit.getSimValue() >= 10.0f && !target.canAttackAir() && unit.getUnitsInReachOfThis().empty()) {
-                return true;
+            if (unit.getType() == Zerg_Mutalisk && unit.saveUnit && !target.canAttackAir() && unit.getUnitsInReachOfThis().empty()) {
+                return false;
             }
         }
 
@@ -567,6 +570,10 @@ namespace McRave::Combat::State {
 
         auto &simTarget          = *unit.getSimTarget().lock();
         auto &target             = *unit.getTarget().lock();
+
+        if (target.isHidden())
+            return;
+
         const auto targetAtHome  = Terrain::isAtHome(target.getPosition());
         const auto selfTerritory = Terrain::inTerritory(PlayerState::Self, unit.getPosition());
 

@@ -110,10 +110,19 @@ namespace McRave::Walls::Zerg {
             }
 
             if (Util::getTime() < Time(7, 00)) {
-                auto sunksForZealots  = double(Players::getTotalCount(PlayerState::Enemy, Protoss_Zealot)) / 2.5;
-                auto sunksForDragoons = double(Players::getTotalCount(PlayerState::Enemy, Protoss_Dragoon)) / 2.0;
-                auto sunksForDTs      = double(Players::getTotalCount(PlayerState::Enemy, Protoss_Dark_Templar)) / 1.0;
-                return ceil(sunksForZealots + sunksForDragoons + sunksForDTs);
+                static map<BWAPI::UnitType, double> trackables = {{Protoss_Zealot, 0.4}, {Protoss_Dragoon, 0.5}, {Protoss_Dark_Templar, 1.0}};
+                auto arrivalValue = 0.0;
+                for (auto &u : Units::getUnits(PlayerState::Enemy)) {
+                    auto &unit = *u;
+
+                    auto idx = trackables.find(unit.getType());
+                    if (idx != trackables.end()) {
+                        if ((Units::inBoundUnit(unit, 25) || vis(Zerg_Spire) > 0)) {
+                            arrivalValue += idx->second;
+                        }
+                    }
+                }
+                return ceil(arrivalValue);
             }
         }
 
@@ -233,36 +242,36 @@ namespace McRave::Walls::Zerg {
         if (Spy::getEnemyTransition() == U_WorkerRush)
             return 0;
 
-        // Upwards of 5 sunkens vs marine flood
+        // MarineRush
         if (Spy::getEnemyTransition() == T_Rush)
             return 2 + (Util::getTime() > Time(4, 20)) + (Util::getTime() > Time(4, 40)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(5, 45)) + (Util::getTime() > Time(6, 30));
 
-        // Need 5 sunkens to defend against 5:00 timing, then add slowly
+        // 2Rax Acad
         if (Spy::getEnemyTransition() == T_Academy)
             return 5 * (Util::getTime() > Time(4, 30)) + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 45));
 
-        // Need 3 sunkens to defend against 7:30 timing
-        if (Spy::getEnemyTransition() == T_3FactGoliath && Stations::getStations(PlayerState::Self).size() >= 3)
-            return 1 + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 30));
-
-        // 4Rax
+        // T_4Rax
         if (Spy::getEnemyTransition() == T_4Rax)
             return 3 * (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 15)) + (Util::getTime() > Time(6, 30));
 
-        // Need 1 sunken to defend vulture threat
+        // 3FactGoliath
+        if (Spy::getEnemyTransition() == T_3FactGoliath && Stations::getStations(PlayerState::Self).size() >= 3)
+            return 1 + (Util::getTime() > Time(6, 00)) + (Util::getTime() > Time(6, 30));
+
+        // T_2PortWraith
         if (Spy::getEnemyTransition() == T_2PortWraith)
             return (Util::getTime() > Time(5, 30));
 
-        // Need 1 sunken to protect from speed vultures
+        // T_2FactVulture
         if (Spy::getEnemyTransition() == T_2FactVulture)
             return 1;
 
-        // Need 4 sunkens to defend against tank timing
+        // T_1FactTanks
         if (Spy::getEnemyTransition() == T_1FactTanks)
             return (Util::getTime() > Time(7, 45)) + (Util::getTime() > Time(8, 15)) + (Util::getTime() > Time(8, 30)) + (Util::getTime() > Time(8, 45));
 
-        // Otherwise throw down 2 if they haven't expanded by 6:00
-        if (!Spy::enemyFastExpand())
+        // No expand or spire visible
+        if (!Spy::enemyFastExpand() || vis(Zerg_Spire) > 0)
             return 2 * (Util::getTime() > Time(6, 00));
 
         return 0;
@@ -272,12 +281,12 @@ namespace McRave::Walls::Zerg {
     {
         // Determine how much we have traded
         auto bioKilled       = Players::getDeadCount(PlayerState::Enemy, Terran_Marine, Terran_Firebat, Terran_Medic);
-        auto mechKilled      = Players::getDeadCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode);
+        auto mechKilled      = Players::getDeadCount(PlayerState::Enemy, Terran_Siege_Tank_Siege_Mode, Terran_Siege_Tank_Tank_Mode, Terran_Goliath);
         auto buildingsKilled = Players::getDeadCount(PlayerState::Enemy, Terran_Barracks);
 
         auto minimum   = Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 ? 1 : 0;
         auto expected  = max(ZvT_Opener(wall), ZvT_Transition(wall));
-        auto reduction = (bioKilled / 16) + (mechKilled / 2) + buildingsKilled;
+        auto reduction = (bioKilled / 16) + (mechKilled / 3) + buildingsKilled;
 
         if (expected > 0)
             minimum = 1;
@@ -300,7 +309,7 @@ namespace McRave::Walls::Zerg {
         if (Players::getVisibleCount(PlayerState::Enemy, Zerg_Hatchery) >= 3 || Spy::getEnemyTransition() == Z_3HatchSpeedling)
             return 1 + (Util::getTime() > Time(4, 15));
         if (Spy::getEnemyTransition() == Z_2HatchSpeedling || (Stations::getStations(PlayerState::Enemy).size() <= 1 && Players::getTotalCount(PlayerState::Enemy, Zerg_Hatchery) >= 2))
-            return 1;
+            return 1 + (vis(Zerg_Spire) > 0);
 
         // Early hatch
         if (BuildOrder::getCurrentOpener() == Z_12Pool) {

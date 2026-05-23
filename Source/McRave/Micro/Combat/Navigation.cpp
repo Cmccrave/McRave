@@ -1,7 +1,7 @@
 #include "Combat.h"
+#include "Info/Unit/Pathing.h"
 #include "Info/Unit/UnitInfo.h"
 #include "Info/Unit/Units.h"
-#include "Info/Unit/Pathing.h"
 #include "Map/Grids/Grids.h"
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
@@ -155,8 +155,11 @@ namespace McRave::Combat::Navigation {
         if (!unit.hasCommander() || !unit.hasTarget() || !unit.attemptingAvoidance())
             return;
 
-        if (unit.getLocalState() == LocalState::Attack && unit.canStartAttack())
-            return;
+        // Dangerous splash must be avoided immediately
+        if (!unit.isReachedByType(Protoss_Archon) && !unit.isTargetedByType(Terran_Valkyrie)) {
+            if (unit.getLocalState() == LocalState::Attack && unit.canStartAttack())
+                return;
+        }
 
         auto commander = unit.getCommander().lock();
         auto target    = unit.getTarget().lock();
@@ -264,8 +267,9 @@ namespace McRave::Combat::Navigation {
             return;
 
         // Create one path from commander to retreat
-        auto harassingCommander = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self,
-                                                       [&](auto &u) { return u->isLightAir() && !u->hasCommander() && !u->saveUnit && u->getGlobalState() == GlobalState::Attack && !u->getGoal().isValid(); });
+        auto harassingCommander = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) {
+            return u->isLightAir() && !u->hasCommander() && !u->saveUnit && u->getGlobalState() == GlobalState::Attack && !u->getGoal().isValid();
+        });
 
         if (harassingCommander) {
             auto &unit = *harassingCommander;
@@ -290,7 +294,14 @@ namespace McRave::Combat::Navigation {
             auto cachedDist    = unit.getLocalState() == LocalState::Attack ? 0.0 : min(simDistCurrent, int(unit.getRetreatRadius() + 32.0));
 
             static const Position offset(16, 16);
-            const int frameNow = Broodwar->getFrameCount();
+
+            // Store the last harass information
+            static int lastHarassFrame     = Broodwar->getFrameCount();
+            static auto lastHarassPosition = Combat::getHarassPosition();
+            if (Combat::getHarassPosition() != lastHarassPosition) {
+                lastHarassPosition = Combat::getHarassPosition();
+                lastHarassFrame    = Broodwar->getFrameCount();
+            }
 
             const auto flyerAttack = [&](const TilePosition &t) {
                 const auto center = Position(t) + offset;
@@ -299,7 +310,7 @@ namespace McRave::Combat::Navigation {
                     d = min(d, center.getApproxDistance(pos) - 32);
 
                 auto dist = max(0.00001, double(d) - cachedDist);
-                auto vis  = clamp(double(frameNow - Grids::getLastVisibleFrame(t)) * 0.0002, 0.05, 0.5);
+                auto vis  = clamp(double(lastHarassFrame - Grids::getLastVisibleFrame(t)) * 0.0002, 0.05, 0.5);
                 return Util::fastReciprocal(dist * vis);
             };
 
@@ -343,7 +354,7 @@ namespace McRave::Combat::Navigation {
 
                 // Testing this
                 updateAvoidance(*unit);
-                //Visuals::drawLine(unit->getPosition(), unit->getNavigation(), Colors::Green);
+                // Visuals::drawLine(unit->getPosition(), unit->getNavigation(), Colors::Green);
             }
         }
     }

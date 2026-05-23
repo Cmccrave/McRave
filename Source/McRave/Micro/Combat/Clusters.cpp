@@ -233,7 +233,7 @@ namespace McRave::Combat::Clusters {
                     // Determine the shape we want
                     cluster.shape = Shape::None;
                     if (!commander->isLightAir() && !commander->isSuicidal() && !commander->getType().isWorker()) {
-                        if (cluster.state == LocalState::Hold && atHome && Combat::holdAtChoke())
+                        if (cluster.state == LocalState::Hold && atHome && Combat::holdAtChoke() && cluster.units.size() >= 6)
                             cluster.shape = Shape::Concave;
                         else
                             cluster.shape = Shape::Line;
@@ -360,13 +360,13 @@ namespace McRave::Combat::Clusters {
         }
 
         // TODO: Use cluster size instead with count of units in range
-        auto multiplier  = unit.getGroundDamage() - target.getArmor();
         auto clusterSize = Grids::getAirDensity(unit.getPosition(), PlayerState::Self);
         if (clusterSize < 5)
             return false;
 
         // Estimate damage, padded by expected losses before we land an attack
         clusterSize -= (Util::getTime() > Time(8, 00)) + (Util::getTime() > Time(10, 00)) + (Util::getTime() > Time(12, 00));
+        auto multiplier     = unit.getGroundDamage() - target.getArmor();
         auto damageEstimate = clusterSize * multiplier;
 
         // One shotting units for free / two shotting important units
@@ -379,10 +379,11 @@ namespace McRave::Combat::Clusters {
         auto dpsInRange = 0.0;
         for (auto u : Units::getUnits(PlayerState::Enemy)) {
             auto &enemy = *u;
-            if (enemy.canAttackAir() && (!enemy.isStale() || enemy.getType().isBuilding())) {
+            if (enemy.canAttackAir() && enemy.isCompleted() && (!enemy.isStale() || enemy.getType().isBuilding())) {
 
                 // Have to check this estimate as engage position isn't set yet
-                if (enemy.getPosition().getDistance(target.getPosition()) <= enemy.getAirReach()) {
+                auto intersect = Util::closestLinearIntersect(enemy.getPosition(), unit.getPosition(), target.getPosition());
+                if (enemy.getPosition().getDistance(intersect) <= enemy.getAirReach()) {
                     dpsInRange += enemy.getDpsAgainst(unit);
                 }
             }
@@ -400,9 +401,9 @@ namespace McRave::Combat::Clusters {
         // Check for low DPS to start the dive
         if ((dpsInRange <= 0.0 && Players::ZvZ() && !target.getType().isWorker())                      //
             || (dpsInRange <= 1.0 && Util::getTime() < Time(8, 00))                                    //
-            || (dpsInRange <= 2.0 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))  //
-            || (dpsInRange <= 3.0 && Util::getTime() > Time(12, 00) && Util::getTime() < Time(16, 00)) //
-            || (dpsInRange <= 4.0 && Util::getTime() > Time(16, 00)))                                  //
+            || (dpsInRange <= 2.5 && Util::getTime() > Time(8, 00) && Util::getTime() < Time(12, 00))  //
+            || (dpsInRange <= 4.0 && Util::getTime() > Time(12, 00) && Util::getTime() < Time(16, 00)) //
+            || (dpsInRange <= 5.5 && Util::getTime() > Time(16, 00)))                                  //
             return true;
 
         // If already in range and haven't attack recently, it's fine to swing once, this helps for recalculations done once in range

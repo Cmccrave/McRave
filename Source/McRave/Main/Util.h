@@ -33,6 +33,8 @@ namespace McRave::Util {
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, BWAPI::Position);
     bool rectangleIntersect(BWAPI::Position, BWAPI::Position, int, int);
 
+    Position closestLinearIntersect(BWAPI::Position source, BWAPI::Position start, BWAPI::Position end);
+
     template <typename T> //
     inline bool rectangleIntersect(T topLeftA, T botRightA, T topLeftB, T botRightB)
     {

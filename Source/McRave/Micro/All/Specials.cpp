@@ -115,9 +115,9 @@ namespace McRave::Command {
                 return false;
             });
 
-            if (destinationNydus && destinationNydus->unit()->getNydusExit()) {
+            if (destinationNydus && destinationNydus->isCompleted() && destinationNydus->unit()->getNydusExit()) {
                 if (auto info = Units::getUnitInfo(destinationNydus->unit()->getNydusExit())) {
-                    if (unit.getPosition().getDistance(info->getPosition()) < 160.0) {
+                    if (info->isCompleted() && unit.getPosition().getDistance(info->getPosition()) < 160.0) {
                         unit.setCommand(UnitCommandTypes::Right_Click_Unit, *info);
                         unit.commandText = "NydusTravel";
                         return true;
@@ -512,10 +512,13 @@ namespace McRave::Command {
             auto selfMoreMelee  = vis(Zerg_Zergling) + vis(Zerg_Ultralisk) > vis(Zerg_Hydralisk);
             auto enemyLessMelee = (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot)) || (Players::ZvT());
 
-            auto castSwarmTarget = selfMoreMelee && enemyLessMelee && unit.canStartCast(Dark_Swarm, target.getPosition());
-            auto castSwarmAlly   = !selfMoreMelee;
+            auto goodSwarmTarget = target.getType() != Terran_Vulture && !target.getType().isBuilding();
 
-            auto castPlagueTarget = castSwarmTarget;
+            auto castSwarmTarget = goodSwarmTarget && selfMoreMelee && enemyLessMelee && unit.canStartCast(Dark_Swarm, target.getPosition());
+            auto castSwarmPath   = enemyLessMelee && target.isSiegeTank();
+            auto castSwarmAlly   = !selfMoreMelee; // NOIMPL, just plague for now
+
+            auto castPlagueTarget = !castSwarmTarget;
 
             // If close to target and can cast Plague
             if (!unit.targetsFriendly() && castPlagueTarget && target.unit()->exists() && unit.canStartCast(Plague, target.getPosition()) && unit.isWithinRange(target)) {
@@ -533,12 +536,26 @@ namespace McRave::Command {
                 return true;
             }
 
+            // If near an ally with a close engage position
+            if (!unit.targetsFriendly() && castSwarmPath) {
+                auto closestRanged = Util::getClosestUnit(unit.getPosition(), PlayerState::Self,
+                                                          [&](auto &u) { return u->getRole() == Role::Combat && !u->isMelee() && !u->isFlying() && !u->isSpellcaster() && u->hasAttackedRecently(); });
+                if (closestRanged) {
+                    if (closestRanged->isWithinReach(target) && unit.canStartCast(Dark_Swarm, closestRanged->getEngagePosition())) {
+                        unit.setCommand(Dark_Swarm, closestRanged->getEngagePosition());
+                        unit.commandText = "DarkSwarm";
+                        Actions::addAction(unit.unit(), closestRanged->getEngagePosition(), Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
+                        return true;
+                    }
+                }
+            }
+
             // If within range of an intermediate point within engaging distance
-            if (!unit.targetsFriendly()) {
+            if (!unit.targetsFriendly() && castSwarmPath) {
 
                 auto pos = Util::findPointOnPath(unit.getMarchPath(), [&](auto &p) {
                     auto distSelf = p.getDistance(unit.getPosition());
-                    auto distMin  = BuildOrder::getCompositionPercentage(Zerg_Hydralisk) > 0.0 ? 200.0 : 0.0;
+                    auto distMin  = 200.0;
                     auto dist     = p.getDistance(target.getPosition());
                     if (dist < 400.0 && dist > distMin && !Actions::overlapsActions(unit.unit(), p, TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm)))
                         Visuals::drawBox(TilePosition(p), Colors::Blue);
@@ -554,7 +571,7 @@ namespace McRave::Command {
             }
 
             // If close to target and need to Consume
-            if (unit.targetsFriendly() && unit.getEnergy() < 150 && unit.getPosition().getDistance(target.getPosition()) <= 160.0 && unit.canStartCast(Consume, target.getPosition())) {
+            if (unit.targetsFriendly() && unit.isWithinRange(target) && unit.canStartCast(Consume, target)) {
                 unit.setCommand(Consume, target);
                 unit.commandText = "Consume";
                 return true;

@@ -145,8 +145,7 @@ namespace McRave::Walls {
             if (colonyCount == 0 && BuildOrder::isAllIn())
                 return 0;
 
-            if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) || (!Combat::isDefendNatural() && wall.getStation()->isNatural()) ||
-                Stations::isPocket(wall.getStation()))
+            if (!Terrain::inTerritory(PlayerState::Self, wall.getArea()) || (!Combat::isDefendNatural() && wall.getStation()->isNatural()) || Stations::isPocket(wall.getStation()))
                 return 0;
 
             // Protoss
@@ -181,9 +180,13 @@ namespace McRave::Walls {
                     groundCount += Players::getVisibleCount(PlayerState::Enemy, Zerg_Sunken_Colony) + Players::getVisibleCount(PlayerState::Enemy, Zerg_Creep_Colony) +
                                    Players::getVisibleCount(PlayerState::Enemy, Zerg_Spore_Colony);
 
-                // If they expanded, we can skip a sunk
-                if (Players::ZvP() && colonyCount == 0 && Spy::enemyFastExpand() && Spy::getEnemyBuild() != P_FFE && Util::getTime() > Time(4, 30))
-                    groundCount++;
+                // If they expanded, we can skip a sunk (maybe more)
+                if (Players::ZvP() && colonyCount == 0 && Spy::enemyFastExpand() && Spy::getEnemyBuild() != P_FFE && Util::getTime() > Time(4, 30)) {
+                    if (groundCount >= 3)
+                        groundCount += 2;
+                    else
+                        groundCount += 1;
+                }
 
                 // Can't build defensives early until closest hatch almost completes
                 if (Broodwar->self()->getRace() == Races::Zerg && Util::getTime() < Time(3, 30)) {
@@ -304,6 +307,7 @@ namespace McRave::Walls {
         for (auto &[choke, wall] : BWEB::Walls::getWalls()) {
             updateDefenses(wall);
         }
+        Visuals::endPerfTest("Walls");
     }
 
     bool isDefenseFilled(BWEB::Wall *const wall)

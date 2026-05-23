@@ -272,7 +272,7 @@ namespace McRave::Command {
         const auto shouldApproach = [&]() {
             // Don't approach if
             if (unit.getSpeed() <= 0.0 || unit.canStartAttack() || unit.isCapitalShip() || target.isSuicidal() || unit.isSpellcaster() || unit.getLocalState() == LocalState::Retreat ||
-                (unit.getType() == Zerg_Lurker && !unit.isBurrowed()) || (!unit.isTargetedBySplash() && !unit.isTargetedBySuicide() && (target.isSplasher() || target.isSuicidal())) ||
+                (unit.getType() == Zerg_Lurker && !unit.isBurrowed()) || target.isSuicidal() ||
                 (unit.getGroundRange() <= 32.0 && unit.getAirRange() <= 32.0 && !unit.isHovering()) || (unit.getType() == Zerg_Hydralisk) ||
                 (unit.getType().isWorker() && target.getType().isWorker()) || (unit.isHovering() && Util::boxDistance(unit, target) < 16.0) ||
                 (unit.isFlying() && Util::boxDistance(unit, target) < 32.0))
@@ -601,8 +601,7 @@ namespace McRave::Command {
     bool defend(UnitInfo &unit)
     {
         const auto canDefend    = unit.getRole() == Role::Combat;
-        const auto shouldDefend = unit.getFormation().isValid() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && unit.getGlobalState() != GlobalState::Attack &&
-                                  unit.getLocalState() != LocalState::Attack && !unit.isLightAir();
+        const auto shouldDefend = unit.getFormation().isValid() && Terrain::inTerritory(PlayerState::Self, unit.getPosition()) && unit.getLocalState() == LocalState::Hold && !unit.isLightAir();
 
         if (canDefend && shouldDefend) {
             unit.setCommand(Move, unit.getFormation());
@@ -615,7 +614,7 @@ namespace McRave::Command {
     bool explore(UnitInfo &unit)
     {
         const auto scoreFunction = [&](ScoreContext &context) {
-            auto score = mobility(context) * Util::fastReciprocal(distance(context));
+            auto score = mobility(context) * Util::fastReciprocal(threat(context) * distance(context));
             return score;
         };
 

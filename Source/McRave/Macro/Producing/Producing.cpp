@@ -119,9 +119,7 @@ namespace McRave::Producing {
 
             // Rules for choosing a valid larva
             auto validLarva = [&](UnitInfo &larva, double saturation, const BWEB::Station *station) {
-                if (!larva.unit() || larva.getType() != Zerg_Larva || larva.getRole() != Role::Production ||
-                    (larva.isProxy() && bestType != Zerg_Hydralisk && BuildOrder::getCurrentTransition().find("Lurker") != string::npos) ||
-                    (!larva.isProxy() && BuildOrder::isProxy() && bestType == Zerg_Hydralisk) || !larva.unit()->getHatchery() || !larva.unit()->isCompleted() ||
+                if (!larva.unit() || larva.getType() != Zerg_Larva || larva.getRole() != Role::Production || !larva.unit()->getHatchery() || !larva.unit()->isCompleted() ||
                     lastProduceFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4 || (Planning::overlapsPlan(larva, larva.getPosition()) && Util::getTime() > Time(4, 00)))
                     return false;
 
@@ -134,8 +132,8 @@ namespace McRave::Producing {
                         return false;
                 }
 
-                if (Players::ZvT() && Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters)) {
-                    if (closestStation && bestType.isWorker() && Stations::getSaturationRatio(closestStation) >= 2.0)
+                if (bestType.isWorker() && !Workers::canTransferWorkers()) {
+                    if (closestStation && Stations::getSaturationRatio(closestStation) >= 2.0)
                         return false;
                 }
 
@@ -241,7 +239,7 @@ namespace McRave::Producing {
         updateReservedResources();
         updateLarva();
         updateProduction();
-        Visuals::endPerfTest("Production");
+        Visuals::endPerfTest("Producing");
     }
 
     bool producedThisFrame() { return lastProduceFrame >= Broodwar->getFrameCount() - Broodwar->getLatencyFrames() - 4; }
@@ -336,10 +334,7 @@ namespace McRave::Producing {
         return false;
     };
 
-    bool larvaTrickOptional(UnitInfo &larva)
-    {
-        return false;
-    };
+    bool larvaTrickOptional(UnitInfo &larva) { return false; };
 
     int getReservedMineral() { return reservedMineral; }
     int getReservedGas() { return reservedGas; }

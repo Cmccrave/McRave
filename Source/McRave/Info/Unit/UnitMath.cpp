@@ -404,9 +404,8 @@ namespace McRave::Math {
         auto maxGrdReach = max(256.0, Players::getStrength(pState).maxGroundReach);
 
         if (unit.isFlying())
-            return maxAirReach;
-        else
-            return maxGrdReach + 160.0;
+            return maxAirReach + 32.0;
+        return maxGrdReach + 160.0;
     }
 
     int stopAnimationFrames(UnitType unitType)

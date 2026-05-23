@@ -122,7 +122,7 @@ namespace McRave::Workers {
                     if (unit.getPosition().getDistance(station->getResourceCentroid()) < 320.0 || Terrain::inArea(station, unit.getPosition()) || Util::getTime() < Time(3, 30))
                         safeStations.push_back(station);
 
-                    else {
+                    else if (canTransferWorkers()) {
                         auto &path     = Stations::getPathBetween(closestStation, station);
                         auto threatPos = Util::findPointOnPath(path, [&](auto &t) { return Grids::getGroundThreat(t, PlayerState::Enemy) > 0.0; });
                         if (!threatPos)
@@ -451,6 +451,13 @@ namespace McRave::Workers {
         unit.getResource().lock()->getType().isRefinery() ? gasWorkers-- : minWorkers--;
         unit.getResource().lock()->removeTargetedBy(unit.weak_from_this());
         unit.setResource(nullptr);
+    }
+
+    bool canTransferWorkers()
+    { 
+        if (Players::ZvT() && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && !Combat::State::isStaticRetreat(Zerg_Hydralisk))
+            return false;
+        return true;
     }
 
     bool canAssignToBuild(UnitInfo &unit)

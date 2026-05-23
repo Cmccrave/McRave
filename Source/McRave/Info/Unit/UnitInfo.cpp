@@ -77,6 +77,7 @@ namespace McRave {
                 commandHistory.erase(commandHistory.begin());
 
             lastPos       = position;
+            lastGoal      = goal;
             lastFormation = formation;
             lastWalk      = walkPosition;
             lastTile      = tilePosition;
@@ -159,8 +160,8 @@ namespace McRave {
             inDanger  = Actions::isInDanger(*this, position);
 
             // McRave Stats
-            engageRadius  = Math::calcSimRadius(*this) + 160.0;
-            retreatRadius = Math::calcSimRadius(*this) + 64.0;
+            engageRadius  = Math::calcSimRadius(*this);
+            retreatRadius = Math::calcSimRadius(*this) - 96.0;
 
             // States
             tState = TransportState::None;
@@ -418,7 +419,7 @@ namespace McRave {
             if (wallDefender && ((this->isWithinRange(*wallDefender) || (!Walls::isComplete(closestWall) && wallDefender->isWithinRange(*this)))))
                 return true;
 
-            // If no wall defender, defend stations within the radius
+            // If no wall defender, defend stations within the area
             if (!wallDefender && closestStation) {
                 if (atHome && Terrain::inArea(closestStation, getPosition()))
                     return true;
@@ -494,7 +495,7 @@ namespace McRave {
         // Building
         if (getType().isBuilding()) {
             auto canDamage       = (getType() != Terran_Bunker || unit()->isCompleted()) && (airDamage > 0.0 || groundDamage > 0.0);
-            threateningThisFrame = Planning::overlapsPlan(*this, getPosition()) || (nearMe && (canDamage || getType() == Protoss_Shield_Battery || getType().isRefinery()));
+            threateningThisFrame = Planning::overlapsPlan(*this, getPosition()) || threatensStation() || (nearMe && (canDamage || getType() == Protoss_Shield_Battery || getType().isRefinery()));
         }
 
         // Worker
@@ -835,10 +836,10 @@ namespace McRave {
         if (isSpellcaster() && getEngDist() >= 64.0)
             return true;
 
-        auto ground = Grids::getGroundDensity(here, PlayerState::Enemy);
-        auto air    = Grids::getAirDensity(here, PlayerState::Enemy);
+        auto enemy = Grids::getGroundDensity(here, PlayerState::Enemy) + Grids::getAirDensity(here, PlayerState::Enemy);
+        auto self  = Grids::getGroundDensity(here, PlayerState::Self) + Grids::getAirDensity(here, PlayerState::Self);
 
-        if (ground + air >= Util::getCastLimit(tech) || (getType() == Protoss_High_Templar && hasTarget() && getTarget().lock()->isHidden()))
+        if (tech == TechTypes::Dark_Swarm || (enemy > self && enemy >= Util::getCastLimit(tech)) || (getType() == Protoss_High_Templar && hasTarget() && getTarget().lock()->isHidden()))
             return true;
         return false;
     }
@@ -994,7 +995,7 @@ namespace McRave {
             return false;
 
         // Special case: hydras have a long initial animation with a short repeated animation. Get them much further in range before attacking
-        if (getType() == Zerg_Hydralisk) {
+        if (getType() == Zerg_Hydralisk && !Actions::overlapsActions(unit(), engagePosition, TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm))) {
             if (!hasAttackedRecently() && !otherUnit.isMelee() && getSpeed() >= otherUnit.getSpeed() && !otherUnit.isSplasher())
                 return Util::boxDistance(getType(), getPosition(), otherUnit.getType(), otherUnit.getPosition()) <= 96.0;
         }

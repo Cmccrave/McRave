@@ -54,6 +54,12 @@ namespace McRave::BuildOrder {
                 Zerg::situational();
                 Zerg::unlocks();
             }
+
+            // TODO: Generic call to this
+            // Ensure teched types are built
+            for (auto &type : focusUnits) {
+                getTechBuildings(type);
+            }
         }
 
         void updateDrawing()
@@ -248,11 +254,6 @@ namespace McRave::BuildOrder {
 
     void getNewTech()
     {
-        // Ensure teched types are built
-        for (auto &type : focusUnits) {
-            getTechBuildings(type);
-        }
-
         // Select next tech based on the order
         for (auto &type : unitOrder) {
             if (!isFocusUnit(type)) {

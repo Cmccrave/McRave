@@ -232,5 +232,6 @@ namespace McRave::Support {
     {
         reset();
         updateUnits();
+        Visuals::endPerfTest("Support");
     }
 } // namespace McRave::Support

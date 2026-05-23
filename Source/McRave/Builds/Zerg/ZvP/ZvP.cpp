@@ -33,9 +33,9 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyOpener() == P_Horror_9_9 || (Spy::getEnemyOpener() == P_Proxy_9_9 && currentOpener == Z_12Hatch))
             wantNatural = macroHatchCount >= 1;
 
-        wantThird = Spy::getEnemyBuild() == P_FFE || (Spy::getEnemyBuild() == P_1GateCore && macroHatchCount >= 2) || (Spy::enemyFastExpand() && macroHatchCount >= 1 && total(Zerg_Hydralisk) > 0) ||
+        wantThird = Spy::getEnemyBuild() == P_FFE || (Spy::getEnemyBuild() == P_1GateCore && macroHatchCount >= 2) || (Spy::enemyFastExpand() && macroHatchCount >= 2) ||
                     macroHatchCount >= 3 || Spy::getEnemyBuild() == "Unknown";
-        if (!wantNatural)
+        if (!wantNatural || Spy::enemyProxy())
             wantThird = false;
 
         wallNat = wantNatural && hatchCount() >= 2 &&
@@ -61,7 +61,7 @@ namespace McRave::BuildOrder::Zerg {
 
     int inboundUnits_ZvP()
     {
-        static map<BWAPI::UnitType, double> trackables = {{Protoss_Zealot, 2.0}, {Protoss_Dragoon, 2.0}, {Protoss_Dark_Templar, 5.0}};
+        static map<BWAPI::UnitType, double> trackables = {{Protoss_Zealot, 2.5}, {Protoss_Dragoon, 2.0}, {Protoss_Dark_Templar, 5.0}};
         if (Players::hasUpgraded(PlayerState::Enemy, Singularity_Charge, 1))
             trackables[Protoss_Dragoon] += 0.2;
         if (Players::hasUpgraded(PlayerState::Enemy, Leg_Enhancements, 1))
@@ -117,9 +117,9 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyBuild() == P_2Gate) {
             initialValue = 12;
             if (Spy::getEnemyOpener() == P_Horror_9_9)
-                initialValue = 20;
+                initialValue = 24;
             if (Spy::getEnemyOpener() == P_Proxy_9_9)
-                initialValue = 14;
+                initialValue = 24;
             if (Spy::getEnemyOpener() == P_9_9)
                 initialValue = 12;
             if (Spy::getEnemyOpener() == P_10_12)
@@ -186,7 +186,7 @@ namespace McRave::BuildOrder::Zerg {
         focusUnit                   = Zerg_Mutalisk;
         reserveLarva                = 6;
         wantThird                   = Spy::getEnemyBuild() == P_FFE || hatchCount() >= 4;
-        unitPressure[Zerg_Mutalisk] = Util::getTime() < Time(12, 00);
+        unitPressure[Zerg_Mutalisk] = Util::getTime() < Time(12, 00) && Players::getDeadCount(PlayerState::Enemy, Protoss_Probe) < 20;
 
         // Order
         unitOrder = mutaling;
@@ -341,7 +341,7 @@ namespace McRave::BuildOrder::Zerg {
         // All-in
         if (Spy::getEnemyOpener() == P_Nexus || Spy::getEnemyOpener() == P_Gateway)
             activeAllinType = AllinType::Z_3HatchSpeedling;
-        if (!needMinimumHydras && hatchCount() >= 3 && !Terrain::isPocketNatural()) {
+        if (hatchCount() >= 3 && !Terrain::isPocketNatural()) {
             if (Spy::enemyGreedy() && Spy::getEnemyBuild() != P_CannonRush)
                 activeAllinType = AllinType::Z_5HatchSpeedling;
         }
@@ -354,7 +354,7 @@ namespace McRave::BuildOrder::Zerg {
         gasLimit = gasMax();
         if (Spy::getEnemyBuild() != "Unknown" && Spy::getEnemyBuild() != P_FFE && !Spy::enemyFastExpand()) {
             auto dropGasLowDrone = vis(Zerg_Drone) + vis(Zerg_Extractor) < 11;
-            auto dropGasEarly    = (Spy::getEnemyBuild() == P_2Gate && Util::getTime() < Time(4, 00)) || (Spy::getEnemyBuild() == P_1GateCore && Util::getTime() < Time(3, 40));
+            auto dropGasEarly    = Spy::getEnemyBuild() == P_1GateCore && Util::getTime() < Time(3, 45);
             auto dropGasSpores   = Spy::getEnemyOpener() == P_Corsair && Util::getTime() < Time(4, 30);
 
             if (dropGasLowDrone || dropGasEarly || dropGasSpores)
