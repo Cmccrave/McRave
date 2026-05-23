@@ -1,3 +1,4 @@
+#include "Builds/All/All.h"
 #include "Builds/Protoss/ProtossBuildOrder.h"
 #include "Macro/Upgrading/Upgrading.h"
 #include "Main/Common.h"
@@ -65,9 +66,9 @@ namespace McRave::BuildOrder::Protoss {
         upgradeQueue[Protoss_Air_Weapons] = vis(Protoss_Stargate) > 0;
 
         // Pumping
-        protossUnitPump[Protoss_Probe]        = true;
-        protossUnitPump[Protoss_Zealot]       = true;
-        protossUnitPump[Protoss_Corsair]      = true;
+        protossUnitPump[Protoss_Probe]   = true;
+        protossUnitPump[Protoss_Zealot]  = true;
+        protossUnitPump[Protoss_Corsair] = true;
     }
 
     void PvZ_5GateGoon()

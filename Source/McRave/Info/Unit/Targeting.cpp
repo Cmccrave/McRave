@@ -7,6 +7,7 @@
 #include "Map/Grids/Grids.h"
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
+#include "Micro/Combat/Combat.h"
 #include "Strategy/Actions/Actions.h"
 #include "Strategy/Spy/Spy.h"
 
@@ -869,10 +870,10 @@ namespace McRave::Targets {
                 if (!unit.isAvailable() || !unit.hasTarget())
                     continue;
                 auto target = unit.getTarget().lock();
-                int color = unit.getPlayer()->getColor();
+                int color   = unit.getPlayer()->getColor();
                 Visuals::drawLine(target->getPosition(), unit.getPosition(), color);
 
-                //if (unit.unit()->isSelected())
+                // if (unit.unit()->isSelected())
                 //{
                 //    auto prio = getPriority(unit, *target);
                 //    Broodwar->drawTextMap(target->getPosition(), "%d", int(prio));

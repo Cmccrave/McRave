@@ -585,6 +585,9 @@
     <ClInclude Include="..\Source\McRave\Main\Logger.h">
       <Filter>McRave\Main</Filter>
     </ClInclude>
+    <ClInclude Include="..\Source\McRave\Builds\All\All.h">
+      <Filter>McRave\Builds\All</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="BWEM">

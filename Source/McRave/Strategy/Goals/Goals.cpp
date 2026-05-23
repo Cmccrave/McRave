@@ -11,6 +11,7 @@
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
 #include "Map/Walls/Walls.h"
+#include "Micro/Combat/Combat.h"
 #include "Micro/Worker/Workers.h"
 #include "Strategy/Actions/Actions.h"
 #include "Strategy/Spy/Spy.h"

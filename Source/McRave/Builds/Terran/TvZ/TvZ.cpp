@@ -1,3 +1,4 @@
+#include "Builds/All/All.h"
 #include "Builds/Terran/TerranBuildOrder.h"
 #include "Macro/Researching/Researching.h"
 #include "Main/Common.h"

@@ -1,4 +1,5 @@
-﻿#include "Builds/Zerg/ZergBuildOrder.h"
+﻿#include "Builds/All/All.h"
+#include "Builds/Zerg/ZergBuildOrder.h"
 #include "Info/Player/Players.h"
 #include "Info/Unit/UnitInfo.h"
 #include "Info/Unit/Units.h"
@@ -33,8 +34,8 @@ namespace McRave::BuildOrder::Zerg {
         if (Spy::getEnemyOpener() == P_Horror_9_9 || (Spy::getEnemyOpener() == P_Proxy_9_9 && currentOpener == Z_12Hatch))
             wantNatural = macroHatchCount >= 1;
 
-        wantThird = Spy::getEnemyBuild() == P_FFE || (Spy::getEnemyBuild() == P_1GateCore && macroHatchCount >= 2) || (Spy::enemyFastExpand() && macroHatchCount >= 2) ||
-                    macroHatchCount >= 3 || Spy::getEnemyBuild() == "Unknown";
+        wantThird = Spy::getEnemyBuild() == P_FFE || (Spy::getEnemyBuild() == P_1GateCore && macroHatchCount >= 2) || (Spy::enemyFastExpand() && macroHatchCount >= 2) || macroHatchCount >= 3 ||
+                    Spy::getEnemyBuild() == "Unknown";
         if (!wantNatural || Spy::enemyProxy())
             wantThird = false;
 
@@ -242,10 +243,10 @@ namespace McRave::BuildOrder::Zerg {
 
     void ZvP3HatchMuta()
     {
-        //auto hydraOpenerOK = (Spy::getEnemyBuild() == P_1GateCore && Spy::getEnemyTransition() != P_4Gate && Spy::getEnemyTransition() != P_Robo) //
+        // auto hydraOpenerOK = (Spy::getEnemyBuild() == P_1GateCore && Spy::getEnemyTransition() != P_4Gate && Spy::getEnemyTransition() != P_Robo) //
         //                     || (Spy::getEnemyBuild() == P_FFE && Spy::getEnemyTransition() != P_5GateGoon && Spy::getEnemyTransition() != P_CorsairGoon && Spy::getEnemyTransition() != P_Speedlot);
 
-        //auto hydraOpen = !Terrain::isNarrowNatural() && (hydraOpenerOK || total(Zerg_Hydralisk) > 0);
+        // auto hydraOpen = !Terrain::isNarrowNatural() && (hydraOpenerOK || total(Zerg_Hydralisk) > 0);
         auto hydraOpen = false;
         auto mutaOpen  = true;
 

@@ -1,3 +1,4 @@
+#include "Builds/All/All.h"
 #include "Builds/Terran/TerranBuildOrder.h"
 #include "Main/Common.h"
 #include "Strategy/Spy/Spy.h"

@@ -2,8 +2,9 @@
 
 #include <fstream>
 
+#include "All.h"
 #include "Builds/Protoss/ProtossBuildOrder.h"
-#include "Builds/Terran//TerranBuildOrder.h"
+#include "Builds/Terran/TerranBuildOrder.h"
 #include "Builds/Zerg/ZergBuildOrder.h"
 #include "Info/Player/Players.h"
 #include "Info/Resource/Resources.h"
@@ -23,13 +24,12 @@ namespace McRave::BuildOrder {
 
         void updateBuild()
         {
-            // Set s for better build readability - TODO: better build order management
+            // Clear queues and composition
             buildQueue.clear();
             upgradeQueue.clear();
             techQueue.clear();
             armyComposition.clear();
 
-            // TODO: Check if we own a <race> unit - have a build order allowed PER race for FFA weirdness and maybe mind control shenanigans
             if (Players::getSupply(PlayerState::Self, Races::Protoss) > 0) {
                 s = Players::getSupply(PlayerState::Self, Races::Protoss);
                 Protoss::opener();
@@ -116,11 +116,9 @@ namespace McRave::BuildOrder {
         if (com(t) > 0)
             return true;
 
-        // Estimate how long until a building finishes based on how far it is from the nearest worker
+        // Estimate how long until a building finishes
         auto closestBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == t; });
-        auto closestWorker   = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == Broodwar->self()->getRace().getWorker(); });
-
-        if (closestBuilding && closestWorker)
+        if (closestBuilding)
             return double(t.buildTime() - closestBuilding->unit()->getRemainingBuildTime()) / double(t.buildTime()) >= percent;
         return false;
     }
@@ -130,7 +128,7 @@ namespace McRave::BuildOrder {
         if (Broodwar->self()->hasResearched(t))
             return true;
 
-        // Estimate how long until a building finishes based on how far it is from the nearest worker
+        // Estimate how long until a tech finishes
         auto closestBuilding = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Self, [&](auto &u) { return u->getType() == t.whatResearches() && u->unit()->isResearching(); });
         return closestBuilding != nullptr;
     }
@@ -330,16 +328,8 @@ namespace McRave::BuildOrder {
         Visuals::endPerfTest("BuildOrder");
     }
 
-    // Focus
-    UnitType getFirstFocusUnit() { return focusUnit; }
     UnitType getRampType() { return rampType; }
-
-    // getFocusTechs
-    // getFocusUpgrades
-
     bool isFocusUnit(UnitType unit) { return focusUnits.find(unit) != focusUnits.end(); }
-    // bool isFocusTech
-    // bool isFocusUpgrade
 
     map<UnitType, int> &getBuildQueue() { return buildQueue; }
     map<UpgradeType, int> &getUpgradeQueue() { return upgradeQueue; }

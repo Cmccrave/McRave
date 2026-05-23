@@ -1,3 +1,4 @@
+#include "Builds/All/All.h"
 #include "Builds/Zerg/ZergBuildOrder.h"
 #include "Main/Common.h"
 #include "Strategy/Spy/Spy.h"
@@ -10,6 +11,5 @@ using namespace McRave::BuildOrder::All;
 namespace McRave::BuildOrder::Zerg {
 
     namespace {
-
     }
-}
+} // namespace McRave::BuildOrder::Zerg

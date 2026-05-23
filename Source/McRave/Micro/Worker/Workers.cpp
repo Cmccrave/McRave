@@ -10,6 +10,7 @@
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
 #include "Micro/All/Commands.h"
+#include "Micro/Combat/Combat.h"
 #include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;
@@ -454,7 +455,7 @@ namespace McRave::Workers {
     }
 
     bool canTransferWorkers()
-    { 
+    {
         if (Players::ZvT() && !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Ion_Thrusters) && !Combat::State::isStaticRetreat(Zerg_Hydralisk))
             return false;
         return true;

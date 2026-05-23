@@ -8,6 +8,7 @@
 #include "Main/Common.h"
 #include "Map/Stations/Stations.h"
 #include "Map/Terrain/Terrain.h"
+#include "Micro/Combat/Combat.h"
 #include "Micro/Scout/Scouts.h"
 #include "ProtossWalls.h"
 #include "Strategy/Spy/Spy.h"

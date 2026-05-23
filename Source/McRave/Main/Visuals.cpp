@@ -261,6 +261,7 @@ namespace McRave::Visuals {
         getCurrentWindow();
         drawInformation();
         checkSpeed();
+        Visuals::endPerfTest("Visuals");
     }
 
     void endPerfTest(string function)

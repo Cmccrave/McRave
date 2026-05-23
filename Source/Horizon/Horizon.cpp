@@ -2,6 +2,7 @@
 #include "Info/Unit/UnitInfo.h"
 #include "Info/Unit/Units.h"
 #include "Main/Common.h"
+#include "Micro/Combat/Combat.h"
 
 using namespace BWAPI;
 using namespace std;
@@ -133,7 +134,7 @@ namespace McRave::Horizon {
             addSimStrength(simStrengthPerPlayer[enemy.getPlayer()], enemy, simRatio);
             addSimStrength(simStrengthPerState[PlayerState::Enemy], enemy, simRatio);
 
-            //if (unit.unit()->isSelected())
+            // if (unit.unit()->isSelected())
             //    Broodwar->drawTextMap(enemy.getPosition(), "%.2f", simRatio);
         }
 
@@ -163,7 +164,7 @@ namespace McRave::Horizon {
             addSimStrength(simStrengthPerPlayer[self.getPlayer()], self, simRatio);
             addSimStrength(simStrengthPerState[PlayerState::Self], self, simRatio);
 
-            //if (unit.unit()->isSelected())
+            // if (unit.unit()->isSelected())
             //    Broodwar->drawTextMap(self.getPosition(), "%.2f", simRatio);
         }
 

@@ -4,6 +4,7 @@
 #include <iomanip>
 
 #include "BuildOrder.h"
+#include "Builds/All/All.h"
 #include "Info/Player/Players.h"
 #include "Map/Terrain/Terrain.h"
 #include "Map/Walls/Walls.h"
@@ -512,8 +513,8 @@ namespace McRave::Learning {
         getBestBuild();
         getPermanentBuild();
 
-        initialBuild = BuildOrder::getCurrentBuild();
-        initialOpener = BuildOrder::getCurrentOpener();
+        initialBuild      = BuildOrder::getCurrentBuild();
+        initialOpener     = BuildOrder::getCurrentOpener();
         initialTransition = BuildOrder::getCurrentTransition();
     }
 } // namespace McRave::Learning

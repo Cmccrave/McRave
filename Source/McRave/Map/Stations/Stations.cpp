@@ -11,6 +11,7 @@
 #include "Map/Grids/Grids.h"
 #include "Map/Terrain/Terrain.h"
 #include "Map/Walls/Walls.h"
+#include "Micro/Combat/Combat.h"
 #include "Strategy/Spy/Spy.h"
 
 using namespace BWAPI;

@@ -1,3 +1,4 @@
+#include "Builds/All/All.h"
 #include "Builds/Zerg/ZergBuildOrder.h"
 #include "Info/Player/Players.h"
 #include "Main/Common.h"

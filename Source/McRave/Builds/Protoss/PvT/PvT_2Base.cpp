@@ -1,3 +1,4 @@
+#include "Builds/All/All.h"
 #include "Builds/Protoss/ProtossBuildOrder.h"
 #include "Main/Common.h"
 #include "Strategy/Spy/Spy.h"
@@ -14,8 +15,8 @@ namespace McRave::BuildOrder::Protoss {
     void PvT_2B_12Nexus()
     {
         // 8p 12n 12g 13g 15c
-        scout                      = vis(Protoss_Pylon) > 0;
-        transitionReady            = vis(Protoss_Gateway) >= 2;
+        scout           = vis(Protoss_Pylon) > 0;
+        transitionReady = vis(Protoss_Gateway) >= 2;
 
         // Buildings
         buildQueue[Protoss_Nexus]            = 1 + (s >= 24);

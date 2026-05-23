@@ -128,6 +128,7 @@
     <ClInclude Include="..\Source\BWEB\Logger.h" />
     <ClInclude Include="..\Source\Horizon\Horizon.h" />
     <ClInclude Include="..\Source\McRave\Builds\All\BuildOrder.h" />
+    <ClInclude Include="..\Source\McRave\Builds\All\All.h" />
     <ClInclude Include="..\Source\McRave\Builds\All\Learning.h" />
     <ClInclude Include="..\Source\McRave\Builds\Protoss\ProtossBuildOrder.h" />
     <ClInclude Include="..\Source\McRave\Builds\Terran\TerranBuildOrder.h" />

@@ -1,3 +1,4 @@
+#include "Builds/All/All.h"
 #include "Builds/Terran/TerranBuildOrder.h"
 #include "Main/Common.h"
 #include "Strategy/Spy/Spy.h"
@@ -11,8 +12,6 @@ using namespace TechTypes;
 
 namespace McRave::BuildOrder::Terran {
 
-    void TvP_1RaxFE() {
-    
-    }
+    void TvP_1RaxFE() {}
 
 } // namespace McRave::BuildOrder::Terran
