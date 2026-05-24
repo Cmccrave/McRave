@@ -159,7 +159,7 @@ namespace McRave::Combat::Simulation {
 
         // Adjust winrates if we have static defense that would make the fight easier and we're at home
         if (!unit.isFlying()) {
-            const auto defendStation    = Stations::getClosestStationAir(unit.retreatPos, PlayerState::Self);
+            const auto defendStation    = Stations::getClosestStationAir(unit.getRetreatPosition(), PlayerState::Self);
             const auto furthestDefender = Util::getFurthestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
                 return u->getType().isBuilding() && u->canAttackGround() && u->isCompleted() && defendStation && Terrain::inArea(defendStation->getBase()->GetArea(), u->getPosition());
             });

@@ -358,7 +358,7 @@ namespace McRave::Combat::State {
 
         const auto nearMainRamp = [&]() {
             auto center = Terrain::getMainRamp().center;
-            return center.isValid() && target.getPosition().getDistance(center) < 64.0;
+            return center.isValid() && target.getPosition().getDistance(center) < 160.0;
         };
 
         const auto enemyNearSelfStation = [&]() {
@@ -439,7 +439,7 @@ namespace McRave::Combat::State {
         auto atHomeAttack = [&]() {
             // If both sides are melee vs melee, we don't need to force engagement until something is in range
             if (target.isThreatening() && !target.isHidden()) {
-                if (unit.isMelee() && target.isMelee() && !target.hasAttackedRecently() && !inRange && !Combat::isDefendNatural() && nearMainRamp())
+                if (unit.isMelee() && target.isMelee() && !inRange && !Combat::isDefendNatural() && Combat::holdAtChoke() && nearMainRamp())
                     return false;
                 if (unit.getType() == Zerg_Zergling && Players::getTotalCount(PlayerState::Enemy, Terran_Vulture) > 0 && !inRange && !target.hasAttackedRecently())
                     return false;

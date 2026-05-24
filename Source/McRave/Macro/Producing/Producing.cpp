@@ -23,6 +23,8 @@ namespace McRave::Producing {
         int lastProduceFrame = -999;
         int availMin, availGas;
 
+        set<UnitType> invalidThisFrame;
+
         string scoreThisFrame;
 
         void reset()
@@ -116,6 +118,7 @@ namespace McRave::Producing {
             // Find the best UnitType
             auto best         = 0.0;
             UnitType bestType = None;
+            invalidThisFrame.clear();
 
             // Rules for choosing a valid larva
             auto validLarva = [&](UnitInfo &larva, double saturation, const BWEB::Station *station) {
@@ -128,13 +131,17 @@ namespace McRave::Producing {
                 // Strategic checks
                 if (Players::ZvP() && Stations::ownedBy(Terrain::getMyNatural()) == PlayerState::Self) {
                     auto time = (Spy::getEnemyBuild() != P_FFE) ? Time(4, 00) : Time(6, 00);
-                    if (bestType == Zerg_Overlord && !station->isNatural() && Util::getTime() > time && Players::getTotalCount(PlayerState::Self, Zerg_Mutalisk, Zerg_Scourge, Zerg_Hydralisk) == 0)
+                    if (bestType == Zerg_Overlord && !station->isNatural() && Util::getTime() > time && Players::getTotalCount(PlayerState::Self, Zerg_Mutalisk, Zerg_Scourge, Zerg_Hydralisk) == 0) {
+                        invalidThisFrame.insert(Zerg_Overlord);
                         return false;
+                    }
                 }
 
                 if (bestType.isWorker() && !Workers::canTransferWorkers()) {
-                    if (closestStation && Stations::getSaturationRatio(closestStation) >= 2.0)
+                    if (closestStation && Stations::getSaturationRatio(closestStation) >= 2.0) {
+                        invalidThisFrame.insert(Zerg_Drone);
                         return false;
+                    }
                 }
 
                 return closestStation && station == closestStation;
@@ -335,6 +342,8 @@ namespace McRave::Producing {
     };
 
     bool larvaTrickOptional(UnitInfo &larva) { return false; };
+
+    bool isNotProduceable(UnitType type) { return Util::contains(invalidThisFrame, type); }
 
     int getReservedMineral() { return reservedMineral; }
     int getReservedGas() { return reservedGas; }

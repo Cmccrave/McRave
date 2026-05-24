@@ -11,7 +11,7 @@ namespace McRave {
         UnitType lastType      = UnitTypes::None;
         Role lastRole          = Role::None;
         Position lastPos       = Positions::Invalid;
-        Position lastGoal = Positions::Invalid;
+        Position lastGoal      = Positions::Invalid;
         Position lastFormation = Positions::Invalid;
         WalkPosition lastWalk  = WalkPositions::Invalid;
         TilePosition lastTile  = TilePositions::Invalid;
@@ -20,6 +20,10 @@ namespace McRave {
         LocalState lastLState  = LocalState::None;
 
     public:
+        std::map<int, Position> &getPositionHistory() { return positionHistory; }
+        std::map<int, UnitCommandType> &getCommandHistory() { return commandHistory; }
+        std::map<int, std::pair<Order, Position>> &getOrderHistory() { return orderHistory; }
+
         UnitType getLastType() { return lastType; }
         Role getLastRole() { return lastRole; }
         Position getLastPosition() { return lastPos; }

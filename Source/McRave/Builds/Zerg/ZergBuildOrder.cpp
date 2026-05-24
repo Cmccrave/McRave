@@ -7,6 +7,7 @@
 #include "Info/Unit/Units.h"
 #include "Macro/Expanding/Expanding.h"
 #include "Macro/Planning/Planning.h"
+#include "Macro/Producing/Producing.h"
 #include "Macro/Researching/Researching.h"
 #include "Macro/Upgrading/Upgrading.h"
 #include "Map/Stations/Stations.h"
@@ -175,7 +176,7 @@ namespace McRave::BuildOrder::Zerg {
                         LOG_SLOW("Wall ", i, " needs a spore - has ", wall.getAirDefenseCount(), ", wants ", airNeeded, " more, has ", colonies, " colonies");
 
                     if ((atPercent(Zerg_Spawning_Pool, 0.66) && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
-                        buildQueue[Zerg_Creep_Colony]++;
+                        buildQueue[Zerg_Creep_Colony] = colonyCount + 1;
                         i++;
                     }
                 }
@@ -195,7 +196,7 @@ namespace McRave::BuildOrder::Zerg {
                         needSunks = true;
 
                     if ((vis(Zerg_Spawning_Pool) > 0 && grdNeeded > colonies) || (atPercent(Zerg_Evolution_Chamber, 0.50) && airNeeded > colonies)) {
-                        buildQueue[Zerg_Creep_Colony]++;
+                        buildQueue[Zerg_Creep_Colony] = colonyCount + 1;
                         LOG_SLOW("Station ", i, " needs a sunken/spore");
                         i++;
                     }
@@ -1024,7 +1025,7 @@ namespace McRave::BuildOrder::Zerg {
                 auto typeAvailable = (unlockReady(type) && isFocusUnit(type)) ||                                                                                                    //
                                      (!type.isWorker() && any_of(type.buildsWhat().begin(), type.buildsWhat().end(), [&](auto &t) { return unlockReady(t) && isFocusUnit(t); })) || //
                                      (type.isWorker() && (!Resources::isMineralSaturated() || !Resources::isGasSaturated()));                                                       //
-                if (!typeAvailable || vis(type) >= count)
+                if (!typeAvailable || vis(type) >= count || Producing::isNotProduceable(type))
                     continue;
 
                 // Queue if affordable, break otherwise to prevent spending gas on other units
@@ -1049,7 +1050,7 @@ namespace McRave::BuildOrder::Zerg {
         // Pump lings or drones if nothing else to do
         if (availGas <= 0 || armyComposition.empty()) {
             auto saturated = Resources::isGasSaturated() && (Players::ZvZ() ? Resources::isHalfMineralSaturated() : Resources::isMineralSaturated());
-            if (zergUnitPump[Zerg_Zergling] || vis(Zerg_Drone) >= droneCap || saturated) {
+            if (zergUnitPump[Zerg_Zergling] || Producing::isNotProduceable(Zerg_Drone) || vis(Zerg_Drone) >= droneCap || saturated) {
                 armyComposition[Zerg_Zergling] = 1.0;
                 armyComposition[Zerg_Drone]    = 0.0;
             }

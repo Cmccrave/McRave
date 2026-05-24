@@ -277,12 +277,12 @@ namespace McRave::Combat::Clusters {
                     if (commander->isLightAir()) {
                         cluster.commandShare    = CommandShare::Exact;
                         cluster.marchPosition   = Combat::getHarassPosition();
-                        cluster.retreatPosition = commander->retreatPos;
+                        cluster.retreatPosition = commander->getRetreatPosition();
                     }
                     else {
                         cluster.commandShare    = CommandShare::Parallel;
-                        cluster.marchPosition   = commander->marchPos;
-                        cluster.retreatPosition = commander->retreatPos;
+                        cluster.marchPosition   = commander->getMarchPosition();
+                        cluster.retreatPosition = commander->getRetreatPosition();
                     }
 
                     // Assign commander to each unit

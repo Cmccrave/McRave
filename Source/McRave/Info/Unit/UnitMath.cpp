@@ -404,7 +404,7 @@ namespace McRave::Math {
         auto maxGrdReach = max(256.0, Players::getStrength(pState).maxGroundReach);
 
         if (unit.isFlying())
-            return maxAirReach + 32.0;
+            return maxAirReach + 64.0;
         return maxGrdReach + 160.0;
     }
 

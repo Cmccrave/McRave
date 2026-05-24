@@ -214,9 +214,9 @@ namespace McRave::Combat {
             }
 
             // Inbound important unit targeting
-            if (Players::ZvT() || Players::ZvP()) {
+            if (Players::ZvT() || Players::ZvP() || Players::ZvZ()) {
                 const auto closest = Util::getClosestUnit(Terrain::getNaturalPosition(), PlayerState::Enemy, [&](auto &u) {
-                    return Units::inBoundUnit(*u, 15) && u->unit()->exists() && (u->isSiegeTank() || u->getType() == Protoss_Reaver || u->getType() == Terran_Valkyrie || u->isTransport());
+                    return Units::inBoundUnit(*u, 15) && u->unit()->exists() && (u->isSiegeTank() || u->getType() == Protoss_Reaver || u->getType() == Terran_Valkyrie || u->getType() == Zerg_Mutalisk || u->isTransport());
                 });
                 if (closest) {
                     harassPosition = closest->getPosition();

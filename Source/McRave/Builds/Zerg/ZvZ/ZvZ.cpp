@@ -159,7 +159,7 @@ namespace McRave::BuildOrder::Zerg {
 
         focusUnit                   = Zerg_Mutalisk;
         reserveLarva                = 3;
-        unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony, Zerg_Mutalisk, Zerg_Evolution_Chamber) == 0 &&
+        unitPressure[Zerg_Mutalisk] = Players::getTotalCount(PlayerState::Enemy, Zerg_Spore_Colony, Zerg_Mutalisk) == 0 &&
                                       Players::getDeadCount(PlayerState::Enemy, Zerg_Drone) < 8;
         wantNatural = (Spy::enemyTurtle() && Spy::getEnemyTransition() != Z_2HatchHydra) || Spy::getEnemyTransition() == Z_2HatchMuta;
 
@@ -223,7 +223,7 @@ namespace McRave::BuildOrder::Zerg {
         // Build
         buildQueue[Zerg_Extractor] = (s >= 22 && Util::getTime() > Time(1, 45)) + (vis(Zerg_Drone) >= 16 && vis(Zerg_Spire) > 0);
         buildQueue[Zerg_Lair]      = (!speedFirst || lingSpeed()) && gas(100) && vis(Zerg_Drone) >= 8 && (vis(Zerg_Larva) == 0 || vis(Zerg_Drone) >= 14);
-        buildQueue[Zerg_Spire]     = lingSpeed() && atPercent(Zerg_Lair, 0.95) && com(Zerg_Drone) >= 12 && vis(Zerg_Larva) <= 1;
+        buildQueue[Zerg_Spire]     = lingSpeed() && atPercent(Zerg_Lair, 0.95) && com(Zerg_Drone) >= 10 && vis(Zerg_Larva) <= 1;
         buildQueue[Zerg_Overlord]  = 1 + secondOvie + (s >= 32) + (s >= 46);
 
         // Upgrades

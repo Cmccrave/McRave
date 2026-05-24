@@ -137,8 +137,8 @@ namespace McRave {
             tilePosition      = t.isBuilding() ? unit()->getTilePosition() : TilePosition(position);
             walkPosition      = t.isBuilding() ? WalkPosition(tilePosition) : WalkPosition(position);
             destination       = Positions::Invalid;
-            retreatPos        = Positions::Invalid;
-            marchPos          = Positions::Invalid;
+            retreatPosition   = Positions::Invalid;
+            marchPosition     = Positions::Invalid;
             surroundPosition  = Positions::Invalid;
             trapPosition      = Positions::Invalid;
             interceptPosition = Positions::Invalid;

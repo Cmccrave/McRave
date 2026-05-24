@@ -201,17 +201,19 @@ namespace McRave::Walls {
                     groundCount++;
                 }
 
-                // If they're only at home and not proxying units, don't make any defenses for a bit
+                // If they're only at home and not proxying units, don't make any defenses if possible
                 if (Broodwar->self()->getRace() == Races::Zerg) {
-                    auto seconds             = (colonyCount > 0) ? 20 : 30;
-                    auto minimumColonyNeeded = (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(6, 00));
-
-                    auto morphBlindAgainst = Spy::getEnemyBuild() == T_RaxFact || Spy::getEnemyBuild() == P_2Gate;
-                    auto morphAlways       = (morphBlindAgainst && wall.getGroundDefenseCount() == 0) || Players::vFFA() || Spy::enemyProxy();
-                    if (!morphAlways && (wall.getGroundDefenseCount() >= minimumColonyNeeded || colonyCount >= minimumColonyNeeded || Spy::enemyFastExpand())) {
-                        auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) { return Units::inBoundUnit(*u, seconds); });
-                        if (!closestUnit)
-                            return 0;
+                    auto morphAlways = Players::vFFA() || Spy::enemyProxy();
+                    if (!morphAlways) {
+                        auto minimumColonyNeeded = (Util::getTime() > Time(4, 00)) + (Util::getTime() > Time(5, 00)) + (Util::getTime() > Time(6, 00));
+                        auto aboveMinimum        = wall.getGroundDefenseCount() >= minimumColonyNeeded || colonyCount >= minimumColonyNeeded;
+                        auto aboveCritcal        = (Spy::getEnemyBuild() == T_RaxFact || Spy::getEnemyBuild() == P_2Gate) && (colonyCount > 0 || wall.getGroundDefenseCount() > 0);
+                        auto seconds             = (colonyCount > 0) ? 20 : 30;
+                        if (aboveMinimum && aboveCritcal) {
+                            auto closestUnit = Util::getClosestUnit(Position(wall.getChokePoint()->Center()), PlayerState::Enemy, [&](auto &u) { return Units::inBoundUnit(*u, seconds); });
+                            if (!closestUnit)
+                                return 0;
+                        }
                     }
                 }
 

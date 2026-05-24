@@ -879,23 +879,16 @@ namespace McRave::Planning {
             for (auto &[building, count] : BuildOrder::getBuildQueue()) {
                 int queuedCount = 0;
 
-                auto morphed = !building.whatBuilds().first.isWorker();
-                auto addon   = building.isAddon();
+                auto morphed      = !building.whatBuilds().first.isWorker();
+                auto addon        = building.isAddon();
+                auto haveMinerals = (Workers::getMineralWorkers() > 0 || building.mineralPrice() == 0 || Broodwar->self()->minerals() >= building.mineralPrice());
+                auto haveGas      = (Workers::getGasWorkers() > 0 || building.gasPrice() == 0 || Broodwar->self()->gas() >= building.gasPrice());
 
-                if (building.isAddon() || !building.isBuilding())
+                if (building.isAddon() || !building.isBuilding() || !haveMinerals || !haveGas)
                     continue;
 
                 // If the building morphed from another building type, add the visible amount of child type to the parent type
-                int morphOffset = 0;
-                if (building == Zerg_Creep_Colony)
-                    morphOffset = vis(Zerg_Sunken_Colony) + vis(Zerg_Spore_Colony);
-                if (building == Zerg_Hatchery)
-                    morphOffset = vis(Zerg_Lair) + vis(Zerg_Hive);
-                if (building == Zerg_Lair)
-                    morphOffset = vis(Zerg_Hive);
-
-                auto haveMinerals = (Workers::getMineralWorkers() > 0 || building.mineralPrice() == 0 || Broodwar->self()->minerals() >= building.mineralPrice());
-                auto haveGas      = (Workers::getGasWorkers() > 0 || building.gasPrice() == 0 || Broodwar->self()->gas() >= building.gasPrice());
+                int morphOffset = Players::visibleTypesAndParents(PlayerState::Self, building);
 
                 // Queue the cost of any morphs or building
                 if (count > vis(building) + morphOffset && haveMinerals && haveGas) {

@@ -35,7 +35,7 @@ namespace McRave::Combat::Navigation {
 
     void getGroundRetreatPath(UnitInfo &unit)
     {
-        auto pathPoint      = Pathing::getPathPoint(unit, unit.retreatPos);
+        auto pathPoint      = Pathing::getPathPoint(unit, unit.getRetreatPosition());
         auto newPathAllowed = !mapBWEM.GetArea(TilePosition(unit.getPosition())) || !mapBWEM.GetArea(TilePosition(pathPoint)) ||
                               mapBWEM.GetArea(TilePosition(unit.getPosition()))->AccessibleFrom(mapBWEM.GetArea(TilePosition(pathPoint)));
 
@@ -60,8 +60,8 @@ namespace McRave::Combat::Navigation {
             return threat;
         };
 
-        if (!unit.hasSameMarchPath(unit.getPosition(), unit.retreatPos)) {
-            BWEB::Path newPath(unit.getPosition(), unit.retreatPos, unit.getType());
+        if (!unit.hasSameMarchPath(unit.getPosition(), unit.getRetreatPosition())) {
+            BWEB::Path newPath(unit.getPosition(), unit.getRetreatPosition(), unit.getType());
             newPath.generateAS_h(retreat);
             unit.setMarchPath(std::move(newPath));
         }
@@ -126,7 +126,9 @@ namespace McRave::Combat::Navigation {
     {
         unit.setNavigation(unit.getDestination());
 
-        if (unit.getFormation().isValid() && unit.getLocalState() != LocalState::Attack) {
+        // Maintain formation until close to attacking
+        auto distToDest = unit.getPosition().getDistance(unit.getDestination());
+        if (unit.getFormation().isValid() && unit.getPosition().getDistance(unit.getDestination()) >= 64.0) {
             unit.setNavigation(unit.getFormation());
             return;
         }
@@ -134,7 +136,7 @@ namespace McRave::Combat::Navigation {
         auto dist = unit.isFlying() ? 96.0 : 160.0;
 
         // Within a certain distance, it's better to just navigate to the destination
-        if (unit.getPosition().getDistance(unit.getDestination()) < 160.0) {
+        if (unit.getPosition().getDistance(unit.getDestination()) < 96.0) {
             unit.setNavigation(unit.getDestination());
             return;
         }
@@ -305,9 +307,9 @@ namespace McRave::Combat::Navigation {
 
             const auto flyerAttack = [&](const TilePosition &t) {
                 const auto center = Position(t) + offset;
-                auto d            = center.getApproxDistance(simPosition) - 32;
+                auto d            = center.getApproxDistance(simPosition) - 48;
                 for (auto &pos : simPositions)
-                    d = min(d, center.getApproxDistance(pos) - 32);
+                    d = min(d, center.getApproxDistance(pos) - 48);
 
                 auto dist = max(0.00001, double(d) - cachedDist);
                 auto vis  = clamp(double(lastHarassFrame - Grids::getLastVisibleFrame(t)) * 0.0002, 0.05, 0.5);

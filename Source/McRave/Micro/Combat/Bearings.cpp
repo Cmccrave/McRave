@@ -59,83 +59,82 @@ namespace McRave::Combat::Bearings {
             return;
         }
 
-        auto retreat    = Stations::getClosestRetreatStation(unit);
-        unit.marchPos   = Stations::getDefendPosition(retreat);
-        unit.retreatPos = Stations::getHoldPosition(retreat);
+        auto retreat = Stations::getClosestRetreatStation(unit);
+        unit.setMarchPosition(Stations::getDefendPosition(retreat));
+        unit.setRetreatPosition(Stations::getHoldPosition(retreat));
 
         // If attacking and target is close, set as destination
         if (unit.getLocalState() == LocalState::Attack) {
             if (unit.attemptingRegroup()) {
                 unit.setDestination(unit.getCommander().lock()->getPosition());
-                //Broodwar->drawTextMap(unit.getPosition(), "a_regrp");
+                // Broodwar->drawTextMap(unit.getPosition(), "a_regrp");
             }
             else if (unit.attemptingIntercept()) {
                 unit.setDestination(unit.getInterceptPosition());
-                //Broodwar->drawTextMap(unit.getPosition(), "a_intercept");
+                // Broodwar->drawTextMap(unit.getPosition(), "a_intercept");
             }
             else if (unit.attemptingTrap()) {
                 unit.setDestination(unit.getTrapPosition());
-                //Broodwar->drawTextMap(unit.getPosition(), "a_trap");
+                // Broodwar->drawTextMap(unit.getPosition(), "a_trap");
             }
             else if (unit.attemptingSurround()) {
                 unit.setDestination(unit.getSurroundPosition());
-                //Broodwar->drawTextMap(unit.getPosition(), "a_surround");
+                // Broodwar->drawTextMap(unit.getPosition(), "a_surround");
             }
             else if (unit.hasTarget()) {
                 unit.setDestination(unit.getTarget().lock()->getPosition());
-                //Broodwar->drawTextMap(unit.getPosition(), "a_target");
+                // Broodwar->drawTextMap(unit.getPosition(), "a_target");
             }
-            unit.marchPos = unit.getDestination();
+            unit.setMarchPosition(unit.getDestination());
         }
         else if (unit.getLocalState() == LocalState::Retreat || unit.getGlobalState() == GlobalState::Retreat) {
             if (unit.getGoal().isValid() && unit.getGoalType() == GoalType::Defend) {
                 unit.setDestination(unit.getGoal());
-                //Broodwar->drawTextMap(unit.getPosition(), "r_goal");
+                // Broodwar->drawTextMap(unit.getPosition(), "r_goal");
             }
             else if (unit.getType() == Terran_Wraith && unit.saveUnit) {
                 auto closestRepair = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) { return u->getType().isWorker() && u->getRole() == Role::Combat; });
                 if (closestRepair) {
                     unit.setDestination(closestRepair->getPosition());
-                    //Broodwar->drawTextMap(unit.getPosition(), "r_repair");
+                    // Broodwar->drawTextMap(unit.getPosition(), "r_repair");
                 }
             }
             else if (retreat) {
                 unit.setDestination(retreat->getBase()->Center());
-                //Broodwar->drawTextMap(unit.getPosition(), "r_retreat");
+                // Broodwar->drawTextMap(unit.getPosition(), "r_retreat");
             }
             else {
                 unit.setDestination(Position(Terrain::getMainChoke()->Center()));
-                //Broodwar->drawTextMap(unit.getPosition(), "r_choke");
+                // Broodwar->drawTextMap(unit.getPosition(), "r_choke");
             }
         }
         else {
             if (unit.getGoal().isValid()) {
                 unit.setDestination(unit.getGoal());
-                //Broodwar->drawTextMap(unit.getPosition(), "z_goal");
+                // Broodwar->drawTextMap(unit.getPosition(), "z_goal");
             }
             else if (unit.attemptingRegroup()) {
                 unit.setDestination(unit.getCommander().lock()->getPosition());
-                //Broodwar->drawTextMap(unit.getPosition(), "z_regrp");
+                // Broodwar->drawTextMap(unit.getPosition(), "z_regrp");
             }
             else if (Combat::getHarassPosition().isValid() && unit.attemptingHarass()) {
                 unit.setDestination(Combat::getHarassPosition());
-                //Broodwar->drawTextMap(unit.getPosition(), "z_harass");
+                // Broodwar->drawTextMap(unit.getPosition(), "z_harass");
             }
             else if (unit.hasTarget()) {
                 unit.setDestination(unit.getTarget().lock()->getPosition());
-                //Broodwar->drawTextMap(unit.getPosition(), "z_target");
+                // Broodwar->drawTextMap(unit.getPosition(), "z_target");
             }
             else if (Combat::getAttackPosition().isValid() && unit.canAttackGround()) {
                 unit.setDestination(Combat::getAttackPosition());
-                //Broodwar->drawTextMap(unit.getPosition(), "z_atkpos");
+                // Broodwar->drawTextMap(unit.getPosition(), "z_atkpos");
             }
             else {
                 getCleanupPosition(unit);
-                //Broodwar->drawTextMap(unit.getPosition(), "z_clean");
+                // Broodwar->drawTextMap(unit.getPosition(), "z_clean");
             }
-            unit.marchPos = unit.getDestination();
+            unit.setMarchPosition(unit.getDestination());
         }
-
     }
 
     void onFrame()

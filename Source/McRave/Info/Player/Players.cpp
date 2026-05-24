@@ -216,6 +216,17 @@ namespace McRave::Players {
     int getDeadCount(PlayerState state, std::vector<UnitType> types) { return getCounts(allTotalTypeCounts[state], types) - getCounts(allVisibleTypeCounts[state], types); }
     int getIncompleteCount(PlayerState state, std::vector<UnitType> types) { return getCounts(allVisibleTypeCounts[state], types) - getCounts(allCompleteTypeCounts[state], types); }
 
+    int visibleTypesAndParents(PlayerState state, UnitType t)
+    {
+        if (t == Zerg_Creep_Colony)
+            return getVisibleCount(state, Zerg_Sunken_Colony) + getVisibleCount(state, Zerg_Spore_Colony);
+        if (t == Zerg_Hatchery)
+            return getVisibleCount(state, Zerg_Lair) + getVisibleCount(state, Zerg_Hive);
+        if (t == Zerg_Lair)
+            return getVisibleCount(state, Zerg_Hive);
+        return getVisibleCount(state, t);
+    }
+
     bool hasDetection(PlayerState state)
     {
         return getTotalCount(state, Protoss_Observer) > 0 || getTotalCount(state, Protoss_Photon_Cannon) > 0 || getTotalCount(state, Terran_Science_Vessel) > 0 ||

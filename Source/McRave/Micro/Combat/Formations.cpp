@@ -39,9 +39,10 @@ namespace McRave::Combat::Formations {
             }
 
             Visuals::drawCircle(Position(closestChoke->Center()), 6, Colors::Yellow, true);
+            auto rangeRadius = Players::getStrength(PlayerState::Enemy).maxGroundRange;
 
-            auto minRadius   = double(closestChoke->Width());
-            auto unitRadius  = (sizeSpacing * double(cluster.units.size())) / 1.5;
+            auto minRadius   = max(rangeRadius, double(closestChoke->Width()));
+            auto unitRadius  = min(rangeRadius + 96.0, (sizeSpacing * double(cluster.units.size())) / 1.5);
             formation.radius = max(minRadius, unitRadius);
 
             auto chokeSpacing     = double(formation.radius * M_PI_D2 / cluster.units.size());

@@ -9,6 +9,8 @@ namespace McRave::Producing {
     void onFrame();
     bool producedThisFrame();
 
+    bool isNotProduceable(BWAPI::UnitType);
+
     bool larvaTrickRequired(UnitInfo &unit);
     bool larvaTrickOptional(UnitInfo &unit);
 } // namespace McRave::Producing

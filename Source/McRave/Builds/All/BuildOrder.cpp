@@ -296,8 +296,6 @@ namespace McRave::BuildOrder {
         reverse(toCheck.begin(), toCheck.end());
 
         // Some hardcoded requirements
-        if (type == Zerg_Zergling)
-            toCheck.push_back(Zerg_Hive);
         if (type == Zerg_Lurker && com(Zerg_Hydralisk_Den) > 0)
             techQueue[TechTypes::Lurker_Aspect] = 1;
 

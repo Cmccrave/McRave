@@ -16,6 +16,9 @@ namespace McRave::Players {
     template <typename... Types> int getDeadCount(PlayerState state, Types... types) { return getDeadCount(state, {types...}); }
     template <typename... Types> int getIncompleteCount(PlayerState state, Types... types) { return getIncompleteCount(state, {types...}); }
 
+    // Returns the number of visible units of this type for this PlayerState including parent types
+    int visibleTypesAndParents(PlayerState state, BWAPI::UnitType type);
+
     bool hasDetection(PlayerState);
     bool hasMelee(PlayerState);
     bool hasRanged(PlayerState);
