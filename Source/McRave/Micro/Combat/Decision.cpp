@@ -40,8 +40,9 @@ namespace McRave::Combat::Decision {
 
         // Use commands that the commander is using if okay to do so
         unit.commandText = "";
-        if (commander.getCommandType() == UnitCommandTypes::Attack_Unit && commander.hasTarget())
-            unit.setCommand(commander.getCommandType(), *commander.getTarget().lock());
+        auto cmderTarget = commander.getTarget();
+        if (commander.getCommandType() == UnitCommandTypes::Attack_Unit && cmderTarget)
+            unit.setCommand(commander.getCommandType(), *cmderTarget);
         else if (commander.getCommandType() == UnitCommandTypes::Move)
             unit.setCommand(commander.getCommandType(), cmdPos);
         else if (commander.getCommandType() == UnitCommandTypes::Right_Click_Position)

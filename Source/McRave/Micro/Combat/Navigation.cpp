@@ -127,8 +127,9 @@ namespace McRave::Combat::Navigation {
         unit.setNavigation(unit.getDestination());
 
         // Maintain formation until close to attacking
-        auto distToDest = unit.getPosition().getDistance(unit.getDestination());
-        if (unit.getFormation().isValid() && unit.getPosition().getDistance(unit.getDestination()) >= 64.0) {
+        auto distToDest   = unit.getPosition().getDistance(unit.getDestination());
+        auto distToIgnore = unit.getGroundRange() + 64.0;
+        if (unit.getFormation().isValid() && unit.getPosition().getDistance(unit.getDestination()) >= distToIgnore) {
             unit.setNavigation(unit.getFormation());
             return;
         }
@@ -154,7 +155,8 @@ namespace McRave::Combat::Navigation {
 
     void updateAvoidance(UnitInfo &unit)
     {
-        if (!unit.hasCommander() || !unit.hasTarget() || !unit.attemptingAvoidance())
+        auto target = unit.getTarget();
+        if (!unit.hasCommander() || !target || !unit.attemptingAvoidance())
             return;
 
         // Dangerous splash must be avoided immediately
@@ -163,9 +165,7 @@ namespace McRave::Combat::Navigation {
                 return;
         }
 
-        auto commander = unit.getCommander().lock();
-        auto target    = unit.getTarget().lock();
-
+        auto commander   = unit.getCommander().lock();
         auto selfRange   = target->isFlying() ? unit.getAirRange() : unit.getGroundRange();
         auto targetRange = unit.isFlying() ? target->getAirRange() : target->getGroundRange();
         auto maxRange    = max(selfRange, targetRange);

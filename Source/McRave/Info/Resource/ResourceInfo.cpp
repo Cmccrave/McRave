@@ -46,7 +46,9 @@ namespace McRave {
                 if (enemy->getType().isWorker())
                     continue;
 
-                if (!enemy->hasTarget() || (!Players::ZvZ() && !enemy->getTarget().lock()->getType().isWorker()) || !enemy->isCompleted() || !enemy->canAttackGround())
+                auto enemyTarget = enemy->getTarget();
+
+                if (!enemyTarget || (!Players::ZvZ() && !enemyTarget->getType().isWorker()) || !enemy->isCompleted() || !enemy->canAttackGround())
                     continue;
 
                 const auto inRangeOfResource = enemy->getPosition().getDistance(position) < max(200.0, enemy->getGroundReach());

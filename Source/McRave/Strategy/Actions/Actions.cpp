@@ -116,15 +116,16 @@ namespace McRave::Actions {
                 }
 
                 // Spider mines are hard to dodge abruptly
-                if (unit.getType() == Terran_Vulture_Spider_Mine && unit.hasTarget()) {
-                    addAction(unit.unit(), unit.getTarget().lock()->getPosition(), UnitTypes::Terran_Vulture_Spider_Mine, PlayerState::Neutral, Util::getCastRadius(TechTypes::Spider_Mines));
+                auto target = unit.getTarget();
+                if (unit.getType() == Terran_Vulture_Spider_Mine && target) {
+                    addAction(unit.unit(), target->getPosition(), UnitTypes::Terran_Vulture_Spider_Mine, PlayerState::Neutral, Util::getCastRadius(TechTypes::Spider_Mines));
                     addAction(unit.unit(), unit.getPosition(), UnitTypes::Terran_Vulture_Spider_Mine, PlayerState::Neutral, Util::getCastRadius(TechTypes::Spider_Mines));
                 }
 
                 // Scarabs eventually go to their target
                 // TODO: Hardcoded the radius at 30
-                if (unit.getType() == Protoss_Scarab && unit.hasTarget())
-                    addAction(unit.unit(), unit.getTarget().lock()->getPosition(), UnitTypes::Protoss_Scarab, PlayerState::Enemy, 30);
+                if (unit.getType() == Protoss_Scarab && target)
+                    addAction(unit.unit(), target->getPosition(), UnitTypes::Protoss_Scarab, PlayerState::Enemy, 30);
             }
 
             // Check my Actions
@@ -148,8 +149,9 @@ namespace McRave::Actions {
                 }
 
                 // Spider mines are hard to dodge abruptly
-                if (unit.getType() == Terran_Vulture_Spider_Mine && unit.hasTarget()) {
-                    addAction(unit.unit(), unit.getTarget().lock()->getPosition(), UnitTypes::Terran_Vulture_Spider_Mine, PlayerState::Neutral, Util::getCastRadius(TechTypes::Spider_Mines));
+                auto target = unit.getTarget();
+                if (unit.getType() == Terran_Vulture_Spider_Mine && target) {
+                    addAction(unit.unit(), target->getPosition(), UnitTypes::Terran_Vulture_Spider_Mine, PlayerState::Neutral, Util::getCastRadius(TechTypes::Spider_Mines));
                     addAction(unit.unit(), unit.getPosition(), UnitTypes::Terran_Vulture_Spider_Mine, PlayerState::Neutral, Util::getCastRadius(TechTypes::Spider_Mines));
                 }
             }

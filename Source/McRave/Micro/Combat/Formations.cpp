@@ -17,7 +17,7 @@ namespace McRave::Combat::Formations {
         auto sizeSpacing            = double(max(commander->getType().width(), commander->getType().height()) + 2);
         auto closestChoke           = Util::getClosestChokepoint(cluster.marchPosition);
         auto formationWithChoke     = Combat::holdAtChoke() && closestChoke && Position(closestChoke->Center()).getDistance(cluster.marchPosition) < 32.0;
-        auto formationWithCommander = cluster.shape == Shape::Concave;
+        auto formationWithCommander = commander->getGlobalState() == GlobalState::Attack && commander->getLocalState() == LocalState::Hold;
 
         // This is a line one
         formation.center      = cluster.marchPosition;
@@ -58,12 +58,12 @@ namespace McRave::Combat::Formations {
             }
         }
 
-        //// Hold with commander
-        // else if (formationWithCommander) {
-        //    formation.radius = clamp((cluster.units.size() * cluster.spacing / 1.3), 64.0, 640.0);
-        //    formation.start  = commander->getPosition();
-        //    formation.angle  = BWEB::Map::getAngle(cluster.marchNavigation, cluster.retreatNavigation);
-        //}
+        // Hold with commander
+         else if (formationWithCommander) {
+            formation.center = cluster.marchNavigation;
+            formation.start  = (commander->getPosition() / 32) * 32; // Helps remove oscillations
+            formation.angle  = BWEB::Map::getAngle(cluster.marchNavigation, commander->getPosition());
+        }
     }
 
     void marchFormation(Formation &formation, Cluster &cluster)
@@ -90,11 +90,12 @@ namespace McRave::Combat::Formations {
         }
 
         // Flying formations - mostly just avoiding splash with a circle
-        if (commander->isFlying() && commander->hasTarget()) {
+        auto cmderTarget = commander->getTarget();
+        if (commander->isFlying() && cmderTarget) {
             formation.angle       = BWEB::Map::getAngle(cluster.marchPosition, cluster.retreatPosition);
             formation.radius      = max(commander->getGroundRange(), commander->getAirRange()) + 32.0;
             formation.stepPerUnit = 64;
-            formation.center      = commander->getTarget().lock()->getPosition(); // Should be marchNavigation, but we are trying to do avoidance right now
+            formation.center      = cmderTarget->getPosition(); // Should be marchNavigation, but we are trying to do avoidance right now
         }
     }
 

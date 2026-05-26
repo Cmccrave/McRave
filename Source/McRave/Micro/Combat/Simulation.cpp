@@ -25,7 +25,7 @@ namespace McRave::Combat::Simulation {
 
         auto lastState = unit.getSimState();
 
-        if (unit.getEngDist() == DBL_MAX || !unit.hasTarget()) {
+        if (unit.getEngDist() == DBL_MAX || !unit.getTarget()) {
             unit.setSimState(SimState::Loss);
             unit.setSimValue(0.0);
             return;
@@ -153,17 +153,17 @@ namespace McRave::Combat::Simulation {
     void updateIncentives(UnitInfo &unit)
     {
         // Can't have incentives without a target for now
-        if (!unit.hasTarget())
+        auto target = unit.getTarget();
+        if (!target)
             return;
-        auto &target = *unit.getTarget().lock();
 
         // Adjust winrates if we have static defense that would make the fight easier and we're at home
         if (!unit.isFlying()) {
             const auto defendStation    = Stations::getClosestStationAir(unit.getRetreatPosition(), PlayerState::Self);
-            const auto furthestDefender = Util::getFurthestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
+            const auto furthestDefender = Util::getFurthestUnit(target->getPosition(), PlayerState::Self, [&](auto &u) {
                 return u->getType().isBuilding() && u->canAttackGround() && u->isCompleted() && defendStation && Terrain::inArea(defendStation->getBase()->GetArea(), u->getPosition());
             });
-            if (furthestDefender && furthestDefender->isWithinRange(target)) {
+            if (furthestDefender && furthestDefender->isWithinRange(*target)) {
                 minWinPercent = 0.0;
                 maxWinPercent = 0.0;
                 return;
@@ -177,7 +177,7 @@ namespace McRave::Combat::Simulation {
         }
 
         // Adjust winrate if targeting a worker
-        if (target.getType().isWorker() || target.getType() == Zerg_Overlord) {
+        if (target->getType().isWorker() || target->getType() == Zerg_Overlord) {
             minWinPercent *= 2.0;
             maxWinPercent *= 2.0;
         }

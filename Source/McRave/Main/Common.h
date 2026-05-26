@@ -20,7 +20,7 @@ namespace McRave {
     class PlayerInfo;
 
     // clang-format off
-    enum class GoalType { None, Attack, Contain, Explore, Escort, Defend, Block, Harass, Runby };
+    enum class GoalType { None, Attack, Contain, Explore, Escort, Defend, Block, Harass, Runby, Build };
     enum class Role { None, Worker, Combat, Transport, Scout, Production, Defender, Support, Consumable };
     enum class TransportState { None, Loading, Engaging, Retreating, Reinforcing };
     enum class ResourceState { None, Assignable, Mineable, Stealable };

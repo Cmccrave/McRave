@@ -167,7 +167,7 @@ namespace McRave {
         }
 
         // Returns true for supplyless unit types
-        bool isToken() { return type == UnitTypes::Terran_Vulture_Spider_Mine || type == UnitTypes::Protoss_Scarab || type == UnitTypes::Protoss_Interceptor || type == UnitTypes::Zerg_Larva; }
+        bool isToken() { return type == UnitTypes::Terran_Vulture_Spider_Mine || type == UnitTypes::Protoss_Scarab || type == UnitTypes::Protoss_Interceptor || type == UnitTypes::Zerg_Egg || type == UnitTypes::Zerg_Larva; }
 
         // Returns true for large air types
         bool isCapitalShip() { return type == UnitTypes::Protoss_Carrier || type == UnitTypes::Terran_Battlecruiser || type == UnitTypes::Zerg_Guardian; }
@@ -319,9 +319,8 @@ namespace McRave {
         bool attemptingAvoidance();
 
         // Targets
-        std::weak_ptr<UnitInfo> getTarget() { return target_; }
+        std::shared_ptr<UnitInfo> getTarget() { return target_.lock(); }
         void setTarget(UnitInfo *unit) { unit ? target_ = unit->weak_from_this() : target_.reset(); }
-        bool hasTarget() { return !target_.expired(); }
         std::vector<std::weak_ptr<UnitInfo>> &getUnitsTargetingThis() { return unitsTargetingThis; }
         std::vector<std::weak_ptr<UnitInfo>> &getUnitsInEngageOfThis() { return unitsInEngageOfThis; }
         bool isTargetedBySplash() { return targetedBySplash; }

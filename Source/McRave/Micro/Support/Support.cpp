@@ -130,10 +130,10 @@ namespace McRave::Support {
                     auto dist = commander->getPosition().getDistance(unit.getPosition());
                     if (dist < distBest) {
                         auto position = commander->getPosition();
-                        if (commander->getSimState() == SimState::Win && commander->hasTarget()) {
-                            auto &commanderTarget = commander->getTarget().lock();
-                            if ((commanderTarget->isCloaked() || commanderTarget->isBurrowed()) && commander->isWithinReach(*commanderTarget))
-                                position = commanderTarget->getPosition();
+                        auto cmderTarget = commander->getTarget();
+                        if (commander->getSimState() == SimState::Win && cmderTarget) {
+                            if ((cmderTarget->isCloaked() || cmderTarget->isBurrowed()) && commander->isWithinReach(*cmderTarget))
+                                position = cmderTarget->getPosition();
                         }
                         unit.setDestination(position);
                         distBest = dist;

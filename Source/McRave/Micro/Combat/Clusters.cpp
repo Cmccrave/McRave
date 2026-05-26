@@ -72,7 +72,7 @@ namespace McRave::Combat::Clusters {
                 if (child.unit->getType() == Zerg_Queen)
                     return false;
                 if (child.unit->getType() == Terran_Medic) {
-                    if (child.unit->hasTarget(); auto target = child.unit->getTarget().lock()) {
+                    if (auto target = child.unit->getTarget()) {
                         if (parent.unit == &*target)
                             return true;
                     }

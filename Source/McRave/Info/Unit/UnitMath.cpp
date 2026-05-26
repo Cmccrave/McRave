@@ -20,6 +20,7 @@ namespace McRave::Math {
 
     static const auto avgUnitSpeed = 4.34;
     static const auto avgHealth    = 161.05;
+    double maxPriority             = 0.0;
 
     double calcMaxGroundStrength(UnitInfo &unit)
     {
@@ -85,23 +86,21 @@ namespace McRave::Math {
 
     double calcPriority(UnitInfo &unit)
     {
-        // According to sheet linked above, these are the maximum values for normalizing
-        auto bonus = 1.0;
-
         if (unit.isMarkedForDeath())
             return 5.0;
 
-        // If target is an egg, larva, scarab or spell
-        if (unit.getType() == UnitTypes::Zerg_Egg || unit.getType() == UnitTypes::Zerg_Larva || unit.getType() == UnitTypes::Protoss_Scarab || unit.getType().isSpell())
-            return 0.0;
+        // Important targets will be set to the same as maximum 
+        if (unit.getType() == Protoss_Dark_Archon ||                                                                                                             //
+            unit.getType() == Protoss_Arbiter || unit.getType() == Protoss_Shuttle || unit.getType() == Protoss_Carrier || unit.getType() == Protoss_Observer || //
+            unit.getType() == Terran_Vulture_Spider_Mine ||                                                                                                      //
+            unit.getType() == Terran_Science_Vessel || unit.getType() == Terran_Dropship ||                                                                      //
+            unit.getType() == Zerg_Defiler ||                                                                                                                    //
+            unit.getType() == Zerg_Queen)                                                                                                                        //
+            return maxPriority;
 
-        // Bunch of priority hacks
-        if (unit.getType() == Terran_Vulture_Spider_Mine || unit.getType() == Terran_Science_Vessel || unit.getType() == Terran_Dropship || //
-            unit.getType() == Protoss_Arbiter || unit.getType() == Protoss_Shuttle || unit.getType() == Protoss_Carrier ||                  //
-            unit.getType() == Zerg_Queen)
-            return 15.0;
-        if (Spy::enemyProxy() && unit.getType() == Protoss_Pylon)
-            return Grids::getGroundThreat(unit.getPosition(), PlayerState::Enemy) <= 0.1f ? 5.0 : 1.0;
+        // Unimportant (except spider mines, which is set above)
+        if (unit.isToken())
+            return 0.0;
 
         // Mark neutrals blocking geysers next to our bases
         if (unit.getTilePosition().isValid()) {
@@ -109,7 +108,7 @@ namespace McRave::Math {
             if (area && Terrain::inTerritory(PlayerState::Self, unit.getPosition())) {
                 for (auto &gas : area->Geysers()) {
                     if (gas->TopLeft().getDistance(unit.getTilePosition()) < 2 && !unit.isInvincible())
-                        return 10.0;
+                        return maxPriority;
                 }
             }
         }
@@ -118,7 +117,15 @@ namespace McRave::Math {
         auto dps  = ff + max(calcGroundDPS(unit), calcAirDPS(unit));
         auto cost = calcRelativeCost(unit);
         auto surv = calcSurvivability(unit);
-        return clamp(bonus * (dps * cost / surv), 0.001, 9999.99);
+
+        auto bonus = 1.0;
+        if (unit.getType().isWorker())
+            bonus = 10.0;
+
+        auto prio = clamp(bonus * (dps * cost / surv), 0.001, 9999.99);
+        if (prio > maxPriority)
+            maxPriority = prio;
+        return prio;
     }
 
     double calcRelativeCost(UnitInfo &unit)
@@ -477,5 +484,7 @@ namespace McRave {
         maxAirStrength        = Math::calcMaxAirStrength(unit);
         splash                = Math::calcSplashRadius(unit);
         priority              = Math::calcPriority(unit);
+
+        Broodwar->drawTextMap(unit.getPosition(), "%.4f", priority);
     }
 } // namespace McRave

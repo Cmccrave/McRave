@@ -877,8 +877,6 @@ namespace McRave::Planning {
 
             // Add up how many more buildings of each type we need
             for (auto &[building, count] : BuildOrder::getBuildQueue()) {
-                int queuedCount = 0;
-
                 auto morphed      = !building.whatBuilds().first.isWorker();
                 auto addon        = building.isAddon();
                 auto haveMinerals = (Workers::getMineralWorkers() > 0 || building.mineralPrice() == 0 || Broodwar->self()->minerals() >= building.mineralPrice());
@@ -888,20 +886,20 @@ namespace McRave::Planning {
                     continue;
 
                 // If the building morphed from another building type, add the visible amount of child type to the parent type
-                int morphOffset = Players::visibleTypesAndParents(PlayerState::Self, building);
+                int visibleTypes = Players::visibleTypesAndParents(PlayerState::Self, building);
 
                 // Queue the cost of any morphs or building
-                if (count > vis(building) + morphOffset && haveMinerals && haveGas) {
-                    plannedMineral += building.mineralPrice() * (count - vis(building) - morphOffset);
-                    plannedGas += building.gasPrice() * (count - vis(building) - morphOffset);
+                if (count > visibleTypes && haveMinerals && haveGas) {
+                    plannedMineral += building.mineralPrice() * (count - visibleTypes);
+                    plannedGas += building.gasPrice() * (count - visibleTypes);
                 }
 
                 if (morphed)
                     continue;
 
                 // Queue building if our actual count is higher than our visible count
-                while (count > queuedCount + vis(building) + morphOffset) {
-                    queuedCount++;
+                while (count > visibleTypes) {
+                    visibleTypes++;
                     auto here   = getBuildLocation(building);
                     auto center = Position(here) + Position(building.tileWidth() * 16, building.tileHeight() * 16);
                     if (!here.isValid()) {

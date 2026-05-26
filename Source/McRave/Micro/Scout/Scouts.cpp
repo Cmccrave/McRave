@@ -441,9 +441,10 @@ namespace McRave::Scouts {
                     // Zergling
                     auto fasterLings       = !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::hasUpgraded(PlayerState::Self, UpgradeTypes::Metabolic_Boost);
                     auto enemyLowLingCount = !Players::hasUpgraded(PlayerState::Enemy, UpgradeTypes::Metabolic_Boost) && Players::getTotalCount(PlayerState::Enemy, Zerg_Zergling) <= 12;
+                    auto enemyFastPool     = Util::getTime() < Time(3, 15) && (Spy::getEnemyOpener() == Z_4Pool || Spy::getEnemyOpener() == Z_7Pool || Spy::enemyRush());
 
                     main.desiredTypeCounts[Zerg_Zergling] = !fullScout && (fasterLings || enemyLowLingCount);
-                    if (BuildOrder::isRush() || Spy::enemyRush() || Spy::enemyPressure() || Spy::enemyTurtle() || Spy::enemyFortress())
+                    if (BuildOrder::isRush() || enemyFastPool || Spy::enemyPressure() || Spy::enemyTurtle() || Spy::enemyFortress())
                         main.desiredTypeCounts[Zerg_Zergling] = 0;
 
                     // Overlord

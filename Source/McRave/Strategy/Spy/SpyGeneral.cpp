@@ -257,18 +257,28 @@ namespace McRave::Spy::General {
         }
     } // namespace
 
-    void updateGeneral(StrategySpy &theSpy)
+    void updateTimings(StrategySpy &theSpy)
     {
-        // Update enemy general strategy
+        // Update enemy timings
         for (auto &p : Players::getPlayers()) {
             PlayerInfo &player = p.second;
 
             if (player.isEnemy()) {
                 enemyUnitTimings(player, theSpy);
                 enemyUpgradeTimings(player, theSpy);
-                checkEnemyUnits(player, theSpy);
+            }
+        }
+    }
 
-                // TODO: Impl multiple players
+    void updateGeneral(StrategySpy &theSpy)
+    {
+        // Update enemy general strategy
+        for (auto &p : Players::getPlayers()) {
+            PlayerInfo &player = p.second;
+
+            // TODO: Impl multiple players
+            if (player.isEnemy()) {
+                checkEnemyUnits(player, theSpy);
                 checkEnemyRush(player, theSpy);
                 checkEnemyPressure(player, theSpy);
                 checkEnemyInvis(player, theSpy);

@@ -73,6 +73,7 @@ namespace McRave::Spy {
         Protoss::updateProtoss(theSpy);
         Terran::updateTerran(theSpy);
         Zerg::updateZerg(theSpy);
+        General::updateTimings(theSpy);
 
         // Verify strategy checking for confirmations
         for (auto &strat : theSpy.strats) {

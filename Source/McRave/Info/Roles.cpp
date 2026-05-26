@@ -247,10 +247,11 @@ namespace McRave::Roles {
                     }
                 }
                 else {
-                    auto earlyPool     = Spy::getEnemyOpener() == Z_4Pool || Spy::getEnemyOpener() == Z_7Pool;
-                    auto defendSunkens = Util::getTime() < Time(3, 00) && proxyThreateningUnit && !sixLings;
+                    auto selfLatePool   = BuildOrder::getCurrentOpener() == Z_12Pool || BuildOrder::getCurrentBuild() == Z_HatchPool;
+                    auto enemyEarlyPool = (Spy::getEnemyOpener() == Z_4Pool || Spy::getEnemyOpener() == Z_7Pool);
+                    auto defendSunkens  = Util::getTime() < Time(3, 00) && proxyThreateningUnit && !sixLings;
 
-                    if (earlyPool && defendSunkens)
+                    if (selfLatePool && enemyEarlyPool && defendSunkens)
                         forceCombatWorker(10);
                 }
             }
@@ -290,12 +291,19 @@ namespace McRave::Roles {
                     location = proxyWorker->getPosition();
 
                 if (BuildOrder::takeNatural()) {
-
-                    // Bunker being built, 3 drones per marine and 3 extra for the bunker
-                    if (proxyDangerousBuilding && !proxyDangerousBuilding->isCompleted() && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8) {
-                        LOG_ONCE("Proxy bunker, pull drones");
+                    
+                    // Barracks being built inside territory
+                    if (proxyBuilding && Terrain::inTerritory(PlayerState::Self, proxyBuilding->getPosition()))
+                    {
+                        LOG_ONCE("Proxy barracks, pull drones");
                         forceCombatWorker(count);
                     }
+
+                    // Bunker being built, 3 drones per marine and 3 extra for the bunker
+                    else if (proxyDangerousBuilding && !proxyDangerousBuilding->isCompleted() && com(Zerg_Zergling) <= 2 && total(Zerg_Zergling) <= 8) {
+                        LOG_ONCE("Proxy bunker, pull drones");
+                        forceCombatWorker(count);
+                    }                    
 
                     // We haven't got our hatchery down yet
                     else if (hatchCount() < 2 && proxyWorker && selfBuildingWorker &&

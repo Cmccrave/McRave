@@ -167,6 +167,7 @@ namespace McRave::Spy {
         bool enemySlowerSpeed();
     } // namespace Zerg
     namespace General {
+        void updateTimings(StrategySpy &);
         void updateGeneral(StrategySpy &);
     }
 } // namespace McRave::Spy

@@ -184,19 +184,19 @@ namespace McRave::Transports {
 
             for (auto &c : unit.getAssignedCargo()) {
                 auto &cargo = *c.lock();
-                if (!cargo.hasTarget())
+                auto cargoTarget = cargo.getTarget();
+                if (!cargoTarget)
                     continue;
-                auto &cargoTarget = *cargo.getTarget().lock();
 
-                if (readyToLoad(cargo, cargoTarget))
+                if (readyToLoad(cargo, *cargoTarget))
                     setState(TransportState::Loading);
-                else if (readyToRetreat(cargo, cargoTarget))
+                else if (readyToRetreat(cargo, *cargoTarget))
                     setState(TransportState::Retreating);
-                else if (readyToReinforce(cargo, cargoTarget))
+                else if (readyToReinforce(cargo, *cargoTarget))
                     setState(TransportState::Reinforcing);
-                else if (readyToEngage(cargo, cargoTarget)) {
+                else if (readyToEngage(cargo, *cargoTarget)) {
                     setState(TransportState::Engaging);
-                    if (readyToDrop(cargo, cargoTarget)) {
+                    if (readyToDrop(cargo, *cargoTarget)) {
                         unit.unit()->unload(cargo.unit());
                     }
                 }

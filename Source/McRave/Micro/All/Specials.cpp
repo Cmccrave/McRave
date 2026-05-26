@@ -56,6 +56,8 @@ namespace McRave::Command {
 
     bool click(UnitInfo &unit)
     {
+        auto target = unit.getTarget();
+
         // Shield Battery - Repair Shields
         if (com(Protoss_Shield_Battery) > 0 && (unit.unit()->getGroundWeaponCooldown() > Broodwar->getLatencyFrames() || unit.unit()->getAirWeaponCooldown() > Broodwar->getLatencyFrames()) &&
             unit.getType().maxShields() > 0 &&
@@ -64,7 +66,7 @@ namespace McRave::Command {
             auto battery = Util::getClosestUnit(unit.getPosition(), PlayerState::Self,
                                                 [&](auto &u) { return u->getType() == Protoss_Shield_Battery && u->unit()->isCompleted() && u->getEnergy() > 10; });
 
-            if (battery && ((unit.getType().isFlyer() && (!unit.hasTarget() || (unit.getTarget().lock()->getPosition().getDistance(unit.getPosition()) >= 320))) ||
+            if (battery && ((unit.getType().isFlyer() && (!target || (target->getPosition().getDistance(unit.getPosition()) >= 320))) ||
                             unit.unit()->getDistance(battery->getPosition()) < 320)) {
                 if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Right_Click_Unit || unit.unit()->getLastCommand().getTarget() != battery->unit()) {
                     unit.setCommand(Right_Click_Unit, *battery);
@@ -84,9 +86,8 @@ namespace McRave::Command {
             auto alwaysLoad   = unit.getGlobalState() == GlobalState::Retreat;
 
             if (bunker) {
-                if (unit.hasTarget()) {
-                    auto &target = *unit.getTarget().lock();
-                    auto close   = target.isWithinReach(unit) && target.isWithinReach(*bunker);
+                if (target) {
+                    auto close   = target->isWithinReach(unit) && target->isWithinReach(*bunker);
                     loadBunker   = alwaysLoad || close;
                     unloadBunker = !alwaysLoad && !close;
                 }
@@ -152,6 +153,8 @@ namespace McRave::Command {
 
     bool siege(UnitInfo &unit)
     {
+        auto target = unit.getTarget();
+
         // Don't siege next to a tank that is already sieged
         if (!unit.unit()->isSieged()) {
             auto nearestSiegedFriend = Util::getClosestUnit(unit.getPosition(), PlayerState::Self, [&](auto &u) { return unit != *u && u->getType() == Terran_Siege_Tank_Siege_Mode; });
@@ -160,7 +163,7 @@ namespace McRave::Command {
                 return false;
         }
 
-        if (unit.hasTarget(); auto target = unit.getTarget().lock()) {
+        if (target) {
             auto targetDist   = Util::boxDistance(unit, *target);
             auto siegeLimit   = target->getSpeed() > 0.0 ? 500 : 384;
             auto unsiegeLimit = target->getSpeed() > 0.0 ? 400 : 384;
@@ -217,6 +220,8 @@ namespace McRave::Command {
 
     bool burrow(UnitInfo &unit)
     {
+        auto target = unit.getTarget();
+
         // Vulture spider mine burrowing
         if (unit.getType() == Terran_Vulture) {
             if (Broodwar->self()->hasResearched(Spider_Mines) && unit.unit()->getSpiderMineCount() > 0) {
@@ -244,7 +249,7 @@ namespace McRave::Command {
 
         // Lurker burrowing
         else if (unit.getType() == Zerg_Lurker) {
-            if (unit.hasTarget(); auto target = unit.getTarget().lock()) {
+            if (target) {
                 auto targetDist = unit.getPosition().getDistance(target->getPosition());
                 auto burrow     = (unit.getGlobalState() == GlobalState::Retreat && unit.getPosition().getDistance(Combat::getDefendPosition()) < 280.0) //
                               || (unit.isWithinRange(*target) && unit.getLocalState() == LocalState::Attack)                                             //
@@ -397,20 +402,20 @@ namespace McRave::Command {
 
     bool castTarget(UnitInfo &unit)
     {
-        if (!unit.hasTarget())
+        auto target = unit.getTarget();
+        if (!target)
             return false;
-        auto &target = *unit.getTarget().lock();
 
         // Battlecruiser - Yamato
         if (unit.getType() == Terran_Battlecruiser && Broodwar->self()->hasResearched(Yamato_Gun)) {
-            auto targetCastable = target.unit()->exists() && !target.isHidden() && unit.canStartCast(Yamato_Gun, target) && target.getHealth() >= 80;
-            auto inRange        = unit.getPosition().getDistance(target.getPosition()) <= Util::getCastRange(Yamato_Gun);
+            auto targetCastable = target->unit()->exists() && !target->isHidden() && unit.canStartCast(Yamato_Gun, *target) && target->getHealth() >= 80;
+            auto inRange        = unit.getPosition().getDistance(target->getPosition()) <= Util::getCastRange(Yamato_Gun);
 
             // If close to target and can cast Yamato
             if (targetCastable && inRange) {
-                unit.setCommand(Yamato_Gun, target);
+                unit.setCommand(Yamato_Gun, *target);
                 unit.commandText = "Yamato";
-                Actions::addAction(unit.unit(), target.getPosition(), Yamato_Gun, PlayerState::Neutral);
+                Actions::addAction(unit.unit(), target->getPosition(), Yamato_Gun, PlayerState::Neutral);
                 return true;
             }
         }
@@ -418,11 +423,11 @@ namespace McRave::Command {
         // Ghost - Nuke / Lockdown
         else if (unit.getType() == Terran_Ghost) {
 
-            if (com(Terran_Nuclear_Missile) > 0 && unit.unit()->isCloaked() && unit.getPosition().getDistance(target.getPosition()) > 200) {
-                if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech_Position || unit.unit()->getLastCommand().getTargetPosition() != target.getPosition()) {
-                    unit.setCommand(Nuclear_Strike, target.getPosition());
+            if (com(Terran_Nuclear_Missile) > 0 && unit.unit()->isCloaked() && unit.getPosition().getDistance(target->getPosition()) > 200) {
+                if (unit.unit()->getLastCommand().getType() != UnitCommandTypes::Use_Tech_Position || unit.unit()->getLastCommand().getTargetPosition() != target->getPosition()) {
+                    unit.setCommand(Nuclear_Strike, target->getPosition());
                     unit.commandText = "Nuke";
-                    Actions::addAction(unit.unit(), target.getPosition(), Nuclear_Strike, PlayerState::Neutral, Util::getCastRadius(Nuclear_Strike));
+                    Actions::addAction(unit.unit(), target->getPosition(), Nuclear_Strike, PlayerState::Neutral, Util::getCastRadius(Nuclear_Strike));
                     return true;
                 }
             }
@@ -437,8 +442,8 @@ namespace McRave::Command {
 
         // Marine / Firebat - Stim Packs
         else if ((unit.getType() == Terran_Marine || unit.getType() == Terran_Firebat)) {
-            auto selfCastable = !unit.isStimmed() && unit.canStartCast(Stim_Packs, target.getPosition());
-            auto inRange      = unit.isWithinRange(target);
+            auto selfCastable = !unit.isStimmed() && unit.canStartCast(Stim_Packs, target->getPosition());
+            auto inRange      = unit.isWithinRange(*target);
 
             // If close to target and can cast Stim on self
             if (selfCastable && inRange) {
@@ -450,8 +455,8 @@ namespace McRave::Command {
 
         // Medic - Healing
         else if (unit.getType() == Terran_Medic) {
-            auto targetCastable = unit.canStartCast(Healing, target.getPosition()) && target.getHealth() < target.getType().maxHitPoints();
-            auto inRange        = unit.getPosition().getDistance(target.getPosition()) <= Util::getCastRange(Healing) + 32.0;
+            auto targetCastable = unit.canStartCast(Healing, target->getPosition()) && target->getHealth() < target->getType().maxHitPoints();
+            auto inRange        = unit.getPosition().getDistance(target->getPosition()) <= Util::getCastRange(Healing) + 32.0;
 
             // If close to target and can cast Healing
             if (targetCastable && inRange) {
@@ -463,45 +468,45 @@ namespace McRave::Command {
 
         // Comsat scans
         else if (unit.getType() == Terran_Comsat_Station) {
-            auto targetScannable = target.unit()->exists() && unit.canStartCast(Scanner_Sweep, target.getPosition());
-            auto selfInReach     = Util::getClosestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) {
-                return (u->getRole() == Role::Combat && u->getLocalState() == LocalState::Attack && u->isWithinReach(target)) || (u->getRole() == Role::Defender && u->isWithinRange(target));
+            auto targetScannable = target->unit()->exists() && unit.canStartCast(Scanner_Sweep, target->getPosition());
+            auto selfInReach     = Util::getClosestUnit(target->getPosition(), PlayerState::Self, [&](auto &u) {
+                return (u->getRole() == Role::Combat && u->getLocalState() == LocalState::Attack && u->isWithinReach(*target)) || (u->getRole() == Role::Defender && u->isWithinRange(*target));
             });
 
             // If something is close to target and this can cast Scanner Sweep
             if (targetScannable && selfInReach) {
-                unit.setCommand(Scanner_Sweep, target.getPosition());
+                unit.setCommand(Scanner_Sweep, target->getPosition());
                 unit.commandText = "Scan";
-                Actions::addAction(unit.unit(), target.getPosition(), Spell_Scanner_Sweep, PlayerState::Self, Util::getCastRadius(Scanner_Sweep));
+                Actions::addAction(unit.unit(), target->getPosition(), Spell_Scanner_Sweep, PlayerState::Self, Util::getCastRadius(Scanner_Sweep));
                 return true;
             }
         }
 
         // Arbiters - Stasis Field
         else if (unit.getType() == Protoss_Arbiter) {
-            auto targetCastable = target.unit()->exists() && unit.canStartCast(Stasis_Field, target.getPosition());
-            auto inRange        = unit.getPosition().getDistance(target.getPosition()) <= Util::getCastRange(Stasis_Field) + 32.0;
-            auto selfInReach    = Util::getClosestUnit(target.getPosition(), PlayerState::Self, [&](auto &u) { return u->getLocalState() == LocalState::Attack && u->isWithinReach(target); });
+            auto targetCastable = target->unit()->exists() && unit.canStartCast(Stasis_Field, target->getPosition());
+            auto inRange        = unit.getPosition().getDistance(target->getPosition()) <= Util::getCastRange(Stasis_Field) + 32.0;
+            auto selfInReach    = Util::getClosestUnit(target->getPosition(), PlayerState::Self, [&](auto &u) { return u->getLocalState() == LocalState::Attack && u->isWithinReach(*target); });
 
             // If close to target and can cast Stasis Field
             if (targetCastable && inRange && selfInReach) {
-                unit.setCommand(Stasis_Field, target);
+                unit.setCommand(Stasis_Field, *target);
                 unit.commandText = "Stasis";
-                Actions::addAction(unit.unit(), target.getPosition(), Stasis_Field, PlayerState::Self, Util::getCastRadius(Stasis_Field));
+                Actions::addAction(unit.unit(), target->getPosition(), Stasis_Field, PlayerState::Self, Util::getCastRadius(Stasis_Field));
                 return true;
             }
         }
 
         // High Templar - Psi Storm
         else if (unit.getType() == Protoss_High_Templar) {
-            auto targetCastable = target.unit()->exists() && unit.canStartCast(Psionic_Storm, target.getPosition());
-            auto inRange        = unit.getPosition().getDistance(target.getPosition()) <= Util::getCastRange(Psionic_Storm) + 32.0;
+            auto targetCastable = target->unit()->exists() && unit.canStartCast(Psionic_Storm, target->getPosition());
+            auto inRange        = unit.getPosition().getDistance(target->getPosition()) <= Util::getCastRange(Psionic_Storm) + 32.0;
 
             // If close to target and can cast Psi Storm
             if (inRange && targetCastable) {
-                unit.setCommand(Psionic_Storm, target);
+                unit.setCommand(Psionic_Storm, *target);
                 unit.commandText = "Storm";
-                Actions::addAction(unit.unit(), target.getPosition(), Psionic_Storm, PlayerState::Neutral, Util::getCastRadius(Psionic_Storm));
+                Actions::addAction(unit.unit(), target->getPosition(), Psionic_Storm, PlayerState::Neutral, Util::getCastRadius(Psionic_Storm));
                 return true;
             }
         }
@@ -512,27 +517,27 @@ namespace McRave::Command {
             auto selfMoreMelee  = vis(Zerg_Zergling) + vis(Zerg_Ultralisk) > vis(Zerg_Hydralisk);
             auto enemyLessMelee = (Players::ZvP() && Players::getVisibleCount(PlayerState::Enemy, Protoss_Dragoon) > Players::getVisibleCount(PlayerState::Enemy, Protoss_Zealot)) || (Players::ZvT());
 
-            auto goodSwarmTarget = target.getType() != Terran_Vulture && !target.getType().isBuilding();
+            auto goodSwarmTarget = target->getType() != Terran_Vulture && !target->getType().isBuilding();
 
-            auto castSwarmTarget = goodSwarmTarget && selfMoreMelee && enemyLessMelee && unit.canStartCast(Dark_Swarm, target.getPosition());
-            auto castSwarmPath   = enemyLessMelee && target.isSiegeTank();
+            auto castSwarmTarget = goodSwarmTarget && selfMoreMelee && enemyLessMelee && unit.canStartCast(Dark_Swarm, target->getPosition());
+            auto castSwarmPath   = enemyLessMelee && target->isSiegeTank();
             auto castSwarmAlly   = !selfMoreMelee; // NOIMPL, just plague for now
 
             auto castPlagueTarget = !castSwarmTarget;
 
             // If close to target and can cast Plague
-            if (!unit.targetsFriendly() && castPlagueTarget && target.unit()->exists() && unit.canStartCast(Plague, target.getPosition()) && unit.isWithinRange(target)) {
-                unit.setCommand(Plague, target.getPosition());
+            if (!unit.targetsFriendly() && castPlagueTarget && target->unit()->exists() && unit.canStartCast(Plague, target->getPosition()) && unit.isWithinRange(*target)) {
+                unit.setCommand(Plague, target->getPosition());
                 unit.commandText = "Plague";
-                Actions::addAction(unit.unit(), target.getPosition(), Plague, PlayerState::Neutral, Util::getCastRadius(Plague));
+                Actions::addAction(unit.unit(), target->getPosition(), Plague, PlayerState::Neutral, Util::getCastRadius(Plague));
                 return true;
             }
 
             // If close to target and can cast Dark Swarm
-            if (!unit.targetsFriendly() && castSwarmTarget && target.unit()->exists() && unit.isWithinRange(target)) {
-                unit.setCommand(Dark_Swarm, target.getPosition());
+            if (!unit.targetsFriendly() && castSwarmTarget && target->unit()->exists() && unit.isWithinRange(*target)) {
+                unit.setCommand(Dark_Swarm, target->getPosition());
                 unit.commandText = "DarkSwarm";
-                Actions::addAction(unit.unit(), target.getPosition(), Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
+                Actions::addAction(unit.unit(), target->getPosition(), Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
                 return true;
             }
 
@@ -541,7 +546,7 @@ namespace McRave::Command {
                 auto closestRanged = Util::getClosestUnit(unit.getPosition(), PlayerState::Self,
                                                           [&](auto &u) { return u->getRole() == Role::Combat && !u->isMelee() && !u->isFlying() && !u->isSpellcaster() && u->hasAttackedRecently(); });
                 if (closestRanged) {
-                    if (closestRanged->isWithinReach(target) && unit.canStartCast(Dark_Swarm, closestRanged->getEngagePosition())) {
+                    if (closestRanged->isWithinReach(*target) && unit.canStartCast(Dark_Swarm, closestRanged->getEngagePosition())) {
                         unit.setCommand(Dark_Swarm, closestRanged->getEngagePosition());
                         unit.commandText = "DarkSwarm";
                         Actions::addAction(unit.unit(), closestRanged->getEngagePosition(), Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
@@ -556,7 +561,7 @@ namespace McRave::Command {
                 auto pos = Util::findPointOnPath(unit.getMarchPath(), [&](auto &p) {
                     auto distSelf = p.getDistance(unit.getPosition());
                     auto distMin  = 200.0;
-                    auto dist     = p.getDistance(target.getPosition());
+                    auto dist     = p.getDistance(target->getPosition());
                     if (dist < 400.0 && dist > distMin && !Actions::overlapsActions(unit.unit(), p, TechTypes::Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(TechTypes::Dark_Swarm)))
                         Visuals::drawBox(TilePosition(p), Colors::Blue);
 
@@ -565,14 +570,14 @@ namespace McRave::Command {
                 if (pos.isValid() && unit.getPosition().getDistance(pos) < 320.0 && unit.canStartCast(Dark_Swarm, pos)) {
                     unit.setCommand(Dark_Swarm, pos);
                     unit.commandText = "DarkSwarmPath";
-                    Actions::addAction(unit.unit(), target.getPosition(), Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
+                    Actions::addAction(unit.unit(), target->getPosition(), Dark_Swarm, PlayerState::Neutral, Util::getCastRadius(Dark_Swarm));
                     return true;
                 }
             }
 
             // If close to target and need to Consume
-            if (unit.targetsFriendly() && unit.isWithinRange(target) && unit.canStartCast(Consume, target)) {
-                unit.setCommand(Consume, target);
+            if (unit.targetsFriendly() && unit.isWithinRange(*target) && unit.canStartCast(Consume, *target)) {
+                unit.setCommand(Consume, *target);
                 unit.commandText = "Consume";
                 return true;
             }
@@ -580,17 +585,17 @@ namespace McRave::Command {
 
         // Queen - Broodlings / Ensnare
         else if (unit.getType() == Zerg_Queen) {
-            if (unit.canStartCast(Spawn_Broodlings, target)) {
-                unit.setCommand(Spawn_Broodlings, target);
+            if (unit.canStartCast(Spawn_Broodlings, *target)) {
+                unit.setCommand(Spawn_Broodlings, *target);
                 unit.commandText = "Broodlings";
-                Actions::addAction(unit.unit(), target.unit(), Spawn_Broodlings, PlayerState::Neutral);
+                Actions::addAction(unit.unit(), target->unit(), Spawn_Broodlings, PlayerState::Neutral);
                 return true;
             }
 
-            if (unit.canStartCast(Ensnare, target.getPosition())) {
-                unit.setCommand(Ensnare, target.getPosition());
+            if (unit.canStartCast(Ensnare, target->getPosition())) {
+                unit.setCommand(Ensnare, target->getPosition());
                 unit.commandText = "Ensnare";
-                Actions::addAction(unit.unit(), target.getPosition(), Ensnare, PlayerState::Neutral);
+                Actions::addAction(unit.unit(), target->getPosition(), Ensnare, PlayerState::Neutral);
                 return true;
             }
         }

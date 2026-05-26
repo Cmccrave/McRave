@@ -742,6 +742,16 @@ namespace McRave::Terrain {
         }
     }
 
+    vector<const Area *> getTerritory(PlayerState playerState)
+    {
+        vector<const Area *> returnVector;
+        for (auto &[area, player] : territoryArea) {
+            if (player == playerState)
+                returnVector.push_back(area);
+        }
+        return returnVector;
+    }
+
     void createAreaCache()
     {
         // Cache area geometry
@@ -825,19 +835,17 @@ namespace McRave::Terrain {
 
         // Make an outline for main areas for now
         for (auto &station : BWEB::Stations::getStations()) {
-            if (station.isMain() || station.isNatural()) {
-                auto area = station.getBase()->GetArea();
-                auto geos = areaGeometry[area].walks;
+            auto area = station.getBase()->GetArea();
+            auto geos = areaGeometry[area].walks;
 
-                // Get boundary tiles
-                vector<WalkPosition> boundarySet;
-                for (auto &w : geos) {
-                    if (isBoundary(w, area)) {
-                        boundarySet.push_back(w);
-                    }
+            // Get boundary tiles
+            vector<WalkPosition> boundarySet;
+            for (auto &w : geos) {
+                if (isBoundary(w, area)) {
+                    boundarySet.push_back(w);
                 }
-                areaOutlines[area] = traceOutline(boundarySet);
             }
+            areaOutlines[area] = traceOutline(boundarySet);
         }
     }
 
@@ -986,12 +994,13 @@ namespace McRave::Terrain {
         }
         return nullptr;
     }
-    vector<WalkPosition> getAreaOutline(const BWEM::Area *area)
+    vector<WalkPosition> &getAreaOutline(const BWEM::Area *area)
     {
+        static vector<WalkPosition> emptyVector;
         if (area) {
             return areaOutlines[area];
         }
-        return {};
+        return emptyVector;
     }
 
     double getChokepointAngle(const BWEM::ChokePoint *chokepoint)

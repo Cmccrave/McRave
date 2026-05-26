@@ -187,10 +187,11 @@ namespace McRave::Pathing {
             };
 
             auto positions = generatePositions(enemy, biasTowards, lineGenerator);
+            auto enemyPtr  = enemy.shared_from_this();
             for (auto &[pos, dist] : positions) {
                 auto closestTargeter = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
-                    return allowedTypes.find(u->getType()) != allowedTypes.end() && u->hasTarget() && u->getRole() == Role::Combat &&
-                           (!u->getTrapPosition().isValid() || u->getTrapPosition() == pos) && *u->getTarget().lock() == enemy;
+                    return allowedTypes.find(u->getType()) != allowedTypes.end() && u->getRole() == Role::Combat && (!u->getTrapPosition().isValid() || u->getTrapPosition() == pos) &&
+                           u->getTarget() == enemyPtr;
                 });
                 if (closestTargeter)
                     assignPosition(*closestTargeter, pos);
@@ -229,10 +230,11 @@ namespace McRave::Pathing {
             // Testing:
             // This doesnt grab the closest targeter, just the closest ling, so re-assign targeting as a test
             auto positions = generatePositions(enemy, biasTowards, squareGenerator);
+            auto enemyPtr  = enemy.shared_from_this();
             for (auto &[pos, dist] : positions) {
                 auto closestTargeter = Util::getClosestUnit(pos, PlayerState::Self, [&](auto &u) {
                     return allowedTypes.find(u->getType()) != allowedTypes.end() && u->getRole() == Role::Combat && (!u->getSurroundPosition().isValid() || u->getSurroundPosition() == pos) &&
-                           u->hasTarget() && *u->getTarget().lock() == enemy;
+                           u->getTarget() == enemyPtr;
                 });
                 if (closestTargeter && Util::findWalkable(*closestTargeter, pos)) {
                     assignPosition(*closestTargeter, pos);
@@ -256,10 +258,9 @@ namespace McRave::Pathing {
 
             for (auto &u : Units::getUnits(PlayerState::Self)) {
                 UnitInfo &unit = *u;
-                if (unit.hasTarget()) {
-                    auto &target = *unit.getTarget().lock();
-                    getEngagePosition(unit, target);
-                    getInterceptPosition(unit, target);
+                if (auto target = unit.getTarget()) {
+                    getEngagePosition(unit, *target);
+                    getInterceptPosition(unit, *target);
                 }
             }
         }

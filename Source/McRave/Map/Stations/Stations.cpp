@@ -874,7 +874,7 @@ namespace McRave::Stations {
         const auto closestSelf = Util::getClosestUnit(station->getBase()->Center(), PlayerState::Self, [&](auto &u) {
             if ((u->getRole() != Role::Combat && u->getRole() != Role::Defender) || !u->isCompleted() || u->isLightAir())
                 return false;
-            if (u->hasTarget(); auto target = u->getTarget().lock()) {
+            if (auto target = u->getTarget()) {
                 if (Terrain::inArea(station, u->getPosition()) && Terrain::inArea(station, target->getPosition()) && u->getLocalState() == LocalState::Attack && u->getSimState() == SimState::Win)
                     return true;
             }

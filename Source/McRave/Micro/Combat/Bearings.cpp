@@ -54,11 +54,6 @@ namespace McRave::Combat::Bearings {
 
     void updateDestination(UnitInfo &unit)
     {
-        if (unit.getDestination().isValid()) {
-            Broodwar->drawTextMap(unit.getPosition(), "z_stale");
-            return;
-        }
-
         auto retreat = Stations::getClosestRetreatStation(unit);
         unit.setMarchPosition(Stations::getDefendPosition(retreat));
         unit.setRetreatPosition(Stations::getHoldPosition(retreat));
@@ -81,8 +76,8 @@ namespace McRave::Combat::Bearings {
                 unit.setDestination(unit.getSurroundPosition());
                 // Broodwar->drawTextMap(unit.getPosition(), "a_surround");
             }
-            else if (unit.hasTarget()) {
-                unit.setDestination(unit.getTarget().lock()->getPosition());
+            else if (auto target = unit.getTarget()) {
+                unit.setDestination(target->getPosition());
                 // Broodwar->drawTextMap(unit.getPosition(), "a_target");
             }
             unit.setMarchPosition(unit.getDestination());
@@ -121,8 +116,8 @@ namespace McRave::Combat::Bearings {
                 unit.setDestination(Combat::getHarassPosition());
                 // Broodwar->drawTextMap(unit.getPosition(), "z_harass");
             }
-            else if (unit.hasTarget()) {
-                unit.setDestination(unit.getTarget().lock()->getPosition());
+            else if (auto target = unit.getTarget()) {
+                unit.setDestination(target->getPosition());
                 // Broodwar->drawTextMap(unit.getPosition(), "z_target");
             }
             else if (Combat::getAttackPosition().isValid() && unit.canAttackGround()) {

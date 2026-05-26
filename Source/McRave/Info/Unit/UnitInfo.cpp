@@ -372,7 +372,7 @@ namespace McRave {
         burrowed = (getType() != Terran_Vulture_Spider_Mine && unit()->isBurrowed());
 
         // If this is a spider mine and doesn't have a target, then it is an inactive mine and unable to attack
-        if (getType() == Terran_Vulture_Spider_Mine && (!unit()->exists() || (!hasTarget() && unit()->getSecondaryOrder() == Orders::Cloak))) {
+        if (getType() == Terran_Vulture_Spider_Mine && (!unit()->exists() || (!getTarget() && unit()->getSecondaryOrder() == Orders::Cloak))) {
             burrowed    = true;
             groundReach = getGroundRange();
         }
@@ -405,6 +405,8 @@ namespace McRave {
         const auto atHome      = Terrain::isAtHome(getPosition());
         const auto atChoke     = getPosition().getDistance(closestGeo) <= rangeCheck;
         const auto nearMe      = atHome || atChoke;
+
+        const auto unitTarget = getTarget();
 
         auto threatensStation = [&]() {
             if (!closestStation)
@@ -439,8 +441,8 @@ namespace McRave {
         };
 
         auto threatensWorkers = [&]() {
-            if (hasTarget(); auto target = getTarget().lock()) {
-                return hasAttackedRecently() && Terrain::inTerritory(PlayerState::Self, target->getPosition()) && (target->getRole() == Role::Worker || target->getRole() == Role::Support);
+            if (unitTarget) {
+                return hasAttackedRecently() && Terrain::inTerritory(PlayerState::Self, unitTarget->getPosition()) && (unitTarget->getRole() == Role::Worker || unitTarget->getRole() == Role::Support);
             }
             auto closestMineral = Resources::getClosestMineral(position, [&](auto &r) { return r->getResourceState() == ResourceState::Mineable; });
             if (closestMineral && closestMineral->getPosition().getDistance(position) < max(200.0, getGroundRange()))
@@ -472,7 +474,7 @@ namespace McRave {
             auto fragileBuilding = Util::getClosestUnit(getPosition(), PlayerState::Self, [&](auto &u) {
                 return !u->isHealthy() && u->getType().isBuilding() && u->isCompleted() && Terrain::inTerritory(PlayerState::Self, u->getPosition());
             });
-            return fragileBuilding && hasTarget() && !getTarget().lock()->isHealthy() &&
+            return fragileBuilding && unitTarget && !unitTarget->isHealthy() &&
                    Util::boxDistance(fragileBuilding->getType(), fragileBuilding->getPosition(), getType(), getPosition()) < proximityCheck;
         };
 
@@ -480,6 +482,8 @@ namespace McRave {
         auto nearbuildLocation = [&]() {
             if (!this->canAttackGround())
                 return false;
+            if (Planning::overlapsPlan(*this, getPosition()))
+                return true;
             if (atHome && !isFlying() && Util::getTime() < Time(5, 00)) {
                 auto closestBuilder = Util::getClosestUnit(getPosition(), PlayerState::Self,
                                                            [&](auto &u) { return u->getRole() == Role::Worker && u->getBuildLocation().isValid() && u->getBuildType().isValid(); });
@@ -495,7 +499,7 @@ namespace McRave {
         // Building
         if (getType().isBuilding()) {
             auto canDamage       = (getType() != Terran_Bunker || unit()->isCompleted()) && (airDamage > 0.0 || groundDamage > 0.0);
-            threateningThisFrame = Planning::overlapsPlan(*this, getPosition()) || threatensStation() || (nearMe && (canDamage || getType() == Protoss_Shield_Battery || getType().isRefinery()));
+            threateningThisFrame = nearbuildLocation() || threatensStation() || (nearMe && (canDamage || getType() == Protoss_Shield_Battery || getType().isRefinery()));
         }
 
         // Worker
@@ -718,21 +722,21 @@ namespace McRave {
     // Check for ability to execute a command
     bool UnitInfo::canStartAttack()
     {
-        if (!hasTarget() || isSpellcaster() || (!targetsFriendly() && getGroundDamage() == 0 && getAirDamage() == 0) || (getType() == UnitTypes::Zerg_Lurker && !isBurrowed()))
+        auto target = getTarget();
+        if (!target || isSpellcaster() || (!targetsFriendly() && getGroundDamage() == 0 && getAirDamage() == 0) || (getType() == UnitTypes::Zerg_Lurker && !isBurrowed()))
             return false;
-        auto &target = *getTarget().lock();
 
         if (isSuicidal() || getType().topSpeed() <= 0.0)
             return true;
 
         // Special Case: Medics
         if (getType() == Terran_Medic)
-            return target.getPercentTotal() < 1.0 && getEnergy() > 0;
+            return target->getPercentTotal() < 1.0 && getEnergy() > 0;
 
         // Special Case: Carriers
         if (getType() == UnitTypes::Protoss_Carrier) {
             auto leashRange = 320;
-            if (getPosition().getDistance(target.getPosition()) >= leashRange)
+            if (getPosition().getDistance(target->getPosition()) >= leashRange)
                 return true;
             for (auto &interceptor : unit()->getInterceptors()) {
                 if (interceptor->getOrder() != Orders::InterceptorAttack && interceptor->getShields() == interceptor->getType().maxShields() &&
@@ -744,16 +748,16 @@ namespace McRave {
 
         // Special Case: Reavers - Shuttles reset the cooldown of their attacks to 30 frames not 60 frames
         if (getType() == Protoss_Reaver && hasTransport() && unit()->isLoaded()) {
-            auto dist = Util::boxDistance(getType(), getPosition(), target.getType(), target.getPosition());
+            auto dist = Util::boxDistance(getType(), getPosition(), target->getType(), target->getPosition());
             return (dist <= getGroundRange());
         }
 
         // Last attack frame - confirmed
-        auto weaponCooldown          = (getType() == Protoss_Reaver) ? 60 : (target.getType().isFlyer() ? getType().airWeapon().damageCooldown() : getType().groundWeapon().damageCooldown());
+        auto weaponCooldown          = (getType() == Protoss_Reaver) ? 60 : (target->getType().isFlyer() ? getType().airWeapon().damageCooldown() : getType().groundWeapon().damageCooldown());
         const auto framesSinceAttack = Broodwar->getFrameCount() - lastAttackFrame;
-        const auto cooldown = (getType() == Protoss_Reaver) ? weaponCooldown - framesSinceAttack : (target.getType().isFlyer() ? unit()->getAirWeaponCooldown() : unit()->getGroundWeaponCooldown());
+        const auto cooldown = (getType() == Protoss_Reaver) ? weaponCooldown - framesSinceAttack : (target->getType().isFlyer() ? unit()->getAirWeaponCooldown() : unit()->getGroundWeaponCooldown());
 
-        auto angle       = BWEB::Map::getAngle(getPosition(), target.getPosition());
+        auto angle       = BWEB::Map::getAngle(getPosition(), target->getPosition());
         auto facingAngle = M_PI_T2 - unit()->getAngle(); // Reverse direction to counter clockwise, as it should be
         auto angleDiff   = (M_PI - fabs(fmod(fabs(angle - facingAngle), M_PI_T2) - M_PI));
 
@@ -767,8 +771,8 @@ namespace McRave {
         // Time to arrive in range - confirmed
         auto arrivalFrames = 0;
         if (getSpeed() > 0.0) {
-            auto boxDistance = double(Util::boxDistance(getType(), getPosition(), target.getType(), target.getPosition()));
-            auto range       = (target.getType().isFlyer() ? getAirRange() : getGroundRange());
+            auto boxDistance = double(Util::boxDistance(getType(), getPosition(), target->getType(), target->getPosition()));
+            auto range       = (target->getType().isFlyer() ? getAirRange() : getGroundRange());
             auto speed       = hasTransport() ? getTransport().lock()->getSpeed() : getSpeed();
             arrivalFrames    = int(ceil(max(0.0, (boxDistance - range) / speed)));
         }
@@ -839,7 +843,8 @@ namespace McRave {
         auto enemy = Grids::getGroundDensity(here, PlayerState::Enemy) + Grids::getAirDensity(here, PlayerState::Enemy);
         auto self  = Grids::getGroundDensity(here, PlayerState::Self) + Grids::getAirDensity(here, PlayerState::Self);
 
-        if (tech == TechTypes::Dark_Swarm || (enemy > self && enemy >= Util::getCastLimit(tech)) || (getType() == Protoss_High_Templar && hasTarget() && getTarget().lock()->isHidden()))
+        auto target = getTarget();
+        if (tech == TechTypes::Dark_Swarm || (enemy > self && enemy >= Util::getCastLimit(tech)) || (getType() == Protoss_High_Templar && target && target->isHidden()))
             return true;
         return false;
     }
@@ -954,7 +959,8 @@ namespace McRave {
 
     bool UnitInfo::isRequestingPickup()
     {
-        if (!hasTarget() || !hasTransport() || unit()->isLoaded())
+        auto target = getTarget();
+        if (!target || !hasTransport() || unit()->isLoaded())
             return false;
 
         // Check if we are being attacked by multiple bullets
@@ -968,10 +974,9 @@ namespace McRave {
         if (getType() == Terran_Ghost)
             return !Terrain::inArea(mapBWEM.GetArea(TilePosition(getDestination())), getPosition());
 
-        auto &unitTarget = getTarget().lock();
-        auto range       = unitTarget->isFlying() ? getAirRange() : getGroundRange();
+        auto range       = target->isFlying() ? getAirRange() : getGroundRange();
         auto cargoPickup = getType() == BWAPI::UnitTypes::Protoss_High_Templar
-                               ? (!canStartCast(BWAPI::TechTypes::Psionic_Storm, unitTarget->getPosition()) || Grids::getGroundThreat(getPosition(), PlayerState::Enemy) <= 0.1f)
+                               ? (!canStartCast(BWAPI::TechTypes::Psionic_Storm, target->getPosition()) || Grids::getGroundThreat(getPosition(), PlayerState::Enemy) <= 0.1f)
                                : !canStartAttack();
 
         return getLocalState() == LocalState::Retreat || getEngDist() > range + 32.0 || cargoPickup || bulletCount >= 4 || isTargetedBySuicide();
@@ -1062,27 +1067,26 @@ namespace McRave {
 
     bool UnitInfo::attemptingSurround()
     {
-        if (!hasTarget() || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 20.0)
+        auto target = getTarget();
+        if (!target || !surroundPosition.isValid() || position.getDistance(surroundPosition) < 20.0)
             return false;
 
-        auto &target = *getTarget().lock();
-        if (target.isThreatening())
+        if (target->isThreatening())
             return false;
-        if (target.getSpeed() >= speed)
+        if (target->getSpeed() >= speed)
             return false;
         return true;
     }
 
     bool UnitInfo::attemptingTrap()
     {
-        if (!hasTarget() || !trapPosition.isValid() || position.getDistance(trapPosition) < 16.0)
+        auto target = getTarget();
+        if (!target || !trapPosition.isValid() || position.getDistance(trapPosition) < 16.0)
             return false;
 
-        auto &target = *getTarget().lock();
-
-        if (target.getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target.getPosition()))
+        if (target->getType().isWorker() && Terrain::inTerritory(PlayerState::Self, target->getPosition()))
             return true;
-        if (target.getSpeed() >= speed && Terrain::inTerritory(PlayerState::Self, target.getPosition()))
+        if (target->getSpeed() >= speed && Terrain::inTerritory(PlayerState::Self, target->getPosition()))
             return true;
         return false;
     }
@@ -1109,8 +1113,9 @@ namespace McRave {
         if (!isLightAir() || saveUnit)
             return false;
         if (hasCommander(); auto cmder = commander.lock()) {
-            if (cmder->hasTarget()) {
-                if (position.getDistance(cmder->getTarget().lock()->getPosition()) < 200.0)
+            auto cmderTarget = cmder->getTarget();
+            if (cmderTarget) {
+                if (position.getDistance(cmderTarget->getPosition()) < 200.0)
                     return false;
             }
 
@@ -1136,7 +1141,8 @@ namespace McRave {
 
     bool UnitInfo::attemptingIntercept()
     {
-        if (!hasTarget() || !interceptPosition.isValid() || position.getDistance(interceptPosition) < 8.0 || lState != LocalState::Attack)
+        auto target = getTarget();
+        if (!target || !interceptPosition.isValid() || position.getDistance(interceptPosition) < 8.0 || lState != LocalState::Attack)
             return false;
         return true;
     }

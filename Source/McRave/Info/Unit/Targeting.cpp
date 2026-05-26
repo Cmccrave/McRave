@@ -622,6 +622,7 @@ namespace McRave::Targets {
 
     void getSimTarget(UnitInfo &unit, PlayerState pState)
     {
+        auto unitTarget = unit.getTarget();
         double distBest = DBL_MAX;
         for (auto &t : Units::getUnits(pState)) {
             UnitInfo &target = *t;
@@ -632,7 +633,7 @@ namespace McRave::Targets {
                                     (!unit.getType().isFlyer() && target.getType() == Terran_Vulture_Spider_Mine));
             auto unitCanAttack   = ((target.isFlying() && unit.canAttackAir()) || (!target.isFlying() && unit.canAttackGround()) || (unit.getType() == Protoss_Carrier));
 
-            if (!targetCanAttack && (!unit.hasTarget() || target != *unit.getTarget().lock()))
+            if (!targetCanAttack && (!unitTarget || t != unitTarget))
                 continue;
 
             if (!target.isWithinEngage(unit))
@@ -649,8 +650,8 @@ namespace McRave::Targets {
             }
         }
 
-        if (!unit.hasSimTarget() && unit.hasTarget())
-            unit.setSimTarget(&*unit.getTarget().lock());
+        if (!unit.hasSimTarget() && unitTarget)
+            unit.setSimTarget(&*unitTarget);
     }
 
     void getBestTarget(UnitInfo &unit, PlayerState pState)
@@ -763,9 +764,9 @@ namespace McRave::Targets {
         }
 
         // Add this unit to the targeted by vector
-        if (unit.hasTarget() && (unit.getRole() == Role::Combat || unit.getRole() == Role::Support)) {
-            auto target = unit.getTarget().lock();
-            target->addTargeter(unit);
+        auto unitTarget = unit.getTarget();
+        if (unitTarget && (unit.getRole() == Role::Combat || unit.getRole() == Role::Support)) {
+            unitTarget->addTargeter(unit);
         }
     }
 
@@ -867,9 +868,12 @@ namespace McRave::Targets {
         for (auto &state : {PlayerState::Self, PlayerState::Enemy, PlayerState::Ally}) {
             for (auto &u : Units::getUnits(state)) {
                 UnitInfo &unit = *u;
-                if (!unit.isAvailable() || !unit.hasTarget())
+                if (!unit.isAvailable())
                     continue;
-                auto target = unit.getTarget().lock();
+                auto target = unit.getTarget();
+                if (!target)
+                    continue;
+
                 int color   = unit.getPlayer()->getColor();
                 Visuals::drawLine(target->getPosition(), unit.getPosition(), color);
 

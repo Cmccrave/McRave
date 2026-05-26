@@ -20,6 +20,7 @@ namespace McRave::Spy::Zerg {
         {static_cast<string>(Z_7Pool), Time(1, 50)},
         {static_cast<string>(Z_9Pool), Time(2, 00)},
         {static_cast<string>(Z_Overpool), Time(2, 10)},
+        {static_cast<string>(Z_Gaspool), Time(2, 20)},
         {static_cast<string>(Z_12Pool), Time(2, 25)},
 
         // Hatch first

@@ -157,12 +157,11 @@ namespace McRave::Players {
         // Grab the UnitInfo for this unit
         auto info = Units::getUnitInfo(bwUnit);
         if (info) {
+            info->setTarget(nullptr);
             if (info->hasResource())
                 Workers::removeUnit(*info);
             if (info->hasTransport())
                 Transports::removeUnit(*info);
-            if (info->hasTarget())
-                info->setTarget(nullptr);
             if (info->getRole() == Role::Scout)
                 Scouts::removeUnit(*info);
 
@@ -219,11 +218,11 @@ namespace McRave::Players {
     int visibleTypesAndParents(PlayerState state, UnitType t)
     {
         if (t == Zerg_Creep_Colony)
-            return getVisibleCount(state, Zerg_Sunken_Colony) + getVisibleCount(state, Zerg_Spore_Colony);
+            return getVisibleCount(state, t) + getVisibleCount(state, Zerg_Sunken_Colony) + getVisibleCount(state, Zerg_Spore_Colony);
         if (t == Zerg_Hatchery)
-            return getVisibleCount(state, Zerg_Lair) + getVisibleCount(state, Zerg_Hive);
+            return getVisibleCount(state, t) + getVisibleCount(state, Zerg_Lair) + getVisibleCount(state, Zerg_Hive);
         if (t == Zerg_Lair)
-            return getVisibleCount(state, Zerg_Hive);
+            return getVisibleCount(state, t) + getVisibleCount(state, Zerg_Hive);
         return getVisibleCount(state, t);
     }
 

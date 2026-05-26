@@ -28,7 +28,7 @@ namespace McRave::Horizon {
 
             if (!u.unit() || (u.isStunned()) || (u.getVisibleAirStrength() <= 0.0 && u.getVisibleGroundStrength() <= 0.0) ||
                 (u.getRole() != Role::None && u.getRole() != Role::Combat && u.getRole() != Role::Defender) || (u.getRole() == Role::Combat && u.getGlobalState() == GlobalState::Retreat) ||
-                (!u.hasTarget() && !u.hasSimTarget()))
+                (!u.getTarget() && !u.hasSimTarget()))
                 return false;
             return true;
         }
@@ -72,10 +72,9 @@ namespace McRave::Horizon {
 
     void simulate(UnitInfo &unit)
     {
-        if (!unit.hasTarget())
+        auto &unitTarget = unit.getTarget();
+        if (!unitTarget)
             return;
-
-        auto &unitTarget = unit.getTarget().lock();
 
         // Determine when to start tracking engagement times, if nothing is in range, it cannot
         // count towards simulation time
@@ -93,12 +92,22 @@ namespace McRave::Horizon {
 
         auto combinedSim = false;
 
+        const auto getTargetForSim = [&](auto &u) {
+            auto target = u.getTarget();
+            if (!target)
+                target = u.getSimTarget().lock();
+            return target;
+        };
+
         for (auto &e : Units::getUnits(PlayerState::Enemy)) {
             UnitInfo &enemy = *e;
             if (!addToSim(enemy))
                 continue;
 
-            auto &enemyTarget      = enemy.hasTarget() ? enemy.getTarget().lock() : enemy.getSimTarget().lock();
+            auto enemyTarget = getTargetForSim(enemy);
+            if (!enemyTarget)
+                continue;
+
             auto simRatio          = 0.0;
             const auto distUnknown = min(double(unit.getType().sightRange()), (Broodwar->getFrameCount() - enemy.getLastVisibleFrame()) * enemy.getSpeed());
             const auto distTarget  = max(0.0, double(Util::boxDistance(enemy.getType(), enemy.getPosition(), unit.getType(), unit.getPosition())));
@@ -110,7 +119,7 @@ namespace McRave::Horizon {
             if ((enemy.getSpeed() <= 0.0 && distEngage - targetDisplacement > enemyRange + 32.0 && distTarget - targetDisplacement > enemyRange + 32.0) ||
                 (enemy.getType() == UnitTypes::Terran_Siege_Tank_Siege_Mode && distTarget < 64.0) ||
                 (enemy.getSpeed() <= 0.0 && distTarget - targetDisplacement > enemyRange && enemyTarget->getSpeed() <= 0.0) ||
-                (enemy.targetsFriendly() && unit.hasTarget() && enemy.getPosition().getDistance(unitTarget->getPosition()) >= enemyReach))
+                (enemy.targetsFriendly() && enemy.getPosition().getDistance(unitTarget->getPosition()) >= enemyReach))
                 continue;
 
             // If enemy doesn't move, calculate how long it will remain in range once in range
@@ -143,7 +152,10 @@ namespace McRave::Horizon {
             if (!addToSim(self))
                 continue;
 
-            auto &selfTarget      = self.hasTarget() ? self.getTarget().lock() : self.getSimTarget().lock();
+            auto selfTarget = getTargetForSim(self);
+            if (!selfTarget)
+                continue;
+
             const auto range      = max(self.getAirRange(), self.getGroundRange());
             const auto reach      = max(self.getAirReach(), self.getGroundReach());
             const auto distance   = self.getEngDist();
@@ -173,7 +185,10 @@ namespace McRave::Horizon {
             if (!addToSim(ally))
                 continue;
 
-            auto &allyTarget      = ally.hasTarget() ? ally.getTarget().lock() : ally.getSimTarget().lock();
+            auto allyTarget = getTargetForSim(ally);
+            if (!allyTarget)
+                continue;
+
             const auto range      = max(ally.getAirRange(), ally.getGroundRange());
             const auto reach      = max(ally.getAirReach(), ally.getGroundReach());
             const auto distance   = double(Util::boxDistance(ally.getType(), ally.getPosition(), unit.getType(), unitTarget->getPosition()));
@@ -182,7 +197,7 @@ namespace McRave::Horizon {
             auto simRatio         = max(0.0, simulationTime - engageTime - addPrepTime(ally));
 
             // If the unit doesn't affect this simulation
-            if ((ally.getSpeed() <= 0.0 && ally.getEngDist() > -16.0) || (unit.hasTarget() && ally.hasTarget() && ally.getEngagePosition().getDistance(unitTarget->getPosition()) > reach))
+            if ((ally.getSpeed() <= 0.0 && ally.getEngDist() > -16.0) || (ally.getEngagePosition().getDistance(unitTarget->getPosition()) > reach))
                 continue;
 
             if (unit.unit()->isSelected())

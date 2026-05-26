@@ -77,7 +77,7 @@ namespace McRave::Terrain {
     };
     AreaGeometry* getAreaGeometry(const BWEM::Area *);
     inline AreaGeometry* getAreaGeometry(const BWEB::Station *station) { return getAreaGeometry(station->getBase()->GetArea()); };
-    std::vector<BWAPI::WalkPosition> getAreaOutline(const BWEM::Area *);
+    std::vector<BWAPI::WalkPosition>& getAreaOutline(const BWEM::Area *);
 
     // Checks if "here" is in area
     bool inArea(const BWEM::Area *area, BWAPI::Position here);
@@ -106,6 +106,7 @@ namespace McRave::Terrain {
 
     bool inTerritory(PlayerState, BWAPI::Position);
     bool inTerritory(PlayerState, const BWEM::Area *);
+    std::vector<const BWEM::Area *> getTerritory(PlayerState);
 
     // Checks if the source to the target is all within the given PlayerState territory
     template <typename T> //

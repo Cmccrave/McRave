@@ -248,7 +248,7 @@ namespace McRave::BuildOrder::Zerg {
 
         auto secondGas = (Spy::enemyFastExpand() && vis(Zerg_Drone) >= 20) || (atPercent(Zerg_Lair, 0.5) && vis(Zerg_Drone) >= 20);
 
-        wantThird = hatchCount() >= 2;
+        wantThird = (!Spy::enemyProxy() && !Spy::enemyRush() && hatchCount() >= 2) || hatchCount() >= 3;
         planEarly = wantThird && thirdHatch && hatchCount() < 3;
 
         // Buildings
@@ -304,6 +304,12 @@ namespace McRave::BuildOrder::Zerg {
         // Reactions
         if (!inTransition) {
             if (Spy::getEnemyTransition() == U_WorkerRush) {
+                currentBuild      = Z_PoolHatch;
+                currentOpener     = Z_Overpool;
+                currentTransition = Z_2HatchMuta;
+            }
+
+            if (Spy::getEnemyOpener() == T_8Rax || Spy::enemyProxy()) {
                 currentBuild      = Z_PoolHatch;
                 currentOpener     = Z_Overpool;
                 currentTransition = Z_2HatchMuta;

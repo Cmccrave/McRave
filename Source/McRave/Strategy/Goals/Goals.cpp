@@ -42,9 +42,11 @@ namespace McRave::Goals {
             GoalTarget(){};
         };
 
-        bool canAssignGoal(const shared_ptr<UnitInfo> unit)
+        bool canAssignGoal(const shared_ptr<UnitInfo> unit, GoalType gType)
         {
             if (!unit->isAvailable() || unit->getRole() == Role::Scout || unit->getGoal().isValid())
+                return false;
+            if (gType != GoalType::Build && unit->getBuildLocation().isValid())
                 return false;
             return true;
         }
@@ -58,7 +60,7 @@ namespace McRave::Goals {
 
             // TODO: Caching
             for (int current = 0; current < count; current++) {
-                const auto closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) { return canAssignGoal(u) && pred(u); });
+                const auto closest = Util::getClosestUnit(here, PlayerState::Self, [&](auto &u) { return canAssignGoal(u, gType) && pred(u); });
                 if (closest) {
                     closest->setGoal(here);
                     closest->setGoalType(gType);
@@ -82,7 +84,7 @@ namespace McRave::Goals {
                 }
             }
 
-            auto assignable = [&](auto &u) { return canAssignGoal(u) && u->getType() == type; };
+            auto assignable = [&](auto &u) { return canAssignGoal(u, gType) && u->getType() == type; };
 
             auto getClosest = [&]() { return type.isFlyer() ? Util::getClosestUnit(here, PlayerState::Self, assignable) : Util::getClosestUnitGround(here, PlayerState::Self, assignable); };
 
@@ -273,20 +275,45 @@ namespace McRave::Goals {
                     assignWorker(Planning::getCurrentExpansion()->getBase()->Center());
             }
 
-            auto outlines   = Terrain::getAreaOutline(Terrain::getMainArea());
-            auto natOutline = Terrain::getAreaOutline(Terrain::getNaturalArea());
-            outlines.insert(outlines.end(), natOutline.begin(), natOutline.end());
+            vector<WalkPosition> outlines;
+            bool natAdded  = false;
+            bool mainAdded = false;
+            for (auto &area : Terrain::getTerritory(PlayerState::Self)) {
+                auto areaOutline = Terrain::getAreaOutline(area);
+                outlines.insert(outlines.end(), areaOutline.begin(), areaOutline.end());
+                if (area == Terrain::getMainArea())
+                    mainAdded = true;
+                if (area == Terrain::getNaturalArea())
+                    natAdded = true;
+            }
+
+            // Make sure nat and main area involved
+            if (!mainAdded) {
+                auto mainOutline = Terrain::getAreaOutline(Terrain::getMainArea());
+                outlines.insert(outlines.end(), mainOutline.begin(), mainOutline.end());
+            }
+            if (!natAdded) {
+                auto natOutline = Terrain::getAreaOutline(Terrain::getNaturalArea());
+                outlines.insert(outlines.end(), natOutline.begin(), natOutline.end());
+            }
 
             auto oldestTile = TilePositions::Invalid;
+            auto oldestVis  = 0;
             for (auto &w : outlines) {
-                auto tile = TilePosition(w);
-                if (tile.isValid() && Broodwar->getFrameCount() - Grids::getLastVisibleFrame(tile) >= 720 && Broodwar->isBuildable(oldestTile)) {
+                auto tile    = TilePosition(w);
+                auto visDiff = Broodwar->getFrameCount() - Grids::getLastVisibleFrame(tile);
+
+                if (tile.isValid() && visDiff > oldestVis) {
                     oldestTile = tile;
-                    break;
+                    oldestVis  = visDiff;
+                    // if (!Broodwar->isExplored(tile))
+                    //    break;
                 }
             }
 
             if (oldestTile.isValid()) {
+
+                Visuals::drawLine(Terrain::getMainPosition(), Position(oldestTile), Colors::Yellow);
 
                 // Clear out base early game
                 auto proxyNeedsScouting = !Spy::enemyProxy() || Spy::getEnemyBuild() == P_CannonRush;
@@ -300,7 +327,7 @@ namespace McRave::Goals {
                 auto possibleCannonRush = (Spy::enemyPossibleProxy() && Players::getTotalCount(PlayerState::Enemy, Protoss_Probe) > 0) || Spy::getEnemyBuild() == P_CannonRush;
                 if (Roles::getRoleCount(Role::Combat) == 0 && (possibleProxyFact || possibleCannonRush)) {
                     static auto scoutProxyTime = Util::getTime();
-                    if (Util::getTime() - scoutProxyTime > Time(0, 30)) {
+                    if (Util::getTime() - scoutProxyTime > Time(0, 15)) {
                         LOG_ONCE("Need to scout main for proxy");
                         auto proxyWorker = Util::getClosestUnit(Terrain::getMainPosition(), PlayerState::Enemy, [&](auto &u) { return u->getType().isWorker() && u->isProxy(); });
                         if (!proxyWorker || (proxyWorker && !proxyWorker->unit()->exists()))

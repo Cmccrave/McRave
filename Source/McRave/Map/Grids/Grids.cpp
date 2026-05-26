@@ -137,7 +137,6 @@ namespace McRave::Grids {
             const auto allowCollision  = !unit.isFlying() && !unit.isBurrowed();
             const auto allowGround     = unit.getPlayer() != Broodwar->self() && unit.getPlayer() != Broodwar->neutral() && unit.canAttackGround();
             const auto allowAir        = unit.getPlayer() != Broodwar->self() && unit.getPlayer() != Broodwar->neutral() && unit.canAttackAir();
-            const auto addSplash       = unit.hasTarget() && unit.isSplasher();
 
             const auto groundAura = max(96.0, unit.getGroundRange());
             const auto airAura    = max(96.0, unit.getAirRange());
@@ -147,29 +146,6 @@ namespace McRave::Grids {
 
             const auto invGrdReachDiff = 1.0 / (unit.getGroundReach() - unit.getGroundRange());
             const auto invAirReachDiff = 1.0 / (unit.getAirReach() - unit.getAirRange());
-
-            if (addSplash) {
-                // auto splashRadius = ceil(unit.getSplashRadius() / 8.0);
-                // auto target       = unit.getTarget().lock();
-                // for (auto &w : Util::getWalkCircle(splashRadius)) {
-                //    auto walk = target->getWalkPosition() + w;
-                //    if (!walk.isValid())
-                //        continue;
-
-                //    auto &index     = grid[gridWalkScale * walk.y + walk.x];
-                //    const auto dist = Util::fastDistance(x1, y1, (walk.x * 8) + 4, (walk.y * 8) + 4) + 8;
-                //    if (index.lastUpdateFrame != currentGridFrame) {
-                //        index.wipe();
-                //        index.lastUpdateFrame = currentGridFrame;
-                //    }
-
-                //    // Threat
-                //    if (allowAir) {
-                //        const auto rangeDiff = 0.015625 * max(1.0, dist - double(unit.getSplashRadius())); // This is just 1/64 so it decays over 2 tiles
-                //        index.airThreat += (dist <= 104.0 ? float(unit.getVisibleAirStrength()) : float(unit.getVisibleAirStrength() * rangeDiff));
-                //    }
-                //}
-            }
 
             if (radius > 0 && (!unit.getType().isBuilding() || unit.canAttackAir() || unit.canAttackGround())) {
                 radius += 2;
